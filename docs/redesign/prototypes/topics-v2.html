@@ -8,18 +8,18 @@
   <link rel="stylesheet" href="assets/tokens.css?v=4">
   <link rel="stylesheet" href="assets/app.css?v=12">
   <link rel="stylesheet" href="assets/dash.css?v=54">
-  <link rel="stylesheet" href="assets/mme.css?v=2">
+  <link rel="stylesheet" href="assets/mme.css?v=3">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=3"></script>
-  <script src="assets/messages.js?v=13"></script>
+  <script src="assets/messages.js?v=14"></script>
   <script src="assets/messages-v2.js?v=27"></script>
-  <script src="assets/messages-mme.js?v=2"></script>
+  <script src="assets/messages-mme.js?v=3"></script>
   <script src="assets/components.js?v=6"></script>
   <script src="assets/dash.js?v=11"></script>
   <script src="assets/mme.js?v=2"></script>
-  <script src="assets/shell.js?v=28"></script>
+  <script src="assets/shell.js?v=29"></script>
   <script src="data/home.js?v=3"></script>
   <script src="data/stories.js?v=1"></script>
   <script src="data/mme.js?v=1"></script>
@@ -83,13 +83,13 @@
       route: '/trends',
       dash: true,
       title: () => t('nav.topics'),
-      breadcrumbs: () => [{ label: t('nav.topics') }],
+      breadcrumbs: () => [{ label: t('nav.media') }],
       render (content, { tabs }) {
         content.classList.add('dash', 'minimal')
         reset()
         const ok = topics.kind === 'data' || topics.kind === 'empty'
-        if (!ok) { content.replaceChildren(TopBar({ title: t('nav.topics'), tabs, quiet: true }), UI.ErrorState({ onRetry: () => location.reload() }), protoNote()); return }
-        if (topics.kind === 'empty') { content.replaceChildren(TopBar({ title: t('nav.topics'), tabs, quiet: true }), h('div', { class: 'dash-grid' }, card('c-12', UI.EmptyState({ text: t('topics2.empty') }))), protoNote()); return }
+        if (!ok) { content.replaceChildren(TopBar({ title: `${t('nav.media')} · ${t('tab.media.topics')}`, tabs, quiet: true }), UI.ErrorState({ onRetry: () => location.reload() }), protoNote()); return }
+        if (topics.kind === 'empty') { content.replaceChildren(TopBar({ title: `${t('nav.media')} · ${t('tab.media.topics')}`, tabs, quiet: true }), h('div', { class: 'dash-grid' }, card('c-12', UI.EmptyState({ text: t('topics2.empty') }))), protoNote()); return }
 
         const d = topics.data
         const name = (x) => x[App.locale] || x.el
@@ -110,7 +110,7 @@
         })
         const movers = rows.filter((r) => r.change !== null)
 
-        const bar = TopBar({ title: t('nav.topics'), tabs, quiet: true })
+        const bar = TopBar({ title: `${t('nav.media')} · ${t('tab.media.topics')}`, tabs, quiet: true })
 
         // Left column: all topics, and the topics over time. Right column: the topics that rise and fall.
         const largest = rows.slice(0, 6)

@@ -28,13 +28,12 @@
     '/methodology': 'methodology.html'
   }
 
-  // The sidebar has 6 items (APO-161: Media and Ownership are one item). The sub-pages of an item are tabs inside the page (shell-spec.md, "Navigation").
+  // The sidebar has 5 items (APO-161: Media and Ownership are one item). The sub-pages of an item are tabs inside the page (shell-spec.md, "Navigation").
   // The item "world" is Αναλύσεις: its tabs are the pages of the ΑΝΑΛΥΣΗ section of the live sidebar, in the same order (#35).
-  // ΜΜΕ & πρόσωπα (/media) is not there: its content is Μέσα › Επισκόπηση.
+  // ΜΜΕ & πρόσωπα (/media) is not there: its content is Μέσα › Επισκόπηση. Θέματα (/trends) is a tab of Μέσα, not an item of its own.
   const NAV = [
     { key: 'home', tabs: [['home', '/']] },
-    { key: 'media', tabs: [['overview', '/media'], ['ownership', '/groups'], ['fingerprints', '/fingerprints'], ['similarity', '/similarity']], details: ['/outlet', '/group'] },
-    { key: 'topics', tabs: [['trends', '/trends']], details: ['/topic'] },
+    { key: 'media', tabs: [['overview', '/media'], ['topics', '/trends'], ['ownership', '/groups'], ['fingerprints', '/fingerprints'], ['similarity', '/similarity']], details: ['/outlet', '/group', '/topic'] },
     { key: 'spread', tabs: [['overview', '/stories']], details: ['/story'] },
     { key: 'politics', tabs: [['elections', '/elections'], ['statements', '/track'], ['cases', '/cases'], ['campaigns', '/campaigns']] },
     { key: 'world', tabs: [['speeches', '/speeches'], ['war', '/war'], ['analyze', '/analyze'], ['narrative', '/narrative'], ['gaza', '/gaza'], ['israel', '/israel'],

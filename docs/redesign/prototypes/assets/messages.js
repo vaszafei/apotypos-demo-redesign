@@ -242,6 +242,7 @@ window.MESSAGES = {
     'entity.link.missing.short': 'η σελίδα δεν έχει φτιαχτεί',
 
     'tab.media.overview': 'Επισκόπηση',
+    'tab.media.topics': 'Θέματα',
     'tab.media.ownership': 'Ιδιοκτησία',
     'tab.media.fingerprints': 'Αποτυπώματα',
     'tab.media.similarity': 'Ομοιότητα και πρωτοτυπία',
@@ -591,6 +592,7 @@ window.MESSAGES = {
     'entity.link.missing.short': 'page not built',
 
     'tab.media.overview': 'Overview',
+    'tab.media.topics': 'Topics',
     'tab.media.ownership': 'Ownership',
     'tab.media.fingerprints': 'Fingerprints',
     'tab.media.similarity': 'Similarity and originality',

@@ -8,21 +8,21 @@
   <link rel="stylesheet" href="assets/tokens.css?v=4">
   <link rel="stylesheet" href="assets/app.css?v=12">
   <link rel="stylesheet" href="assets/dash.css?v=54">
-  <link rel="stylesheet" href="assets/mme.css?v=2">
-  <link rel="stylesheet" href="assets/date-range.css?v=1">
+  <link rel="stylesheet" href="assets/mme.css?v=3">
+  <link rel="stylesheet" href="assets/date-range.css?v=2">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=3"></script>
-  <script src="assets/messages.js?v=13"></script>
+  <script src="assets/messages.js?v=14"></script>
   <script src="assets/messages-v2.js?v=27"></script>
   <script src="assets/messages-spread.js?v=12"></script>
-  <script src="assets/messages-mme.js?v=2"></script>
+  <script src="assets/messages-mme.js?v=3"></script>
   <script src="assets/components.js?v=6"></script>
   <script src="assets/dash.js?v=11"></script>
   <script src="assets/date-range.js?v=1"></script>
   <script src="assets/mme.js?v=2"></script>
-  <script src="assets/shell.js?v=28"></script>
+  <script src="assets/shell.js?v=29"></script>
   <script src="data/mme.js?v=1"></script>
   <script src="data/groups.js?v=2"></script>
   <script src="data/originality.js?v=1"></script>
@@ -41,7 +41,7 @@
     const colorOfGroup = Dash.groupColors(groupList)
 
     // ?ds=il opens the Israeli set, as on the live page.
-    const view = { set: params.get('ds') === 'il' ? 'il' : 'gr', from: null, to: null, people: 'tone' }
+    const view = { set: params.get('ds') === 'il' ? 'il' : 'gr', from: null, to: null, people: 'tone', sort: 'n' }
     let lastValid = null
     let draw = () => {}
     const setSelect = h('select', { 'aria-label': t('mme.set'), onChange: (e) => { view.set = e.target.value; view.from = null; lastValid = null; draw() } },
@@ -220,8 +220,8 @@
           const storiesPerDay = dates.map(() => 0)
           set.sd.forEach((pairs) => { for (let j = 0; j < pairs.length; j += 2) storiesPerDay[pairs[j]]++ })
 
-          // Row 1: 4 small stat cards. Each has a number and a small picture of the same measure.
-          const c3 = (el) => { el.classList.replace('c-4', 'c-3'); return el }
+          // Row 1: 4 small stat cards on two lines. Each has a number and a small picture of the same measure.
+          const c3 = (el) => { el.classList.replace('c-4', 'c-3'); el.classList.add('mme-kpi'); return el }
           const groupCount = new Set(S.active.map((o) => o.group).filter(Boolean)).size
           const statOutlets = c3(Stat({
             kpi: 'K05', label: t('mme.stat.outlets'), empty: !S.active.length, value: fmt.int(S.active.length),
@@ -235,11 +235,11 @@
           const statArticles = c3(Stat({
             kpi: 'K06', label: t('media2.stat.articles'), empty: analysed <= 0, value: fmt.int(analysed),
             sub: change !== null ? [h('span', { class: 'delta' }, `${change >= 0 ? '▲' : '▼'} ${fmt.signed(change * 100)}%`), ' ', t('media2.stat.articles.delta')] : t('media2.stat.articles.avg', { n: fmt.int(Math.round(analysed / days)) }),
-            viz: Spark(totals, i0, i1, t('media2.spark.articles'), { w: 96, hgt: 26 })
+            viz: Spark(totals, i0, i1, t('media2.spark.articles'), { w: 80, hgt: 22 })
           }))
           const statStories = c3(Stat({
             kpi: 'K07', label: t('media2.stat.stories'), empty: S.storyCount <= 0, value: fmt.int(S.storyCount),
-            sub: t('media.k07.hint'), viz: Spark(storiesPerDay, i0, i1, t('media2.spark.stories'), { w: 96, hgt: 26 })
+            sub: t('media.k07.hint'), viz: Spark(storiesPerDay, i0, i1, t('media2.spark.stories'), { w: 80, hgt: 22 })
           }))
           const quoteTotal = S.personQuotes.reduce((a, b) => a + b, 0)
           const statPeople = c3(Stat({
@@ -272,40 +272,50 @@
             h('ul', { class: 'rows' }, bylines.data.outlets.slice().sort((a, b) => b.anonPct - a.anonPct).map((r) => h('li', {},
               h('span', { class: 'row-name' }, r.name), h('span', { class: 'row-value' }, fmt.pct(r.anonPct / 100)), UI.HBar(r.anonPct, 100))))) : null
 
-          // The ranking of the outlets. It takes the place of the outlet cards of the live page: the three largest topics are under the name.
-          const rows = S.active.slice().sort((a, b) => b.n - a.n)
-          const newsShares = S.active.map((o) => o.news / o.n)
+          // All the outlets: one tile for each, in place of the outlet cards of the live page. A tile has the articles, the three largest topics, clickbait and stance.
           const cbMax = Math.max(...cbOutlets.map((o) => o.cbYes / o.cbKnown), 0.01)
-          const scaleCell = (num, graphic) => h('div', { class: 'scale-cell' }, h('span', { class: 'scale-num' }, num), graphic)
-          const nameCell = (o) => h('div', { class: 'name-cell' }, Mme.outletLink(S, o),
-            h('span', { class: 'reason' }, Mme.topIssues(S, o, 3).map((r) => `${r.x[App.locale] || r.x.el} ${Math.round(r.v * 100)}%`).join(' · ')))
-          const columns = [
-            { label: t('media.col.outlet'), render: nameCell },
-            greek && { label: t('media.col.group'), phone: false, render: (o) => (o.group
-              ? h('span', { class: 'group-cell' }, h('span', { class: 'dot', style: `--dot:${colorOfGroup.get(o.group) || NO_GROUP}`, 'aria-hidden': 'true' }),
+          const crit = (o) => { const n = o.stance[0] + o.stance[1] + o.stance[2]; return n >= 30 ? o.stance[0] / n : -1 }
+          const cb = (o) => (o.cbKnown >= 100 ? o.cbYes / o.cbKnown : -1)
+          const SORTS = { n: (a, b) => b.n - a.n, cb: (a, b) => cb(b) - cb(a), crit: (a, b) => crit(b) - crit(a), name: (a, b) => a.name.localeCompare(b.name, App.locale) }
+          const rows = S.active.slice().sort(SORTS[view.sort] || SORTS.n)
+          const nMax = Math.max(...S.active.map((o) => o.n), 1)
+          const tile = (o, i) => {
+            const color = o.group ? colorOfGroup.get(o.group) || NO_GROUP : null
+            const group = !greek ? null : o.group
+              ? h('p', { class: 'mme-tile-group' }, h('span', { class: 'dot', style: `--dot:${color}`, 'aria-hidden': 'true' }),
                 slugOfGroup.has(o.group) ? h('a', { class: 'quiet-link', href: `group-v2.html?g=${slugOfGroup.get(o.group)}` }, o.group) : o.group)
-              : h('span', { class: 'group-cell' }, h('span', { class: 'dot dot-none', 'aria-hidden': 'true' }), h('span', { class: 'muted-text' }, t('media.col.group.none')))) },
-            { label: t('media.col.articles'), num: true, render: (o) => fmt.int(o.n) },
-            { label: t('media.col.clickbait'), num: true, phone: false, render: (o) => (o.cbKnown >= 100
-              ? scaleCell(fmt.pct(o.cbYes / o.cbKnown), Scale(o.cbYes / o.cbKnown, 0, cbMax, cbAvg, fmt.pct(o.cbYes / o.cbKnown), fmt.pct(cbAvg)))
-              : h('span', { class: 'mini-empty' }, t('group.clickbait.none'))) },
-            { label: t('mme.rank.stance'), phone: false, render: (o) => UI.MiniStance(o.stance.map((v, j) => ({ label: t(`stance.${['critical', 'neutral', 'supportive'][j]}`), value: v, color: ['var(--stance-critical)', 'var(--stance-neutral)', 'var(--stance-supportive)'][j] }))) }
-          ].filter(Boolean)
-          const ranking = card('c-12 mme-rank', cardHead(t('mme.rank.all'), null, `${t('mme.rank.note')} ${t('media2.rank.outlets.note')}`),
-            UI.DataTable({ rows, columns, rankColumn: true, pageSize: rows.length, emptyText: t('media.empty') }))
+              : h('p', { class: 'mme-tile-group' }, h('span', { class: 'dot dot-none', 'aria-hidden': 'true' }), t('media.col.group.none'))
+            const stanceN = o.stance[0] + o.stance[1] + o.stance[2]
+            return h('li', { class: 'mme-tile', style: color ? `--gc:${color}` : '' },
+              h('div', { class: 'mme-tile-head' },
+                h('p', { class: 'mme-tile-name' }, view.sort === 'name' ? null : h('span', { class: 'mme-tile-rank' }, String(i + 1)), Mme.outletLink(S, o)),
+                h('p', { class: 'mme-tile-n' }, fmt.int(o.n), h('small', {}, t('mme.tile.articles')))),
+              group,
+              h('div', { class: 'mme-tile-vol', 'aria-hidden': 'true' }, h('span', { style: `width:${(o.n / nMax) * 100}%` })),
+              h('ul', { class: 'mme-tile-topics', 'aria-label': t('mme.rank.topics') }, Mme.topIssues(S, o, 3).map((r) => h('li', {}, `${r.x[App.locale] || r.x.el} `, h('b', {}, `${Math.round(r.v * 100)}%`)))),
+              h('div', { class: 'mme-tile-metrics' },
+                h('span', {}, t('mme.tile.cb')),
+                o.cbKnown >= 100 ? Scale(o.cbYes / o.cbKnown, 0, cbMax, cbAvg, fmt.pct(o.cbYes / o.cbKnown), fmt.pct(cbAvg)) : h('span', {}),
+                h('span', { class: 'mme-tile-val' }, o.cbKnown >= 100 ? fmt.pct(o.cbYes / o.cbKnown) : t('group.clickbait.none')),
+                h('span', {}, t('mme.rank.stance')),
+                UI.MiniStance(o.stance.map((v, j) => ({ label: t(`stance.${['critical', 'neutral', 'supportive'][j]}`), value: v, color: ['var(--stance-critical)', 'var(--stance-neutral)', 'var(--stance-supportive)'][j] }))),
+                h('span', { class: 'mme-tile-val' }, stanceN >= 30 ? t('mme.tile.crit', { p: pct0(o.stance[0] / stanceN) }) : '')))
+          }
+          const sorter = UI.SegmentedControl({ label: t('mme.rank.sort'), value: view.sort, options: ['n', 'cb', 'crit', 'name'].map((k) => ({ value: k, label: t(`mme.rank.sort.${k}`) })), onChange: (k) => { view.sort = k; draw() } })
+          const ranking = card('c-12 mme-rank', cardHead(t('mme.rank.all'), sorter, `${t('mme.rank.note')} ${t('media2.rank.outlets.note')}`),
+            rows.length ? h('ul', { class: 'mme-tiles' }, rows.map(tile)) : emptyText(t('media.empty')))
           ranking.id = 'ranking'
           ranking.setAttribute('aria-live', 'polite')
 
           // The cards of the live page that the dashboard did not have.
-          // The topic chips and «Ένα θέμα, όλα τα μέσα» are on the page Θέματα. «Οι ιστορίες του διαστήματος» is on the page Ιστορίες.
-          const highlights = Mme.HighlightsCard(S)
+          // The topic chips and «Ένα θέμα, όλα τα μέσα» are on the page Θέματα. «Οι ιστορίες του διαστήματος» is on the page Ιστορίες. «Τι ξεχωρίζει» is on Αρχική.
           const agenda = Mme.AgendaCard(S)
           const people = Mme.PeopleCard(S, { mode: view.people, onMode: (m) => { view.people = m; draw() } })
           const gov = Mme.GovCard(S)
           const persons = Mme.PersonsCard(S)
 
           content.replaceChildren(bar, h('div', { class: 'dash-grid' },
-            statOutlets, statArticles, statStories, statPeople, highlights,
+            statOutlets, statArticles, statStories, statPeople,
             ranking, h('div', { class: 'c-6 card-col' }, volume, scatterCard, bylineCard), h('div', { class: 'c-6 card-col' }, gov),
             agenda, people, persons), Mme.MethodNote(S), protoNote())
         }

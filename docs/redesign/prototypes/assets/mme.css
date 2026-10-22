@@ -84,14 +84,43 @@
 .mme-headline .muted-text { font-size: var(--text-caption); }
 .mme-angle { font-size: var(--text-caption); color: var(--text-primary); }
 
-/* Four stat cards in a row: the line under the number goes below it, the small picture stays on the right. */
-.dstat.c-3 .dstat-row { grid-template-columns: auto minmax(0, 1fr); row-gap: 2px; }
-.dstat.c-3 .dstat-sub { grid-column: 1 / -1; grid-row: 2; }
-.dstat.c-3 .dstat-row > :nth-child(3) { justify-self: end; }
-/* The ranking: the name column takes the room left by the numbers, so the topics under the name wrap. */
-.mme-rank .data-table td:nth-child(2) { min-width: 220px; }
+/* Four small stat cards in a row: the label over the number and its line, the small picture on the right. */
+.dstat.mme-kpi { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: baseline; column-gap: var(--space-2); row-gap: 0; padding: 6px 12px; }
+.mme-kpi .dstat-label { grid-column: 1 / 3; grid-row: 1; }
+.mme-kpi .dstat-row { display: contents; }
+.mme-kpi .dstat-value { grid-column: 1; grid-row: 2; font-size: 18px; line-height: 1.25; }
+.mme-kpi .dstat-sub { grid-column: 2 / 4; grid-row: 2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.mme-kpi .dstat-row > :nth-child(3) { grid-column: 3; grid-row: 1; align-self: center; }
+.mme-kpi .meter { width: 72px; }
+.mme-kpi .dcard-empty { grid-column: 1 / -1; }
+@media (max-width: 1023px) { .mme-kpi.c-3 { grid-column: span 6; } }
+
+/* All outlets: one tile for each outlet. The top rule has the color of the group. */
+.mme-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: var(--space-3); margin: var(--space-1) 0 0; padding: 0; list-style: none; }
+.mme-tile { display: grid; gap: 8px; align-content: start; padding: 10px 12px 12px; border: 1px solid var(--border); border-top: 3px solid var(--gc, var(--bar-muted)); border-radius: var(--radius); background: var(--surface-raised); font-size: var(--text-small); }
+.mme-tile:hover { border-color: var(--ink); border-top-color: var(--gc, var(--ink)); }
+.mme-tile p { margin: 0; }
+.mme-tile-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: var(--space-2); }
+.mme-tile-name { overflow: hidden; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
+.mme-tile-name a { color: var(--ink); }
+.mme-tile-n { font-size: 18px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.mme-tile-n small { margin-left: 4px; font-size: var(--text-caption); font-weight: 400; color: var(--text-secondary); }
+.mme-tile-rank { margin-right: 6px; font-size: var(--text-caption); font-weight: 400; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.mme-tile-group { display: flex; align-items: center; gap: 6px; overflow: hidden; font-size: var(--text-caption); color: var(--text-secondary); white-space: nowrap; text-overflow: ellipsis; }
+.mme-tile-group a { color: var(--text-secondary); }
+.mme-tile-vol { height: 4px; border-radius: 2px; background: var(--surface-card); }
+.mme-tile-vol span { display: block; height: 100%; border-radius: 2px; background: var(--series-news); }
+.mme-tile-topics { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.mme-tile-topics li { padding: 1px 8px; border-radius: var(--pill); background: var(--surface-card); font-size: var(--text-caption); color: var(--text-primary); }
+.mme-tile-topics b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.mme-tile-metrics { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 6px var(--space-2); padding-top: 8px; border-top: 1px solid var(--border); font-size: var(--text-caption); color: var(--text-secondary); }
+.mme-tile-metrics .scale { justify-self: start; }
+.mme-tile-metrics .stacked-mini { width: 100%; }
+.mme-tile-val { text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
 /* The topic names of the agenda are long: the standing labels get more room. */
 .dash .mme-heat.matrix-turned thead th:not(:first-child) { height: 190px; }
 /* The lists of stories pushed or skipped: the line under the story wraps instead of being cut. */
 .mme-related li { grid-template-columns: minmax(0, 1fr); }
 .mme-related .related-main .muted-text { white-space: normal; overflow: visible; text-overflow: clip; }
+/* Αρχική: the highlights card of the media above the old tiles. */
+.home-dash { margin-bottom: var(--space-4); }
