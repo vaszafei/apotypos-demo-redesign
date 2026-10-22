@@ -14,7 +14,7 @@
   <script src="assets/icons.js?v=3"></script>
   <script src="assets/messages.js?v=17"></script>
   <script src="assets/messages-v2.js?v=31"></script>
-  <script src="assets/components.js?v=6"></script>
+  <script src="assets/components.js?v=7"></script>
   <script src="assets/dash.js?v=11"></script>
   <script src="assets/vendor/d3-hierarchy.min.js"></script>
   <script src="assets/shell.js?v=31"></script>
@@ -358,7 +358,7 @@
 
           const rows = [...groups.map((g) => ({ key: g.name, label: g.name, value: g.collected, color: colorOf.get(g.name) })), ...(ungroupedTotal ? [{ key: null, label: t('media2.groups.none'), value: ungroupedTotal, color: NO_GROUP }] : [])]
 
-          // Row 1: the bubbles of owners and outlets, and the share of each group and of its outlets. The legend of the sunburst names the owners.
+          // Row 1: the bubbles of owners and outlets, and the share of each group and of its outlets. The owner of a group is in the title of its legend row.
           const outletOf = (o) => ({ name: o.name, slug: o.slug, value: o.collected, analysed: o.analysed, news: o.news, stance: o.stance })
           const treeGroups = [...groups.map((g) => ({ key: g.name, label: g.name, owner: g.owner, color: colorOf.get(g.name), slug: g.slug, lean: g.lean, outlets: g.outlets.filter((o) => o.collected > 0).map(outletOf).sort((a, b) => b.value - a.value) })),
             ...(ungroupedTotal ? [{ key: null, label: t('media2.groups.none'), owner: null, color: NO_GROUP, outlets: d.ungrouped.filter((o) => o.collected > 0).map(outletOf).sort((a, b) => b.value - a.value) }] : [])]
@@ -369,12 +369,10 @@
             total
               ? h('div', { class: 'donut-wrap sun-wrap' }, Sunburst({ groups: treeGroups, total }),
                   h('ul', { class: 'rows rows-groups rows-owners' }, treeGroups.map((g) => {
-                    const sub = g.key === null ? t('g2.bubble.none', { n: fmt.int(g.outlets.length) }) : `${g.owner} · ${t('g2.bubble.outlets', { n: fmt.int(g.outlets.length) })}`
-                    return h('li', {},
+                    return h('li', { title: g.key === null ? t('g2.bubble.none', { n: fmt.int(g.outlets.length) }) : `${g.owner} · ${t('g2.bubble.outlets', { n: fmt.int(g.outlets.length) })}` },
                       h('span', { class: g.key === null ? 'dot dot-none' : 'dot', style: `--dot:${g.color}`, 'aria-hidden': 'true' }),
                       h('span', { class: 'row-name', title: g.label }, g.key === null ? g.label : h('a', { class: 'quiet-link', href: hrefOf(groups.find((x) => x.name === g.key)) }, g.label)),
-                      h('span', { class: 'row-value' }, fmt.pct(g.value / total)),
-                      h('span', { class: 'row-sub', title: sub }, sub))
+                      h('span', { class: 'row-value' }, fmt.pct(g.value / total)))
                   })))
               : emptyText(t('groups.empty')))
 
