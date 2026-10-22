@@ -131,6 +131,11 @@
 .dash .chart .slice:hover { stroke-width: 22; }
 .donut-wrap { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-4); align-items: center; }
 .donut-wrap .donut { display: block; }
+.dash .chart .bubble-group { cursor: default; }
+.rows-owners { gap: 6px; }
+.rows-owners li { row-gap: 0; }
+.rows-owners .row-sub { grid-column: 2 / -1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-caption); color: var(--text-secondary); }
+@media (max-width: 719px) { .sun-wrap { grid-template-columns: minmax(0, 1fr); } .sun-wrap .donut { justify-self: center; width: 200px; height: 200px; } }
 .dash .chart .tile:hover { stroke: #1f1f1f; stroke-width: 2; }
 .legend-inline { display: inline-flex; flex-wrap: wrap; gap: var(--space-3); font-size: var(--text-caption); color: var(--text-secondary); }
 .legend-inline span { display: inline-flex; align-items: center; gap: var(--space-1); }

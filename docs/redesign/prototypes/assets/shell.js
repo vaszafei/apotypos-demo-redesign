@@ -15,7 +15,7 @@
     '/media': 'media-v2.html',
     '/fingerprints': 'fingerprints-v2.html',
     '/groups': 'groups-v2.html',
-    '/analyze': 'analyze-v2.html',
+    '/analyze': 'groups-v2.html',
     '/elections': 'elections-v2.html',
     '/speeches': 'speeches-v2.html',
     '/contradictions': 'persons-v2.html',
@@ -30,6 +30,7 @@
 
   // The sidebar has 6 items (APO-161: Media and Ownership are one item). The sub-pages of an item are tabs inside the page (shell-spec.md, "Navigation").
   // The item "world" is Αναλύσεις: its tabs are the pages of the ΑΝΑΛΥΣΗ section of the live sidebar, in the same order (#35).
+  // Αναλύσεις & Ιδιοκτησία (/analyze) is not there: ownership is only Μέσα › Ιδιοκτησία, so /analyze opens that tab.
   // ΜΜΕ & πρόσωπα (/media) is not there: its content is Μέσα › Επισκόπηση. Θέματα (/trends) is a tab of Μέσα, not an item of its own.
   // Πρόσωπα is an item: its overview (/fingerprints) and Φάκελος προσώπου (/contradictions), which left Αναλύσεις.
   const NAV = [
@@ -38,7 +39,7 @@
     { key: 'spread', tabs: [['overview', '/stories']], details: ['/story'] },
     { key: 'people', tabs: [['overview', '/fingerprints'], ['file', '/contradictions']] },
     { key: 'politics', tabs: [['elections', '/elections'], ['statements', '/track'], ['cases', '/cases'], ['campaigns', '/campaigns']] },
-    { key: 'world', tabs: [['speeches', '/speeches'], ['war', '/war'], ['analyze', '/analyze'], ['narrative', '/narrative'], ['gaza', '/gaza'], ['israel', '/israel'],
+    { key: 'world', tabs: [['speeches', '/speeches'], ['war', '/war'], ['narrative', '/narrative'], ['gaza', '/gaza'], ['israel', '/israel'],
       ['language', '/gaza-language'], ['coverage', '/coverage'], ['france', '/france-riots'], ['overton', '/overton']] }
   ]
   const FOOTER = [['methodology', '/methodology'], ['about', '/about'], ['pages', null]]
