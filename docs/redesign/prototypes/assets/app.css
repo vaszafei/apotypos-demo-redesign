@@ -95,7 +95,18 @@ button, input, select { font: inherit; color: inherit; }
 .section-tabs ul { gap: var(--space-1); }
 .section-tabs a { padding: 7px 14px; margin-bottom: 0; border: 1px solid transparent; border-radius: var(--pill); color: var(--text-secondary); }
 .section-tabs a:hover { border-color: var(--border); color: var(--ink); }
-.section-tabs a[aria-current="page"] { border-color: var(--ink); background: transparent; color: var(--ink); font-weight: 600; box-shadow: 0 1px 0 rgba(17, 17, 17, 0.03), 0 8px 18px -10px rgba(17, 17, 17, 0.35); }
+.section-tabs a[aria-current="page"], .section-tabs a[aria-current="true"] { border-color: var(--ink); background: transparent; color: var(--ink); font-weight: 600; box-shadow: 0 1px 0 rgba(17, 17, 17, 0.03), 0 8px 18px -10px rgba(17, 17, 17, 0.35); }
+
+/* Sub-tabs: the pages of a tab with sub-tabs (Αναλύσεις › Παλαιστίνη–Ισραήλ). A second row of underlined tabs under the pills. */
+.sub-tabs { padding: 0 var(--space-5) var(--space-3); overflow-x: auto; }
+.sub-tabs ul { list-style: none; margin: 0 auto; padding: 0; display: flex; justify-content: center; gap: var(--space-5); width: max-content; min-width: 100%; border-bottom: 1px solid var(--border); }
+.sub-tabs a { display: block; padding: 8px 0 9px; font-size: var(--text-small); color: var(--text-secondary); text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+.sub-tabs a:hover { color: var(--ink); }
+.sub-tabs a[aria-current="page"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
+@media (max-width: 1023px) {
+  .sub-tabs { padding: var(--space-2) var(--space-4) 0; }
+  .sub-tabs ul { justify-content: flex-start; }
+}
 
 /* The back button is a round icon button. The search is a round field. */
 .back-button {
