@@ -1,0 +1,16 @@
+{
+  "name": "demo-redesign-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sync": "node scripts/sync-prototype.mjs",
+    "dev": "pnpm sync && nuxt dev",
+    "generate": "pnpm sync && nuxt generate",
+    "preview": "nuxt preview"
+  },
+  "dependencies": {
+    "nuxt": "^4.6.2",
+    "vue": "^3.5.44",
+    "vue-router": "^5.4.0"
+  }
+}

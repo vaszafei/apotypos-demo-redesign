@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Απότυπος</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css?v=4">
+  <link rel="stylesheet" href="assets/app.css?v=11">
+  <link rel="stylesheet" href="assets/dash.css?v=52">
+  <link rel="stylesheet" href="assets/politics.css?v=1">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/icons.js?v=2"></script>
+  <script src="assets/messages.js?v=11"></script>
+  <script src="assets/messages-v2.js?v=27"></script>
+  <script src="assets/messages-politics.js?v=1"></script>
+  <script src="assets/components.js?v=6"></script>
+  <script src="assets/dash.js?v=10"></script>
+  <script src="assets/politics.js?v=1"></script>
+  <script src="assets/shell.js?v=25"></script>
+  <script src="data/conflictLanguage.js?v=1"></script>
+  <script>
+    // Κόσμος, Γλώσσα: the same war, different words for Israelis and Palestinians. It reads the language file (1 Aug to 30 Sep 2026).
+    // Each card compares the two sides on the same base. A list in the top bar picks one outlet.
+    const { t, fmt, h, load } = App
+    const { reset, card, cardHead, TopBar, select } = Dash
+    const { PairRows, Rows } = Politics
+    const result = load('conflictLanguage', ['keys', 'total', 'outlets', 'months'], (b) => b.outlets)
+    const MIN_OUTLET = 20
+    // Each card: [message key, value of Palestinians, base, value of Israelis, base, evidence keys]. A card with no base compares counts.
+    const CARDS = [
+      ['agent', 'agent_pal', 'death_pal', 'agent_isr', 'death_isr', ['death_pal_noagent', 'death_pal_agent', 'death_isr_noagent', 'death_isr_agent']],
+      ['emo', 'emo_pal', 'death_pal', 'emo_isr', 'death_isr', ['emo_pal', 'emo_isr']],
+      ['named', 'named_pal', 'death_pal', 'named_isr', 'death_isr', ['named_pal', 'named_isr']],
+      ['hostage', 'hostage_pal', 'cap_pal', 'hostage_isr', 'cap_isr', ['cap_pal', 'cap_isr']],
+      ['hedge', 'hedge_pal', 'fig_pal', 'hedge_isr', 'fig_isr', []],
+      ['terror', 'terror_pal', null, 'terror_isr', null, ['terror_pal', 'terror_isr']],
+      ['sd', 'sd_pal', null, 'sd_isr', null, []]
+    ]
+    let outlet = ''
+
+    Shell.start({
+      id: 'language',
+      route: '/gaza-language',
+      dash: true,
+      title: () => t('nav.world'),
+      breadcrumbs: () => [{ label: t('nav.world') }, { label: t('tab.world.language') }],
+      render (content, { tabs }) {
+        content.classList.add('dash', 'minimal')
+        const paint = () => {
+          const title = t('tab.world.language')
+          const problem = Dash.stateContent([result], { title, tabs, quiet: true })
+          if (problem) { content.replaceChildren(...problem); return }
+          const d = result.data
+          const idx = Object.fromEntries(d.keys.map((k, i) => [k, i]))
+          const rows = d.outlets.filter((o) => o.values[idx.n] >= MIN_OUTLET).sort((a, b) => b.values[idx.n] - a.values[idx.n])
+          const picked = rows.find((o) => o.name === outlet)
+          const values = picked ? picked.values : d.total
+          const v = (k) => values[idx[k]]
+          const bar = TopBar({
+            title, tabs, quiet: true,
+            actions: [select(t('lang.outlet'), outlet, [{ value: '', label: t('lang.outlet.all') }, ...rows.map((o) => ({ value: o.name, label: o.name }))], (x) => { outlet = x; paint() }),
+              h('span', { class: 'muted-text' }, t('lang.count', { n: fmt.int(v('n')), from: fmt.date(d.window[0], { day: 'numeric', month: 'short' }), to: fmt.date(d.window[1]) }))]
+          })
+          const names = [t('gz.side.pal'), t('gz.side.isr')]
+          const share = (a, b) => (b ? a / b : 0)
+          const monthOf = (m, k, base) => {
+            const x = d.months[m]
+            return base ? fmt.pct(share(x[idx[k]], x[idx[base]])) : fmt.int(x[idx[k]])
+          }
+          const side = (k, base) => (base
+            ? { value: share(v(k), v(base)), text: fmt.pct(share(v(k), v(base))), sub: t('lang.of', { a: fmt.int(v(k)), b: fmt.int(v(base)) }) }
+            : { value: v(k), text: t('lang.articles', { n: fmt.int(v(k)) }), sub: k.startsWith('sd_') ? t('lang.sd.own', { n: fmt.int(v(`${k}_own`)) }) : null })
+          const evidence = (keys) => {
+            const items = keys.flatMap((k) => (d.evidence[k] || []).map((e) => ({ ...e, k }))).filter((e) => !picked || e.outlet === picked.name)
+            if (!items.length) return null
+            return h('details', { class: 'evidence' }, h('summary', {}, t('lang.examples')),
+              h('ul', { class: 'quote-list' }, items.slice(0, 6).map((e) => h('li', {},
+                h('span', { class: 'quote-meta' }, e.outlet, ' · ', fmt.date(e.date, { day: 'numeric', month: 'short' })),
+                h('a', { class: 'quiet-link', href: e.url, target: '_blank', rel: 'noopener' }, e.title)))))
+          }
+
+          const cards = CARDS.map(([key, a, aBase, b, bBase, ev]) => {
+            const empty = aBase && !v(aBase) && !v(bBase)
+            const a1 = side(a, aBase)
+            const b1 = side(b, bBase)
+            if (!picked) {
+              a1.sub = [a1.sub, t('lang.month', { a: monthOf('2026-08', a, aBase), b: monthOf('2026-09', a, aBase) })].filter(Boolean).join(' · ')
+              b1.sub = [b1.sub, t('lang.month', { a: monthOf('2026-08', b, bBase), b: monthOf('2026-09', b, bBase) })].filter(Boolean).join(' · ')
+            }
+            return card('c-6', cardHead(t(`lang.${key}.title`), null, t(`lang.${key}.info`)),
+              empty ? h('p', { class: 'dcard-empty' }, t('lang.none')) : PairRows([{ label: '', a: a1, b: b1 }], { names, max: aBase ? 1 : Math.max(a1.value, b1.value, 1) }),
+              evidence(ev))
+          })
+          const genTotal = v('gen_own') + v('gen_quoted') + v('gen_scare_quotes')
+          const genCard = card('c-6', cardHead(t('lang.gen.title'), null, t('lang.gen.info')),
+            Rows([['own', 'gen_own'], ['quoted', 'gen_quoted'], ['scare', 'gen_scare_quotes']].map(([k, key]) => ({ label: t(`lang.gen.${k}`), value: v(key), text: `${fmt.int(v(key))} · ${fmt.pct(share(v(key), genTotal))}`, color: k === 'own' ? 'var(--ink)' : 'var(--bar-muted)' }))),
+            evidence(['gen_own', 'gen_quoted', 'gen_scare_quotes']))
+
+          const pctPair = (o, a, b, base1, base2) => {
+            const x = (k, base) => (o.values[idx[base]] >= 5 ? fmt.pct(share(o.values[idx[k]], o.values[idx[base]])) : '–')
+            return `${x(a, base1)} / ${x(b, base2)}`
+          }
+          const g = (o, k) => o.values[idx[k]]
+          const table = card('c-12', cardHead(t('lang.outlets.title'), null, t('lang.outlets.info')),
+            UI.DataTable({
+              rows, rankColumn: true, pageSize: rows.length, rowId: (o) => (o.name === outlet ? 'picked-outlet' : null),
+              columns: [
+                { label: t('lang.col.outlet'), render: (o) => h('span', { class: 'nowrap', title: o.lean || null }, o.name === outlet ? h('strong', {}, o.name) : o.name) },
+                { label: t('lang.col.n'), num: true, render: (o) => fmt.int(g(o, 'n')) },
+                { label: t('lang.col.agent'), num: true, render: (o) => pctPair(o, 'agent_pal', 'agent_isr', 'death_pal', 'death_isr') },
+                { label: t('lang.col.hedge'), num: true, phone: false, render: (o) => (g(o, 'fig_pal') >= 5 ? fmt.pct(share(g(o, 'hedge_pal'), g(o, 'fig_pal'))) : '–') },
+                { label: t('lang.col.emo'), num: true, phone: false, render: (o) => `${fmt.int(g(o, 'emo_pal'))} / ${fmt.int(g(o, 'emo_isr'))}` },
+                { label: t('lang.col.gen'), num: true, phone: false, render: (o) => fmt.int(g(o, 'gen_own')) },
+                { label: t('lang.col.terror'), num: true, phone: false, render: (o) => `${fmt.int(g(o, 'terror_pal'))} / ${fmt.int(g(o, 'terror_isr'))}` }
+              ]
+            }))
+
+          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...cards, genCard, table), h('p', { class: 'proto-note' }, t('lang.note')))
+        }
+        paint()
+      }
+    })
+    reset()
+  </script>
+</body>
+</html>

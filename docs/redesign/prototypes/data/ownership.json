@@ -1,0 +1,67 @@
+{
+ "exportedAt": "2026-10-19",
+ "source": "whoownsthemedia.gr",
+ "recordDate": null,
+ "groups": [
+  {
+   "slug": "alter-ego",
+   "name": "Alter Ego Media",
+   "owner": "Βαγγέλης Μαρινάκης",
+   "lean": "Κεντροδεξιά/ΝΔ"
+  },
+  {
+   "slug": "antenna",
+   "name": "Antenna Group",
+   "owner": "Θόδωρος Κυριακός",
+   "lean": "Κεντροδεξιά"
+  },
+  {
+   "slug": "bakou",
+   "name": "Συμφέροντα Μπάκου-Καϋμενάκη",
+   "owner": "Δημήτρης Μπάκος, Γιάννης Καϋμενάκης, Αλέξανδρος Εξάρχου",
+   "lean": "Κεντροδεξιά/ΝΔ"
+  },
+  {
+   "slug": "dpg",
+   "name": "DPG Digital Media",
+   "owner": "Δημήτρης Γιαννακόπουλος",
+   "lean": "Αδέσμευτη"
+  },
+  {
+   "slug": "melissanidis",
+   "name": "Συμφέροντα Μελισσανίδη",
+   "owner": "Δημήτρης Μελισσανίδης, Γιώργος Μελισσανίδης",
+   "lean": "Αδέσμευτη"
+  },
+  {
+   "slug": "politis",
+   "name": "Politis Group",
+   "owner": "Χάρης Πολίτης",
+   "lean": null
+  },
+  {
+   "slug": "restis",
+   "name": "Συμφέροντα Ρέστη",
+   "owner": "Βίκτωρ Ρέστης",
+   "lean": "Αδέσμευτη"
+  },
+  {
+   "slug": "savvidis",
+   "name": "Συμφέροντα Σαββίδη",
+   "owner": "Ιβάν Σαββίδης",
+   "lean": "Αδέσμευτη"
+  },
+  {
+   "slug": "skai",
+   "name": "Όμιλος ΣΚΑΪ",
+   "owner": "Γιάννης Αλαφούζος, Θεμιστοκλής Αλαφούζος",
+   "lean": "Κεντροδεξιά/ΝΔ"
+  },
+  {
+   "slug": "vardinogiannis",
+   "name": "Όμιλος Βαρδινογιάννη",
+   "owner": "Βαρδής Βαρδινογιάννης",
+   "lean": "Κεντροδεξιά/ΝΔ"
+  }
+ ]
+}

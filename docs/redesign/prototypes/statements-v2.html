@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Απότυπος</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css?v=4">
+  <link rel="stylesheet" href="assets/app.css?v=11">
+  <link rel="stylesheet" href="assets/dash.css?v=52">
+  <link rel="stylesheet" href="assets/politics.css?v=1">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/icons.js?v=2"></script>
+  <script src="assets/messages.js?v=11"></script>
+  <script src="assets/messages-v2.js?v=27"></script>
+  <script src="assets/messages-politics.js?v=1"></script>
+  <script src="assets/components.js?v=6"></script>
+  <script src="assets/dash.js?v=10"></script>
+  <script src="assets/politics.js?v=1"></script>
+  <script src="assets/shell.js?v=25"></script>
+  <script src="data/statements.js?v=1"></script>
+  <script>
+    // Πολιτική, Δηλώσεις: the statement tracker (C11). The two names of one person are one row, and the rank has its own column.
+    const { t, fmt, h, load } = App
+    const { reset, card, cardHead, Stat, TopBar } = Dash
+    const result = load('statements', ['rows'], (b) => b.rows)
+
+    Shell.start({
+      id: 'statements',
+      route: '/track',
+      dash: true,
+      title: () => t('nav.politics'),
+      breadcrumbs: () => [{ label: t('nav.politics') }, { label: t('tab.politics.statements') }],
+      render (content, { tabs }) {
+        content.classList.add('dash', 'minimal')
+        const title = t('tab.politics.statements')
+        const problem = Dash.stateContent([result], { title, tabs, quiet: true })
+        if (problem) { content.replaceChildren(...problem); return }
+        const rows = result.data.rows
+        const bar = TopBar({ title, tabs, quiet: true })
+        const sum = (k) => rows.reduce((a, r) => a + r[k], 0)
+        const stats = [
+          Stat({ label: t('st.stat.total'), value: fmt.int(sum('total')), sub: t('st.stat.total.sub', { n: fmt.int(rows.length) }) }),
+          Stat({ label: t('st.stat.promises'), value: fmt.int(sum('promises')), sub: t('st.stat.promises.sub') }),
+          Stat({ label: t('st.stat.predictions'), value: fmt.int(sum('predictions')), sub: t('st.stat.predictions.sub') })
+        ]
+        const max = rows[0] ? rows[0].total : 1
+        const table = card('c-12', cardHead(t('st.table.title'), null, t('st.table.info')),
+          UI.DataTable({
+            rows, rankColumn: true, pageSize: rows.length,
+            columns: [
+              { label: t('st.col.person'), render: (r) => h('span', { class: 'leader-cell' }, r.speaker, r.names.length > 1 ? h('span', { class: 'row-sub' }, t('st.names', { names: r.names.filter((n) => n !== r.speaker).join(', ') })) : null) },
+              { label: t('st.col.total'), num: true, render: (r) => h('div', { class: 'bar-cell' }, h('span', { class: 'bar-num' }, fmt.int(r.total)), UI.HBar(r.total, max)) },
+              { label: t('st.col.promises'), num: true, render: (r) => (r.promises ? fmt.int(r.promises) : h('span', { class: 'mini-empty' }, '0')) },
+              { label: t('st.col.predictions'), num: true, render: (r) => (r.predictions ? fmt.int(r.predictions) : h('span', { class: 'mini-empty' }, '0')) }
+            ]
+          }))
+        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...stats, table), h('p', { class: 'proto-note' }, t('st.note')))
+      }
+    })
+    reset()
+  </script>
+</body>
+</html>

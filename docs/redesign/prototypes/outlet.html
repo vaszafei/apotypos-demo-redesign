@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Απότυπος</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css?v=4">
+  <link rel="stylesheet" href="assets/app.css?v=11">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/icons.js?v=2"></script>
+  <script src="assets/messages.js?v=11"></script>
+  <script src="assets/components.js?v=6"></script>
+  <script src="assets/shell.js?v=25"></script>
+  <script src="data/media.js"></script>
+  <script src="data/outlet.js"></script>
+  <script src="data/groups.js"></script>
+  <script>
+    // Outlet: Detail page of Rosa.gr. notFound and failed show ErrorPage (rule 6 of the API answer).
+    // ?state=bad gives the body {} and must show ErrorPage 500, not a crash (S3).
+    const { t, fmt, h, load } = App
+    const result = load('outlet', ['name', 'rows', 'collectedDaily', 'headlines'], (b) => b.rows)
+    const media = load('media', ['dates', 'outletDaily'], (b) => b.outlets)
+    // The group of the outlet and the other outlets of the group (APO-161). If this call fails, the page shows the facts without a link.
+    const groupsData = load('groups', ['groups'], (b) => b.groups)
+    const groupRecord = (name) => (groupsData.kind === 'failed' ? null : (groupsData.data.groups || []).find((g) => g.name === name) || null)
+    const view = { from: '2026-08-01', to: '2026-09-30' }
+    let lastValid = { ...view }
+    const sumRange = (arr, i0, i1, pick = (x) => x) => { let s = 0; for (let i = i0; i <= i1; i++) s += pick(arr[i]); return s }
+    const outletName = () => (result.kind === 'data' || result.kind === 'empty' ? result.data.name : t('error.500.title'))
+
+    Shell.start({
+      id: 'outlet',
+      route: '/media/outlet/17661f5754',
+      title: outletName,
+      breadcrumbs: () => [{ label: t('media.title'), href: 'media-v2.html' }, { label: outletName() }],
+      render (content) {
+        if (result.kind === 'notFound') { content.replaceChildren(UI.ErrorPage({ status: 404 })); return }
+        if (result.kind === 'failed' || media.kind === 'failed') { content.replaceChildren(UI.ErrorPage({ status: 500 })); return }
+
+        const draw = () => {
+          const o = result.data
+          const m = media.data
+          const empty = result.kind === 'empty'
+          const i0 = m.dates.indexOf(lastValid.from)
+          const i1 = m.dates.indexOf(lastValid.to)
+          const period = fmt.period(lastValid.from, lastValid.to)
+          const rows = empty ? [] : o.rows.filter((r) => r[0] >= i0 && r[0] <= i1)
+
+          // Ranks against all outlets with analysed rows in the range.
+          const all = m.outlets.map((x, k) => {
+            const pick = (n) => sumRange(m.outletDaily[k], i0, i1, (c) => c[n])
+            return { slug: x.slug, analysed: pick(0), news: pick(1), cbKnown: pick(2), cbYes: pick(3) }
+          })
+          const self = all.find((x) => x.slug === o.slug)
+          const ranked = (list, value) => list.sort((a, b) => value(b) - value(a)).findIndex((x) => x.slug === o.slug) + 1
+          const withRows = all.filter((x) => x.analysed > 0)
+          const stance = [1, 2, 3].map((s) => rows.filter((r) => r[2] === s).length)
+          const stanceN = stance.reduce((s, x) => s + x, 0)
+          const collected = sumRange(o.collectedDaily, i0, i1)
+
+          const header = UI.PageHeader({
+            kicker: t('outlet.kicker'), title: o.name, hint: t('outlet.hint'),
+            controls: UI.RangeControl({ dates: m.dates, from: view.from, to: view.to, presets: UI.periodPresets(), onChange: (r) => { Object.assign(view, r); if (r.from <= r.to) lastValid = { ...r }; draw() } }),
+            updatedAt: m.updatedAt
+          })
+
+          const tiles = UI.KpiStrip([
+            UI.KpiTile({ kpiId: 'K48', label: t('outlet.k48'), value: fmt.int(collected), hint: period, emptyText: t('outlet.k48.empty'), state: collected && !empty ? 'ready' : 'empty' }),
+            UI.KpiTile({ kpiId: 'K09', label: t('outlet.k09'), value: self.analysed ? fmt.pct(self.news / self.analysed) : '', hint: t('outlet.k09.hint', { rank: ranked(withRows, (x) => x.news / x.analysed), n: withRows.length }), emptyText: t('outlet.k09.empty'), state: self.analysed && !empty ? 'ready' : 'empty' }),
+            UI.KpiTile({ kpiId: 'K10', label: t('outlet.k10'), value: '', hint: t('outlet.k10.hint', { n: fmt.int(stanceN) }), emptyText: t('outlet.k10.empty'), state: stanceN >= 30 ? 'ready' : 'empty',
+              extra: UI.StackedBar([
+                { label: t('stance.critical'), value: stance[0], color: 'var(--stance-critical)' },
+                { label: t('stance.neutral'), value: stance[1], color: 'var(--stance-neutral)' },
+                { label: t('stance.supportive'), value: stance[2], color: 'var(--stance-supportive)' }
+              ]) })
+          ])
+
+          const facts = UI.ChartCard({
+            title: t('outlet.facts.title'),
+            body: UI.FactList([
+              { label: t('outlet.fact.group'), value: o.group ? (groupRecord(o.group) ? h('a', { href: `group.html?g=${groupRecord(o.group).slug}` }, o.group) : o.group) : t('outlet.fact.none') },
+              { label: t('outlet.fact.owner'), value: o.owner || t('outlet.fact.none') },
+              { label: t('outlet.fact.analysed'), value: `${fmt.int(rows.length)} · ${period}` }
+            ])
+          })
+
+          const record = o.group ? groupRecord(o.group) : null
+          const others = record ? record.outlets.filter((x) => x.slug !== o.slug) : []
+          const siblings = UI.ChartCard({
+            title: t('outlet.siblings.title'), note: others.length ? t('outlet.siblings.note', { period: fmt.period(groupsData.data.window[0], groupsData.data.window[1]) }) : null,
+            body: others.length
+              ? h('ul', { class: 'plain-list' }, others.map((x) => h('li', {}, h('span', {}, x.name), h('span', { class: 'meta' }, `${t('group.col.collected')}: ${fmt.int(x.collected)}`))))
+              : UI.EmptyState({ text: o.group ? t('outlet.siblings.only') : t('outlet.siblings.none') })
+          })
+
+          const issueCounts = new Map()
+          for (const r of rows) issueCounts.set(r[1], (issueCounts.get(r[1]) || 0) + 1)
+          const topics = [...issueCounts].map(([k, count]) => ({ issue: m.issues[k], count })).sort((a, b) => b.count - a.count)
+          const topicsCard = UI.ChartCard({
+            title: t('outlet.topics.title'), note: t('outlet.topics.note'),
+            body: UI.DataTable({
+              rows: topics, rankColumn: true, emptyText: t('outlet.k09.empty'),
+              columns: [
+                { label: t('home.col.issue'), render: (r) => r.issue[App.locale] || r.issue.el },
+                { label: t('home.col.articles'), num: true, render: (r) => fmt.int(r.count) },
+                { label: t('home.col.share'), num: true, render: (r) => fmt.pct(r.count / rows.length) },
+                { label: '', phone: false, render: (r) => UI.HBar(r.count / rows.length, topics[0].count / rows.length) }
+              ]
+            })
+          })
+
+          const headlines = UI.ChartCard({
+            title: t('outlet.headlines.title'), note: t('outlet.headlines.note'),
+            body: o.headlines.length
+              ? h('ul', { class: 'plain-list' }, o.headlines.map((x) => h('li', {}, (App.safeUrl(x.url) ? h('a', { href: App.safeUrl(x.url), rel: 'noopener', target: '_blank' }, x.title) : x.title))))
+              : UI.EmptyState({ text: t('outlet.k48.empty') })
+          })
+
+          content.replaceChildren(header, tiles, h('div', { class: 'grid-2' }, h('div', {}, facts, siblings, topicsCard), headlines), protoNote())
+        }
+        draw()
+      }
+    })
+
+    function protoNote () { return h('p', { class: 'proto-note' }, t('proto.states')) }
+  </script>
+</body>
+</html>

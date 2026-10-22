@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Απότυπος</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css?v=4">
+  <link rel="stylesheet" href="assets/app.css?v=11">
+  <link rel="stylesheet" href="assets/dash.css?v=52">
+  <link rel="stylesheet" href="assets/politics.css?v=1">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/icons.js?v=2"></script>
+  <script src="assets/messages.js?v=11"></script>
+  <script src="assets/messages-v2.js?v=27"></script>
+  <script src="assets/messages-politics.js?v=1"></script>
+  <script src="assets/components.js?v=6"></script>
+  <script src="assets/dash.js?v=10"></script>
+  <script src="assets/politics.js?v=1"></script>
+  <script src="assets/shell.js?v=25"></script>
+  <script src="data/war.js?v=1"></script>
+  <script>
+    // Κόσμος, Ρητορική: how the press writes about Turkey (K20 to K23, C05, C06). It reads the war file (1 Aug to 30 Sep 2026).
+    const { t, fmt, h, load } = App
+    const { reset, card, cardHead, Stat, TopBar, Spark } = Dash
+    const { weekLabel, ColumnChart, Rows, signed } = Politics
+    const result = load('war', ['weeks', 'daily', 'outlets'], (b) => b.weeks)
+    const MIN_OUTLET = 20
+    const MIN_CELL = 5
+    const VOICES = ['outlet', 'turkish_official', 'greek_gov', 'greek_opposition', 'analyst', 'military', 'third_country']
+    const METRICS = [['hot_inc', 'hot'], ['war', 'gt'], ['hl', 'gt'], ['norm', 'gt'], ['coll', 'gt'], ['unsrc', 'gt'], ['demon', 'gt'], ['trciv', 'gt']]
+
+    const share = (a, b) => (b ? a / b : 0)
+    const points = (v) => `${v > 0 ? '+' : v < 0 ? '−' : '±'}${fmt.dec(Math.abs(v * 100))}`
+    const wide = (stat) => { stat.classList.replace('c-4', 'c-3'); return stat }
+
+    Shell.start({
+      id: 'war',
+      route: '/war',
+      dash: true,
+      title: () => t('nav.world'),
+      breadcrumbs: () => [{ label: t('nav.world') }, { label: t('tab.world.war') }],
+      render (content, { tabs }) {
+        content.classList.add('dash', 'minimal')
+        const title = t('tab.world.war')
+        const problem = Dash.stateContent([result], { title, tabs, quiet: true })
+        if (problem) { content.replaceChildren(...problem); return }
+        const d = result.data
+        const bar = TopBar({ title, tabs, quiet: true })
+        const sum = (k, rows = d.weeks) => rows.reduce((a, w) => a + w[k], 0)
+        const all = Object.fromEntries(Object.keys(d.weeks[0]).filter((k) => typeof d.weeks[0][k] === 'number').map((k) => [k, sum(k)]))
+        const labels = d.weeks.map((w) => weekLabel(w.week, d.window))
+
+        // August against September, from the days. The day file has the shares, so the counts are share × articles.
+        const month = (m) => {
+          const days = d.daily.filter((x) => x.date.startsWith(m))
+          const gt = days.reduce((a, x) => a + x.gt, 0)
+          const hot = days.reduce((a, x) => a + Math.round((x.hot || 0) * x.gt), 0)
+          const own = days.reduce((a, x) => a + (x.own || 0) * Math.round((x.hot || 0) * x.gt), 0)
+          return { gt, hot, hotShare: share(hot, gt), ownShare: share(own, hot) }
+        }
+        const aug = month('2026-08')
+        const sep = month('2026-09')
+        const air = Object.values(d.airspace).reduce((a, w) => ({ v: a.v + w.violations, i: a.i + w.infringements, u: a.u + w.uav }), { v: 0, i: 0, u: 0 })
+        const stats = [
+          wide(Stat({ kpi: 'K20', label: t('war.stat.gt'), value: fmt.int(all.gt), sub: t('war.stat.gt.sub', { n: fmt.dec((all.gt / all.total) * 1000) }) })),
+          wide(Stat({ kpi: 'K21', label: t('war.stat.hot'), value: fmt.pct(share(all.hot, all.gt)), sub: t('war.stat.month', { a: fmt.pct(aug.hotShare), b: fmt.pct(sep.hotShare) }) })),
+          wide(Stat({ kpi: 'K22', label: t('war.stat.own'), value: fmt.pct(share(all.own, all.hot)), sub: t('war.stat.month', { a: fmt.pct(aug.ownShare), b: fmt.pct(sep.ownShare) }) })),
+          wide(Stat({ kpi: 'K23', label: t('war.stat.air'), value: fmt.int(air.v), sub: t('war.stat.air.sub', { inf: fmt.int(air.i), uav: fmt.int(air.u) }) }))
+        ]
+
+        // Row 2: the weeks, with the events under the chart.
+        const marks = Object.fromEntries(d.events.map((e, i) => [d.weeks.findIndex((w) => w.week === e.week), i + 1]).filter(([i]) => i >= 0))
+        const weeksCard = card('c-8', cardHead(t('war.weeks.title'), h('span', { class: 'stance-key' },
+          h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: 'var(--stance-critical)' } }), t('war.weeks.legend.hot')),
+          h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: 'var(--bar-muted)' } }), t('war.weeks.legend.rest'))), t('war.weeks.info')),
+        ColumnChart({
+          labels: labels.map((l) => l.short),
+          values: d.weeks.map((w) => w.gt),
+          part: d.weeks.map((w) => w.hot),
+          top: d.weeks.map((w) => fmt.pct(share(w.hot, w.gt))),
+          below: d.weeks.map((w) => fmt.int((d.airspace[w.week] || {}).violations || 0)),
+          marks,
+          height: 280,
+          tips: d.weeks.map((w, i) => t('war.weeks.tip', { week: labels[i].long, gt: fmt.int(w.gt), hot: fmt.int(w.hot), share: fmt.pct(share(w.hot, w.gt)), air: fmt.int((d.airspace[w.week] || {}).violations || 0) })),
+          aria: t('war.weeks.title')
+        }),
+        h('p', { class: 'dcard-sub' }, t('war.weeks.air')),
+        h('ol', { class: 'marker-row' }, d.events.map((e, i) => h('li', {}, h('span', { class: 'marker-num' }, String(i + 1)), h('span', { class: 'name' }, e[App.locale] || e.el)))))
+
+        const grades = [['0', all.calm], ['1', all.e1], ['2', all.e2], ['3', all.e3], ['4', all.war]]
+        const gradeMonth = (m, k) => {
+          const rows = d.weeks.filter((w) => (m === 'aug' ? w.week < '2026-08-31' : w.week >= '2026-08-31'))
+          return share(sum(k, rows), sum('gt', rows))
+        }
+        const gradeKeys = ['calm', 'e1', 'e2', 'e3', 'war']
+        const scaleCard = card('c-4', cardHead(t('war.scale.title'), null, t('war.scale.info')),
+          Rows(grades.map(([g, n], i) => ({
+            label: t(`war.scale.${g}`), value: n, color: ['#2a78d6', 'var(--bar-muted)', '#e8a37a', 'var(--stance-critical)', '#7d1f1f'][i],
+            text: `${fmt.pct(share(n, all.gt))} · ${fmt.pct(gradeMonth('aug', gradeKeys[i]))} → ${fmt.pct(gradeMonth('sep', gradeKeys[i]))}`
+          }))))
+
+        // Row 3: who speaks, the frames and the other measures.
+        const voices = {}
+        d.weeks.forEach((w) => Object.entries(w.voices).forEach(([k, n]) => { voices[k] = (voices[k] || 0) + n }))
+        const voiceCard = card('c-4', cardHead(t('war.voice.title'), null, t('war.voice.info')),
+          Rows(VOICES.filter((k) => voices[k]).map((k) => ({ label: t(`war.voice.${k}`), value: voices[k], text: `${fmt.int(voices[k])} · ${fmt.pct(share(voices[k], all.hot))}`, color: k === 'outlet' ? 'var(--stance-critical)' : null }))))
+        const frames = {}
+        d.weeks.forEach((w) => Object.entries(w.frames).forEach(([k, n]) => { frames[k] = (frames[k] || 0) + n }))
+        const frameCard = card('c-4', cardHead(t('war.frames.title'), null, t('war.frames.info')),
+          Rows(Object.entries(frames).filter(([k]) => k !== 'other').sort((a, b) => b[1] - a[1]).map(([k, n]) => ({ label: t(`war.frame.${k}`), value: share(n, all.gt), text: fmt.pct(share(n, all.gt)) })), { max: 1 }))
+
+        const metricRows = METRICS.map(([k, base]) => {
+          const weekly = d.weeks.map((w) => share(w[k], w[base]))
+          const m = (rows) => share(sum(k, rows), sum(base, rows))
+          const a = m(d.weeks.filter((w) => w.week < '2026-08-31'))
+          const b = m(d.weeks.filter((w) => w.week >= '2026-08-31'))
+          return { k, value: share(all[k], all[base]), change: b - a, weekly }
+        })
+        const metricCard = card('c-4', cardHead(t('war.metrics.title'), null, t('war.metrics.info')),
+          UI.DataTable({
+            rows: metricRows, pageSize: metricRows.length,
+            columns: [
+              { label: t('war.metrics.col.metric'), render: (r) => h('span', { title: t(`war.metric.${r.k}.sub`) }, t(`war.metric.${r.k}`)) },
+              { label: t('war.metrics.col.share'), num: true, render: (r) => fmt.pct(r.value) },
+              { label: t('war.metrics.col.change'), num: true, render: (r) => h('span', { class: 'delta' }, points(r.change)) },
+              { label: t('war.metrics.col.weeks'), phone: false, render: (r) => Spark(r.weekly, 0, r.weekly.length - 1, `${t(`war.metric.${r.k}`)}: ${r.weekly.map(fmt.pct).join(', ')}`, { w: 72, hgt: 22 }) }
+            ]
+          }))
+
+        // Row 4: the grid of outlets and weeks.
+        const outlets = d.outlets.filter((o) => o.gt >= MIN_OUTLET).sort((a, b) => share(b.hot, b.gt) - share(a.hot, a.gt))
+        const heatCard = card('c-12', cardHead(t('war.heat.title'), null, t('war.heat.info')),
+          h('div', { class: 'table-wrap' }, h('table', { class: 'data-table heat' },
+            h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, t('war.col.outlet')), labels.map((l) => h('th', { scope: 'col', class: 'num' }, l.short)), h('th', { scope: 'col', class: 'num' }, t('war.heat.total')))),
+            h('tbody', {}, outlets.map((o) => h('tr', {},
+              h('th', { scope: 'row' }, o.name),
+              (d.outletWeeks[o.name] || []).map(([gt, hot], i) => {
+                const enough = gt >= MIN_CELL
+                const s = share(hot, gt)
+                const text = enough ? t('war.heat.cell', { outlet: o.name, week: labels[i].long, hot: fmt.int(hot), gt: fmt.int(gt), share: fmt.pct(s) }) : t('war.heat.few', { outlet: o.name, week: labels[i].long, gt: fmt.int(gt) })
+                return h('td', { class: 'hc', title: text, 'aria-label': text, style: enough ? `background:color-mix(in srgb, var(--stance-critical) ${Math.round(Math.min(1, s / 0.6) * 90 + 6)}%, #ffffff)` : 'background:var(--surface-page)' })
+              }),
+              h('td', { class: 'num' }, fmt.int(o.gt))))))))
+
+        // Row 5: the outlets table and the articles with a war frame.
+        const outletCard = card('c-7', cardHead(t('war.outlets.title'), null, t('war.outlets.info')),
+          UI.DataTable({
+            rows: outlets.slice().sort((a, b) => b.gt - a.gt), rankColumn: true, pageSize: outlets.length,
+            columns: [
+              { label: t('war.col.outlet'), render: (o) => h('span', { class: 'nowrap', title: o.lean || null }, o.name) },
+              { label: t('war.col.articles'), num: true, render: (o) => fmt.int(o.gt) },
+              { label: t('war.col.per1k'), num: true, phone: false, render: (o) => fmt.dec((o.gt / o.total) * 1000) },
+              { label: t('war.col.hot'), num: true, render: (o) => fmt.pct(share(o.hot, o.gt)) },
+              { label: t('war.col.own'), num: true, phone: false, render: (o) => fmt.pct(share(o.own, o.hot)) },
+              { label: t('war.col.hl'), num: true, phone: false, render: (o) => fmt.pct(share(o.hl, o.gt)) }
+            ]
+          }))
+        const exampleCard = card('c-5 card-top', cardHead(t('war.examples.title'), null, t('war.examples.info')),
+          h('ul', { class: 'quote-list' }, d.examples.slice(0, 8).map((e) => h('li', {},
+            h('span', { class: 'quote-meta' }, e.outlet, ' · ', fmt.date(e.date, { day: 'numeric', month: 'short' }), h('span', { class: 'pill' }, t(`war.voice.${e.voice}`))),
+            h('a', { class: 'quiet-link', href: e.url, target: '_blank', rel: 'noopener' }, e.title),
+            e.phrase ? h('span', { class: 'quote-text' }, `«${e.phrase}»`) : null))))
+
+        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...stats, weeksCard, scaleCard, voiceCard, frameCard, metricCard, heatCard, outletCard, exampleCard),
+          h('p', { class: 'proto-note' }, t('war.note')))
+      }
+    })
+    reset()
+  </script>
+</body>
+</html>

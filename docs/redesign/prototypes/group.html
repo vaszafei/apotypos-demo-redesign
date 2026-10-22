@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Απότυπος</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css?v=4">
+  <link rel="stylesheet" href="assets/app.css?v=11">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/icons.js?v=2"></script>
+  <script src="assets/messages.js?v=11"></script>
+  <script src="assets/components.js?v=6"></script>
+  <script src="assets/shell.js?v=25"></script>
+  <script src="data/groups.js"></script>
+  <script>
+    // Group page (APO-161): Detail page, the hub of Μέσα and Ιδιοκτησία. ?g=<slug> picks the group.
+    // All figures are static, with the fixed period 1 Aug to 30 Sep 2026, so the header shows no date and each hint shows the period.
+    // An unknown slug shows ErrorPage 404. A failed or bad answer shows ErrorPage 500 (S3).
+    const { t, fmt, h, load, params } = App
+    const result = load('groups', ['groups', 'ungrouped', 'totalCollected', 'topicsAll', 'issues', 'window'], (b) => b.groups)
+    // Prototype only: without ?g the page shows Politis Group, the example group of the prototypes.
+    const slug = params.get('g') || 'politis'
+    const group = result.kind === 'failed' || result.kind === 'notFound' ? null : result.data.groups.find((g) => g.slug === slug)
+    const groupName = () => (group ? group.name : t(result.kind === 'failed' ? 'error.500.title' : 'error.404.title'))
+
+    Shell.start({
+      id: 'group',
+      route: `/groups/${slug}`,
+      title: groupName,
+      breadcrumbs: () => [{ label: t('groups.title'), href: 'groups-v2.html' }, { label: groupName() }],
+      render (content) {
+        if (result.kind === 'failed') { content.replaceChildren(UI.ErrorPage({ status: 500 })); return }
+        if (result.kind === 'notFound' || !group) { content.replaceChildren(UI.ErrorPage({ status: 404 })); return }
+
+        const d = result.data
+        const empty = result.kind === 'empty'
+        const period = fmt.period(d.window[0], d.window[1])
+        const withArticles = empty ? [] : group.outlets.filter((o) => o.collected > 0)
+        const collected = empty ? 0 : group.collected
+        const outletHref = (o) => `outlet-v2.html?slug=${o.slug}`
+
+        const header = UI.PageHeader({
+          kicker: t('group.kicker'), title: group.name,
+          hint: t('group.hint', { owner: group.owner, outlets: fmt.int(group.outlets.length), period })
+        })
+
+        const tiles = UI.KpiStrip([
+          UI.KpiTile({ kpiId: 'K50', label: t('group.k.articles'), value: fmt.int(collected), hint: t('group.k.articles.hint', { period }), emptyText: t('group.k.articles.empty'), state: collected ? 'ready' : 'empty' }),
+          UI.KpiTile({ kpiId: 'K51', label: t('group.k.share'), value: collected ? fmt.pct(collected / d.totalCollected) : '', hint: t('group.k.share.hint', { period }), emptyText: t('group.k.share.empty'), state: collected ? 'ready' : 'empty' }),
+          UI.KpiTile({ kpiId: 'K52', label: t('group.k.outlets'), value: fmt.int(withArticles.length), hint: t('group.k.outlets.hint', { period }), emptyText: t('group.k.outlets.empty'), state: withArticles.length ? 'ready' : 'empty' })
+        ])
+
+        const facts = UI.ChartCard({
+          title: t('group.facts.title'),
+          body: UI.FactList([
+            { label: t('group.fact.owner'), value: group.owner },
+            { label: t('group.fact.lean'), value: group.lean || t('groups.lean.none') },
+            { label: t('group.fact.record'), value: t('group.fact.record.value', { source: d.record.source, date: fmt.date(d.record.exportedAt) }) }
+          ])
+        })
+
+        const outlets = UI.ChartCard({
+          title: t('group.outlets.title'), note: t('group.outlets.note', { period }),
+          footnote: h('span', { class: 'stance-key' }, t('group.stance.key'), [['stance.critical', 'critical'], ['stance.neutral', 'neutral'], ['stance.supportive', 'supportive']].map(([key, name]) => h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: `var(--stance-${name})` } }), t(key)))),
+          body: UI.DataTable({
+            rows: empty ? [] : group.outlets, rankColumn: true, emptyText: t('group.empty'),
+            columns: [
+              { label: t('group.col.outlet'), render: (o) => (outletHref(o) ? h('a', { href: outletHref(o) }, o.name) : o.name) },
+              { label: t('group.col.collected'), num: true, render: (o) => fmt.int(o.collected) },
+              { label: t('group.col.news'), num: true, render: (o) => (o.analysed ? fmt.pct(o.news / o.analysed) : '') },
+              { label: t('group.col.stance'), phone: false, render: (o) => UI.MiniStance([
+                { label: t('stance.critical'), value: o.stance[0], color: 'var(--stance-critical)' },
+                { label: t('stance.neutral'), value: o.stance[1], color: 'var(--stance-neutral)' },
+                { label: t('stance.supportive'), value: o.stance[2], color: 'var(--stance-supportive)' }
+              ]) },
+              { label: t('group.col.clickbait'), num: true, render: (o) => (o.cbKnown ? fmt.pct(o.cbYes / o.cbKnown) : h('span', { class: 'mini-empty' }, t('group.clickbait.none'))) }
+            ]
+          })
+        })
+
+        const nGroup = group.topics.reduce((s, x) => s + x, 0)
+        const nAll = d.topicsAll.reduce((s, x) => s + x, 0)
+        const topics = d.issues.map((issue, k) => ({ issue, share: nGroup ? group.topics[k] / nGroup : 0, all: nAll ? d.topicsAll[k] / nAll : 0 }))
+          .filter((r) => r.share > 0).sort((a, b) => b.share - a.share)
+        const topicsCard = UI.ChartCard({
+          title: t('group.topics.title'), note: empty ? null : t('group.topics.note', { n: fmt.int(nGroup), period }),
+          body: UI.DataTable({
+            rows: empty ? [] : topics, rankColumn: true, emptyText: t('group.empty'),
+            columns: [
+              { label: t('group.col.topic'), render: (r) => r.issue[App.locale] || r.issue.el },
+              { label: t('group.col.share'), num: true, render: (r) => fmt.pct(r.share) },
+              { label: t('group.col.all'), num: true, render: (r) => fmt.pct(r.all) },
+              { label: t('group.col.diff'), num: true, render: (r) => fmt.signed((r.share - r.all) * 100) }
+            ]
+          })
+        })
+
+        content.replaceChildren(header, tiles, facts, outlets, topicsCard, protoNote())
+      }
+    })
+
+    function protoNote () { return h('p', { class: 'proto-note' }, t('proto.states')) }
+  </script>
+</body>
+</html>

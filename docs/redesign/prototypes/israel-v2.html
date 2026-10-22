@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Απότυπος</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css?v=4">
+  <link rel="stylesheet" href="assets/app.css?v=11">
+  <link rel="stylesheet" href="assets/dash.css?v=52">
+  <link rel="stylesheet" href="assets/politics.css?v=1">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/icons.js?v=2"></script>
+  <script src="assets/messages.js?v=11"></script>
+  <script src="assets/messages-v2.js?v=27"></script>
+  <script src="assets/messages-politics.js?v=1"></script>
+  <script src="assets/components.js?v=6"></script>
+  <script src="assets/dash.js?v=10"></script>
+  <script src="assets/politics.js?v=1"></script>
+  <script src="assets/shell.js?v=25"></script>
+  <script src="data/israel.js?v=1"></script>
+  <script>
+    // Κόσμος, Ισραήλ: how the press builds the picture of Israel (K27 to K29). It reads the Israel file (1 Aug to 30 Sep 2026).
+    const { t, fmt, h, load } = App
+    const { reset, card, cardHead, Stat, TopBar } = Dash
+    const { ColumnChart, Rows, ToneBar, pctOf, signed } = Politics
+    const result = load('israel', ['overall', 'contexts', 'outlets'], (b) => Object.keys(b.outlets))
+    const MIN_OUTLET = 25
+    const ACTORS = ['state', 'leader', 'people', 'armed']
+    const ROLES = ['aggressor', 'defender', 'victim', 'mediator', 'none']
+    const FORCE = ['justified', 'contested', 'condemned']
+    let sample = 'label_ally_partner'
+
+    // One row: a name with its count, the tone bar and the net tone.
+    const toneRow = (label, n, x) => h('li', {},
+      h('span', { class: 'tone-name' }, label, h('span', { class: 'row-sub' }, t('isr.actor.n', { n: fmt.int(n) }))),
+      ToneBar(x.tone),
+      h('span', { class: 'tone-net' }, signed(x.net, 0)))
+
+    Shell.start({
+      id: 'israel',
+      route: '/israel',
+      dash: true,
+      title: () => t('nav.world'),
+      breadcrumbs: () => [{ label: t('nav.world') }, { label: t('tab.world.israel') }],
+      render (content, { tabs }) {
+        content.classList.add('dash', 'minimal')
+        const title = t('tab.world.israel')
+        const problem = Dash.stateContent([result], { title, tabs, quiet: true })
+        if (problem) { content.replaceChildren(...problem); return }
+        const d = result.data
+        const o = d.overall
+        const bar = TopBar({ title, tabs, quiet: true })
+        const outlets = Object.entries(d.outlets).map(([name, x]) => ({ name, ...x })).filter((x) => x.n >= MIN_OUTLET).sort((a, b) => b.n - a.n)
+        const m = d.monthly
+
+        const stats = [
+          Stat({ kpi: 'K27', label: t('isr.stat.n'), value: fmt.int(d.n), sub: t('isr.stat.n.sub', { n: fmt.int(d.contexts.gaza ? d.contexts.gaza.state.n : 0) }) }),
+          Stat({ kpi: 'K28', label: t('isr.stat.net'), value: signed(o.state.net, 0), sub: t('isr.stat.net.sub', { a: signed(m['2026-08'].net, 0), b: signed(m['2026-09'].net, 0) }), viz: h('div', { style: 'width:96px' }, ToneBar(o.state.tone)) }),
+          Stat({ kpi: 'K29', label: t('isr.stat.outlets'), value: fmt.int(outlets.length), sub: t('isr.stat.outlets.sub') })
+        ]
+
+        const key = h('span', { class: 'stance-key' }, [['critical', 'critical'], ['neutral', 'neutral'], ['sympathetic', 'supportive']].map(([k, c]) =>
+          h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: `var(--stance-${c})` } }), t(`politics.tone.${k}`))))
+        const toneCard = card('c-6', cardHead(t('isr.tone.title'), null, t('isr.tone.info')), key,
+          h('ul', { class: 'tone-rows' }, ACTORS.filter((k) => o[k] && o[k].n).map((k) => toneRow(t(`isr.actor.${k}`), o[k].n, o[k]))))
+        const ctxCard = card('c-6', cardHead(t('isr.ctx.title'), null, t('isr.ctx.info')),
+          h('ul', { class: 'tone-rows' }, Object.entries(d.contexts).sort((a, b) => b[1].state.net - a[1].state.net).map(([k, x]) => toneRow(t(`isr.ctx.${k}`), x.state.n, x.state))))
+
+        const roleCard = card('c-6', cardHead(t('isr.role.title'), null, t('isr.role.info')),
+          h('div', { class: 'how-grid' },
+            h('div', { class: 'how-panel' }, h('h3', { class: 'rows-caption' }, t('isr.role.head')),
+              Rows(ROLES.map((k) => ({ label: t(`isr.role.${k}`), value: o.state.role[k], text: pctOf(o.state.role[k]), color: k === 'none' ? 'var(--bar-muted)' : null })), { max: 100 })),
+            h('div', { class: 'how-panel' }, h('h3', { class: 'rows-caption' }, t('isr.force.head'), ' ', h('span', { class: 'muted-text' }, t('isr.force.n', { n: fmt.int(o.state.force_n) }))),
+              Rows(FORCE.map((k) => ({ label: t(`isr.force.${k}`), value: o.state.force[k], text: pctOf(o.state.force[k]) })), { max: 100 }))))
+        const labelCard = card('c-6', cardHead(t('isr.labels.title'), null, t('isr.labels.info')),
+          h('div', { class: 'how-grid' }, [d.labels.slice(0, 4), d.labels.slice(4)].map((part) => h('div', { class: 'how-panel' },
+            Rows(part.map((k) => ({ label: t(`isr.label.${k}`), value: o.state.labels[k], text: pctOf(o.state.labels[k]) })), { max: 25 })))))
+
+        // The Achilles Shield: the ally against the Gaza coverage.
+        const a = d.achilles
+        const days = []
+        for (let x = new Date(`${d.window[0]}T00:00:00Z`); x <= new Date(`${d.window[1]}T00:00:00Z`); x.setUTCDate(x.getUTCDate() + 1)) days.push(x.toISOString().slice(0, 10))
+        const perDay = new Map(a.daily.map((x) => [x.date, x.n]))
+        const marks = Object.fromEntries(a.events.map(([date], i) => [days.indexOf(date), i + 1]).filter(([i]) => i >= 0))
+        const callout = (value, text) => h('div', { class: 'dstat-row callout' }, h('p', { class: 'dstat-value' }, value), h('p', { class: 'dstat-sub' }, text))
+        const ba = a.before_after_gaza
+        const achCard = card('c-12', cardHead(t('isr.ach.title'), null, t('isr.ach.info')),
+          h('div', { class: 'callouts' },
+            callout(pctOf(a.mention_gaza), t('isr.ach.gaza', { n: fmt.int(a.n) })),
+            callout(pctOf(a.tone.neutral), t('isr.ach.neutral', { b: pctOf(a.gaza_tone.neutral) })),
+            callout(pctOf(a.labels.ally_any), t('isr.ach.ally', { b: pctOf(a.gaza_labels.ally_any) }))),
+          h('h3', { class: 'rows-caption' }, t('isr.ach.daily')),
+          ColumnChart({ labels: days.map((x) => fmt.date(x, { day: 'numeric', month: 'short' })), values: days.map((x) => perDay.get(x) || 0), marks, height: 180, aria: t('isr.ach.daily'),
+            tips: days.map((x) => `${fmt.date(x, { weekday: 'short', day: 'numeric', month: 'short' })} · ${fmt.int(perDay.get(x) || 0)}`) }),
+          h('ol', { class: 'marker-row' }, a.events.map(([date, text], i) => h('li', {}, h('span', { class: 'marker-num' }, String(i + 1)), h('span', { class: 'name' }, `${fmt.date(date, { day: 'numeric', month: 'short' })} · ${text}`)))),
+          h('div', { class: 'ach-grid' },
+            h('div', {}, h('h3', { class: 'rows-caption' }, t('isr.ach.issues')),
+              Rows(Object.entries(a.issues).map(([k, v]) => ({ label: t(`isr.ach.issue.${k}`), value: v, text: pctOf(v), color: k === 'gaza' ? 'var(--stance-critical)' : null })), { max: 100 })),
+            h('div', {}, h('h3', { class: 'rows-caption' }, t('isr.ach.who')),
+              Rows(Object.entries(a.who).sort((x, y) => y[1] - x[1]).map(([k, v]) => ({ label: t(`isr.ach.who.${k}`), value: v })))),
+            h('div', {}, h('h3', { class: 'rows-caption' }, t('isr.ach.before')),
+              h('p', { class: 'dcard-sub' }, `${t('isr.ach.pre')}: ${fmt.int(ba.pre.n)} → ${t('isr.ach.post')}: ${fmt.int(ba.post.n)}`),
+              h('ul', { class: 'shift-list' }, [
+                [t('isr.ach.col.critical'), ba.pre.tone.critical, ba.post.tone.critical],
+                [t('isr.ach.col.occupier'), ba.pre.labels.occupier, ba.post.labels.occupier],
+                [t('isr.ach.col.aggressor'), ba.pre.labels.aggressor, ba.post.labels.aggressor]
+              ].map(([label, before, after]) => h('li', {}, h('span', {}, label), h('strong', {}, `${pctOf(before)} → ${pctOf(after)}`)))))))
+
+        const outletCard = card('c-8', cardHead(t('isr.outlets.title'), null, t('isr.outlets.info')), key.cloneNode(true),
+          UI.DataTable({
+            rows: outlets, rankColumn: true, pageSize: outlets.length,
+            columns: [
+              { label: t('isr.col.outlet'), render: (x) => h('span', { class: 'nowrap', title: x.lean || null }, x.name) },
+              { label: t('isr.col.n'), num: true, render: (x) => fmt.int(x.n) },
+              { label: t('isr.col.tone'), phone: false, render: (x) => h('div', { style: 'width:110px' }, ToneBar(x.tone)) },
+              { label: t('isr.col.net'), num: true, render: (x) => signed(x.net, 0) },
+              { label: t('isr.col.ally'), num: true, phone: false, render: (x) => pctOf(x.labels.ally_partner) },
+              { label: t('isr.col.occupier'), num: true, phone: false, render: (x) => pctOf(x.labels.occupier) },
+              { label: t('isr.col.force'), num: true, phone: false, render: (x) => (x.force_n >= 10 ? pctOf(x.force.justified) : h('span', { class: 'mini-empty' }, '–')) }
+            ]
+          }))
+
+        const sampleHolder = h('div', {})
+        const drawSample = () => {
+          sampleHolder.replaceChildren(
+            Dash.select('', sample, Object.keys(d.examples).map((k) => ({ value: k, label: t(`isr.ex.${k}`) })), (v) => { sample = v; drawSample() }),
+            h('ul', { class: 'quote-list' }, (d.examples[sample] || []).map((e) => h('li', {},
+              h('span', { class: 'quote-meta' }, e.outlet, ' · ', fmt.date(e.date, { day: 'numeric', month: 'short' }), e.ctx ? h('span', { class: 'pill' }, t(`isr.ctx.${e.ctx}`)) : null),
+              h('a', { class: 'quiet-link', href: e.url, target: '_blank', rel: 'noopener' }, e.title)))))
+        }
+        drawSample()
+        const titlesCard = card('c-4 card-top', cardHead(t('isr.titles.title'), null, t('isr.titles.info')), sampleHolder)
+
+        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...stats, toneCard, ctxCard, roleCard, labelCard, achCard, outletCard, titlesCard),
+          h('p', { class: 'proto-note' }, t('isr.note')))
+      }
+    })
+    reset()
+  </script>
+</body>
+</html>

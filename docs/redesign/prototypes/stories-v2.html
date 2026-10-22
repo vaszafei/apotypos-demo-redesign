@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Απότυπος</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css?v=4">
+  <link rel="stylesheet" href="assets/app.css?v=11">
+  <link rel="stylesheet" href="assets/dash.css?v=52">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/icons.js?v=2"></script>
+  <script src="assets/messages.js?v=11"></script>
+  <script src="assets/messages-v2.js?v=27"></script>
+  <script src="assets/messages-spread.js?v=12"></script>
+  <script src="assets/components.js?v=6"></script>
+  <script src="assets/dash.js?v=10"></script>
+  <script src="assets/spread.js?v=5"></script>
+  <script src="assets/shell.js?v=25"></script>
+  <script src="data/stories.js?v=1"></script>
+  <script src="data/storyDetail.js?v=1"></script>
+  <script src="data/groups.js?v=1"></script>
+  <script>
+    // Stories: one page for all stories (APO-180). The cards show how stories spread across the ownership groups, and the table lists every story.
+    // A click on a column of the first card or on a group of the third card filters the table and the chart of days. The filter shows as a chip in the table card.
+    const { t, fmt, h, load } = App
+    const { reset, fit, niceStep, NO_GROUP, Spark, card, cardHead } = Dash
+    const list = load('stories', ['dates', 'issues', 'stories'], (b) => b.stories)
+    const detail = load('storyDetail', ['outlets', 'stories'], (b) => b.stories)
+    const groupsData = load('groups', ['groups'], (b) => b.groups)
+    const colorOfGroup = Dash.groupColors(groupsData.data ? groupsData.data.groups : [])
+    const STEP = 25
+    const MAX_GROUPS = 8
+    // The 4 ways a story starts, from the first day with an outlet that has a group. The first 3 are teal and gray, so they do not use the colors of the groups.
+    const TYPES = [
+      ['together', 'var(--series-news)'],
+      ['follow', 'var(--series-other)'],
+      ['single', 'var(--bar-muted)'],
+      ['none', 'var(--rule)']
+    ]
+
+    // Thin columns with a round top, one for each day, stacked by the way the story started. Each column has its day number under it.
+    function DailyChart ({ series, dates }) {
+      const days = dates.length
+      const totals = Array.from({ length: days }, (_, i) => series.reduce((sum, x) => sum + x.values[i], 0))
+      return fit((holder, width) => {
+        const height = 190
+        const pad = { top: 8, right: 4, bottom: 34, left: 36 }
+        const max = Math.max(...totals, 1)
+        const step = niceStep(max / 4)
+        const top = Math.ceil(max / step) * step
+        const plotW = width - pad.left - pad.right
+        const plotH = height - pad.top - pad.bottom
+        const bw = plotW / days
+        const y = (v) => pad.top + plotH - (v / top) * plotH
+        const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
+        for (let v = 0; v <= top; v += step) svg.append(h('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: y(v), y2: y(v) }), h('text', { x: pad.left - 6, y: y(v) + 4, 'text-anchor': 'end' }, fmt.int(v)))
+        const every = Math.max(1, Math.ceil(18 / bw))
+        const w = Math.min(10, Math.max(2, bw * 0.5))
+        totals.forEach((total, i) => {
+          const bx = pad.left + i * bw + (bw - w) / 2
+          const parts = series.map((x) => ({ x, v: x.values[i] })).filter((p) => p.v)
+          let base = pad.top + plotH
+          parts.forEach((p, k) => {
+            const hgt = (p.v / top) * plotH
+            const attrs = { fill: p.x.color, stroke: '#ffffff', 'stroke-width': 0.5 }
+            svg.append(k === parts.length - 1 ? h('path', { ...attrs, d: Spread.topRound(bx, base - hgt, w, hgt, 4) }) : h('rect', { ...attrs, x: bx, y: base - hgt, width: w, height: hgt }))
+            base -= hgt
+          })
+          if (i % every === 0) {
+            svg.append(h('text', { x: bx + w / 2, y: height - 18, 'text-anchor': 'middle' }, String(Number(dates[i].slice(8)))))
+            if (i === 0 || dates[i].endsWith('-01')) svg.append(h('text', { class: 'axis-month', x: bx + w / 2, y: height - 4, 'text-anchor': 'middle' }, fmt.date(dates[i], { month: 'short' })))
+          }
+        })
+        const overlay = h('rect', { class: 'overlay', x: pad.left, y: pad.top, width: plotW, height: plotH })
+        overlay.addEventListener('pointermove', (e) => {
+          const i = Math.min(days - 1, Math.max(0, Math.floor((e.clientX - svg.getBoundingClientRect().left - pad.left) / bw)))
+          const parts = series.filter((x) => x.values[i]).map((x) => `${x.name} ${x.values[i]}`).join(' · ')
+          UI.showTooltip(`${t('stories.daily.tip', { date: fmt.date(dates[i]), n: fmt.int(totals[i]) })}${parts ? `: ${parts}` : ''}`, e.clientX, e.clientY)
+        })
+        overlay.addEventListener('pointerleave', () => UI.hideTooltip())
+        svg.append(overlay)
+        holder.replaceChildren(svg, h('div', { class: 'visually-hidden' }, h('table', {}, h('caption', {}, t('stories.daily.aria')),
+          h('tbody', {}, totals.map((v, i) => h('tr', {}, h('th', { scope: 'row' }, fmt.date(dates[i])), h('td', {}, fmt.int(v))))))))
+      })
+    }
+
+    // One column for each number of groups, from 1 to 8. The columns with an echo are teal and the others are gray. A click on a column selects it.
+    function ReachChart ({ counts, selected, onPick, label }) {
+      return fit((holder, width) => {
+        const height = 190
+        const pad = { top: 8, right: 4, bottom: 34, left: 40 }
+        const max = Math.max(...counts, 1)
+        const step = niceStep(max / 4)
+        const top = Math.ceil(max / step) * step
+        const plotW = width - pad.left - pad.right
+        const plotH = height - pad.top - pad.bottom
+        const bw = plotW / counts.length
+        const y = (v) => pad.top + plotH - (v / top) * plotH
+        const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, role: 'group', 'aria-label': label })
+        for (let v = 0; v <= top; v += step) svg.append(h('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: y(v), y2: y(v) }), h('text', { x: pad.left - 6, y: y(v) + 4, 'text-anchor': 'end' }, fmt.int(v)))
+        counts.forEach((v, i) => {
+          const n = i + 1
+          const w = Math.min(26, bw * 0.62)
+          const bx = pad.left + i * bw + (bw - w) / 2
+          const dim = selected !== null && selected !== n
+          const echo = n >= Spread.ECHO_MIN
+          const text = t('stories.reach.tip', { n, stories: fmt.int(v) })
+          if (v) svg.append(h('path', { d: Spread.topRound(bx, y(v), w, pad.top + plotH - y(v), 4), fill: echo ? 'var(--series-news)' : 'var(--bar-muted)', 'fill-opacity': dim ? 0.3 : 1 }))
+          svg.append(h('text', { x: bx + w / 2, y: height - 18, 'text-anchor': 'middle', 'font-weight': selected === n ? 700 : 400 }, String(n)))
+          const hit = h('rect', { class: 'hit', x: pad.left + i * bw, y: pad.top, width: bw, height: plotH + 20, tabindex: 0, role: 'button', 'aria-pressed': String(selected === n), 'aria-label': text })
+          hit.addEventListener('pointermove', (e) => UI.showTooltip(text, e.clientX, e.clientY))
+          hit.addEventListener('pointerleave', () => UI.hideTooltip())
+          hit.addEventListener('click', () => onPick(n))
+          hit.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPick(n) } })
+          svg.append(hit)
+        })
+        svg.append(h('text', { class: 'axis-month', x: pad.left + plotW / 2, y: height - 4, 'text-anchor': 'middle' }, t('stories.reach.axis')))
+        holder.replaceChildren(svg)
+      })
+    }
+
+    Shell.start({
+      id: 'stories',
+      route: '/stories',
+      dash: true,
+      title: () => t('nav.spread'),
+      breadcrumbs: () => [{ label: t('nav.spread') }],
+      render (content) {
+        content.classList.add('dash', 'minimal')
+        const title = t('nav.spread')
+        const problem = Dash.stateContent([list, detail])
+        if (problem) { content.replaceChildren(...problem.filter(Boolean), protoNote()); return }
+        const d = list.data
+        const dd = detail.data
+        const name = (x) => x[App.locale] || x.el
+        const last = d.dates.length - 1
+        const prof = Spread.profiles(dd)
+        const groups = prof.groups
+        const colorOf = (i) => colorOfGroup.get(groups[i]) || NO_GROUP
+        const profileOf = new Map(prof.list.map((p) => [p.id, p]))
+        // A generic story is a catch-all, such as "Άλλα διεθνή". It is not a story, so the page leaves it out.
+        const stories = d.stories.filter((s) => !s.generic && profileOf.has(s.id)).map((s) => {
+          const articles = s.days.reduce((sum, v, i) => (i % 2 ? sum + v : sum), 0)
+          return { ...s, articles, start: s.days[0], end: s.days[s.days.length - 2], p: profileOf.get(s.id) }
+        })
+        const daily = (s) => { const v = new Array(last + 1).fill(0); for (let i = 0; i < s.days.length; i += 2) v[s.days[i]] = s.days[i + 1]; return v }
+        const state = { reach: null, solo: null }
+
+        // The share of the stories that a group wrote together with other groups, in which it started alone and the others followed.
+        const soloRows = groups.map((g, i) => {
+          const wrote = stories.filter((s) => s.p.groupsAll.length >= 2 && s.p.groupsAll.includes(i))
+          const started = wrote.filter((s) => s.p.type === 'follow' && s.p.firstGroups[0] === i)
+          return { i, g, wrote: wrote.length, started: started.length, share: wrote.length ? started.length / wrote.length : 0 }
+        }).sort((a, b) => b.share - a.share)
+        const soloMax = Math.max(...soloRows.map((r) => r.share), 0.0001)
+        const reachCounts = Array.from({ length: MAX_GROUPS }, (_, k) => stories.filter((s) => s.p.reach === k + 1).length)
+
+        const grid = h('div', { class: 'dash-grid story-top' })
+        const chip = (text, onClear) => h('button', { type: 'button', class: 'chip chip-sm chip-filter', 'aria-label': `${t('stories.filter.clear')}: ${text}`, onClick: onClear }, text, h('span', { 'aria-hidden': 'true' }, ' ×'))
+
+        function draw () {
+          reset()
+          const rows = stories.filter((s) => (state.reach === null || s.p.reach === state.reach)
+            && (state.solo === null || (s.p.type === 'follow' && s.p.firstGroups[0] === state.solo))).sort((a, b) => b.articles - a.articles || b.start - a.start)
+
+          const series = TYPES.map(([key, color]) => {
+            const values = new Array(last + 1).fill(0)
+            rows.filter((s) => s.p.type === key).forEach((s) => { values[s.start]++ })
+            return { name: t(`stories.type.${key}`), color, values }
+          })
+          const dailyCard = card('c-5', cardHead(t('stories.daily.title'), null, t('stories.daily.info')), DailyChart({ series, dates: d.dates }),
+            h('ul', { class: 'legend-inline legend-wrap' }, series.map((x) => h('li', {}, h('span', { class: 'swatch', style: { background: x.color } }), x.name))))
+
+          const filters = [
+            state.reach !== null ? chip(t('stories.filter.reach', { n: state.reach }), () => { state.reach = null; draw() }) : null,
+            state.solo !== null ? chip(t('stories.filter.solo', { name: groups[state.solo] }), () => { state.solo = null; draw() }) : null
+          ].filter(Boolean)
+          const day = (i) => fmt.date(d.dates[i], { day: 'numeric', month: 'short' })
+          const table = UI.DataTable({
+            rows, rankColumn: true, pageSize: STEP, moreStep: STEP, emptyText: t('media.empty'),
+            columns: [
+              // The echo sits under the name: 4 or more groups wrote the story on one day.
+              { label: t('media.col.story'), render: (s) => h('div', { class: 'name-cell' }, UI.EntityLink({ type: 'story', key: String(s.id), label: name(s) }),
+                s.p.reach >= Spread.ECHO_MIN ? h('span', { class: 'reason' }, h('span', { class: 'chip chip-echo chip-sm' }, t('stories.reason.echo', { n: s.p.reach }))) : null) },
+              { label: t('media.col.issue'), phone: false, render: (s) => h('span', { class: 'topic-cell' }, name(d.issues[s.issue])) },
+              { label: t('stories.col.groups'), phone: false, render: (s) => {
+                const text = t('echoes.reach.aria', { n: s.p.peakGroups.length, total: groups.length })
+                return h('span', { class: 'nowrap' }, h('span', { class: 'reach', role: 'img', 'aria-label': text, title: text },
+                  groups.map((_, i) => (s.p.peakGroups.includes(i) ? h('span', { class: 'dot', style: `--dot:${colorOf(i)}` }) : h('span', { class: 'dot dot-none' })))), h('span', { class: 'reach-n' }, s.p.peakGroups.length))
+              } },
+              { label: t('stories.col.type'), phone: false, render: (s) => h('span', { class: 'nowrap' }, t(`stories.type.${s.p.type}`)) },
+              { label: t('stories.col.period'), phone: false, render: (s) => h('span', { class: 'nowrap' }, s.start === s.end ? day(s.start) : `${day(s.start)} → ${day(s.end)}`) },
+              { label: t('media.col.articles'), num: true, render: (s) => fmt.int(s.articles) },
+              { label: t('media2.col.life'), phone: false, render: (s) => Spark(daily(s), 0, last, t('media2.spark.articles'), { w: 100, hgt: 20 }) }
+            ]
+          })
+          const tableCard = card('c-12', cardHead(t('topics2.stories.title'), filters.length ? h('span', { class: 'legend-inline' }, filters) : null, t('topics2.stories.note', { n: fmt.int(stories.length) })),
+            h('p', { class: 'dcard-sub' }, rows.length === stories.length ? t('stories.count', { n: fmt.int(rows.length) }) : t('stories.count.of', { n: fmt.int(rows.length), total: fmt.int(stories.length) })), table)
+          const pickReach = (n) => { state.reach = state.reach === n ? null : n; draw() }
+          const reachCard = card('c-3', cardHead(t('stories.reach.title'), null, t('stories.reach.info', { min: Spread.ECHO_MIN })),
+            ReachChart({ counts: reachCounts, selected: state.reach, onPick: pickReach, label: t('stories.reach.aria') }),
+            h('ul', { class: 'legend-inline legend-wrap' },
+              h('li', {}, h('span', { class: 'swatch', style: { background: 'var(--series-news)' } }), t('stories.reach.echo', { n: Spread.ECHO_MIN })),
+              h('li', {}, h('span', { class: 'swatch', style: { background: 'var(--bar-muted)' } }), t('stories.reach.noecho'))))
+          const pickSolo = (i) => { state.solo = state.solo === i ? null : i; draw() }
+          const soloCard = card('c-4', cardHead(t('stories.solo.title'), null, t('stories.solo.info')),
+            h('ul', { class: 'rows rows-groups rows-pick' }, soloRows.map((r) => {
+              const li = h('li', { style: `--bar-color:${colorOf(r.i)}`, tabindex: 0, role: 'button', 'aria-pressed': String(state.solo === r.i), class: state.solo === r.i ? 'is-picked' : '', title: t('stories.solo.tip', { name: r.g, started: fmt.int(r.started), wrote: fmt.int(r.wrote) }) },
+                h('span', { class: 'dot', style: `--dot:${colorOf(r.i)}` }), h('span', { class: 'row-name' }, r.g),
+                h('span', { class: 'row-value' }, t('stories.solo.row', { share: fmt.pct(r.share), n: fmt.int(r.started) })), UI.HBar(r.share, soloMax))
+              li.addEventListener('click', () => pickSolo(r.i))
+              li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickSolo(r.i) } })
+              return li
+            })))
+          grid.replaceChildren(reachCard, dailyCard, soloCard, tableCard)
+        }
+        draw()
+
+        content.replaceChildren(h('h1', { class: 'visually-hidden' }, title), grid, protoNote())
+      }
+    })
+
+    function protoNote () { return h('p', { class: 'proto-note' }, t('proto.states')) }
+  </script>
+</body>
+</html>

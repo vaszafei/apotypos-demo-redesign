@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Απότυπος</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css?v=4">
+  <link rel="stylesheet" href="assets/app.css?v=11">
+  <link rel="stylesheet" href="assets/dash.css?v=52">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/icons.js?v=2"></script>
+  <script src="assets/messages.js?v=11"></script>
+  <script src="assets/messages-v2.js?v=27"></script>
+  <script src="assets/messages-spread.js?v=12"></script>
+  <script src="assets/components.js?v=6"></script>
+  <script src="assets/dash.js?v=10"></script>
+  <script src="assets/shell.js?v=25"></script>
+  <script src="data/campaigns.js?v=1"></script>
+  <script>
+    // Politics, Καμπάνιες (moved from News spread on 2026-10-21): the 4 detector lists of the API. A row is a sign to check, not a proof. In this read only the political list has rows.
+    const { t, fmt, h, load } = App
+    const { reset, card, cardHead, emptyText, TopBar } = Dash
+    const result = load('campaigns', ['window', 'political', 'other'], (b) => b.political)
+    // The kind of a row. Orange is an attack, teal is praise and gray is ambiguous. There is no red and green for good and bad.
+    const KIND_COLOR = { ΕΠΙΘΕΣΗ: 'var(--emph-less)', ΑΠΟΘΕΩΣΗ: 'var(--emph-more)' }
+
+    const when = (iso) => `${fmt.date(iso.slice(0, 10), { day: 'numeric', month: 'short' })}, ${iso.slice(11, 16)}`
+    const kindLabel = (kind) => (App.t(`camp.kind.${kind}`) === `camp.kind.${kind}` ? kind : t(`camp.kind.${kind}`))
+
+    function Item (r) {
+      const stance = r.netTone === null ? t('camp.detail.none') : fmt.signed(r.netTone)
+      return h('li', {}, h('details', { class: 'camp-item' },
+        h('summary', {},
+          h('span', { class: 'camp-score', title: t('camp.score', { n: r.score }) }, r.score),
+          h('span', { class: 'camp-person' }, h('strong', {}, r.person), ' ', h('span', { class: 'camp-kind', style: `--kind:${KIND_COLOR[r.kind] || 'var(--bar-muted)'}` }, kindLabel(r.kind))),
+          h('span', { class: 'camp-meta' },
+          h('span', { class: 'muted-text' }, t('camp.row.week', { date: fmt.date(r.week, { day: 'numeric', month: 'short' }) })),
+          h('span', {}, t('camp.row.mentions', { n: fmt.int(r.mentions), burst: fmt.dec(r.burst) })),
+          h('span', { class: 'muted-text' }, t('camp.row.groups', { n: r.groups })),
+          h('span', { class: 'muted-text' }, t('camp.row.anon', { n: r.anonPct })),
+          h('span', { class: 'muted-text' }, r.first ? t('camp.row.first', { source: r.first.source, date: when(r.first.at) }) : ''))),
+        h('div', { class: 'camp-detail' },
+          h('span', { class: 'muted-text' }, [t('camp.detail.stance', { tone: stance, n: r.toneN }), t('camp.detail.attack', { n: r.attackPct }), t('camp.detail.halo', { n: r.haloPct })].join(' · ')),
+          r.samples.length
+            ? h('ul', { class: 'camp-samples', 'aria-label': t('camp.detail.samples') }, r.samples.map((s) => h('li', {}, s.title, ' ', h('span', { class: 'muted-text' }, `— ${s.source}`))))
+            : h('span', { class: 'muted-text' }, t('camp.detail.nosamples')))))
+    }
+
+    Shell.start({
+      id: 'campaigns',
+      route: '/campaigns',
+      dash: true,
+      title: () => t('nav.politics'),
+      breadcrumbs: () => [{ label: t('nav.politics') }],
+      render (content, { tabs }) {
+        content.classList.add('dash', 'minimal')
+        reset()
+        const title = t('nav.politics')
+        const problem = Dash.stateContent([result], { title, tabs, quiet: true })
+        if (problem) { content.replaceChildren(...problem.filter(Boolean), protoNote()); return }
+        const d = result.data
+        const bar = TopBar({ title, tabs, quiet: true })
+        const political = d.political.slice().sort((a, b) => b.score - a.score)
+        const others = [['sustained', 'camp.sustained'], ['bursts', 'camp.bursts'], ['dissemination', 'camp.dissem']]
+        // The API names the lists political, pushes, sustained and dissemination. The page order follows the current app: political, sustained, bursts (pushes), dissemination.
+        const countOf = { sustained: d.other.sustained, bursts: d.other.pushes, dissemination: d.other.dissemination }
+        content.replaceChildren(bar, h('div', { class: 'dash-grid' },
+          card('c-12', cardHead(t('camp.political.title'), null, t('camp.political.info')),
+            political.length ? h('ul', { class: 'camp-list' }, political.map(Item)) : emptyText(t('camp.empty')),
+            h('p', { class: 'dcard-sub' }, t('camp.market', { n: d.marketAnonPct }))),
+          others.map(([key, msg]) => card('c-4', cardHead(t(`${msg}.title`), null, t(`${msg}.info`)),
+            countOf[key] ? h('p', { class: 'dcard-sub' }, countOf[key]) : emptyText(t('camp.empty'))))), protoNote())
+      }
+    })
+
+    function protoNote () { return h('p', { class: 'proto-note' }, t('proto.states')) }
+  </script>
+</body>
+</html>

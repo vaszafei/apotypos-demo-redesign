@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Απότυπος</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css?v=4">
+  <link rel="stylesheet" href="assets/app.css?v=11">
+  <link rel="stylesheet" href="assets/dash.css?v=52">
+  <link rel="stylesheet" href="assets/politics.css?v=1">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/icons.js?v=2"></script>
+  <script src="assets/messages.js?v=11"></script>
+  <script src="assets/messages-v2.js?v=27"></script>
+  <script src="assets/messages-politics.js?v=1"></script>
+  <script src="assets/components.js?v=6"></script>
+  <script src="assets/dash.js?v=10"></script>
+  <script src="assets/politics.js?v=1"></script>
+  <script src="assets/shell.js?v=25"></script>
+  <script src="data/elections.js?v=1"></script>
+  <script src="data/peopleMatrix.js?v=1"></script>
+  <script>
+    // Πολιτική, Εκλογές: the stance of the articles toward the government (K30, K32, K33), the persons and their attacks.
+    // It reads the elections file (1 Aug to 30 Sep 2026, 36 outlets) and the persons matrix of the same period.
+    const { t, fmt, h, load } = App
+    const { reset, card, cardHead, emptyText, Stat, TopBar, Spark } = Dash
+    const { weekLabel, LineChart, ToneBar, divergeCell, signed } = Politics
+    const result = load('elections', ['outlets', 'issues', 'people', 'weeks'], (b) => b.outlets)
+    const matrix = load('peopleMatrix', ['persons', 'outlets'], (b) => b.outlets)
+    const MIN_OUTLET = 100
+    const MIN_WEEK = 8
+    // The persons of Greek politics. The matrix and the attacks leave out the foreign person of the file.
+    const GREEK = 6
+    // The colors of the selected outlets. They leave out the blue and the red of the stance.
+    const PICK_COLORS = ['#1baf7a', '#eda100', '#6250d6', '#e87ba4']
+    let picked = []
+
+    const sum3 = (s) => s[0] + s[1] + s[2]
+    const net = (s) => (sum3(s) ? (s[2] - s[0]) / sum3(s) : null)
+
+    // The diverging bars of the groups page: critical to the left, neutral in the center, supportive to the right.
+    function Diverge (rows, { onPick, isPicked, colorOf } = {}) {
+      const unit = 40 / Math.max(...rows.map((r) => Math.max(r.crit + r.neu / 2, r.sup + r.neu / 2)))
+      const seg = (name, left, width) => h('span', { class: 'div-seg', style: `--seg:var(--stance-${name});left:${left}%;width:${width}%` })
+      return h('ul', { class: 'diverge' }, rows.map((r) => {
+        const li = h('li', {
+          class: onPick ? `pick-row${isPicked(r) ? ' is-picked' : ''}` : null,
+          tabindex: onPick ? '0' : null,
+          role: onPick ? 'button' : null,
+          'aria-pressed': onPick ? String(isPicked(r)) : null,
+          'aria-label': r.aria
+        },
+        h('span', { class: 'div-name', title: r.aria }, onPick && isPicked(r) ? h('span', { class: 'pick-swatch', style: `--dot:${colorOf(r)}` }) : null, r.label),
+        h('span', { class: 'div-track' },
+          seg('critical', 50 - (r.neu / 2) * unit - r.crit * unit, r.crit * unit),
+          seg('neutral', 50 - (r.neu / 2) * unit, r.neu * unit),
+          seg('supportive', 50 + (r.neu / 2) * unit, r.sup * unit),
+          h('span', { class: 'div-mid' }),
+          h('span', { class: 'div-val div-val-l', style: `right:${100 - (50 - (r.neu / 2) * unit - r.crit * unit)}%` }, fmt.pct(r.crit)),
+          h('span', { class: 'div-val div-val-r', style: `left:${50 + (r.neu / 2) * unit + r.sup * unit}%` }, r.end ? `${fmt.pct(r.sup)} · ${r.end}` : fmt.pct(r.sup))))
+        if (onPick) {
+          li.addEventListener('click', () => onPick(r))
+          li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPick(r) } })
+        }
+        return li
+      }))
+    }
+    const stanceRow = (label, s, extra) => ({ label, crit: s[0] / sum3(s), neu: s[1] / sum3(s), sup: s[2] / sum3(s), n: sum3(s), net: net(s), ...extra })
+    const stanceKey = () => h('span', { class: 'stance-key' },
+      [['stance.critical', 'critical'], ['stance.neutral', 'neutral'], ['stance.supportive', 'supportive']].map(([key, nm]) => h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: `var(--stance-${nm})` } }), t(key))))
+
+    Shell.start({
+      id: 'elections',
+      route: '/elections',
+      dash: true,
+      title: () => t('nav.politics'),
+      breadcrumbs: () => [{ label: t('nav.politics') }, { label: t('tab.politics.elections') }],
+      render (content, { tabs }) {
+        content.classList.add('dash', 'minimal')
+        const title = t('tab.politics.elections')
+        const problem = Dash.stateContent([result], { title, tabs, quiet: true })
+        if (problem) { content.replaceChildren(...problem); return }
+        const d = result.data
+        const bar = TopBar({ title, tabs, quiet: true })
+        const labels = d.weeks.map((w) => weekLabel(w, d.window))
+
+        const total = d.outlets.reduce((a, o) => [a[0] + o.stance[0], a[1] + o.stance[1], a[2] + o.stance[2]], [0, 0, 0])
+        const gov = sum3(total)
+        const stats = [
+          Stat({ kpi: 'K30', label: t('elec.stat.gov'), value: fmt.int(gov), sub: t('elec.stat.gov.sub', { share: fmt.pct(gov / d.analysed), n: fmt.int(d.analysed) }), viz: Dash.Meter(gov / d.analysed) }),
+          Stat({ kpi: 'K32', label: t('elec.stat.net'), value: signed(net(total)), sub: t('elec.stat.net.sub', { crit: fmt.pct(total[0] / gov), sup: fmt.pct(total[2] / gov) }), viz: h('div', { style: 'width:96px' }, ToneBar({ critical: total[0], neutral: total[1], sympathetic: total[2] }, { labels: ['stance.critical', 'stance.neutral', 'stance.supportive'] })) }),
+          Stat({ kpi: 'K33', label: t('elec.stat.analysed'), value: fmt.int(d.analysed), sub: t('elec.stat.analysed.sub', { n: fmt.int(d.outlets.length), from: fmt.date(d.window[0], { day: 'numeric', month: 'short' }), to: fmt.date(d.window[1]) }) })
+        ]
+
+        // Outlets: the list and the time chart. A click on an outlet adds it to the chart or takes it out.
+        const outletRows = d.outlets.filter((o) => sum3(o.stance) >= MIN_OUTLET)
+          .map((o) => stanceRow(o.name, o.stance, { o, end: signed(net(o.stance)) }))
+          .sort((a, b) => a.net - b.net)
+          .map((r) => ({ ...r, aria: t('elec.outlets.row', { outlet: r.label, critical: fmt.pct(r.crit), neutral: fmt.pct(r.neu), supportive: fmt.pct(r.sup), n: fmt.int(r.n) }) }))
+        if (!picked.length && outletRows.length) picked = [outletRows[0].label, outletRows[outletRows.length - 1].label]
+        const colors = new Map()
+        const colorOf = (r) => colors.get(r.label)
+        const outletHolder = h('div', {})
+        const timeHolder = h('div', {})
+        const weekNet = (weeks) => weeks.map((s) => (sum3(s) >= MIN_WEEK ? net(s) : null))
+        const marketWeeks = d.weeks.map((_, i) => d.outlets.reduce((a, o) => [a[0] + o.weeks[i][0], a[1] + o.weeks[i][1], a[2] + o.weeks[i][2]], [0, 0, 0]))
+        const drawOutlets = () => {
+          picked.forEach((name) => { if (!colors.has(name)) colors.set(name, PICK_COLORS.find((c) => ![...colors.entries()].some(([n, used]) => used === c && picked.includes(n))) || PICK_COLORS[0]) })
+          outletHolder.replaceChildren(Diverge(outletRows, { onPick: pick, isPicked: (r) => picked.includes(r.label), colorOf }))
+          const series = [{ label: t('elec.time.all'), color: 'var(--stance-neutral)', width: 3, values: weekNet(marketWeeks), dots: false },
+            ...picked.map((name) => ({ label: name, color: colors.get(name), values: weekNet(d.outlets.find((o) => o.name === name).weeks) }))]
+          timeHolder.replaceChildren(LineChart({ labels: labels.map((l) => l.short), tips: labels.map((l) => l.long), series, yFormat: (v) => signed(v, 1), min: -1, max: 1, height: 260, aria: t('elec.time.aria') }))
+        }
+        function pick (r) {
+          picked = picked.includes(r.label) ? picked.filter((n) => n !== r.label) : [...picked, r.label].slice(-4)
+          drawOutlets()
+          const again = outletHolder.querySelector(`[aria-label="${CSS.escape(r.aria)}"]`)
+          if (again) again.focus()
+        }
+        drawOutlets()
+        const outletCard = card('c-7', cardHead(t('elec.outlets.title'), stanceKey(), t('elec.outlets.info')), h('p', { class: 'dcard-sub' }, t('elec.outlets.hint')), outletHolder)
+        const timeCard = card('', cardHead(t('elec.time.title'), null, t('elec.time.info')), timeHolder)
+
+        const topicRows = d.issues.filter((i) => sum3(i.stance) >= 300).sort((a, b) => sum3(b.stance) - sum3(a.stance)).slice(0, 12)
+          .map((i) => stanceRow(i[App.locale] || i.el, i.stance, { end: null }))
+          .map((r) => ({ ...r, aria: `${r.label}: ${t('stance.critical')} ${fmt.pct(r.crit)}, ${t('stance.neutral')} ${fmt.pct(r.neu)}, ${t('stance.supportive')} ${fmt.pct(r.sup)} · ${fmt.int(r.n)}` }))
+        const topicCard = card('', cardHead(t('elec.topics.title'), null, t('elec.topics.info')), topicRows.length ? Diverge(topicRows) : emptyText(t('topics2.empty')))
+
+        // Persons: one row for each person, with the weekly articles, the image and the statements.
+        const people = d.people.map((p, k) => ({ ...p, k, n: p.weeks.reduce((a, b) => a + b, 0), statements: p.acts.reduce((a, b) => a + b, 0) })).sort((a, b) => b.n - a.n)
+        const act = (p, name) => p.acts[d.acts.indexOf(name)]
+        const peopleCard = card('c-12', cardHead(t('elec.people.title'), null, t('elec.people.info')),
+          UI.DataTable({
+            rows: people, pageSize: people.length, emptyText: t('topics2.empty'),
+            columns: [
+              { label: t('elec.col.person'), render: (p) => h('span', { class: 'nowrap' }, p.name) },
+              { label: t('elec.col.role'), phone: false, render: (p) => h('span', { class: 'muted-text' }, [p.role, p.party].filter(Boolean).join(' · ')) },
+              { label: t('elec.col.articles'), num: true, render: (p) => fmt.int(p.n) },
+              { label: t('elec.col.trend'), phone: false, render: (p) => Spark(p.weeks, 0, p.weeks.length - 1, `${p.name}: ${p.weeks.map(fmt.int).join(', ')}`) },
+              { label: t('elec.col.image'), phone: false, render: (p) => h('div', { class: 'tone-cell' }, ToneBar({ critical: p.portrayal[0], neutral: p.portrayal[1], sympathetic: p.portrayal[2] }, { labels: ['politics.tone.negative', 'politics.tone.neutral', 'politics.tone.positive'] }), h('span', { class: 'num' }, signed(net(p.portrayal)))) },
+              { label: t('elec.col.statements'), num: true, render: (p) => fmt.int(p.statements) },
+              { label: t('elec.col.attacks'), num: true, phone: false, render: (p) => fmt.int(act(p, 'attack')) },
+              { label: t('elec.col.promises'), num: true, phone: false, render: (p) => fmt.int(act(p, 'promise')) }
+            ]
+          }))
+
+        // Tone matrix: outlets by persons, from the persons matrix of the same period.
+        let toneCard = null
+        if (matrix.kind === 'data') {
+          const m = matrix.data
+          const persons = m.persons.slice(0, GREEK)
+          const rows = m.outlets.filter((o) => o.cells.slice(0, GREEK).filter((c) => c.net !== null).length >= 3).sort((a, b) => b.rows - a.rows)
+          const chart = UI.MatrixChart({
+              caption: t('elec.tone.title'), rowHeader: '',
+              rows: rows.map((o) => ({ label: o.name })),
+              columns: persons.map((p) => ({ label: p.split(' ').pop(), title: p })),
+              cell: (ri, ci) => {
+                const c = rows[ri].cells[ci]
+                const style = divergeCell(c.net)
+                return { ...style, text: c.net === null ? '·' : signed(c.net), title: c.net === null ? t('elec.tone.few', { outlet: rows[ri].name, person: persons[ci] }) : t('elec.tone.cell', { outlet: rows[ri].name, person: persons[ci], net: signed(c.net), n: fmt.int(c.n) }) }
+              }
+            })
+          chart.querySelector('table').classList.add('matrix-turned')
+          chart.querySelector('table').style.setProperty('--first', '150px')
+          toneCard = card('c-7', cardHead(t('elec.tone.title'), null, t('elec.tone.info')), chart)
+        }
+
+        const attackCard = card(toneCard ? 'c-5 card-top' : 'c-12', cardHead(t('elec.attacks.title'), null, t('elec.attacks.info')),
+          h('ul', { class: 'target-list' }, people.filter((p) => p.k < GREEK).map((p) => h('li', {},
+            h('span', {}, h('strong', {}, p.name), ' ', h('span', { class: 'muted-text' }, t('elec.attacks.total', { n: fmt.int(act(p, 'attack')) }))),
+            h('span', { class: 'chips' }, p.attacks.slice(0, 4).map(([target, n]) => h('span', { class: 'target-chip' }, target, h('strong', {}, fmt.int(n)))))))))
+
+        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...stats, outletCard, h('div', { class: 'c-5 card-col' }, timeCard, topicCard), peopleCard, toneCard, attackCard),
+          h('p', { class: 'proto-note' }, t('elec.note')))
+      }
+    })
+    reset()
+  </script>
+</body>
+</html>

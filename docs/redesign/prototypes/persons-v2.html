@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Απότυπος</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css?v=4">
+  <link rel="stylesheet" href="assets/app.css?v=11">
+  <link rel="stylesheet" href="assets/dash.css?v=52">
+  <link rel="stylesheet" href="assets/politics.css?v=1">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/icons.js?v=2"></script>
+  <script src="assets/messages.js?v=11"></script>
+  <script src="assets/messages-v2.js?v=27"></script>
+  <script src="assets/messages-politics.js?v=1"></script>
+  <script src="assets/components.js?v=6"></script>
+  <script src="assets/dash.js?v=10"></script>
+  <script src="assets/politics.js?v=1"></script>
+  <script src="assets/shell.js?v=25"></script>
+  <script src="data/personFile.js?v=1"></script>
+  <script>
+    // Πολιτική, Πρόσωπα: the person file. One person, a fixed page (the data has one person today).
+    // The statements are verbatim from interviews. The pairs and the verdicts are proposals of models to review.
+    const { t, fmt, h, load, safeUrl } = App
+    const { reset, card, cardHead, Stat, TopBar } = Dash
+    const { ColumnChart, Rows } = Politics
+    const result = load('personFile', ['summary', 'themes', 'pairs', 'checked'], (b) => b.themes)
+    const VERDICTS = ['accurate', 'mostly_accurate', 'inaccurate', 'unverifiable']
+    const KINDS = ['fact', 'position', 'accusation', 'prediction', 'promise', 'claim']
+    const PAIRS = 6
+    let allPairs = false
+
+    const videoAt = (video, sec) => safeUrl(`https://www.youtube.com/watch?v=${encodeURIComponent(video)}&t=${Math.floor(sec || 0)}s`)
+    const day = (iso) => fmt.date(iso, { day: 'numeric', month: 'short', year: 'numeric' })
+
+    Shell.start({
+      id: 'persons',
+      route: '/contradictions',
+      dash: true,
+      title: () => t('nav.politics'),
+      breadcrumbs: () => [{ label: t('nav.politics') }, { label: t('tab.politics.persons') }],
+      render (content, { tabs }) {
+        content.classList.add('dash', 'minimal')
+        const paint = () => {
+          const title = t('tab.politics.persons')
+          const problem = Dash.stateContent([result], { title, tabs, quiet: true })
+          if (problem) { content.replaceChildren(...problem); return }
+          const d = result.data
+          const s = d.summary
+          const bar = TopBar({ title, tabs, quiet: true })
+          const name = App.locale === 'en' ? s.person_en : s.person
+
+          const hero = card('c-12 hero',
+            h('div', { class: 'hero-main' },
+              h('p', { class: 'hero-kicker' }, t('pf.kicker')),
+              h('h1', { class: 'hero-title' }, name),
+              h('p', { class: 'dcard-sub hero-lead' }, t('pf.lead')),
+              h('div', { class: 'hero-chips' },
+                h('span', { class: 'chip chip-num' }, t('pf.chip.videos', { n: fmt.int(d.videos) })),
+                h('span', { class: 'chip chip-num' }, t('pf.chip.claims', { n: fmt.int(s.claims) })),
+                h('span', { class: 'hero-period' }, h('strong', {}, t('pf.period', { from: day(s.from), to: day(s.to) }))))))
+
+          const wide = (stat) => { stat.classList.replace('c-4', 'c-3'); return stat }
+          const stats = [
+            wide(Stat({ label: t('pf.stat.videos'), value: fmt.int(d.videos), sub: t('pf.stat.videos.sub', { n: fmt.int(d.videosSampled), x: fmt.int(d.noCaptions) }) })),
+            wide(Stat({ label: t('pf.stat.claims'), value: fmt.int(s.claims), sub: t('pf.stat.claims.sub') })),
+            wide(Stat({ label: t('pf.stat.pairs'), value: fmt.int(d.pairs.length), sub: t('pf.stat.pairs.sub') })),
+            wide(Stat({ label: t('pf.stat.checked'), value: fmt.int(d.checks.checked), sub: t('pf.stat.checked.sub', { n: fmt.int(d.checks.checkable) }) }))
+          ]
+
+          // The months from the first to the last statement. A month with no interview is a gap, not a zero line.
+          const counts = new Map(d.claimsByMonth)
+          const months = []
+          for (let x = new Date(`${d.claimsByMonth[0][0]}-01T00:00:00Z`); x.toISOString().slice(0, 7) <= d.claimsByMonth[d.claimsByMonth.length - 1][0]; x.setUTCMonth(x.getUTCMonth() + 1)) months.push(x.toISOString().slice(0, 7))
+          const monthLabel = (m) => fmt.date(`${m}-01`, { month: 'short', year: '2-digit' })
+          const monthCard = card('c-8', cardHead(t('pf.months.title'), null, t('pf.months.info')),
+            ColumnChart({ labels: months.map(monthLabel), values: months.map((m) => counts.get(m) || 0), height: 220, aria: t('pf.months.title'),
+              tips: months.map((m) => `${monthLabel(m)} · ${fmt.int(counts.get(m) || 0)}`) }))
+          const verdictColor = { accurate: 'var(--stance-supportive)', mostly_accurate: '#7fa7e0', inaccurate: 'var(--stance-critical)', unverifiable: 'var(--bar-muted)' }
+          const verdictCard = card('c-4', cardHead(t('pf.verdict.title'), null, t('pf.verdict.info')),
+            Rows(VERDICTS.map((k) => ({ label: t(`pf.verdict.${k}`), value: d.checks.verdicts[k] || 0, color: verdictColor[k] })), { max: d.checks.checked }))
+
+          const themeRows = d.themes.slice().sort((a, b) => b.n - a.n)
+          const kindsOf = (x) => KINDS.filter((k) => x.kinds[k]).sort((a, b) => x.kinds[b] - x.kinds[a]).slice(0, 3).map((k) => `${t(`pf.kind.${k}`)} ${fmt.int(x.kinds[k])}`).join(' · ')
+          const themeCard = card('c-12', cardHead(t('pf.themes.title'), null, t('pf.themes.info')),
+            h('ul', { class: 'theme-list' }, themeRows.map((x) => h('li', {}, h('details', {},
+              h('summary', {},
+                h('span', { class: 'theme-name' }, x.el),
+                h('span', { class: 'theme-bar' }, UI.HBar(x.n, themeRows[0].n)),
+                h('span', { class: 'num' }, fmt.int(x.n)),
+                h('span', { class: 'muted-text theme-kinds' }, kindsOf(x)),
+                h('span', { class: 'muted-text nowrap' }, `${fmt.date(x.from, { month: 'short', year: 'numeric' })} → ${fmt.date(x.to, { month: 'short', year: 'numeric' })}`)),
+              h('p', { class: 'theme-summary' }, x.summary))))))
+
+          const pairs = allPairs ? d.pairs : d.pairs.slice(0, PAIRS)
+          const side = (label, x) => h('div', { class: 'pair-side' },
+            h('p', { class: 'quote-meta' }, h('strong', {}, label), ' · ', day(x.date), ' · ', h('a', { class: 'quiet-link', href: videoAt(x.video, x.t), target: '_blank', rel: 'noopener' }, t('pf.watch'))),
+            h('p', { class: 'quote-text' }, `«${x.quote}»`))
+          const pairCard = card('c-7', cardHead(t('pf.pairs.title'), null, t('pf.pairs.info')),
+            h('ul', { class: 'quote-list' }, pairs.map((p) => h('li', {},
+              h('span', { class: 'quote-meta' }, h('span', { class: 'pill pill-hot' }, t(`pf.pair.${p.type}`)), h('span', {}, t(`pf.pair.${p.confidence}`))),
+              h('strong', { class: 'pair-conflict' }, p.conflict),
+              h('div', { class: 'pair-sides' }, side(t('pf.pair.earlier'), p.earlier), side(t('pf.pair.later'), p.later))))),
+            d.pairs.length > PAIRS ? h('div', { class: 'table-more' }, h('button', { type: 'button', class: 'button', 'aria-expanded': String(allPairs), onClick: () => { allPairs = !allPairs; paint() } }, allPairs ? t('table.less') : t('pf.pairs.more', { n: fmt.int(d.pairs.length) }))) : null)
+
+          const order = { inaccurate: 0, accurate: 1, mostly_accurate: 2, unverifiable: 3 }
+          const checks = d.checked.slice().sort((a, b) => order[a.verdict] - order[b.verdict] || b.date.localeCompare(a.date)).slice(0, 10)
+          const checkCard = card('c-5 card-top', cardHead(t('pf.checks.title'), null, t('pf.checks.info')),
+            h('ul', { class: 'quote-list' }, checks.map((c) => h('li', {},
+              h('span', { class: 'quote-meta' }, h('span', { class: `pill verdict-${c.verdict}` }, t(`pf.verdict.${c.verdict}`)), day(c.date), ' · ', h('a', { class: 'quiet-link', href: videoAt(c.video, c.t), target: '_blank', rel: 'noopener' }, t('pf.watch'))),
+              h('strong', {}, c.assertion_el),
+              c.summary_el ? h('span', { class: 'muted-text' }, c.summary_el) : h('span', { class: 'quote-text' }, `«${c.quote}»`)))))
+
+          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, hero, ...stats, monthCard, verdictCard, themeCard, pairCard, checkCard), h('p', { class: 'proto-note' }, t('pf.note')))
+        }
+        paint()
+      }
+    })
+    reset()
+  </script>
+</body>
+</html>

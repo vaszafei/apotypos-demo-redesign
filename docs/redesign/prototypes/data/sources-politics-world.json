@@ -1,0 +1,67 @@
+{
+ "reads": [
+  {
+   "url": "https://apotypos.org/topics-data/aug_sep_2026/facts.json",
+   "status": 200,
+   "read_at": "2026-10-22T11:43:27Z",
+   "last_modified": "Tue, 20 Oct 2026 19:34:59 GMT",
+   "bytes": 6944550
+  },
+  {
+   "url": "https://apotypos.org/war-data/index.json",
+   "status": 200,
+   "read_at": "2026-10-22T11:43:27Z",
+   "last_modified": "Tue, 20 Oct 2026 19:34:59 GMT",
+   "bytes": 176601
+  },
+  {
+   "url": "https://apotypos.org/israel-data/aug_sep_2026/index.json",
+   "status": 200,
+   "read_at": "2026-10-22T11:43:27Z",
+   "last_modified": "Tue, 20 Oct 2026 19:34:59 GMT",
+   "bytes": 114339
+  },
+  {
+   "url": "https://apotypos.org/gaza-data/aug_sep_2026/index.json",
+   "status": 200,
+   "read_at": "2026-10-22T11:43:27Z",
+   "last_modified": "Tue, 20 Oct 2026 19:34:59 GMT",
+   "bytes": 119467
+  },
+  {
+   "url": "https://apotypos.org/language-data/index.json",
+   "status": 200,
+   "read_at": "2026-10-22T11:43:27Z",
+   "last_modified": "Tue, 20 Oct 2026 19:34:59 GMT",
+   "bytes": 220342
+  },
+  {
+   "url": "https://apotypos.org/data/speeches/unga81/index.json",
+   "status": 200,
+   "read_at": "2026-10-22T11:43:28Z",
+   "last_modified": "Tue, 20 Oct 2026 19:34:59 GMT",
+   "bytes": 1081942
+  },
+  {
+   "url": "https://apotypos.org/api/statements/speakers?limit=25",
+   "status": 200,
+   "read_at": "2026-10-22T11:43:28Z",
+   "last_modified": null,
+   "bytes": 2152
+  },
+  {
+   "url": "https://apotypos.org/api/cases/coverage?q=%CE%A1%CE%BF%CF%85%CE%B2%CE%AF%CE%BA%CF%89%CE%BD%CE%B1%CF%82",
+   "status": 200,
+   "read_at": "2026-10-22T11:43:28Z",
+   "last_modified": null,
+   "bytes": 21184
+  },
+  {
+   "url": "https://apotypos.org/contradictions",
+   "status": 200,
+   "read_at": "2026-10-22T11:43:28Z",
+   "last_modified": null,
+   "bytes": 2952697
+  }
+ ]
+}

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Απότυπος</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css?v=4">
+  <link rel="stylesheet" href="assets/app.css?v=11">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/icons.js?v=2"></script>
+  <script src="assets/messages.js?v=11"></script>
+  <script src="assets/messages-entities.js"></script>
+  <script src="assets/components.js?v=6"></script>
+  <script src="assets/shell.js?v=25"></script>
+  <script src="data/pages.js"></script>
+  <script>
+    // The table of all 58 routes. scripts/make-pages-table.py makes data/pages.js from the route map.
+    const { t, h } = App
+    const { rows, counts } = window.FIXTURES.pages
+    const view = { type: 'all' }
+    const types = ['Dashboard', 'Ranked list', 'Detail', 'Matrix', 'Explorer', 'Text', 'Removed']
+
+    Shell.start({
+      id: 'pages',
+      title: () => t('pages.title'),
+      breadcrumbs: () => [{ label: t('pages.title') }],
+      render (content) {
+        const draw = () => {
+          const visible = rows.filter((r) => view.type === 'all' || r.type === view.type)
+          const table = UI.DataTable({
+            rows: visible, pageSize: Infinity, emptyText: t('media.empty'),
+            rowId: (r) => Shell.routeAnchor(r.route),
+            columns: [
+              { label: t('pages.col.route'), render: (r) => [
+                h('code', {}, r.route),
+                h('details', { class: 'row-details' }, h('summary', {}, t('pages.details')),
+                  h('dl', {},
+                    h('dt', {}, t('pages.col.status')), h('dd', {}, r.status),
+                    r.kpis.length > 0 && [h('dt', {}, t('pages.col.kpis')), h('dd', {}, r.kpis.map((k) => h('span', { style: { display: 'block' }, lang: 'en' }, `${k.id} ${k.name}`)))],
+                    r.kpis.length > 0 && [h('dt', {}, t('pages.col.data')), h('dd', {}, [...new Set(r.kpis.map((k) => k.path))].map((p) => h('code', { style: { display: 'block' } }, p)))],
+                    h('dt', {}, t('pages.col.note')), h('dd', { lang: 'en' }, r.note)))
+              ] },
+              { label: t('pages.col.type'), render: (r) => t(`type.${r.type}`) },
+              { label: t('pages.col.section'), render: (r) => Shell.placeOf(r.route.split('?')[0]) || t(`place.${r.section}`) },
+              { label: t('pages.col.prototype'), render: (r) => r.prototype
+                ? h('a', { href: r.prototype }, t('pages.prototype.own'))
+                : h('a', { href: r.typePrototype }, t('pages.prototype.type')) }
+            ]
+          })
+          content.replaceChildren(
+            UI.PageHeader({ title: t('pages.title'), hint: t('pages.hint') }),
+            h('p', { 'data-testid': 'page-counts' }, t('pages.counts', counts)),
+            h('p', {}, h('a', { href: 'entities.html' }, t('entities.link'))),
+            UI.FilterBar(h('div', { class: 'field' }, t('pages.filter.type'), UI.SegmentedControl({
+              label: t('pages.filter.type'), value: view.type, onChange: (v) => { view.type = v; draw() },
+              options: [{ value: 'all', label: t('pages.filter.all') }, ...types.map((x) => ({ value: x, label: t(`type.${x}`) }))]
+            }))),
+            h('section', { class: 'card' }, table))
+          markTarget()
+        }
+        draw()
+      }
+    })
+
+    // The rows render after the page loads, so the browser cannot scroll to the hash by itself.
+    function markTarget () {
+      const id = decodeURIComponent(location.hash.slice(1))
+      const row = id && document.getElementById(id)
+      if (!row) return
+      row.classList.add('is-target')
+      row.scrollIntoView({ block: 'center' })
+    }
+    window.addEventListener('hashchange', () => { document.querySelectorAll('.is-target').forEach((r) => r.classList.remove('is-target')); markTarget() })
+  </script>
+</body>
+</html>

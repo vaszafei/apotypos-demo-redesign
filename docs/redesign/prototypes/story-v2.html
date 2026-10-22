@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Απότυπος</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css?v=4">
+  <link rel="stylesheet" href="assets/app.css?v=11">
+  <link rel="stylesheet" href="assets/dash.css?v=52">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/icons.js?v=2"></script>
+  <script src="assets/messages.js?v=11"></script>
+  <script src="assets/messages-v2.js?v=27"></script>
+  <script src="assets/messages-spread.js?v=12"></script>
+  <script src="assets/components.js?v=6"></script>
+  <script src="assets/dash.js?v=10"></script>
+  <script src="assets/spread.js?v=5"></script>
+  <script src="assets/shell.js?v=25"></script>
+  <script src="data/stories.js?v=1"></script>
+  <script src="data/storyDetail.js?v=1"></script>
+  <script src="data/groups.js?v=1"></script>
+  <script>
+    // News spread, Story page: /story/<id>. One page for each story of the tab Ιστορίες. The page is open at ?id=<story id>.
+    // The data has no article titles, so the page shows how the story spread: when, in which outlets and groups, and how it was written.
+    const { t, fmt, h, load, params } = App
+    const { fit, reset, niceStep, NO_GROUP, Spark, card, cardHead } = Dash
+    const list = load('stories', ['dates', 'issues', 'stories'], (b) => b.stories)
+    const detail = load('storyDetail', ['outlets', 'stories', 'base', 'people'], (b) => b.stories)
+    const groupsData = load('groups', ['groups'], (b) => b.groups)
+    const colorOfGroup = Dash.groupColors(groupsData.data ? groupsData.data.groups : [])
+    const id = Number(params.get('id'))
+    const MIN_DAYS = 14
+        const RELATED = 8
+
+    // A key for the bars of one measure: the bar is the story and the line is all articles.
+    const shareKey = () => h('span', { class: 'legend-inline' },
+      h('span', {}, h('span', { class: 'swatch', style: { background: 'var(--series-news)' } }), t('story.key.story')),
+      h('span', {}, h('span', { class: 'swatch-tick' }), t('story.key.all')))
+
+    // A share: the bar is the share in the story and the tick is the share in all articles. The scale of a block is its largest value.
+    function ShareRow ({ label, value, usual, max, color, tip }) {
+      return h('li', { title: tip },
+        h('span', { class: 'row-name' }, label),
+        h('span', { class: 'row-value' }, fmt.pct(value)),
+        h('div', { class: 'share', 'aria-hidden': 'true' },
+          h('div', { class: 'share-fill', style: { width: `${Math.min(1, value / max) * 100}%`, background: color || null } }),
+          h('span', { class: 'share-tick', style: { left: `${Math.min(1, usual / max) * 100}%` } })))
+    }
+    const shareTip = (label, value, usual) => t('story.share.tip', { label, value: fmt.pct(value), usual: fmt.pct(usual) })
+    function shareBlock (rows) {
+      const max = Math.max(...rows.flatMap((r) => [r.value, r.usual]), 0.0001)
+      return h('ul', { class: 'rows rows-share' }, rows.map((r) => ShareRow({ ...r, max, tip: shareTip(r.label, r.value, r.usual) })))
+    }
+
+    // The life of the story: an area over a window that starts some days before the story and ends some days after it. The days of the story are in a soft band
+    // and the peak has a dot. The date labels are the start and the end of the story and of the window, and a label never touches another.
+    function LifeChart ({ values, lo, hi, start, end, peak, dates }) {
+      return fit((holder, width) => {
+        const height = 118
+        const pad = { top: 22, right: 8, bottom: 24, left: 8 }
+        const shown = values.slice(lo, hi + 1)
+        const max = Math.max(...shown, 1)
+        const x = (i) => pad.left + ((i - lo) / Math.max(hi - lo, 1)) * (width - pad.left - pad.right)
+        const y = (v) => pad.top + (height - pad.top - pad.bottom) * (1 - v / max)
+        const line = shown.map((v, k) => `${k ? 'L' : 'M'}${x(lo + k).toFixed(1)} ${y(v).toFixed(1)}`).join(' ')
+        const base = height - pad.bottom
+        const svg = h('svg', { class: 'chart life', width, height, viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': t('story.hero.life') },
+          h('rect', { class: 'life-band', x: x(start) - 4, y: pad.top - 6, width: x(end) - x(start) + 8, height: base - pad.top + 6, rx: 4 }),
+          h('path', { class: 'life-area', d: `${line} L${x(hi)} ${base} L${x(lo)} ${base}Z` }),
+          h('path', { class: 'life-line', d: line }),
+          h('line', { class: 'life-base', x1: pad.left, x2: width - pad.right, y1: base, y2: base }),
+          h('circle', { class: 'life-dot', cx: x(peak), cy: y(max), r: 4 }))
+        const label = t('story.hero.peak', { date: fmt.date(dates[peak], { day: 'numeric', month: 'short' }), n: fmt.int(max) })
+        const anchor = x(peak) < 70 ? 'start' : x(peak) > width - 70 ? 'end' : 'middle'
+        svg.append(h('text', { class: 'life-label', x: anchor === 'start' ? x(peak) - 4 : anchor === 'end' ? x(peak) + 4 : x(peak), y: pad.top - 9, 'text-anchor': anchor }, label))
+        // The labels in order of importance. A label shows when the space of 64 px around its center is free.
+        const placed = []
+        const ticks = [[start, 'middle'], [end, 'middle'], [lo, 'start'], [hi, 'end']]
+        ticks.forEach(([i, anchorOf]) => {
+          const cx = x(i)
+          if (placed.some((p) => Math.abs(p - cx) < 64)) return
+          placed.push(cx)
+          const edge = anchorOf === 'middle' ? (cx < 30 ? 'start' : cx > width - 30 ? 'end' : 'middle') : anchorOf
+          svg.append(h('line', { class: 'life-tick', x1: cx, x2: cx, y1: base, y2: base + 4 }),
+            h('text', { class: 'life-date', x: edge === 'start' ? Math.max(cx - 2, 2) : edge === 'end' ? Math.min(cx + 2, width - 2) : cx, y: height - 5, 'text-anchor': edge }, fmt.date(dates[i], { day: 'numeric', month: 'short' })))
+        })
+        holder.replaceChildren(svg)
+      })
+    }
+
+    // Thin columns with a round top, one for each day, stacked by ownership group. Each column has its day number under it.
+    function DailyChart ({ lo, hi, series, dates }) {
+      const days = hi - lo + 1
+      const totals = Array.from({ length: days }, (_, i) => series.reduce((s, x) => s + x.values[lo + i], 0))
+      return fit((holder, width) => {
+        const height = 190
+        const pad = { top: 8, right: 4, bottom: 34, left: 36 }
+        const max = Math.max(...totals, 1)
+        const step = niceStep(max / 4)
+        const top = Math.ceil(max / step) * step
+        const plotW = width - pad.left - pad.right
+        const plotH = height - pad.top - pad.bottom
+        const bw = plotW / days
+        const y = (v) => pad.top + plotH - (v / top) * plotH
+        const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
+        for (let v = 0; v <= top; v += step) {
+          svg.append(h('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: y(v), y2: y(v) }), h('text', { x: pad.left - 6, y: y(v) + 4, 'text-anchor': 'end' }, fmt.int(v)))
+        }
+        // The day number shows under each column when there is room. The month shows under the first column and under the first day of a month.
+        const every = Math.max(1, Math.ceil(18 / bw))
+        const w = Math.min(10, Math.max(2, bw * 0.5))
+        totals.forEach((total, i) => {
+          const bx = pad.left + i * bw + (bw - w) / 2
+          const parts = series.map((x) => ({ x, v: x.values[lo + i] })).filter((p) => p.v)
+          let base = pad.top + plotH
+          parts.forEach((p, k) => {
+            const hgt = (p.v / top) * plotH
+            const attrs = { fill: p.x.color, stroke: '#ffffff', 'stroke-width': 0.5 }
+            svg.append(k === parts.length - 1 ? h('path', { ...attrs, d: Spread.topRound(bx, base - hgt, w, hgt, 4) }) : h('rect', { ...attrs, x: bx, y: base - hgt, width: w, height: hgt }))
+            base -= hgt
+          })
+          if (i % every === 0) {
+            const date = dates[lo + i]
+            svg.append(h('text', { x: bx + w / 2, y: height - 18, 'text-anchor': 'middle' }, String(Number(date.slice(8)))))
+            if (i === 0 || date.endsWith('-01')) svg.append(h('text', { class: 'axis-month', x: bx + w / 2, y: height - 4, 'text-anchor': 'middle' }, fmt.date(date, { month: 'short' })))
+          }
+        })
+        const overlay = h('rect', { class: 'overlay', x: pad.left, y: pad.top, width: plotW, height: plotH })
+        overlay.addEventListener('pointermove', (e) => {
+          const i = Math.min(days - 1, Math.max(0, Math.floor((e.clientX - svg.getBoundingClientRect().left - pad.left) / bw)))
+          const parts = series.filter((x) => x.values[lo + i]).map((x) => `${x.name} ${x.values[lo + i]}`).join(' · ')
+          UI.showTooltip(`${t('story.daily.tip', { date: fmt.date(dates[lo + i]), n: fmt.int(totals[i]) })}${parts ? `: ${parts}` : ''}`, e.clientX, e.clientY)
+        })
+        overlay.addEventListener('pointerleave', () => UI.hideTooltip())
+        svg.append(overlay)
+        const table = h('div', { class: 'visually-hidden' }, h('table', {}, h('caption', {}, t('story.daily.aria')),
+          h('tbody', {}, totals.map((v, i) => h('tr', {}, h('th', { scope: 'row' }, fmt.date(dates[lo + i])), h('td', {}, fmt.int(v)))))))
+        holder.replaceChildren(svg, table)
+      })
+    }
+
+    // A row of the difference view. The center line is the share in all articles. The bar goes right (teal) when the story has more, left (orange) when it has less.
+    function DiffRow ({ label, value, usual, scale }) {
+      const diff = value - usual
+      const tip = t('story.how.tip', { label, value: fmt.pct(value), usual: fmt.pct(usual), diff: `${diff >= 0 ? '+' : '−'}${fmt.pct(Math.abs(diff))}` })
+      return h('li', { title: tip }, h('span', { class: 'div-name' }, label), h('span', { class: 'div-num' }, fmt.pct(value)), Spread.DiffTrack(diff, scale, tip))
+    }
+
+    // Related stories. The topic is too general: the topic "Θάνατος Μαζωνάκη" holds 11 other deaths. A story is related when its title has rare words in common
+    // (the stem is the first 6 letters, so the endings of Greek words do not matter) or when it has articles on the same days. Common words have no weight.
+    const stem = (w) => w.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').slice(0, 6)
+    const wordsOf = (name) => [...new Set((name.match(/[\p{L}]{4,}/gu) || []).map((w) => [stem(w), w]).map(([s, w]) => `${s}|${w}`))].map((x) => x.split('|'))
+    function relatedStories (stories, target, daysOf) {
+      const df = new Map()
+      const bag = new Map(stories.map((s) => [s.id, new Map(wordsOf(s.el))]))
+      bag.forEach((words) => words.forEach((_, k) => df.set(k, (df.get(k) || 0) + 1)))
+      const rare = (k) => df.get(k) <= 12
+      const mine = bag.get(target.id)
+      const mineRare = [...mine.keys()].filter(rare)
+      const idf = (k) => Math.log(stories.length / df.get(k))
+      const norm = (v) => Math.sqrt(v.reduce((s, x) => s + x * x, 0)) || 1
+      const myDays = daysOf(target)
+      const myNorm = norm(myDays)
+      const weight = mineRare.reduce((s, k) => s + idf(k), 0) || 1
+      return stories.filter((s) => s.id !== target.id).map((s) => {
+        const shared = mineRare.filter((k) => bag.get(s.id).has(k))
+        const nameScore = shared.reduce((sum, k) => sum + idf(k), 0) / weight
+        const other = daysOf(s)
+        const cosine = other.reduce((sum, v, i) => sum + v * myDays[i], 0) / (norm(other) * myNorm)
+        return { s, shared: shared.map((k) => mine.get(k)), nameScore, cosine, score: 0.65 * nameScore + 0.35 * cosine }
+      }).filter((r) => r.nameScore > 0 || r.cosine >= 0.8).sort((a, b) => b.score - a.score).slice(0, RELATED)
+    }
+
+    Shell.start({
+      id: 'story',
+      route: `/story/${id}`,
+      dash: true,
+      title: () => t('nav.spread'),
+      breadcrumbs: () => null,
+      render (content) {
+        content.classList.add('dash', 'minimal')
+        reset()
+        const problem = Dash.stateContent([list, detail])
+        if (problem) { content.replaceChildren(...problem.filter(Boolean), protoNote()); return }
+        const d = list.data
+        const dd = detail.data
+        const story = d.stories.find((s) => s.id === id)
+        const det = dd.stories.find((s) => s.id === id)
+        if (!story || !det) { content.replaceChildren(UI.ErrorPage({ status: 404 })); return }
+
+        const name = (x) => x[App.locale] || x.el
+        const last = d.dates.length - 1
+        const issue = d.issues[story.issue]
+        const daily = (s) => { const v = new Array(last + 1).fill(0); for (let i = 0; i < s.days.length; i += 2) v[s.days[i]] = s.days[i + 1]; return v }
+        const articlesOf = (s) => s.days.reduce((sum, v, i) => (i % 2 ? sum + v : sum), 0)
+
+        // The rows of the story: for each outlet the articles, the first day and the line of days. For each group the line of days.
+        const byOutlet = new Map()
+        const byGroup = new Map()
+        const perDay = new Array(last + 1).fill(0)
+        let start = last
+        let end = 0
+        for (let i = 0; i < det.t.length; i += 3) {
+          const [o, day, n] = [det.t[i], det.t[i + 1], det.t[i + 2]]
+          start = Math.min(start, day)
+          end = Math.max(end, day)
+          perDay[day] += n
+          const rec = byOutlet.get(o) || { outlet: o, n: 0, first: day }
+          rec.n += n
+          byOutlet.set(o, rec)
+          const g = dd.outlets[o].group
+          const line = byGroup.get(g) || { group: g, n: 0, values: new Array(last + 1).fill(0) }
+          line.n += n
+          line.values[day] += n
+          byGroup.set(g, line)
+        }
+        const articles = [...byOutlet.values()].reduce((s, r) => s + r.n, 0)
+        const outlets = [...byOutlet.values()].sort((a, b) => b.n - a.n)
+        const groupName = (g) => g || t('story.nogroup')
+        const groupColor = (g) => (g && colorOfGroup.get(g)) || NO_GROUP
+        const groups = [...byGroup.values()].sort((a, b) => b.n - a.n)
+        const totalAll = dd.outlets.reduce((s, o) => s + o.total, 0)
+        const usualOfGroup = (g) => dd.outlets.filter((o) => o.group === g).reduce((s, o) => s + o.total, 0) / totalAll
+        const peak = perDay.indexOf(Math.max(...perDay))
+        const profile = Spread.profiles(dd).list.find((e) => e.id === id)
+        const echo = profile && profile.reach >= Spread.ECHO_MIN ? profile : null
+
+        // The window of the chart is at least 14 days, so a short story does not fill it with wide bars.
+        let lo = start
+        let hi = end
+        while (hi - lo + 1 < MIN_DAYS && (lo > 0 || hi < last)) {
+          if (lo > 0) lo--
+          if (hi - lo + 1 < MIN_DAYS && hi < last) hi++
+        }
+
+        // The title card: the story first, then small labels (topic, echo, outlets, articles), the life of the story and the period.
+        // The life chart starts some days before the story and ends some days after it, so a young story is not lost in the 61 days.
+        const span = end - start + 1
+        const before = Math.max(5, Math.ceil(span * 0.35))
+        const after = Math.max(3, Math.ceil(span * 0.2))
+        const lifeLo = Math.max(0, start - before)
+        const lifeHi = Math.min(last, end + after)
+        const dayLabel = (i) => fmt.date(d.dates[i], { day: 'numeric', month: 'short' })
+        const heroCard = card('c-12 hero hero-split',
+          h('div', { class: 'hero-main' },
+            h('p', { class: 'hero-kicker' }, t('hero.kind.story')),
+            h('h1', { class: 'hero-title' }, name(story)),
+            h('div', { class: 'hero-chips' },
+              echo ? h('a', { class: 'chip chip-echo', href: Shell.hrefOf('/stories') }, t('story.hero.echo', { n: echo.reach })) : h('span', { class: 'chip chip-quiet' }, t('story.hero.echo.none')),
+              h('span', { class: 'chip chip-num' }, t('story.hero.chip.outlets', { n: fmt.int(byOutlet.size) })),
+              h('span', { class: 'chip chip-num' }, t('story.hero.chip.articles', { n: fmt.int(articles) })),
+              h('span', { class: 'chip' }, UI.EntityLink({ type: 'topic', key: String(story.issue), label: name(issue) }))),
+            h('p', { class: 'hero-period' }, h('strong', {}, `${dayLabel(start)} → ${fmt.date(d.dates[end])}`), h('span', { class: 'muted-text' }, ` · ${end === start ? t('story.hero.day.one') : t('story.hero.days', { n: span })}`))),
+          h('div', { class: 'hero-life' }, LifeChart({ values: perDay, lo: lifeLo, hi: lifeHi, start, end, peak, dates: d.dates })))
+
+        const series = groups.map((g) => ({ name: groupName(g.group), color: groupColor(g.group), values: g.values }))
+        const dailyCard = card('c-12', cardHead(t('story.daily.title'), null, t('story.daily.info')),
+          DailyChart({ lo, hi, dates: d.dates, series }),
+          h('ul', { class: 'legend-inline legend-wrap' }, series.map((x) => h('li', {}, h('span', { class: 'swatch', style: { background: x.color } }), x.name))))
+
+        const groupsCard = card('c-12', cardHead(t('story.groups.title'), shareKey(), t('story.groups.info')),
+          shareBlock(groups.map((g) => ({ label: groupName(g.group), value: g.n / articles, usual: usualOfGroup(g.group), color: groupColor(g.group) }))
+            .map((r) => ({ ...r, label: h('span', { class: 'group-cell' }, h('span', { class: 'dot', style: `--dot:${r.color}` }), r.label) }))))
+
+        // The outlets as a ring and a compact list of all of them. The color is the ownership group, the same as in the chart. Outlets of one group stand together.
+        const groupRank = new Map(groups.map((g, i) => [g.group, i]))
+        const ordered = outlets.slice().sort((a, b) => (groupRank.get(dd.outlets[a.outlet].group) - groupRank.get(dd.outlets[b.outlet].group)) || b.n - a.n)
+        const outletColor = (r) => groupColor(dd.outlets[r.outlet].group)
+        const ringItems = ordered.map((r) => ({ name: dd.outlets[r.outlet].name, n: r.n, color: outletColor(r) }))
+        const outletsCard = card('c-12', cardHead(t('story.outlets.title'), null, t('story.outlets.info')), h('div', { class: 'outlets-wrap' }, Spread.Ring(ringItems, { center: fmt.int(articles), caption: t('story.outlets.total'), aria: t('story.outlets.aria'), tip: (it) => t('story.outlets.tip', { name: it.name, n: fmt.int(it.n), share: fmt.pct(it.n / articles) }) }),
+          h('ul', { class: 'outlet-grid' }, ordered.map((r) => {
+            const o = dd.outlets[r.outlet]
+            return h('li', { title: t('story.outlets.tip', { name: o.name, n: fmt.int(r.n), share: fmt.pct(r.n / articles) }) },
+              h('span', { class: 'dot', style: `--dot:${outletColor(r)}` }), UI.EntityLink({ type: 'outlet', key: o.slug, label: o.name }), h('strong', {}, fmt.int(r.n)))
+          }))))
+
+        // How the story was written: for each measure, how far the story is from all articles. The rows share one scale, so the bars compare.
+        const total = (arr) => arr.reduce((a, b) => a + b, 0)
+        const part = (arr, i, sum = total(arr)) => (sum ? arr[i] / sum : 0)
+        // A row shows when the story has articles of that kind. The 2 kinds that are common in all articles and missing in the story show too: that is a finding.
+        const rowsOf = (key, labelKey, count) => {
+          const all = det[key].map((_, i) => ({ label: t(`story.${key === 'f' ? 'frame' : 'section'}.${dd[labelKey][i]}`), value: part(det[key], i), usual: part(dd.base[key], i) }))
+          const present = all.filter((r) => r.value > 0).sort((a, b) => b.value - a.value).slice(0, count)
+          const missing = all.filter((r) => r.value === 0).sort((a, b) => b.usual - a.usual).slice(0, 2)
+          return [...present, ...missing]
+        }
+        const stanceN = total(det.s.slice(1))
+        const stanceRows = ['critical', 'neutral', 'supportive'].map((code, i) => ({ label: t(`stance.${code}`), value: part(det.s.slice(1), i, stanceN), usual: part(dd.base.s.slice(1), i, total(dd.base.s.slice(1))) }))
+        const [scored, baited] = det.k
+        const clickRows = scored ? [{ label: t('story.how.clickbait'), value: baited / scored, usual: dd.base.k[1] / dd.base.k[0] }] : []
+        const panels = [
+          { title: t('story.how.frame'), rows: rowsOf('f', 'frames', 8) },
+          { title: t('story.how.section'), rows: rowsOf('c', 'sections', 6) },
+          { title: t('story.how.stance'), rows: stanceN ? stanceRows : [], note: stanceN ? t('story.how.stance.n', { n: fmt.int(stanceN), total: fmt.int(articles) }) : t('story.how.stance.none') },
+          { title: t('story.how.clickbait'), rows: clickRows, note: scored ? t('story.how.clickbait.n', { n: fmt.int(baited), total: fmt.int(scored) }) : t('story.how.clickbait.none') }
+        ]
+        const scale = Math.max(0.05, ...panels.flatMap((p) => p.rows.map((r) => Math.abs(r.value - r.usual))))
+        const column = (items) => h('div', { class: 'how-panel' }, items.map((p) => [
+          h('h3', { class: 'rows-caption' }, p.title),
+          p.rows.length ? h('ul', { class: 'diverge diverge-3' }, p.rows.map((r) => DiffRow({ ...r, scale }))) : null,
+          p.note ? h('p', { class: 'dcard-sub' }, p.note) : null
+        ]))
+        const howKey = h('span', { class: 'legend-inline' },
+          h('span', {}, h('span', { class: 'swatch', style: { background: 'var(--emph-more)' } }), t('story.how.more')),
+          h('span', {}, h('span', { class: 'swatch', style: { background: 'var(--emph-less)' } }), t('story.how.less')))
+        const howCard = card('c-12', cardHead(t('story.how.title'), howKey, t('story.how.info')),
+          h('div', { class: 'how-grid' }, column([panels[0]]), column([panels[1]]), column([panels[2], panels[3]])))
+
+        const people = []
+        for (let i = 0; i < det.p.length; i += 4) people.push({ person: dd.people[det.p[i]], counts: det.p.slice(i + 1, i + 4) })
+        people.sort((a, b) => total(b.counts) - total(a.counts))
+        const SEG = ['var(--emph-less)', 'var(--bar-muted)', 'var(--emph-more)']
+        const peopleCard = card('c-12', cardHead(t('story.people.title'), null, t('story.people.info')), UI.DataTable({
+          rows: people, rankColumn: true, pageSize: 7, emptyText: t('story.people.empty'),
+          columns: [
+            { label: t('story.people.col.person'), render: (r) => h('div', {}, h('div', {}, r.person.name), h('span', { class: 'muted-text' }, [r.person.role, r.person.party].filter(Boolean).join(' · '))) },
+            { label: t('story.people.col.mentions'), num: true, render: (r) => fmt.int(total(r.counts)) },
+            { label: t('story.people.col.portrayal'), phone: false, render: (r) => {
+              const sum = total(r.counts)
+              const text = r.counts.map((n, i) => `${t(`story.portrayal.${dd.portrayals[i]}`)} ${fmt.pct(n / sum)}`).join(', ')
+              return h('div', { class: 'stack stack-wide', role: 'img', 'aria-label': text, title: text }, r.counts.map((n, i) => n ? h('span', { style: `width:${(n / sum) * 100}%;--seg:${SEG[i]}` }) : null))
+            } }
+          ]
+        }))
+
+        const related = relatedStories(d.stories.filter((s) => !s.generic), story, daily).map((r) => ({ ...r, articles: articlesOf(r.s) }))
+        const relatedCard = card('c-12', cardHead(t('story.related.title'), null, t('story.related.info')),
+          related.length ? h('ul', { class: 'rows-related' }, related.map((r) => h('li', {},
+            h('span', { class: 'related-main' }, UI.EntityLink({ type: 'story', key: String(r.s.id), label: name(r.s) }),
+              h('span', { class: 'muted-text' }, r.shared.length ? t('story.related.shared', { words: r.shared.slice(0, 2).join(', ') }) : t('story.related.days'))),
+            Spark(daily(r.s), 0, last, t('media2.spark.articles'), { w: 84, hgt: 20 }),
+            h('span', { class: 'row-value' }, fmt.int(r.articles)))))
+            : h('p', { class: 'dcard-empty' }, t('story.related.empty')))
+
+        // The title card is the first card of the main column on the left. The main cards are under it, and the lists are on the right. On a narrow screen the columns join in one.
+        const at = (n, el) => { el.style.order = n; return el }
+        content.replaceChildren(h('div', { class: 'dash-grid story-grid entity-grid' },
+          h('div', { class: 'card-col c-8 story-col' }, at(0, heroCard), at(1, dailyCard), at(2, outletsCard), at(3, howCard), at(4, peopleCard)),
+          h('div', { class: 'card-col c-4 story-col' }, at(5, groupsCard), at(6, relatedCard))), protoNote())
+      }
+    })
+
+    function protoNote () { return h('p', { class: 'proto-note' }, t('proto.states')) }
+  </script>
+</body>
+</html>

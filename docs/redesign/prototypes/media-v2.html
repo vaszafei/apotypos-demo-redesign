@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Απότυπος</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css?v=4">
+  <link rel="stylesheet" href="assets/app.css?v=11">
+  <link rel="stylesheet" href="assets/dash.css?v=52">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/icons.js?v=2"></script>
+  <script src="assets/messages.js?v=11"></script>
+  <script src="assets/messages-v2.js?v=27"></script>
+  <script src="assets/messages-spread.js?v=12"></script>
+  <script src="assets/components.js?v=6"></script>
+  <script src="assets/dash.js?v=8"></script>
+  <script src="assets/shell.js?v=25"></script>
+  <script src="data/media.js?v=3"></script>
+  <script src="data/home.js?v=2"></script>
+  <script src="data/groups.js?v=2"></script>
+  <script src="data/originality.js?v=1"></script>
+  <script>
+    // Media, Επισκόπηση: dashboard of APO-161. The same data as media.html, a new display.
+    // The page uses the whole width. The tabs are under the title. The page has no buttons in the top bar. Each card holds one measure and one picture of it.
+    const { t, fmt, h, load, params } = App
+    const { fit, reset, niceStep, pct0, NO_GROUP, Spark, Scale, card, cardHead, emptyText, Stat, Meter, TopBar } = Dash
+    const topics = load('home', ['dates', 'issues', 'issueDaily'], (b) => b.dates)
+    const result = load('media', ['dates', 'outlets', 'outletDaily', 'issues', 'issueDaily', 'stories', 'storyDays', 'people'], (b) => b.outlets)
+    const groupsData = load('groups', ['groups'], (b) => b.groups)
+    // The share of articles with no byline comes from the API in its own period (Sep 2025 – Jan 2026), for 5 outlets.
+    const bylines = load('originality', ['window', 'outlets'], (b) => b.outlets)
+    const groupList = groupsData.kind === 'failed' ? [] : (groupsData.data.groups || [])
+    const slugOfGroup = new Map(groupList.map((g) => [g.name, g.slug]))
+    const colorOfGroup = Dash.groupColors(groupList)
+
+    const view = { from: '2026-08-01', to: '2026-09-30', tab: 'outlets' }
+    let lastValid = { from: view.from, to: view.to }
+
+    const sumRange = (arr, i0, i1, pick = (x) => x) => { let s = 0; for (let i = i0; i <= i1; i++) s += pick(arr[i]); return s }
+
+    // A bar with round top corners. The radius is never more than half of the width or the full height.
+    function barPath (x, y, w, hgt, radius) {
+      const r = Math.min(radius, w / 2, hgt)
+      if (r <= 0) return `M${x} ${y}h${w}v${hgt}h${-w}z`
+      return `M${x} ${y + hgt}V${y + r}a${r} ${r} 0 0 1 ${r} ${-r}h${w - 2 * r}a${r} ${r} 0 0 1 ${r} ${r}V${y + hgt}z`
+    }
+
+    // Stacked columns, one for each day: news and not news. A drag selects a period. The numbers mark the largest stories.
+    function VolumeChart ({ dates, news, other, i0, i1, onSelect }) {
+      const totals = news.map((v, i) => v + other[i])
+      return fit((holder, width) => {
+        const height = 170
+        const pad = { top: 8, right: 4, bottom: 24, left: 44 }
+        const max = Math.max(...totals, 1)
+        const step = niceStep(max / 4)
+        const top = Math.ceil(max / step) * step
+        const plotW = width - pad.left - pad.right
+        const plotH = height - pad.top - pad.bottom
+        const bw = plotW / totals.length
+        const y = (v) => pad.top + plotH - (v / top) * plotH
+        const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
+        for (let v = 0; v <= top; v += step) {
+          svg.append(h('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: y(v), y2: y(v) }),
+            h('text', { x: pad.left - 6, y: y(v) + 4, 'text-anchor': 'end' }, fmt.int(v)))
+        }
+        const every = Math.max(7, Math.ceil(64 / bw))
+        totals.forEach((v, i) => {
+          const x = pad.left + i * bw
+          const muted = i < i0 || i > i1 ? ' is-muted' : ''
+          const hNews = (news[i] / top) * plotH
+          const hOther = (other[i] / top) * plotH
+          // A bar fills 60% of its slot. The top edge of the stack is round.
+          const w = Math.max(1, bw * 0.6)
+          const bx = x + (bw - w) / 2
+          const hTop = Math.max(0, hOther - 1)
+          svg.append(h('path', { class: `bar-news${muted}`, d: barPath(bx, pad.top + plotH - hNews, w, Math.max(0, hNews), hTop > 0 ? 0 : 3) }),
+            hTop > 0 && h('path', { class: `bar-other${muted}`, d: barPath(bx, pad.top + plotH - hNews - hOther, w, hTop, 3) }))
+          if (i % every === 0) svg.append(h('text', { x: x + bw / 2, y: height - 7, 'text-anchor': 'middle' }, fmt.date(dates[i], { day: 'numeric', month: 'short' })))
+        })
+        const band = h('rect', { class: 'band', x: 0, y: pad.top, width: 0, height: plotH, hidden: true })
+        svg.append(band)
+        const indexAt = (e) => Math.min(totals.length - 1, Math.max(0, Math.floor((e.clientX - svg.getBoundingClientRect().left - pad.left) / bw)))
+        let anchor = null
+        const showBand = (a, b) => { const lo = Math.min(a, b); const hi = Math.max(a, b); band.removeAttribute('hidden'); band.setAttribute('x', pad.left + lo * bw); band.setAttribute('width', (hi - lo + 1) * bw) }
+        const overlay = h('rect', { class: 'overlay', x: pad.left, y: pad.top, width: plotW, height: plotH })
+        overlay.addEventListener('pointerdown', (e) => { anchor = indexAt(e); overlay.setPointerCapture(e.pointerId) })
+        overlay.addEventListener('pointermove', (e) => {
+          const i = indexAt(e)
+          if (anchor !== null) showBand(anchor, i)
+          UI.showTooltip(t('media2.chart.day', { date: fmt.date(dates[i]), n: fmt.int(totals[i]), news: fmt.int(news[i]) }), e.clientX, e.clientY)
+        })
+        overlay.addEventListener('pointerup', (e) => {
+          const i = indexAt(e)
+          const a = anchor
+          anchor = null
+          UI.hideTooltip()
+          if (a !== null && a !== i) onSelect({ from: dates[Math.min(a, i)], to: dates[Math.max(a, i)] })
+          else band.setAttribute('hidden', '')
+        })
+        overlay.addEventListener('pointercancel', () => { anchor = null; band.setAttribute('hidden', '') })
+        overlay.addEventListener('pointerleave', () => UI.hideTooltip())
+        svg.append(overlay)
+        // The same values as a table for a screen reader. The period control works with the keyboard.
+        const table = h('div', { class: 'visually-hidden' }, h('table', {}, h('caption', {}, t('media2.chart.title')),
+          h('tbody', {}, totals.map((v, i) => h('tr', {}, h('th', { scope: 'row' }, fmt.date(dates[i])), h('td', {}, fmt.int(v)))))))
+        holder.replaceChildren(svg, table)
+      })
+    }
+
+    // Scatter: news share on x, clickbait share on y, the size of a dot is the number of articles, the color is the group.
+    function Scatter ({ points, avgX, avgY }) {
+      return fit((holder, width) => {
+        const height = Math.max(240, Math.min(300, Math.round(width * 0.42)))
+        const pad = { top: 12, right: 14, bottom: 40, left: 44 }
+        const plotW = width - pad.left - pad.right
+        const plotH = height - pad.top - pad.bottom
+        const xs = points.map((p) => p.x)
+        const x0 = Math.max(0, Math.floor((Math.min(...xs) - 0.03) * 20) / 20)
+        const x1 = Math.min(1, Math.ceil((Math.max(...xs) + 0.03) * 20) / 20)
+        const yMax = Math.ceil((Math.max(...points.map((p) => p.y)) + 0.02) * 20) / 20
+        const sx = (v) => pad.left + ((v - x0) / (x1 - x0)) * plotW
+        const sy = (v) => pad.top + plotH - (v / yMax) * plotH
+        const maxN = Math.max(...points.map((p) => p.n))
+        const radius = (n) => 5 + 9 * Math.sqrt(n / maxN)
+        const text = (p) => t('media2.scatter.point', { name: p.name, news: fmt.pct(p.x), cb: fmt.pct(p.y), n: fmt.int(p.n) })
+        const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
+        for (let k = 0; k <= 4; k++) {
+          const v = (yMax * k) / 4
+          svg.append(h('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: sy(v), y2: sy(v) }), h('text', { x: pad.left - 6, y: sy(v) + 4, 'text-anchor': 'end' }, pct0(v)))
+          const xv = x0 + ((x1 - x0) * k) / 4
+          svg.append(h('text', { x: sx(xv), y: height - 22, 'text-anchor': 'middle' }, pct0(xv)))
+        }
+        svg.append(h('text', { class: 'axis-title', x: pad.left + plotW / 2, y: height - 4, 'text-anchor': 'middle' }, `${t('media2.scatter.x')} →  ·  ${t('media2.scatter.y')} ↑`),
+          h('line', { class: 'avg-line', x1: sx(avgX), x2: sx(avgX), y1: pad.top, y2: pad.top + plotH }),
+          h('line', { class: 'avg-line', x1: pad.left, x2: width - pad.right, y1: sy(avgY), y2: sy(avgY) }))
+        points.slice().sort((a, b) => b.n - a.n).forEach((p) => {
+          const c = h('circle', { class: 'pt', cx: sx(p.x), cy: sy(p.y), r: radius(p.n), fill: p.color })
+          const show = (e) => UI.showTooltip(text(p), e.clientX, e.clientY)
+          c.addEventListener('pointerenter', show)
+          c.addEventListener('pointermove', show)
+          c.addEventListener('pointerleave', () => UI.hideTooltip())
+          svg.append(c)
+        })
+        // Direct labels for the outliers: the highest and the lowest value on each axis, and the 3 largest outlets.
+        const bySize = points.slice().sort((a, b) => b.n - a.n).slice(0, 3)
+        const outliers = [points.reduce((a, b) => (b.y > a.y ? b : a)), points.reduce((a, b) => (b.y < a.y ? b : a)), points.reduce((a, b) => (b.x > a.x ? b : a)), points.reduce((a, b) => (b.x < a.x ? b : a)), ...bySize]
+        // A label that would overlap a label already placed is left out. The tooltip still names the dot.
+        const placed = []
+        new Set(outliers).forEach((p) => {
+          const toLeft = sx(p.x) > width - 120
+          const w = p.name.length * 6.5
+          const x = sx(p.x) + (toLeft ? -1 : 1) * (radius(p.n) + 4)
+          const box = { x0: toLeft ? x - w : x, x1: toLeft ? x : x + w, y: sy(p.y) }
+          if (placed.some((b) => Math.abs(b.y - box.y) < 14 && b.x0 < box.x1 && box.x0 < b.x1)) return
+          placed.push(box)
+          svg.append(h('text', { class: 'pt-label', x, y: box.y + 4, 'text-anchor': toLeft ? 'end' : 'start' }, p.name))
+        })
+        const table = h('div', { class: 'visually-hidden' }, h('table', {}, h('caption', {}, t('media2.scatter.title')),
+          h('tbody', {}, points.map((p) => h('tr', {}, h('th', { scope: 'row' }, p.name), h('td', {}, text(p)))))))
+        holder.replaceChildren(svg, table)
+      })
+    }
+
+    Shell.start({
+      id: 'media',
+      route: '/media',
+      dash: true,
+      title: () => t('media.title'),
+      breadcrumbs: () => [{ label: t('media.title') }],
+      render (content, { tabs }) {
+        content.classList.add('dash', 'minimal')
+        const draw = () => {
+          reset()
+          const d = result.data
+          const ok = result.kind === 'data' || result.kind === 'empty'
+          if (!ok) {
+            content.replaceChildren(TopBar({ title: t('nav.media'), tabs, quiet: true }), UI.ErrorState({ onRetry: () => location.reload() }), protoNote())
+            return
+          }
+          const empty = result.kind === 'empty'
+          const i0 = d.dates.indexOf(lastValid.from)
+          const i1 = d.dates.indexOf(lastValid.to)
+          const days = i1 - i0 + 1
+          const select = (r) => { Object.assign(view, r); if (r.from <= r.to) lastValid = { ...r }; draw() }
+
+          const outlets = empty ? [] : d.outlets.map((o, k) => {
+            const pick = (n) => sumRange(d.outletDaily[k], i0, i1, (c) => c[n])
+            return { ...o, daily: d.outletDaily[k].map((c) => c[0]), analysed: pick(0), news: pick(1), cbKnown: pick(2), cbYes: pick(3) }
+          }).filter((o) => o.analysed > 0)
+
+          // Daily totals use the named count Analysed articles (the topics data, all 36 outlets), as K06 does. News are the topics with soft: false.
+          const hasTopics = topics.kind === 'data' && !empty
+          const soft = hasTopics ? topics.data.issues.map((i) => i.soft) : []
+          const daily = (isSoft) => d.dates.map((_, i) => (hasTopics ? topics.data.issueDaily.reduce((s, row, k) => s + (soft[k] === isSoft ? row[i] : 0), 0) : 0))
+          const news = daily(false)
+          const other = daily(true)
+          const totals = news.map((v, i) => v + other[i])
+          const analysed = sumRange(totals, i0, i1)
+          const newsCount = sumRange(news, i0, i1)
+
+          const storySizes = empty ? [] : d.storyDays.map((pairs) => {
+            let n = 0
+            for (let j = 0; j < pairs.length; j += 2) if (pairs[j] >= i0 && pairs[j] <= i1) n += pairs[j + 1]
+            return n
+          }).filter((n) => n >= 3)
+          const storyCount = storySizes.length
+          const storyRows = storySizes.reduce((s, n) => s + n, 0)
+          const storiesPerDay = d.dates.map(() => 0)
+          if (!empty) d.storyDays.forEach((pairs) => { for (let j = 0; j < pairs.length; j += 2) if (pairs[j + 1] > 0) storiesPerDay[pairs[j]]++ })
+          // Top bar: only the tabs. The title is for screen readers. The page has no buttons.
+          const bar = TopBar({ title: t('nav.media'), tabs, quiet: true })
+
+          // Row 1: 3 small stat cards. Each has a number and a small picture of the same measure.
+          const hasPrev = days >= 14
+          const last7 = sumRange(totals, i1 - 6, i1)
+          const prev7 = hasPrev ? sumRange(totals, i1 - 13, i1 - 7) : 0
+          const change = hasPrev && prev7 > 0 ? (last7 - prev7) / prev7 : null
+          const statArticles = Stat({
+            kpi: 'K06', label: t('media2.stat.articles'), empty: analysed <= 0, value: fmt.int(analysed),
+            sub: change !== null ? [h('span', { class: 'delta' }, `${change >= 0 ? '▲' : '▼'} ${fmt.signed(change * 100)}%`), ' ', t('media2.stat.articles.delta')] : t('media2.stat.articles.avg', { n: fmt.int(Math.round(analysed / days)) }),
+            viz: Spark(totals, i0, i1, t('media2.spark.articles'), { w: 96, hgt: 26 })
+          })
+          const statStories = Stat({
+            kpi: 'K07', label: t('media2.stat.stories'), empty: storyCount <= 0, value: fmt.int(storyCount),
+            sub: t('media2.stat.stories.sub', { share: fmt.pct(Math.min(1, storyRows / (analysed || 1))) }),
+            viz: Spark(storiesPerDay, i0, i1, t('media2.spark.stories'), { w: 96, hgt: 26 })
+          })
+          const statNews = Stat({
+            label: t('media2.stat.news'), empty: analysed <= 0, value: fmt.pct(newsCount / (analysed || 1)),
+            sub: t('media2.stat.news.sub', { n: fmt.int(newsCount), total: fmt.int(analysed) }), viz: Meter(newsCount / (analysed || 1))
+          })
+
+          // Row 2: the lead chart.
+          let peakDay = i0
+          for (let i = i0; i <= i1; i++) if (totals[i] > totals[peakDay]) peakDay = i
+          const volume = card('',
+            cardHead(t('media2.chart.title'), h('span', { class: 'legend-inline' },
+              h('span', {}, h('span', { class: 'swatch', style: { background: 'var(--series-news)' } }), t('media2.chart.news')),
+              h('span', {}, h('span', { class: 'swatch', style: { background: 'var(--series-other)' } }), t('media2.chart.other'))),
+              analysed > 0 ? `${t('media2.chart.peak', { date: fmt.date(d.dates[peakDay]), n: fmt.int(totals[peakDay]) })} · ${t('media2.chart.hint')}` : null),
+            analysed > 0 ? VolumeChart({ dates: d.dates, news, other, i0, i1, onSelect: select }) : emptyText(t('media2.chart.empty')))
+
+          // Row 3: the scatter.
+          const outletTotal = outlets.reduce((s, o) => s + o.analysed, 0)
+          const cbOutlets = outlets.filter((o) => o.cbKnown >= 100)
+          const points = cbOutlets.map((o) => ({ name: o.name, x: o.news / o.analysed, y: o.cbYes / o.cbKnown, n: o.analysed, color: o.group ? colorOfGroup.get(o.group) : NO_GROUP }))
+          const newsAvg = outlets.reduce((s, o) => s + o.news, 0) / (outletTotal || 1)
+          const cbAvg = cbOutlets.reduce((s, o) => s + o.cbYes, 0) / (cbOutlets.reduce((s, o) => s + o.cbKnown, 0) || 1)
+          const scatterCard = card('',
+            cardHead(t('media2.scatter.title'), null, t('media2.scatter.sub', { n: fmt.int(points.length), total: fmt.int(outlets.length) })),
+            points.length > 1 ? Scatter({ points, avgX: newsAvg, avgY: cbAvg }) : emptyText(t('media2.empty.list')))
+
+          // The share of articles with no byline, for the 5 outlets that the API scores. The card says its own period.
+          const bylineCard = bylines.kind === 'data' ? card('', cardHead(t('originality.anon.title'), null, t('originality.anon.info')),
+            h('p', { class: 'dcard-sub' }, t('originality.meta', { n: bylines.data.outlets.length, from: fmt.date(bylines.data.window[0], { month: 'short', year: 'numeric' }), to: fmt.date(bylines.data.window[1], { month: 'short', year: 'numeric' }) })),
+            h('ul', { class: 'rows' }, bylines.data.outlets.slice().sort((a, b) => b.anonPct - a.anonPct).map((r) => h('li', {},
+              h('span', { class: 'row-name' }, r.name), h('span', { class: 'row-value' }, fmt.pct(r.anonPct / 100)), UI.HBar(r.anonPct, 100))))) : null
+
+          // Row 4: the ranking table.
+          const tableOf = (rows, columns) => UI.DataTable({ rows, columns, rankColumn: true, pageSize: rows.length, emptyText: t('media.empty') })
+
+          let note = null
+          let results
+          {
+            const rows = outlets.slice().sort((a, b) => b.analysed - a.analysed)
+            const newsShares = outlets.map((o) => o.news / o.analysed)
+            const cbMax = Math.max(...cbOutlets.map((o) => o.cbYes / o.cbKnown), 0.01)
+            const scaleCell = (num, graphic) => h('div', { class: 'scale-cell' }, h('span', { class: 'scale-num' }, num), graphic)
+            note = t('media2.rank.outlets.note')
+            results = tableOf(rows, [
+              { label: t('media.col.outlet'), render: (o) => h('a', { href: `outlet-v2.html?slug=${o.slug}`, class: 'quiet-link' }, o.name) },
+              { label: t('media.col.group'), render: (o) => (o.group
+                ? h('span', { class: 'group-cell' }, h('span', { class: 'dot', style: `--dot:${colorOfGroup.get(o.group)}`, 'aria-hidden': 'true' }),
+                  slugOfGroup.has(o.group) ? h('a', { class: 'quiet-link', href: `group-v2.html?g=${slugOfGroup.get(o.group)}` }, o.group) : o.group)
+                : h('span', { class: 'group-cell' }, h('span', { class: 'dot dot-none', 'aria-hidden': 'true' }), h('span', { class: 'muted-text' }, t('media.col.group.none')))) },
+              { label: t('media.col.articles'), num: true, render: (o) => fmt.int(o.analysed) },
+              { label: t('media.col.news'), num: true, render: (o) => scaleCell(fmt.pct(o.news / o.analysed), Scale(o.news / o.analysed, Math.min(...newsShares), Math.max(...newsShares), newsAvg, fmt.pct(o.news / o.analysed), fmt.pct(newsAvg))) },
+              { label: t('media.col.clickbait'), num: true, render: (o) => (o.cbKnown
+                ? scaleCell(fmt.pct(o.cbYes / o.cbKnown), Scale(o.cbYes / o.cbKnown, 0, cbMax, cbAvg, fmt.pct(o.cbYes / o.cbKnown), fmt.pct(cbAvg)))
+                : h('span', { class: 'mini-empty' }, t('group.clickbait.none'))) }
+            ])
+          }
+          const ranking = card('c-8', cardHead(t('media2.rank.outlets'), null, note), results)
+          ranking.id = 'ranking'
+          ranking.setAttribute('aria-live', 'polite')
+
+          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, statArticles, statStories, statNews, ranking, h('div', { class: 'c-4 card-col' }, volume, scatterCard, bylineCard)), protoNote())
+        }
+        draw()
+      }
+    })
+
+    function protoNote () { return h('p', { class: 'proto-note' }, t('proto.states')) }
+  </script>
+</body>
+</html>

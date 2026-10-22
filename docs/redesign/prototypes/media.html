@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Απότυπος</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css?v=4">
+  <link rel="stylesheet" href="assets/app.css?v=11">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/icons.js?v=2"></script>
+  <script src="assets/messages.js?v=11"></script>
+  <script src="assets/components.js?v=6"></script>
+  <script src="assets/shell.js?v=25"></script>
+  <script src="data/media.js"></script>
+  <script src="data/home.js"></script>
+  <script src="data/groups.js"></script>
+  <script>
+    // Media: Explorer. A range, a filter and four entity tabs. The filters stay when a call fails.
+    const { t, fmt, h, load, params } = App
+    // K06 uses the named count Analysed articles from the topics data (all 36 outlets), as the KPI proposal says.
+    const topics = load('home', ['dates', 'issueDaily'], (b) => b.dates)
+    const result = load('media', ['dates', 'outlets', 'outletDaily', 'issues', 'issueDaily', 'stories', 'storyDays', 'people'], (b) => b.outlets)
+    // The group slug of each outlet: the column Όμιλος links to the group page (APO-161).
+    const groupsData = load('groups', ['groups'], (b) => b.groups)
+    const slugOfGroup = new Map(groupsData.kind === 'failed' ? [] : (groupsData.data.groups || []).map((g) => [g.name, g.slug]))
+    const view = { from: '2026-08-01', to: '2026-09-30', tab: params.get('tab') || 'outlets', newsOnly: false, query: '' }
+    let lastValid = { from: view.from, to: view.to }
+
+    const sumRange = (arr, i0, i1, pick = (x) => x) => { let s = 0; for (let i = i0; i <= i1; i++) s += pick(arr[i]); return s }
+
+    Shell.start({
+      id: 'media',
+      route: '/media',
+      title: () => t('media.title'),
+      breadcrumbs: () => [{ label: t('media.title') }],
+      render (content) {
+        const draw = (focusSearch) => {
+          const d = result.data
+          const ok = result.kind === 'data' || result.kind === 'empty'
+          const header = UI.PageHeader({
+            kicker: t('media.kicker'), title: t('media.title'), hint: t('media.hint'),
+            controls: ok ? UI.RangeControl({ dates: d.dates, from: view.from, to: view.to, presets: UI.periodPresets(), onChange: (r) => { Object.assign(view, r); if (r.from <= r.to) lastValid = { ...r }; draw() } }) : null,
+            updatedAt: result.kind === 'data' ? d.updatedAt : null
+          })
+          const search = h('input', { type: 'search', value: view.query, onInput: (e) => { view.query = e.target.value; draw(true) } })
+          const filters = UI.FilterBar(
+            h('div', { class: 'field' }, t('media.tabs'), UI.SegmentedControl({
+              label: t('media.tabs'), value: view.tab, onChange: (tab) => { view.tab = tab; draw() },
+              options: ['outlets', 'issues', 'stories', 'people'].map((k) => ({ value: k, label: t(`media.tab.${k}`) }))
+            })),
+            view.tab !== 'people' && view.tab !== 'outlets' && h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: view.newsOnly, onChange: (e) => { view.newsOnly = e.target.checked; draw() } }), t('media.filter.news')),
+            h('label', { class: 'field' }, t('media.filter.search'), search))
+
+          if (!ok) {
+            content.replaceChildren(header, filters, UI.ErrorState({ onRetry: () => location.reload() }), protoNote())
+            return
+          }
+          const empty = result.kind === 'empty'
+          const i0 = d.dates.indexOf(lastValid.from)
+          const i1 = d.dates.indexOf(lastValid.to)
+          const outlets = empty ? [] : d.outlets.map((o, k) => {
+            const pick = (n) => sumRange(d.outletDaily[k], i0, i1, (c) => c[n])
+            return { ...o, analysed: pick(0), news: pick(1), cbKnown: pick(2), cbYes: pick(3) }
+          }).filter((o) => o.analysed > 0)
+          const analysed = empty || topics.kind !== 'data' ? 0 : topics.data.issueDaily.reduce((s, daily) => s + sumRange(daily, i0, i1), 0)
+          // K07: all stories with 3 or more rows in the range. storyDays holds flat pairs [day, rows, ...].
+          const storyCount = empty ? 0 : d.storyDays.filter((pairs) => {
+            let n = 0
+            for (let j = 0; j < pairs.length; j += 2) if (pairs[j] >= i0 && pairs[j] <= i1) n += pairs[j + 1]
+            return n >= 3
+          }).length
+          // The table lists only the 40 largest stories of the window.
+          const stories = empty ? [] : d.stories.map((s) => ({ ...s, count: sumRange(s.daily, i0, i1) })).filter((s) => s.count >= 3)
+          const softIssues = new Set(d.issues.filter((i) => i.soft).map((i) => i.el))
+          const period = fmt.period(lastValid.from, lastValid.to)
+
+          const tiles = UI.KpiStrip([
+            UI.KpiTile({ kpiId: 'K05', label: t('media.k05'), value: fmt.int(outlets.length), hint: `${t('media.k05.hint')} · ${period}`, emptyText: t('media.k05.empty'), state: outlets.length ? 'ready' : 'empty' }),
+            UI.KpiTile({ kpiId: 'K06', label: t('media.k06'), value: fmt.int(analysed), hint: t('media.k06.hint'), emptyText: t('media.k06.empty'), state: analysed ? 'ready' : 'empty' }),
+            UI.KpiTile({ kpiId: 'K07', label: t('media.k07'), value: fmt.int(storyCount), hint: `${t('media.k07.hint')} · ${period}`, emptyText: t('media.k07.empty'), state: storyCount ? 'ready' : 'empty' })
+          ])
+
+          const q = view.query.trim().toLocaleLowerCase('el')
+          const match = (text) => !q || text.toLocaleLowerCase('el').includes(q)
+          const name = (x) => x[App.locale] || x.el
+          const clear = h('button', { type: 'button', class: 'button', onClick: () => { view.query = ''; view.newsOnly = false; draw() } }, t('state.clearFilters'))
+          const tableOf = (rows, columns) => UI.DataTable({ rows, columns, rankColumn: view.tab !== 'people', emptyText: t('media.empty'), emptyAction: clear })
+
+          let results
+          if (view.tab === 'outlets') {
+            results = tableOf(outlets.filter((o) => match(o.name)).sort((a, b) => b.analysed - a.analysed), [
+              { label: t('media.col.outlet'), render: (o) => (o.slug === '17661f5754' ? h('a', { href: 'outlet.html' }, o.name) : o.name) },
+              { label: t('media.col.group'), render: (o) => (o.group ? (slugOfGroup.has(o.group) ? h('a', { href: `group.html?g=${slugOfGroup.get(o.group)}` }, o.group) : o.group) : h('span', { class: 'mini-empty' }, t('media.col.group.none'))) },
+              { label: t('media.col.articles'), num: true, render: (o) => fmt.int(o.analysed) },
+              { label: t('media.col.news'), num: true, render: (o) => fmt.pct(o.news / o.analysed) },
+              { label: t('media.col.clickbait'), num: true, render: (o) => (o.cbKnown ? fmt.pct(o.cbYes / o.cbKnown) : h('span', { class: 'mini-empty' }, t('group.clickbait.none'))) }
+            ])
+          } else if (view.tab === 'issues') {
+            const rows = empty ? [] : d.issues.map((issue, k) => ({ issue, count: sumRange(d.issueDaily[k], i0, i1) }))
+              .filter((r) => r.count > 0 && (!view.newsOnly || !r.issue.soft) && match(name(r.issue))).sort((a, b) => b.count - a.count)
+            const base = rows.reduce((s, r) => s + r.count, 0)
+            results = tableOf(rows, [
+              { label: t('media.col.issue'), render: (r) => name(r.issue) },
+              { label: t('media.col.articles'), num: true, render: (r) => fmt.int(r.count) },
+              { label: t('media.col.share'), num: true, render: (r) => fmt.pct(r.count / base) },
+              { label: '', phone: false, render: (r) => UI.HBar(r.count / base, rows[0].count / base) }
+            ])
+          } else if (view.tab === 'stories') {
+            const rows = stories.filter((s) => (!view.newsOnly || !softIssues.has(s.issue)) && match(name(s))).sort((a, b) => b.count - a.count)
+            results = h('div', {}, h('p', { class: 'card-note' }, t('media.stories.note')), tableOf(rows, [
+              { label: t('media.col.story'), render: (s) => name(s) },
+              { label: t('media.col.issue'), key: 'issue' },
+              { label: t('media.col.articles'), num: true, render: (s) => fmt.int(s.count) }
+            ]))
+          } else {
+            results = h('div', {}, h('p', { class: 'card-note' }, t('media.people.note')), tableOf(d.people.filter((p) => match(p.name)), [
+              { label: t('media.col.person'), key: 'name' },
+              { label: t('media.col.role'), key: 'role' },
+              { label: t('media.col.party'), render: (p) => p.party || '' }
+            ]))
+          }
+          content.replaceChildren(header, tiles, filters, h('section', { class: 'card', 'aria-live': 'polite' }, results), protoNote())
+          if (focusSearch) { search.focus(); search.setSelectionRange(search.value.length, search.value.length) }
+        }
+        draw()
+      }
+    })
+
+    function protoNote () { return h('p', { class: 'proto-note' }, t('proto.states')) }
+  </script>
+</body>
+</html>

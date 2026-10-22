@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Απότυπος</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css?v=4">
+  <link rel="stylesheet" href="assets/app.css?v=11">
+  <link rel="stylesheet" href="assets/dash.css?v=52">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/icons.js?v=2"></script>
+  <script src="assets/messages.js?v=11"></script>
+  <script src="assets/messages-v2.js?v=27"></script>
+  <script src="assets/components.js?v=6"></script>
+  <script src="assets/dash.js?v=10"></script>
+  <script src="assets/shell.js?v=25"></script>
+  <script src="data/overton.js?v=1"></script>
+  <script>
+    // Topics, Μετατοπίσεις: when the way the coverage describes a topic changes. It reads the overton file (36 topics, 53 weeks of 2025).
+    // The file has no drift for each week. It has the strongest shift of each topic, its week and the articles of each week.
+    const { t, fmt, h, load } = App
+    const { fit, reset, niceStep, card, cardHead, emptyText, Stat, TopBar } = Dash
+    const shifts = load('overton', ['topics', 'weeks'], (b) => b.topics)
+
+    // Weekly articles of one topic. The dot is the week of the strongest shift. It is blue above the limit and gray below.
+    function WeekSpark (topic, weeks, limit) {
+      const w = 110
+      const hgt = 24
+      const max = Math.max(...topic.n, 1)
+      const x = (i) => 1 + (i / (topic.n.length - 1)) * (w - 2)
+      const y = (v) => hgt - 2 - (v / max) * (hgt - 4)
+      const at = weeks.indexOf(topic.week)
+      const label = t('shifts.spark', { topic: topic.label })
+      return h('svg', { class: 'spark', width: w, height: hgt, viewBox: `0 0 ${w} ${hgt}`, role: 'img', 'aria-label': label },
+        h('path', { class: 'spark-range', d: topic.n.map((v, k) => `${k ? 'L' : 'M'}${x(k).toFixed(1)} ${y(v).toFixed(1)}`).join(' ') }),
+        at >= 0 ? h('circle', { cx: x(at), cy: y(topic.n[at]), r: 3, fill: topic.ratio >= limit ? 'var(--emph-less)' : 'var(--bar-muted)', stroke: '#ffffff', 'stroke-width': 1.5 }) : null)
+    }
+
+    // Bars: how many topics had the strongest shift in each month of 2025.
+    function MonthChart ({ counts }) {
+      return fit((holder, width) => {
+        const height = 230
+        const pad = { top: 12, right: 8, bottom: 40, left: 30 }
+        const max = Math.max(...counts, 1)
+        const step = niceStep(max / 4)
+        const top = Math.ceil(max / step) * step
+        const plotW = width - pad.left - pad.right
+        const plotH = height - pad.top - pad.bottom
+        const bw = plotW / counts.length
+        const y = (v) => pad.top + plotH - (v / top) * plotH
+        const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
+        for (let v = 0; v <= top; v += step) svg.append(h('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: y(v), y2: y(v) }), h('text', { x: pad.left - 6, y: y(v) + 4, 'text-anchor': 'end' }, fmt.int(v)))
+        counts.forEach((v, i) => {
+          const month = fmt.date(`2025-${String(i + 1).padStart(2, '0')}-01`, { month: 'short' })
+          const bx = pad.left + i * bw + bw * 0.18
+          const text = t('shifts.month.tip', { month, n: fmt.int(v) })
+          if (v) svg.append(h('rect', { x: bx, y: y(v), width: bw * 0.64, height: pad.top + plotH - y(v), rx: 3, fill: 'var(--series-news)' }))
+          svg.append(h('text', { x: pad.left + i * bw + bw / 2, y: height - 20, 'text-anchor': 'middle' }, month))
+          const hit = h('rect', { class: 'hit', x: pad.left + i * bw, y: pad.top, width: bw, height: plotH + 20 })
+          hit.addEventListener('pointermove', (e) => UI.showTooltip(text, e.clientX, e.clientY))
+          hit.addEventListener('pointerleave', () => UI.hideTooltip())
+          svg.append(hit)
+        })
+        svg.append(h('text', { class: 'axis-month', x: pad.left + plotW / 2, y: height - 4, 'text-anchor': 'middle' }, t('shifts.month.axis')))
+        holder.replaceChildren(svg)
+      })
+    }
+
+    Shell.start({
+      id: 'topics',
+      route: '/overton',
+      dash: true,
+      title: () => t('tab.topics.overton'),
+      breadcrumbs: () => [{ label: t('nav.topics') }, { label: t('tab.topics.overton') }],
+      render (content, { tabs }) {
+        content.classList.add('dash', 'minimal')
+        reset()
+        const bar = TopBar({ title: t('tab.topics.overton'), tabs, quiet: true })
+        if (shifts.kind !== 'data') {
+          content.replaceChildren(bar, shifts.kind === 'empty' ? h('div', { class: 'dash-grid' }, card('c-12', UI.EmptyState({ text: t('shifts.empty') }))) : UI.ErrorState({ onRetry: () => location.reload() }), protoNote())
+          return
+        }
+
+        const d = shifts.data
+        const name = (x) => x.label
+        const limit = d.threshold
+        const rows = d.topics.slice().sort((a, b) => b.ratio - a.ratio)
+        const moved = rows.filter((r) => r.ratio >= limit)
+        const strongest = rows[0]
+        const weekDate = (iso) => fmt.date(iso, { day: 'numeric', month: 'short' })
+        const counts = new Array(12).fill(0)
+        moved.forEach((r) => { counts[Number(r.week.slice(5, 7)) - 1]++ })
+
+        const ratio = (v) => `${new Intl.NumberFormat('el-GR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}×`
+        const statTopics = Stat({ label: t('shifts.stat.topics'), value: fmt.int(rows.length), sub: t('shifts.stat.topics.sub') })
+        const statShifts = Stat({ label: t('shifts.stat.shifts'), value: fmt.int(moved.length), sub: t('shifts.stat.shifts.sub', { n: fmt.dec(limit) }) })
+        const statTop = Stat({ label: t('shifts.stat.top'), value: ratio(strongest.ratio), sub: t('shifts.stat.top.sub', { topic: name(strongest), date: fmt.date(strongest.week, { day: 'numeric', month: 'short', year: 'numeric' }) }) })
+
+        const table = card('c-8', cardHead(t('shifts.table.title'), null, t('shifts.table.info')),
+          h('p', { class: 'dcard-sub' }, t('shifts.table.sub', { from: fmt.date(d.window[0]), to: fmt.date(d.window[1]) })),
+          UI.DataTable({
+            rows, rankColumn: true, pageSize: rows.length, emptyText: t('shifts.empty'),
+            columns: [
+              { label: t('media.col.issue'), render: (r) => h('span', { class: 'nowrap' }, name(r)) },
+              { label: t('shifts.col.shift'), num: true, render: (r) => (r.ratio >= limit ? h('span', { class: 'delta' }, ratio(r.ratio)) : h('span', { class: 'mini-empty', title: t('shifts.below') }, ratio(r.ratio))) },
+              { label: t('shifts.col.week'), render: (r) => h('span', { class: 'nowrap' }, fmt.date(r.week, { day: 'numeric', month: 'short' })) },
+              { label: t('shifts.col.articles'), num: true, phone: false, render: (r) => fmt.int(r.size) },
+              { label: t('shifts.col.trend'), phone: false, render: (r) => WeekSpark(r, d.weeks, limit) }
+            ]
+          }))
+        const monthCard = card('c-4', cardHead(t('shifts.month.title'), null, t('shifts.month.info')), MonthChart({ counts }))
+
+        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, statTopics, statShifts, statTop, table, h('div', { class: 'c-4 card-col' }, monthCard)), protoNote())
+      }
+    })
+
+    function protoNote () { return h('p', { class: 'proto-note' }, t('proto.states')) }
+  </script>
+</body>
+</html>

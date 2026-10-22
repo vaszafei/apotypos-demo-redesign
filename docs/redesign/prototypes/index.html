@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Απότυπος</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css?v=4">
+  <link rel="stylesheet" href="assets/app.css?v=11">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/icons.js?v=2"></script>
+  <script src="assets/messages.js?v=11"></script>
+  <script src="assets/components.js?v=6"></script>
+  <script src="assets/shell.js?v=25"></script>
+  <script src="data/home.js"></script>
+  <script>
+    // Home: Dashboard with a period that varies. The header shows the RangeControl and the update date.
+    const { t, fmt, h, load } = App
+    const result = load('home', ['dates', 'outlets', 'issues', 'issueDaily'], (b) => b.dates)
+    const range = { from: '2026-08-01', to: '2026-09-30' }
+    let lastValid = { ...range }
+
+    function sumRange (daily, i0, i1) {
+      let s = 0
+      for (let i = i0; i <= i1; i++) s += daily[i]
+      return s
+    }
+
+    Shell.start({
+      id: 'home',
+      route: '/',
+      title: () => t('home.title'),
+      breadcrumbs: () => [],
+      render (content) {
+        const draw = () => {
+          const data = result.data
+          const dates = data?.dates ?? []
+          const presets = UI.periodPresets()
+          const controls = result.kind === 'data' || result.kind === 'empty'
+            ? UI.RangeControl({ dates, from: range.from, to: range.to, presets, onChange: (r) => { Object.assign(range, r); if (r.from <= r.to) lastValid = { ...r }; draw() } })
+            : null
+          const makeHeader = (meta) => UI.PageHeader({ title: t('home.title'), meta, controls, updatedAt: result.kind === 'data' ? data.updatedAt : null })
+
+          if (result.kind === 'failed' || result.kind === 'notFound') {
+            content.replaceChildren(makeHeader(null), UI.ErrorState({ onRetry: () => location.reload() }), protoNote())
+            return
+          }
+          const empty = result.kind === 'empty'
+          const i0 = dates.indexOf(lastValid.from)
+          const i1 = dates.indexOf(lastValid.to)
+          const len = i1 - i0 + 1
+
+          const collected = empty ? 0 : data.outlets.reduce((s, o) => s + sumRange(o.daily, i0, i1), 0)
+          const previous = !empty && i0 - len >= 0 ? data.outlets.reduce((s, o) => s + sumRange(o.daily, i0 - len, i0 - 1), 0) : null
+          const outletsActive = empty ? 0 : data.outlets.filter((o) => sumRange(o.daily, i0, i1) > 0).length
+          const issueCounts = empty ? [] : data.issues.map((issue, k) => ({ issue, count: sumRange(data.issueDaily[k], i0, i1) }))
+          const analysed = issueCounts.reduce((s, x) => s + x.count, 0)
+          const news = issueCounts.filter((x) => !x.issue.soft).sort((a, b) => b.count - a.count)
+          const newsTotal = news.reduce((s, x) => s + x.count, 0)
+          const period = fmt.period(lastValid.from, lastValid.to)
+          const name = (issue) => issue[App.locale] || issue.el
+
+          const tiles = UI.KpiStrip([
+            UI.KpiTile({ kpiId: 'K01', label: t('home.k01'), value: fmt.int(collected), hint: null, emptyText: t('home.k01.empty'), state: collected ? 'ready' : 'empty',
+              change: previous ? t('change.vsPrevious', { sign: '', value: fmt.signed(((collected - previous) / previous) * 100) + '%' }) : null }),
+            UI.KpiTile({ kpiId: 'K02', label: t('home.k02'), value: fmt.int(outletsActive), hint: t('home.k02.hint'), emptyText: t('home.k02.empty'), state: outletsActive ? 'ready' : 'empty' }),
+            UI.KpiTile({ kpiId: 'K03', label: t('home.k03'), value: analysed ? fmt.pct(newsTotal / analysed) : '', hint: t('home.k03.hint', { news: fmt.int(newsTotal), analysed: fmt.int(analysed) }), emptyText: t('home.k03.empty'), state: analysed ? 'ready' : 'empty' }),
+            UI.KpiTile({ kpiId: 'K04', label: t('home.k04'), value: newsTotal ? fmt.pct(news[0].count / newsTotal) : '', hint: newsTotal ? t('home.k04.hint', { issue: name(news[0].issue) }) : null, emptyText: t('home.k03.empty'), state: newsTotal ? 'ready' : 'empty' })
+          ])
+
+          const daily = empty ? [] : dates.slice(i0, i1 + 1).map((d, j) => ({ key: d, value: data.outlets.reduce((s, o) => s + o.daily[i0 + j], 0) }))
+          const dailyCard = UI.ChartCard({
+            title: t('home.daily.title'), note: t('home.daily.note'),
+            body: daily.length ? UI.BarChart({ values: daily, label: t('home.daily.title'), tooltipOf: (v) => `${fmt.date(v.key)}: ${fmt.int(v.value)}`, tickEvery: len > 20 ? 7 : 2 }) : UI.EmptyState({ text: t('home.k01.empty') })
+          })
+          const topicsCard = UI.ChartCard({
+            title: t('home.topics.title'), note: t('home.topics.note'),
+            body: UI.DataTable({
+              rankColumn: true, emptyText: t('home.topics.empty'),
+              rows: news.filter((x) => x.count > 0),
+              columns: [
+                { label: t('home.col.issue'), render: (r) => name(r.issue) },
+                { label: t('home.col.articles'), num: true, render: (r) => fmt.int(r.count) },
+                { label: t('home.col.share'), num: true, render: (r) => fmt.pct(r.count / newsTotal) },
+                { label: '', phone: false, render: (r) => UI.HBar(r.count / newsTotal, news[0].count / newsTotal) }
+              ]
+            })
+          })
+          content.replaceChildren(makeHeader([period, t('home.meta.outlets', { n: fmt.int(outletsActive) })]), tiles, dailyCard, topicsCard, protoNote())
+        }
+        draw()
+      }
+    })
+
+    function protoNote () { return h('p', { class: 'proto-note' }, t('proto.states')) }
+  </script>
+</body>
+</html>

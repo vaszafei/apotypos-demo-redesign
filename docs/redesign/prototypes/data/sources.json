@@ -1,0 +1,104 @@
+{
+ "reads": [
+  {
+   "url": "https://apotypos.org/topics-data/aug_sep_2026/facts.json",
+   "status": 200,
+   "read_at": "2026-10-21T09:55:07Z",
+   "last_modified": "Tue, 20 Oct 2026 19:34:59 GMT",
+   "bytes": 6944550
+  },
+  {
+   "url": "https://apotypos.org/topics-data/aug_sep_2026/volume.json",
+   "status": 200,
+   "read_at": "2026-10-21T09:55:07Z",
+   "last_modified": "Tue, 20 Oct 2026 19:34:59 GMT",
+   "bytes": 10928
+  },
+  {
+   "url": "https://apotypos.org/media-data/aug_sep_2026/facts.json",
+   "status": 200,
+   "read_at": "2026-10-19T13:45:30Z",
+   "last_modified": "Mon, 05 Oct 2026 16:24:31 GMT",
+   "bytes": 6919888
+  },
+  {
+   "url": "https://apotypos.org/media-data/aug_sep_2026/outlets/17661f5754.json",
+   "status": 200,
+   "read_at": "2026-10-19T13:45:31Z",
+   "last_modified": "Mon, 05 Oct 2026 16:24:31 GMT",
+   "bytes": 272203
+  },
+  {
+   "url": "https://apotypos.org/gaza-data/aug_sep_2026/index.json",
+   "status": 200,
+   "read_at": "2026-10-19T13:45:31Z",
+   "last_modified": "Mon, 05 Oct 2026 16:24:32 GMT",
+   "bytes": 119467
+  },
+  {
+   "url": "https://apotypos.org/api/analytics/fingerprints?days=30&top=10",
+   "status": 200,
+   "read_at": "2026-10-19T13:45:31Z",
+   "last_modified": null,
+   "bytes": 48674
+  },
+  {
+   "url": "https://apotypos.org/api/groups?days=30",
+   "status": 200,
+   "read_at": "2026-10-19T13:45:31Z",
+   "last_modified": null,
+   "bytes": 3941
+  },
+  {
+   "url": "https://apotypos.org/api/analytics/owner-interest-bias",
+   "status": 200,
+   "read_at": "2026-10-19T13:45:31Z",
+   "last_modified": null,
+   "bytes": 5072
+  },
+  {
+   "url": "https://apotypos.org/api/analytics/stance-ratings?days=30&top=15",
+   "status": 200,
+   "read_at": "2026-10-19T13:48:34Z",
+   "last_modified": null,
+   "bytes": 74843
+  },
+  {
+   "url": "https://apotypos.org/methodology",
+   "status": 200,
+   "read_at": "2026-10-19T13:45:31Z",
+   "last_modified": null,
+   "bytes": 249775
+  },
+  {
+   "url": "https://apotypos.org/api/analytics/originality",
+   "status": 200,
+   "read_at": "2026-10-21T10:47:48Z",
+   "last_modified": null,
+   "bytes": 1127
+  },
+  {
+   "url": "https://apotypos.org/api/campaigns/detect",
+   "status": 200,
+   "read_at": "2026-10-21T10:47:48Z",
+   "last_modified": null,
+   "bytes": 3214
+  }
+ ],
+ "fixture_bytes": {
+  "home": 19099,
+  "media": 180541,
+  "outlet": 19145,
+  "gaza": 9422,
+  "groups": 10850,
+  "fingerprints": 7188,
+  "peopleMatrix": 10208,
+  "stanceRatings": 9835,
+  "interests": 3027,
+  "methodology": 21534,
+  "stories": 823997,
+  "storyDetail": 1045049,
+  "originality": 617,
+  "campaigns": 2984
+ }
+}

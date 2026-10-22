@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Απότυπος</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css?v=4">
+  <link rel="stylesheet" href="assets/app.css?v=11">
+  <link rel="stylesheet" href="assets/dash.css?v=52">
+  <link rel="stylesheet" href="assets/politics.css?v=1">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/icons.js?v=2"></script>
+  <script src="assets/messages.js?v=11"></script>
+  <script src="assets/messages-v2.js?v=27"></script>
+  <script src="assets/messages-politics.js?v=1"></script>
+  <script src="assets/components.js?v=6"></script>
+  <script src="assets/dash.js?v=10"></script>
+  <script src="assets/politics.js?v=1"></script>
+  <script src="assets/shell.js?v=25"></script>
+  <script src="data/speeches.js?v=1"></script>
+  <script>
+    // Πολιτική, ΟΗΕ: the 192 speeches of the 81st General Assembly (K47 and 3 kept tiles). Words and countries move to the hints.
+    // The region pills in the top bar filter every card.
+    const { t, fmt, h, load } = App
+    const { reset, card, cardHead, Stat, TopBar, SLOTS } = Dash
+    const { Rows, dataName } = Politics
+    const result = load('speeches', ['rows', 'agenda'], (b) => b.rows)
+    const REGIONS = ['Africa', 'Europe', 'Asia-Pacific', 'Latin America & Caribbean', 'Middle East', 'North America']
+    const DOMESTIC = 'Domestic affairs'
+    const TONES = ['hostile', 'critical', 'neutral', 'conciliatory', 'supportive']
+    let region = ''
+
+    Shell.start({
+      id: 'speeches',
+      route: '/speeches',
+      dash: true,
+      title: () => t('nav.politics'),
+      breadcrumbs: () => [{ label: t('nav.politics') }, { label: t('tab.politics.speeches') }],
+      render (content, { tabs }) {
+        content.classList.add('dash', 'minimal')
+        const paint = () => {
+          const title = t('tab.politics.speeches')
+          const problem = Dash.stateContent([result], { title, tabs, quiet: true })
+          if (problem) { content.replaceChildren(...problem); return }
+          const d = result.data
+          const rows = d.rows.filter((r) => !region || r.region === region)
+          const topic = (x) => dataName('un.topic', x)
+          const pills = h('div', { class: 'region-pills', role: 'group', 'aria-label': t('un.regions') },
+            [['', t('un.region.all'), d.rows.length], ...REGIONS.map((r) => [r, t(`un.region.${r}`), d.rows.filter((x) => x.region === r).length])].map(([value, label, n]) =>
+              h('button', { type: 'button', 'aria-pressed': String(region === value), onClick: () => { region = value; paint() } }, `${label} `, h('span', { class: 'muted-text' }, fmt.int(n)))))
+          const bar = TopBar({ title, tabs, quiet: true, actions: [pills] })
+
+          const sum = (k) => rows.reduce((a, r) => a + r.counts[k], 0)
+          const wide = (stat) => { stat.classList.replace('c-4', 'c-3'); return stat }
+          const stats = [
+            wide(Stat({ label: t('un.stat.hours'), value: fmt.dec(rows.reduce((a, r) => a + r.seconds, 0) / 3600), sub: t('un.stat.hours.sub', { n: fmt.int(rows.length), w: fmt.int(rows.reduce((a, r) => a + r.words, 0)) }) })),
+            wide(Stat({ kpi: 'K47', label: t('un.stat.claims'), value: fmt.int(sum('claims')), sub: t('un.stat.claims.sub') })),
+            wide(Stat({ label: t('un.stat.promises'), value: fmt.int(sum('promises')), sub: t('un.stat.promises.sub') })),
+            wide(Stat({ label: t('un.stat.attacks'), value: fmt.int(sum('attacks')), sub: t('un.stat.attacks.sub') }))
+          ]
+
+          // The agenda of the region: from the full totals for all regions, from the top topics of each speech for one region.
+          const agenda = region
+            ? Object.values(rows.reduce((acc, r) => {
+              r.shares.forEach(([k, s]) => {
+                const m = (s * r.seconds) / 60
+                const e = acc[k] || (acc[k] = { topic: k, minutes: 0, leaders: 0, top: [] })
+                e.minutes += m
+                e.leaders += m >= 1
+                e.top.push([m, r.speaker])
+              })
+              return acc
+            }, {})).map((e) => ({ ...e, top: e.top.sort((a, b) => b[0] - a[0]).slice(0, 3).map((x) => x[1]) })).sort((a, b) => b.minutes - a.minutes)
+            : d.agenda
+          const shown = agenda.filter((a) => a.topic !== DOMESTIC).slice(0, 12)
+          const agendaCard = card('c-7', cardHead(t('un.agenda.title'), null, t('un.agenda.info', { n: fmt.int(d.topics) })),
+            Rows(shown.map((a) => ({ label: topic(a.topic), sub: t('un.agenda.top', { names: a.top.join(', ') }), value: a.minutes, text: t('un.agenda.value', { m: fmt.int(Math.round(a.minutes)), n: fmt.int(a.leaders) }) })), { cls: 'rows-wrap' }))
+
+          const targets = {}
+          // Two names of the data can have one Greek name (for example Western nations and Western countries). The shown name is the key.
+          rows.forEach((r) => new Map(r.targets.map(([k, n]) => [dataName('un.target', k), n])).forEach((n, k) => { const e = targets[k] || (targets[k] = { n: 0, leaders: 0 }); e.n += n; e.leaders++ }))
+          const targetRows = Object.entries(targets).sort((a, b) => b[1].n - a[1].n).slice(0, 8)
+          const targetCard = card('', cardHead(t('un.targets.title'), null, t('un.targets.info')),
+            Rows(targetRows.map(([k, e]) => ({ label: k, value: e.n, text: t('un.targets.value', { n: fmt.int(e.n), l: fmt.int(e.leaders) }), color: 'var(--stance-critical)' }))))
+
+          const greek = rows.filter((r) => r.greece.n).sort((a, b) => b.greece.n - a.greece.n)
+          const greeceCard = card('', cardHead(t('un.greece.title'), null, t('un.greece.info')),
+            greek.length
+              ? h('ul', { class: 'target-list' }, greek.map((r) => h('li', {},
+                h('span', {}, h('strong', {}, r.speaker), ' ', h('span', { class: 'muted-text' }, `${r.role}, ${r.country} · ${t('un.greece.refs', { n: fmt.int(r.greece.n) })}`)),
+                h('span', { class: 'chips' }, TONES.filter((k) => r.greece.tones[k]).map((k) => h('span', { class: `target-chip tone-${k}` }, t(`un.tone.${k}`), h('strong', {}, fmt.int(r.greece.tones[k])))),
+                  r.greece.refers_to.map((x) => h('span', { class: 'pill' }, x))))))
+              : h('p', { class: 'dcard-empty' }, t('un.greece.none')))
+
+          // The fingerprint of each speech. The 8 largest topics of all speeches have a fixed color, the domestic affairs are dark gray.
+          const colorOf = new Map(d.agenda.filter((a) => a.topic !== DOMESTIC).slice(0, SLOTS.length).map((a, i) => [a.topic, SLOTS[i]]))
+          colorOf.set(DOMESTIC, '#5c5a55')
+          const segColor = (k) => colorOf.get(k) || '#d6d2c8'
+          const legend = h('span', { class: 'stance-key' }, [...colorOf.keys()].map((k) => h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: colorOf.get(k) } }), topic(k))),
+            h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: '#d6d2c8' } }), t('un.other')))
+          const Print = (r) => {
+            const rest = Math.max(0, 1 - r.shares.reduce((a, [, s]) => a + s, 0))
+            const label = r.shares.map(([k, s]) => `${topic(k)} ${fmt.pct(s)}`).join(', ')
+            return h('div', { class: 'print', role: 'img', 'aria-label': label, title: label },
+              r.shares.map(([k, s]) => h('span', { style: `width:${s * 100}%;--seg:${segColor(k)}` })),
+              rest > 0.01 ? h('span', { style: `width:${rest * 100}%;--seg:#ebe8e1` }) : null)
+          }
+          const sorted = rows.slice().sort((a, b) => b.seconds - a.seconds)
+          const tableCard = card('c-12', cardHead(t('un.table.title'), null, t('un.table.info')), legend,
+            UI.DataTable({
+              rows: sorted, rankColumn: true, pageSize: 25, moreStep: 25,
+              columns: [
+                { label: t('un.col.leader'), render: (r) => h('span', { class: 'leader-cell' }, h('a', { class: 'quiet-link', href: r.url, target: '_blank', rel: 'noopener' }, r.speaker), h('span', { class: 'row-sub' }, `${r.role} · ${r.country}`)) },
+                { label: t('un.col.minutes'), num: true, render: (r) => fmt.int(Math.round(r.seconds / 60)) },
+                { label: t('un.col.wpm'), num: true, phone: false, render: (r) => fmt.int(Math.round(r.words / (r.seconds / 60))) },
+                { label: t('un.col.print'), phone: false, render: Print },
+                { label: t('un.col.top'), phone: false, render: (r) => { const top = r.shares.find(([k]) => k !== DOMESTIC) || r.shares[0]; return top ? h('span', { class: 'nowrap' }, `${topic(top[0])} `, h('span', { class: 'muted-text' }, fmt.pct(top[1]))) : '–' } },
+                { label: t('un.col.claims'), num: true, render: (r) => fmt.int(r.counts.claims) },
+                { label: t('un.col.promises'), num: true, phone: false, render: (r) => fmt.int(r.counts.promises) },
+                { label: t('un.col.attacks'), num: true, phone: false, render: (r) => fmt.int(r.counts.attacks) }
+              ]
+            }))
+
+          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...stats, agendaCard, h('div', { class: 'c-5 card-col' }, targetCard, greeceCard), tableCard), h('p', { class: 'proto-note' }, t('un.note')))
+        }
+        paint()
+      }
+    })
+    reset()
+  </script>
+</body>
+</html>

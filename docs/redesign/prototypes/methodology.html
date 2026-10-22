@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Απότυπος</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css?v=4">
+  <link rel="stylesheet" href="assets/app.css?v=11">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/icons.js?v=2"></script>
+  <script src="assets/messages.js?v=11"></script>
+  <script src="assets/components.js?v=6"></script>
+  <script src="assets/shell.js?v=25"></script>
+  <script src="data/methodology.js"></script>
+  <script>
+    // Methodology: Text page. The text comes from the current page and exists only in Greek.
+    const { t, h, load } = App
+    const result = load('methodology', ['sections'], (b) => b.sections)
+
+    Shell.start({
+      id: 'methodology',
+      title: () => t('meth.title'),
+      breadcrumbs: () => [{ label: t('meth.title') }],
+      render (content) {
+        // The Text type has no empty state (page-types.md), so ?state=empty shows the text.
+        if (result.kind === 'failed' || result.kind === 'notFound') { content.replaceChildren(UI.ErrorPage({ status: 500 })); return }
+        const [intro, ...sections] = result.data.sections
+        // make-fixtures.py gives the headings in sentence case with their accents.
+        const title = (s) => s.heading
+        const anchor = (i) => `s${i + 1}`
+        content.replaceChildren(
+          UI.PageHeader({ title: t('meth.title'), hint: intro.paragraphs[0] }),
+          App.locale !== 'el' ? UI.DataNotice({ text: t('meth.langNote') }) : '',
+          h('nav', { class: 'toc', 'aria-labelledby': 'toc-title', lang: App.locale },
+            h('h2', { class: 'kpi-label', id: 'toc-title' }, t('meth.toc')),
+            h('ol', { lang: 'el' }, sections.map((s, i) => h('li', {}, h('a', { href: `#${anchor(i)}` }, title(s)))))),
+          h('article', { class: 'text-column', lang: 'el' }, sections.map((s, i) => [
+            h('h2', { id: anchor(i) }, title(s)),
+            s.paragraphs.map((p) => h('p', {}, p))
+          ])))
+      }
+    })
+  </script>
+</body>
+</html>

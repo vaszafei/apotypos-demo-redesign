@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Απότυπος</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css?v=4">
+  <link rel="stylesheet" href="assets/app.css?v=11">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/icons.js?v=2"></script>
+  <script src="assets/messages.js?v=11"></script>
+  <script src="assets/components.js?v=6"></script>
+  <script src="assets/shell.js?v=25"></script>
+  <script src="data/groups.js"></script>
+  <script>
+    // Ιδιοκτησία (APO-161): Ranked list of the groups. The group, the owner and the articles come from the static files,
+    // so the period is fixed (1 Aug to 30 Sep 2026): no RangeControl and no date in the header. The hint of each KPI shows the period.
+    const { t, fmt, h, load } = App
+    const result = load('groups', ['groups', 'ungrouped', 'totalCollected', 'window'], (b) => b.groups)
+    const view = { mode: 'list' }
+
+    Shell.start({
+      id: 'groups',
+      route: '/groups',
+      title: () => t('groups.title'),
+      breadcrumbs: () => [{ label: t('groups.title') }],
+      render (content) {
+        const draw = () => {
+          const focused = [...document.querySelectorAll('.segmented button')].indexOf(document.activeElement)
+          if (result.kind === 'failed' || result.kind === 'notFound') {
+            content.replaceChildren(UI.PageHeader({ kicker: t('groups.kicker'), title: t('groups.title') }), UI.ErrorState({ onRetry: () => location.reload() }), protoNote())
+            return
+          }
+          const d = result.data
+          const period = fmt.period(d.window[0], d.window[1])
+          const empty = result.kind === 'empty'
+          const groups = empty ? [] : d.groups.filter((g) => g.collected > 0)
+          const total = empty ? 0 : d.totalCollected
+          const grouped = groups.reduce((s, g) => s + g.collected, 0)
+          const groupedOutlets = groups.reduce((s, g) => s + g.outlets.filter((o) => o.collected > 0).length, 0)
+          const allOutlets = groupedOutlets + (empty ? 0 : d.ungrouped.length)
+          const top3 = groups.slice(0, 3).reduce((s, g) => s + g.collected, 0)
+          const ungroupedTotal = empty ? 0 : d.ungrouped.reduce((s, o) => s + o.collected, 0)
+
+          const header = UI.PageHeader({
+            kicker: t('groups.kicker'), title: t('groups.title'),
+            hint: empty ? null : t('groups.hint', { groups: fmt.int(groups.length), outlets: fmt.int(groupedOutlets), all: fmt.int(allOutlets), period })
+          })
+
+          const tiles = UI.KpiStrip([
+            UI.KpiTile({ kpiId: 'K35', label: t('groups.k.groups'), value: fmt.int(groups.length), hint: t('groups.k.groups.hint', { period }), emptyText: t('groups.k.groups.empty'), state: groups.length ? 'ready' : 'empty' }),
+            UI.KpiTile({ kpiId: 'K49', label: t('groups.k.known'), value: total ? fmt.pct(grouped / total) : '', hint: t('groups.k.known.hint', { outlets: fmt.int(groupedOutlets), all: fmt.int(allOutlets), period }), emptyText: t('groups.k.known.empty'), state: total ? 'ready' : 'empty' }),
+            UI.KpiTile({ kpiId: 'K37', label: t('groups.k.top3'), value: total ? fmt.pct(top3 / total) : '', hint: t('groups.k.top3.hint', { period }), emptyText: t('groups.k.top3.empty'), state: total ? 'ready' : 'empty' })
+          ])
+
+          const hrefOf = (g) => `group.html?g=${g.slug}`
+          const outletHref = (o) => (o.slug === '17661f5754' ? 'outlet.html' : null)
+
+          const table = UI.ChartCard({
+            title: t('groups.table.title'), note: t('groups.table.note', { period }),
+            body: h('div', {},
+              UI.DataTable({
+                rows: groups, rankColumn: true, emptyText: t('groups.empty'),
+                columns: [
+                  { label: t('groups.col.group'), render: (g) => h('a', { href: hrefOf(g) }, g.name) },
+                  { label: t('groups.col.owner'), key: 'owner' },
+                  { label: t('groups.col.lean'), render: (g) => g.lean || h('span', { class: 'mini-empty' }, t('groups.lean.none')) },
+                  { label: t('groups.col.outlets'), num: true, render: (g) => fmt.int(g.outlets.length) },
+                  { label: t('groups.col.articles'), num: true, render: (g) => fmt.int(g.collected) },
+                  { label: t('groups.col.share'), num: true, render: (g) => fmt.pct(g.collected / total) },
+                  { label: '', phone: false, render: (g) => UI.HBar(g.collected / total, groups[0].collected / total) }
+                ]
+              }),
+              groups.length ? h('p', { class: 'card-footnote' }, t('groups.table.none', { n: fmt.int(d.ungrouped.length), articles: fmt.int(ungroupedTotal), share: fmt.pct(ungroupedTotal / total) })) : null)
+          })
+
+          let mapCard = null
+          if (groups.length) {
+            const max = Math.max(...groups.flatMap((g) => g.outlets.map((o) => o.collected)), ...d.ungrouped.map((o) => o.collected))
+            const owners = groups.map((g) => ({
+              title: g.name, href: hrefOf(g), subtitle: g.owner,
+              shareText: `${fmt.pct(g.collected / total)} · ${t('groups.map.outlets', { n: fmt.int(g.outlets.length) })}`,
+              outlets: g.outlets.map((o) => ({ name: o.name, href: outletHref(o), value: o.collected, valueText: fmt.int(o.collected) }))
+            }))
+            owners.push({
+              title: null, shareText: `${fmt.pct(ungroupedTotal / total)} · ${t('groups.map.outlets', { n: fmt.int(d.ungrouped.length) })}`,
+              outlets: d.ungrouped.map((o) => ({ name: o.name, href: outletHref(o), value: o.collected, valueText: fmt.int(o.collected) }))
+            })
+            mapCard = UI.ChartCard({
+              title: t('groups.map.title'), note: t('groups.map.note', { period }),
+              body: UI.OwnershipMap({ groups: owners, max, caption: t('groups.map.title'), emptyOwner: t('groups.map.owner.none') })
+            })
+          }
+
+          const switcher = groups.length
+            ? h('div', { class: 'view-controls hide-phone' }, UI.SegmentedControl({
+              label: t('groups.view'), value: view.mode, onChange: (mode) => { view.mode = mode; draw() },
+              options: [{ value: 'list', label: t('groups.view.list') }, { value: 'map', label: t('groups.view.map') }]
+            }))
+            : null
+
+          const record = h('p', { class: 'record-note' }, t('groups.record', { source: d.record.source, date: fmt.date(d.record.exportedAt) }))
+          content.replaceChildren(header, tiles, switcher,
+            h('div', { class: 'view-wrap', 'data-view': view.mode },
+              h('div', { class: 'view-list' }, table),
+              mapCard && h('div', { class: 'view-map' }, mapCard)),
+            record, protoNote())
+          if (focused >= 0) document.querySelectorAll('.segmented button')[focused]?.focus()
+        }
+        draw()
+      }
+    })
+
+    function protoNote () { return h('p', { class: 'proto-note' }, t('proto.states')) }
+  </script>
+</body>
+</html>

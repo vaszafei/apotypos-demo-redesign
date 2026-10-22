@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Απότυπος</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css?v=4">
+  <link rel="stylesheet" href="assets/app.css?v=11">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/icons.js?v=2"></script>
+  <script src="assets/messages.js?v=11"></script>
+  <script src="assets/components.js?v=6"></script>
+  <script src="assets/shell.js?v=25"></script>
+  <script src="data/gaza.js"></script>
+  <script>
+    // Gaza: Dashboard with a fixed period. The header shows no date. The hint of each KPI shows the period.
+    const { t, fmt, h, load } = App
+    const result = load('gaza', ['window', 'nGaza', 'total', 'daily', 'peaks', 'outlets', 'overall'], (b) => b.daily.filter((d) => d.gaza > 0))
+
+    Shell.start({
+      id: 'gaza',
+      route: '/gaza',
+      title: () => t('gaza.title'),
+      breadcrumbs: () => [{ label: t('tab.world.gaza') }],
+      render (content) {
+        const header = UI.PageHeader({ kicker: t('gaza.kicker'), title: t('gaza.title'), hint: t('gaza.hint') })
+        if (result.kind === 'failed' || result.kind === 'notFound') {
+          content.replaceChildren(header, UI.ErrorState({ onRetry: () => location.reload() }), protoNote())
+          return
+        }
+        const d = result.data
+        const empty = result.kind === 'empty'
+        const period = fmt.period(d.window[0], d.window[1])
+        const peak = d.peaks[0]
+
+        const tiles = UI.KpiStrip([
+          UI.KpiTile({ kpiId: 'K24', label: t('gaza.k24'), value: fmt.int(d.nGaza), hint: t('gaza.k24.hint', { rate: fmt.dec((d.nGaza / d.total) * 1000), period }), emptyText: t('gaza.k24.empty'), state: empty ? 'empty' : 'ready' }),
+          UI.KpiTile({ kpiId: 'K25', label: t('gaza.k25'), value: fmt.int(peak.gaza), hint: t('gaza.k25.hint', { date: fmt.date(peak.date), period }), emptyText: t('gaza.k25.empty'), state: empty ? 'empty' : 'ready' }),
+          UI.KpiTile({ kpiId: 'K26', label: t('gaza.k26'), value: fmt.int(d.fullOutlets), hint: t('gaza.k26.hint', { period }), emptyText: t('gaza.k26.empty'), state: empty ? 'empty' : 'ready' })
+        ])
+        if (empty) {
+          content.replaceChildren(header, tiles, UI.ChartCard({ title: t('gaza.daily.title'), body: UI.EmptyState({ text: t('gaza.k24.empty') }) }), protoNote())
+          return
+        }
+
+        const markers = {}
+        d.peaks.forEach((p, i) => { markers[d.daily.findIndex((x) => x.date === p.date)] = String(i + 1) })
+        const dailyCard = UI.ChartCard({
+          title: t('gaza.daily.title'), note: t('gaza.daily.note', { period }),
+          body: UI.BarChart({
+            values: d.daily.map((x) => ({ key: x.date, value: x.per1k, gaza: x.gaza })), markers, label: t('gaza.daily.title'),
+            valueFormat: (v) => fmt.int(v), tooltipOf: (v) => t('gaza.daily.tooltip', { date: fmt.date(v.key), gaza: fmt.int(v.gaza), rate: fmt.dec(v.value) })
+          })
+        })
+
+        const peaksCard = UI.ChartCard({
+          title: t('gaza.peaks.title'),
+          body: h('ol', { class: 'plain-list' }, d.peaks.map((p, i) => h('li', {},
+            h('strong', {}, `${i + 1}. ${fmt.date(p.date)} · ${fmt.int(p.gaza)}`),
+            p.titles.map((x) => h('span', { class: 'meta' }, `${x.outlet}: `, (App.safeUrl(x.url) ? h('a', { href: App.safeUrl(x.url), rel: 'noopener', target: '_blank' }, x.title) : x.title))))))
+        })
+
+        const voices = [[t('gaza.voices.isr'), d.overall.any_isr_voice], [t('gaza.voices.pal'), d.overall.any_pal_voice]]
+        const voicesCard = UI.ChartCard({
+          title: t('gaza.voices.title'), note: t('gaza.voices.note', { period }),
+          body: h('table', { class: 'data-table' }, h('tbody', {}, voices.map(([label, v]) =>
+            h('tr', {}, h('th', { scope: 'row' }, label), h('td', { class: 'num' }, fmt.pct(v / 100)), h('td', { style: { width: '50%' } }, UI.HBar(v / 100))))))
+        })
+
+        const outletsCard = UI.ChartCard({
+          title: t('gaza.outlets.title'), note: t('gaza.outlets.note', { n: d.outlets.length, total: d.fullOutlets, period }),
+          body: UI.DataTable({
+            rows: d.outlets, rankColumn: true, emptyText: t('gaza.k26.empty'),
+            columns: [
+              { label: t('gaza.col.outlet'), key: 'name' },
+              { label: t('gaza.col.n'), num: true, render: (r) => fmt.int(r.n) },
+              { label: t('gaza.col.isr'), num: true, render: (r) => fmt.pct(r.any_isr_voice / 100) },
+              { label: t('gaza.col.pal'), num: true, render: (r) => fmt.pct(r.any_pal_voice / 100) }
+            ]
+          })
+        })
+
+        content.replaceChildren(header, tiles, dailyCard, h('div', { class: 'grid-2' }, peaksCard, h('div', {}, voicesCard, outletsCard)), protoNote())
+      }
+    })
+
+    function protoNote () { return h('p', { class: 'proto-note' }, t('proto.states')) }
+  </script>
+</body>
+</html>
