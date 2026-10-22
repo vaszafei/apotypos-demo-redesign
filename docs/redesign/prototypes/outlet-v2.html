@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="assets/tokens.css?v=4">
   <link rel="stylesheet" href="assets/app.css?v=12">
   <link rel="stylesheet" href="assets/dash.css?v=54">
+  <link rel="stylesheet" href="assets/mme.css?v=1">
 </head>
 <body>
   <div id="app"></div>
@@ -15,10 +16,12 @@
   <script src="assets/messages.js?v=13"></script>
   <script src="assets/messages-v2.js?v=27"></script>
   <script src="assets/messages-spread.js?v=12"></script>
+  <script src="assets/messages-mme.js?v=1"></script>
   <script src="assets/components.js?v=6"></script>
   <script src="assets/dash.js?v=11"></script>
   <script src="assets/spread.js?v=5"></script>
   <script src="assets/entity-cards.js?v=3"></script>
+  <script src="assets/mme.js?v=1"></script>
   <script src="assets/shell.js?v=27"></script>
   <script src="data/media.js"></script>
   <script src="data/home.js"></script>
@@ -26,9 +29,12 @@
   <script src="data/storyDetail.js?v=1"></script>
   <script src="data/groups.js?v=1"></script>
   <script src="data/outlet.js"></script>
+  <script src="data/mme.js?v=1"></script>
   <script>
     // Media, page of one outlet: /outlet/<slug>. It has the structure of the Story page: a title card on the left, the cards in two columns, no tab bar, no breadcrumbs.
-    // The page is open at ?slug=<slug> (Rosa.gr when there is none). All 36 outlets of the snapshot work. The headlines are in the sample of Rosa.gr only.
+    // The page is open at ?slug=<slug> (Rosa.gr when there is none). All 36 outlets of the snapshot work.
+    // The 29 outlets of the live page ΜΜΕ & πρόσωπα also get its profile cards (data/mme.js, whole window): the numbers with ranks, the weekly agenda,
+    // the stories it pushes or skips, the stance by topic, the frames, whom it quotes, how it presents the people and the newest headlines.
     const { t, fmt, h, load, params } = App
     const { reset, NO_GROUP, Spark, card, cardHead } = Dash
     const media = load('media', ['dates', 'outlets', 'outletDaily', 'issues'], (b) => b.outlets)
@@ -37,6 +43,7 @@
     const detail = load('storyDetail', ['outlets', 'stories'], (b) => b.stories)
     const groupsData = load('groups', ['groups'], (b) => b.groups)
     const sample = load('outlet', ['rows'], (b) => b.rows)
+    const mme = load('mme', ['sets'], (b) => Object.keys(b.sets))
     const colorOfGroup = Dash.groupColors(groupsData.data ? groupsData.data.groups : [])
     const slug = params.get('slug') || '17661f5754'
     const outlet = media.data ? media.data.outlets.find((o) => o.slug === slug) : null
@@ -175,8 +182,20 @@
                 h('span', { class: 'row-value' }, fmt.int(r.n)))))]
             : h('p', { class: 'dcard-empty' }, t('outlet2.stories.empty')))
 
+        // The profile cards of ΜΜΕ & πρόσωπα, for an outlet of its Greek set. The sums are for its whole window.
+        const mset = mme.kind === 'data' ? mme.data.sets.gr : null
+        const mk = mset ? mset.outlets.findIndex((o) => o.slug === slug) : -1
+        const MS = mk >= 0 ? Mme.summary(mset, 0, mset.dates.length - 1) : null
+        const live = MS ? {
+          stats: Mme.OutletStats(MS, mk), weekly: Mme.WeeklyAgenda(mset, mk), pushSkip: Mme.PushSkip(MS, mk), stance: Mme.StanceByTopic(MS, mk),
+          frames: Mme.FramesCard(MS, mk), voices: Mme.VoicesCard(MS, mk), portrayal: Mme.PortrayalCard(MS, mk)
+        } : null
+        const liveHeadlines = MS ? Mme.Headlines(mset, mk) : []
+
         const headlines = sample.kind === 'data' && sample.data.slug === slug ? sample.data.headlines : []
-        const headlinesCard = card('c-12', cardHead(t('outlet2.headlines.title'), null, t('outlet2.headlines.info')),
+        const headlinesCard = liveHeadlines.length
+          ? card('c-12', cardHead(t('outlet2.headlines.title'), null, t('mme.o.headlines.info')), h('ul', { class: 'plain-list' }, liveHeadlines))
+          : card('c-12', cardHead(t('outlet2.headlines.title'), null, t('outlet2.headlines.info')),
           headlines.length
             ? h('ul', { class: 'plain-list' }, headlines.map((x) => h('li', {}, App.safeUrl(x.url) ? h('a', { href: App.safeUrl(x.url), rel: 'noopener', target: '_blank' }, x.title) : x.title)))
             : h('p', { class: 'dcard-empty' }, t('outlet2.headlines.empty')))
@@ -205,8 +224,9 @@
         // The title card is the first card of the main column on the left. The main cards are under it, and the lists are on the right. On a narrow screen the columns join in one.
         const at = (n, el) => { el.style.order = n; return el }
         content.replaceChildren(h('div', { class: 'dash-grid story-grid entity-grid' },
-          h('div', { class: 'card-col c-8 story-col' }, at(0, heroCard), at(1, dailyCard), at(2, topicsCard), at(3, howCard), at(4, storiesCard)),
-          h('div', { class: 'card-col c-4 story-col' }, at(5, relatedCard), at(6, headlinesCard))), protoNote())
+          h('div', { class: 'card-col c-8 story-col' }, at(0, heroCard), live && at(1, live.stats), at(2, dailyCard), live && at(3, live.weekly), at(4, topicsCard), at(5, howCard),
+            live && at(6, live.frames), live && at(7, live.stance), at(8, storiesCard), live && at(9, live.portrayal)),
+          h('div', { class: 'card-col c-4 story-col' }, at(10, relatedCard), live && at(11, live.pushSkip[0]), live && at(12, live.pushSkip[1]), live && at(13, live.voices), at(14, headlinesCard))), protoNote())
       }
     })
 
