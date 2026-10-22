@@ -15,7 +15,7 @@
   <script src="assets/messages.js?v=11"></script>
   <script src="assets/messages-v2.js?v=27"></script>
   <script src="assets/messages-spread.js?v=12"></script>
-  <script src="assets/components.js?v=6"></script>
+  <script src="assets/components.js?v=7"></script>
   <script src="assets/dash.js?v=8"></script>
   <script src="assets/shell.js?v=25"></script>
   <script src="data/media.js?v=3"></script>
@@ -256,7 +256,7 @@
               h('span', { class: 'row-name' }, r.name), h('span', { class: 'row-value' }, fmt.pct(r.anonPct / 100)), UI.HBar(r.anonPct, 100))))) : null
 
           // Row 4: the ranking table.
-          const tableOf = (rows, columns) => UI.DataTable({ rows, columns, rankColumn: true, pageSize: rows.length, emptyText: t('media.empty') })
+          const tableOf = (rows, columns) => UI.DataTable({ rows, columns, pageSize: rows.length, emptyText: t('media.empty') })
 
           let note = null
           let results

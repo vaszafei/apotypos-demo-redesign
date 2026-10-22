@@ -12,7 +12,7 @@
   <div id="app"></div>
   <script src="assets/icons.js?v=2"></script>
   <script src="assets/messages.js?v=11"></script>
-  <script src="assets/components.js?v=6"></script>
+  <script src="assets/components.js?v=7"></script>
   <script src="assets/shell.js?v=25"></script>
   <script src="data/groups.js"></script>
   <script>
@@ -63,7 +63,7 @@
             title: t('groups.table.title'), note: t('groups.table.note', { period }),
             body: h('div', {},
               UI.DataTable({
-                rows: groups, rankColumn: true, emptyText: t('groups.empty'),
+                rows: groups, emptyText: t('groups.empty'),
                 columns: [
                   { label: t('groups.col.group'), render: (g) => h('a', { href: hrefOf(g) }, g.name) },
                   { label: t('groups.col.owner'), key: 'owner' },

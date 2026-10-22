@@ -236,7 +236,6 @@ button, input, select { font: inherit; color: inherit; }
 .data-table th { padding: var(--space-2); border-bottom: 1px solid var(--border); text-align: left; font-size: var(--text-caption); font-weight: 600; color: var(--text-secondary); }
 .data-table td { padding: var(--space-2); border-bottom: 1px solid var(--border); vertical-align: top; }
 .data-table .num { text-align: right; white-space: nowrap; }
-.data-table .rank { width: 40px; color: var(--text-secondary); }
 .data-table tr:target td, .data-table tr.is-target td { background: #fff6cc; }
 .table-more { margin-top: var(--space-3); }
 

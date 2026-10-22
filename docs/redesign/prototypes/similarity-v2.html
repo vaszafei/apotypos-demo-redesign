@@ -15,7 +15,7 @@
   <script src="assets/messages.js?v=11"></script>
   <script src="assets/messages-v2.js?v=27"></script>
   <script src="assets/messages-spread.js?v=12"></script>
-  <script src="assets/components.js?v=6"></script>
+  <script src="assets/components.js?v=7"></script>
   <script src="assets/dash.js?v=10"></script>
   <script src="assets/spread.js?v=5"></script>
   <script src="assets/shell.js?v=25"></script>
@@ -161,7 +161,7 @@
           h('span', {}, h('span', { class: 'swatch', style: { background: 'var(--bar-muted)' } }), t('originality.key.rewrite')),
           h('span', {}, h('span', { class: 'swatch-tick' }), t('originality.key.avg', { pct: fmt.pct(average) })))
         const origTable = UI.DataTable({
-          rows, rankColumn: true, pageSize: 10, emptyText: t('media.empty'),
+          rows, pageSize: 10, emptyText: t('media.empty'),
           columns: [
             { label: t('media.col.outlet'), render: (r) => h('div', { class: 'name-cell' }, UI.EntityLink({ type: 'outlet', key: null, label: r.name }),
               h('span', { class: 'reason' }, (extremes.get(r.name) || ['mid']).map((code) => h('span', { class: 'chip chip-sm' }, t(`originality.reason.${code}`))))) },
@@ -188,7 +188,7 @@
         const name = (i) => h('span', { class: 'group-cell nowrap' }, dot(i), UI.EntityLink({ type: 'outlet', key: dd.outlets[i].slug, label: outletName(i) }))
         const pairsCard = card('c-12', h('details', { class: 'pairs-details' }, h('summary', { class: 'dcard-title' }, t('sim.table.title', { n: fmt.int(pairRows.length) })),
           UI.DataTable({
-            rows: pairRows, rankColumn: true, pageSize: STEP, moreStep: STEP, emptyText: t('spread.rank.empty'),
+            rows: pairRows, pageSize: STEP, moreStep: STEP, emptyText: t('spread.rank.empty'),
             columns: [
               { label: t('sim.col.pair'), render: (p) => h('span', { class: 'pair' }, name(p.a), h('span', { class: 'muted-text' }, ' ↔ '), name(p.b)) },
               { label: t('sim.col.shared'), num: true, phone: false, render: (p) => fmt.int(p.shared) },

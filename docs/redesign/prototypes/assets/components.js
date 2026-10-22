@@ -189,7 +189,7 @@
   const cellClass = (c) => [c.num && 'num', c.phone === false && 'hide-phone'].filter(Boolean).join(' ') || null
 
   // DataTable: the first 10 rows, and a control for the rest (C07, G19). With moreStep, the control adds that number of rows each time (APO-180).
-  function DataTable ({ columns, rows, rankColumn = false, pageSize = 10, moreStep = 0, caption, emptyText, emptyAction, rowId }) {
+  function DataTable ({ columns, rows, pageSize = 10, moreStep = 0, caption, emptyText, emptyAction, rowId }) {
     if (rows.length === 0) return EmptyState({ text: emptyText, action: emptyAction })
     let expanded = false
     let shown = pageSize
@@ -198,10 +198,9 @@
       const visible = moreStep ? rows.slice(0, shown) : expanded ? rows : rows.slice(0, pageSize)
       const table = h('table', { class: 'data-table' },
         caption && h('caption', {}, caption),
-        h('thead', {}, h('tr', {}, rankColumn && h('th', { class: 'rank', scope: 'col' }, t('table.rank')),
+        h('thead', {}, h('tr', {},
           columns.map((c) => h('th', { scope: 'col', class: cellClass(c) }, c.label)))),
-        h('tbody', {}, visible.map((row, i) => h('tr', { id: rowId ? rowId(row) : null },
-          rankColumn && h('td', { class: 'rank' }, String(i + 1)),
+        h('tbody', {}, visible.map((row) => h('tr', { id: rowId ? rowId(row) : null },
           columns.map((c) => h('td', { class: cellClass(c) }, c.render ? c.render(row) : row[c.key]))))))
       wrap.replaceChildren(h('div', { class: 'table-wrap' }, table),
         moreStep

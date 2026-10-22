@@ -16,7 +16,7 @@
   <script src="assets/messages.js?v=11"></script>
   <script src="assets/messages-v2.js?v=27"></script>
   <script src="assets/messages-politics.js?v=1"></script>
-  <script src="assets/components.js?v=6"></script>
+  <script src="assets/components.js?v=7"></script>
   <script src="assets/dash.js?v=10"></script>
   <script src="assets/politics.js?v=1"></script>
   <script src="assets/shell.js?v=25"></script>
@@ -111,7 +111,7 @@
           const sorted = rows.slice().sort((a, b) => b.seconds - a.seconds)
           const tableCard = card('c-12', cardHead(t('un.table.title'), null, t('un.table.info')), legend,
             UI.DataTable({
-              rows: sorted, rankColumn: true, pageSize: 25, moreStep: 25,
+              rows: sorted, pageSize: 25, moreStep: 25,
               columns: [
                 { label: t('un.col.leader'), render: (r) => h('span', { class: 'leader-cell' }, h('a', { class: 'quiet-link', href: r.url, target: '_blank', rel: 'noopener' }, r.speaker), h('span', { class: 'row-sub' }, `${r.role} · ${r.country}`)) },
                 { label: t('un.col.minutes'), num: true, render: (r) => fmt.int(Math.round(r.seconds / 60)) },

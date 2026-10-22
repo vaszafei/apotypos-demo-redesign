@@ -15,7 +15,7 @@
   <script src="assets/messages.js?v=11"></script>
   <script src="assets/messages-v2.js?v=27"></script>
   <script src="assets/messages-spread.js?v=12"></script>
-  <script src="assets/components.js?v=6"></script>
+  <script src="assets/components.js?v=7"></script>
   <script src="assets/dash.js?v=10"></script>
   <script src="assets/spread.js?v=5"></script>
   <script src="assets/shell.js?v=25"></script>
@@ -180,7 +180,7 @@
           ].filter(Boolean)
           const day = (i) => fmt.date(d.dates[i], { day: 'numeric', month: 'short' })
           const table = UI.DataTable({
-            rows, rankColumn: true, pageSize: STEP, moreStep: STEP, emptyText: t('media.empty'),
+            rows, pageSize: STEP, moreStep: STEP, emptyText: t('media.empty'),
             columns: [
               // The echo sits under the name: 4 or more groups wrote the story on one day.
               { label: t('media.col.story'), render: (s) => h('div', { class: 'name-cell' }, UI.EntityLink({ type: 'story', key: String(s.id), label: name(s) }),

@@ -16,7 +16,7 @@
   <script src="assets/messages.js?v=11"></script>
   <script src="assets/messages-v2.js?v=27"></script>
   <script src="assets/messages-politics.js?v=1"></script>
-  <script src="assets/components.js?v=6"></script>
+  <script src="assets/components.js?v=7"></script>
   <script src="assets/dash.js?v=10"></script>
   <script src="assets/politics.js?v=1"></script>
   <script src="assets/shell.js?v=25"></script>
@@ -145,7 +145,7 @@
         const rows = Object.entries(d.outlets).map(([name, x]) => ({ name, ...x })).sort((a, b) => b.n - a.n)
         const outletCard = card('c-12', cardHead(t('gz.outlets.title'), null, t('gz.outlets.info')),
           UI.DataTable({
-            rows, rankColumn: true, pageSize: rows.length,
+            rows, pageSize: rows.length,
             columns: [
               { label: t('gz.col.outlet'), render: (r) => h('span', { class: 'nowrap', title: r.lean || null }, r.name) },
               { label: t('gz.col.n'), num: true, render: (r) => fmt.int(r.n) },

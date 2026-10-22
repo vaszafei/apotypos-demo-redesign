@@ -15,7 +15,7 @@
   <script src="assets/messages.js?v=11"></script>
   <script src="assets/messages-v2.js?v=27"></script>
   <script src="assets/messages-spread.js?v=12"></script>
-  <script src="assets/components.js?v=6"></script>
+  <script src="assets/components.js?v=7"></script>
   <script src="assets/dash.js?v=10"></script>
   <script src="assets/spread.js?v=5"></script>
   <script src="assets/shell.js?v=25"></script>
@@ -314,7 +314,7 @@
         people.sort((a, b) => total(b.counts) - total(a.counts))
         const SEG = ['var(--emph-less)', 'var(--bar-muted)', 'var(--emph-more)']
         const peopleCard = card('c-12', cardHead(t('story.people.title'), null, t('story.people.info')), UI.DataTable({
-          rows: people, rankColumn: true, pageSize: 7, emptyText: t('story.people.empty'),
+          rows: people, pageSize: 7, emptyText: t('story.people.empty'),
           columns: [
             { label: t('story.people.col.person'), render: (r) => h('div', {}, h('div', {}, r.person.name), h('span', { class: 'muted-text' }, [r.person.role, r.person.party].filter(Boolean).join(' · '))) },
             { label: t('story.people.col.mentions'), num: true, render: (r) => fmt.int(total(r.counts)) },

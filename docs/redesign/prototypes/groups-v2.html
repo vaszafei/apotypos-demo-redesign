@@ -14,7 +14,7 @@
   <script src="assets/icons.js?v=2"></script>
   <script src="assets/messages.js?v=11"></script>
   <script src="assets/messages-v2.js?v=27"></script>
-  <script src="assets/components.js?v=6"></script>
+  <script src="assets/components.js?v=7"></script>
   <script src="assets/dash.js?v=8"></script>
   <script src="assets/shell.js?v=25"></script>
   <script src="data/groups.js?v=2"></script>
@@ -207,7 +207,7 @@
           const stanceOf = (g) => g.outlets.reduce((a, o) => [a[0] + o.stance[0], a[1] + o.stance[1], a[2] + o.stance[2]], [0, 0, 0])
           const table = card('c-12', cardHead(t('g2.table.title'), null, [t('g2.table.note', { period }), groups.length ? `${t('groups.table.none', { n: fmt.int(d.ungrouped.length), articles: fmt.int(ungroupedTotal), share: fmt.pct(ungroupedTotal / total) })} ${t('g2.record', { source: d.record.source, date: fmt.date(d.record.exportedAt) })}` : ''].join(' ')),
             UI.DataTable({
-              rows: groups, rankColumn: true, emptyText: t('media.empty'),
+              rows: groups, emptyText: t('media.empty'),
               columns: [
                 { label: t('groups.col.group'), render: (g) => h('span', { class: 'group-cell' }, h('span', { class: 'dot', style: `--dot:${colorOf.get(g.name)}`, 'aria-hidden': 'true' }), h('a', { class: 'quiet-link', href: hrefOf(g) }, g.name)) },
                 { label: t('groups.col.owner'), phone: false, key: 'owner' },
