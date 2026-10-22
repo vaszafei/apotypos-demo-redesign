@@ -7,7 +7,7 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=4">
   <link rel="stylesheet" href="assets/app.css?v=12">
-  <link rel="stylesheet" href="assets/dash.css?v=63">
+  <link rel="stylesheet" href="assets/dash.css?v=64">
 </head>
 <body>
   <div id="app"></div>
@@ -52,11 +52,11 @@
         const every = Math.max(7, Math.ceil(64 / bw))
         stacks.forEach((segs, i) => {
           const x = pad.left + i * bw
-          const w = Math.max(1, bw * 0.7)
+          const w = Math.max(1, bw * 0.78)
           const bx = x + (bw - w) / 2
           if (totals[i] < GAP) svg.append(h('rect', { class: 'gap-band', x: x + 1, y: pad.top, width: Math.max(1, bw - 2), height: plotH }))
           // The column has a rounded top (a clip path) and a gap of 1 px between its segments.
-          const rr = Math.min(3, w / 2)
+          const rr = Math.min(4, w / 2)
           const yt = y(totals[i])
           const yb = y(0)
           const clip = `vc-${uid}-${i}`
@@ -94,6 +94,61 @@
       return el
     }
 
+    // A wide layout of the bubbles: the outlets of each group are packed in its circle, and the groups sit in a band from left to right,
+    // in the order of the legend. Each group goes at the leftmost place in the band where it touches no group before it.
+    function ribbon (groups, width, height) {
+      const pad = 2
+      const nodes = groups.map((g) => {
+        const children = g.outlets.map((o) => ({ data: { o }, r: Math.sqrt(o.value) }))
+        d3.packSiblings(children.map((c) => Object.assign(c, { r: c.r + pad })))
+        const enc = d3.packEnclose(children)
+        children.forEach((c) => { c.dx = c.x - enc.x; c.dy = c.y - enc.y; c.r -= pad })
+        return { data: { g }, r: enc.r + 4, children }
+      })
+      const maxR = Math.max(...nodes.map((n) => n.r))
+      const gap = maxR * 0.06
+      // Place the groups in a band of a given half height. Try a few bands and keep the one with the shape closest to the chart.
+      const place = (band) => {
+        const placed = []
+        nodes.forEach((n) => {
+          let best = null
+          for (let k = -8; k <= 8; k++) {
+            const y = (k / 8) * Math.max(0, band - n.r)
+            let x = placed.length ? -Infinity : 0
+            placed.forEach((p) => {
+              const d = p.r + n.r + gap
+              const dy = Math.abs(p.y - y)
+              if (dy < d) x = Math.max(x, p.x + Math.sqrt(d * d - dy * dy))
+            })
+            if (x === -Infinity) x = Math.min(...placed.map((p) => p.x - p.r)) + n.r
+            if (!best || x < best.x - 0.5 || (Math.abs(x - best.x) <= 0.5 && Math.abs(y) < Math.abs(best.y))) best = { x, y }
+          }
+          placed.push({ r: n.r, ...best })
+        })
+        const w = Math.max(...placed.map((p) => p.x + p.r)) - Math.min(...placed.map((p) => p.x - p.r))
+        const hh = Math.max(...placed.map((p) => p.y + p.r)) - Math.min(...placed.map((p) => p.y - p.r))
+        return { placed, score: Math.abs(Math.log((w / hh) / (width / height))) }
+      }
+      let best = null
+      for (let f = 1; f <= 3; f += 0.1) { const tryIt = place(maxR * f); if (!best || tryIt.score < best.score) best = tryIt }
+      nodes.forEach((n, i) => { n.x = best.placed[i].x; n.y = best.placed[i].y })
+      // Scale the band to fit the chart, and center it.
+      const x0 = Math.min(...nodes.map((n) => n.x - n.r))
+      const x1 = Math.max(...nodes.map((n) => n.x + n.r))
+      const y0 = Math.min(...nodes.map((n) => n.y - n.r))
+      const y1 = Math.max(...nodes.map((n) => n.y + n.r))
+      const s = Math.min((width - 8) / (x1 - x0), (height - 8) / (y1 - y0))
+      const ox = (width - (x1 - x0) * s) / 2
+      const oy = (height - (y1 - y0) * s) / 2
+      nodes.forEach((n) => {
+        n.x = ox + (n.x - x0) * s
+        n.y = oy + (n.y - y0) * s
+        n.r = (n.r) * s
+        n.children.forEach((c) => { c.x = n.x + c.dx * s; c.y = n.y + c.dy * s; c.r *= s })
+      })
+      return nodes
+    }
+
     // Zoomable bubbles of owners and outlets: one circle for each group, with a circle for each of its outlets inside. The area is the collected articles.
     // A click on a group zooms to it and the panel under the chart shows the group. A click on the empty space, the back button or Esc zooms out.
     // In a zoomed group, a click on an outlet opens its page.
@@ -113,11 +168,9 @@
       const groupTip = (g) => [g.key === null ? t('g2.donut.tip', { group: g.label, n: fmt.int(g.value), share: fmt.pct(g.value / total) }) : t('g2.bubble.group', { group: g.label, owner: g.owner, n: fmt.int(g.value), share: fmt.pct(g.value / total) }), t('g2.bubble.zoom')].join('\n')
 
       return fit((holder, width) => {
-        const height = Math.max(280, Math.min(420, Math.round(width * 0.9)))
-        const root = d3.hierarchy({ children: groups.map((g) => ({ g, children: g.outlets.map((o) => ({ o, g })) })) })
-          .sum((d) => (d.o ? d.o.value : 0)).sort((a, b) => b.value - a.value)
-        d3.pack().size([width, height]).padding((d) => (d.depth === 0 ? 10 : 2))(root)
-        const nodeOf = new Map(root.children.map((gn) => [gn.data.g, gn]))
+        const height = Math.max(240, Math.min(360, Math.round(width * 0.55)))
+        const groupNodes = ribbon(groups, width, height)
+        const nodeOf = new Map(groupNodes.map((gn) => [gn.data.g, gn]))
         const svg = h('svg', { class: 'chart bubbles', width, height, viewBox: `0 0 ${width} ${height}`, role: 'group', 'aria-label': t('g2.tree.title') })
         const back = h('rect', { class: 'bubble-bg', x: 0, y: 0, width, height, fill: 'transparent' })
         const scene = h('g', {})
@@ -133,7 +186,7 @@
         const toScreen = (x, y) => { const s = k(); return [width / 2 + (x - view[0]) * s, height / 2 + (y - view[1]) * s] }
 
         const layers = new Map()
-        root.children.forEach((gn) => {
+        groupNodes.forEach((gn) => {
           const g = gn.data.g
           const layer = h('g', { class: 'bubble-layer' })
           layers.set(g, layer)
@@ -160,7 +213,7 @@
         function drawLabels () {
           const s = k()
           labels.replaceChildren()
-          root.children.forEach((gn) => {
+          groupNodes.forEach((gn) => {
             const g = gn.data.g
             const zoomed = focus === g
             if (focus && !zoomed) return
@@ -310,9 +363,9 @@
           const treeGroups = [...groups.map((g) => ({ key: g.name, label: g.name, owner: g.owner, color: colorOf.get(g.name), slug: g.slug, lean: g.lean, outlets: g.outlets.filter((o) => o.collected > 0).map(outletOf).sort((a, b) => b.value - a.value) })),
             ...(ungroupedTotal ? [{ key: null, label: t('media2.groups.none'), owner: null, color: NO_GROUP, outlets: d.ungrouped.filter((o) => o.collected > 0).map(outletOf).sort((a, b) => b.value - a.value) }] : [])]
           treeGroups.forEach((g) => { g.value = g.outlets.reduce((s, o) => s + o.value, 0) })
-          const bubbles = card('c-5', cardHead(t('g2.tree.title'), null, [t('g2.tree.sub', { period }), t('g2.record', { source: d.record.source, date: fmt.date(d.record.exportedAt) })].join(' ')),
+          const bubbles = card('c-7', cardHead(t('g2.tree.title'), null, [t('g2.tree.sub', { period }), t('g2.record', { source: d.record.source, date: fmt.date(d.record.exportedAt) })].join(' ')),
             total ? OwnerBubbles({ groups: treeGroups, total }) : emptyText(t('groups.empty')))
-          const shareCard = card('c-7', cardHead(t('media2.groups.title'), null, total ? t('media2.groups.known', { share: fmt.pct(grouped / total) }) : null),
+          const shareCard = card('c-5', cardHead(t('media2.groups.title'), null, total ? t('media2.groups.known', { share: fmt.pct(grouped / total) }) : null),
             total
               ? h('div', { class: 'donut-wrap sun-wrap' }, Sunburst({ groups: treeGroups, total }),
                   h('ul', { class: 'rows rows-groups rows-owners' }, treeGroups.map((g) => {
