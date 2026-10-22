@@ -7,7 +7,7 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=4">
   <link rel="stylesheet" href="assets/app.css?v=12">
-  <link rel="stylesheet" href="assets/dash.css?v=59">
+  <link rel="stylesheet" href="assets/dash.css?v=61">
 </head>
 <body>
   <div id="app"></div>
@@ -33,9 +33,10 @@
 
     // Stacked columns: one for each day, one segment for each group. A gap day has a dashed band.
     function VolumeChart ({ dates, stacks, order }) {
+      const uid = Math.random().toString(36).slice(2, 7)
       const totals = stacks.map((s) => s.reduce((a, b) => a + b.value, 0))
       return fit((holder, width) => {
-        const height = 220
+        const height = 300
         const pad = { top: 8, right: 4, bottom: 24, left: 44 }
         const step = niceStep(Math.max(...totals, 1) / 4)
         const top = Math.ceil(Math.max(...totals, 1) / step) * step
@@ -51,15 +52,23 @@
         const every = Math.max(7, Math.ceil(64 / bw))
         stacks.forEach((segs, i) => {
           const x = pad.left + i * bw
-          const w = Math.max(1, bw * 0.6)
+          const w = Math.max(1, bw * 0.7)
           const bx = x + (bw - w) / 2
           if (totals[i] < GAP) svg.append(h('rect', { class: 'gap-band', x: x + 1, y: pad.top, width: Math.max(1, bw - 2), height: plotH }))
+          // The column has a rounded top (a clip path) and a gap of 1 px between its segments.
+          const rr = Math.min(3, w / 2)
+          const yt = y(totals[i])
+          const yb = y(0)
+          const clip = `vc-${uid}-${i}`
+          svg.append(h('clipPath', { id: clip }, h('path', { d: `M${bx} ${yb}V${yt + rr}Q${bx} ${yt} ${bx + rr} ${yt}H${bx + w - rr}Q${bx + w} ${yt} ${bx + w} ${yt + rr}V${yb}Z` })))
+          const col = h('g', { 'clip-path': `url(#${clip})` })
           let base = 0
           segs.forEach((s) => {
             if (!s.value) return
-            svg.append(h('rect', { x: bx, y: y(base + s.value), width: w, height: Math.max(0.5, (s.value / top) * plotH - 0.5), fill: s.color }))
+            col.append(h('rect', { x: bx, y: y(base + s.value), width: w, height: Math.max(0.5, (s.value / top) * plotH - 1), fill: s.color }))
             base += s.value
           })
+          svg.append(col)
           if (i % every === 0) svg.append(h('text', { x: x + bw / 2, y: height - 7, 'text-anchor': 'middle' }, fmt.date(dates[i], { day: 'numeric', month: 'short' })))
         })
         const tipOf = (i) => [t('g2.volume.tip', { date: fmt.date(dates[i]), n: fmt.int(totals[i]) }) + (totals[i] < GAP ? ` · ${t('g2.volume.gap')}` : ''),
@@ -322,7 +331,7 @@
           const order = rows.map((r) => ({ key: r.key, label: r.label, color: r.color }))
           const stacks = m && !empty ? m.dates.map((_, i) => order.map((o) => ({ ...o, value: m.outlets.reduce((a, out, k) => (groupOf.has(out.slug) && groupOf.get(out.slug) === o.key ? a + m.outletDaily[k][i][0] : a), 0) }))) : []
           const volumeTotal = stacks.reduce((s, day) => s + day.reduce((a, b) => a + b.value, 0), 0)
-          const volume = card('c-7', cardHead(t('g2.volume.title'), null, t('g2.volume.info', { min: fmt.int(GAP), n: fmt.int(volumeTotal) })),
+          const volume = card('c-8', cardHead(t('g2.volume.title'), null, t('g2.volume.info', { min: fmt.int(GAP), n: fmt.int(volumeTotal) })),
             volumeTotal
               ? [h('span', { class: 'legend-inline' }, order.map((o) => h('span', {}, h('span', { class: 'swatch', style: { background: o.color } }), o.label))), VolumeChart({ dates: m.dates, stacks, order })]
               : emptyText(t('groups.empty')))
@@ -335,18 +344,17 @@
           }).filter((r) => r.n >= 30)
           const unit = stanceRows.length ? 40 / Math.max(...stanceRows.map((r) => Math.max(r.crit + r.neu / 2, r.sup + r.neu / 2))) : 0
           const seg = (name, left, width) => h('span', { class: 'div-seg', style: `--seg:var(--stance-${name});left:${left}%;width:${width}%` })
-          const stanceCard = card('c-5', cardHead(t('g2.stance.title'), h('span', { class: 'stance-key' },
-            [['stance.critical', 'critical'], ['stance.neutral', 'neutral'], ['stance.supportive', 'supportive']].map(([key, nm]) => h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: `var(--stance-${nm})` } }), t(key)))), t('g2.stance.sub')),
+          const stanceCard = card('c-4', cardHead(t('g2.stance.title'), null, t('g2.stance.sub')),
             stanceRows.length
-              ? h('ul', { class: 'diverge' }, stanceRows.map((r) => h('li', { 'aria-label': t('g2.stance.row', { group: r.g.name, critical: fmt.pct(r.crit), neutral: fmt.pct(r.neu), supportive: fmt.pct(r.sup), n: fmt.int(r.n) }) },
-                h('span', { class: 'div-name', title: r.g.name }, r.g.name),
-                h('span', { class: 'div-track' },
-                  seg('critical', 50 - (r.neu / 2) * unit - r.crit * unit, r.crit * unit),
-                  seg('neutral', 50 - (r.neu / 2) * unit, r.neu * unit),
-                  seg('supportive', 50 + (r.neu / 2) * unit, r.sup * unit),
-                  h('span', { class: 'div-mid' }),
-                  h('span', { class: 'div-val div-val-l', style: `right:${100 - (50 - (r.neu / 2) * unit - r.crit * unit)}%` }, fmt.pct(r.crit)),
-                  h('span', { class: 'div-val div-val-r', style: `left:${50 + (r.neu / 2) * unit + r.sup * unit}%` }, fmt.pct(r.sup))))))
+              ? [h('span', { class: 'stance-key' }, [['stance.critical', 'critical'], ['stance.neutral', 'neutral'], ['stance.supportive', 'supportive']].map(([key, nm]) => h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: `var(--stance-${nm})` } }), t(key)))),
+                h('ul', { class: 'diverge diverge-3 diverge-groups' }, stanceRows.map((r) => h('li', { 'aria-label': t('g2.stance.row', { group: r.g.name, critical: fmt.pct(r.crit), neutral: fmt.pct(r.neu), supportive: fmt.pct(r.sup), n: fmt.int(r.n) }) },
+                  h('span', { class: 'div-name', title: r.g.name }, h('span', { class: 'dot', style: `--dot:${colorOf.get(r.g.name)}`, 'aria-hidden': 'true' }), h('span', { class: 'div-label' }, r.g.name)),
+                  h('span', { class: 'div-num' }, h('span', { class: 'div-num-c' }, fmt.pct(r.crit)), ' · ', h('span', { class: 'div-num-s' }, fmt.pct(r.sup))),
+                  h('span', { class: 'div-track' },
+                    seg('critical', 50 - (r.neu / 2) * unit - r.crit * unit, r.crit * unit),
+                    seg('neutral', 50 - (r.neu / 2) * unit, r.neu * unit),
+                    seg('supportive', 50 + (r.neu / 2) * unit, r.sup * unit),
+                    h('span', { class: 'div-mid' })))))]
               : emptyText(t('groups.empty')))
 
           content.replaceChildren(bar, h('div', { class: 'dash-grid' }, bubbles, shareCard, volume, stanceCard), protoNote())

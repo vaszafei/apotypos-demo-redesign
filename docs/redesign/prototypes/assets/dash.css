@@ -331,6 +331,14 @@
 .diverge-3 .div-num { text-align: right; font-size: var(--text-caption); color: var(--text-primary); }
 .diverge-3 .div-track, .diff-cell .div-track { grid-column: 1 / -1; height: 10px; border-radius: 5px; background: var(--surface-sunken, #ece9e0); }
 .diverge-3 .div-seg, .diff-cell .div-seg { top: 1px; height: 8px; border-radius: 4px; }
+.diverge-groups { gap: 10px; margin-top: var(--space-2); }
+.diverge-groups .div-name { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.diverge-groups .div-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.diverge-groups .div-track { height: 12px; background: none; }
+.diverge-groups .div-seg { top: 0; height: 12px; border-radius: 6px; box-shadow: 0 0 0 1px var(--surface-raised); }
+.diverge-groups .div-num-c, .diverge-groups .div-num-s { font-variant-numeric: tabular-nums; }
+.diverge-groups .div-num-c::before, .diverge-groups .div-num-s::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 4px; border-radius: 2px; background: var(--stance-critical); }
+.diverge-groups .div-num-s::before { background: var(--stance-supportive); }
 .diverge-3 .div-mid, .diff-cell .div-mid { top: -2px; bottom: -2px; width: 2px; margin-left: -1px; border-radius: 1px; background: #1f1f1f; }
 .story-grid { margin-top: var(--space-4); }
 @media (max-width: 1279px) { .story-col { display: contents; } }
