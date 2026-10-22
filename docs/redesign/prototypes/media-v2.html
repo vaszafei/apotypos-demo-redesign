@@ -20,7 +20,7 @@
   <script src="assets/components.js?v=6"></script>
   <script src="assets/dash.js?v=11"></script>
   <script src="assets/mme.js?v=1"></script>
-  <script src="assets/shell.js?v=27"></script>
+  <script src="assets/shell.js?v=28"></script>
   <script src="data/mme.js?v=1"></script>
   <script src="data/groups.js?v=2"></script>
   <script src="data/originality.js?v=1"></script>
@@ -203,7 +203,7 @@
             Dash.select(t('range.from'), view.from, dayOptions, (v) => select({ from: v, to: view.to })),
             Dash.select(t('range.to'), view.to, dayOptions, (v) => select({ from: view.from, to: v }))
           ]
-          const bar = TopBar({ title: `${t('nav.media')} · ${t('tab.media.overview')}`, tabs, actions, error: view.from > view.to ? t('range.invalid') : null })
+          const bar = TopBar({ title: `${t('nav.media')} · ${t('tab.media.overview')}`, tabs, actions, quiet: true, error: view.from > view.to ? t('range.invalid') : null })
 
           // Daily totals of all the outlets: the news are the topics with soft: false.
           const news = dates.map((_, d) => S.outlets.reduce((s, o) => s + set.od[o.k][d * 7 + 1], 0))
