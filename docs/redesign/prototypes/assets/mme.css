@@ -96,27 +96,37 @@
 @media (max-width: 1023px) { .mme-kpi.c-3 { grid-column: span 6; } }
 
 /* All outlets: one tile for each outlet. The top rule has the color of the group. */
-.mme-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: var(--space-3); margin: var(--space-1) 0 0; padding: 0; list-style: none; }
-.mme-tile { display: grid; gap: 8px; align-content: start; padding: 10px 12px 12px; border: 1px solid var(--border); border-top: 3px solid var(--gc, var(--bar-muted)); border-radius: var(--radius); background: var(--surface-raised); font-size: var(--text-small); }
-.mme-tile:hover { border-color: var(--ink); border-top-color: var(--gc, var(--ink)); }
+.mme-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-3); margin: var(--space-1) 0 0; padding: 0; list-style: none; }
+.mme-tile { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-raised); box-shadow: inset 0 3px 0 var(--gc, var(--bar-muted)); font-size: var(--text-small); transition: border-color 0.12s, box-shadow 0.12s; }
+.mme-tile:hover { border-color: var(--rule); box-shadow: inset 0 3px 0 var(--gc, var(--bar-muted)), 0 4px 14px rgba(17, 17, 17, 0.07); }
 .mme-tile p { margin: 0; }
-.mme-tile-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: var(--space-2); }
-.mme-tile-name { overflow: hidden; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
-.mme-tile-name a { color: var(--ink); }
-.mme-tile-n { font-size: 18px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
-.mme-tile-n small { margin-left: 4px; font-size: var(--text-caption); font-weight: 400; color: var(--text-secondary); }
-.mme-tile-rank { margin-right: 6px; font-size: var(--text-caption); font-weight: 400; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-.mme-tile-group { display: flex; align-items: center; gap: 6px; overflow: hidden; font-size: var(--text-caption); color: var(--text-secondary); white-space: nowrap; text-overflow: ellipsis; }
-.mme-tile-group a { color: var(--text-secondary); }
-.mme-tile-vol { height: 4px; border-radius: 2px; background: var(--surface-card); }
+.mme-tile-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-2); padding-top: 2px; }
+.mme-tile-id { display: grid; gap: 2px; min-width: 0; }
+.mme-tile-name { overflow: hidden; font-size: 15px; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
+.mme-tile-name a { color: var(--ink); text-decoration: none; }
+.mme-tile-name a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.mme-tile-rank { margin-right: 6px; font-size: var(--text-caption); font-weight: 500; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.mme-tile-group { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; font-size: var(--text-caption); color: var(--text-secondary); white-space: nowrap; text-overflow: ellipsis; }
+.mme-tile-group .dot { width: 8px; height: 8px; }
+.mme-tile-group a { overflow: hidden; color: var(--text-secondary); text-decoration: none; text-overflow: ellipsis; }
+.mme-tile-group a:hover { color: var(--ink); text-decoration: underline; }
+.mme-tile-n { display: grid; justify-items: end; flex: none; font-size: 18px; font-weight: 600; line-height: 1.15; color: var(--ink); font-variant-numeric: tabular-nums; }
+.mme-tile-n small { font-size: var(--text-caption); font-weight: 400; color: var(--text-secondary); }
+.mme-tile-vol { height: 3px; border-radius: 2px; background: var(--surface-card); }
 .mme-tile-vol span { display: block; height: 100%; border-radius: 2px; background: var(--series-news); }
-.mme-tile-topics { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; padding: 0; list-style: none; }
-.mme-tile-topics li { padding: 1px 8px; border-radius: var(--pill); background: var(--surface-card); font-size: var(--text-caption); color: var(--text-primary); }
-.mme-tile-topics b { font-weight: 600; font-variant-numeric: tabular-nums; }
-.mme-tile-metrics { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 6px var(--space-2); padding-top: 8px; border-top: 1px solid var(--border); font-size: var(--text-caption); color: var(--text-secondary); }
-.mme-tile-metrics .scale { justify-self: start; }
-.mme-tile-metrics .stacked-mini { width: 100%; }
-.mme-tile-val { text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
+.mme-tile-topics { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.mme-tile-topics li { display: grid; grid-template-columns: minmax(0, 1fr) 56px 32px; align-items: center; gap: var(--space-2); font-size: var(--text-caption); color: var(--text-primary); }
+.mme-tile-topic { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.mme-tile-bar { height: 6px; border-radius: 3px; background: var(--surface-card); }
+.mme-tile-bar span { display: block; height: 100%; border-radius: 3px; background: var(--bar-muted); }
+.mme-tile-pct { text-align: right; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.mme-tile-metrics { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-3); margin-top: auto; padding-top: 10px; border-top: 1px solid var(--border); }
+.mme-tile-metric { display: grid; gap: 4px; align-content: start; min-width: 0; }
+.mme-tile-label { font-size: var(--text-caption); color: var(--text-secondary); }
+.mme-tile-val { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.mme-tile-none { font-size: var(--text-caption); color: var(--text-secondary); }
+.mme-tile-metric .scale { width: 100%; max-width: 110px; }
+.mme-tile-metric .mme-stack { min-width: 0; height: 8px; }
 /* The topic names of the agenda are long: the standing labels get more room. */
 .dash .mme-heat.matrix-turned thead th:not(:first-child) { height: 190px; }
 /* The lists of stories pushed or skipped: the line under the story wraps instead of being cut. */
@@ -124,3 +134,5 @@
 .mme-related .related-main .muted-text { white-space: normal; overflow: visible; text-overflow: clip; }
 /* Αρχική: the highlights card of the media above the old tiles. */
 .home-dash { margin-bottom: var(--space-4); }
+/* Πρόσωπα: the people card sits above the grid of the persons of the API. */
+.fp-people { margin-bottom: var(--space-4); }

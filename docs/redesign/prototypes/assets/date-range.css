@@ -47,8 +47,8 @@
 .set-select { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-small); color: var(--text-secondary); }
 .set-select select { min-height: 40px; padding: 0 30px 0 12px; border: 1px solid var(--border); border-radius: var(--pill, 999px); background-color: var(--surface-raised); color: var(--ink); font: inherit; font-size: var(--text-small); }
 @media (max-width: 1023px) { .header-tools { max-width: none; flex: 1; } }
-/* With the drop-down list, the bar of five tabs has no room for the search below 1440 px: the tabs go to a second line, as on a page with many tabs. */
-@media (min-width: 1024px) and (max-width: 1439px) {
+/* With the drop-down list, the bar of five tabs has no room for the search below 1600 px: the tabs go to a second line, as on a page with many tabs. */
+@media (min-width: 1024px) and (max-width: 1599px) {
   .header-bar.has-tabs:has(.header-tools) { grid-template-columns: minmax(0, 1fr) minmax(0, 440px); row-gap: var(--space-2); }
   .header-bar.has-tabs:has(.header-tools) .section-tabs { grid-column: 1 / -1; grid-row: 2; }
   .header-bar.has-tabs:has(.header-tools) .section-tabs ul { flex-wrap: wrap; justify-content: center; min-width: 0; }

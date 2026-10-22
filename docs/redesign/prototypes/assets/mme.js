@@ -176,9 +176,10 @@
 
   // A diverging color for a net balance from −1 to +1: red for critical, blue for sympathetic, a warm gray in the middle.
   function netColor (net) {
-    const k = Math.min(1, Math.abs(net) / 0.5)
-    const end = net < 0 ? [0xc2, 0x3b, 0x3b] : [0x2a, 0x62, 0xc4]
-    const mid = [0xe4, 0xe1, 0xda]
+    // Soft tones: a light warm gray in the middle, a muted brick for critical and a muted blue for supportive. The step eases in, so small values stay pale.
+    const k = Math.min(1, Math.abs(net) / 0.5) ** 1.3 * 0.85
+    const end = net < 0 ? [0xc0, 0x5a, 0x4c] : [0x4a, 0x76, 0xb8]
+    const mid = [0xee, 0xeb, 0xe5]
     const rgb = mid.map((v, i) => Math.round(v + (end[i] - v) * k))
     const hex = `#${rgb.map((v) => v.toString(16).padStart(2, '0')).join('')}`
     return { background: hex, color: textOn(hex) }
@@ -197,7 +198,7 @@
         const n = o.quotes[p.k]
         const rate = o.n ? (n / o.n) * 1000 : 0
         const title = t('mme.people.cell.voice', { outlet: o.name, person: p.name, n: fmt.int(n), rate: fmt.dec(rate) })
-        const bg = n ? tint('#2a78d6', 1 - Math.min(1, rate / maxRate) * 0.9) : 'transparent'
+        const bg = n ? tint('#4a76b8', 1 - Math.min(1, rate / maxRate) * 0.8) : 'transparent'
         return h('td', { style: { background: bg, color: n ? textOn(bg) : 'var(--text-secondary)' }, title, 'aria-label': title }, n ? (rate < 10 ? fmt.dec(rate) : fmt.int(Math.round(rate))) : '')
       }
       const tone = o.tone[p.k]

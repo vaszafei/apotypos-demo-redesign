@@ -8,20 +8,20 @@
   <link rel="stylesheet" href="assets/tokens.css?v=4">
   <link rel="stylesheet" href="assets/app.css?v=12">
   <link rel="stylesheet" href="assets/dash.css?v=54">
-  <link rel="stylesheet" href="assets/mme.css?v=3">
-  <link rel="stylesheet" href="assets/date-range.css?v=2">
+  <link rel="stylesheet" href="assets/mme.css?v=4">
+  <link rel="stylesheet" href="assets/date-range.css?v=3">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=3"></script>
-  <script src="assets/messages.js?v=14"></script>
+  <script src="assets/messages.js?v=15"></script>
   <script src="assets/messages-v2.js?v=27"></script>
   <script src="assets/messages-spread.js?v=12"></script>
-  <script src="assets/messages-mme.js?v=3"></script>
+  <script src="assets/messages-mme.js?v=4"></script>
   <script src="assets/components.js?v=6"></script>
   <script src="assets/dash.js?v=11"></script>
   <script src="assets/date-range.js?v=1"></script>
-  <script src="assets/mme.js?v=2"></script>
+  <script src="assets/mme.js?v=3"></script>
   <script src="assets/shell.js?v=29"></script>
   <script src="data/mme.js?v=1"></script>
   <script src="data/groups.js?v=2"></script>
@@ -41,18 +41,19 @@
     const colorOfGroup = Dash.groupColors(groupList)
 
     // ?ds=il opens the Israeli set, as on the live page.
-    const view = { set: params.get('ds') === 'il' ? 'il' : 'gr', from: null, to: null, people: 'tone', sort: 'n' }
+    const view = { set: params.get('ds') === 'il' ? 'il' : 'gr', from: null, to: null, sort: 'n' }
     let lastValid = null
     let draw = () => {}
     const setSelect = h('select', { 'aria-label': t('mme.set'), onChange: (e) => { view.set = e.target.value; view.from = null; lastValid = null; draw() } },
       ['gr', 'il'].map((k) => h('option', { value: k }, t(`mme.set.${k}`))))
-    // The drop-down list joins the global search in the top bar of the shell, on its left.
+    // The drop-down list joins the global search in the top bar of the shell, on its right.
     function placeSetSelect () {
       const search = document.querySelector('.header-bar .global-search')
       if (!search || search.parentElement.classList.contains('header-tools')) return
-      const tools = h('div', { class: 'header-tools' }, h('label', { class: 'set-select' }, h('span', { class: 'visually-hidden' }, t('mme.set')), setSelect))
+      // The search comes first and the list of countries is on its right.
+      const tools = h('div', { class: 'header-tools' })
       search.replaceWith(tools)
-      tools.append(search)
+      tools.append(search, h('label', { class: 'set-select' }, h('span', { class: 'visually-hidden' }, t('mme.set')), setSelect))
     }
 
     const sumRange = (arr, i0, i1, pick = (x) => x) => { let s = 0; for (let i = i0; i <= i1; i++) s += pick(arr[i]); return s }
@@ -283,23 +284,33 @@
             const color = o.group ? colorOfGroup.get(o.group) || NO_GROUP : null
             const group = !greek ? null : o.group
               ? h('p', { class: 'mme-tile-group' }, h('span', { class: 'dot', style: `--dot:${color}`, 'aria-hidden': 'true' }),
-                slugOfGroup.has(o.group) ? h('a', { class: 'quiet-link', href: `group-v2.html?g=${slugOfGroup.get(o.group)}` }, o.group) : o.group)
+                slugOfGroup.has(o.group) ? h('a', { href: `group-v2.html?g=${slugOfGroup.get(o.group)}` }, o.group) : o.group)
               : h('p', { class: 'mme-tile-group' }, h('span', { class: 'dot dot-none', 'aria-hidden': 'true' }), t('media.col.group.none'))
             const stanceN = o.stance[0] + o.stance[1] + o.stance[2]
+            const top = Mme.topIssues(S, o, 3)
+            const topMax = Math.max(...top.map((r) => r.v), 0.01)
             return h('li', { class: 'mme-tile', style: color ? `--gc:${color}` : '' },
               h('div', { class: 'mme-tile-head' },
-                h('p', { class: 'mme-tile-name' }, view.sort === 'name' ? null : h('span', { class: 'mme-tile-rank' }, String(i + 1)), Mme.outletLink(S, o)),
+                h('div', { class: 'mme-tile-id' },
+                  h('p', { class: 'mme-tile-name' }, view.sort === 'name' ? null : h('span', { class: 'mme-tile-rank' }, `${i + 1}`), Mme.outletLink(S, o)),
+                  group),
                 h('p', { class: 'mme-tile-n' }, fmt.int(o.n), h('small', {}, t('mme.tile.articles')))),
-              group,
               h('div', { class: 'mme-tile-vol', 'aria-hidden': 'true' }, h('span', { style: `width:${(o.n / nMax) * 100}%` })),
-              h('ul', { class: 'mme-tile-topics', 'aria-label': t('mme.rank.topics') }, Mme.topIssues(S, o, 3).map((r) => h('li', {}, `${r.x[App.locale] || r.x.el} `, h('b', {}, `${Math.round(r.v * 100)}%`)))),
+              h('ul', { class: 'mme-tile-topics', 'aria-label': t('mme.rank.topics') }, top.map((r) => h('li', {},
+                h('span', { class: 'mme-tile-topic' }, r.x[App.locale] || r.x.el),
+                h('span', { class: 'mme-tile-bar', 'aria-hidden': 'true' }, h('span', { style: `width:${(r.v / topMax) * 100}%` })),
+                h('span', { class: 'mme-tile-pct' }, `${Math.round(r.v * 100)}%`)))),
               h('div', { class: 'mme-tile-metrics' },
-                h('span', {}, t('mme.tile.cb')),
-                o.cbKnown >= 100 ? Scale(o.cbYes / o.cbKnown, 0, cbMax, cbAvg, fmt.pct(o.cbYes / o.cbKnown), fmt.pct(cbAvg)) : h('span', {}),
-                h('span', { class: 'mme-tile-val' }, o.cbKnown >= 100 ? fmt.pct(o.cbYes / o.cbKnown) : t('group.clickbait.none')),
-                h('span', {}, t('mme.rank.stance')),
-                UI.MiniStance(o.stance.map((v, j) => ({ label: t(`stance.${['critical', 'neutral', 'supportive'][j]}`), value: v, color: ['var(--stance-critical)', 'var(--stance-neutral)', 'var(--stance-supportive)'][j] }))),
-                h('span', { class: 'mme-tile-val' }, stanceN >= 30 ? t('mme.tile.crit', { p: pct0(o.stance[0] / stanceN) }) : '')))
+                h('div', { class: 'mme-tile-metric' },
+                  h('p', { class: 'mme-tile-label' }, t('mme.tile.cb')),
+                  o.cbKnown >= 100
+                    ? [h('p', { class: 'mme-tile-val' }, fmt.pct(o.cbYes / o.cbKnown)), Scale(o.cbYes / o.cbKnown, 0, cbMax, cbAvg, fmt.pct(o.cbYes / o.cbKnown), fmt.pct(cbAvg))]
+                    : h('p', { class: 'mme-tile-none' }, t('group.clickbait.none'))),
+                h('div', { class: 'mme-tile-metric' },
+                  h('p', { class: 'mme-tile-label' }, t('mme.rank.stance')),
+                  stanceN >= 30
+                    ? [h('p', { class: 'mme-tile-val' }, t('mme.tile.crit', { p: pct0(o.stance[0] / stanceN) })), Mme.StanceBar(o.stance, o.name)]
+                    : h('p', { class: 'mme-tile-none' }, t('stance.few', { n: 30 })))))
           }
           const sorter = UI.SegmentedControl({ label: t('mme.rank.sort'), value: view.sort, options: ['n', 'cb', 'crit', 'name'].map((k) => ({ value: k, label: t(`mme.rank.sort.${k}`) })), onChange: (k) => { view.sort = k; draw() } })
           const ranking = card('c-12 mme-rank', cardHead(t('mme.rank.all'), sorter, `${t('mme.rank.note')} ${t('media2.rank.outlets.note')}`),
@@ -309,15 +320,14 @@
 
           // The cards of the live page that the dashboard did not have.
           // The topic chips and «Ένα θέμα, όλα τα μέσα» are on the page Θέματα. «Οι ιστορίες του διαστήματος» is on the page Ιστορίες. «Τι ξεχωρίζει» is on Αρχική.
-          const agenda = Mme.AgendaCard(S)
-          const people = Mme.PeopleCard(S, { mode: view.people, onMode: (m) => { view.people = m; draw() } })
+          // «Η ατζέντα κάθε μέσου» is on Θέματα and «Πώς παρουσιάζει κάθε μέσο τα πρόσωπα» on Πρόσωπα.
           const gov = Mme.GovCard(S)
           const persons = Mme.PersonsCard(S)
 
           content.replaceChildren(bar, h('div', { class: 'dash-grid' },
             statOutlets, statArticles, statStories, statPeople,
             ranking, h('div', { class: 'c-6 card-col' }, volume, scatterCard, bylineCard), h('div', { class: 'c-6 card-col' }, gov),
-            agenda, people, persons), Mme.MethodNote(S), protoNote())
+            persons), Mme.MethodNote(S), protoNote())
         }
         placeSetSelect()
         draw()
