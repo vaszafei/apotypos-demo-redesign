@@ -15,6 +15,7 @@
     '/media': 'media-v2.html',
     '/fingerprints': 'fingerprints-v2.html',
     '/groups': 'groups-v2.html',
+    '/analyze': 'analyze-v2.html',
     '/elections': 'elections-v2.html',
     '/speeches': 'speeches-v2.html',
     '/contradictions': 'persons-v2.html',
@@ -30,7 +31,7 @@
   // The sidebar has 6 items (APO-161: Media and Ownership are one item). The sub-pages of an item are tabs inside the page (shell-spec.md, "Navigation").
   const NAV = [
     { key: 'home', tabs: [['home', '/']] },
-    { key: 'media', tabs: [['overview', '/media'], ['ownership', '/groups'], ['fingerprints', '/fingerprints'], ['similarity', '/similarity']], details: ['/outlet', '/group'] },
+    { key: 'media', tabs: [['overview', '/media'], ['analyze', '/analyze'], ['ownership', '/groups'], ['fingerprints', '/fingerprints'], ['similarity', '/similarity']], details: ['/outlet', '/group'] },
     { key: 'topics', tabs: [['trends', '/trends'], ['overton', '/overton']], details: ['/topic'] },
     { key: 'spread', tabs: [['overview', '/stories']], details: ['/story'] },
     { key: 'politics', tabs: [['elections', '/elections'], ['speeches', '/speeches'], ['persons', '/contradictions'], ['statements', '/track'], ['cases', '/cases'], ['campaigns', '/campaigns']] },
