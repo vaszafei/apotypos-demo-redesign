@@ -7,18 +7,27 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=4">
   <link rel="stylesheet" href="assets/app.css?v=12">
+  <link rel="stylesheet" href="assets/dash.css?v=54">
+  <link rel="stylesheet" href="assets/mme.css?v=4">
 </head>
 <body>
   <div id="app"></div>
-  <script src="assets/icons.js?v=2"></script>
-  <script src="assets/messages.js?v=13"></script>
+  <script src="assets/icons.js?v=3"></script>
+  <script src="assets/messages.js?v=16"></script>
+  <script src="assets/messages-v2.js?v=27"></script>
+  <script src="assets/messages-mme.js?v=4"></script>
   <script src="assets/components.js?v=6"></script>
-  <script src="assets/shell.js?v=28"></script>
+  <script src="assets/dash.js?v=11"></script>
+  <script src="assets/mme.js?v=3"></script>
+  <script src="assets/shell.js?v=30"></script>
   <script src="data/home.js"></script>
+  <script src="data/mme.js?v=1"></script>
   <script>
     // Home: Dashboard with a period that varies. The header shows the RangeControl and the update date.
     const { t, fmt, h, load } = App
     const result = load('home', ['dates', 'outlets', 'issues', 'issueDaily'], (b) => b.dates)
+    // «Τι ξεχωρίζει στο διάστημα» comes from Μέσα › Επισκόπηση: the Greek outlets of data/mme.js, for the period of the page.
+    const mme = load('mme', ['sets'], (b) => Object.keys(b.sets))
     const range = { from: '2026-08-01', to: '2026-09-30' }
     let lastValid = { ...range }
 
@@ -88,11 +97,23 @@
               ]
             })
           })
-          content.replaceChildren(makeHeader([period, t('home.meta.outlets', { n: fmt.int(outletsActive) })]), tiles, dailyCard, topicsCard, protoNote())
+          content.replaceChildren(makeHeader([period, t('home.meta.outlets', { n: fmt.int(outletsActive) })]), highlights(), tiles, dailyCard, topicsCard, protoNote())
         }
         draw()
       }
     })
+
+    // The highlights card of the media, for the days of the period that the set has. It is left out when the set does not cover the period.
+    function highlights () {
+      if (mme.kind !== 'data' || !mme.data.sets.gr) return null
+      const set = mme.data.sets.gr
+      const i0 = set.dates.indexOf(lastValid.from)
+      const i1 = set.dates.indexOf(lastValid.to)
+      if (i0 < 0 || i1 < i0) return null
+      const el = Mme.HighlightsCard(Mme.summary(set, i0, i1))
+      el.querySelector('.dcard-head').after(h('p', { class: 'dcard-sub' }, t('mme.home.note')))
+      return h('div', { class: 'dash home-dash' }, h('div', { class: 'dash-grid' }, el))
+    }
 
     function protoNote () { return h('p', { class: 'proto-note' }, t('proto.states')) }
   </script>

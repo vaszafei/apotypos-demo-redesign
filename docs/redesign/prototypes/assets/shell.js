@@ -30,15 +30,16 @@
 
   // The sidebar has 6 items (APO-161: Media and Ownership are one item). The sub-pages of an item are tabs inside the page (shell-spec.md, "Navigation").
   // The item "world" is Αναλύσεις: its tabs are the pages of the ΑΝΑΛΥΣΗ section of the live sidebar, in the same order (#35).
-  // ΜΜΕ & πρόσωπα (/media) is not there: its content is Μέσα › Επισκόπηση.
+  // ΜΜΕ & πρόσωπα (/media) is not there: its content is Μέσα › Επισκόπηση. Θέματα (/trends) is a tab of Μέσα, not an item of its own.
+  // Πρόσωπα is an item: its overview (/fingerprints) and Φάκελος προσώπου (/contradictions), which left Αναλύσεις.
   const NAV = [
     { key: 'home', tabs: [['home', '/']] },
-    { key: 'media', tabs: [['overview', '/media'], ['ownership', '/groups'], ['fingerprints', '/fingerprints'], ['similarity', '/similarity']], details: ['/outlet', '/group'] },
-    { key: 'topics', tabs: [['trends', '/trends']], details: ['/topic'] },
+    { key: 'media', tabs: [['overview', '/media'], ['topics', '/trends'], ['ownership', '/groups'], ['similarity', '/similarity']], details: ['/outlet', '/group', '/topic'] },
     { key: 'spread', tabs: [['overview', '/stories']], details: ['/story'] },
+    { key: 'people', tabs: [['overview', '/fingerprints'], ['file', '/contradictions']] },
     { key: 'politics', tabs: [['elections', '/elections'], ['statements', '/track'], ['cases', '/cases'], ['campaigns', '/campaigns']] },
     { key: 'world', tabs: [['speeches', '/speeches'], ['war', '/war'], ['analyze', '/analyze'], ['narrative', '/narrative'], ['gaza', '/gaza'], ['israel', '/israel'],
-      ['language', '/gaza-language'], ['coverage', '/coverage'], ['france', '/france-riots'], ['overton', '/overton'], ['persons', '/contradictions']] }
+      ['language', '/gaza-language'], ['coverage', '/coverage'], ['france', '/france-riots'], ['overton', '/overton']] }
   ]
   const FOOTER = [['methodology', '/methodology'], ['about', '/about'], ['pages', null]]
 
@@ -252,7 +253,7 @@
           h('li', {}, h('a', { href: hrefOf(r), 'aria-current': r === route ? 'page' : null }, t(`tab.${item.key}.${key}`))))))
         : null
       // A dash page has its tabs in the center of the top bar. The other pages have them under the top bar.
-      // An item with many tabs (Αναλύσεις has 11) puts them on a second row of the top bar, so they do not push the page wider.
+      // An item with many tabs (Αναλύσεις has 10) puts them on a second row of the top bar, so they do not push the page wider.
       if (dash && tabBar) { header.classList.add('has-tabs'); if (item.tabs.length > 6) header.classList.add('many-tabs'); header.append(tabBar) }
       header.append(GlobalSearch())
       const content = h('main', { class: 'content', id: 'content' })

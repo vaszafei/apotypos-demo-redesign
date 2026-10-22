@@ -8,21 +8,26 @@
   <link rel="stylesheet" href="assets/tokens.css?v=4">
   <link rel="stylesheet" href="assets/app.css?v=12">
   <link rel="stylesheet" href="assets/dash.css?v=54">
+  <link rel="stylesheet" href="assets/mme.css?v=4">
 </head>
 <body>
   <div id="app"></div>
-  <script src="assets/icons.js?v=2"></script>
-  <script src="assets/messages.js?v=13"></script>
+  <script src="assets/icons.js?v=3"></script>
+  <script src="assets/messages.js?v=16"></script>
   <script src="assets/messages-v2.js?v=27"></script>
   <script src="assets/components.js?v=6"></script>
+  <script src="assets/messages-mme.js?v=4"></script>
   <script src="assets/dash.js?v=11"></script>
-  <script src="assets/shell.js?v=28"></script>
+  <script src="assets/mme.js?v=3"></script>
+  <script src="assets/shell.js?v=30"></script>
   <script src="data/fingerprints.js?v=2"></script>
   <script src="data/stanceRatings.js?v=2"></script>
   <script src="data/groups.js?v=2"></script>
+  <script src="data/mme.js?v=1"></script>
   <script>
-    // Media, Αποτυπώματα: dashboard of APO-161. One view: the 15 persons of the API. Each view states its persons, its period and its source in the line under the title.
-    // Cards: the strongest cells in a list, the matrix, and the range chart. The measure control (emphasis or stance) is in the top bar, on the right.
+    // Πρόσωπα › Επισκόπηση (formerly Μέσα › Αποτυπώματα): dashboard of APO-161.
+    // First «Τα πρόσωπα» and «Πώς παρουσιάζει κάθε μέσο τα πρόσωπα» of the live page ΜΜΕ & πρόσωπα (data/mme.js, the Greek outlets over the whole window), with its own tone and voice control.
+    // Then the 15 persons of the API: the strongest cells in a list and the range chart. The measure control (emphasis or stance) is in the top bar, on the right.
     const { t, fmt, h, load } = App
     const { fit, reset, NO_GROUP, card, cardHead, emptyText, TopBar } = Dash
     const sources = {
@@ -34,7 +39,9 @@
     const colorOf = Dash.groupColors(groupList)
     const groupOfOutlet = new Map(groupList.flatMap((g) => g.outlets.map((o) => [o.name, g.name])))
     const groupRank = new Map(groupList.map((g, i) => [g.name, i]))
-    const state = { mode: 'attention' }
+    const state = { mode: 'attention', people: 'tone' }
+    const mme = load('mme', ['sets'], (b) => Object.keys(b.sets))
+    const mmeSummary = mme.kind === 'data' ? Mme.summary(mme.data.sets.gr, 0, mme.data.sets.gr.dates.length - 1) : null
 
     // Two palettes. Coverage (more or less attention) uses orange and teal, so it is not read as a party color. Stance uses the critical and supportive colors.
     const PALETTES = { cover: { low: [0xc2, 0x57, 0x0c], high: [0x0f, 0x7c, 0x78] }, stance: { low: [0xc2, 0x3b, 0x3b], high: [0x2a, 0x62, 0xc4] } }
@@ -61,17 +68,11 @@
         k = Math.min(1, k + 0.02)
       }
     }
-    const stepOfRounded = (z) => stepOf(Math.round(z * 10) / 10)
 
     const NET_LABELS = ['≤ −0,5', '−0,4', '−0,25', '−0,1', '0', '+0,1', '+0,25', '+0,4', '≥ +0,5']
     const Z_LABELS = ['≤ −2', '−1,5', '−1', '−0,5', '0', '+0,5', '+1', '+1,5', '≥ +2']
     const zOfNet = (net) => net * 4
 
-    function legendOf (labels, palette) {
-      return h('div', { class: 'scale-legend' }, h('span', {}, t('fp.legend.low')),
-        h('ol', { class: 'scale-steps' }, [-4, -3, -2, -1, 0, 1, 2, 3, 4].map((s, i) => { const c = stepColors(s, palette); return h('li', { style: { background: c.background, color: c.color } }, labels[i]) })),
-        h('span', {}, t('fp.legend.high')))
-    }
     // The short name of a person is the last word. A name that two persons share stays whole.
     const shortNames = (names) => names.map((n) => { const last = n.split(' ').pop(); return names.filter((m) => m.split(' ').pop() === last).length > 1 ? n : last })
 
@@ -119,38 +120,6 @@
         })
       }
       return sortRows({ kind: attention ? 'attention' : 'stance', palette: attention ? 'cover' : 'stance', labels: attention ? Z_LABELS : NET_LABELS, period, rows, cols, grid, note: t(attention ? 'fp.note.extended' : 'fp.note.extended.stance') })
-    }
-
-    // The matrix: the numbers show only in strong deviations. The title of each cell gives its value.
-    // The persons view turns the table: a row for each person (15) and a column for each outlet (30 or more). It is short, and it shows without a scroll.
-    // The text of a strong cell depends on the width of a column. The matrix draws again at its real width.
-    function Matrix (m) {
-      const FIRST = 108
-      return fit((holder, width) => {
-        // A strong cell always shows a small triangle (up: above the average, down: below). The number follows it, without its sign, if the column is 32 px wide or more.
-        const colW = (width - FIRST) / m.rows.length
-        const withNumber = colW >= 32
-        const textOf = (c) => {
-          if (Math.abs(stepOfRounded(c.z)) < 2) return ''
-          return h('span', { class: 'cell-val' }, h('span', { class: c.z > 0 ? 'tri tri-up' : 'tri tri-down', 'aria-hidden': 'true' }), withNumber ? c.label.replace(/^[+−-]/, '') : null)
-        }
-        const dot = (r) => h('span', { class: r.group ? 'dot' : 'dot dot-none', style: r.group ? `--dot:${colorOf.get(r.group) || NO_GROUP}` : null, 'aria-hidden': 'true' })
-        const paint = (c, title) => (c
-          ? { ...stepColors(stepOfRounded(c.z), m.palette), text: textOf(c), title: c.title, className: null }
-          : { background: 'transparent', color: 'var(--text-secondary)', text: '', title, className: 'cell-empty' })
-        const chart = UI.MatrixChart({
-          caption: t('fp.matrix.title'), rowHeader: '',
-          rows: m.cols.map((c) => ({ label: h('span', { title: c.title }, c.short) })),
-          columns: m.rows.map((r) => ({ label: h('span', { class: 'col-label' }, dot(r), r.name), title: r.sub ? `${r.name} · ${r.sub}` : r.name })),
-          cell: (ri, ci) => paint(m.grid[ci][ri], `${m.rows[ci].name} · ${m.cols[ri].title}`),
-          legend: legendOf(m.labels, m.palette)
-        })
-        const table = chart.querySelector('table')
-        table.classList.add('matrix-turned')
-        table.style.setProperty('--first', `${FIRST}px`)
-        table.style.minWidth = `${FIRST + m.rows.length * 22}px`
-        holder.replaceChildren(chart)
-      })
     }
 
     // The strongest cells, as a list with a bar.
@@ -228,7 +197,7 @@
       route: '/fingerprints',
       dash: true,
       title: () => t('fp.title'),
-      breadcrumbs: () => [{ label: t('fp.title') }],
+      breadcrumbs: () => [{ label: t('nav.people') }],
       render (content, { tabs }) {
         content.classList.add('dash', 'minimal')
         const draw = () => {
@@ -236,19 +205,22 @@
           const focused = [...document.querySelectorAll('.dash-bar .segmented button')].indexOf(document.activeElement)
           const m = personsModel()
           const measure = UI.SegmentedControl({ label: t('fp.mode'), value: state.mode, onChange: (mode) => { state.mode = mode; draw() }, options: ['attention', 'stance'].map((mode) => ({ value: mode, label: t(`fp.mode.${mode}`) })) })
-          const bar = TopBar({ title: t('nav.media'), actions: [measure], tabs, quiet: true })
+          const bar = TopBar({ title: t('nav.people'), actions: [measure], tabs, quiet: true })
           if (m.failed) { content.replaceChildren(bar, UI.ErrorState({ onRetry: () => location.reload() }), protoNote()); return }
           if (m.empty) { content.replaceChildren(bar, h('div', { class: 'dash-grid' }, card('c-12', cardHead(t('fp.matrix.title')), UI.EmptyState({ text: t('fp.empty') }))), protoNote()); return }
 
-          // Row 1: the strongest cells in a narrow column and the matrix. Row 2: the range chart.
-          const strip = card('card-wide', cardHead(t('f2.strip.persons'), h('span', { class: 'legend-inline' },
+          // Row 1: the person cards and the people × outlets of the live page. Row 2: the strongest cells in a narrow column and the range chart.
+          const personCards = mmeSummary ? Mme.PersonsCard(mmeSummary) : null
+          const people = mmeSummary ? Mme.PeopleCard(mmeSummary, { mode: state.people, onMode: (mode) => { state.people = mode; draw() } }) : null
+          if (people) people.append(h('p', { class: 'dcard-sub' }, t('mme.topics.window', { from: fmt.date(mmeSummary.set.dates[0]), to: fmt.date(mmeSummary.set.dates[mmeSummary.set.dates.length - 1]) })))
+          const strip = card('card-main', cardHead(t('f2.strip.persons'), h('span', { class: 'legend-inline' },
               h('span', {}, h('span', { class: 'swatch swatch-band' }), t('f2.strip.key.band')),
               h('span', {}, h('span', { class: 'swatch swatch-tick' }), t('f2.strip.key.median')),
               h('span', {}, h('span', { class: 'dot', style: '--dot:var(--text-secondary)' }), t('f2.strip.key.extreme'))),
             t('f2.strip.sub')), RangeChart(m))
-          const matrix = card('card-main', cardHead(t('fp.matrix.title'), null, `${m.note} ${t('f2.matrix.sub')}`), Matrix(m))
+          strip.append(h('p', { class: 'dcard-sub' }, m.note))
 
-          content.replaceChildren(bar, h('div', { class: 'dash-grid dash-grid-side' }, CellList(m, 'top'), matrix, strip), protoNote())
+          content.replaceChildren(bar, people ? h('div', { class: 'dash-grid fp-people' }, personCards, people) : null, h('div', { class: 'dash-grid dash-grid-side' }, CellList(m, 'top'), strip), protoNote())
           if (focused >= 0) document.querySelectorAll('.dash-bar .segmented button')[focused]?.focus()
         }
         draw()

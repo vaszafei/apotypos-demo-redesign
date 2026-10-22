@@ -84,14 +84,55 @@
 .mme-headline .muted-text { font-size: var(--text-caption); }
 .mme-angle { font-size: var(--text-caption); color: var(--text-primary); }
 
-/* Four stat cards in a row: the line under the number goes below it, the small picture stays on the right. */
-.dstat.c-3 .dstat-row { grid-template-columns: auto minmax(0, 1fr); row-gap: 2px; }
-.dstat.c-3 .dstat-sub { grid-column: 1 / -1; grid-row: 2; }
-.dstat.c-3 .dstat-row > :nth-child(3) { justify-self: end; }
-/* The ranking: the name column takes the room left by the numbers, so the topics under the name wrap. */
-.mme-rank .data-table td:nth-child(2) { min-width: 220px; }
+/* Four small stat cards in a row: the label over the number and its line, the small picture on the right. */
+.dstat.mme-kpi { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: baseline; column-gap: var(--space-2); row-gap: 0; padding: 6px 12px; }
+.mme-kpi .dstat-label { grid-column: 1 / 3; grid-row: 1; }
+.mme-kpi .dstat-row { display: contents; }
+.mme-kpi .dstat-value { grid-column: 1; grid-row: 2; font-size: 18px; line-height: 1.25; }
+.mme-kpi .dstat-sub { grid-column: 2 / 4; grid-row: 2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.mme-kpi .dstat-row > :nth-child(3) { grid-column: 3; grid-row: 1; align-self: center; }
+.mme-kpi .meter { width: 72px; }
+.mme-kpi .dcard-empty { grid-column: 1 / -1; }
+@media (max-width: 1023px) { .mme-kpi.c-3 { grid-column: span 6; } }
+
+/* All outlets: one tile for each outlet. The top rule has the color of the group. */
+.mme-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-3); margin: var(--space-1) 0 0; padding: 0; list-style: none; }
+.mme-tile { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-raised); box-shadow: inset 0 3px 0 var(--gc, var(--bar-muted)); font-size: var(--text-small); transition: border-color 0.12s, box-shadow 0.12s; }
+.mme-tile:hover { border-color: var(--rule); box-shadow: inset 0 3px 0 var(--gc, var(--bar-muted)), 0 4px 14px rgba(17, 17, 17, 0.07); }
+.mme-tile p { margin: 0; }
+.mme-tile-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-2); padding-top: 2px; }
+.mme-tile-id { display: grid; gap: 2px; min-width: 0; }
+.mme-tile-name { overflow: hidden; font-size: 15px; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
+.mme-tile-name a { color: var(--ink); text-decoration: none; }
+.mme-tile-name a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.mme-tile-rank { margin-right: 6px; font-size: var(--text-caption); font-weight: 500; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.mme-tile-group { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; font-size: var(--text-caption); color: var(--text-secondary); white-space: nowrap; text-overflow: ellipsis; }
+.mme-tile-group .dot { width: 8px; height: 8px; }
+.mme-tile-group a { overflow: hidden; color: var(--text-secondary); text-decoration: none; text-overflow: ellipsis; }
+.mme-tile-group a:hover { color: var(--ink); text-decoration: underline; }
+.mme-tile-n { display: grid; justify-items: end; flex: none; font-size: 18px; font-weight: 600; line-height: 1.15; color: var(--ink); font-variant-numeric: tabular-nums; }
+.mme-tile-n small { font-size: var(--text-caption); font-weight: 400; color: var(--text-secondary); }
+.mme-tile-vol { height: 3px; border-radius: 2px; background: var(--surface-card); }
+.mme-tile-vol span { display: block; height: 100%; border-radius: 2px; background: var(--series-news); }
+.mme-tile-topics { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.mme-tile-topics li { display: grid; grid-template-columns: minmax(0, 1fr) 56px 32px; align-items: center; gap: var(--space-2); font-size: var(--text-caption); color: var(--text-primary); }
+.mme-tile-topic { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.mme-tile-bar { height: 6px; border-radius: 3px; background: var(--surface-card); }
+.mme-tile-bar span { display: block; height: 100%; border-radius: 3px; background: var(--bar-muted); }
+.mme-tile-pct { text-align: right; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.mme-tile-metrics { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-3); margin-top: auto; padding-top: 10px; border-top: 1px solid var(--border); }
+.mme-tile-metric { display: grid; gap: 4px; align-content: start; min-width: 0; }
+.mme-tile-label { font-size: var(--text-caption); color: var(--text-secondary); }
+.mme-tile-val { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.mme-tile-none { font-size: var(--text-caption); color: var(--text-secondary); }
+.mme-tile-metric .scale { width: 100%; max-width: 110px; }
+.mme-tile-metric .mme-stack { min-width: 0; height: 8px; }
 /* The topic names of the agenda are long: the standing labels get more room. */
 .dash .mme-heat.matrix-turned thead th:not(:first-child) { height: 190px; }
 /* The lists of stories pushed or skipped: the line under the story wraps instead of being cut. */
 .mme-related li { grid-template-columns: minmax(0, 1fr); }
 .mme-related .related-main .muted-text { white-space: normal; overflow: visible; text-overflow: clip; }
+/* Αρχική: the highlights card of the media above the old tiles. */
+.home-dash { margin-bottom: var(--space-4); }
+/* Πρόσωπα: the people card sits above the grid of the persons of the API. */
+.fp-people { margin-bottom: var(--space-4); }
