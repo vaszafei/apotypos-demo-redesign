@@ -7,7 +7,7 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=4">
   <link rel="stylesheet" href="assets/app.css?v=12">
-  <link rel="stylesheet" href="assets/dash.css?v=64">
+  <link rel="stylesheet" href="assets/dash.css?v=66">
 </head>
 <body>
   <div id="app"></div>
@@ -367,13 +367,14 @@
             total ? OwnerBubbles({ groups: treeGroups, total }) : emptyText(t('groups.empty')))
           const shareCard = card('c-5', cardHead(t('media2.groups.title'), null, total ? t('media2.groups.known', { share: fmt.pct(grouped / total) }) : null),
             total
-              ? h('div', { class: 'donut-wrap sun-wrap' }, Sunburst({ groups: treeGroups, total }),
+              ? h('div', { class: 'donut-wrap sun-wrap' },
                   h('ul', { class: 'rows rows-groups rows-owners' }, treeGroups.map((g) => {
                     return h('li', { title: g.key === null ? t('g2.bubble.none', { n: fmt.int(g.outlets.length) }) : `${g.owner} · ${t('g2.bubble.outlets', { n: fmt.int(g.outlets.length) })}` },
                       h('span', { class: g.key === null ? 'dot dot-none' : 'dot', style: `--dot:${g.color}`, 'aria-hidden': 'true' }),
                       h('span', { class: 'row-name', title: g.label }, g.key === null ? g.label : h('a', { class: 'quiet-link', href: hrefOf(groups.find((x) => x.name === g.key)) }, g.label)),
                       h('span', { class: 'row-value' }, fmt.pct(g.value / total)))
-                  })))
+                  })),
+                  Sunburst({ groups: treeGroups, total }))
               : emptyText(t('groups.empty')))
 
           // Row 2, on the left: the articles of each day, stacked by group. The largest group is at the bottom, the outlets with no group are on top.
