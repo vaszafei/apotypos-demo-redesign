@@ -12,6 +12,7 @@ from pathlib import Path
 NAMES = [
     "magnifying-glass", "bars-3", "x-mark", "chevron-right",
     "exclamation-triangle", "inbox", "arrow-path", "arrow-top-right-on-square",
+    "arrow-left", "calendar", "chevron-down", "chevron-left",
 ]
 
 

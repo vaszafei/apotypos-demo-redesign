@@ -1,5 +1,15 @@
 // Messages of the cards from the live page ΜΜΕ & πρόσωπα (assets/mme.js): Μέσα › Επισκόπηση and the page of one outlet.
 Object.assign(window.MESSAGES.el, {
+  'mme.rank.all': 'Όλα τα μέσα',
+  'dr.title': 'Περίοδος',
+  'dr.presets': 'Έτοιμες περίοδοι',
+  'dr.days': '{n} ημέρες',
+  'dr.prev': 'Προηγούμενος μήνας',
+  'dr.next': 'Επόμενος μήνας',
+  'dr.pick.end': 'Διαλέξτε την τελευταία ημέρα',
+  'dr.apply': 'Εφαρμογή',
+  'dr.cancel': 'Ακύρωση',
+  'mme.topics.window': 'Από την ανάλυση ΜΜΕ & πρόσωπα · {from} – {to}',
   'mme.set': 'Σύνολο μέσων',
   'mme.set.gr': 'Ελλάδα',
   'mme.set.il': 'Ισραήλ',
@@ -25,7 +35,7 @@ Object.assign(window.MESSAGES.el, {
 
   'mme.rank.topics': 'Κύρια θέματα',
   'mme.rank.stance': 'Στάση',
-  'mme.rank.note': 'Τα 29 μέσα με τουλάχιστον 500 άρθρα στο διάστημα της ανάλυσης. Κάτω από το όνομα: τα τρία μεγαλύτερα θέματα του μέσου. Η στάση είναι προς την κυβέρνηση, στα άρθρα όπου η κυβέρνηση παίζει ρόλο.',
+  'mme.rank.note': 'Τα μέσα με τουλάχιστον 500 άρθρα στο διάστημα της ανάλυσης. Κάτω από το όνομα: τα τρία μεγαλύτερα θέματα του μέσου. Η στάση είναι προς την κυβέρνηση, στα άρθρα όπου η κυβέρνηση παίζει ρόλο.',
 
   'mme.stories.title': 'Οι ιστορίες του διαστήματος',
   'mme.stories.info': 'Οι μεγαλύτερες συγκεκριμένες ιστορίες και ποιο μέσο τις έτρεξε. Το μέγεθος της κουκκίδας είναι το μερίδιο της ιστορίας στα άρθρα του μέσου. Κενό: καμία δημοσίευση.',
@@ -138,6 +148,16 @@ Object.assign(window.MESSAGES.el, {
 })
 
 Object.assign(window.MESSAGES.en, {
+  'mme.rank.all': 'All outlets',
+  'dr.title': 'Period',
+  'dr.presets': 'Preset periods',
+  'dr.days': '{n} days',
+  'dr.prev': 'Previous month',
+  'dr.next': 'Next month',
+  'dr.pick.end': 'Choose the last day',
+  'dr.apply': 'Apply',
+  'dr.cancel': 'Cancel',
+  'mme.topics.window': 'From the analysis Media & people · {from} – {to}',
   'mme.set': 'Set of outlets',
   'mme.set.gr': 'Greece',
   'mme.set.il': 'Israel',
@@ -163,7 +183,7 @@ Object.assign(window.MESSAGES.en, {
 
   'mme.rank.topics': 'Main topics',
   'mme.rank.stance': 'Stance',
-  'mme.rank.note': 'The 29 outlets with at least 500 articles in the window of the analysis. Under the name: the three largest topics of the outlet. The stance is to the government, in the articles where the government has a role.',
+  'mme.rank.note': 'The outlets with at least 500 articles in the window of the analysis. Under the name: the three largest topics of the outlet. The stance is to the government, in the articles where the government has a role.',
 
   'mme.stories.title': 'The stories of the period',
   'mme.stories.info': 'The largest specific stories and which outlet ran them. The size of a dot is the share of the story in the articles of the outlet. Empty: nothing published.',

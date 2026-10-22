@@ -8,18 +8,20 @@
   <link rel="stylesheet" href="assets/tokens.css?v=4">
   <link rel="stylesheet" href="assets/app.css?v=12">
   <link rel="stylesheet" href="assets/dash.css?v=54">
-  <link rel="stylesheet" href="assets/mme.css?v=1">
+  <link rel="stylesheet" href="assets/mme.css?v=2">
+  <link rel="stylesheet" href="assets/date-range.css?v=1">
 </head>
 <body>
   <div id="app"></div>
-  <script src="assets/icons.js?v=2"></script>
+  <script src="assets/icons.js?v=3"></script>
   <script src="assets/messages.js?v=13"></script>
   <script src="assets/messages-v2.js?v=27"></script>
   <script src="assets/messages-spread.js?v=12"></script>
-  <script src="assets/messages-mme.js?v=1"></script>
+  <script src="assets/messages-mme.js?v=2"></script>
   <script src="assets/components.js?v=6"></script>
   <script src="assets/dash.js?v=11"></script>
-  <script src="assets/mme.js?v=1"></script>
+  <script src="assets/date-range.js?v=1"></script>
+  <script src="assets/mme.js?v=2"></script>
   <script src="assets/shell.js?v=28"></script>
   <script src="data/mme.js?v=1"></script>
   <script src="data/groups.js?v=2"></script>
@@ -38,9 +40,20 @@
     const slugOfGroup = new Map(groupList.map((g) => [g.name, g.slug]))
     const colorOfGroup = Dash.groupColors(groupList)
 
-    // ?ds=il opens the Israeli set, as on the live page. ?topic=<index> opens a topic in «Ένα θέμα, όλα τα μέσα».
-    const view = { set: params.get('ds') === 'il' ? 'il' : 'gr', from: null, to: null, topic: params.has('topic') ? Number(params.get('topic')) : null, generic: false, people: 'tone' }
+    // ?ds=il opens the Israeli set, as on the live page.
+    const view = { set: params.get('ds') === 'il' ? 'il' : 'gr', from: null, to: null, people: 'tone' }
     let lastValid = null
+    let draw = () => {}
+    const setSelect = h('select', { 'aria-label': t('mme.set'), onChange: (e) => { view.set = e.target.value; view.from = null; lastValid = null; draw() } },
+      ['gr', 'il'].map((k) => h('option', { value: k }, t(`mme.set.${k}`))))
+    // The drop-down list joins the global search in the top bar of the shell, on its left.
+    function placeSetSelect () {
+      const search = document.querySelector('.header-bar .global-search')
+      if (!search || search.parentElement.classList.contains('header-tools')) return
+      const tools = h('div', { class: 'header-tools' }, h('label', { class: 'set-select' }, h('span', { class: 'visually-hidden' }, t('mme.set')), setSelect))
+      search.replaceWith(tools)
+      tools.append(search)
+    }
 
     const sumRange = (arr, i0, i1, pick = (x) => x) => { let s = 0; for (let i = i0; i <= i1; i++) s += pick(arr[i]); return s }
 
@@ -175,7 +188,7 @@
       breadcrumbs: () => [{ label: t('nav.media') }],
       render (content, { tabs }) {
         content.classList.add('dash', 'minimal')
-        const draw = () => {
+        draw = () => {
           reset()
           if (result.kind === 'failed' || result.kind === 'notFound') {
             content.replaceChildren(TopBar({ title: t('nav.media'), tabs, quiet: true }), UI.ErrorState({ onRetry: () => location.reload() }), protoNote())
@@ -193,17 +206,10 @@
           const S = Mme.summary(set, i0, i1)
           const greek = set.country === 'GR'
 
-          // The top bar: the tabs, the set of outlets (Ελλάδα, Ισραήλ) and the period (5 presets, from and to).
-          const presets = Mme.presets(set)
-          const preset = presets.find((p) => p.from === view.from && p.to === view.to)
-          const dayOptions = dates.map((d) => ({ value: d, label: fmt.date(d) }))
-          const actions = [
-            UI.SegmentedControl({ label: t('mme.set'), value: view.set, onChange: (v) => { view.set = v; view.from = null; lastValid = null; view.topic = null; draw() }, options: ['gr', 'il'].map((k) => ({ value: k, label: t(`mme.set.${k}`) })) }),
-            UI.SegmentedControl({ label: t('range.label'), value: preset ? preset.key : null, onChange: (key) => { const p = presets.find((x) => x.key === key); select({ from: p.from, to: p.to }) }, options: presets.map((p) => ({ value: p.key, label: p.label })) }),
-            Dash.select(t('range.from'), view.from, dayOptions, (v) => select({ from: v, to: view.to })),
-            Dash.select(t('range.to'), view.to, dayOptions, (v) => select({ from: view.from, to: v }))
-          ]
-          const bar = TopBar({ title: `${t('nav.media')} · ${t('tab.media.overview')}`, tabs, actions, quiet: true, error: view.from > view.to ? t('range.invalid') : null })
+          // The set of outlets (Ελλάδα, Ισραήλ) is a drop-down list next to the global search. The period is one date picker in the top bar.
+          setSelect.value = view.set
+          const picker = UI.DateRangePicker({ dates, from: view.from, to: view.to, presets: Mme.presets(set), onChange: select })
+          const bar = TopBar({ title: `${t('nav.media')} · ${t('tab.media.overview')}`, tabs, actions: [picker], quiet: true })
 
           // Daily totals of all the outlets: the news are the topics with soft: false.
           const news = dates.map((_, d) => S.outlets.reduce((s, o) => s + set.od[o.k][d * 7 + 1], 0))
@@ -280,34 +286,30 @@
                 slugOfGroup.has(o.group) ? h('a', { class: 'quiet-link', href: `group-v2.html?g=${slugOfGroup.get(o.group)}` }, o.group) : o.group)
               : h('span', { class: 'group-cell' }, h('span', { class: 'dot dot-none', 'aria-hidden': 'true' }), h('span', { class: 'muted-text' }, t('media.col.group.none')))) },
             { label: t('media.col.articles'), num: true, render: (o) => fmt.int(o.n) },
-            { label: t('media.col.news'), num: true, render: (o) => scaleCell(fmt.pct(o.news / o.n), Scale(o.news / o.n, Math.min(...newsShares), Math.max(...newsShares), newsAvg, fmt.pct(o.news / o.n), fmt.pct(newsAvg))) },
             { label: t('media.col.clickbait'), num: true, phone: false, render: (o) => (o.cbKnown >= 100
               ? scaleCell(fmt.pct(o.cbYes / o.cbKnown), Scale(o.cbYes / o.cbKnown, 0, cbMax, cbAvg, fmt.pct(o.cbYes / o.cbKnown), fmt.pct(cbAvg)))
               : h('span', { class: 'mini-empty' }, t('group.clickbait.none'))) },
             { label: t('mme.rank.stance'), phone: false, render: (o) => UI.MiniStance(o.stance.map((v, j) => ({ label: t(`stance.${['critical', 'neutral', 'supportive'][j]}`), value: v, color: ['var(--stance-critical)', 'var(--stance-neutral)', 'var(--stance-supportive)'][j] }))) }
           ].filter(Boolean)
-          const ranking = card('c-12 mme-rank', cardHead(t('media2.rank.outlets'), null, `${t('mme.rank.note')} ${t('media2.rank.outlets.note')}`),
+          const ranking = card('c-12 mme-rank', cardHead(t('mme.rank.all'), null, `${t('mme.rank.note')} ${t('media2.rank.outlets.note')}`),
             UI.DataTable({ rows, columns, rankColumn: true, pageSize: rows.length, emptyText: t('media.empty') }))
           ranking.id = 'ranking'
           ranking.setAttribute('aria-live', 'polite')
 
           // The cards of the live page that the dashboard did not have.
-          const pickTopic = (i) => { view.topic = i; draw(); requestAnimationFrame(() => document.getElementById('topic')?.scrollIntoView({ behavior: 'smooth', block: 'start' })) }
-          const chips = Mme.ChipsCard(S, { picked: view.topic, onPick: pickTopic })
+          // The topic chips and «Ένα θέμα, όλα τα μέσα» are on the page Θέματα. «Οι ιστορίες του διαστήματος» is on the page Ιστορίες.
           const highlights = Mme.HighlightsCard(S)
-          const storiesCard = Mme.StoriesCard(S, { generic: view.generic, onGeneric: (v) => { view.generic = v; draw() } })
           const agenda = Mme.AgendaCard(S)
           const people = Mme.PeopleCard(S, { mode: view.people, onMode: (m) => { view.people = m; draw() } })
           const gov = Mme.GovCard(S)
-          const topic = Mme.TopicCard(S, { topic: view.topic, onTopic: (i) => { view.topic = i; draw() } })
-          topic.id = 'topic'
           const persons = Mme.PersonsCard(S)
 
           content.replaceChildren(bar, h('div', { class: 'dash-grid' },
-            statOutlets, statArticles, statStories, statPeople, chips, highlights,
+            statOutlets, statArticles, statStories, statPeople, highlights,
             ranking, h('div', { class: 'c-6 card-col' }, volume, scatterCard, bylineCard), h('div', { class: 'c-6 card-col' }, gov),
-            storiesCard, agenda, people, topic, persons), Mme.MethodNote(S), protoNote())
+            agenda, people, persons), Mme.MethodNote(S), protoNote())
         }
+        placeSetSelect()
         draw()
       }
     })

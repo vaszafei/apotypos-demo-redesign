@@ -1,0 +1,48 @@
+/* DateRangePicker (assets/date-range.js): the button with the period and its popover. */
+.dr { position: relative; display: inline-block; }
+.dr-trigger { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 36px; padding: 0 12px 0 10px; border: 1px solid var(--border); border-radius: var(--pill, 999px); background: var(--surface-raised); color: var(--ink); font: inherit; font-size: var(--text-small); cursor: pointer; }
+.dr-trigger:hover, .dr-trigger[aria-expanded="true"] { border-color: var(--ink); }
+.dr-trigger .dr-icon { width: 18px; height: 18px; color: var(--text-secondary); }
+.dr-text { font-weight: 600; font-variant-numeric: tabular-nums; }
+.dr-days { font-size: var(--text-caption); color: var(--text-secondary); }
+.dr-chev { width: 14px; height: 14px; color: var(--text-secondary); }
+.dr-pop { position: absolute; z-index: 40; top: calc(100% + 6px); right: 0; display: grid; grid-template-columns: 180px auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-raised); box-shadow: 0 12px 32px rgba(17, 17, 17, 0.14); }
+.dr-pop[hidden] { display: none; }
+.dr-presets { display: grid; align-content: start; gap: 2px; margin: 0; padding: var(--space-3) var(--space-2); list-style: none; border-right: 1px solid var(--border); }
+.dr-preset { width: 100%; min-height: 32px; padding: 0 10px; border: 0; border-radius: 6px; background: none; color: var(--text-primary); font: inherit; font-size: var(--text-small); text-align: left; cursor: pointer; }
+.dr-preset:hover { background: var(--surface-card); }
+.dr-preset[aria-pressed="true"] { background: var(--ink); color: #ffffff; }
+.dr-main { position: relative; padding: var(--space-3) var(--space-4) var(--space-3); }
+.dr-nav { position: absolute; top: var(--space-2); left: var(--space-2); right: var(--space-2); display: flex; justify-content: space-between; pointer-events: none; }
+.dr-step { width: 32px; height: 32px; pointer-events: auto; }
+.dr-step:disabled { opacity: 0.3; cursor: default; }
+.dr-months { display: flex; gap: var(--space-5); }
+.dr-month-title { margin: 4px 0 var(--space-2); text-align: center; font-size: var(--text-small); font-weight: 600; color: var(--ink); text-transform: capitalize; }
+.dr-grid { display: grid; grid-template-columns: repeat(7, 36px); row-gap: 2px; }
+.dr-cell { display: flex; align-items: center; justify-content: center; height: 34px; font-size: var(--text-small); font-variant-numeric: tabular-nums; }
+.dr-wd { height: 24px; font-size: var(--text-caption); color: var(--text-secondary); }
+.dr-day { border: 0; background: none; color: var(--ink); font: inherit; font-size: var(--text-small); cursor: pointer; }
+.dr-day:hover:not(:disabled) { box-shadow: inset 0 0 0 1px var(--ink); border-radius: 6px; }
+.dr-day.in-range { background: color-mix(in srgb, var(--accent) 12%, #ffffff); }
+.dr-day.is-start, .dr-day.is-end { background: var(--ink); color: #ffffff; border-radius: 6px; }
+.dr-day.in-range.is-start:not(.is-end) { border-radius: 6px 0 0 6px; }
+.dr-day.in-range.is-end:not(.is-start) { border-radius: 0 6px 6px 0; }
+.dr-day.is-off { color: var(--border); cursor: default; }
+.dr-foot { display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--border); }
+.dr-summary { flex: 1; margin: 0; font-size: var(--text-caption); color: var(--text-secondary); }
+.dr .button-primary { background: var(--ink); border-color: var(--ink); color: #ffffff; }
+.dr .button-primary:disabled { opacity: 0.4; }
+@media (max-width: 719px) {
+  .dr-pop { position: fixed; top: 64px; left: 8px; right: 8px; grid-template-columns: 1fr; max-height: calc(100vh - 80px); overflow-y: auto; }
+  .dr-presets { display: flex; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--border); }
+  .dr-preset { width: auto; }
+  .dr-months { flex-direction: column; align-items: center; }
+  .dr-grid { grid-template-columns: repeat(7, minmax(36px, 1fr)); }
+}
+
+/* The set of outlets as a drop-down list next to the global search. */
+.header-tools { display: flex; align-items: center; gap: var(--space-2); justify-self: end; width: 100%; max-width: 560px; }
+.header-tools .global-search { margin: 0; }
+.set-select { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-small); color: var(--text-secondary); }
+.set-select select { min-height: 40px; padding: 0 30px 0 12px; border: 1px solid var(--border); border-radius: var(--pill, 999px); background-color: var(--surface-raised); color: var(--ink); font: inherit; font-size: var(--text-small); }
+@media (max-width: 1023px) { .header-tools { max-width: none; flex: 1; } }
