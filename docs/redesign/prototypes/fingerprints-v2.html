@@ -13,20 +13,20 @@
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=3"></script>
-  <script src="assets/messages.js?v=15"></script>
+  <script src="assets/messages.js?v=16"></script>
   <script src="assets/messages-v2.js?v=27"></script>
   <script src="assets/components.js?v=6"></script>
   <script src="assets/messages-mme.js?v=4"></script>
   <script src="assets/dash.js?v=11"></script>
   <script src="assets/mme.js?v=3"></script>
-  <script src="assets/shell.js?v=29"></script>
+  <script src="assets/shell.js?v=30"></script>
   <script src="data/fingerprints.js?v=2"></script>
   <script src="data/stanceRatings.js?v=2"></script>
   <script src="data/groups.js?v=2"></script>
   <script src="data/mme.js?v=1"></script>
   <script>
-    // Media, Πρόσωπα (formerly Αποτυπώματα): dashboard of APO-161.
-    // First card: «Πώς παρουσιάζει κάθε μέσο τα πρόσωπα» of the live page ΜΜΕ & πρόσωπα (data/mme.js, the Greek outlets over the whole window), with its own tone and voice control.
+    // Πρόσωπα › Επισκόπηση (formerly Μέσα › Αποτυπώματα): dashboard of APO-161.
+    // First «Τα πρόσωπα» and «Πώς παρουσιάζει κάθε μέσο τα πρόσωπα» of the live page ΜΜΕ & πρόσωπα (data/mme.js, the Greek outlets over the whole window), with its own tone and voice control.
     // Then the 15 persons of the API: the strongest cells in a list and the range chart. The measure control (emphasis or stance) is in the top bar, on the right.
     const { t, fmt, h, load } = App
     const { fit, reset, NO_GROUP, card, cardHead, emptyText, TopBar } = Dash
@@ -197,7 +197,7 @@
       route: '/fingerprints',
       dash: true,
       title: () => t('fp.title'),
-      breadcrumbs: () => [{ label: t('fp.title') }],
+      breadcrumbs: () => [{ label: t('nav.people') }],
       render (content, { tabs }) {
         content.classList.add('dash', 'minimal')
         const draw = () => {
@@ -205,11 +205,12 @@
           const focused = [...document.querySelectorAll('.dash-bar .segmented button')].indexOf(document.activeElement)
           const m = personsModel()
           const measure = UI.SegmentedControl({ label: t('fp.mode'), value: state.mode, onChange: (mode) => { state.mode = mode; draw() }, options: ['attention', 'stance'].map((mode) => ({ value: mode, label: t(`fp.mode.${mode}`) })) })
-          const bar = TopBar({ title: t('nav.media'), actions: [measure], tabs, quiet: true })
+          const bar = TopBar({ title: t('nav.people'), actions: [measure], tabs, quiet: true })
           if (m.failed) { content.replaceChildren(bar, UI.ErrorState({ onRetry: () => location.reload() }), protoNote()); return }
           if (m.empty) { content.replaceChildren(bar, h('div', { class: 'dash-grid' }, card('c-12', cardHead(t('fp.matrix.title')), UI.EmptyState({ text: t('fp.empty') }))), protoNote()); return }
 
-          // Row 1: the people of the live page. Row 2: the strongest cells in a narrow column and the range chart.
+          // Row 1: the person cards and the people × outlets of the live page. Row 2: the strongest cells in a narrow column and the range chart.
+          const personCards = mmeSummary ? Mme.PersonsCard(mmeSummary) : null
           const people = mmeSummary ? Mme.PeopleCard(mmeSummary, { mode: state.people, onMode: (mode) => { state.people = mode; draw() } }) : null
           if (people) people.append(h('p', { class: 'dcard-sub' }, t('mme.topics.window', { from: fmt.date(mmeSummary.set.dates[0]), to: fmt.date(mmeSummary.set.dates[mmeSummary.set.dates.length - 1]) })))
           const strip = card('card-main', cardHead(t('f2.strip.persons'), h('span', { class: 'legend-inline' },
@@ -219,7 +220,7 @@
             t('f2.strip.sub')), RangeChart(m))
           strip.append(h('p', { class: 'dcard-sub' }, m.note))
 
-          content.replaceChildren(bar, people ? h('div', { class: 'dash-grid fp-people' }, people) : null, h('div', { class: 'dash-grid dash-grid-side' }, CellList(m, 'top'), strip), protoNote())
+          content.replaceChildren(bar, people ? h('div', { class: 'dash-grid fp-people' }, personCards, people) : null, h('div', { class: 'dash-grid dash-grid-side' }, CellList(m, 'top'), strip), protoNote())
           if (focused >= 0) document.querySelectorAll('.dash-bar .segmented button')[focused]?.focus()
         }
         draw()

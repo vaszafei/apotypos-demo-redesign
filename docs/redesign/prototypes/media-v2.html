@@ -14,7 +14,7 @@
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=3"></script>
-  <script src="assets/messages.js?v=15"></script>
+  <script src="assets/messages.js?v=16"></script>
   <script src="assets/messages-v2.js?v=27"></script>
   <script src="assets/messages-spread.js?v=12"></script>
   <script src="assets/messages-mme.js?v=4"></script>
@@ -22,7 +22,7 @@
   <script src="assets/dash.js?v=11"></script>
   <script src="assets/date-range.js?v=1"></script>
   <script src="assets/mme.js?v=3"></script>
-  <script src="assets/shell.js?v=29"></script>
+  <script src="assets/shell.js?v=30"></script>
   <script src="data/mme.js?v=1"></script>
   <script src="data/groups.js?v=2"></script>
   <script src="data/originality.js?v=1"></script>
@@ -320,14 +320,12 @@
 
           // The cards of the live page that the dashboard did not have.
           // The topic chips and «Ένα θέμα, όλα τα μέσα» are on the page Θέματα. «Οι ιστορίες του διαστήματος» is on the page Ιστορίες. «Τι ξεχωρίζει» is on Αρχική.
-          // «Η ατζέντα κάθε μέσου» is on Θέματα and «Πώς παρουσιάζει κάθε μέσο τα πρόσωπα» on Πρόσωπα.
+          // «Η ατζέντα κάθε μέσου» is on Θέματα. «Τα πρόσωπα» and «Πώς παρουσιάζει κάθε μέσο τα πρόσωπα» are on Πρόσωπα.
           const gov = Mme.GovCard(S)
-          const persons = Mme.PersonsCard(S)
 
           content.replaceChildren(bar, h('div', { class: 'dash-grid' },
             statOutlets, statArticles, statStories, statPeople,
-            ranking, h('div', { class: 'c-6 card-col' }, volume, scatterCard, bylineCard), h('div', { class: 'c-6 card-col' }, gov),
-            persons), Mme.MethodNote(S), protoNote())
+            ranking, h('div', { class: 'c-6 card-col' }, volume, scatterCard, bylineCard), h('div', { class: 'c-6 card-col' }, gov)), Mme.MethodNote(S), protoNote())
         }
         placeSetSelect()
         draw()
