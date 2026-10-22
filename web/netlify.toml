@@ -2,6 +2,8 @@
   base = "web"
   command = "pnpm generate"
   publish = ".output/public"
+  # Netlify skips a build when nothing in the base directory changed. The pages live in docs/redesign/prototypes, so a change there must build too.
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ../docs/redesign/prototypes"
 
 [build.environment]
   NODE_VERSION = "22"
