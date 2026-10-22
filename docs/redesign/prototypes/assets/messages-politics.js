@@ -1078,7 +1078,7 @@ Object.assign(window.MESSAGES.en, {
   'case.note': 'The analysis finds the articles with the terms of the case in all the outlets of the archive. The archive of this analysis has 6 outlets and articles up to July 2026.'
 })
 
-// Αναλύσεις › Παλαιστίνη–Ισραήλ › Στον ΟΗΕ
+// Αναλύσεις › Ομιλίες ΟΗΕ › Ισραήλ–Παλαιστίνη
 Object.assign(window.MESSAGES.el, {
   'unpi.stat.minutes': 'Λεπτά για Ισραήλ–Παλαιστίνη',
   'unpi.stat.minutes.sub': '{n} ηγέτες με ένα λεπτό ή περισσότερο',
@@ -1106,7 +1106,6 @@ Object.assign(window.MESSAGES.el, {
   'unpi.col.share': 'Μερίδιο',
   'unpi.col.israel': 'Στο Ισραήλ',
   'unpi.col.hamas': 'Στη Χαμάς',
-  'unpi.all': 'Όλες οι ομιλίες του ΟΗΕ',
   'unpi.note': 'Το κομμάτι Ισραήλ–Παλαιστίνη των ομιλιών της 81ης συνόδου της Γενικής Συνέλευσης. Τα σύνολα (λεπτά, ηγέτες, θέση) είναι από όλες τις ομιλίες. Οι κάρτες και ο πίνακας έχουν τις {n} ομιλίες όπου το θέμα είναι ένα από τα κύρια, γι’ αυτό αθροίζουν λιγότερα λεπτά.'
 })
 Object.assign(window.MESSAGES.en, {
@@ -1136,6 +1135,5 @@ Object.assign(window.MESSAGES.en, {
   'unpi.col.share': 'Share',
   'unpi.col.israel': 'On Israel',
   'unpi.col.hamas': 'On Hamas',
-  'unpi.all': 'All UN speeches',
   'unpi.note': 'The Israel–Palestine part of the speeches of the 81st session of the General Assembly. The totals (minutes, leaders, place) are from all the speeches. The cards and the table have the {n} speeches where the topic is one of the main ones, so they add up to fewer minutes.'
 })

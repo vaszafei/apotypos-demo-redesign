@@ -13,16 +13,16 @@
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=3"></script>
-  <script src="assets/messages.js?v=18"></script>
+  <script src="assets/messages.js?v=19"></script>
   <script src="assets/messages-v2.js?v=31"></script>
-  <script src="assets/messages-politics.js?v=3"></script>
+  <script src="assets/messages-politics.js?v=4"></script>
   <script src="assets/components.js?v=7"></script>
   <script src="assets/dash.js?v=11"></script>
   <script src="assets/politics.js?v=1"></script>
-  <script src="assets/shell.js?v=33"></script>
+  <script src="assets/shell.js?v=34"></script>
   <script src="data/speeches.js?v=1"></script>
   <script>
-    // Αναλύσεις › Παλαιστίνη–Ισραήλ › Στον ΟΗΕ: the Israel–Palestine part of the 192 speeches of the 81st General Assembly.
+    // Αναλύσεις › Ομιλίες ΟΗΕ › Ισραήλ–Παλαιστίνη: the Israel–Palestine part of the 192 speeches of the 81st General Assembly.
     // It reads the speeches file of Ομιλίες ΟΗΕ. A speech has only its main topics (shares), so the cards count the speeches with the topic among them.
     const { t, fmt, h, load } = App
     const { reset, card, cardHead, Stat, TopBar } = Dash
@@ -39,14 +39,14 @@
       route: '/un-israel-palestine',
       dash: true,
       title: () => t('nav.world'),
-      breadcrumbs: () => [{ label: t('nav.world') }, { label: t('tab.world.pi') }, { label: t('tab.world.pi.un') }],
+      breadcrumbs: () => [{ label: t('nav.world') }, { label: t('tab.world.speeches') }, { label: t('tab.world.speeches.pi') }],
       render (content, { tabs }) {
         content.classList.add('dash', 'minimal')
-        const title = t('tab.world.pi.un')
+        const title = t('tab.world.speeches.pi')
         const problem = Dash.stateContent([result], { title, tabs, quiet: true })
         if (problem) { content.replaceChildren(...problem); return }
         const d = result.data
-        const bar = TopBar({ title, tabs, quiet: true, actions: [h('a', { class: 'dcard-link', href: 'speeches-v2.html' }, t('unpi.all'), ' →')] })
+        const bar = TopBar({ title, tabs, quiet: true })
 
         const total = d.agenda.find((a) => a.topic === TOPIC)
         const rank = d.agenda.findIndex((a) => a.topic === TOPIC) + 1
