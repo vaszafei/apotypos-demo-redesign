@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Απότυπος</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css?v=4">
+  <link rel="stylesheet" href="assets/app.css?v=12">
+  <link rel="stylesheet" href="assets/dash.css?v=66">
+  <link rel="stylesheet" href="assets/politics.css?v=1">
+  <link rel="stylesheet" href="assets/world.css?v=1">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/icons.js?v=3"></script>
+  <script src="assets/messages.js?v=17"></script>
+  <script src="assets/messages-v2.js?v=31"></script>
+  <script src="assets/messages-politics.js?v=2"></script>
+  <script src="assets/messages-world.js?v=1"></script>
+  <script src="assets/components.js?v=7"></script>
+  <script src="assets/dash.js?v=11"></script>
+  <script src="assets/politics.js?v=1"></script>
+  <script src="assets/world.js?v=1"></script>
+  <script src="assets/shell.js?v=32"></script>
+  <script src="data/storyCoverage.js?v=1"></script>
+  <script>
+    // Αναλύσεις, Μία είδηση πολλές εκδοχές (#37): one story through every outlet of the archive. It reads the snapshot of the live /coverage page.
+    // The page is a «story case»: any story with a list of facts, outlets and articles fills it.
+    const { t, fmt, h, load, safeUrl } = App
+    const { reset, card, cardHead, Stat, TopBar } = Dash
+    const { Rows } = Politics
+    const { Chips, StackColumns, el } = World
+    const result = load('storyCoverage', ['facts', 'outlets', 'articles'], (b) => b.articles)
+    // The facts in four groups, as on the live page. The matrix shows the phrase and the AKTOR part.
+    const GROUPS = [['phrase', ['threat', 'romania']], ['aktor', ['aktor', 'marafatsos', 'lobbyist', 'exarchos', 'fee', 'jet', 'undisclosed', 'deals']],
+      ['context', ['corridor', 'bulgaria', 'critics', 'rubio']], ['reaction', ['gov', 'commercial', 'papastavrou', 'opposition', 'lobby_quote', 'pyatt']]]
+    const MATRIX = [['phrase', ['threat']], ['aktor', ['aktor', 'marafatsos', 'lobbyist', 'exarchos', 'fee', 'jet']]]
+    const AKTOR = ['aktor', 'marafatsos', 'exarchos']
+    // The owner group of the story has its fixed group color (#2).
+    const OWNER_COLOR = Dash.groupColor('Συμφέροντα Μπάκου-Καϋμενάκη')
+    // A first mention before 15% of the text counts as "at the start".
+    const START = 0.15
+    let filterFact = ''
+    let filterOutlet = ''
+    let onlyAbout = false
+    let openPrior = ''
+
+    Shell.start({
+      id: 'coverage',
+      route: '/coverage',
+      dash: true,
+      title: () => t('nav.world'),
+      breadcrumbs: () => [{ label: t('nav.world') }, { label: t('tab.world.coverage') }],
+      render (content, { tabs }) {
+        content.classList.add('dash', 'minimal')
+        const title = t('tab.world.coverage')
+        const problem = Dash.stateContent([result], { title, tabs, quiet: true })
+        if (problem) { content.replaceChildren(...problem); return }
+        const d = result.data
+        const bar = TopBar({ title, tabs, quiet: true })
+        const factName = (k) => el([d.facts.find((f) => f.key === k)?.el, d.facts.find((f) => f.key === k)?.en])
+        const covered = d.outlets.filter((o) => o.n > 0)
+        const about = d.articles.filter((a) => a.about)
+        const hasAktor = (a) => AKTOR.some((k) => a.facts.includes(k))
+        const ownerOutlets = d.outlets.filter((o) => o.owner_link)
+        const ownerAktor = d.articles.filter((a) => ownerOutlets.some((o) => o.outlet === a.outlet) && hasAktor(a)).length
+        const n = covered.length
+        const count = (k) => covered.filter((o) => o.facts[k] > 0).length
+        const day = (ts) => `${ts.slice(8, 10)}/${ts.slice(5, 7)}`
+        const time = (ts) => `${day(ts)} ${ts.slice(11, 16)}`
+        const ownerDot = (o) => (o.owner_link ? h('span', { class: 'owner-tag', style: `--chip:${OWNER_COLOR}`, title: el([o.owner_link.el, o.owner_link.en]) }, t(`cov.owner.${o.owner_link.kind}`)) : null)
+        const iefPrior = d.prior.filter((p) => p.outlet === 'Iefimerida' && p.d < d.window.from).length
+
+        const stats = [
+          Stat({ label: t('cov.stat.phrase'), value: t('cov.of', { a: count('threat'), b: n }), sub: t('cov.stat.phrase.sub') }),
+          Stat({ label: t('cov.stat.aktor'), value: t('cov.of', { a: covered.filter((o) => o.aktor_any).length, b: n }), sub: t('cov.stat.aktor.sub') }),
+          Stat({ label: t('cov.stat.titles'), value: `${about.filter((a) => a.angle === 'lobby').length} / ${about.length}`, sub: t('cov.stat.titles.sub') }),
+          Stat({ label: t('cov.stat.owner'), value: fmt.int(ownerAktor), sub: t('cov.stat.owner.sub', { n: iefPrior }) })
+        ]
+        stats.forEach((x) => x.classList.replace('c-4', 'c-3'))
+
+        // The articles list. A square, a dot or a bar can set its filters.
+        const listHolder = h('div', {})
+        const listCard = card('c-12', cardHead(t('cov.list.title'), null, t('cov.list.info')), listHolder)
+        listCard.id = 'articles'
+        const showList = (outlet, fact) => { filterOutlet = outlet ?? filterOutlet; filterFact = fact ?? filterFact; drawList(); listCard.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
+
+        // Ποιο κομμάτι της είδησης έφτασε: one square for each outlet with an article.
+        const waffleOrder = [...covered].sort((a, b) => (b.aktor_any - a.aktor_any) || ((b.facts.threat > 0) - (a.facts.threat > 0)) || (b.n - a.n))
+        const waffle = h('div', { class: 'waffle', role: 'list' }, waffleOrder.map((o) => h('button', {
+          type: 'button', role: 'listitem', class: `waffle-cell${o.facts.threat > 0 ? ' is-phrase' : ''}${o.aktor_any ? ' is-aktor' : ''}`,
+          'aria-label': `${o.outlet}: ${t(o.facts.threat > 0 ? 'cov.waffle.phrase' : 'cov.waffle.nophrase')}${o.aktor_any ? `, ${t('cov.waffle.aktor')}` : ''}`,
+          onPointermove: (e) => UI.showTooltip(`${o.outlet} · ${t('cov.articles', { n: o.n })}`, e.clientX, e.clientY),
+          onPointerleave: () => UI.hideTooltip(),
+          onClick: () => showList(o.outlet, '')
+        }, o.owner_link ? h('span', { class: 'waffle-owner', style: `--chip:${OWNER_COLOR}` }) : null)))
+        const waffleCard = card('c-4', cardHead(t('cov.waffle.title'), null, t('cov.waffle.info')),
+          h('p', { class: 'dcard-sub' }, t('cov.waffle.sub', { a: d.articles.length, n })),
+          waffle,
+          h('span', { class: 'stance-key' },
+            h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: 'var(--series-news)' } }), t('cov.waffle.phrase')),
+            h('span', { class: 'key-item' }, h('span', { class: 'swatch swatch-ring' }), t('cov.waffle.aktor')),
+            h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: 'var(--bar-muted)' } }), t('cov.waffle.none')),
+            h('span', { class: 'key-item' }, h('span', { class: 'dot', style: `--dot:${OWNER_COLOR}` }), t('cov.waffle.owner'))),
+          h('p', { class: 'dcard-sub' }, t('cov.waffle.note')))
+
+        // Τι έγραψε η WSJ και πόσα μέσα το μετέφεραν: one bar per fact, in four groups.
+        const factsCard = card('c-8', cardHead(t('cov.facts.title'), null, t('cov.facts.info')),
+          h('p', { class: 'dcard-sub' }, t('cov.facts.sub', { n })),
+          h('div', { class: 'fact-groups' }, GROUPS.map(([g, keys]) => h('div', { class: 'fact-group' },
+            h('h3', { class: 'rows-caption' }, t(`cov.group.${g}`)),
+            h('ul', { class: 'rows fact-rows' }, keys.map((k) => h('li', { class: 'is-clickable', style: g === 'aktor' ? '--bar-color:var(--side-b)' : null, onClick: () => showList('', k), title: t('cov.facts.click') },
+              h('span', { class: 'row-name', title: factName(k) }, factName(k)), h('span', { class: 'row-value' }, `${count(k)} / ${n}`), UI.HBar(count(k), n))))))),
+          h('p', { class: 'dcard-sub' }, t('cov.facts.note')))
+
+        // Μέσο προς μέσο: a dot for each outlet and fact. A filled dot opens the articles.
+        const cols = MATRIX.flatMap(([, keys]) => keys)
+        const matrixOrder = [...covered].sort((a, b) => cols.filter((k) => b.facts[k] > 0).length - cols.filter((k) => a.facts[k] > 0).length || b.n - a.n)
+        const matrixCard = card('c-12', cardHead(t('cov.matrix.title'), null, t('cov.matrix.info')),
+          h('p', { class: 'dcard-sub' }, t('cov.matrix.sub')),
+          h('div', { class: 'table-scroll' }, h('table', { class: 'dot-matrix' },
+            h('thead', {},
+              h('tr', {}, h('th', { colspan: 2 }), MATRIX.map(([g, keys]) => h('th', { colspan: keys.length, class: `group-head group-${g}` }, t(`cov.group.${g}`)))),
+              h('tr', {}, h('th', { scope: 'col' }, t('cov.col.outlet')), h('th', { scope: 'col', class: 'num' }, t('cov.col.articles')), cols.map((k) => h('th', { scope: 'col', title: factName(k) }, t(`cov.short.${k}`))))),
+            h('tbody', {}, matrixOrder.map((o) => h('tr', {},
+              h('th', { scope: 'row' }, h('span', { class: 'outlet-name' }, o.outlet, ownerDot(o))),
+              h('td', { class: 'num' }, fmt.int(o.n)),
+              cols.map((k) => {
+                const v = o.facts[k]
+                const g = MATRIX.find(([, keys]) => keys.includes(k))[0]
+                return h('td', {}, v
+                  ? h('button', { type: 'button', class: `mdot is-on group-${g}`, 'aria-label': `${o.outlet} · ${factName(k)} · ${t('cov.articles', { n: v })}`, title: `${o.outlet} · ${factName(k)} · ${t('cov.articles', { n: v })}`, onClick: () => showList(o.outlet, k) })
+                  : h('span', { class: 'mdot', title: `${o.outlet} · ${factName(k)} · ${t('cov.matrix.none')}` }))
+              })))))))
+
+        // The three outlet lists.
+        const quiet = covered.filter((o) => !o.aktor_any).sort((a, b) => b.n - a.n || a.outlet.localeCompare(b.outlet))
+        const loud = covered.filter((o) => o.aktor_any).sort((a, b) => a.first.localeCompare(b.first))
+        const absent = d.outlets.filter((o) => o.n === 0 && o.published >= 100).sort((a, b) => b.published - a.published)
+        const depthText = (a) => [a.depth < START ? t('cov.depth.start') : t('cov.depth.at', { p: Math.round(a.depth * 100) }), a.about ? null : t('cov.depth.column')].filter(Boolean).join(' · ')
+        const quietCard = card('c-4', cardHead(t('cov.quiet.title'), null, t('cov.quiet.info')),
+          h('p', { class: 'dcard-sub' }, t('cov.of.outlets', { a: quiet.length, b: n })),
+          h('ul', { class: 'outlet-list' }, quiet.map((o) => h('li', {},
+            h('button', { type: 'button', class: 'link-button', onClick: () => showList(o.outlet, '') }, o.outlet), ownerDot(o),
+            o.facts.lobby_quote > 0 && !o.facts.lobbyist ? h('span', { class: 'muted-text' }, t('cov.quiet.lobbyquote')) : null,
+            h('span', { class: 'row-value' }, t('cov.articles', { n: o.n }))))))
+        const loudCard = card('c-4', cardHead(t('cov.loud.title'), null, t('cov.loud.info')),
+          h('p', { class: 'dcard-sub' }, t('cov.loud.sub')),
+          h('ul', { class: 'quote-list' }, loud.map((o) => {
+            const list = d.articles.filter((a) => a.outlet === o.outlet && a.depth !== null && a.depth !== undefined)
+            return h('li', {}, h('span', { class: 'quote-meta' }, h('strong', {}, o.outlet), ' · ', t('cov.loud.n', { a: list.length, b: o.n })),
+              list.map((a) => h('span', {}, safeUrl(a.url) ? h('a', { class: 'quiet-link', href: a.url, target: '_blank', rel: 'noopener' }, a.title) : a.title, h('span', { class: 'muted-text' }, ` · ${depthText(a)}`))))
+          })))
+        const absentCard = card('c-4', cardHead(t('cov.absent.title'), null, t('cov.absent.info')),
+          h('p', { class: 'dcard-sub' }, t('cov.absent.sub')),
+          Rows(absent.map((o) => ({ label: o.outlet, value: o.published, text: t('cov.absent.row', { n: fmt.int(o.published) }), sub: o.other_guilfoyle ? t('cov.absent.other', { n: o.other_guilfoyle }) : null, color: 'var(--bar-muted)' }))),
+          h('p', { class: 'dcard-sub' }, t('cov.absent.note')))
+
+        // The outlets of the owner group, and Μαραφάτσος before and after the story.
+        const ownerCard = card('c-6 owner-card', cardHead(t('cov.owner.title'), null, t('cov.owner.info')),
+          h('p', { class: 'dcard-sub' }, t('cov.owner.sub')),
+          h('ul', { class: 'quote-list' }, ownerOutlets.map((o) => h('li', { style: `--chip:${OWNER_COLOR}` },
+            h('span', { class: 'quote-meta' }, h('span', { class: 'dot', style: `--dot:${OWNER_COLOR}` }), h('strong', {}, o.outlet), ' · ', el([o.owner_link.el, o.owner_link.en]), ' · ', t('cov.owner.week', { n: fmt.int(o.published) })),
+            d.articles.filter((a) => a.outlet === o.outlet).map((a) => h('span', { class: 'owner-article' }, h('span', { class: 'muted-text' }, `${time(a.t)} · `),
+              safeUrl(a.url) ? h('a', { class: 'quiet-link', href: a.url, target: '_blank', rel: 'noopener' }, a.title) : a.title,
+              hasAktor(a) || a.facts.includes('lobbyist') ? null : h('span', { class: 'muted-text' }, ` — ${t('cov.owner.without')}`)))))),
+          h('p', { class: 'callout dcard-sub' }, t('cov.owner.note', { n: iefPrior })),
+          h('p', { class: 'source-links' }, h('span', { class: 'muted-text' }, t('cov.owner.sources')), d.ownerSources.filter(([, u]) => safeUrl(u)).map(([label, u]) => h('a', { class: 'quiet-link', href: u, target: '_blank', rel: 'noopener' }, label, ' ↗'))))
+
+        const priorRows = [...new Set(d.prior.map((p) => p.outlet))].map((o) => {
+          const list = d.prior.filter((p) => p.outlet === o)
+          const before = list.filter((p) => p.d < d.window.from)
+          return { o, before, lobby: before.filter((p) => p.lobby === '1').length, after: list.length - before.length, last: before.map((p) => p.d).sort().pop(), outlet: d.outlets.find((x) => x.outlet === o) }
+        }).sort((a, b) => b.before.length - a.before.length)
+        const priorHolder = h('div', {})
+        const drawPrior = () => priorHolder.replaceChildren(h('div', { class: 'table-scroll' }, h('table', { class: 'data-table prior-table' },
+          h('thead', {}, h('tr', {}, ['outlet', 'before', 'lobby', 'after', 'last'].map((k) => h('th', { scope: 'col', class: k === 'outlet' ? null : 'num' }, t(`cov.prior.col.${k}`))))),
+          h('tbody', {}, priorRows.flatMap((r) => [
+            h('tr', { class: `pick-row${openPrior === r.o ? ' is-picked' : ''}`, onClick: () => { openPrior = openPrior === r.o ? '' : r.o; drawPrior() } },
+              h('th', { scope: 'row' }, h('span', { class: 'outlet-name' }, r.o, r.outlet ? ownerDot(r.outlet) : null)),
+              h('td', { class: 'num' }, fmt.int(r.before.length)), h('td', { class: 'num' }, r.lobby ? fmt.int(r.lobby) : '—'),
+              h('td', { class: 'num strong' }, fmt.int(r.after)), h('td', { class: 'num' }, r.last ? fmt.date(r.last, { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—')),
+            openPrior === r.o ? h('tr', { class: 'prior-titles' }, h('td', { colspan: 5 }, h('ul', { class: 'quote-list' }, r.before.sort((a, b) => b.d.localeCompare(a.d)).map((p) => h('li', {},
+              h('span', { class: 'quote-meta' }, fmt.date(p.d), p.lobby === '1' ? h('span', { class: 'pill' }, t('cov.prior.lobbyist')) : null),
+              safeUrl(p.url) ? h('a', { class: 'quiet-link', href: p.url, target: '_blank', rel: 'noopener' }, p.title.replace(/\s*-\s*iefimerida\.gr$/, '')) : p.title))))) : null
+          ])))))
+        drawPrior()
+        const priorCard = card('c-6', cardHead(t('cov.prior.title'), null, t('cov.prior.info')),
+          h('p', { class: 'dcard-sub' }, t('cov.prior.sub')), priorHolder, h('p', { class: 'dcard-sub' }, t('cov.prior.note')))
+
+        // Τι έβαλαν στον τίτλο, Πότε, Non-paper.
+        const angles = d.angles.map((a) => ({ ...a, n: about.filter((x) => x.angle === a.key).length })).sort((a, b) => b.n - a.n)
+        const anglesCard = card('c-4', cardHead(t('cov.angles.title'), null, t('cov.angles.info')),
+          h('p', { class: 'dcard-sub' }, t('cov.angles.sub', { n: about.length })),
+          Rows(angles.map((a) => ({ label: el([a.el, a.en]), value: a.n, text: `${a.n} (${Math.round((a.n / about.length) * 100)}%)`, color: a.key === 'lobby' ? 'var(--side-b)' : null }))),
+          h('p', { class: 'dcard-sub' }, t('cov.angles.note')))
+        const days = Object.keys(d.window.corpus_days).sort()
+        const firsts = []
+        d.articles.forEach((a) => { if (!firsts.some((x) => x.outlet === a.outlet)) firsts.push(a) })
+        const whenCard = card('c-5', cardHead(t('cov.when.title'), h('span', { class: 'stance-key' },
+          h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: 'var(--side-b)' } }), t('cov.when.aktor')),
+          h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: 'var(--series-news)' } }), t('cov.when.other'))), t('cov.when.info')),
+          h('p', { class: 'dcard-sub' }, t('cov.when.sub')),
+          StackColumns({
+            labels: days.map((x) => `${x.slice(8, 10)}/${x.slice(5, 7)}`),
+            series: [{ color: 'var(--series-news)', values: days.map((x) => about.filter((a) => a.t.startsWith(x) && !hasAktor(a)).length) },
+              { color: 'var(--side-b)', values: days.map((x) => about.filter((a) => a.t.startsWith(x) && hasAktor(a)).length) }],
+            top: days.map((x) => { const v = d.daily[x] || 0; return v ? String(v) : '' }),
+            tips: days.map((x) => t('cov.when.tip', { day: fmt.date(x), n: d.daily[x] || 0, all: fmt.int(d.window.corpus_days[x]) })),
+            height: 180, aria: t('cov.when.title')
+          }),
+          h('p', { class: 'rows-caption' }, t('cov.when.first')),
+          h('ol', { class: 'first-list' }, firsts.slice(0, 8).map((a) => h('li', {}, h('strong', {}, a.outlet), h('span', { class: 'muted-text' }, time(a.t))))),
+          h('p', { class: 'dcard-sub' }, t('cov.when.note')))
+        const nonPaperCard = card('c-3', cardHead(t('cov.np.title')),
+          h('p', { class: 'dstat-value' }, fmt.int(d.nonPaper.found)),
+          h('p', { class: 'dcard-sub' }, t('cov.np.found')),
+          h('p', { class: 'np-text' }, t('cov.np.text')),
+          h('p', { class: 'dcard-sub' }, t('cov.np.searched', { s: d.nonPaper.searched })))
+
+        // Τα άρθρα: filtered by fact and outlet.
+        const drawList = () => {
+          const list = d.articles.filter((a) => (!onlyAbout || a.about) && (!filterFact || a.facts.includes(filterFact)) && (!filterOutlet || a.outlet === filterOutlet))
+          const outletOpts = [...covered].sort((a, b) => b.n - a.n || a.outlet.localeCompare(b.outlet)).map((o) => ({ value: o.outlet, label: `${o.outlet} (${o.n})` }))
+          listHolder.replaceChildren(
+            h('div', { class: 'panel-tools' },
+              h('span', { class: 'muted-text' }, t('cov.list.count', { a: list.length, b: d.articles.length })),
+              Dash.select('', filterFact, [{ value: '', label: t('cov.list.allfacts') }, ...d.facts.map((f) => ({ value: f.key, label: el([f.el, f.en]) }))], (v) => { filterFact = v; drawList() }),
+              Dash.select('', filterOutlet, [{ value: '', label: t('cov.list.alloutlets') }, ...outletOpts], (v) => { filterOutlet = v; drawList() }),
+              h('label', { class: 'check-inline' }, h('input', { type: 'checkbox', checked: onlyAbout, onChange: (e) => { onlyAbout = e.target.checked; drawList() } }), t('cov.list.about')),
+              filterFact || filterOutlet ? h('button', { type: 'button', class: 'dcard-link', onClick: () => { filterFact = ''; filterOutlet = ''; drawList() } }, t('cov.list.clear')) : null),
+            list.length ? h('ul', { class: 'quote-list article-list' }, list.map((a) => h('li', {},
+              h('span', { class: 'quote-meta' }, time(a.t), ' · ', h('strong', {}, a.outlet), a.about ? null : h('span', { class: 'pill' }, t('cov.list.column'))),
+              safeUrl(a.url) ? h('a', { class: 'quiet-link', href: a.url, target: '_blank', rel: 'noopener' }, a.title) : a.title,
+              h('span', { class: 'fact-pills' }, a.facts.filter((k) => ['threat', 'aktor', 'marafatsos', 'lobbyist', 'deals', 'gov', 'opposition'].includes(k)).map((k) => h('span', { class: `pill${AKTOR.includes(k) || k === 'lobbyist' ? ' pill-aktor' : ''}` }, t(`cov.short.${k}`))),
+                hasAktor(a) ? null : h('span', { class: 'pill pill-quiet' }, t('cov.list.noaktor'))),
+              hasAktor(a) || a.facts.includes('lobbyist') ? h('span', { class: 'quote-text' }, a.ev) : null)))
+              : Dash.emptyText(t('cov.list.none')))
+        }
+        drawList()
+
+        const methodCard = card('c-12', cardHead(t('cov.method.title')),
+          h('ul', { class: 'limits-list' }, [1, 2, 3, 4].map((i) => h('li', {}, t(`cov.method.${i}`, { from: fmt.date(d.window.from), to: fmt.date(d.window.to) })))),
+          h('p', { class: 'dcard-sub' }, t('cov.method.data', { date: d.generated })))
+
+        content.replaceChildren(bar,
+          h('div', { class: 'story-lead' }, h('p', { class: 'quote-meta' }, t('cov.lead.kicker', { date: fmt.date(d.story.published) })), h('h2', { class: 'story-lead-title' }, t('cov.lead.title')), h('p', { class: 'hero-lead' }, t('cov.lead.text'))),
+          h('div', { class: 'dash-grid' }, ...stats, waffleCard, factsCard, matrixCard, quietCard, loudCard, absentCard, ownerCard, priorCard, anglesCard, whenCard, nonPaperCard, listCard, methodCard),
+          h('p', { class: 'proto-note' }, t('cov.note')))
+      }
+    })
+    reset()
+  </script>
+</body>
+</html>

@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="el" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>html,body{margin:0}</style>
+</head>
+<body>
+<title>Migration and Palestine Narrative</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap">
+<style>
+
+/* Layout: one reading column of analysis panels; summary strip first, method note above results, evidence last (Apotypos convention). */
+:root {
+  --bg: #F6F4EF; --surface: #FFFEFB; --surface-2: #EDEAE3; --line: #DDD9D0; --line-strong: #C9C4B9;
+  --ink: #171717; --ink-soft: #404040; --muted: #686A70; --subtle: #99978F;
+  --accent: #315CFF; --accent-soft: #EEF1FF;
+  --f-report: #6B7280; --f-blame: #E85D3F; --f-explain: #16846B; --f-react: #D59524;
+  --f-report-soft: #EEEFF1; --f-blame-soft: #FFF0EB; --f-explain-soft: #E8F7F2; --f-react-soft: #FFF5DD;
+  --sans: "Geist", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --serif: "Source Serif 4", ui-serif, Georgia, serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #131311; --surface: #1B1A18; --surface-2: #24231F; --line: #2F2D29; --line-strong: #44413B;
+  --ink: #EDEBE6; --ink-soft: #CFCCC4; --muted: #9C9A93; --subtle: #77756E;
+  --accent: #7C95FF; --accent-soft: #1E2440;
+  --f-report: #9CA3AF; --f-blame: #F07A5F; --f-explain: #3FB896; --f-react: #E2AD4A;
+  --f-report-soft: #23252A; --f-blame-soft: #3A211B; --f-explain-soft: #15302A; --f-react-soft: #352A15;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #131311; --surface: #1B1A18; --surface-2: #24231F; --line: #2F2D29; --line-strong: #44413B;
+  --ink: #EDEBE6; --ink-soft: #CFCCC4; --muted: #9C9A93; --subtle: #77756E;
+  --accent: #7C95FF; --accent-soft: #1E2440;
+  --f-report: #9CA3AF; --f-blame: #F07A5F; --f-explain: #3FB896; --f-react: #E2AD4A;
+  --f-report-soft: #23252A; --f-blame-soft: #3A211B; --f-explain-soft: #15302A; --f-react-soft: #352A15;
+  color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 32px 64px }
+.wrap { max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px }
+h1, h2 { font-family: var(--serif); font-weight: 600; text-wrap: balance; margin: 0; letter-spacing: -0.01em }
+h1 { font-size: clamp(28px, 4.4vw, 40px); line-height: 1.12 }
+h2 { font-size: 21px; line-height: 1.25 }
+p { margin: 0 }
+.eyebrow { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted) }
+.lede { color: var(--ink-soft); max-width: 68ch; font-size: 16px }
+.muted { color: var(--muted) }
+.small { font-size: 13px }
+.num { font-variant-numeric: tabular-nums }
+header { display: flex; flex-direction: column; gap: 10px; padding-bottom: 4px }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0 }
+.panel-head { display: flex; flex-direction: column; gap: 4px }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px }
+@media (max-width: 820px) { .grid2 { grid-template-columns: minmax(0, 1fr) } }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden }
+.kpi { padding: 14px 16px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); margin: 0 -1px -1px 0; display: flex; flex-direction: column; gap: 2px }
+.kpi b { font-family: var(--serif); font-size: 30px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums }
+.kpi span { font-size: 12.5px; color: var(--muted) }
+.note { border-left: 3px solid var(--line-strong); padding: 10px 14px; background: var(--surface-2); border-radius: 0 8px 8px 0; font-size: 13.5px; color: var(--ink-soft); display: flex; flex-direction: column; gap: 6px }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--ink-soft) }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px }
+/* cluster bars */
+.bars { display: flex; flex-direction: column; gap: 2px }
+.bar-row { display: grid; grid-template-columns: minmax(150px, 290px) minmax(0, 1fr) 76px; gap: 12px; align-items: center; padding: 5px 6px; border-radius: 6px; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; width: 100% }
+.bar-row:hover { background: var(--surface-2) }
+.bar-row[aria-pressed="true"] { background: var(--accent-soft) }
+.bar-row:focus-visible, .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px }
+.bar-label { font-size: 13.5px; line-height: 1.3 }
+.track { height: 14px; background: var(--surface-2); border-radius: 3px; overflow: hidden }
+.fill { height: 100%; border-radius: 3px }
+.bar-val { font-family: var(--mono); font-size: 12.5px; text-align: right; color: var(--ink-soft) }
+@media (max-width: 560px) { .bar-row { grid-template-columns: minmax(0, 1fr) 64px; row-gap: 4px } .bar-row .track { grid-column: 1 / -1; grid-row: 2 } }
+/* heatmap */
+.scroll { overflow-x: auto }
+table { border-collapse: collapse; width: 100%; font-size: 13px }
+th { font-weight: 500; color: var(--muted); text-align: left; padding: 6px 8px; font-size: 12px; white-space: nowrap }
+td { padding: 4px; }
+.heat td.cell { text-align: center; font-family: var(--mono); font-size: 12px; border-radius: 4px; min-width: 64px; padding: 7px 4px }
+.heat td.name { padding: 6px 8px; white-space: nowrap; font-size: 13px }
+.echo td, .echo th { border-bottom: 1px solid var(--line); padding: 9px 8px; vertical-align: top }
+.echo td.j { font-family: var(--mono); white-space: nowrap }
+.svgchart { width: 100%; height: auto; display: block }
+.svgchart text { fill: var(--muted); font-family: var(--mono); font-size: 11px }
+/* evidence */
+.chips { display: flex; flex-wrap: wrap; gap: 6px }
+.chip { font: inherit; font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink-soft); cursor: pointer }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink) }
+.posts { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px }
+.post { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; background: var(--bg) }
+.post .who { font-weight: 600; font-size: 13.5px }
+.post .txt { font-size: 13.5px; color: var(--ink-soft); overflow-wrap: anywhere }
+.post .meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; color: var(--muted) }
+.pill { font-family: var(--mono); font-size: 11px; padding: 1px 7px; border-radius: 999px }
+a { color: var(--accent) }
+.filters { display: flex; flex-direction: column; gap: 8px }
+.filter-row { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 10px; align-items: start }
+.filter-label { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding-top: 6px }
+@media (max-width: 560px) { .filter-row { grid-template-columns: minmax(0, 1fr); gap: 4px } }
+.sig { font-family: var(--mono); font-size: 11px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--ink-soft) }
+.sig.strong { border-color: var(--f-blame); color: var(--f-blame) }
+.score { font-family: var(--mono); font-size: 11.5px; font-weight: 500; padding: 1px 8px; border-radius: 999px; background: var(--surface-2); color: var(--ink-soft) }
+.score.hi { background: var(--f-blame-soft); color: var(--f-blame) }
+.pair { display: flex; flex-direction: column; gap: 3px }
+.pair .track { height: 9px }
+.limits { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; color: var(--ink-soft); font-size: 14px; max-width: 80ch }
+@media (prefers-reduced-motion: no-preference) { .fill { transition: width .5s ease } }
+
+.heat th { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--muted); padding: 6px 4px; text-align: center }
+.echo th { text-align: left }
+.he { direction: rtl; unicode-bidi: plaintext; text-align: right }
+.chip2 { font-family: var(--mono); font-size: 11px; padding: 1px 8px; border-radius: 999px; white-space: nowrap }
+.v-own { background: var(--f-blame-soft); color: var(--f-blame) }
+.v-quote { background: var(--f-react-soft); color: var(--f-react) }
+.v-trump { background: var(--f-react-soft); color: var(--f-react); outline: 1px dashed var(--f-react) }
+.v-crit { background: var(--f-explain-soft); color: var(--f-explain) }
+.v-report { background: var(--f-report-soft); color: var(--f-report) }
+.flow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px }
+@media (max-width: 760px) { .flow { grid-template-columns: minmax(0, 1fr) } }
+.fbox { border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 8px; background: var(--bg); min-width: 0 }
+.fbox h3 { margin: 0; font-family: var(--serif); font-size: 16px }
+.fbox p { margin: 0; font-size: 13.5px; color: var(--ink-soft) }
+.fbox b.big { font-family: var(--serif); font-size: 28px; color: var(--ink) }
+select { font: inherit; font-size: 13px; padding: 4px 8px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--surface); color: var(--ink) }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Apotypos · narrative trace · France, Oct 2026</div>
+    <h1>"Immigrants, Islamists and the Palestinian flag": who carries the narrative</h1>
+    <p class="lede">This page follows one narrative about the French riots: immigrants caused them, French immigration policy failed, the protests are a pro-Palestinian "intifada", and Israel is the West's front line against Islamism. It asks who produces the narrative in Israel, and where the same words occur in the Greek press and on Facebook.</p>
+  </header>
+
+  <section class="kpis" id="kpis" aria-label="Summary"></section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div class="eyebrow">At a glance</div>
+      <h2>The narrative is made in Israel, borrowed from Trump and X, and rare in the Greek press</h2>
+    </div>
+    <div class="flow" id="flow"></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div class="eyebrow">How often each part occurs</div>
+      <h2 id="m-title"></h2>
+      <p class="muted small">Percent of texts in which a word pattern for each part occurs (English, Greek, Hebrew, French). A pattern shows that a text uses the idea. It does not show that the writer holds the idea: most Greek mentions of immigration report Trump or Le Pen.</p>
+    </div>
+    <div class="scroll"><table class="heat" id="heat"></table></div>
+    <p class="muted small">"Migrants / Islam blamed" is one category, because the rhetoric is the same. For the press, it counts texts that name immigrants, Muslims, Islam or Islamism. For Facebook, it is the coded cluster "Migration / Islam blamed" (each post was read).</p>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div class="eyebrow">Who produces it in Israel</div>
+      <h2 id="v-title"></h2>
+      <p class="muted small">46 Israeli articles touch Palestine, Islamism, Israel or immigration policy. Each one was read and given one voice.</p>
+    </div>
+    <div class="grid2">
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <div class="eyebrow">Voice</div>
+        <div class="bars" id="v-bars"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <div class="eyebrow">Own-voice articles by outlet</div>
+        <div class="bars" id="o-bars"></div>
+      </div>
+    </div>
+    <div class="note">
+      <strong>Three groups produce it</strong>
+      <span><b>The government.</b> Diaspora Affairs Minister Amichai Chikli ("civil war has begun in France") and the Foreign Ministry, which Haaretz reports linked the riots to pro-Palestinian activism "despite no evidence". Prime Minister Netanyahu told Channel 14 that he warned Macron in October 2023.</span>
+      <span><b>Right-leaning outlets and their columnists.</b> Channel 14 (5 own-voice items), Israel Hayom (Dror Eydar, Shuki Bless, Yifat Ben Hai Segev), i24NEWS (Zvi Yehezkeli), Walla (Amit Yagur, Zvika Klein), the Jerusalem Post (Zvika Klein) and JNS (Fiamma Nirenstein). Three op-eds tie France to the Israeli election.</span>
+      <span><b>The counter-voices.</b> Haaretz (Hebrew and English), an Israel Hayom explainer, a Channel 14 news report, and fact-checks on N12 and Walla.</span>
+    </div>
+    <div><select id="pick" aria-label="Voice"></select></div>
+    <div class="scroll"><table class="echo" id="items"></table></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div class="eyebrow">Shared words across the three corpora</div>
+      <h2>The same phrases travel, but mostly from one shared source</h2>
+      <p class="muted small">Number of texts with each phrase. A shared phrase does not prove that one corpus copied another. Most phrases come from one upstream source (Trump, an X post, a politician) that each corpus took directly.</p>
+    </div>
+    <div class="scroll"><table class="echo" id="shared"></table></div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel">
+      <div class="panel-head">
+        <div class="eyebrow">Greek press</div>
+        <h2 id="g-title"></h2>
+        <p class="muted small">How the 21 Greek articles that mention Palestine or Islamism use it, out of 976 riot articles.</p>
+      </div>
+      <div class="scroll"><table class="echo" id="routes"></table></div>
+      <p class="muted small" id="g-note"></p>
+    </section>
+    <section class="panel">
+      <div class="panel-head">
+        <div class="eyebrow">Facebook</div>
+        <h2 id="f-title"></h2>
+        <p class="muted small">933 public posts in scope. Counts only; posts are not quoted.</p>
+      </div>
+      <div class="kpis" id="f-kpis"></div>
+      <p class="muted small" id="f-note"></p>
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><div class="eyebrow">Limitations</div><h2>What this trace can and cannot show</h2></div>
+    <ul class="limits">
+      <li>The word patterns find mentions. One reader (Claude) read the 46 Israeli and 21 Greek candidates by hand to decide the voice. A second person did not check them.</li>
+      <li>The windows are different. The Greek corpus ends on 19 October, so Trump's "Muslim city" remark of 19 October is mostly outside it. Most Hebrew outlets are covered for 18–20 October only.</li>
+      <li>Facebook posts have no dates in this sample, so the trace cannot show whether a phrase was on Facebook before or after the press.</li>
+      <li>A shared phrase shows a common source or a copy. It does not show coordination or payment.</li>
+      <li>The Facebook sample comes from searches. Some searches name Jews, Mossad or synagogues, and these searches find most of the "intifada" posts.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+const D = {"counts": {"il": {"n": 139, "narr": {"mi": 49, "policy": 16, "pal": 30, "israel": 6}, "full": 19, "phrase": {"intifada": 4, "muslimcity": 10, "trumpborder": 11, "vance": 1, "mosque": 1, "flags": 22, "netanyahu": 1, "chikli": 3, "amar": 3}, "il": 32}, "gr": {"n": 976, "narr": {"mi": 153, "policy": 49, "pal": 14, "israel": 1}, "full": 5, "phrase": {"intifada": 0, "muslimcity": 0, "trumpborder": 4, "vance": 32, "mosque": 0, "flags": 5, "netanyahu": 0, "chikli": 0, "amar": 4}, "il": 0}, "fb": {"n": 933, "narr": {"mi": 134, "policy": 16, "pal": 32, "israel": 1}, "full": 24, "phrase": {"intifada": 6, "muslimcity": 1, "trumpborder": 2, "vance": 2, "mosque": 1, "flags": 10, "netanyahu": 1, "chikli": 0, "amar": 3}, "il": 4}}, "ilLang": {"he": {"n": 107, "narr": {"mi": 38, "policy": 12, "pal": 20, "israel": 3}, "full": 14, "phrase": {"intifada": 2, "muslimcity": 10, "trumpborder": 9, "vance": 0, "mosque": 1, "flags": 15, "netanyahu": 1, "chikli": 0, "amar": 2}, "il": 8}, "en": {"n": 32, "narr": {"mi": 11, "policy": 4, "pal": 10, "israel": 3}, "full": 5, "phrase": {"intifada": 2, "muslimcity": 0, "trumpborder": 2, "vance": 1, "mosque": 0, "flags": 7, "netanyahu": 0, "chikli": 3, "amar": 1}, "il": 24}}, "labels": {"mi": "Migrants / Islam blamed", "policy": "Immigration policy blamed", "pal": "Palestine / \"intifada\" link", "israel": "Israel as the West's front line"}, "voice": {"own": 14, "quote": 4, "trump": 12, "crit": 6, "report": 10}, "items": [{"i": 6, "voice": "report", "outlet": "The Times of Israel", "day": "2026-10-18", "author": "Agencies", "lang": "en", "title": "Rioters loot stores in Milan during cost-of-living protest featuring Palestinian symbols", "url": "https://www.timesofisrael.com/rioters-loot-stores-in-milan-during-cost-of-living-protest-featuring-palestinian-symbols", "note": ""}, {"i": 7, "voice": "report", "outlet": "The Times of Israel", "day": "2026-10-18", "author": "Janis Laizans; Stamos Prousalis; Yann Tessier", "lang": "en", "title": "Mass protests in France spiral into worst riots in years; 1,200 arrested, 150 cops injured", "url": "https://www.timesofisrael.com/mass-protests-in-france-spiral-into-worst-riots-in-years-1200-arrested-150-cops-injured", "note": ""}, {"i": 9, "voice": "crit", "outlet": "Haaretz (English)", "day": "2026-10-19", "author": "Sefy Hendler", "lang": "en", "title": "Analysis • France is burning. But this is no Islamist uprising", "url": "https://www.haaretz.com/world-news/europe/2026-10-19/ty-article/.premium/with-a-fateful-election-on-the-horizon-france-lost-control-to-rage-and-violence/000001a1-513d-d25a-a7ff-777d234d0000", "note": "Analysis: \"France is burning. But this is no Islamist uprising\""}, {"i": 10, "voice": "crit", "outlet": "Haaretz (English)", "day": "2026-10-18", "author": "Ben Kroll", "lang": "en", "title": "'Different protest, same predictable slogans' • Israel links French protests to pro-Palestinian activism despite no evidence", "url": "https://www.haaretz.com/world-news/europe/2026-10-18/ty-article/.premium/israel-links-french-protests-to-pro-palestinian-activism-despite-scant-evidence/000001a1-4eab-da52-a3f1-4eff71790000", "note": "Report: the Israeli government links the riots to pro-Palestinian activism \"despite no evidence\""}, {"i": 12, "voice": "report", "outlet": "The Media Line", "day": "2026-10-19", "author": "Giorgia Valente", "lang": "en", "title": "Extremists Could Exploit France’s Riots Without Organizing Them, Expert Tells TML", "url": "https://themedialine.org/top-stories/extremists-could-exploit-frances-riots-without-organizing-them-expert-tells-tml", "note": ""}, {"i": 14, "voice": "own", "outlet": "JNS (Jewish News Syndicate)", "day": "2026-10-19", "author": "Fiamma Nirenstein", "lang": "en", "title": "Did you want to globalize the intifada?", "url": "https://www.jns.org/opinion/column/fiamma-nirenstein/paris-and-milan-globalize-the-intifada", "note": "Op-ed: France now faces the \"globalized intifada\" that began on 7 October 2023"}, {"i": 16, "voice": "report", "outlet": "JNS (Jewish News Syndicate)", "day": "2026-10-19", "author": "JNS Staff", "lang": "en", "title": "Sa'ar rebukes Iranian FM over comments on unrest in France", "url": "https://www.jns.org/news/israel-news/saar-rebukes-iranian-fm-over-comments-on-unrest-in-france", "note": ""}, {"i": 17, "voice": "report", "outlet": "JNS (Jewish News Syndicate)", "day": "2026-10-18", "author": "Canaan Lidor", "lang": "en", "title": "French Jewish leader calls on government to declare emergency", "url": "https://www.jns.org/news/world/french-jewish-leader-calls-on-government-to-declare-emergency", "note": ""}, {"i": 19, "voice": "quote", "outlet": "JNS (Jewish News Syndicate)", "day": "2026-10-18", "author": "JNS Staff", "lang": "en", "title": "Chikli: Civil war has begun in France, ‘I wish France victory over barbarism’", "url": "https://www.jns.org/news/world/chikli-civil-war-has-begun-in-france-i-wish-france-victory-over-barbarism", "note": "Minister Amichai Chikli: \"civil war has begun in France\"; \"victory over barbarism\""}, {"i": 20, "voice": "report", "outlet": "Algemeiner", "day": "2026-10-19", "author": "The Algemeiner", "lang": "en", "title": "France Riots: Macron Rejects Interior Minister’s Resignation as Synagogue, Jewish Businesses Vandalized", "url": "https://www.algemeiner.com/2026/10/19/france-riots-macron-rejects-interior-ministers-resignation-synagogue-jewish-businesses-vandalized", "note": ""}, {"i": 21, "voice": "own", "outlet": "The Jerusalem Post", "day": "2026-10-19", "author": "MICHAEL J SALAMON; LOUIS LIBIN", "lang": "en", "title": "France must confront antisemitism and political extremism", "url": "https://www.jpost.com/opinion/article-912148", "note": "Op-ed: the Palestinian flags at the protests \"deserve scrutiny\"; repeats the Amar claim"}, {"i": 26, "voice": "trump", "outlet": "The Jerusalem Post", "day": "2026-10-18", "author": "JERUSALEM POST STAFF; REUTERS", "lang": "en", "title": "Donald Trump urges French authorities to shutdown the border following violent riots", "url": "https://www.jpost.com/international/article-912064", "note": ""}, {"i": 27, "voice": "own", "outlet": "The Jerusalem Post", "day": "2026-10-18", "author": "ZVIKA KLEIN", "lang": "en", "title": "Zohran Mamdani, Paris recognize dangers of 'globalize the Intifada'", "url": "https://www.jpost.com/opinion/article-912063", "note": "Column: why was the Palestinian flag next to the tricolour?"}, {"i": 30, "voice": "trump", "outlet": "The Times of Israel", "day": "2026-10-18", "author": "AFP", "lang": "en", "title": "Trump says ‘France is burning,’ blames riots on immigrants ‘with hatred in their hearts’", "url": "https://www.timesofisrael.com/liveblog_entry/trump-says-france-is-burning-blames-riots-on-immigrants-with-hatred-in-their-hearts", "note": ""}, {"i": 35, "voice": "report", "outlet": "Ynet", "day": "2026-10-19", "author": "Ynet והסוכנויות", "lang": "he", "title": "עוצר לילי בלב פריז, אזהרות נסיעה בעולם: \"השמאל הקיצוני מתכנן כאוס עד הבחירות\"", "url": "https://www.ynet.co.il/news/article/rkkx0cmnme", "note": ""}, {"i": 38, "voice": "trump", "outlet": "Ynet", "day": "2026-10-19", "author": "רויטרס", "lang": "he", "title": "המהומות בצרפת: רה\"מ צרפת קורא להטלת \"עוצר מוגבל\" על אזורים במדינה", "url": "https://www.ynet.co.il/news/article/hjq0etq3gl", "note": ""}, {"i": 51, "voice": "report", "outlet": "N12 (Mako)", "day": "2026-10-18", "author": "הגר אמגר", "lang": "he", "title": "\"רצות על החיים שלנו\": האימה של ישראלים במהומות בצרפת", "url": "https://www.mako.co.il/news-world/2026_q4/Article-32f7d72850e41a1027.htm", "note": ""}, {"i": 57, "voice": "crit", "outlet": "N12 (Mako)", "day": "2026-10-19", "author": "יונתן אפולט", "lang": "he", "title": "האמת מאחורי התמונה מפריז שזעזעה את העולם", "url": "https://www.mako.co.il/nexter-news/Article-d9ab2d139b351a1026.htm", "note": "Fact-check: 1,384 posts on X link the riots to Jews or Israel"}, {"i": 58, "voice": "trump", "outlet": "Walla", "day": "2026-10-20", "author": "מערכת וואלה", "lang": "he", "title": "לילה מתוח בצרפת: עוצר בפריז, אזהרות מסע - והמבחן של מקרון", "url": "https://www.walla.co.il/news/world/383958119", "note": ""}, {"i": 60, "voice": "quote", "outlet": "Walla", "day": "2026-10-20", "author": "יואב איתיאל", "lang": "he", "title": "אתי כרייף בלב המהומות בפריז: ראיון בלעדי לוואלה", "url": "https://www.walla.co.il/news/world/383958129", "note": "Interview, Eti Kraif: \"they wanted to globalize the intifada, they got it in the face\""}, {"i": 64, "voice": "crit", "outlet": "Walla", "day": "2026-10-19", "author": "יואב איתיאל", "lang": "he", "title": "הדגל במגדל אייפל והקשישים: הפייק של המהומות בצרפת", "url": "https://www.walla.co.il/news/world/383958070", "note": "Fact-check: the \"Palestinian flag\" on the Eiffel Tower is a Jordanian flag"}, {"i": 66, "voice": "own", "outlet": "Walla", "day": "2026-10-19", "author": "צביקה קליין", "lang": "he", "title": "אנטישמיות מפריז לניו יורק: מה ממדאני מסרב להבין", "url": "https://www.walla.co.il/news/opinions/383958045", "note": "Column: the flag shows the Palestinian issue entered the protest, but \"be careful with conclusions\""}, {"i": 67, "voice": "trump", "outlet": "Walla", "day": "2026-10-19", "author": "עמית אביטן", "lang": "he", "title": "לילות של ביזה והרס: צרפת ואיטליה נאבקות להשיב שליטה ברחובות", "url": "https://www.walla.co.il/news/world/383958023", "note": ""}, {"i": 68, "voice": "own", "outlet": "Walla", "day": "2026-10-19", "author": "עמית יגור", "lang": "he", "title": "צרפת בוערת, מנהיגיה עסוקים בישראל: הקמפיין להרס המערב", "url": "https://www.walla.co.il/news/opinions/383958006", "note": "Op-ed: France ignored immigration and waved the Palestinian flag; a \"campaign to destroy the West\""}, {"i": 73, "voice": "own", "outlet": "Israel Hayom", "day": "2026-10-20", "author": "יפעת בן חי שגב", "lang": "he", "title": "דעה", "url": "https://www.israelhayom.co.il/opinions/article/21671540", "note": "Op-ed: Paris and Jerusalem; links the riots to the Israeli election"}, {"i": 77, "voice": "trump", "outlet": "Israel Hayom", "day": "2026-10-19", "author": "אור שקד; שליח בארה\"ב; דודי קוגן", "lang": "he", "title": "עוצר הוכרז בפריז - מקרון \"ברח\" למזרח התיכון", "url": "https://www.israelhayom.co.il/news/world-news/europe/article/21662712", "note": ""}, {"i": 78, "voice": "own", "outlet": "Israel Hayom", "day": "2026-10-19", "author": "דרור אידר", "lang": "he", "title": "המהומות בצרפת: פירות הבאושים של מדיניות ההגירה", "url": "https://www.israelhayom.co.il/news/world-news/europe/article/21662889", "note": "Op-ed: \"the rotten fruits of immigration policy\"; the Palestinian flag is \"the flag of the destruction of Western civilization\""}, {"i": 79, "voice": "own", "outlet": "Israel Hayom", "day": "2026-10-19", "author": "שוקי בלס", "lang": "he", "title": "דעה", "url": "https://www.israelhayom.co.il/opinions/article/21662787", "note": "Op-ed: far left and Islamists exploit the anger; Israel can be \"a beacon\""}, {"i": 80, "voice": "quote", "outlet": "Israel Hayom", "day": "2026-10-19", "author": "דין ברנדשטטר", "lang": "he", "title": "פריז נשרפת? העיקר שיש יין: הסרטון ששבר את הרשת - והפייק שהופץ", "url": "https://www.israelhayom.co.il/news/world-news/europe/article/21660900", "note": "Quotes Éric Ciotti: \"a kind of French intifada\""}, {"i": 81, "voice": "crit", "outlet": "Israel Hayom", "day": "2026-10-19", "author": "מערכת היום פלוס; עידו אבניאל", "lang": "he", "title": "על מה לעזאזל מפגינים עכשיו בצרפת?", "url": "https://www.israelhayom.co.il/news/world-news/other/article/21656934", "note": "Explainer: most protesters burned nothing; the \"intifada\" images come from small groups"}, {"i": 97, "voice": "quote", "outlet": "Channel 14", "day": "2026-10-20", "author": "אפרת ברינר", "lang": "he", "title": "מיוחד ל-C14: האזהרה המצמררת של נתניהו למקרון שהפכה לנבואה", "url": "https://www.c14.co.il/article/1746291", "note": "Netanyahu tells C14 he warned Macron on 7 October 2023 that Hamas could reach Paris"}, {"i": 98, "voice": "own", "outlet": "Channel 14", "day": "2026-10-20", "author": "דסק C", "lang": "he", "title": "מדרכות פריז הפכו לשוק שחור של סחורות גנובות", "url": "https://www.c14.co.il/article/1746055", "note": "Report: Islamic groups and pro-Palestinian activists among the organizers"}, {"i": 99, "voice": "own", "outlet": "Channel 14", "day": "2026-10-20", "author": "דסק C", "lang": "he", "title": "דגלי פלשתין וארגונים אסלאמיים: מי מלבה את הכאוס בצרפת?", "url": "https://www.c14.co.il/article/1745631", "note": "Report: \"Palestinian flags and Islamic organizations: who fuels the chaos?\" (the \"54 organizations\" claim)"}, {"i": 100, "voice": "trump", "outlet": "Channel 14", "day": "2026-10-19", "author": "דסק C", "lang": "he", "title": "טראמפ על המחאות בצרפת: \"פריז תהפוך לעיר מוסלמית די בקרוב\"", "url": "https://www.c14.co.il/article/1745416", "note": ""}, {"i": 103, "voice": "own", "outlet": "Channel 14", "day": "2026-10-19", "author": "זיו שזו", "lang": "he", "title": "\"היישר מספר ההוראות של חמאס\": כך נראית הצביעות ברחובות פריז", "url": "https://www.c14.co.il/article/1744479", "note": "Report: rioters use tactics \"straight from Hamas's playbook\" (an influencer's video)"}, {"i": 104, "voice": "crit", "outlet": "Channel 14", "day": "2026-10-19", "author": "אפרת ברינר", "lang": "he", "title": "הסמל של צרפת עלה באש – והממשלה נערכת לצעד שלא נראה שנים", "url": "https://www.c14.co.il/article/1744560", "note": "Report: no sign that Islamist groups organized the riots; the PM blames the far left"}, {"i": 109, "voice": "own", "outlet": "Channel 14", "day": "2026-10-19", "author": "סיון יחזקאל", "lang": "he", "title": "המהומות בצרפת הן תזכורת לישראל: זה מה שקורה כשהשמאל בשלטון", "url": "https://www.c14.co.il/article/1743675", "note": "Op-ed: the riots are a reminder for Israel of \"what happens when the left is in power\""}, {"i": 110, "voice": "own", "outlet": "Channel 14", "day": "2026-10-19", "author": "טל מאיר", "lang": "he", "title": "צרפת היא רק הפרומו: מה מחכה לישראל אחרי הבחירות?", "url": "https://www.c14.co.il/article/1743592", "note": "Op-ed: France is \"only the promo\" for Israel after the election; repeats the mosque phrase"}, {"i": 113, "voice": "trump", "outlet": "i24NEWS (Hebrew)", "day": "2026-10-18", "author": "נטלי הוויט; אלון גל", "lang": "he", "title": "המהומות בצרפת: 1,800 נעצרו; בית כנסת בפריז הושחת", "url": "https://www.i24news.tv/he/news/international/europe/artc-20433bd2", "note": ""}, {"i": 114, "voice": "own", "outlet": "i24NEWS (Hebrew)", "day": "2026-10-18", "author": "צבי יחזקאלי", "lang": "he", "title": "אינתיפאדה איסלאמיסטית בלב צרפת: ההפגנות שמקרון מתקשה להבין", "url": "https://www.i24news.tv/he/news/opinion-and-analysis/artc-626b58f3", "note": "Opinion: \"Islamist intifada in the heart of France\""}, {"i": 116, "voice": "trump", "outlet": "i24NEWS (Hebrew)", "day": "2026-10-19", "author": "נטלי הוויט; אלון גל; גיא פלק", "lang": "he", "title": "טראמפ נגד מקרון: \"פריז תהיה עיר מוסלמית בקרוב מאוד, הוא נותן לכולם להיכנס\"", "url": "https://www.i24news.tv/he/news/international/artc-dd315aa7", "note": ""}, {"i": 117, "voice": "trump", "outlet": "i24NEWS (Hebrew)", "day": "2026-10-20", "author": "גיא פלק", "lang": "he", "title": "המהומות בצרפת: עוצר הוטל במהלך הלילה במספר ערים", "url": "https://www.i24news.tv/he/news/international/europe/artc-f3af41ad", "note": ""}, {"i": 118, "voice": "trump", "outlet": "i24NEWS (Hebrew)", "day": "2026-10-19", "author": "נטלי הוויט; גיא פלק", "lang": "he", "title": "הכאוס נמשך ברחבי צרפת: רכבת תיירים נשדדה, פורעים תקפו שוטרים", "url": "https://www.i24news.tv/he/news/international/europe/artc-48854e0c", "note": ""}, {"i": 121, "voice": "report", "outlet": "Makor Rishon", "day": "2026-10-19", "author": "דוד זבולוני", "lang": "he", "title": "\"הרבה מעבר למה שאתם רואים\": עדות מצמררת של יהודי מרחובות פריז", "url": "https://www.makorrishon.co.il/news/tfosot/article/382899", "note": ""}, {"i": 131, "voice": "report", "outlet": "Maariv", "day": "2026-10-20", "author": null, "lang": "he", "title": "\"אנו קוראים להתגייס\": אחרי צרפת - גם בבריטניה מתכננים להבעיר את השטח", "url": "https://www.maariv.co.il/news/world/article-1379327", "note": ""}, {"i": 136, "voice": "trump", "outlet": "Kan", "day": "2026-10-19", "author": "ישי בר יוסף", "lang": "he", "title": "טראמפ על המהומות בצרפת: \"פריז תהפוך בקרוב לעיר מוסלמית, מקרון נותן לכולם להיכנס\"", "url": "https://www.kan.org.il/content/kan-news/global/1110815", "note": ""}], "shared": [{"k": "Trump: \"close your borders\"; \"Paris will be a Muslim city\"", "il": 12, "gr": 35, "fb": 3, "first": "18 Oct (Truth Social)", "route": "One upstream source. 12 Israeli reports in 8 outlets, and 35 Greek migration headlines quote Trump."}, {"k": "\"Globalize the intifada\"", "il": 5, "gr": 0, "fb": 6, "first": "18 Oct (JPost)", "route": "Israeli and English-language only. The Facebook posts come from the searches on Jews, Mossad and synagogues."}, {"k": "Éric Ciotti: \"a French intifada\"", "il": 1, "gr": 1, "fb": 0, "first": "19 Oct", "route": "A French politician quoted by Israel Hayom and In.gr on the same day."}, {"k": "\"54 organizations\" behind the riots", "il": 2, "gr": 0, "fb": 2, "first": "20 Oct (C14)", "route": "Channel 14 and 2 Facebook posts; the Facebook posts are in English."}, {"k": "Viral X post: \"MASSIVE RIOTS and PALESTINE FLAGS\"", "il": 0, "gr": 1, "fb": 2, "first": "6 Oct (Naftemporiki embed)", "route": "A US partisan X post, embedded in a Greek article 11 days before the riots of 17 October."}, {"k": "Georgiadis: \"Not one French flag. Only Palestine\"", "il": 0, "gr": 1, "fb": 1, "first": "18 Oct", "route": "A Greek minister's post. Rosa.gr reports it as a critic; one Facebook post reshares it."}, {"k": "\"Not a single mosque was damaged\"", "il": 1, "gr": 0, "fb": 1, "first": "19 Oct (C14)", "route": "A Channel 14 op-ed and one Facebook post; no Greek article."}], "grRoutes": [{"route": "Embedded X posts", "n": 3, "ex": "Naftemporiki, Newsit and Insider.gr embed English-language X posts on Palestinian flags or on an \"alliance with political Islamism\"."}, {"route": "French sources quoted", "n": 2, "ex": "In.gr quotes Éric Ciotti (\"red fascism, a French intifada\"). Newsbeast cites a report on \"fanatic supporters of Palestine\"."}, {"route": "Greek politician quoted", "n": 1, "ex": "Rosa.gr reports, as a critic, Adonis Georgiadis's post on the Palestinian flags."}, {"route": "Own-voice insinuation", "n": 2, "ex": "Newsbreak.gr: \"Questions on the role of Islamist elements\" (a headline and its related link)."}, {"route": "Critique of the narrative", "n": 4, "ex": "ThePressProject (MeRA25), Rosa.gr (Sakellaridis), a Proto Thema analysis and Ethnos say that the far right calls the protests an Islamist revolt."}, {"route": "Neutral mention", "n": 9, "ex": "Greta Thunberg's keffiyeh (5 articles), flags in an embedded video, placards, and Bernard-Henri Lévy on Macron and Israel."}], "grIsrael": 2, "grN": 976, "ilN": 139, "fbN": 933, "fbFull": {"n": 24, "posters": 24, "il": 4, "lang": {"en": 20, "el": 4, "fr": 0}}, "grMigr": {"headlines": 44, "speaker": 40, "trump": 35}, "fbMigr": 134, "speakersIL": {"Vance": 1, "Chikli": 2, "Trump": 16, "Netanyahu": 2, "Le Pen / Bardella": 6, "Zemmour": 2, "Sa'ar": 2, "Retailleau": 1}, "speakersGR": {"Le Pen / Bardella": 36, "Trump": 46, "Georgiadis": 3, "Retailleau": 3, "Musk": 2, "Vance": 15, "Zemmour": 1}, "ownOutlets": {"JNS (Jewish News Syndicate)": 1, "The Jerusalem Post": 2, "Walla": 2, "Israel Hayom": 3, "Channel 14": 5, "i24NEWS (Hebrew)": 1}};
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const pct = (n, d) => d ? Math.round(n / d * 100) : 0;
+const kpis = (id, list) => { document.getElementById(id).innerHTML = list.map(([b, s]) => `<div class="kpi"><b>${b}</b><span>${esc(s)}</span></div>`).join(''); };
+const row = (label, val, w, c) => `<div class="bar-row" style="cursor:default"><span class="bar-label">${esc(label)}</span><span class="track"><span class="fill" style="display:block;width:${w}%;background:${c}"></span></span><span class="bar-val num">${val}</span></div>`;
+const V = { own: ['v-own', 'Own voice: advances it', 'var(--f-blame)'], quote: ['v-quote', 'Quotes a speaker who advances it', 'var(--f-react)'],
+  trump: ['v-trump', 'Reports the Trump quotes', 'var(--f-react)'], crit: ['v-crit', 'Questions or debunks it', 'var(--f-explain)'], report: ['v-report', 'Neutral mention', 'var(--f-report)'] };
+const C = D.counts, own = D.voice.own, ownOut = Object.keys(D.ownOutlets).length;
+
+kpis('kpis', [
+  [own, `Israeli articles advance it in their own voice, in ${ownOut} outlets`],
+  [D.voice.trump, 'Israeli reports carry the Trump quotes'],
+  [`${D.grIsrael} of ${D.grN}`, 'Greek riot articles mention Israel at all'],
+  [`${D.grMigr.trump} of ${D.grMigr.headlines}`, 'Greek migration headlines quote Trump'],
+  [`${D.fbFull.n} of ${D.fbN}`, 'Facebook posts join migrants / Islam to Palestine'],
+]);
+
+document.getElementById('flow').innerHTML = [
+  ['Israel', `${own} + ${D.voice.quote}`, `own-voice and quoted articles. The narrative has all four parts here: immigrants, policy, the "intifada" and Israel as the West's front line. Producers: the government (Chikli, the Foreign Ministry) and right-leaning outlets, led by Channel 14 and Israel Hayom.`],
+  ['Greek press', `${D.grMigr.speaker} of ${D.grMigr.headlines}`, `migration headlines name a speaker, mostly Trump. The Palestine link enters through embedded X posts and quoted politicians (Ciotti, Georgiadis). The "Israel as front line" part does not occur.`],
+  ['Facebook', `${D.fbFull.n}`, `posts join migrants / Islam to Palestine, from ${D.fbFull.posters} posters. The "globalize the intifada" and "54 organizations" phrases occur in English posts, and match Israeli and US sources.`],
+].map(([h, n, p]) => `<div class="fbox"><h3>${h}</h3><b class="big num">${n}</b><p>${esc(p)}</p></div>`).join('');
+
+const cols = [['Israel, Hebrew', D.ilLang.he], ['Israel, English', D.ilLang.en], ['Greek press', C.gr], ['Facebook', C.fb]];
+const ks = Object.keys(D.labels);
+document.getElementById('heat').innerHTML = `<thead><tr><th></th>${cols.map(([l, s]) => `<th>${l}<br>${s.n}</th>`).join('')}</tr></thead><tbody>` +
+  ks.map(k => `<tr><td class="name">${esc(D.labels[k])}</td>${cols.map(([, s]) => { const v = pct(s.narr[k], s.n); return `<td class="cell" style="background:color-mix(in srgb, var(--f-blame) ${Math.min(80, v * 2.5)}%, transparent)">${v}%</td>`; }).join('')}</tr>`).join('') +
+  `<tr><td class="name"><b>All together: migrants / Islam + Palestine</b></td>${cols.map(([, s]) => { const v = pct(s.full, s.n); return `<td class="cell" style="background:color-mix(in srgb, var(--f-blame) ${Math.min(80, v * 2.5)}%, transparent)"><b>${v}%</b></td>`; }).join('')}</tr></tbody>`;
+document.getElementById('m-title').textContent = `The Palestine link is in ${pct(C.il.narr.pal, C.il.n)}% of Israeli articles, against ${pct(C.gr.narr.pal, C.gr.n)}% of Greek articles and ${pct(C.fb.narr.pal, C.fb.n)}% of Facebook posts`;
+
+const vo = Object.keys(V), vm = Math.max(...vo.map(k => D.voice[k] || 0));
+document.getElementById('v-bars').innerHTML = vo.map(k => row(V[k][1], D.voice[k] || 0, (D.voice[k] || 0) / vm * 100, V[k][2])).join('');
+const oo = Object.entries(D.ownOutlets).sort((a, b) => b[1] - a[1]), om = oo[0][1];
+document.getElementById('o-bars').innerHTML = oo.map(([o, n]) => row(o, n, n / om * 100, 'var(--f-blame)')).join('');
+document.getElementById('v-title').textContent = `${own} articles advance the narrative in their own voice; ${oo[0][0]} has the most (${oo[0][1]})`;
+
+const pick = document.getElementById('pick');
+pick.innerHTML = vo.map(k => `<option value="${k}">${esc(V[k][1])} (${D.voice[k] || 0})</option>`).join('');
+const show = () => {
+  const k = pick.value;
+  document.getElementById('items').innerHTML = `<thead><tr><th>Day</th><th>Outlet</th><th>Writer</th><th>Headline</th><th>What it says</th></tr></thead><tbody>` +
+    D.items.filter(x => x.voice === k).sort((a, b) => a.day.localeCompare(b.day)).map(x => `<tr><td class="num">${+x.day.slice(8)} Oct</td><td>${esc(x.outlet)}</td><td>${esc(x.author || '')}</td><td class="${x.lang === 'he' ? 'he' : ''}"><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a></td><td>${esc(x.note)}</td></tr>`).join('') + '</tbody>';
+};
+pick.addEventListener('change', show); pick.value = 'own'; show();
+
+document.getElementById('shared').innerHTML = `<thead><tr><th>Phrase or source</th><th>Israel</th><th>Greek press</th><th>Facebook</th><th>First seen</th><th>Route</th></tr></thead><tbody>` +
+  D.shared.map(s => `<tr><td>${esc(s.k)}</td><td class="num">${s.il}</td><td class="num">${s.gr}</td><td class="num">${s.fb}</td><td>${esc(s.first)}</td><td>${esc(s.route)}</td></tr>`).join('') + '</tbody>';
+
+document.getElementById('routes').innerHTML = `<thead><tr><th>Route</th><th>Articles</th><th>Example</th></tr></thead><tbody>` +
+  D.grRoutes.map(r => `<tr><td>${esc(r.route)}</td><td class="num">${r.n}</td><td>${esc(r.ex)}</td></tr>`).join('') + '</tbody>';
+const gAdv = D.grRoutes.filter(r => /Embedded|French|insinuation/.test(r.route)).reduce((s, r) => s + r.n, 0);
+document.getElementById('g-title').textContent = `Only ${gAdv} of ${D.grN} Greek articles carry the Palestine link toward blame, and none puts Israel at the front line`;
+document.getElementById('g-note').textContent = `On migration, the Greek press is close to the Israeli press: both mostly report what Trump, Vance and Le Pen said. In Greek articles that mention immigration, the most named speakers are Trump (${D.speakersGR.Trump}), Le Pen or Bardella (${D.speakersGR['Le Pen / Bardella']}) and Vance (${D.speakersGR.Vance}).`;
+
+kpis('f-kpis', [
+  [D.fbFull.n, `"migration / Islam blamed" posts also name Palestine (${pct(D.fbFull.n, D.fbN)}%)`],
+  [C.fb.phrase.intifada, 'posts use "globalize the intifada"'],
+  [D.fbMigr, `posts in the "migration blamed" cluster (${pct(D.fbMigr, D.fbN)}%)`],
+  [D.fbFull.il, 'posts name an Israeli source'],
+]);
+document.getElementById('f-title').textContent = `On Facebook, ${D.fbMigr} posts blame migrants or Islam, but only ${D.fbFull.n} of them add the Palestine link`;
+document.getElementById('f-note').textContent = `The ${D.fbFull.n} posts are "migration / Islam blamed" posts that also name Palestine, the intifada or Hamas: ${D.fbFull.lang.en} from English searches, ${D.fbFull.lang.el} from Greek searches and ${D.fbFull.lang.fr} from French searches. Two shared texts link Facebook to the press: the X post on "PALESTINE FLAGS" (also embedded by Naftemporiki) and the "54 organizations" claim (also on Channel 14).`;
+</script>
+<script>
+(() => {
+  if (window.parent === window) return
+  const send = () => window.parent.postMessage({ type: 'france-riots-height', h: document.body.offsetHeight }, '*')
+  new ResizeObserver(send).observe(document.body)
+  window.addEventListener('load', send)
+  send()
+})()
+</script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"12f0b357057b46bb83fe6869a4d0128b","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>
