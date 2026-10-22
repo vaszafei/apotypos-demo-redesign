@@ -14,7 +14,7 @@
   <script src="assets/icons.js?v=2"></script>
   <script src="assets/messages.js?v=11"></script>
   <script src="assets/messages-v2.js?v=27"></script>
-  <script src="assets/components.js?v=6"></script>
+  <script src="assets/components.js?v=7"></script>
   <script src="assets/dash.js?v=8"></script>
   <script src="assets/shell.js?v=25"></script>
   <script src="data/home.js?v=3"></script>
@@ -116,7 +116,7 @@
         // A catch-all topic is not a mover.
         const table = card('', cardHead(t('topics2.all.title'), null, t('topics2.all.sub')),
           UI.DataTable({
-            rows, rankColumn: true, pageSize: rows.length, emptyText: t('media.empty'),
+            rows, pageSize: rows.length, emptyText: t('media.empty'),
             columns: [
               { label: t('media.col.issue'), render: (r) => h('span', { class: 'nowrap' }, UI.EntityLink({ type: 'topic', key: String(d.issues.indexOf(r.issue)), label: name(r.issue) })) },
               { label: t('media.col.articles'), num: true, render: (r) => fmt.int(r.count) },

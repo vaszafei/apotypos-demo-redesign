@@ -15,7 +15,7 @@
   <script src="assets/messages.js?v=11"></script>
   <script src="assets/messages-v2.js?v=27"></script>
   <script src="assets/messages-spread.js?v=12"></script>
-  <script src="assets/components.js?v=6"></script>
+  <script src="assets/components.js?v=7"></script>
   <script src="assets/dash.js?v=8"></script>
   <script src="assets/shell.js?v=25"></script>
   <script src="data/media.js?v=3"></script>
@@ -228,10 +228,6 @@
             sub: t('media2.stat.stories.sub', { share: fmt.pct(Math.min(1, storyRows / (analysed || 1))) }),
             viz: Spark(storiesPerDay, i0, i1, t('media2.spark.stories'), { w: 96, hgt: 26 })
           })
-          const statNews = Stat({
-            label: t('media2.stat.news'), empty: analysed <= 0, value: fmt.pct(newsCount / (analysed || 1)),
-            sub: t('media2.stat.news.sub', { n: fmt.int(newsCount), total: fmt.int(analysed) }), viz: Meter(newsCount / (analysed || 1))
-          })
 
           // Row 2: the lead chart.
           let peakDay = i0
@@ -260,13 +256,12 @@
               h('span', { class: 'row-name' }, r.name), h('span', { class: 'row-value' }, fmt.pct(r.anonPct / 100)), UI.HBar(r.anonPct, 100))))) : null
 
           // Row 4: the ranking table.
-          const tableOf = (rows, columns) => UI.DataTable({ rows, columns, rankColumn: true, pageSize: rows.length, emptyText: t('media.empty') })
+          const tableOf = (rows, columns) => UI.DataTable({ rows, columns, pageSize: rows.length, emptyText: t('media.empty') })
 
           let note = null
           let results
           {
             const rows = outlets.slice().sort((a, b) => b.analysed - a.analysed)
-            const newsShares = outlets.map((o) => o.news / o.analysed)
             const cbMax = Math.max(...cbOutlets.map((o) => o.cbYes / o.cbKnown), 0.01)
             const scaleCell = (num, graphic) => h('div', { class: 'scale-cell' }, h('span', { class: 'scale-num' }, num), graphic)
             note = t('media2.rank.outlets.note')
@@ -277,17 +272,18 @@
                   slugOfGroup.has(o.group) ? h('a', { class: 'quiet-link', href: `group-v2.html?g=${slugOfGroup.get(o.group)}` }, o.group) : o.group)
                 : h('span', { class: 'group-cell' }, h('span', { class: 'dot dot-none', 'aria-hidden': 'true' }), h('span', { class: 'muted-text' }, t('media.col.group.none')))) },
               { label: t('media.col.articles'), num: true, render: (o) => fmt.int(o.analysed) },
-              { label: t('media.col.news'), num: true, render: (o) => scaleCell(fmt.pct(o.news / o.analysed), Scale(o.news / o.analysed, Math.min(...newsShares), Math.max(...newsShares), newsAvg, fmt.pct(o.news / o.analysed), fmt.pct(newsAvg))) },
               { label: t('media.col.clickbait'), num: true, render: (o) => (o.cbKnown
                 ? scaleCell(fmt.pct(o.cbYes / o.cbKnown), Scale(o.cbYes / o.cbKnown, 0, cbMax, cbAvg, fmt.pct(o.cbYes / o.cbKnown), fmt.pct(cbAvg)))
                 : h('span', { class: 'mini-empty' }, t('group.clickbait.none'))) }
             ])
           }
-          const ranking = card('c-8', cardHead(t('media2.rank.outlets'), null, note), results)
+          const ranking = card('c-7', cardHead(t('media2.rank.outlets'), null, note), results)
           ranking.id = 'ranking'
           ranking.setAttribute('aria-live', 'polite')
 
-          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, statArticles, statStories, statNews, ranking, h('div', { class: 'c-4 card-col' }, volume, scatterCard, bylineCard)), protoNote())
+          statArticles.classList.replace('c-4', 'c-7')
+          statStories.classList.replace('c-4', 'c-5')
+          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, statArticles, statStories, ranking, h('div', { class: 'c-5 card-col' }, volume, scatterCard, bylineCard)), protoNote())
         }
         draw()
       }

@@ -12,7 +12,7 @@
   <div id="app"></div>
   <script src="assets/icons.js?v=2"></script>
   <script src="assets/messages.js?v=11"></script>
-  <script src="assets/components.js?v=6"></script>
+  <script src="assets/components.js?v=7"></script>
   <script src="assets/shell.js?v=25"></script>
   <script src="data/gaza.js"></script>
   <script>
@@ -73,7 +73,7 @@
         const outletsCard = UI.ChartCard({
           title: t('gaza.outlets.title'), note: t('gaza.outlets.note', { n: d.outlets.length, total: d.fullOutlets, period }),
           body: UI.DataTable({
-            rows: d.outlets, rankColumn: true, emptyText: t('gaza.k26.empty'),
+            rows: d.outlets, emptyText: t('gaza.k26.empty'),
             columns: [
               { label: t('gaza.col.outlet'), key: 'name' },
               { label: t('gaza.col.n'), num: true, render: (r) => fmt.int(r.n) },

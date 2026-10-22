@@ -16,7 +16,7 @@
   <script src="assets/messages.js?v=11"></script>
   <script src="assets/messages-v2.js?v=27"></script>
   <script src="assets/messages-politics.js?v=1"></script>
-  <script src="assets/components.js?v=6"></script>
+  <script src="assets/components.js?v=7"></script>
   <script src="assets/dash.js?v=10"></script>
   <script src="assets/politics.js?v=1"></script>
   <script src="assets/shell.js?v=25"></script>
@@ -106,7 +106,7 @@
           const g = (o, k) => o.values[idx[k]]
           const table = card('c-12', cardHead(t('lang.outlets.title'), null, t('lang.outlets.info')),
             UI.DataTable({
-              rows, rankColumn: true, pageSize: rows.length, rowId: (o) => (o.name === outlet ? 'picked-outlet' : null),
+              rows, pageSize: rows.length, rowId: (o) => (o.name === outlet ? 'picked-outlet' : null),
               columns: [
                 { label: t('lang.col.outlet'), render: (o) => h('span', { class: 'nowrap', title: o.lean || null }, o.name === outlet ? h('strong', {}, o.name) : o.name) },
                 { label: t('lang.col.n'), num: true, render: (o) => fmt.int(g(o, 'n')) },

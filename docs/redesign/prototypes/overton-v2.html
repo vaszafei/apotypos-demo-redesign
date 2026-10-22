@@ -14,7 +14,7 @@
   <script src="assets/icons.js?v=2"></script>
   <script src="assets/messages.js?v=11"></script>
   <script src="assets/messages-v2.js?v=27"></script>
-  <script src="assets/components.js?v=6"></script>
+  <script src="assets/components.js?v=7"></script>
   <script src="assets/dash.js?v=10"></script>
   <script src="assets/shell.js?v=25"></script>
   <script src="data/overton.js?v=1"></script>
@@ -102,7 +102,7 @@
         const table = card('c-8', cardHead(t('shifts.table.title'), null, t('shifts.table.info')),
           h('p', { class: 'dcard-sub' }, t('shifts.table.sub', { from: fmt.date(d.window[0]), to: fmt.date(d.window[1]) })),
           UI.DataTable({
-            rows, rankColumn: true, pageSize: rows.length, emptyText: t('shifts.empty'),
+            rows, pageSize: rows.length, emptyText: t('shifts.empty'),
             columns: [
               { label: t('media.col.issue'), render: (r) => h('span', { class: 'nowrap' }, name(r)) },
               { label: t('shifts.col.shift'), num: true, render: (r) => (r.ratio >= limit ? h('span', { class: 'delta' }, ratio(r.ratio)) : h('span', { class: 'mini-empty', title: t('shifts.below') }, ratio(r.ratio))) },

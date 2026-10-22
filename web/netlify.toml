@@ -2,6 +2,8 @@
   base = "web"
   command = "pnpm generate"
   publish = ".output/public"
+  # The prototypes live in docs/, outside the base directory. Exit 1 builds on every push.
+  ignore = "exit 1"
 
 [build.environment]
   NODE_VERSION = "22"

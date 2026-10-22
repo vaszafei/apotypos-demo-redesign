@@ -16,7 +16,7 @@
   <script src="assets/messages.js?v=11"></script>
   <script src="assets/messages-v2.js?v=27"></script>
   <script src="assets/messages-politics.js?v=1"></script>
-  <script src="assets/components.js?v=6"></script>
+  <script src="assets/components.js?v=7"></script>
   <script src="assets/dash.js?v=10"></script>
   <script src="assets/politics.js?v=1"></script>
   <script src="assets/shell.js?v=25"></script>
@@ -148,7 +148,7 @@
         // Row 5: the outlets table and the articles with a war frame.
         const outletCard = card('c-7', cardHead(t('war.outlets.title'), null, t('war.outlets.info')),
           UI.DataTable({
-            rows: outlets.slice().sort((a, b) => b.gt - a.gt), rankColumn: true, pageSize: outlets.length,
+            rows: outlets.slice().sort((a, b) => b.gt - a.gt), pageSize: outlets.length,
             columns: [
               { label: t('war.col.outlet'), render: (o) => h('span', { class: 'nowrap', title: o.lean || null }, o.name) },
               { label: t('war.col.articles'), num: true, render: (o) => fmt.int(o.gt) },

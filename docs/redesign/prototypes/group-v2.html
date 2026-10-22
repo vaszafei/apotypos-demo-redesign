@@ -15,7 +15,7 @@
   <script src="assets/messages.js?v=11"></script>
   <script src="assets/messages-v2.js?v=27"></script>
   <script src="assets/messages-spread.js?v=12"></script>
-  <script src="assets/components.js?v=6"></script>
+  <script src="assets/components.js?v=7"></script>
   <script src="assets/dash.js?v=10"></script>
   <script src="assets/spread.js?v=5"></script>
   <script src="assets/entity-cards.js?v=3"></script>
@@ -115,12 +115,11 @@
         const dailyCard = Entity.DailyCard({ dates, daily, topicDays, issues: d.issues, info: t('group2.daily.info') })
 
         const outletsCard = card('c-12', cardHead(t('group2.outlets.title'), null, t('group2.outlets.info')), UI.DataTable({
-          rows: group.outlets, rankColumn: true, pageSize: 10, emptyText: t('group.empty'),
+          rows: group.outlets, pageSize: 10, emptyText: t('group.empty'),
           columns: [
             { label: t('group.col.outlet'), render: (o) => UI.EntityLink({ type: 'outlet', key: o.slug, label: o.name }) },
             { label: t('group.col.collected'), num: true, render: (o) => fmt.int(o.collected) },
             { label: '', phone: false, render: (o) => UI.HBar(o.collected / group.collected, 1) },
-            { label: t('group.col.news'), num: true, render: (o) => (o.analysed ? fmt.pct(o.news / o.analysed) : '') },
             { label: t('group.col.stance'), phone: false, render: (o) => UI.MiniStance([
               { label: t('stance.critical'), value: o.stance[0], color: 'var(--stance-critical)' },
               { label: t('stance.neutral'), value: o.stance[1], color: 'var(--stance-neutral)' },
@@ -145,23 +144,21 @@
               h('p', { class: 'dcard-sub' }, t('group2.topics.sub', { n: fmt.int(nGroup) }))]
             : h('p', { class: 'dcard-empty' }, t('outlet2.topics.empty')))
 
-        // How the group writes: the news share, the clickbait share and the stance of all its outlets, against all outlets.
+        // How the group writes: the clickbait share and the stance of all its outlets, against all outlets.
         const files = [...g.groups.flatMap((x) => x.outlets), ...(g.ungrouped || [])]
         const allOf = (key) => sum(files.map((o) => o[key]))
         const mineOf = (key) => sum(group.outlets.map((o) => o[key]))
-        const analysed = mineOf('analysed')
-        const newsRows = analysed ? [{ label: t('outlet2.how.news'), value: mineOf('news') / analysed, usual: allOf('news') / allOf('analysed') }] : []
         const clickRows = mineOf('cbKnown') ? [{ label: t('outlet2.how.clickbait'), value: mineOf('cbYes') / mineOf('cbKnown'), usual: allOf('cbYes') / allOf('cbKnown') }] : []
         const stanceMine = [0, 1, 2].map((i) => sum(group.outlets.map((o) => o.stance[i])))
         const stanceAll = [0, 1, 2].map((i) => sum(files.map((o) => o.stance[i])))
         const stanceN = sum(stanceMine)
         const stanceRows = stanceN >= 30 ? ['critical', 'neutral', 'supportive'].map((code, i) => ({ label: t(`stance.${code}`), value: stanceMine[i] / stanceN, usual: stanceAll[i] / sum(stanceAll) })) : []
-        const howScale = scaleOf([...newsRows, ...clickRows, ...stanceRows])
+        const howScale = scaleOf([...clickRows, ...stanceRows])
         const rowsOf = (rows) => (rows.length ? h('ul', { class: 'diverge diverge-3' }, rows.map((r) => DiffRow({ ...r, scale: howScale, tipKey: 'group2.how.tip' }))) : null)
         const note = (text) => h('p', { class: 'dcard-sub' }, text)
         const howCard = card('c-12', cardHead(t('group2.how.title'), diffKey, t('group2.how.info')),
           h('div', { class: 'how-grid how-grid-2' },
-            h('div', { class: 'how-panel' }, rowsOf([...newsRows, ...clickRows]), note(t('outlet2.how.news.n', { n: fmt.int(analysed) })),
+            h('div', { class: 'how-panel' }, rowsOf(clickRows),
               note(clickRows.length ? t('outlet2.how.clickbait.n', { baited: fmt.int(mineOf('cbYes')), scored: fmt.int(mineOf('cbKnown')) }) : t('outlet2.how.clickbait.none'))),
             h('div', { class: 'how-panel' }, h('h3', { class: 'rows-caption' }, t('outlet2.how.stance')), rowsOf(stanceRows),
               note(stanceRows.length ? t('outlet2.how.stance.n', { n: fmt.int(stanceN) }) : t('outlet2.how.stance.none')))))
