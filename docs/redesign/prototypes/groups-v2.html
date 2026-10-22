@@ -13,7 +13,7 @@
   <div id="app"></div>
   <script src="assets/icons.js?v=3"></script>
   <script src="assets/messages.js?v=17"></script>
-  <script src="assets/messages-v2.js?v=30"></script>
+  <script src="assets/messages-v2.js?v=31"></script>
   <script src="assets/components.js?v=6"></script>
   <script src="assets/dash.js?v=11"></script>
   <script src="assets/vendor/d3-hierarchy.min.js"></script>
@@ -104,7 +104,7 @@
       const groupTip = (g) => [g.key === null ? t('g2.donut.tip', { group: g.label, n: fmt.int(g.value), share: fmt.pct(g.value / total) }) : t('g2.bubble.group', { group: g.label, owner: g.owner, n: fmt.int(g.value), share: fmt.pct(g.value / total) }), t('g2.bubble.zoom')].join('\n')
 
       return fit((holder, width) => {
-        const height = Math.max(280, Math.min(400, Math.round(width * 0.64)))
+        const height = Math.max(280, Math.min(420, Math.round(width * 0.9)))
         const root = d3.hierarchy({ children: groups.map((g) => ({ g, children: g.outlets.map((o) => ({ o, g })) })) })
           .sum((d) => (d.o ? d.o.value : 0)).sort((a, b) => b.value - a.value)
         d3.pack().size([width, height]).padding((d) => (d.depth === 0 ? 10 : 2))(root)
@@ -301,9 +301,9 @@
           const treeGroups = [...groups.map((g) => ({ key: g.name, label: g.name, owner: g.owner, color: colorOf.get(g.name), slug: g.slug, lean: g.lean, outlets: g.outlets.filter((o) => o.collected > 0).map(outletOf).sort((a, b) => b.value - a.value) })),
             ...(ungroupedTotal ? [{ key: null, label: t('media2.groups.none'), owner: null, color: NO_GROUP, outlets: d.ungrouped.filter((o) => o.collected > 0).map(outletOf).sort((a, b) => b.value - a.value) }] : [])]
           treeGroups.forEach((g) => { g.value = g.outlets.reduce((s, o) => s + o.value, 0) })
-          const bubbles = card('c-7', cardHead(t('g2.tree.title'), null, [t('g2.tree.sub', { period }), t('g2.record', { source: d.record.source, date: fmt.date(d.record.exportedAt) })].join(' ')),
+          const bubbles = card('c-5', cardHead(t('g2.tree.title'), null, [t('g2.tree.sub', { period }), t('g2.record', { source: d.record.source, date: fmt.date(d.record.exportedAt) })].join(' ')),
             total ? OwnerBubbles({ groups: treeGroups, total }) : emptyText(t('groups.empty')))
-          const shareCard = card('c-5', cardHead(t('media2.groups.title'), null, total ? t('media2.groups.known', { share: fmt.pct(grouped / total) }) : null),
+          const shareCard = card('c-7', cardHead(t('media2.groups.title'), null, total ? t('media2.groups.known', { share: fmt.pct(grouped / total) }) : null),
             total
               ? h('div', { class: 'donut-wrap sun-wrap' }, Sunburst({ groups: treeGroups, total }),
                   h('ul', { class: 'rows rows-groups rows-owners' }, treeGroups.map((g) => {
@@ -316,18 +316,18 @@
                   })))
               : emptyText(t('groups.empty')))
 
-          // Row 3: the articles of each day, stacked by group. The largest group is at the bottom, the outlets with no group are on top.
+          // Row 2, on the left: the articles of each day, stacked by group. The largest group is at the bottom, the outlets with no group are on top.
           const m = media.kind === 'data' ? media.data : null
           const groupOf = new Map([...groups.flatMap((g) => g.outlets.map((o) => [o.slug, g.name])), ...(empty ? [] : d.ungrouped.map((o) => [o.slug, null]))])
           const order = rows.map((r) => ({ key: r.key, label: r.label, color: r.color }))
           const stacks = m && !empty ? m.dates.map((_, i) => order.map((o) => ({ ...o, value: m.outlets.reduce((a, out, k) => (groupOf.has(out.slug) && groupOf.get(out.slug) === o.key ? a + m.outletDaily[k][i][0] : a), 0) }))) : []
           const volumeTotal = stacks.reduce((s, day) => s + day.reduce((a, b) => a + b.value, 0), 0)
-          const volume = card('c-12', cardHead(t('g2.volume.title'), null, t('g2.volume.info', { min: fmt.int(GAP), n: fmt.int(volumeTotal) })),
+          const volume = card('c-7', cardHead(t('g2.volume.title'), null, t('g2.volume.info', { min: fmt.int(GAP), n: fmt.int(volumeTotal) })),
             volumeTotal
               ? [h('span', { class: 'legend-inline' }, order.map((o) => h('span', {}, h('span', { class: 'swatch', style: { background: o.color } }), o.label))), VolumeChart({ dates: m.dates, stacks, order })]
               : emptyText(t('groups.empty')))
 
-          // Row 2: the stance of each group and the political lean.
+          // Row 2, on the right: the stance of each group.
           const stanceRows = groups.map((g) => {
             const s = g.outlets.reduce((a, o) => [a[0] + o.stance[0], a[1] + o.stance[1], a[2] + o.stance[2]], [0, 0, 0])
             const n = s[0] + s[1] + s[2]
@@ -335,7 +335,7 @@
           }).filter((r) => r.n >= 30)
           const unit = stanceRows.length ? 40 / Math.max(...stanceRows.map((r) => Math.max(r.crit + r.neu / 2, r.sup + r.neu / 2))) : 0
           const seg = (name, left, width) => h('span', { class: 'div-seg', style: `--seg:var(--stance-${name});left:${left}%;width:${width}%` })
-          const stanceCard = card('c-7', cardHead(t('g2.stance.title'), h('span', { class: 'stance-key' },
+          const stanceCard = card('c-5', cardHead(t('g2.stance.title'), h('span', { class: 'stance-key' },
             [['stance.critical', 'critical'], ['stance.neutral', 'neutral'], ['stance.supportive', 'supportive']].map(([key, nm]) => h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: `var(--stance-${nm})` } }), t(key)))), t('g2.stance.sub')),
             stanceRows.length
               ? h('ul', { class: 'diverge' }, stanceRows.map((r) => h('li', { 'aria-label': t('g2.stance.row', { group: r.g.name, critical: fmt.pct(r.crit), neutral: fmt.pct(r.neu), supportive: fmt.pct(r.sup), n: fmt.int(r.n) }) },
@@ -349,18 +349,7 @@
                   h('span', { class: 'div-val div-val-r', style: `left:${50 + (r.neu / 2) * unit + r.sup * unit}%` }, fmt.pct(r.sup))))))
               : emptyText(t('groups.empty')))
 
-          const leanTotals = new Map()
-          groups.forEach((g) => { const k = g.lean || null; const e = leanTotals.get(k) || { value: 0, groups: 0 }; e.value += g.collected; e.groups++; leanTotals.set(k, e) })
-          const leanRows = [...leanTotals.entries()].map(([lean, e]) => ({ lean, ...e })).sort((a, b) => (a.lean === null) - (b.lean === null) || b.value - a.value)
-          const leanCard = card('c-5', cardHead(t('g2.lean.title'), null, t('g2.lean.sub')),
-            leanRows.length
-              ? h('ul', { class: 'rows' }, [...leanRows.map((r) => h('li', { style: `--bar-color:${r.lean === null ? 'var(--bar-muted)' : 'var(--series-news)'}` },
-                h('span', { class: 'row-name' }, r.lean || t('groups.lean.none')), h('span', { class: 'row-value' }, t('g2.lean.value', { share: fmt.pct(r.value / total), groups: fmt.int(r.groups) })),
-                UI.HBar(r.value, leanRows[0].value))),
-              ungroupedTotal ? h('li', { style: '--bar-color:var(--bar-muted)' }, h('span', { class: 'row-name' }, t('media2.groups.none')), h('span', { class: 'row-value' }, fmt.pct(ungroupedTotal / total)), UI.HBar(ungroupedTotal, leanRows[0].value)) : null])
-              : emptyText(t('groups.empty')))
-
-          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, bubbles, shareCard, stanceCard, leanCard, volume), protoNote())
+          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, bubbles, shareCard, volume, stanceCard), protoNote())
         }
         draw()
       }
