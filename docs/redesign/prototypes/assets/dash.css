@@ -132,10 +132,33 @@
 .donut-wrap { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-4); align-items: center; }
 .donut-wrap .donut { display: block; }
 .dash .chart .bubble-group { cursor: default; }
+.dash .chart.bubbles { display: block; overflow: hidden; touch-action: manipulation; }
+.dash .chart .bubble-group, .dash .chart .bubble-layer .tile { cursor: zoom-in; transition: opacity 0.3s; }
+.dash .chart.is-zoomed .tile { cursor: pointer; }
+.dash .chart.is-zoomed .bubble-bg { cursor: zoom-out; }
+.dash .chart .bubble-group:hover, .dash .chart .bubble-group:focus-visible { stroke-width: 3; outline: none; }
+.dash .chart .bubble-layer .tile:hover { stroke: #1f1f1f; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.dash .chart .bubble-layer.is-dim { opacity: 0.25; }
+.dash .chart .bubble-name { font-size: 11px; font-weight: 600; fill: var(--text-primary); stroke: var(--surface-raised); stroke-width: 3px; paint-order: stroke; stroke-linejoin: round; pointer-events: none; }
+.dash .chart .bubble-labels text { pointer-events: none; }
+.bubble-panel { min-height: 44px; border-top: 1px solid var(--rule); padding-top: var(--space-2); font-size: var(--text-small); }
+.bubble-hint { margin: 0; color: var(--text-secondary); font-size: var(--text-caption); }
+.bubble-panel-head { display: flex; align-items: center; gap: var(--space-2); margin-bottom: 6px; }
+.bubble-panel-head .dcard-link { margin-right: var(--space-2); }
+.bubble-facts { display: flex; flex-wrap: wrap; gap: 6px var(--space-5, 24px); margin: 0; }
+.bubble-fact { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.bubble-facts dt { color: var(--text-secondary); font-size: var(--text-caption); }
+.bubble-facts dd { margin: 0; min-width: 0; }
+.bubble-fact .stacked { margin: 3px 0 0; height: 10px; width: 120px; }
 .rows-owners { gap: 6px; }
 .rows-owners li { row-gap: 0; }
 .rows-owners .row-sub { grid-column: 2 / -1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-caption); color: var(--text-secondary); }
-@media (max-width: 719px) { .sun-wrap { grid-template-columns: minmax(0, 1fr); } .sun-wrap .donut { justify-self: center; width: 200px; height: 200px; } }
+.sun-wrap { flex: 1; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-4); align-items: center; }
+.sun-wrap .rows-owners .row-name { white-space: normal; }
+.sun-wrap .donut { width: 210px; height: 210px; }
+.sun-wrap .rows-owners { gap: 9px; }
+.sun-wrap .rows-owners li { grid-template-columns: 10px minmax(0, 1fr) auto; }
+@media (max-width: 719px) { .sun-wrap { grid-template-columns: minmax(0, 1fr); } .sun-wrap .donut { justify-self: center; width: 200px; height: 200px; grid-row: 1; } }
 .dash .chart .tile:hover { stroke: #1f1f1f; stroke-width: 2; }
 .legend-inline { display: inline-flex; flex-wrap: wrap; gap: var(--space-3); font-size: var(--text-caption); color: var(--text-secondary); }
 .legend-inline span { display: inline-flex; align-items: center; gap: var(--space-1); }
@@ -313,6 +336,14 @@
 .diverge-3 .div-num { text-align: right; font-size: var(--text-caption); color: var(--text-primary); }
 .diverge-3 .div-track, .diff-cell .div-track { grid-column: 1 / -1; height: 10px; border-radius: 5px; background: var(--surface-sunken, #ece9e0); }
 .diverge-3 .div-seg, .diff-cell .div-seg { top: 1px; height: 8px; border-radius: 4px; }
+.diverge-groups { gap: 10px; margin-top: var(--space-2); }
+.diverge-groups .div-name { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.diverge-groups .div-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.diverge-groups .div-track { height: 12px; background: none; }
+.diverge-groups .div-seg { top: 0; height: 12px; border-radius: 6px; box-shadow: 0 0 0 1px var(--surface-raised); }
+.diverge-groups .div-num-c, .diverge-groups .div-num-s { font-variant-numeric: tabular-nums; }
+.diverge-groups .div-num-c::before, .diverge-groups .div-num-s::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 4px; border-radius: 2px; background: var(--stance-critical); }
+.diverge-groups .div-num-s::before { background: var(--stance-supportive); }
 .diverge-3 .div-mid, .diff-cell .div-mid { top: -2px; bottom: -2px; width: 2px; margin-left: -1px; border-radius: 1px; background: #1f1f1f; }
 .story-grid { margin-top: var(--space-4); }
 @media (max-width: 1279px) { .story-col { display: contents; } }

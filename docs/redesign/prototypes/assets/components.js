@@ -50,7 +50,7 @@
 
   // A small element builder. Children can be strings, nodes, arrays or null.
   function h (tag, props = {}, ...children) {
-    const svg = ['svg', 'g', 'rect', 'line', 'text', 'path', 'title', 'desc', 'circle'].includes(tag)
+    const svg = ['svg', 'g', 'rect', 'line', 'text', 'path', 'title', 'desc', 'circle', 'clipPath', 'defs'].includes(tag)
     const el = svg ? document.createElementNS('http://www.w3.org/2000/svg', tag) : document.createElement(tag)
     for (const [name, value] of Object.entries(props || {})) {
       if (value === null || value === undefined || value === false) continue

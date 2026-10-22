@@ -7,14 +7,14 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=4">
   <link rel="stylesheet" href="assets/app.css?v=12">
-  <link rel="stylesheet" href="assets/dash.css?v=57">
+  <link rel="stylesheet" href="assets/dash.css?v=66">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=3"></script>
   <script src="assets/messages.js?v=17"></script>
-  <script src="assets/messages-v2.js?v=29"></script>
-  <script src="assets/components.js?v=6"></script>
+  <script src="assets/messages-v2.js?v=31"></script>
+  <script src="assets/components.js?v=7"></script>
   <script src="assets/dash.js?v=11"></script>
   <script src="assets/vendor/d3-hierarchy.min.js"></script>
   <script src="assets/shell.js?v=31"></script>
@@ -33,9 +33,10 @@
 
     // Stacked columns: one for each day, one segment for each group. A gap day has a dashed band.
     function VolumeChart ({ dates, stacks, order }) {
+      const uid = Math.random().toString(36).slice(2, 7)
       const totals = stacks.map((s) => s.reduce((a, b) => a + b.value, 0))
       return fit((holder, width) => {
-        const height = 220
+        const height = 300
         const pad = { top: 8, right: 4, bottom: 24, left: 44 }
         const step = niceStep(Math.max(...totals, 1) / 4)
         const top = Math.ceil(Math.max(...totals, 1) / step) * step
@@ -51,15 +52,23 @@
         const every = Math.max(7, Math.ceil(64 / bw))
         stacks.forEach((segs, i) => {
           const x = pad.left + i * bw
-          const w = Math.max(1, bw * 0.6)
+          const w = Math.max(1, bw * 0.78)
           const bx = x + (bw - w) / 2
           if (totals[i] < GAP) svg.append(h('rect', { class: 'gap-band', x: x + 1, y: pad.top, width: Math.max(1, bw - 2), height: plotH }))
+          // The column has a rounded top (a clip path) and a gap of 1 px between its segments.
+          const rr = Math.min(4, w / 2)
+          const yt = y(totals[i])
+          const yb = y(0)
+          const clip = `vc-${uid}-${i}`
+          svg.append(h('clipPath', { id: clip }, h('path', { d: `M${bx} ${yb}V${yt + rr}Q${bx} ${yt} ${bx + rr} ${yt}H${bx + w - rr}Q${bx + w} ${yt} ${bx + w} ${yt + rr}V${yb}Z` })))
+          const col = h('g', { 'clip-path': `url(#${clip})` })
           let base = 0
           segs.forEach((s) => {
             if (!s.value) return
-            svg.append(h('rect', { x: bx, y: y(base + s.value), width: w, height: Math.max(0.5, (s.value / top) * plotH - 0.5), fill: s.color }))
+            col.append(h('rect', { x: bx, y: y(base + s.value), width: w, height: Math.max(0.5, (s.value / top) * plotH - 1), fill: s.color }))
             base += s.value
           })
+          svg.append(col)
           if (i % every === 0) svg.append(h('text', { x: x + bw / 2, y: height - 7, 'text-anchor': 'middle' }, fmt.date(dates[i], { day: 'numeric', month: 'short' })))
         })
         const tipOf = (i) => [t('g2.volume.tip', { date: fmt.date(dates[i]), n: fmt.int(totals[i]) }) + (totals[i] < GAP ? ` · ${t('g2.volume.gap')}` : ''),
@@ -85,32 +94,208 @@
       return el
     }
 
-    // Packed bubbles of owners and outlets: one circle for each group, with a circle for each of its outlets inside. The area is the collected articles.
+    // A wide layout of the bubbles: the outlets of each group are packed in its circle, and the groups sit in a band from left to right,
+    // in the order of the legend. Each group goes at the leftmost place in the band where it touches no group before it.
+    function ribbon (groups, width, height) {
+      const pad = 2
+      const nodes = groups.map((g) => {
+        const children = g.outlets.map((o) => ({ data: { o }, r: Math.sqrt(o.value) }))
+        d3.packSiblings(children.map((c) => Object.assign(c, { r: c.r + pad })))
+        const enc = d3.packEnclose(children)
+        children.forEach((c) => { c.dx = c.x - enc.x; c.dy = c.y - enc.y; c.r -= pad })
+        return { data: { g }, r: enc.r + 4, children }
+      })
+      const maxR = Math.max(...nodes.map((n) => n.r))
+      const gap = maxR * 0.06
+      // Place the groups in a band of a given half height. Try a few bands and keep the one with the shape closest to the chart.
+      const place = (band) => {
+        const placed = []
+        nodes.forEach((n) => {
+          let best = null
+          for (let k = -8; k <= 8; k++) {
+            const y = (k / 8) * Math.max(0, band - n.r)
+            let x = placed.length ? -Infinity : 0
+            placed.forEach((p) => {
+              const d = p.r + n.r + gap
+              const dy = Math.abs(p.y - y)
+              if (dy < d) x = Math.max(x, p.x + Math.sqrt(d * d - dy * dy))
+            })
+            if (x === -Infinity) x = Math.min(...placed.map((p) => p.x - p.r)) + n.r
+            if (!best || x < best.x - 0.5 || (Math.abs(x - best.x) <= 0.5 && Math.abs(y) < Math.abs(best.y))) best = { x, y }
+          }
+          placed.push({ r: n.r, ...best })
+        })
+        const w = Math.max(...placed.map((p) => p.x + p.r)) - Math.min(...placed.map((p) => p.x - p.r))
+        const hh = Math.max(...placed.map((p) => p.y + p.r)) - Math.min(...placed.map((p) => p.y - p.r))
+        return { placed, score: Math.abs(Math.log((w / hh) / (width / height))) }
+      }
+      let best = null
+      for (let f = 1; f <= 3; f += 0.1) { const tryIt = place(maxR * f); if (!best || tryIt.score < best.score) best = tryIt }
+      nodes.forEach((n, i) => { n.x = best.placed[i].x; n.y = best.placed[i].y })
+      // Scale the band to fit the chart, and center it.
+      const x0 = Math.min(...nodes.map((n) => n.x - n.r))
+      const x1 = Math.max(...nodes.map((n) => n.x + n.r))
+      const y0 = Math.min(...nodes.map((n) => n.y - n.r))
+      const y1 = Math.max(...nodes.map((n) => n.y + n.r))
+      const s = Math.min((width - 8) / (x1 - x0), (height - 8) / (y1 - y0))
+      const ox = (width - (x1 - x0) * s) / 2
+      const oy = (height - (y1 - y0) * s) / 2
+      nodes.forEach((n) => {
+        n.x = ox + (n.x - x0) * s
+        n.y = oy + (n.y - y0) * s
+        n.r = (n.r) * s
+        n.children.forEach((c) => { c.x = n.x + c.dx * s; c.y = n.y + c.dy * s; c.r *= s })
+      })
+      return nodes
+    }
+
+    // Zoomable bubbles of owners and outlets: one circle for each group, with a circle for each of its outlets inside. The area is the collected articles.
+    // A click on a group zooms to it and the panel under the chart shows the group. A click on the empty space, the back button or Esc zooms out.
+    // In a zoomed group, a click on an outlet opens its page.
     function OwnerBubbles ({ groups, total }) {
+      let focus = null
+      const sumStance = (list) => list.reduce((a, o) => [a[0] + o.stance[0], a[1] + o.stance[1], a[2] + o.stance[2]], [0, 0, 0])
+      const stanceBar = (s) => UI.MiniStance([
+        { label: t('stance.critical'), value: s[0], color: 'var(--stance-critical)' },
+        { label: t('stance.neutral'), value: s[1], color: 'var(--stance-neutral)' },
+        { label: t('stance.supportive'), value: s[2], color: 'var(--stance-supportive)' }
+      ])
+      const stanceText = (s) => { const n = s[0] + s[1] + s[2]; return n >= 30 ? t('g2.bubble.stance', { critical: fmt.pct(s[0] / n), supportive: fmt.pct(s[2] / n) }) : t('stance.few', { n: 30 }) }
+      const outletTip = (o, g) => [t('g2.tree.tip', { outlet: o.name, group: g.label, n: fmt.int(o.value), share: fmt.pct(o.value / total) }),
+        t('g2.bubble.ofgroup', { share: fmt.pct(o.value / g.value) }),
+        t('g2.bubble.news', { share: fmt.pct(o.news / (o.analysed || 1)) }),
+        stanceText(o.stance)].join('\n')
+      const groupTip = (g) => [g.key === null ? t('g2.donut.tip', { group: g.label, n: fmt.int(g.value), share: fmt.pct(g.value / total) }) : t('g2.bubble.group', { group: g.label, owner: g.owner, n: fmt.int(g.value), share: fmt.pct(g.value / total) }), t('g2.bubble.zoom')].join('\n')
+
       return fit((holder, width) => {
-        const height = Math.max(260, Math.min(420, Math.round(width * 0.68)))
-        const root = d3.hierarchy({ children: groups.map((g) => ({ g, children: g.outlets.map((o) => ({ o, g })) })) })
-          .sum((d) => (d.o ? d.o.value : 0)).sort((a, b) => b.value - a.value)
-        d3.pack().size([width, height]).padding((d) => (d.depth === 0 ? 10 : 2))(root)
-        const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
-        root.children.forEach((gn) => {
+        const height = Math.max(240, Math.min(360, Math.round(width * 0.55)))
+        const groupNodes = ribbon(groups, width, height)
+        const nodeOf = new Map(groupNodes.map((gn) => [gn.data.g, gn]))
+        const svg = h('svg', { class: 'chart bubbles', width, height, viewBox: `0 0 ${width} ${height}`, role: 'group', 'aria-label': t('g2.tree.title') })
+        const back = h('rect', { class: 'bubble-bg', x: 0, y: 0, width, height, fill: 'transparent' })
+        const scene = h('g', {})
+        const labels = h('g', { class: 'bubble-labels' })
+        svg.append(back, scene, labels)
+        const panel = h('div', { class: 'bubble-panel', 'aria-live': 'polite' })
+
+        // The view is a circle [x, y, r] of the pack that fills the chart.
+        const fullView = [width / 2, height / 2, Math.min(width, height) / 2]
+        const fitView = (n) => [n.x, n.y, n.r * 1.08]
+        let view = focus && nodeOf.has(focus) ? fitView(nodeOf.get(focus)) : fullView
+        const k = () => Math.min(width, height) / (2 * view[2])
+        const toScreen = (x, y) => { const s = k(); return [width / 2 + (x - view[0]) * s, height / 2 + (y - view[1]) * s] }
+
+        const layers = new Map()
+        groupNodes.forEach((gn) => {
           const g = gn.data.g
-          svg.append(tipOn(h('circle', { class: 'bubble-group', cx: gn.x, cy: gn.y, r: gn.r, fill: tint(g.color, 0.88), stroke: g.color, 'stroke-width': 1.5 }),
-            t('g2.bubble.group', { group: g.label, owner: g.owner || t('groups.lean.none'), n: fmt.int(gn.value), share: fmt.pct(gn.value / total) })))
+          const layer = h('g', { class: 'bubble-layer' })
+          layers.set(g, layer)
+          scene.append(layer)
+          const gc = h('circle', { class: 'bubble-group', cx: gn.x, cy: gn.y, r: gn.r, fill: tint(g.color, 0.88), stroke: g.color, 'stroke-width': 1.5, 'vector-effect': 'non-scaling-stroke', tabindex: 0, role: 'button', 'aria-label': groupTip(g) })
+          tipOn(gc, groupTip(g))
+          gc.addEventListener('click', (e) => { e.stopPropagation(); zoomTo(focus === g ? null : g) })
+          gc.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); zoomTo(g) } })
+          layer.append(gc)
           gn.children.forEach((on) => {
             const o = on.data.o
-            const fill = tint(g.color, g.key === null ? 0.5 : 0.35)
-            svg.append(tipOn(h('circle', { class: 'tile', cx: on.x, cy: on.y, r: on.r, fill }), t('g2.tree.tip', { outlet: o.name, group: g.label, n: fmt.int(o.value), share: fmt.pct(o.value / total) })))
-            if (on.r * 2 >= o.name.length * 6.4 + 6 && on.r >= 15) {
-              const two = on.r >= 26
-              svg.append(h('text', { class: 'tile-label', x: on.x, y: on.y + (two ? -1 : 4), 'text-anchor': 'middle', style: { fill: textOn(fill), 'font-weight': 500 } }, o.name))
-              if (two) svg.append(h('text', { class: 'tile-share', x: on.x, y: on.y + 14, 'text-anchor': 'middle', style: { fill: textOn(fill) } }, fmt.pct(o.value / total)))
-            }
+            const c = h('circle', { class: 'tile', cx: on.x, cy: on.y, r: on.r, fill: tint(g.color, g.key === null ? 0.5 : 0.35) })
+            tipOn(c, outletTip(o, g))
+            c.addEventListener('click', (e) => {
+              e.stopPropagation()
+              if (focus === g && o.slug) location.href = `outlet-v2.html?slug=${o.slug}`
+              else zoomTo(g)
+            })
+            layer.append(c)
           })
         })
+
+        // The labels are drawn in screen space after each zoom, so the text keeps its size. A label shows when it fits in its circle.
+        function drawLabels () {
+          const s = k()
+          labels.replaceChildren()
+          groupNodes.forEach((gn) => {
+            const g = gn.data.g
+            const zoomed = focus === g
+            if (focus && !zoomed) return
+            gn.children.forEach((on) => {
+              const o = on.data.o
+              const [x, y] = toScreen(on.x, on.y)
+              const r = on.r * s
+              const fill = tint(g.color, g.key === null ? 0.5 : 0.35)
+              if (r * 2 < o.name.length * 6.4 + 6 || r < 15) return
+              const lines = [[o.name, 'tile-label']]
+              if (r >= 26) lines.push([fmt.pct(o.value / total), 'tile-share'])
+              if (zoomed && r >= 44) lines.push([t('g2.bubble.n', { n: fmt.int(o.value) }), 'tile-share'])
+              const top = y - ((lines.length - 1) * 15) / 2 + 4
+              lines.forEach(([text, cls], i) => labels.append(h('text', { class: cls, x, y: top + i * 15, 'text-anchor': 'middle', style: { fill: textOn(fill), 'font-weight': i ? 400 : 500 } }, text)))
+            })
+            // The name of a group sits on the top edge of its circle, when the circle is large enough on screen.
+            if (!zoomed) {
+              const [x, y] = toScreen(gn.x, gn.y - gn.r)
+              if (gn.r * s >= 34) labels.append(h('text', { class: 'bubble-name', x, y: y + 14, 'text-anchor': 'middle' }, g.label.length > gn.r * s / 3.4 ? `${g.label.slice(0, Math.max(3, Math.floor(gn.r * s / 3.4) - 1))}…` : g.label))
+            }
+          })
+        }
+
+        function applyView () {
+          const s = k()
+          scene.setAttribute('transform', `translate(${width / 2},${height / 2}) scale(${s}) translate(${-view[0]},${-view[1]})`)
+          layers.forEach((el, g) => el.classList.toggle('is-dim', focus !== null && g !== focus))
+          svg.classList.toggle('is-zoomed', !!focus)
+        }
+
+        function drawPanel () {
+          if (!focus) {
+            panel.replaceChildren(h('p', { class: 'bubble-hint' }, t('g2.bubble.hint')))
+            return
+          }
+          const g = focus
+          const s = sumStance(g.outlets)
+          const news = g.outlets.reduce((a, o) => a + o.news, 0) / (g.outlets.reduce((a, o) => a + o.analysed, 0) || 1)
+          panel.replaceChildren(
+            h('div', { class: 'bubble-panel-head' },
+              h('button', { type: 'button', class: 'dcard-link', onClick: () => zoomTo(null) }, t('g2.bubble.back')),
+              h('span', { class: g.key === null ? 'dot dot-none' : 'dot', style: `--dot:${g.color}`, 'aria-hidden': 'true' }),
+              h('strong', {}, g.slug ? h('a', { class: 'quiet-link', href: `group-v2.html?g=${g.slug}` }, g.label) : g.label)),
+            h('dl', { class: 'bubble-facts' },
+              [g.key === null ? null : [t('groups.col.owner'), g.owner], g.key === null ? null : [t('groups.col.lean'), g.lean || t('groups.lean.none')],
+                [t('groups.col.articles'), `${fmt.int(g.value)} · ${fmt.pct(g.value / total)}`], [t('groups.col.outlets'), fmt.int(g.outlets.length)],
+                [t('media.col.news'), fmt.pct(news)], [t('group.col.stance'), stanceBar(s)]]
+                .filter(Boolean).map(([k, v]) => h('div', { class: 'bubble-fact' }, h('dt', {}, k), h('dd', {}, v)))))
+        }
+
+        // The zoom moves the view in 450 ms, with an ease in and out. The labels come back at the end.
+        let anim = 0
+        function zoomTo (next) {
+          focus = next
+          const from = view
+          const to = next ? fitView(nodeOf.get(next)) : fullView
+          const t0 = performance.now()
+          const ease = (x) => (x < 0.5 ? 2 * x * x : 1 - (-2 * x + 2) ** 2 / 2)
+          labels.replaceChildren()
+          UI.hideTooltip()
+          cancelAnimationFrame(anim)
+          const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          const step = (now) => {
+            const p = reduce ? 1 : Math.min(1, (now - t0) / 450)
+            const e = ease(p)
+            view = p === 1 ? to : from.map((v, i) => v + (to[i] - v) * e)
+            applyView()
+            if (p < 1) anim = requestAnimationFrame(step)
+            else drawLabels()
+          }
+          anim = requestAnimationFrame(step)
+          drawPanel()
+        }
+
+        back.addEventListener('click', () => { if (focus) zoomTo(null) })
+        svg.addEventListener('keydown', (e) => { if (e.key === 'Escape' && focus) zoomTo(null) })
+        applyView()
+        drawLabels()
+        drawPanel()
         const table = h('div', { class: 'visually-hidden' }, h('table', {}, h('caption', {}, t('g2.tree.title')),
-          h('tbody', {}, groups.flatMap((g) => g.outlets.map((o) => h('tr', {}, h('th', { scope: 'row' }, o.name), h('td', {}, t('g2.tree.tip', { outlet: o.name, group: g.label, n: fmt.int(o.value), share: fmt.pct(o.value / total) }))))))))
-        holder.replaceChildren(svg, table)
+          h('tbody', {}, groups.flatMap((g) => g.outlets.map((o) => h('tr', {}, h('th', { scope: 'row' }, o.name), h('td', {}, outletTip(o, g).replace(/\n/g, ' · '))))))))
+        holder.replaceChildren(svg, panel, table)
       })
     }
 
@@ -173,37 +358,37 @@
 
           const rows = [...groups.map((g) => ({ key: g.name, label: g.name, value: g.collected, color: colorOf.get(g.name) })), ...(ungroupedTotal ? [{ key: null, label: t('media2.groups.none'), value: ungroupedTotal, color: NO_GROUP }] : [])]
 
-          // Row 1: the bubbles of owners and outlets, and the share of each group and of its outlets. The legend of the sunburst names the owners.
-          const treeGroups = [...groups.map((g) => ({ key: g.name, label: g.name, owner: g.owner, color: colorOf.get(g.name), outlets: g.outlets.filter((o) => o.collected > 0).map((o) => ({ name: o.name, value: o.collected })).sort((a, b) => b.value - a.value) })),
-            ...(ungroupedTotal ? [{ key: null, label: t('media2.groups.none'), owner: null, color: NO_GROUP, outlets: d.ungrouped.filter((o) => o.collected > 0).map((o) => ({ name: o.name, value: o.collected })).sort((a, b) => b.value - a.value) }] : [])]
+          // Row 1: the bubbles of owners and outlets, and the share of each group and of its outlets. The owner of a group is in the title of its legend row.
+          const outletOf = (o) => ({ name: o.name, slug: o.slug, value: o.collected, analysed: o.analysed, news: o.news, stance: o.stance })
+          const treeGroups = [...groups.map((g) => ({ key: g.name, label: g.name, owner: g.owner, color: colorOf.get(g.name), slug: g.slug, lean: g.lean, outlets: g.outlets.filter((o) => o.collected > 0).map(outletOf).sort((a, b) => b.value - a.value) })),
+            ...(ungroupedTotal ? [{ key: null, label: t('media2.groups.none'), owner: null, color: NO_GROUP, outlets: d.ungrouped.filter((o) => o.collected > 0).map(outletOf).sort((a, b) => b.value - a.value) }] : [])]
           treeGroups.forEach((g) => { g.value = g.outlets.reduce((s, o) => s + o.value, 0) })
           const bubbles = card('c-7', cardHead(t('g2.tree.title'), null, [t('g2.tree.sub', { period }), t('g2.record', { source: d.record.source, date: fmt.date(d.record.exportedAt) })].join(' ')),
             total ? OwnerBubbles({ groups: treeGroups, total }) : emptyText(t('groups.empty')))
           const shareCard = card('c-5', cardHead(t('media2.groups.title'), null, total ? t('media2.groups.known', { share: fmt.pct(grouped / total) }) : null),
             total
-              ? h('div', { class: 'donut-wrap sun-wrap' }, Sunburst({ groups: treeGroups, total }),
+              ? h('div', { class: 'donut-wrap sun-wrap' },
                   h('ul', { class: 'rows rows-groups rows-owners' }, treeGroups.map((g) => {
-                    const sub = g.key === null ? t('g2.bubble.none', { n: fmt.int(g.outlets.length) }) : `${g.owner} · ${t('g2.bubble.outlets', { n: fmt.int(g.outlets.length) })}`
-                    return h('li', {},
+                    return h('li', { title: g.key === null ? t('g2.bubble.none', { n: fmt.int(g.outlets.length) }) : `${g.owner} · ${t('g2.bubble.outlets', { n: fmt.int(g.outlets.length) })}` },
                       h('span', { class: g.key === null ? 'dot dot-none' : 'dot', style: `--dot:${g.color}`, 'aria-hidden': 'true' }),
                       h('span', { class: 'row-name', title: g.label }, g.key === null ? g.label : h('a', { class: 'quiet-link', href: hrefOf(groups.find((x) => x.name === g.key)) }, g.label)),
-                      h('span', { class: 'row-value' }, fmt.pct(g.value / total)),
-                      h('span', { class: 'row-sub', title: sub }, sub))
-                  })))
+                      h('span', { class: 'row-value' }, fmt.pct(g.value / total)))
+                  })),
+                  Sunburst({ groups: treeGroups, total }))
               : emptyText(t('groups.empty')))
 
-          // Row 3: the articles of each day, stacked by group. The largest group is at the bottom, the outlets with no group are on top.
+          // Row 2, on the left: the articles of each day, stacked by group. The largest group is at the bottom, the outlets with no group are on top.
           const m = media.kind === 'data' ? media.data : null
           const groupOf = new Map([...groups.flatMap((g) => g.outlets.map((o) => [o.slug, g.name])), ...(empty ? [] : d.ungrouped.map((o) => [o.slug, null]))])
           const order = rows.map((r) => ({ key: r.key, label: r.label, color: r.color }))
           const stacks = m && !empty ? m.dates.map((_, i) => order.map((o) => ({ ...o, value: m.outlets.reduce((a, out, k) => (groupOf.has(out.slug) && groupOf.get(out.slug) === o.key ? a + m.outletDaily[k][i][0] : a), 0) }))) : []
           const volumeTotal = stacks.reduce((s, day) => s + day.reduce((a, b) => a + b.value, 0), 0)
-          const volume = card('c-12', cardHead(t('g2.volume.title'), null, t('g2.volume.info', { min: fmt.int(GAP), n: fmt.int(volumeTotal) })),
+          const volume = card('c-8', cardHead(t('g2.volume.title'), null, t('g2.volume.info', { min: fmt.int(GAP), n: fmt.int(volumeTotal) })),
             volumeTotal
               ? [h('span', { class: 'legend-inline' }, order.map((o) => h('span', {}, h('span', { class: 'swatch', style: { background: o.color } }), o.label))), VolumeChart({ dates: m.dates, stacks, order })]
               : emptyText(t('groups.empty')))
 
-          // Row 2: the stance of each group and the political lean.
+          // Row 2, on the right: the stance of each group.
           const stanceRows = groups.map((g) => {
             const s = g.outlets.reduce((a, o) => [a[0] + o.stance[0], a[1] + o.stance[1], a[2] + o.stance[2]], [0, 0, 0])
             const n = s[0] + s[1] + s[2]
@@ -211,32 +396,20 @@
           }).filter((r) => r.n >= 30)
           const unit = stanceRows.length ? 40 / Math.max(...stanceRows.map((r) => Math.max(r.crit + r.neu / 2, r.sup + r.neu / 2))) : 0
           const seg = (name, left, width) => h('span', { class: 'div-seg', style: `--seg:var(--stance-${name});left:${left}%;width:${width}%` })
-          const stanceCard = card('c-7', cardHead(t('g2.stance.title'), h('span', { class: 'stance-key' },
-            [['stance.critical', 'critical'], ['stance.neutral', 'neutral'], ['stance.supportive', 'supportive']].map(([key, nm]) => h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: `var(--stance-${nm})` } }), t(key)))), t('g2.stance.sub')),
+          const stanceCard = card('c-4', cardHead(t('g2.stance.title'), null, t('g2.stance.sub')),
             stanceRows.length
-              ? h('ul', { class: 'diverge' }, stanceRows.map((r) => h('li', { 'aria-label': t('g2.stance.row', { group: r.g.name, critical: fmt.pct(r.crit), neutral: fmt.pct(r.neu), supportive: fmt.pct(r.sup), n: fmt.int(r.n) }) },
-                h('span', { class: 'div-name', title: r.g.name }, r.g.name),
-                h('span', { class: 'div-track' },
-                  seg('critical', 50 - (r.neu / 2) * unit - r.crit * unit, r.crit * unit),
-                  seg('neutral', 50 - (r.neu / 2) * unit, r.neu * unit),
-                  seg('supportive', 50 + (r.neu / 2) * unit, r.sup * unit),
-                  h('span', { class: 'div-mid' }),
-                  h('span', { class: 'div-val div-val-l', style: `right:${100 - (50 - (r.neu / 2) * unit - r.crit * unit)}%` }, fmt.pct(r.crit)),
-                  h('span', { class: 'div-val div-val-r', style: `left:${50 + (r.neu / 2) * unit + r.sup * unit}%` }, fmt.pct(r.sup))))))
+              ? [h('span', { class: 'stance-key' }, [['stance.critical', 'critical'], ['stance.neutral', 'neutral'], ['stance.supportive', 'supportive']].map(([key, nm]) => h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: `var(--stance-${nm})` } }), t(key)))),
+                h('ul', { class: 'diverge diverge-3 diverge-groups' }, stanceRows.map((r) => h('li', { 'aria-label': t('g2.stance.row', { group: r.g.name, critical: fmt.pct(r.crit), neutral: fmt.pct(r.neu), supportive: fmt.pct(r.sup), n: fmt.int(r.n) }) },
+                  h('span', { class: 'div-name', title: r.g.name }, h('span', { class: 'dot', style: `--dot:${colorOf.get(r.g.name)}`, 'aria-hidden': 'true' }), h('span', { class: 'div-label' }, r.g.name)),
+                  h('span', { class: 'div-num' }, h('span', { class: 'div-num-c' }, fmt.pct(r.crit)), ' · ', h('span', { class: 'div-num-s' }, fmt.pct(r.sup))),
+                  h('span', { class: 'div-track' },
+                    seg('critical', 50 - (r.neu / 2) * unit - r.crit * unit, r.crit * unit),
+                    seg('neutral', 50 - (r.neu / 2) * unit, r.neu * unit),
+                    seg('supportive', 50 + (r.neu / 2) * unit, r.sup * unit),
+                    h('span', { class: 'div-mid' })))))]
               : emptyText(t('groups.empty')))
 
-          const leanTotals = new Map()
-          groups.forEach((g) => { const k = g.lean || null; const e = leanTotals.get(k) || { value: 0, groups: 0 }; e.value += g.collected; e.groups++; leanTotals.set(k, e) })
-          const leanRows = [...leanTotals.entries()].map(([lean, e]) => ({ lean, ...e })).sort((a, b) => (a.lean === null) - (b.lean === null) || b.value - a.value)
-          const leanCard = card('c-5', cardHead(t('g2.lean.title'), null, t('g2.lean.sub')),
-            leanRows.length
-              ? h('ul', { class: 'rows' }, [...leanRows.map((r) => h('li', { style: `--bar-color:${r.lean === null ? 'var(--bar-muted)' : 'var(--series-news)'}` },
-                h('span', { class: 'row-name' }, r.lean || t('groups.lean.none')), h('span', { class: 'row-value' }, t('g2.lean.value', { share: fmt.pct(r.value / total), groups: fmt.int(r.groups) })),
-                UI.HBar(r.value, leanRows[0].value))),
-              ungroupedTotal ? h('li', { style: '--bar-color:var(--bar-muted)' }, h('span', { class: 'row-name' }, t('media2.groups.none')), h('span', { class: 'row-value' }, fmt.pct(ungroupedTotal / total)), UI.HBar(ungroupedTotal, leanRows[0].value)) : null])
-              : emptyText(t('groups.empty')))
-
-          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, bubbles, shareCard, stanceCard, leanCard, volume), protoNote())
+          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, bubbles, shareCard, volume, stanceCard), protoNote())
         }
         draw()
       }
