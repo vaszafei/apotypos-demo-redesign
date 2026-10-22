@@ -177,7 +177,7 @@
           const d = result.data
           const ok = result.kind === 'data' || result.kind === 'empty'
           if (!ok) {
-            content.replaceChildren(TopBar({ title: t('nav.media'), tabs, quiet: true }), UI.ErrorState({ onRetry: () => location.reload() }), protoNote())
+            content.replaceChildren(TopBar({ title: t('tab.world.media'), tabs, quiet: true }), UI.ErrorState({ onRetry: () => location.reload() }), protoNote())
             return
           }
           const empty = result.kind === 'empty'
@@ -211,7 +211,7 @@
           const storiesPerDay = d.dates.map(() => 0)
           if (!empty) d.storyDays.forEach((pairs) => { for (let j = 0; j < pairs.length; j += 2) if (pairs[j + 1] > 0) storiesPerDay[pairs[j]]++ })
           // Top bar: only the tabs. The title is for screen readers. The page has no buttons.
-          const bar = TopBar({ title: t('nav.media'), tabs, quiet: true })
+          const bar = TopBar({ title: t('tab.world.media'), tabs, quiet: true })
 
           // Row 1: 3 small stat cards. Each has a number and a small picture of the same measure.
           const hasPrev = days >= 14

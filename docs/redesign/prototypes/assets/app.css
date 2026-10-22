@@ -85,6 +85,11 @@ button, input, select { font: inherit; color: inherit; }
 .header-bar.has-tabs { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
 .header-bar.has-tabs .global-search { width: 100%; justify-self: end; }
 .header-bar .section-tabs { flex: none; min-width: 0; padding: 0; overflow: visible; }
+.header-bar.has-tabs.many-tabs { grid-template-columns: minmax(0, 1fr) minmax(0, 320px); row-gap: var(--space-2); }
+@media (min-width: 1024px) {
+  .header-bar.many-tabs .section-tabs { grid-column: 1 / -1; grid-row: 2; }
+  .header-bar.many-tabs .section-tabs ul { flex-wrap: wrap; justify-content: center; min-width: 0; }
+}
 /* All tabs are pills. The current tab has a black border and a light elevation. */
 .section-tabs { border-bottom: 0; }
 .section-tabs ul { gap: var(--space-1); }

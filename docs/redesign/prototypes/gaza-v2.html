@@ -23,7 +23,7 @@
   <script src="data/gazaCoverage.js?v=1"></script>
   <script>
     // Κόσμος, Γάζα: how the press builds the picture of Gaza (K24 to K26). It reads the Gaza file (1 Aug to 30 Sep 2026).
-    // The six questions of the old page stay, each in one small card.
+    // The five questions of the live page, each in one small card.
     const { t, fmt, h, load } = App
     const { reset, card, cardHead, Stat, TopBar } = Dash
     const { weekLabel, ColumnChart, LineChart, Rows, PairRows, pctOf, signed } = Politics
@@ -75,9 +75,8 @@
             h('div', {}, h('p', { class: 'quote-meta' }, fmt.date(p.date, { weekday: 'short', day: 'numeric', month: 'short' }), ' · ', t('gz.peak.n', { n: fmt.int(p.gaza) })),
               p.titles.map((x) => h('p', { class: 'peak-title' }, h('span', { class: 'muted-text' }, `${x.outlet}: `), h('a', { class: 'quiet-link', href: x.url, target: '_blank', rel: 'noopener' }, x.title))))))))
 
-        // The six questions.
-        const q1 = card('c-4', cardHead(t('gz.q1.title'), null, t('gz.q1.info')),
-          PairRows([pair(t('gz.q1.row'), o.pal_active, o.isr_active, { subA: t('gz.q1.sub', { n: fmt.int(o.pal_harm_headlines) }), subB: t('gz.q1.sub', { n: fmt.int(o.isr_harm_headlines) }) })], { names, max: 100 }))
+        // The five questions.
+        // The card «Ποιος σκότωσε;» is gone: the live page withdrew the perpetrator-naming measure (its check gave κ = 0,09).
         const q2 = card('c-4', cardHead(t('gz.q2.title'), null, t('gz.q2.info')),
           PairRows([pair(t('gz.q2.any'), o.any_pal_voice, o.any_isr_voice), pair(t('gz.q2.first'), o.first_pal, o.first_isr)], { names, max: 100 }),
           h('p', { class: 'dcard-sub' }, t('gz.q2.civil', { a: pctOf(o.pal_civilian_voice), b: pctOf(o.un_voice) })))
@@ -85,7 +84,7 @@
           PairRows([pair(t('gz.q3.row'), o.named_pal, o.named_isr)], { names, max: 100 }))
         const q4 = card('c-4', cardHead(t('gz.q4.title'), null, t('gz.q4.info')),
           h('div', { class: 'dstat-row' }, h('p', { class: 'dstat-value' }, pctOf(o.hamas_label)), h('p', { class: 'dstat-sub' }, t('gz.q4.label'), h('br'), t('gz.q4.value', { n: fmt.int(o.with_figures) })), Dash.Meter(o.hamas_label / 100)))
-        const q5 = card('c-4', cardHead(t('gz.q5.title'), null, t('gz.q5.info')),
+        const q5 = card('c-6', cardHead(t('gz.q5.title'), null, t('gz.q5.info')),
           h('span', { class: 'stance-key' },
             h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: 'var(--ink)' } }), t('gz.q5.own')),
             h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: 'var(--bar-muted)' } }), t('gz.q5.quoted'))),
@@ -98,7 +97,7 @@
                 h('span', { style: `width:${Math.min(100, (own / scale) * 100)}%;--seg:var(--ink)` }),
                 h('span', { style: `width:${Math.min(100, (quoted / scale) * 100)}%;--seg:var(--bar-muted)` })))
           })))
-        const q6 = card('c-4', cardHead(t('gz.q6.title'), null, t('gz.q6.info')),
+        const q6 = card('c-6', cardHead(t('gz.q6.title'), null, t('gz.q6.info')),
           Rows([{ label: t('gz.q6.oct7'), value: o.ctx_oct7, text: pctOf(o.ctx_oct7) }, { label: t('gz.q6.occupation'), value: o.ctx_occupation, text: pctOf(o.ctx_occupation) }], { max: 100, cls: 'rows-wrap' }))
 
         // The words for each week. A control picks the term.
@@ -159,7 +158,7 @@
             ]
           }))
 
-        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...stats, dailyCard, q1, q2, q3, q4, q5, q6, termCard, perspCard, greeceCard, titlesCard, outletCard),
+        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...stats, dailyCard, q2, q3, q4, q5, q6, termCard, perspCard, greeceCard, titlesCard, outletCard),
           h('p', { class: 'proto-note' }, t('gz.note')))
       }
     })

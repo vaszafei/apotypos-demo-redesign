@@ -29,7 +29,12 @@
     return media.stories.filter((s) => !soft.has(s.issue) && s.el !== s.issue)
       .map((s) => ({ ...s, count: s.daily.reduce((a, b) => a + b, 0) })).filter((s) => s.count >= 3).sort((a, b) => b.count - a.count)
   }
-  function groupColors (groupList) { return new Map(groupList.map((g, i) => [g.name, SLOTS[i % SLOTS.length]])) }
+  // The fixed group to slot map (#2): a group has the same color on every page, whatever list the page has.
+  // Slots 1 to 8 follow the order of the groups file. Antenna Group is only in the live data (/api/sources), so it has a 9th slot.
+  const GROUP_SLOT = new Map([['Alter Ego Media', '#2a78d6'], ['DPG Digital Media', '#eb6834'], ['Συμφέροντα Μπάκου-Καϋμενάκη', '#1baf7a'], ['Politis Group', '#eda100'],
+    ['Συμφέροντα Μελισσανίδη', '#e87ba4'], ['Όμιλος ΣΚΑΪ', '#008300'], ['Συμφέροντα Σαββίδη', '#6250d6'], ['Όμιλος Βαρδινογιάννη', '#e34948'], ['Antenna Group', '#4b5d73']])
+  const groupColor = (name) => (name ? GROUP_SLOT.get(name) || NO_GROUP : NO_GROUP)
+  function groupColors (groupList) { return new Map(groupList.map((g, i) => [g.name, GROUP_SLOT.get(g.name) || SLOTS[i % SLOTS.length]])) }
 
   const luminance = (hex) => {
     const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4))
@@ -113,5 +118,5 @@
     return [head, bad.kind === 'empty' ? h('div', { class: 'dash-grid' }, card('c-12', UI.EmptyState({ text: t('topics2.empty') }))) : UI.ErrorState({ onRetry: () => location.reload() })]
   }
 
-  window.Dash = { stateContent, select, fit, reset, niceStep, pct0, SLOTS, NO_GROUP, groupColors, newsStories, textOn, tint, Spark, Scale, card, cardHead, Info, emptyText, Stat, Meter, TopBar }
+  window.Dash = { stateContent, select, fit, reset, niceStep, pct0, SLOTS, NO_GROUP, groupColors, groupColor, newsStories, textOn, tint, Spark, Scale, card, cardHead, Info, emptyText, Stat, Meter, TopBar }
 })()

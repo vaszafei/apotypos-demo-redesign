@@ -15,6 +15,7 @@
     '/media': 'media-v2.html',
     '/fingerprints': 'fingerprints-v2.html',
     '/groups': 'groups-v2.html',
+    '/analyze': 'analyze-v2.html',
     '/elections': 'elections-v2.html',
     '/speeches': 'speeches-v2.html',
     '/contradictions': 'persons-v2.html',
@@ -28,13 +29,15 @@
   }
 
   // The sidebar has 6 items (APO-161: Media and Ownership are one item). The sub-pages of an item are tabs inside the page (shell-spec.md, "Navigation").
+  // The item "world" is Αναλύσεις: its tabs are the pages of the ΑΝΑΛΥΣΗ section of the live sidebar, in the same order (#35).
   const NAV = [
     { key: 'home', tabs: [['home', '/']] },
-    { key: 'media', tabs: [['overview', '/media'], ['ownership', '/groups'], ['fingerprints', '/fingerprints'], ['similarity', '/similarity']], details: ['/outlet', '/group'] },
-    { key: 'topics', tabs: [['trends', '/trends'], ['overton', '/overton']], details: ['/topic'] },
+    { key: 'media', tabs: [['ownership', '/groups'], ['fingerprints', '/fingerprints'], ['similarity', '/similarity']], details: ['/outlet', '/group'] },
+    { key: 'topics', tabs: [['trends', '/trends']], details: ['/topic'] },
     { key: 'spread', tabs: [['overview', '/stories']], details: ['/story'] },
-    { key: 'politics', tabs: [['elections', '/elections'], ['speeches', '/speeches'], ['persons', '/contradictions'], ['statements', '/track'], ['cases', '/cases'], ['campaigns', '/campaigns']] },
-    { key: 'world', tabs: [['war', '/war'], ['gaza', '/gaza'], ['israel', '/israel'], ['language', '/gaza-language']] }
+    { key: 'politics', tabs: [['elections', '/elections'], ['statements', '/track'], ['cases', '/cases'], ['campaigns', '/campaigns']] },
+    { key: 'world', tabs: [['speeches', '/speeches'], ['media', '/media'], ['war', '/war'], ['analyze', '/analyze'], ['narrative', '/narrative'], ['gaza', '/gaza'], ['israel', '/israel'],
+      ['language', '/gaza-language'], ['coverage', '/coverage'], ['france', '/france-riots'], ['overton', '/overton'], ['persons', '/contradictions']] }
   ]
   const FOOTER = [['methodology', '/methodology'], ['about', '/about'], ['pages', null]]
 
@@ -248,7 +251,8 @@
           h('li', {}, h('a', { href: hrefOf(r), 'aria-current': r === route ? 'page' : null }, t(`tab.${item.key}.${key}`))))))
         : null
       // A dash page has its tabs in the center of the top bar. The other pages have them under the top bar.
-      if (dash && tabBar) { header.classList.add('has-tabs'); header.append(tabBar) }
+      // An item with many tabs (Αναλύσεις has 12) puts them on a second row of the top bar, so they do not push the page wider.
+      if (dash && tabBar) { header.classList.add('has-tabs'); if (item.tabs.length > 6) header.classList.add('many-tabs'); header.append(tabBar) }
       header.append(GlobalSearch())
       const content = h('main', { class: 'content', id: 'content' })
       const shell = h('div', { class: 'shell' }, sidebar, h('div', { class: 'drawer-scrim', onClick: () => setDrawer(false) }),
@@ -270,6 +274,9 @@
       document.onkeydown = (e) => { if (e.key === 'Escape' && shell.classList.contains('drawer-open')) setDrawer(false) }
 
       root.replaceChildren(shell)
+      // A tab bar that scrolls sideways (phones) shows the current tab.
+      const nav = tabBar && tabBar.querySelector('[aria-current="page"]')
+      if (nav && tabBar.scrollWidth > tabBar.clientWidth) tabBar.scrollLeft = nav.offsetLeft - (tabBar.clientWidth - nav.offsetWidth) / 2
       render(content, { tabs: dash ? null : tabBar })
     }
 
