@@ -7,23 +7,24 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=4">
   <link rel="stylesheet" href="assets/app.css?v=12">
-  <link rel="stylesheet" href="assets/dash.css?v=54">
+  <link rel="stylesheet" href="assets/dash.css?v=55">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=3"></script>
-  <script src="assets/messages.js?v=16"></script>
-  <script src="assets/messages-v2.js?v=28"></script>
+  <script src="assets/messages.js?v=17"></script>
+  <script src="assets/messages-v2.js?v=29"></script>
   <script src="assets/components.js?v=6"></script>
   <script src="assets/dash.js?v=11"></script>
-  <script src="assets/shell.js?v=30"></script>
+  <script src="assets/vendor/d3-hierarchy.min.js"></script>
+  <script src="assets/shell.js?v=31"></script>
   <script src="data/groups.js?v=2"></script>
   <script src="data/media.js"></script>
   <script>
     // Media, Ιδιοκτησία: dashboard of APO-161. The group, the owner and the articles come from the static files,
     // so the period is fixed (1 Aug to 30 Sep 2026): there is no period control. The period is in the note of the table.
     const { t, fmt, h, load } = App
-    const { fit, reset, niceStep, NO_GROUP, Scale, card, cardHead, emptyText, TopBar, textOn, tint } = Dash
+    const { fit, reset, niceStep, NO_GROUP, card, cardHead, emptyText, TopBar, textOn, tint } = Dash
     const result = load('groups', ['groups', 'ungrouped', 'totalCollected', 'window'], (b) => b.groups)
     // The daily articles of each outlet (the same period and the same groups as the groups file).
     const media = load('media', ['dates', 'outlets', 'outletDaily'], (b) => b.outlets)
@@ -75,106 +76,72 @@
       })
     }
 
-    // Squarified treemap: the rows of an item list (sorted, largest first) fill a rectangle with boxes of the same shape as far as possible.
-    function squarify (items, x, y, w, hh) {
-      const total = items.reduce((s, i) => s + i.value, 0)
-      if (!total || w <= 0 || hh <= 0) return []
-      const nodes = items.map((it) => ({ it, area: (it.value / total) * w * hh }))
-      const out = []
-      let row = []
-      const worst = (r, side) => {
-        const s = r.reduce((a, n) => a + n.area, 0)
-        const mx = Math.max(...r.map((n) => n.area))
-        const mn = Math.min(...r.map((n) => n.area))
-        return Math.max((side * side * mx) / (s * s), (s * s) / (side * side * mn))
-      }
-      const layoutRow = (r) => {
-        const s = r.reduce((a, n) => a + n.area, 0)
-        if (w >= hh) {
-          const cw = s / hh
-          let cy = y
-          r.forEach((n) => { const ch = n.area / cw; out.push({ it: n.it, x, y: cy, w: cw, h: ch }); cy += ch })
-          x += cw
-          w -= cw
-        } else {
-          const rh = s / w
-          let cx = x
-          r.forEach((n) => { const cw = n.area / rh; out.push({ it: n.it, x: cx, y, w: cw, h: rh }); cx += cw })
-          y += rh
-          hh -= rh
-        }
-      }
-      let i = 0
-      while (i < nodes.length) {
-        const side = Math.min(w, hh)
-        if (!row.length || worst(row.concat(nodes[i]), side) <= worst(row, side)) { row.push(nodes[i]); i++ } else { layoutRow(row); row = [] }
-      }
-      if (row.length) layoutRow(row)
-      return out
+    // Pointer handlers for a tooltip on a mark.
+    const tipOn = (el, text) => {
+      const show = (e) => UI.showTooltip(text, e.clientX, e.clientY)
+      el.addEventListener('pointerenter', show)
+      el.addEventListener('pointermove', show)
+      el.addEventListener('pointerleave', () => UI.hideTooltip())
+      return el
     }
 
-    // Treemap of owners and outlets. The area is the collected articles. The color is the group.
-    function OwnerTreemap ({ groups, total }) {
+    // Packed bubbles of owners and outlets: one circle for each group, with a circle for each of its outlets inside. The area is the collected articles.
+    function OwnerBubbles ({ groups, total }) {
       return fit((holder, width) => {
-        const height = Math.max(240, Math.min(290, Math.round(width * 0.3)))
+        const height = Math.max(280, Math.min(480, Math.round(width * 0.72)))
+        const root = d3.hierarchy({ children: groups.map((g) => ({ g, children: g.outlets.map((o) => ({ o, g })) })) })
+          .sum((d) => (d.o ? d.o.value : 0)).sort((a, b) => b.value - a.value)
+        d3.pack().size([width, height]).padding((d) => (d.depth === 0 ? 10 : 2))(root)
         const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
-        const tip = (o, g) => t('g2.tree.tip', { outlet: o.name, group: g.label, n: fmt.int(o.value), share: fmt.pct(o.value / total) })
-        squarify(groups.map((g) => ({ ...g, value: g.outlets.reduce((s, o) => s + o.value, 0) })), 0, 0, width, height).forEach((box) => {
-          const g = box.it
-          const gx = box.x + 1
-          const gy = box.y + 1
-          const gw = box.w - 2
-          const gh = box.h - 2
-          if (gw <= 0 || gh <= 0) return
-          // The group box is a light tint with a line of the group color on top. The outlet boxes are a stronger tint of the same color.
-          svg.append(h('rect', { x: gx, y: gy, width: gw, height: gh, fill: tint(g.color, 0.84), rx: 4 }),
-            h('rect', { x: gx, y: gy, width: gw, height: 3, fill: g.color, rx: 1.5 }))
-          const head = gh >= 46 && gw >= 90 ? 22 : 0
-          if (head) {
-            const label = t('g2.tree.group', { group: g.label, share: fmt.pct(g.value / total) })
-            svg.append(h('text', { class: 'tile-head', x: gx + 8, y: gy + 17, style: { fill: '#1f1f1f' } }, label.length * 6.8 > gw - 16 ? `${label.slice(0, Math.max(3, Math.floor((gw - 16) / 6.8) - 1))}…` : label))
-          }
-          squarify(g.outlets.slice().sort((a, b) => b.value - a.value), gx + 3, gy + head + (head ? 0 : 5), gw - 6, gh - head - (head ? 3 : 8)).forEach((cell) => {
-            const o = cell.it
-            const fill = tint(g.color, 0.5)
-            const r = h('rect', { class: 'tile', x: cell.x + 1, y: cell.y + 1, width: Math.max(0, cell.w - 2), height: Math.max(0, cell.h - 2), fill, rx: 3 })
-            const show = (e) => UI.showTooltip(tip(o, g), e.clientX, e.clientY)
-            r.addEventListener('pointerenter', show)
-            r.addEventListener('pointermove', show)
-            r.addEventListener('pointerleave', () => UI.hideTooltip())
-            svg.append(r)
-            if (cell.w >= o.name.length * 6.5 + 10 && cell.h >= 22) {
-              svg.append(h('text', { class: 'tile-label', x: cell.x + 7, y: cell.y + 17, style: { fill: textOn(fill) } }, o.name))
-              if (cell.h >= 40) svg.append(h('text', { class: 'tile-share', x: cell.x + 7, y: cell.y + 32, style: { fill: textOn(fill) } }, fmt.pct(o.value / total)))
+        root.children.forEach((gn) => {
+          const g = gn.data.g
+          svg.append(tipOn(h('circle', { class: 'bubble-group', cx: gn.x, cy: gn.y, r: gn.r, fill: tint(g.color, 0.88), stroke: g.color, 'stroke-width': 1.5 }),
+            t('g2.bubble.group', { group: g.label, owner: g.owner || t('groups.lean.none'), n: fmt.int(gn.value), share: fmt.pct(gn.value / total) })))
+          gn.children.forEach((on) => {
+            const o = on.data.o
+            const fill = tint(g.color, g.key === null ? 0.5 : 0.35)
+            svg.append(tipOn(h('circle', { class: 'tile', cx: on.x, cy: on.y, r: on.r, fill }), t('g2.tree.tip', { outlet: o.name, group: g.label, n: fmt.int(o.value), share: fmt.pct(o.value / total) })))
+            if (on.r * 2 >= o.name.length * 6.4 + 6 && on.r >= 15) {
+              const two = on.r >= 26
+              svg.append(h('text', { class: 'tile-label', x: on.x, y: on.y + (two ? -1 : 4), 'text-anchor': 'middle', style: { fill: textOn(fill), 'font-weight': 500 } }, o.name))
+              if (two) svg.append(h('text', { class: 'tile-share', x: on.x, y: on.y + 14, 'text-anchor': 'middle', style: { fill: textOn(fill) } }, fmt.pct(o.value / total)))
             }
           })
         })
         const table = h('div', { class: 'visually-hidden' }, h('table', {}, h('caption', {}, t('g2.tree.title')),
-          h('tbody', {}, groups.flatMap((g) => g.outlets.map((o) => h('tr', {}, h('th', { scope: 'row' }, o.name), h('td', {}, tip(o, g))))))))
+          h('tbody', {}, groups.flatMap((g) => g.outlets.map((o) => h('tr', {}, h('th', { scope: 'row' }, o.name), h('td', {}, t('g2.tree.tip', { outlet: o.name, group: g.label, n: fmt.int(o.value), share: fmt.pct(o.value / total) }))))))))
         holder.replaceChildren(svg, table)
       })
     }
 
-    // Donut: the share of each group in the collected articles. The ring is in the order of the legend. The legend has the numbers.
-    function Donut ({ rows, total }) {
-      const size = 132
-      const radius = 54
-      const circ = 2 * Math.PI * radius
-      const gap = 2
-      const svg = h('svg', { class: 'chart donut', width: size, height: size, viewBox: `0 0 ${size} ${size}`, role: 'img', 'aria-label': rows.map((r) => `${r.label} ${fmt.pct(r.value / total)}`).join(', ') })
-      let start = 0
-      rows.forEach((r) => {
-        const len = (r.value / total) * circ
-        const c = h('circle', { class: 'slice', cx: size / 2, cy: size / 2, r: radius, fill: 'none', stroke: r.color, 'stroke-width': 18, 'stroke-dasharray': `${Math.max(1, len - gap)} ${circ}`, 'stroke-dashoffset': -start, transform: `rotate(-90 ${size / 2} ${size / 2})` })
-        const show = (e) => UI.showTooltip(t('g2.donut.tip', { group: r.label, n: fmt.int(r.value), share: fmt.pct(r.value / total) }), e.clientX, e.clientY)
-        c.addEventListener('pointerenter', show)
-        c.addEventListener('pointermove', show)
-        c.addEventListener('pointerleave', () => UI.hideTooltip())
-        svg.append(c)
-        start += len
+    // Sunburst: the inner ring is the groups, the outer ring their outlets. The rings are in the order of the legend, from the top, clockwise.
+    function Sunburst ({ groups, total }) {
+      const size = 196
+      const c = size / 2
+      const rings = [[48, 72], [74, 97]]
+      const pad = 0.008
+      const arc = (a0, a1, r0, r1) => {
+        a0 += pad / 2
+        a1 = Math.max(a0 + 0.002, a1 - pad / 2)
+        const p = (a, r) => `${(c + r * Math.sin(a)).toFixed(2)} ${(c - r * Math.cos(a)).toFixed(2)}`
+        const large = a1 - a0 > Math.PI ? 1 : 0
+        return `M${p(a0, r1)}A${r1} ${r1} 0 ${large} 1 ${p(a1, r1)}L${p(a1, r0)}A${r0} ${r0} 0 ${large} 0 ${p(a0, r0)}Z`
+      }
+      const svg = h('svg', { class: 'chart donut sunburst', width: size, height: size, viewBox: `0 0 ${size} ${size}`, role: 'img', 'aria-label': groups.map((g) => `${g.label} ${fmt.pct(g.value / total)}`).join(', ') })
+      let a = 0
+      groups.forEach((g) => {
+        const span = (g.value / total) * 2 * Math.PI
+        svg.append(tipOn(h('path', { class: 'slice', d: arc(a, a + span, ...rings[0]), fill: g.color }), t('g2.donut.tip', { group: g.label, n: fmt.int(g.value), share: fmt.pct(g.value / total) })))
+        let b = a
+        g.outlets.forEach((o) => {
+          const s = (o.value / total) * 2 * Math.PI
+          svg.append(tipOn(h('path', { class: 'slice', d: arc(b, b + s, ...rings[1]), fill: tint(g.color, g.key === null ? 0.45 : 0.4) }), t('g2.tree.tip', { outlet: o.name, group: g.label, n: fmt.int(o.value), share: fmt.pct(o.value / total) })))
+          b += s
+        })
+        a += span
       })
-      svg.append(h('text', { class: 'donut-num', x: size / 2, y: size / 2 + 3, 'text-anchor': 'middle' }, fmt.int(total)),
-        h('text', { x: size / 2, y: size / 2 + 19, 'text-anchor': 'middle' }, t('g2.donut.center')))
+      svg.append(h('text', { class: 'donut-num', x: c, y: c + 3, 'text-anchor': 'middle' }, fmt.int(total)),
+        h('text', { x: c, y: c + 19, 'text-anchor': 'middle' }, t('g2.donut.center')))
       return svg
     }
 
@@ -206,31 +173,39 @@
 
           const rows = [...groups.map((g) => ({ key: g.name, label: g.name, value: g.collected, color: colorOf.get(g.name) })), ...(ungroupedTotal ? [{ key: null, label: t('media2.groups.none'), value: ungroupedTotal, color: NO_GROUP }] : [])]
 
-          // Row 1: the treemap and the share of each group.
-          const treeGroups = [...groups.map((g) => ({ key: g.name, label: g.name, color: colorOf.get(g.name), outlets: g.outlets.filter((o) => o.collected > 0).map((o) => ({ name: o.name, value: o.collected })) })),
-            ...(ungroupedTotal ? [{ key: null, label: t('media2.groups.none'), color: NO_GROUP, outlets: d.ungrouped.filter((o) => o.collected > 0).map((o) => ({ name: o.name, value: o.collected })) }] : [])]
-          const treemap = card('c-7', cardHead(t('g2.tree.title'), null, t('g2.tree.sub')),
-            total ? OwnerTreemap({ groups: treeGroups, total }) : emptyText(t('groups.empty')))
+          // Row 1: the bubbles of owners and outlets, with the owner of each group beside them.
+          const treeGroups = [...groups.map((g) => ({ key: g.name, label: g.name, owner: g.owner, color: colorOf.get(g.name), outlets: g.outlets.filter((o) => o.collected > 0).map((o) => ({ name: o.name, value: o.collected })).sort((a, b) => b.value - a.value) })),
+            ...(ungroupedTotal ? [{ key: null, label: t('media2.groups.none'), owner: null, color: NO_GROUP, outlets: d.ungrouped.filter((o) => o.collected > 0).map((o) => ({ name: o.name, value: o.collected })).sort((a, b) => b.value - a.value) }] : [])]
+          treeGroups.forEach((g) => { g.value = g.outlets.reduce((s, o) => s + o.value, 0) })
+          const owners = h('ul', { class: 'owner-list' }, treeGroups.map((g) => h('li', {},
+            h('span', { class: g.key === null ? 'dot dot-none' : 'dot', style: `--dot:${g.color}`, 'aria-hidden': 'true' }),
+            h('span', { class: 'owner-group' }, g.key === null ? g.label : h('a', { class: 'quiet-link', href: hrefOf(groups.find((x) => x.name === g.key)) }, g.label)),
+            h('span', { class: 'owner-name' }, g.key === null ? t('g2.bubble.none', { n: fmt.int(g.outlets.length) }) : `${g.owner} · ${t('g2.bubble.outlets', { n: fmt.int(g.outlets.length) })}`))))
+          const bubbles = card('c-12', cardHead(t('g2.tree.title'), null, [t('g2.tree.sub', { period }), t('g2.record', { source: d.record.source, date: fmt.date(d.record.exportedAt) })].join(' ')),
+            total ? h('div', { class: 'owners-wrap' }, OwnerBubbles({ groups: treeGroups, total }), owners) : emptyText(t('groups.empty')))
+
+          // Row 2: the share of each group and of its outlets.
           const shareCard = card('c-5', cardHead(t('media2.groups.title'), null, total ? t('media2.groups.known', { share: fmt.pct(grouped / total) }) : null),
             total
-              ? [h('div', { class: 'donut-wrap' }, Donut({ rows, total }),
+              ? [h('div', { class: 'donut-wrap sun-wrap' }, Sunburst({ groups: treeGroups, total }),
                   h('ul', { class: 'rows rows-groups' }, rows.map((r) => h('li', {},
                     h('span', { class: r.key === null ? 'dot dot-none' : 'dot', style: `--dot:${r.color}`, 'aria-hidden': 'true' }),
                     h('span', { class: 'row-name', title: r.label }, r.key === null ? r.label : h('a', { class: 'quiet-link', href: hrefOf(groups.find((g) => g.name === r.key)) }, r.label)),
                     h('span', { class: 'row-value' }, fmt.pct(r.value / total))))))]
               : emptyText(t('groups.empty')))
 
-          // Row 2: the articles of each day, stacked by group. The largest group is at the bottom, the outlets with no group are on top.
+          // Row 3: the articles of each day, stacked by group. The largest group is at the bottom, the outlets with no group are on top.
           const m = media.kind === 'data' ? media.data : null
           const groupOf = new Map([...groups.flatMap((g) => g.outlets.map((o) => [o.slug, g.name])), ...(empty ? [] : d.ungrouped.map((o) => [o.slug, null]))])
           const order = rows.map((r) => ({ key: r.key, label: r.label, color: r.color }))
           const stacks = m && !empty ? m.dates.map((_, i) => order.map((o) => ({ ...o, value: m.outlets.reduce((a, out, k) => (groupOf.has(out.slug) && groupOf.get(out.slug) === o.key ? a + m.outletDaily[k][i][0] : a), 0) }))) : []
           const volumeTotal = stacks.reduce((s, day) => s + day.reduce((a, b) => a + b.value, 0), 0)
-          const volume = card('c-12', cardHead(t('g2.volume.title'), h('span', { class: 'legend-inline' }, order.map((o) => h('span', {}, h('span', { class: 'swatch', style: { background: o.color } }), o.label))),
-            t('g2.volume.info', { min: fmt.int(GAP), n: fmt.int(volumeTotal) })),
-          volumeTotal ? VolumeChart({ dates: m.dates, stacks, order }) : emptyText(t('groups.empty')))
+          const volume = card('c-12', cardHead(t('g2.volume.title'), null, t('g2.volume.info', { min: fmt.int(GAP), n: fmt.int(volumeTotal) })),
+            volumeTotal
+              ? [h('span', { class: 'legend-inline' }, order.map((o) => h('span', {}, h('span', { class: 'swatch', style: { background: o.color } }), o.label))), VolumeChart({ dates: m.dates, stacks, order })]
+              : emptyText(t('groups.empty')))
 
-          // Row 3: the stance of each group, and the political lean.
+          // Row 2: the stance of each group. Row 4: the political lean.
           const stanceRows = groups.map((g) => {
             const s = g.outlets.reduce((a, o) => [a[0] + o.stance[0], a[1] + o.stance[1], a[2] + o.stance[2]], [0, 0, 0])
             const n = s[0] + s[1] + s[2]
@@ -255,7 +230,7 @@
           const leanTotals = new Map()
           groups.forEach((g) => { const k = g.lean || null; const e = leanTotals.get(k) || { value: 0, groups: 0 }; e.value += g.collected; e.groups++; leanTotals.set(k, e) })
           const leanRows = [...leanTotals.entries()].map(([lean, e]) => ({ lean, ...e })).sort((a, b) => (a.lean === null) - (b.lean === null) || b.value - a.value)
-          const leanCard = card('c-5', cardHead(t('g2.lean.title'), null, t('g2.lean.sub')),
+          const leanCard = card('c-12', cardHead(t('g2.lean.title'), null, t('g2.lean.sub')),
             leanRows.length
               ? h('ul', { class: 'rows' }, [...leanRows.map((r) => h('li', { style: `--bar-color:${r.lean === null ? 'var(--bar-muted)' : 'var(--series-news)'}` },
                 h('span', { class: 'row-name' }, r.lean || t('groups.lean.none')), h('span', { class: 'row-value' }, t('g2.lean.value', { share: fmt.pct(r.value / total), groups: fmt.int(r.groups) })),
@@ -263,31 +238,7 @@
               ungroupedTotal ? h('li', { style: '--bar-color:var(--bar-muted)' }, h('span', { class: 'row-name' }, t('media2.groups.none')), h('span', { class: 'row-value' }, fmt.pct(ungroupedTotal / total)), UI.HBar(ungroupedTotal, leanRows[0].value)) : null])
               : emptyText(t('groups.empty')))
 
-          // Row 4: the ranking table.
-          const newsOf = (g) => g.outlets.reduce((s, o) => s + o.news, 0) / (g.outlets.reduce((s, o) => s + o.analysed, 0) || 1)
-          const newsAll = groups.map(newsOf)
-          const newsAvg = groups.reduce((s, g) => s + g.outlets.reduce((a, o) => a + o.news, 0), 0) / (groups.reduce((s, g) => s + g.outlets.reduce((a, o) => a + o.analysed, 0), 0) || 1)
-          const stanceOf = (g) => g.outlets.reduce((a, o) => [a[0] + o.stance[0], a[1] + o.stance[1], a[2] + o.stance[2]], [0, 0, 0])
-          const table = card('c-12', cardHead(t('g2.table.title'), null, [t('g2.table.note', { period }), groups.length ? `${t('groups.table.none', { n: fmt.int(d.ungrouped.length), articles: fmt.int(ungroupedTotal), share: fmt.pct(ungroupedTotal / total) })} ${t('g2.record', { source: d.record.source, date: fmt.date(d.record.exportedAt) })}` : ''].join(' ')),
-            UI.DataTable({
-              rows: groups, rankColumn: true, emptyText: t('media.empty'),
-              columns: [
-                { label: t('groups.col.group'), render: (g) => h('span', { class: 'group-cell' }, h('span', { class: 'dot', style: `--dot:${colorOf.get(g.name)}`, 'aria-hidden': 'true' }), h('a', { class: 'quiet-link', href: hrefOf(g) }, g.name)) },
-                { label: t('groups.col.owner'), phone: false, key: 'owner' },
-                { label: t('groups.col.lean'), phone: false, render: (g) => g.lean || h('span', { class: 'mini-empty' }, t('groups.lean.none')) },
-                { label: t('groups.col.outlets'), num: true, render: (g) => fmt.int(g.outlets.length) },
-                { label: t('groups.col.articles'), num: true, render: (g) => fmt.int(g.collected) },
-                { label: t('groups.col.share'), num: true, render: (g) => fmt.pct(g.collected / total) },
-                { label: t('media.col.news'), num: true, phone: false, render: (g) => h('div', { class: 'scale-cell' }, h('span', { class: 'scale-num' }, fmt.pct(newsOf(g))), Scale(newsOf(g), Math.min(...newsAll), Math.max(...newsAll), newsAvg, fmt.pct(newsOf(g)), fmt.pct(newsAvg))) },
-                { label: t('group.col.stance'), phone: false, render: (g) => UI.MiniStance([
-                  { label: t('stance.critical'), value: stanceOf(g)[0], color: 'var(--stance-critical)' },
-                  { label: t('stance.neutral'), value: stanceOf(g)[1], color: 'var(--stance-neutral)' },
-                  { label: t('stance.supportive'), value: stanceOf(g)[2], color: 'var(--stance-supportive)' }
-                ]) }
-              ]
-            }))
-
-          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, treemap, shareCard, volume, stanceCard, leanCard, table), protoNote())
+          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, bubbles, shareCard, stanceCard, volume, leanCard), protoNote())
         }
         draw()
       }
