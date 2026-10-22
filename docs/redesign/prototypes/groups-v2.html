@@ -7,13 +7,13 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=4">
   <link rel="stylesheet" href="assets/app.css?v=12">
-  <link rel="stylesheet" href="assets/dash.css?v=57">
+  <link rel="stylesheet" href="assets/dash.css?v=59">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=3"></script>
   <script src="assets/messages.js?v=17"></script>
-  <script src="assets/messages-v2.js?v=29"></script>
+  <script src="assets/messages-v2.js?v=30"></script>
   <script src="assets/components.js?v=6"></script>
   <script src="assets/dash.js?v=11"></script>
   <script src="assets/vendor/d3-hierarchy.min.js"></script>
@@ -85,32 +85,155 @@
       return el
     }
 
-    // Packed bubbles of owners and outlets: one circle for each group, with a circle for each of its outlets inside. The area is the collected articles.
+    // Zoomable bubbles of owners and outlets: one circle for each group, with a circle for each of its outlets inside. The area is the collected articles.
+    // A click on a group zooms to it and the panel under the chart shows the group. A click on the empty space, the back button or Esc zooms out.
+    // In a zoomed group, a click on an outlet opens its page.
     function OwnerBubbles ({ groups, total }) {
+      let focus = null
+      const sumStance = (list) => list.reduce((a, o) => [a[0] + o.stance[0], a[1] + o.stance[1], a[2] + o.stance[2]], [0, 0, 0])
+      const stanceBar = (s) => UI.MiniStance([
+        { label: t('stance.critical'), value: s[0], color: 'var(--stance-critical)' },
+        { label: t('stance.neutral'), value: s[1], color: 'var(--stance-neutral)' },
+        { label: t('stance.supportive'), value: s[2], color: 'var(--stance-supportive)' }
+      ])
+      const stanceText = (s) => { const n = s[0] + s[1] + s[2]; return n >= 30 ? t('g2.bubble.stance', { critical: fmt.pct(s[0] / n), supportive: fmt.pct(s[2] / n) }) : t('stance.few', { n: 30 }) }
+      const outletTip = (o, g) => [t('g2.tree.tip', { outlet: o.name, group: g.label, n: fmt.int(o.value), share: fmt.pct(o.value / total) }),
+        t('g2.bubble.ofgroup', { share: fmt.pct(o.value / g.value) }),
+        t('g2.bubble.news', { share: fmt.pct(o.news / (o.analysed || 1)) }),
+        stanceText(o.stance)].join('\n')
+      const groupTip = (g) => [g.key === null ? t('g2.donut.tip', { group: g.label, n: fmt.int(g.value), share: fmt.pct(g.value / total) }) : t('g2.bubble.group', { group: g.label, owner: g.owner, n: fmt.int(g.value), share: fmt.pct(g.value / total) }), t('g2.bubble.zoom')].join('\n')
+
       return fit((holder, width) => {
-        const height = Math.max(260, Math.min(420, Math.round(width * 0.68)))
+        const height = Math.max(280, Math.min(400, Math.round(width * 0.64)))
         const root = d3.hierarchy({ children: groups.map((g) => ({ g, children: g.outlets.map((o) => ({ o, g })) })) })
           .sum((d) => (d.o ? d.o.value : 0)).sort((a, b) => b.value - a.value)
         d3.pack().size([width, height]).padding((d) => (d.depth === 0 ? 10 : 2))(root)
-        const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
+        const nodeOf = new Map(root.children.map((gn) => [gn.data.g, gn]))
+        const svg = h('svg', { class: 'chart bubbles', width, height, viewBox: `0 0 ${width} ${height}`, role: 'group', 'aria-label': t('g2.tree.title') })
+        const back = h('rect', { class: 'bubble-bg', x: 0, y: 0, width, height, fill: 'transparent' })
+        const scene = h('g', {})
+        const labels = h('g', { class: 'bubble-labels' })
+        svg.append(back, scene, labels)
+        const panel = h('div', { class: 'bubble-panel', 'aria-live': 'polite' })
+
+        // The view is a circle [x, y, r] of the pack that fills the chart.
+        const fullView = [width / 2, height / 2, Math.min(width, height) / 2]
+        const fitView = (n) => [n.x, n.y, n.r * 1.08]
+        let view = focus && nodeOf.has(focus) ? fitView(nodeOf.get(focus)) : fullView
+        const k = () => Math.min(width, height) / (2 * view[2])
+        const toScreen = (x, y) => { const s = k(); return [width / 2 + (x - view[0]) * s, height / 2 + (y - view[1]) * s] }
+
+        const layers = new Map()
         root.children.forEach((gn) => {
           const g = gn.data.g
-          svg.append(tipOn(h('circle', { class: 'bubble-group', cx: gn.x, cy: gn.y, r: gn.r, fill: tint(g.color, 0.88), stroke: g.color, 'stroke-width': 1.5 }),
-            t('g2.bubble.group', { group: g.label, owner: g.owner || t('groups.lean.none'), n: fmt.int(gn.value), share: fmt.pct(gn.value / total) })))
+          const layer = h('g', { class: 'bubble-layer' })
+          layers.set(g, layer)
+          scene.append(layer)
+          const gc = h('circle', { class: 'bubble-group', cx: gn.x, cy: gn.y, r: gn.r, fill: tint(g.color, 0.88), stroke: g.color, 'stroke-width': 1.5, 'vector-effect': 'non-scaling-stroke', tabindex: 0, role: 'button', 'aria-label': groupTip(g) })
+          tipOn(gc, groupTip(g))
+          gc.addEventListener('click', (e) => { e.stopPropagation(); zoomTo(focus === g ? null : g) })
+          gc.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); zoomTo(g) } })
+          layer.append(gc)
           gn.children.forEach((on) => {
             const o = on.data.o
-            const fill = tint(g.color, g.key === null ? 0.5 : 0.35)
-            svg.append(tipOn(h('circle', { class: 'tile', cx: on.x, cy: on.y, r: on.r, fill }), t('g2.tree.tip', { outlet: o.name, group: g.label, n: fmt.int(o.value), share: fmt.pct(o.value / total) })))
-            if (on.r * 2 >= o.name.length * 6.4 + 6 && on.r >= 15) {
-              const two = on.r >= 26
-              svg.append(h('text', { class: 'tile-label', x: on.x, y: on.y + (two ? -1 : 4), 'text-anchor': 'middle', style: { fill: textOn(fill), 'font-weight': 500 } }, o.name))
-              if (two) svg.append(h('text', { class: 'tile-share', x: on.x, y: on.y + 14, 'text-anchor': 'middle', style: { fill: textOn(fill) } }, fmt.pct(o.value / total)))
-            }
+            const c = h('circle', { class: 'tile', cx: on.x, cy: on.y, r: on.r, fill: tint(g.color, g.key === null ? 0.5 : 0.35) })
+            tipOn(c, outletTip(o, g))
+            c.addEventListener('click', (e) => {
+              e.stopPropagation()
+              if (focus === g && o.slug) location.href = `outlet-v2.html?slug=${o.slug}`
+              else zoomTo(g)
+            })
+            layer.append(c)
           })
         })
+
+        // The labels are drawn in screen space after each zoom, so the text keeps its size. A label shows when it fits in its circle.
+        function drawLabels () {
+          const s = k()
+          labels.replaceChildren()
+          root.children.forEach((gn) => {
+            const g = gn.data.g
+            const zoomed = focus === g
+            if (focus && !zoomed) return
+            gn.children.forEach((on) => {
+              const o = on.data.o
+              const [x, y] = toScreen(on.x, on.y)
+              const r = on.r * s
+              const fill = tint(g.color, g.key === null ? 0.5 : 0.35)
+              if (r * 2 < o.name.length * 6.4 + 6 || r < 15) return
+              const lines = [[o.name, 'tile-label']]
+              if (r >= 26) lines.push([fmt.pct(o.value / total), 'tile-share'])
+              if (zoomed && r >= 44) lines.push([t('g2.bubble.n', { n: fmt.int(o.value) }), 'tile-share'])
+              const top = y - ((lines.length - 1) * 15) / 2 + 4
+              lines.forEach(([text, cls], i) => labels.append(h('text', { class: cls, x, y: top + i * 15, 'text-anchor': 'middle', style: { fill: textOn(fill), 'font-weight': i ? 400 : 500 } }, text)))
+            })
+            // The name of a group sits on the top edge of its circle, when the circle is large enough on screen.
+            if (!zoomed) {
+              const [x, y] = toScreen(gn.x, gn.y - gn.r)
+              if (gn.r * s >= 34) labels.append(h('text', { class: 'bubble-name', x, y: y + 14, 'text-anchor': 'middle' }, g.label.length > gn.r * s / 3.4 ? `${g.label.slice(0, Math.max(3, Math.floor(gn.r * s / 3.4) - 1))}…` : g.label))
+            }
+          })
+        }
+
+        function applyView () {
+          const s = k()
+          scene.setAttribute('transform', `translate(${width / 2},${height / 2}) scale(${s}) translate(${-view[0]},${-view[1]})`)
+          layers.forEach((el, g) => el.classList.toggle('is-dim', focus !== null && g !== focus))
+          svg.classList.toggle('is-zoomed', !!focus)
+        }
+
+        function drawPanel () {
+          if (!focus) {
+            panel.replaceChildren(h('p', { class: 'bubble-hint' }, t('g2.bubble.hint')))
+            return
+          }
+          const g = focus
+          const s = sumStance(g.outlets)
+          const news = g.outlets.reduce((a, o) => a + o.news, 0) / (g.outlets.reduce((a, o) => a + o.analysed, 0) || 1)
+          panel.replaceChildren(
+            h('div', { class: 'bubble-panel-head' },
+              h('button', { type: 'button', class: 'dcard-link', onClick: () => zoomTo(null) }, t('g2.bubble.back')),
+              h('span', { class: g.key === null ? 'dot dot-none' : 'dot', style: `--dot:${g.color}`, 'aria-hidden': 'true' }),
+              h('strong', {}, g.slug ? h('a', { class: 'quiet-link', href: `group-v2.html?g=${g.slug}` }, g.label) : g.label)),
+            h('dl', { class: 'bubble-facts' },
+              [g.key === null ? null : [t('groups.col.owner'), g.owner], g.key === null ? null : [t('groups.col.lean'), g.lean || t('groups.lean.none')],
+                [t('groups.col.articles'), `${fmt.int(g.value)} · ${fmt.pct(g.value / total)}`], [t('groups.col.outlets'), fmt.int(g.outlets.length)],
+                [t('media.col.news'), fmt.pct(news)], [t('group.col.stance'), stanceBar(s)]]
+                .filter(Boolean).map(([k, v]) => h('div', { class: 'bubble-fact' }, h('dt', {}, k), h('dd', {}, v)))))
+        }
+
+        // The zoom moves the view in 450 ms, with an ease in and out. The labels come back at the end.
+        let anim = 0
+        function zoomTo (next) {
+          focus = next
+          const from = view
+          const to = next ? fitView(nodeOf.get(next)) : fullView
+          const t0 = performance.now()
+          const ease = (x) => (x < 0.5 ? 2 * x * x : 1 - (-2 * x + 2) ** 2 / 2)
+          labels.replaceChildren()
+          UI.hideTooltip()
+          cancelAnimationFrame(anim)
+          const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          const step = (now) => {
+            const p = reduce ? 1 : Math.min(1, (now - t0) / 450)
+            const e = ease(p)
+            view = p === 1 ? to : from.map((v, i) => v + (to[i] - v) * e)
+            applyView()
+            if (p < 1) anim = requestAnimationFrame(step)
+            else drawLabels()
+          }
+          anim = requestAnimationFrame(step)
+          drawPanel()
+        }
+
+        back.addEventListener('click', () => { if (focus) zoomTo(null) })
+        svg.addEventListener('keydown', (e) => { if (e.key === 'Escape' && focus) zoomTo(null) })
+        applyView()
+        drawLabels()
+        drawPanel()
         const table = h('div', { class: 'visually-hidden' }, h('table', {}, h('caption', {}, t('g2.tree.title')),
-          h('tbody', {}, groups.flatMap((g) => g.outlets.map((o) => h('tr', {}, h('th', { scope: 'row' }, o.name), h('td', {}, t('g2.tree.tip', { outlet: o.name, group: g.label, n: fmt.int(o.value), share: fmt.pct(o.value / total) }))))))))
-        holder.replaceChildren(svg, table)
+          h('tbody', {}, groups.flatMap((g) => g.outlets.map((o) => h('tr', {}, h('th', { scope: 'row' }, o.name), h('td', {}, outletTip(o, g).replace(/\n/g, ' · '))))))))
+        holder.replaceChildren(svg, panel, table)
       })
     }
 
@@ -174,8 +297,9 @@
           const rows = [...groups.map((g) => ({ key: g.name, label: g.name, value: g.collected, color: colorOf.get(g.name) })), ...(ungroupedTotal ? [{ key: null, label: t('media2.groups.none'), value: ungroupedTotal, color: NO_GROUP }] : [])]
 
           // Row 1: the bubbles of owners and outlets, and the share of each group and of its outlets. The legend of the sunburst names the owners.
-          const treeGroups = [...groups.map((g) => ({ key: g.name, label: g.name, owner: g.owner, color: colorOf.get(g.name), outlets: g.outlets.filter((o) => o.collected > 0).map((o) => ({ name: o.name, value: o.collected })).sort((a, b) => b.value - a.value) })),
-            ...(ungroupedTotal ? [{ key: null, label: t('media2.groups.none'), owner: null, color: NO_GROUP, outlets: d.ungrouped.filter((o) => o.collected > 0).map((o) => ({ name: o.name, value: o.collected })).sort((a, b) => b.value - a.value) }] : [])]
+          const outletOf = (o) => ({ name: o.name, slug: o.slug, value: o.collected, analysed: o.analysed, news: o.news, stance: o.stance })
+          const treeGroups = [...groups.map((g) => ({ key: g.name, label: g.name, owner: g.owner, color: colorOf.get(g.name), slug: g.slug, lean: g.lean, outlets: g.outlets.filter((o) => o.collected > 0).map(outletOf).sort((a, b) => b.value - a.value) })),
+            ...(ungroupedTotal ? [{ key: null, label: t('media2.groups.none'), owner: null, color: NO_GROUP, outlets: d.ungrouped.filter((o) => o.collected > 0).map(outletOf).sort((a, b) => b.value - a.value) }] : [])]
           treeGroups.forEach((g) => { g.value = g.outlets.reduce((s, o) => s + o.value, 0) })
           const bubbles = card('c-7', cardHead(t('g2.tree.title'), null, [t('g2.tree.sub', { period }), t('g2.record', { source: d.record.source, date: fmt.date(d.record.exportedAt) })].join(' ')),
             total ? OwnerBubbles({ groups: treeGroups, total }) : emptyText(t('groups.empty')))

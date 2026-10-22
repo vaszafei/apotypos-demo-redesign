@@ -132,6 +132,24 @@
 .donut-wrap { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-4); align-items: center; }
 .donut-wrap .donut { display: block; }
 .dash .chart .bubble-group { cursor: default; }
+.dash .chart.bubbles { display: block; overflow: hidden; touch-action: manipulation; }
+.dash .chart .bubble-group, .dash .chart .bubble-layer .tile { cursor: zoom-in; transition: opacity 0.3s; }
+.dash .chart.is-zoomed .tile { cursor: pointer; }
+.dash .chart.is-zoomed .bubble-bg { cursor: zoom-out; }
+.dash .chart .bubble-group:hover, .dash .chart .bubble-group:focus-visible { stroke-width: 3; outline: none; }
+.dash .chart .bubble-layer .tile:hover { stroke: #1f1f1f; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.dash .chart .bubble-layer.is-dim { opacity: 0.25; }
+.dash .chart .bubble-name { font-size: 11px; font-weight: 600; fill: var(--text-primary); stroke: var(--surface-raised); stroke-width: 3px; paint-order: stroke; stroke-linejoin: round; pointer-events: none; }
+.dash .chart .bubble-labels text { pointer-events: none; }
+.bubble-panel { min-height: 44px; border-top: 1px solid var(--rule); padding-top: var(--space-2); font-size: var(--text-small); }
+.bubble-hint { margin: 0; color: var(--text-secondary); font-size: var(--text-caption); }
+.bubble-panel-head { display: flex; align-items: center; gap: var(--space-2); margin-bottom: 6px; }
+.bubble-panel-head .dcard-link { margin-right: var(--space-2); }
+.bubble-facts { display: flex; flex-wrap: wrap; gap: 6px var(--space-5, 24px); margin: 0; }
+.bubble-fact { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.bubble-facts dt { color: var(--text-secondary); font-size: var(--text-caption); }
+.bubble-facts dd { margin: 0; min-width: 0; }
+.bubble-fact .stacked { margin: 3px 0 0; height: 10px; width: 120px; }
 .rows-owners { gap: 6px; }
 .rows-owners li { row-gap: 0; }
 .rows-owners .row-sub { grid-column: 2 / -1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-caption); color: var(--text-secondary); }
