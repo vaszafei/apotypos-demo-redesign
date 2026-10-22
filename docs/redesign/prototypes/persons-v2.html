@@ -40,12 +40,12 @@
       id: 'persons',
       route: '/contradictions',
       dash: true,
-      title: () => t('nav.politics'),
-      breadcrumbs: () => [{ label: t('nav.politics') }, { label: t('tab.politics.persons') }],
+      title: () => t('nav.world'),
+      breadcrumbs: () => [{ label: t('nav.world') }, { label: t('tab.world.persons') }],
       render (content, { tabs }) {
         content.classList.add('dash', 'minimal')
         const paint = () => {
-          const title = t('tab.politics.persons')
+          const title = t('tab.world.persons')
           const problem = Dash.stateContent([result], { title, tabs, quiet: true })
           if (problem) { content.replaceChildren(...problem); return }
           const d = result.data

@@ -73,12 +73,12 @@
       id: 'topics',
       route: '/overton',
       dash: true,
-      title: () => t('tab.topics.overton'),
-      breadcrumbs: () => [{ label: t('nav.topics') }, { label: t('tab.topics.overton') }],
+      title: () => t('tab.world.overton'),
+      breadcrumbs: () => [{ label: t('nav.world') }, { label: t('tab.world.overton') }],
       render (content, { tabs }) {
         content.classList.add('dash', 'minimal')
         reset()
-        const bar = TopBar({ title: t('tab.topics.overton'), tabs, quiet: true })
+        const bar = TopBar({ title: t('tab.world.overton'), tabs, quiet: true })
         if (shifts.kind !== 'data') {
           content.replaceChildren(bar, shifts.kind === 'empty' ? h('div', { class: 'dash-grid' }, card('c-12', UI.EmptyState({ text: t('shifts.empty') }))) : UI.ErrorState({ onRetry: () => location.reload() }), protoNote())
           return
