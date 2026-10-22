@@ -7,7 +7,7 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=4">
   <link rel="stylesheet" href="assets/app.css?v=12">
-  <link rel="stylesheet" href="assets/dash.css?v=55">
+  <link rel="stylesheet" href="assets/dash.css?v=57">
 </head>
 <body>
   <div id="app"></div>
@@ -35,7 +35,7 @@
     function VolumeChart ({ dates, stacks, order }) {
       const totals = stacks.map((s) => s.reduce((a, b) => a + b.value, 0))
       return fit((holder, width) => {
-        const height = 280
+        const height = 220
         const pad = { top: 8, right: 4, bottom: 24, left: 44 }
         const step = niceStep(Math.max(...totals, 1) / 4)
         const top = Math.ceil(Math.max(...totals, 1) / step) * step
@@ -88,7 +88,7 @@
     // Packed bubbles of owners and outlets: one circle for each group, with a circle for each of its outlets inside. The area is the collected articles.
     function OwnerBubbles ({ groups, total }) {
       return fit((holder, width) => {
-        const height = Math.max(280, Math.min(480, Math.round(width * 0.72)))
+        const height = Math.max(260, Math.min(420, Math.round(width * 0.68)))
         const root = d3.hierarchy({ children: groups.map((g) => ({ g, children: g.outlets.map((o) => ({ o, g })) })) })
           .sum((d) => (d.o ? d.o.value : 0)).sort((a, b) => b.value - a.value)
         d3.pack().size([width, height]).padding((d) => (d.depth === 0 ? 10 : 2))(root)
@@ -116,9 +116,9 @@
 
     // Sunburst: the inner ring is the groups, the outer ring their outlets. The rings are in the order of the legend, from the top, clockwise.
     function Sunburst ({ groups, total }) {
-      const size = 196
+      const size = 176
       const c = size / 2
-      const rings = [[48, 72], [74, 97]]
+      const rings = [[44, 65], [67, 87]]
       const pad = 0.008
       const arc = (a0, a1, r0, r1) => {
         a0 += pad / 2
@@ -173,25 +173,23 @@
 
           const rows = [...groups.map((g) => ({ key: g.name, label: g.name, value: g.collected, color: colorOf.get(g.name) })), ...(ungroupedTotal ? [{ key: null, label: t('media2.groups.none'), value: ungroupedTotal, color: NO_GROUP }] : [])]
 
-          // Row 1: the bubbles of owners and outlets, with the owner of each group beside them.
+          // Row 1: the bubbles of owners and outlets, and the share of each group and of its outlets. The legend of the sunburst names the owners.
           const treeGroups = [...groups.map((g) => ({ key: g.name, label: g.name, owner: g.owner, color: colorOf.get(g.name), outlets: g.outlets.filter((o) => o.collected > 0).map((o) => ({ name: o.name, value: o.collected })).sort((a, b) => b.value - a.value) })),
             ...(ungroupedTotal ? [{ key: null, label: t('media2.groups.none'), owner: null, color: NO_GROUP, outlets: d.ungrouped.filter((o) => o.collected > 0).map((o) => ({ name: o.name, value: o.collected })).sort((a, b) => b.value - a.value) }] : [])]
           treeGroups.forEach((g) => { g.value = g.outlets.reduce((s, o) => s + o.value, 0) })
-          const owners = h('ul', { class: 'owner-list' }, treeGroups.map((g) => h('li', {},
-            h('span', { class: g.key === null ? 'dot dot-none' : 'dot', style: `--dot:${g.color}`, 'aria-hidden': 'true' }),
-            h('span', { class: 'owner-group' }, g.key === null ? g.label : h('a', { class: 'quiet-link', href: hrefOf(groups.find((x) => x.name === g.key)) }, g.label)),
-            h('span', { class: 'owner-name' }, g.key === null ? t('g2.bubble.none', { n: fmt.int(g.outlets.length) }) : `${g.owner} · ${t('g2.bubble.outlets', { n: fmt.int(g.outlets.length) })}`))))
-          const bubbles = card('c-12', cardHead(t('g2.tree.title'), null, [t('g2.tree.sub', { period }), t('g2.record', { source: d.record.source, date: fmt.date(d.record.exportedAt) })].join(' ')),
-            total ? h('div', { class: 'owners-wrap' }, OwnerBubbles({ groups: treeGroups, total }), owners) : emptyText(t('groups.empty')))
-
-          // Row 2: the share of each group and of its outlets.
+          const bubbles = card('c-7', cardHead(t('g2.tree.title'), null, [t('g2.tree.sub', { period }), t('g2.record', { source: d.record.source, date: fmt.date(d.record.exportedAt) })].join(' ')),
+            total ? OwnerBubbles({ groups: treeGroups, total }) : emptyText(t('groups.empty')))
           const shareCard = card('c-5', cardHead(t('media2.groups.title'), null, total ? t('media2.groups.known', { share: fmt.pct(grouped / total) }) : null),
             total
-              ? [h('div', { class: 'donut-wrap sun-wrap' }, Sunburst({ groups: treeGroups, total }),
-                  h('ul', { class: 'rows rows-groups' }, rows.map((r) => h('li', {},
-                    h('span', { class: r.key === null ? 'dot dot-none' : 'dot', style: `--dot:${r.color}`, 'aria-hidden': 'true' }),
-                    h('span', { class: 'row-name', title: r.label }, r.key === null ? r.label : h('a', { class: 'quiet-link', href: hrefOf(groups.find((g) => g.name === r.key)) }, r.label)),
-                    h('span', { class: 'row-value' }, fmt.pct(r.value / total))))))]
+              ? h('div', { class: 'donut-wrap sun-wrap' }, Sunburst({ groups: treeGroups, total }),
+                  h('ul', { class: 'rows rows-groups rows-owners' }, treeGroups.map((g) => {
+                    const sub = g.key === null ? t('g2.bubble.none', { n: fmt.int(g.outlets.length) }) : `${g.owner} · ${t('g2.bubble.outlets', { n: fmt.int(g.outlets.length) })}`
+                    return h('li', {},
+                      h('span', { class: g.key === null ? 'dot dot-none' : 'dot', style: `--dot:${g.color}`, 'aria-hidden': 'true' }),
+                      h('span', { class: 'row-name', title: g.label }, g.key === null ? g.label : h('a', { class: 'quiet-link', href: hrefOf(groups.find((x) => x.name === g.key)) }, g.label)),
+                      h('span', { class: 'row-value' }, fmt.pct(g.value / total)),
+                      h('span', { class: 'row-sub', title: sub }, sub))
+                  })))
               : emptyText(t('groups.empty')))
 
           // Row 3: the articles of each day, stacked by group. The largest group is at the bottom, the outlets with no group are on top.
@@ -205,7 +203,7 @@
               ? [h('span', { class: 'legend-inline' }, order.map((o) => h('span', {}, h('span', { class: 'swatch', style: { background: o.color } }), o.label))), VolumeChart({ dates: m.dates, stacks, order })]
               : emptyText(t('groups.empty')))
 
-          // Row 2: the stance of each group. Row 4: the political lean.
+          // Row 2: the stance of each group and the political lean.
           const stanceRows = groups.map((g) => {
             const s = g.outlets.reduce((a, o) => [a[0] + o.stance[0], a[1] + o.stance[1], a[2] + o.stance[2]], [0, 0, 0])
             const n = s[0] + s[1] + s[2]
@@ -230,7 +228,7 @@
           const leanTotals = new Map()
           groups.forEach((g) => { const k = g.lean || null; const e = leanTotals.get(k) || { value: 0, groups: 0 }; e.value += g.collected; e.groups++; leanTotals.set(k, e) })
           const leanRows = [...leanTotals.entries()].map(([lean, e]) => ({ lean, ...e })).sort((a, b) => (a.lean === null) - (b.lean === null) || b.value - a.value)
-          const leanCard = card('c-12', cardHead(t('g2.lean.title'), null, t('g2.lean.sub')),
+          const leanCard = card('c-5', cardHead(t('g2.lean.title'), null, t('g2.lean.sub')),
             leanRows.length
               ? h('ul', { class: 'rows' }, [...leanRows.map((r) => h('li', { style: `--bar-color:${r.lean === null ? 'var(--bar-muted)' : 'var(--series-news)'}` },
                 h('span', { class: 'row-name' }, r.lean || t('groups.lean.none')), h('span', { class: 'row-value' }, t('g2.lean.value', { share: fmt.pct(r.value / total), groups: fmt.int(r.groups) })),
@@ -238,7 +236,7 @@
               ungroupedTotal ? h('li', { style: '--bar-color:var(--bar-muted)' }, h('span', { class: 'row-name' }, t('media2.groups.none')), h('span', { class: 'row-value' }, fmt.pct(ungroupedTotal / total)), UI.HBar(ungroupedTotal, leanRows[0].value)) : null])
               : emptyText(t('groups.empty')))
 
-          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, bubbles, shareCard, stanceCard, volume, leanCard), protoNote())
+          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, bubbles, shareCard, stanceCard, leanCard, volume), protoNote())
         }
         draw()
       }
