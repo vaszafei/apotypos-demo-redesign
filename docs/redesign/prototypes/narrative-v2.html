@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Απότυπος</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css?v=4">
+  <link rel="stylesheet" href="assets/app.css?v=12">
+  <link rel="stylesheet" href="assets/dash.css?v=66">
+  <link rel="stylesheet" href="assets/politics.css?v=1">
+  <link rel="stylesheet" href="assets/world.css?v=1">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/icons.js?v=3"></script>
+  <script src="assets/messages.js?v=17"></script>
+  <script src="assets/messages-v2.js?v=31"></script>
+  <script src="assets/messages-politics.js?v=2"></script>
+  <script src="assets/messages-world.js?v=1"></script>
+  <script src="assets/components.js?v=7"></script>
+  <script src="assets/dash.js?v=11"></script>
+  <script src="assets/politics.js?v=1"></script>
+  <script src="assets/world.js?v=1"></script>
+  <script src="assets/shell.js?v=32"></script>
+  <script src="data/narrative.js?v=1"></script>
+  <script>
+    // Αναλύσεις, Ο πόλεμος της αφήγησης (#36): the overview of the Gaza and Israel work. It reads the snapshot of the live /narrative page (14 Oct 2026).
+    // The cards of Γάζα and Ισραήλ are short here and link to their tabs.
+    const { t, fmt, h, load, safeUrl } = App
+    const { reset, card, cardHead, Stat, TopBar } = Dash
+    const { Rows, PairRows, ToneBar, pctOf, signed } = Politics
+    const { Verdict, Chips, StackColumns, dec1, el } = World
+    // The label of a moment without its date: «16 Σεπ 2025: Επιτροπή ΟΗΕ: γενοκτονία» gives «Επιτροπή ΟΗΕ: γενοκτονία».
+    const tail = (label) => el(label).slice(el(label).indexOf(':') + 1).trim()
+    const result = load('narrative', ['moments', 'snapshot', 'cases', 'statements'], (b) => b.moments)
+    // The four voices of «γενοκτονία»: the outlet's own voice, attributed to a person, the legal frame, only inside quotes.
+    const VOICES = [['own', 'var(--ink)'], ['attrib', 'var(--side-a)'], ['legal', 'var(--emph-more)'], ['quoted', 'var(--bar-muted)']]
+    const TERMS = ['genocide', 'occupation', 'war_crimes', 'terrorism', 'massacre', 'ethnic_cleansing', 'self_defense', 'famine']
+    const CONTEXTS = ['gaza', 'gr_defense_energy', 'gr_diplomacy', 'gr_solidarity']
+    const ACHILLES = ['tech', 'cost', 'sovereignty', 'turkey', 'europe', 'gaza']
+    let kind = 'all'
+    let picked = 'G02'
+    let pickedOutlet = ''
+    let onlyReviewed = false
+    let moment = null
+
+    Shell.start({
+      id: 'narrative',
+      route: '/narrative',
+      dash: true,
+      title: () => t('nav.world'),
+      breadcrumbs: () => [{ label: t('nav.world') }, { label: t('tab.world.narrative') }],
+      render (content, { tabs }) {
+        content.classList.add('dash', 'minimal')
+        const title = t('tab.world.narrative')
+        const problem = Dash.stateContent([result], { title, tabs, quiet: true })
+        if (problem) { content.replaceChildren(...problem); return }
+        const d = result.data
+        const s = d.snapshot
+        const bar = TopBar({ title, tabs, quiet: true })
+        const first = d.moments[0]
+        // The peak of the outlet's own voice (the UN Commission, Sep 2025 in this snapshot).
+        const un = d.moments.reduce((a, m) => (m.genocide_pct.own > a.genocide_pct.own ? m : a))
+
+        const stats = [
+          Stat({ label: t('nar.stat.genocide'), value: `${dec1(first.genocide_pct.own)}% → ${dec1(un.genocide_pct.own)}%`, sub: t('nar.stat.genocide.sub', { a: fmt.date(first.start, { month: 'short', year: 'numeric' }), b: fmt.date(un.start, { month: 'short', year: 'numeric' }) }) }),
+          Stat({ label: t('nar.stat.voices'), value: `${dec1(s.voices.isr)}% / ${dec1(s.voices.pal)}%`, sub: t('nar.stat.voices.sub') }),
+          Stat({ label: t('nar.stat.achilles'), value: `${dec1(s.achilles.mention_gaza)}%`, sub: t('nar.stat.achilles.sub', { n: fmt.int(s.achilles.n) }) }),
+          Stat({ label: t('nar.stat.cases'), value: fmt.int(d.cases.length), sub: t('nar.stat.cases.sub') })
+        ]
+        stats.forEach((x) => x.classList.replace('c-4', 'c-3'))
+
+        // 1. Ποιος το είπε, ποιος το έγραψε: statements × outlets, the source of one statement and its archive finds.
+        const matrixHolder = h('div', {})
+        const panelHolder = h('div', { class: 'source-panel' })
+        const statements = () => d.statements.filter((x) => kind === 'all' || x.kind === kind)
+        const cellOf = (c) => {
+          if (!c.articles) return { text: '∅', cls: 'cell-none', tip: t('nar.cell.nodata') }
+          if (!c.n) return { text: '—', cls: 'cell-zero', tip: t('nar.cell.zero') }
+          return { text: c.ok ? `${c.n}✓` : String(c.n), cls: c.ok ? 'cell-ok' : 'cell-hit', tip: t('nar.cell.hit', { n: c.n, ok: c.ok }), n: c.n }
+        }
+        const drawMatrix = () => {
+          const list = statements()
+          if (!list.some((x) => x.id === picked)) picked = list[0]?.id
+          const max = Math.max(1, ...list.flatMap((x) => Object.values(x.cells).map((c) => c.n)))
+          matrixHolder.replaceChildren(h('div', { class: 'table-scroll' }, h('table', { class: 'intent-table' },
+            h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, t('nar.who.statement')), d.outlets.map((o) => h('th', { scope: 'col', class: 'turned' }, h('span', {}, o))))),
+            h('tbody', {}, list.map((x) => h('tr', { class: x.id === picked ? 'is-picked' : null, onClick: () => { picked = x.id; pickedOutlet = ''; drawMatrix(); drawPanel() } },
+              h('th', { scope: 'row' }, h('button', { type: 'button', class: 'row-button', 'aria-pressed': String(x.id === picked) },
+                h('strong', {}, el(x.title)),
+                h('span', { class: 'quote-meta' }, `${x.id} · ${fmt.date(x.date, { day: '2-digit', month: '2-digit', year: '2-digit' })} · ${x.speaker}`, x.kind === 'response' ? h('span', { class: 'pill' }, t('nar.who.response')) : null))),
+              d.outlets.map((o) => {
+                const c = cellOf(x.cells[o])
+                const k = c.n ? 0.15 + 0.6 * (c.n / max) : 0
+                return h('td', { class: `intent-cell ${c.cls}`, title: `${o}: ${c.tip}`, style: c.n ? `--k:${Math.round(k * 100)}%` : null,
+                  onClick: (e) => { if (!c.n) return; e.stopPropagation(); picked = x.id; pickedOutlet = o; drawMatrix(); drawPanel() } }, c.text)
+              })))))))
+        }
+        const drawPanel = () => {
+          const x = d.statements.find((y) => y.id === picked)
+          if (!x) { panelHolder.replaceChildren(); return }
+          const finds = x.matches.filter((m) => (!pickedOutlet || m.outlet === pickedOutlet) && (!onlyReviewed || m.reviewed))
+          const outlets = [...new Set(x.matches.map((m) => m.outlet))].sort()
+          panelHolder.replaceChildren(
+            h('p', { class: 'quote-meta' }, `${x.id} · ${fmt.date(x.date)} · ${t('nar.who.source')}`),
+            h('p', { class: 'source-speaker' }, h('strong', {}, x.speaker), ' · ', el(x.role)),
+            h('blockquote', { class: 'source-quote' }, `«${x.greek}»`),
+            h('p', { class: 'muted-text' }, el(x.context)),
+            h('p', { class: 'source-links' },
+              safeUrl(x.source) ? h('a', { class: 'quiet-link', href: x.source, target: '_blank', rel: 'noopener' }, t(`nar.who.check.${x.verification}`), ' ↗') : null,
+              h('span', { class: 'muted-text' }, x.locator),
+              safeUrl(x.original) ? h('a', { class: 'quiet-link', href: x.original, target: '_blank', rel: 'noopener' }, t('nar.who.original'), ' ↗') : null),
+            h('div', { class: 'panel-sep' }),
+            h('p', { class: 'rows-caption' }, t('nar.who.finds', { from: fmt.date(x.date), to: fmt.date(x.end), days: x.days })),
+            h('div', { class: 'panel-tools' },
+              Dash.select('', pickedOutlet, [{ value: '', label: t('nar.who.alloutlets') }, ...outlets.map((o) => ({ value: o, label: o }))], (v) => { pickedOutlet = v; drawPanel() }),
+              h('label', { class: 'check-inline' }, h('input', { type: 'checkbox', checked: onlyReviewed, onChange: (e) => { onlyReviewed = e.target.checked; drawPanel() } }), t('nar.who.onlyok'))),
+            h('p', { class: 'muted-text' }, t('nar.who.count', { n: x.nMatches, ok: x.nReviewed })),
+            finds.length
+              ? h('ul', { class: 'quote-list' }, finds.map((m) => h('li', {},
+                h('span', { class: 'quote-meta' }, m.outlet, ' · ', fmt.date(m.date), h('span', { class: `pill ${m.reviewed ? 'pill-ok' : ''}` }, t(m.reviewed ? 'nar.who.reviewed' : 'nar.who.candidate')), m.week ? null : h('span', { class: 'pill' }, t('nar.who.later'))),
+                safeUrl(m.url) ? h('a', { class: 'quiet-link', href: m.url, target: '_blank', rel: 'noopener' }, m.title) : m.title,
+                h('span', { class: 'quote-text' }, m.excerpt))))
+              : Dash.emptyText(t('nar.who.none')))
+        }
+        drawMatrix()
+        drawPanel()
+        const kindSwitch = UI.SegmentedControl({ label: t('nar.who.kind'), value: kind, options: ['all', 'statement', 'response'].map((k) => ({ value: k, label: t(`nar.who.kind.${k}`) })),
+          onChange: (v) => { kind = v; kindSwitch.querySelectorAll('button').forEach((b, i) => b.setAttribute('aria-pressed', String(['all', 'statement', 'response'][i] === v))); drawMatrix(); drawPanel() } })
+        const whoCard = card('c-12', cardHead(t('nar.who.title'), kindSwitch, t('nar.who.info', { n: fmt.int(d.searched) })),
+          h('p', { class: 'dcard-sub' }, t('nar.who.sub', { s: d.statements.length, o: d.outlets.length, ok: d.statements.reduce((a, x) => a + x.nReviewed, 0) })),
+          h('div', { class: 'who-grid' }, matrixHolder, panelHolder),
+          h('p', { class: 'dcard-sub' }, t('nar.who.key')))
+
+        // 2. Τρία χρόνια σε 15 στιγμές: «γενοκτονία» by voice in the week after each moment.
+        const momentNote = h('div', { class: 'moment-note' })
+        const drawMoment = (i) => {
+          moment = i
+          const m = d.moments[i]
+          const ex = m.own_example
+          momentNote.replaceChildren(
+            h('p', { class: 'quote-meta' }, h('strong', {}, el(m.label)), ' · ', t('nar.moments.n', { n: fmt.int(m.n) }), ' · ',
+              VOICES.map(([k]) => `${t(`nar.voice.${k}`)} ${dec1(m.genocide_pct[k])}%`).join(' · '), ' · ', t('nar.moments.headlines', { n: m.genocide.headline })),
+            ex ? h('p', { class: 'dcard-sub' }, t('nar.moments.example'), ' ', h('span', { class: 'quote-text' }, `«${ex.sentence}»`), ' — ', ex.outlet, ': ',
+              safeUrl(ex.url) ? h('a', { class: 'quiet-link', href: ex.url, target: '_blank', rel: 'noopener' }, ex.title) : ex.title) : null)
+        }
+        drawMoment(d.moments.indexOf(un))
+        const short = (m) => fmt.date(m.start, { month: '2-digit', year: '2-digit' })
+        const momentsCard = card('c-12', cardHead(t('nar.moments.title'), h('span', { class: 'stance-key' }, VOICES.map(([k, c]) => h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: c } }), t(`nar.voice.${k}`)))), t('nar.moments.info')),
+          h('p', { class: 'dcard-sub' }, t('nar.moments.sub', { n: fmt.int(d.moments.reduce((a, m) => a + m.n, 0)), o: d.outlets.length })),
+          StackColumns({
+            labels: d.moments.map(short),
+            below: d.moments.map((m) => tail(m.label)),
+            top: d.moments.map((m) => `${dec1(m.genocide_any_pct)}%`),
+            series: VOICES.map(([k, color]) => ({ color, values: d.moments.map((m) => m.genocide_pct[k]) })),
+            tips: d.moments.map((m) => `${el(m.label)} · n=${fmt.int(m.n)} · ${VOICES.map(([k]) => `${t(`nar.voice.${k}`)} ${dec1(m.genocide_pct[k])}%`).join(' · ')}`),
+            picked: () => moment,
+            onPick: drawMoment,
+            yFormat: (v) => `${v}%`,
+            height: 260,
+            aria: t('nar.moments.title')
+          }),
+          momentNote)
+
+        // The heat table: «γενοκτονία» in the outlet's own voice, outlet × moment. An empty cell has fewer than 15 articles.
+        const heatRows = d.outlets.map((o) => {
+          const cells = d.moments.map((m) => { const x = m.outlets[o]; return x && x.n >= 15 ? (x.own / x.n) * 100 : null })
+          const n = d.moments.reduce((a, m) => a + (m.outlets[o]?.n || 0), 0)
+          const own = d.moments.reduce((a, m) => a + (m.outlets[o]?.own || 0), 0)
+          return { o, cells, total: n ? (own / n) * 100 : 0 }
+        }).sort((a, b) => b.total - a.total)
+        const heatMax = Math.max(...heatRows.flatMap((r) => r.cells.filter((v) => v !== null)), 1)
+        const heatCard = card('c-12', cardHead(t('nar.heat.title'), null, t('nar.heat.info')),
+          h('p', { class: 'dcard-sub' }, t('nar.heat.sub')),
+          h('div', { class: 'table-scroll' }, h('table', { class: 'heat-table' },
+            h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, t('nar.col.outlet')), d.moments.map((m) => h('th', { scope: 'col', title: el(m.label) }, short(m))), h('th', { scope: 'col', class: 'num' }, t('nar.col.total')))),
+            h('tbody', {}, heatRows.map((r) => h('tr', {},
+              h('th', { scope: 'row' }, r.o, d.sitemapOutlets.includes(r.o) ? '*' : ''),
+              r.cells.map((v, i) => h('td', { class: 'heat-cell', title: `${r.o} · ${el(d.moments[i].label)} · ${v === null ? t('nar.heat.few') : `${dec1(v)}%`}`,
+                style: v ? `--k:${Math.round(Math.min(1, v / heatMax) * 85)}%` : null }, v === null ? '' : Math.round(v))),
+              h('td', { class: 'num' }, `${dec1(r.total)}%`)))))),
+          h('p', { class: 'dcard-sub' }, t('nar.heat.sitemap', { list: d.sitemapOutlets.join(', ') })))
+
+        // 3. and 4. Ποιος μιλά and Οι λέξεις: short versions of the Γάζα cards, with a link to the tab.
+        const names = [t('gz.side.isr'), t('gz.side.pal')]
+        const pair = (label, a, b) => ({ label, a: { value: a, text: `${dec1(a)}%` }, b: { value: b, text: `${dec1(b)}%` } })
+        const link = (href, key) => h('a', { class: 'dcard-link', href }, t(key), ' →')
+        const voicesCard = card('c-6', cardHead(t('nar.voices.title'), link('gaza-v2.html', 'nar.more.gaza'), t('nar.voices.info')),
+          h('p', { class: 'dcard-sub' }, t('nar.voices.sub', { n: fmt.int(s.n), from: fmt.date(s.window.from), to: fmt.date(s.window.to) })),
+          PairRows([pair(t('nar.voices.any'), s.voices.isr, s.voices.pal), pair(t('nar.voices.first'), s.voices.first_isr, s.voices.first_pal), pair(t('nar.voices.named'), s.named.isr, s.named.pal)], { names, colors: ['var(--side-a)', 'var(--side-b)'], max: 100 }),
+          h('p', { class: 'dcard-sub' }, t('nar.voices.note', { civ: dec1(s.voices.pal_civilian), un: dec1(s.voices.un), oct7: dec1(s.context.oct7), occ: dec1(s.context.occupation), hamas: dec1(s.context.hamas_label) })))
+        const termMax = Math.max(...TERMS.flatMap((k) => [s.terms_own[k], s.terms_quoted[k]]))
+        const wordsCard = card('c-6', cardHead(t('nar.words.title'), link('language-v2.html', 'nar.more.language'), t('nar.words.info')),
+          h('p', { class: 'dcard-sub' }, t('nar.words.sub')),
+          h('span', { class: 'stance-key' },
+            h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: 'var(--ink)' } }), t('nar.words.own')),
+            h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: 'var(--bar-muted)' } }), t('nar.words.quoted'))),
+          h('ul', { class: 'term-pairs' }, TERMS.map((k) => h('li', {},
+            h('span', { class: 'row-name' }, t(`nar.term.${k}`)),
+            h('span', { class: 'term-bars' },
+              h('span', { class: 'term-bar', style: `width:${(s.terms_own[k] / termMax) * 100}%;--seg:var(--ink)`, title: `${t('nar.words.own')} ${dec1(s.terms_own[k])}%` }),
+              h('span', { class: 'term-bar', style: `width:${(s.terms_quoted[k] / termMax) * 100}%;--seg:var(--bar-muted)`, title: `${t('nar.words.quoted')} ${dec1(s.terms_quoted[k])}%` })),
+            h('span', { class: 'row-value' }, `${dec1(s.terms_own[k])}% · ${dec1(s.terms_quoted[k])}%`)))))
+
+        // 5. Δύο εικόνες του Ισραήλ: the same state in four contexts, and what the 302 articles on the Achilles Shield discussed.
+        const imagesCard = card('c-8', cardHead(t('nar.images.title'), link('israel-v2.html', 'nar.more.israel'), t('nar.images.info')),
+          h('p', { class: 'dcard-sub' }, t('nar.images.sub')),
+          h('div', { class: 'table-scroll' }, h('table', { class: 'data-table images-table' },
+            h('thead', {}, h('tr', {}, ['ctx', 'n', 'ally', 'strategic', 'occupier', 'tone', 'net'].map((k) => h('th', { scope: 'col', class: k === 'ctx' || k === 'tone' ? null : 'num' }, t(`nar.images.col.${k}`))))),
+            h('tbody', {}, CONTEXTS.map((k) => { const x = s.israel_by_context[k]; return h('tr', {},
+              h('th', { scope: 'row' }, t(`nar.ctx.${k}`)), h('td', { class: 'num' }, fmt.int(x.n)),
+              h('td', { class: 'num' }, `${dec1(x.ally)}%`), h('td', { class: 'num' }, `${dec1(x.strategic)}%`), h('td', { class: 'num' }, `${dec1(x.occupier)}%`),
+              h('td', { class: 'tone-td' }, ToneBar(x.tone)), h('td', { class: 'num strong' }, signed(x.net, 0))) })))),
+          h('p', { class: 'dcard-sub' }, t('nar.images.note', { occ: dec1(s.israel_by_context.gaza.occupier), ally: dec1(s.israel_by_context.gr_defense_energy.ally), str: dec1(s.israel_by_context.gr_defense_energy.strategic), g: dec1(s.achilles.mention_gaza) })))
+        const achillesCard = card('c-4', cardHead(t('nar.achilles.title'), null, t('nar.achilles.info')),
+          h('p', { class: 'dcard-sub' }, t('nar.achilles.sub', { n: fmt.int(s.achilles.n), date: fmt.date(s.achilles.signed) })),
+          Rows(ACHILLES.map((k) => ({ label: t(`nar.ach.${k}`), value: s.achilles.issues[k], text: `${dec1(s.achilles.issues[k])}%`, color: k === 'gaza' ? 'var(--side-b)' : null })), { max: 50 }))
+
+        // 6. Επιρροή, λόμπι, ιδιοκτησία: a time strip with the moments and the cases, then one card for each case.
+        const cases = [...d.cases].sort((a, b) => a.date.localeCompare(b.date))
+        const strip = World.TimeStrip({
+          from: '2023-01-01', to: '2026-12-31',
+          moments: d.moments.map((m) => ({ date: m.start, label: el(m.label) })),
+          cases: cases.map((c, i) => ({ date: c.date, label: c.title, n: i + 1 })),
+          labels: { moment: t('nar.cases.moment'), case: t('nar.cases.case') }
+        })
+        const casesHead = card('c-12 card-flat', cardHead(t('nar.cases.title'), null, t('nar.cases.info')), h('p', { class: 'dcard-sub' }, t('nar.cases.sub')), strip)
+        const caseCards = cases.map((c, i) => card('c-4 case-card',
+          h('p', { class: 'quote-meta' }, h('span', { class: 'marker-num' }, String(i + 1)), t(`nar.kind.${c.kind}`), ' · ', fmt.date(c.date)),
+          h('h2', { class: 'case-title' }, c.title),
+          h('details', { class: 'case-summary' }, h('summary', {}, t('nar.cases.summary')), h('p', {}, c.summary)),
+          h('ul', { class: 'claim-list' }, c.claims.map((x) => h('li', {}, Verdict(x.status, t(`nar.verdict.${x.status}`)), h('span', {}, h('strong', {}, x.text), x.note ? h('span', { class: 'muted-text' }, ` — ${x.note}`) : null)))),
+          c.numbers ? h('p', { class: 'dcard-sub' }, t('nar.cases.numbers', { a: fmt.int(c.numbers.articles), tv: fmt.int(c.numbers.tv_clips), w: c.numbers.window })) : null,
+          c.pieces ? h('details', { class: 'case-summary' }, h('summary', {}, t('nar.cases.pieces', { n: c.pieces.length })),
+            h('ul', { class: 'quote-list' }, c.pieces.map((p) => h('li', {}, h('span', { class: 'quote-meta' }, fmt.date(p.date), ' · ', t('nar.cases.piece', { g: p.gaza, t: p.turkey }), ' · ', t(p.disclosure ? 'nar.cases.disc.yes' : 'nar.cases.disc.no')), p.title))),
+            c.pieces_note ? h('p', { class: 'dcard-sub' }, c.pieces_note) : null) : null,
+          c.covered.length ? h('div', {}, h('p', { class: 'rows-caption' }, t('nar.cases.covered', { n: c.covered.length })), Chips(c.covered.map((x) => ({ label: x.outlet, n: x.n })))) : null,
+          c.silent_checked?.length ? h('div', {}, h('p', { class: 'rows-caption' }, t('nar.cases.silent', { n: c.silent_checked.length })), Chips(c.silent_checked.map((o) => ({ label: o })), 'chips-quiet')) : null,
+          c.silent_note ? h('p', { class: 'dcard-sub' }, c.silent_note) : null,
+          h('p', { class: 'source-links' }, c.sources.filter(([, u]) => safeUrl(u)).map(([label, u]) => h('a', { class: 'quiet-link', href: u, target: '_blank', rel: 'noopener' }, label, ' ↗')))))
+
+        // 7. Σε σύγκριση με τη διεθνή έρευνα: the Greek press beside studies of British and German media.
+        const research = d.research.map((r) => {
+          const max = Math.max(...(r.bars || []).map((b) => b.v), 1)
+          return card(r.bars?.length ? 'c-4 research-card' : 'c-6 research-card', cardHead(el([r.q_el, r.q_en])),
+            h('p', { class: 'research-verdict' }, el([r.verdict_el, r.verdict_en])),
+            r.bars?.length ? h('ul', { class: 'rows research-rows' }, r.bars.map((b) => h('li', { class: b.ours ? 'is-ours' : null, style: b.ours ? '--bar-color:var(--ink)' : '--bar-color:var(--bar-muted)' },
+              h('span', { class: 'row-name' }, el([b.l, b.le])), h('span', { class: 'row-value' }, r.theme === 'voices' ? `${fmt.dec(b.v)}×` : `${String(b.v).replace('.', ',')}%`), UI.HBar(b.v, max)))) : null,
+            r.bars?.length ? h('p', { class: 'dcard-sub' }, el([r.bars_unit_el, r.bars_unit_en])) : null,
+            h('p', { class: 'dcard-sub' }, el([r.ours_el, r.ours_en])),
+            h('details', { class: 'case-summary' }, h('summary', {}, t('nar.research.sources')),
+              h('ul', { class: 'quote-list' }, (r.rows || []).map((x) => h('li', {}, h('span', { class: 'quote-meta' }, x.who), el([x.el, x.en]), safeUrl(x.url) ? h('a', { class: 'quiet-link', href: x.url, target: '_blank', rel: 'noopener' }, t('nar.research.open'), ' ↗') : null))),
+              r.note_el ? h('p', { class: 'dcard-sub' }, el([r.note_el, r.note_en])) : null))
+        })
+        const researchHead = h('p', { class: 'section-lead c-12' }, h('strong', {}, t('nar.research.title')), ' · ', t('nar.research.sub'))
+
+        // 8. Τι δεν ξέρουμε.
+        const limitsCard = card('c-12', cardHead(t('nar.limits.title')),
+          h('ul', { class: 'limits-list' }, [1, 2, 3, 4, 5].map((i) => h('li', {}, t(`nar.limits.${i}`)))),
+          h('p', { class: 'dcard-sub' }, t('nar.limits.data', { date: fmt.date(d.generated) })))
+
+        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...stats, whoCard, momentsCard, heatCard, voicesCard, wordsCard, imagesCard, achillesCard,
+          casesHead, ...caseCards, researchHead, ...research, limitsCard),
+        h('p', { class: 'proto-note' }, t('nar.note')))
+      }
+    })
+    reset()
+  </script>
+</body>
+</html>

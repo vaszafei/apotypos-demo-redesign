@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="el" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>html,body{margin:0}</style>
+</head>
+<body>
+<title>Marseille Claim Tracker</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap">
+<style>
+
+/* Layout: one reading column of analysis panels; summary strip first, method note above results, evidence last (Apotypos convention). */
+:root {
+  --bg: #F6F4EF; --surface: #FFFEFB; --surface-2: #EDEAE3; --line: #DDD9D0; --line-strong: #C9C4B9;
+  --ink: #171717; --ink-soft: #404040; --muted: #686A70; --subtle: #99978F;
+  --accent: #315CFF; --accent-soft: #EEF1FF;
+  --f-report: #6B7280; --f-blame: #E85D3F; --f-explain: #16846B; --f-react: #D59524;
+  --f-report-soft: #EEEFF1; --f-blame-soft: #FFF0EB; --f-explain-soft: #E8F7F2; --f-react-soft: #FFF5DD;
+  --sans: "Geist", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --serif: "Source Serif 4", ui-serif, Georgia, serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #131311; --surface: #1B1A18; --surface-2: #24231F; --line: #2F2D29; --line-strong: #44413B;
+  --ink: #EDEBE6; --ink-soft: #CFCCC4; --muted: #9C9A93; --subtle: #77756E;
+  --accent: #7C95FF; --accent-soft: #1E2440;
+  --f-report: #9CA3AF; --f-blame: #F07A5F; --f-explain: #3FB896; --f-react: #E2AD4A;
+  --f-report-soft: #23252A; --f-blame-soft: #3A211B; --f-explain-soft: #15302A; --f-react-soft: #352A15;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #131311; --surface: #1B1A18; --surface-2: #24231F; --line: #2F2D29; --line-strong: #44413B;
+  --ink: #EDEBE6; --ink-soft: #CFCCC4; --muted: #9C9A93; --subtle: #77756E;
+  --accent: #7C95FF; --accent-soft: #1E2440;
+  --f-report: #9CA3AF; --f-blame: #F07A5F; --f-explain: #3FB896; --f-react: #E2AD4A;
+  --f-report-soft: #23252A; --f-blame-soft: #3A211B; --f-explain-soft: #15302A; --f-react-soft: #352A15;
+  color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 32px 64px }
+.wrap { max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px }
+h1, h2 { font-family: var(--serif); font-weight: 600; text-wrap: balance; margin: 0; letter-spacing: -0.01em }
+h1 { font-size: clamp(28px, 4.4vw, 40px); line-height: 1.12 }
+h2 { font-size: 21px; line-height: 1.25 }
+p { margin: 0 }
+.eyebrow { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted) }
+.lede { color: var(--ink-soft); max-width: 68ch; font-size: 16px }
+.muted { color: var(--muted) }
+.small { font-size: 13px }
+.num { font-variant-numeric: tabular-nums }
+header { display: flex; flex-direction: column; gap: 10px; padding-bottom: 4px }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0 }
+.panel-head { display: flex; flex-direction: column; gap: 4px }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px }
+@media (max-width: 820px) { .grid2 { grid-template-columns: minmax(0, 1fr) } }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden }
+.kpi { padding: 14px 16px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); margin: 0 -1px -1px 0; display: flex; flex-direction: column; gap: 2px }
+.kpi b { font-family: var(--serif); font-size: 30px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums }
+.kpi span { font-size: 12.5px; color: var(--muted) }
+.note { border-left: 3px solid var(--line-strong); padding: 10px 14px; background: var(--surface-2); border-radius: 0 8px 8px 0; font-size: 13.5px; color: var(--ink-soft); display: flex; flex-direction: column; gap: 6px }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--ink-soft) }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px }
+/* cluster bars */
+.bars { display: flex; flex-direction: column; gap: 2px }
+.bar-row { display: grid; grid-template-columns: minmax(150px, 290px) minmax(0, 1fr) 76px; gap: 12px; align-items: center; padding: 5px 6px; border-radius: 6px; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; width: 100% }
+.bar-row:hover { background: var(--surface-2) }
+.bar-row[aria-pressed="true"] { background: var(--accent-soft) }
+.bar-row:focus-visible, .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px }
+.bar-label { font-size: 13.5px; line-height: 1.3 }
+.track { height: 14px; background: var(--surface-2); border-radius: 3px; overflow: hidden }
+.fill { height: 100%; border-radius: 3px }
+.bar-val { font-family: var(--mono); font-size: 12.5px; text-align: right; color: var(--ink-soft) }
+@media (max-width: 560px) { .bar-row { grid-template-columns: minmax(0, 1fr) 64px; row-gap: 4px } .bar-row .track { grid-column: 1 / -1; grid-row: 2 } }
+/* heatmap */
+.scroll { overflow-x: auto }
+table { border-collapse: collapse; width: 100%; font-size: 13px }
+th { font-weight: 500; color: var(--muted); text-align: left; padding: 6px 8px; font-size: 12px; white-space: nowrap }
+td { padding: 4px; }
+.heat td.cell { text-align: center; font-family: var(--mono); font-size: 12px; border-radius: 4px; min-width: 64px; padding: 7px 4px }
+.heat td.name { padding: 6px 8px; white-space: nowrap; font-size: 13px }
+.echo td, .echo th { border-bottom: 1px solid var(--line); padding: 9px 8px; vertical-align: top }
+.echo td.j { font-family: var(--mono); white-space: nowrap }
+.svgchart { width: 100%; height: auto; display: block }
+.svgchart text { fill: var(--muted); font-family: var(--mono); font-size: 11px }
+/* evidence */
+.chips { display: flex; flex-wrap: wrap; gap: 6px }
+.chip { font: inherit; font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink-soft); cursor: pointer }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink) }
+.posts { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px }
+.post { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; background: var(--bg) }
+.post .who { font-weight: 600; font-size: 13.5px }
+.post .txt { font-size: 13.5px; color: var(--ink-soft); overflow-wrap: anywhere }
+.post .meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; color: var(--muted) }
+.pill { font-family: var(--mono); font-size: 11px; padding: 1px 7px; border-radius: 999px }
+a { color: var(--accent) }
+.filters { display: flex; flex-direction: column; gap: 8px }
+.filter-row { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 10px; align-items: start }
+.filter-label { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding-top: 6px }
+@media (max-width: 560px) { .filter-row { grid-template-columns: minmax(0, 1fr); gap: 4px } }
+.sig { font-family: var(--mono); font-size: 11px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--ink-soft) }
+.sig.strong { border-color: var(--f-blame); color: var(--f-blame) }
+.score { font-family: var(--mono); font-size: 11.5px; font-weight: 500; padding: 1px 8px; border-radius: 999px; background: var(--surface-2); color: var(--ink-soft) }
+.score.hi { background: var(--f-blame-soft); color: var(--f-blame) }
+.pair { display: flex; flex-direction: column; gap: 3px }
+.pair .track { height: 9px }
+.limits { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; color: var(--ink-soft); font-size: 14px; max-width: 80ch }
+@media (prefers-reduced-motion: no-preference) { .fill { transition: width .5s ease } }
+
+.verdict { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px }
+@media (max-width: 760px) { .verdict { grid-template-columns: minmax(0, 1fr) } }
+.vbox { border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 8px; background: var(--bg); min-width: 0 }
+.vbox h3 { margin: 0; font-family: var(--serif); font-size: 16px }
+.vbox ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; color: var(--ink-soft) }
+.tag { font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; align-self: flex-start }
+.t-ok { background: var(--f-explain-soft); color: var(--f-explain) }
+.t-no { background: var(--f-blame-soft); color: var(--f-blame) }
+.t-src { background: var(--f-report-soft); color: var(--f-report) }
+.tl { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column }
+.tl li { display: grid; grid-template-columns: 70px 14px minmax(0, 1fr); gap: 10px; align-items: start }
+.tl .d { font-family: var(--mono); font-size: 12px; color: var(--muted); padding-top: 3px; text-align: right }
+.tl .dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 5px; position: relative }
+.tl li:not(:last-child) .dot::after { content: ""; position: absolute; left: 5px; top: 14px; width: 2px; height: calc(100% + 30px); background: var(--line) }
+.tl .body { padding-bottom: 16px; font-size: 13.5px; color: var(--ink-soft) }
+.tl .body b { color: var(--ink) }
+.carry td, .carry th { border-bottom: 1px solid var(--line); padding: 8px; vertical-align: top; font-size: 13px }
+.chip2 { font-family: var(--mono); font-size: 11px; padding: 1px 8px; border-radius: 999px; white-space: nowrap }
+.c-fact { background: var(--f-blame-soft); color: var(--f-blame) }
+.c-attr { background: var(--f-react-soft); color: var(--f-react) }
+.c-flag { background: var(--f-react-soft); color: var(--f-react); outline: 1px dashed var(--f-react) }
+.c-deny { background: var(--f-explain-soft); color: var(--f-explain) }
+.c-dmg { background: var(--f-report-soft); color: var(--f-report) }
+.c-counter { background: var(--accent-soft); color: var(--accent) }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Apotypos · claim tracker · France, Oct 2026</div>
+    <h1>"Only Jewish shops were burned in Marseille": where the claim came from and who carried it</h1>
+    <p class="lede">On 17 October a French TV journalist said rioters in one Marseille street burned every Jewish-owned shop and spared the Muslim-owned ones. This page follows that claim from French TV to X, the Greek and Israeli press and Facebook, and sets out what the sources say about it.</p>
+  </header>
+
+  <section class="kpis" id="kpis" aria-label="Summary"></section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div class="eyebrow">Verdict as of 20 October</div>
+      <h2>Jewish-owned shops were damaged. The claim that only they were targeted is unsupported.</h2>
+    </div>
+    <div class="verdict">
+      <div class="vbox"><span class="tag t-ok">Confirmed</span><h3>Damage happened</h3><ul>
+        <li>Jewish-owned shops in Marseille were set on fire or damaged during the 17–18 October riots, along with many others (<a href="https://www.jta.org/2026/10/18/global/a-synagogue-and-jewish-owned-shops-damaged-in-french-riots" target="_blank" rel="noopener">JTA</a>).</li>
+        <li>A temporary synagogue in Paris's 19th arrondissement was broken into. A committee member said it "primarily points to an attempted theft" (JTA).</li>
+      </ul></div>
+      <div class="vbox"><span class="tag t-no">Not supported</span><h3>Selective targeting</h3><ul>
+        <li>SPCJ, the Jewish community's security service, said there was "no evidence that Jewish institutions or businesses were deliberately targeted" (JTA).</li>
+        <li>CRIF Marseille's president said Jews "did not appear to have been singled out" (JNS). Per Snopes, he also said all shops were hit, "Jewish, non-Jewish or Muslim".</li>
+        <li>Per Snopes, Marseille police said the looting had "no connection" to anti-Jewish sentiment.</li>
+      </ul></div>
+      <div class="vbox"><span class="tag t-src">Origin</span><h3>One unsourced TV remark</h3><ul>
+        <li>Paul Amar on CNews, 17 October. He gave no source for the address lists or the street (Proto Thema, Snopes).</li>
+        <li>No French fact-checker (AFP Factuel, CheckNews, Les Décodeurs) had published on it by 20 October.</li>
+        <li>Snopes is paywalled; its statements here come from search summaries, not the full text.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div class="eyebrow">How it travelled</div>
+      <h2>From one TV remark to the Greek press in a day</h2>
+    </div>
+    <ol class="tl" id="timeline"></ol>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div class="eyebrow">Who carried it, and how</div>
+      <h2 id="carry-title"></h2>
+      <p class="muted small">Every article in the Apotypos corpora (Greek press: 985 riot articles from 28 outlets; Israeli press: 31 riot articles from 10 outlets) that mentions Marseille together with Jewish-owned shops.</p>
+    </div>
+    <div class="legend">
+      <span><span class="chip2 c-fact">repeated as fact</span></span>
+      <span><span class="chip2 c-attr">attributed claim</span></span>
+      <span><span class="chip2 c-flag">attributed, flagged unverified</span></span>
+      <span><span class="chip2 c-dmg">damage only, no targeting claim</span></span>
+      <span><span class="chip2 c-deny">reports denial</span></span>
+      <span><span class="chip2 c-counter">covers the counter-narrative</span></span>
+    </div>
+    <div class="scroll"><table class="carry" id="carry"></table></div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel">
+      <div class="panel-head">
+        <div class="eyebrow">Israeli press, 1–20 Oct</div>
+        <h2 id="il-title"></h2>
+        <p class="muted small">31 riot articles from 10 Israeli English-language outlets, coded by headline (one frame each, hand-coded).</p>
+      </div>
+      <div class="bars" id="il"></div>
+    </section>
+    <section class="panel">
+      <div class="panel-head">
+        <div class="eyebrow">Facebook</div>
+        <h2>On Facebook the claim is rare, and so is the backlash</h2>
+        <p class="muted small">933 posts in scope (of 998) from 37 Facebook searches on the riots in English, Greek and French, and comments from 9 posts about the claim. The counts use the same rules as the Facebook tab.</p>
+      </div>
+      <div class="kpis" id="fb-kpis"></div>
+      <p class="muted small">One public counter-post, by Greek journalist Aris Chatzistefanou on 20 October, calls the claim "Israeli fake news". It links the JPost op-ed above, which did repeat the claim, while JPost's and JNS's news reports did not.</p>
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><div class="eyebrow">Limitations</div><h2>What this tracker can and cannot show</h2></div>
+    <ul class="limits">
+      <li>The Greek and Israeli corpora are what Apotypos collected for 1–20 October. Outlets missing from them (News247, Israel Hayom, i24, Kan) may have carried the claim.</li>
+      <li>Facebook results are search results ranked for one account. They are not a census of Facebook. The comment sample (52 comments, 50 commenters, 7 with Greek-script names; one commenter, not Greek, appears on two posts) is too small to show or rule out coordination.</li>
+      <li>US partisan sites (PJ Media, Townhall) appear only in web search results, not in an Apotypos corpus. X posts are cited from search results and from the tweet embedded in Newsit's article.</li>
+      <li>The verdict reflects statements published by 20 October. Police investigations in Paris and Marseille were ongoing.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+const D = {"greek": {"total": 985, "carried": 3}, "israel": {"total": 31, "fact": 1, "frames": [{"k": "report", "label": "Riot and government news", "n": 12, "color": "var(--f-report)"}, {"k": "antisem", "label": "Antisemitism and Jewish safety", "n": 7, "color": "var(--f-blame)"}, {"k": "islam", "label": "Islamism / pro-Palestinian link", "n": 4, "color": "var(--f-react)"}, {"k": "skeptic", "label": "Pushback and analysis", "n": 4, "color": "var(--f-explain)"}, {"k": "migr", "label": "Migration blame reported (Trump, Vance)", "n": 3, "color": "var(--f-react)"}, {"k": "dipl", "label": "Diplomacy", "n": 1, "color": "var(--f-report)"}]}, "fb": {"total": 933, "claim": 14, "spared": 2, "counter": 4, "comments": 52, "repeaters": 1, "collected": 998}, "timeline": [{"d": "17 Oct", "k": "origin", "who": "Paul Amar, CNews", "what": "says rioters \"came prepared\" with addresses of prefectures and \"quite a few Jewish shopkeepers\", and that on one Marseille street all Jewish-owned shops were burned and Muslim-owned ones were not. No source given."}, {"d": "18 Oct", "k": "amplify", "who": "X", "what": "clips circulate: @IsraelIDFend (\"Businesses owned by Jews: set on fire. Businesses owned by Muslims: left standing\"), Jérémy Benhaïm and others."}, {"d": "18 Oct", "k": "amplify", "who": "US partisan sites", "what": "PJ Media, Townhall and others repeat it as fact; JFeed reports it as the journalist's account."}, {"d": "18 Oct", "k": "press", "who": "Greek press", "what": "Newsit, Parapolitika and Proto Thema run it the same day, all attributed to \"a French journalist\". Newsit embeds the @IsraelIDFend tweet and notes the reports are unconfirmed; Proto Thema notes Amar gave no source."}, {"d": "18 Oct", "k": "check", "who": "JTA, JNS", "what": "SPCJ: no evidence of deliberate targeting. CRIF Marseille's president: Jews do not appear to have been singled out."}, {"d": "19 Oct", "k": "check", "who": "Snopes", "what": "Marseille police: looting had \"no connection\" to anti-Jewish sentiment; CRIF Marseille: all shops were hit (from search summaries; the article is paywalled)."}, {"d": "19 Oct", "k": "press", "who": "The Jerusalem Post (op-ed)", "what": "\"France must confront antisemitism and political extremism\" quotes Amar's claim without the denials."}, {"d": "19 Oct", "k": "counter", "who": "The Jerusalem Post (news)", "what": "\"Social media amplifies conspiracy theories blaming Mossad, Jews for French riots\"."}, {"d": "20 Oct", "k": "counter", "who": "Facebook, Aris Chatzistefanou", "what": "a public post calls the claim \"Israeli fake news\" that will reach Greece, linking the JPost op-ed."}], "carry": [{"d": "18 Oct", "outlet": "Newsit", "country": "Greece", "title": "Γαλλία: «Οι διαδηλωτές πυρπολούσαν μόνο καταστήματα Εβραίων σε δρόμο της Μασσαλίας», ισχυρίζεται δημοσιογράφος", "url": "https://www.newsit.gr/kosmos/gallia-oi-diadilotes-pyrpolousan-mono-katastimata-evraion-se-dromo-tis-massalias-isxyrizetai-dimosiografos/4801518", "how": "flag"}, {"d": "18 Oct", "outlet": "Parapolitika", "country": "Greece", "title": "Γαλλία: Νέα επεισόδια στο Παρίσι με δακρυγόνα και αντλίες νερού κατά διαδηλωτών, 17χρονη έχασε το μάτι της στη Μιλούζ - Έκτακτο διάγγελμα Μακρόν στις 21:00 (Εικόνες & Βίντεο)", "url": "https://www.parapolitika.gr/diethni/article/1807979/gallia-nea-epeisodia-sto-parisi-me-dakrugona-kai-adlies-nerou-kata-diadiloton-ektakto-diaggelma-makron-eikones-video", "how": "attr"}, {"d": "18 Oct", "outlet": "Proto Thema", "country": "Greece", "title": "Οι διαδηλωτές στη Μασσαλία σε ένα δρόμο πυρπολούσαν μόνο καταστήματα Εβραίων, ισχυρίζεται Γάλλος δημοσιογράφος", "url": "https://www.protothema.gr/world/article/1896799/oi-diadilotes-sti-massalia-purpolousan-mono-katastimata-evraion-ishurizetai-gallos-dimosiografos", "how": "flag"}, {"d": "18 Oct", "outlet": "The Jerusalem Post", "country": "Israel", "title": "Paris synagogue ransacked amid violent riots across France", "url": "https://www.jpost.com/diaspora/article-912093", "how": "dmg"}, {"d": "18 Oct", "outlet": "JNS", "country": "Israel", "title": "French Jewish leader calls on government to declare emergency", "url": "https://www.jns.org/news/world/french-jewish-leader-calls-on-government-to-declare-emergency", "how": "deny"}, {"d": "18 Oct", "outlet": "JNS", "country": "Israel", "title": "Paris synagogue ransacked amid riots", "url": "https://www.jns.org/news/antisemitism/paris-synagogue-ransacked-amid-riots", "how": "deny"}, {"d": "19 Oct", "outlet": "The Jerusalem Post", "country": "Israel", "title": "France must confront antisemitism and political extremism", "url": "https://www.jpost.com/opinion/article-912148", "how": "fact"}, {"d": "19 Oct", "outlet": "JNS", "country": "Israel", "title": "France’s Jews have a new fear: Can the state still protect them?", "url": "https://www.jns.org/opinion/dov-maimon/frances-jews-have-a-new-fear-can-the-state-still-protect-them", "how": "deny"}, {"d": "19 Oct", "outlet": "Algemeiner", "country": "Israel", "title": "France Riots: Macron Rejects Interior Minister’s Resignation as Synagogue, Jewish Businesses Vandalized", "url": "https://www.algemeiner.com/2026/10/19/france-riots-macron-rejects-interior-ministers-resignation-synagogue-jewish-businesses-vandalized", "how": "dmg"}, {"d": "19 Oct", "outlet": "The Jerusalem Post", "country": "Israel", "title": "Social media amplifies conspiracy theories blaming Mossad, Jews for French riots", "url": "https://www.jpost.com/diaspora/antisemitism/article-912107", "how": "counter"}]};
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const CHIP = { fact: ['c-fact', 'repeated as fact'], attr: ['c-attr', 'attributed claim'], flag: ['c-flag', 'attributed, flagged unverified'], dmg: ['c-dmg', 'damage only'], deny: ['c-deny', 'reports denial'], counter: ['c-counter', 'counter-narrative'] };
+const COLOR = { origin: 'var(--f-blame)', amplify: 'var(--f-react)', press: 'var(--f-report)', check: 'var(--f-explain)', counter: 'var(--accent)' };
+
+document.getElementById('kpis').innerHTML = [
+  ['17 Oct', 'claim made on CNews by Paul Amar'],
+  [D.greek.carried + ' of ' + D.greek.total, 'Greek riot articles carried it, all attributed'],
+  [D.israel.fact + ' of ' + D.israel.total, 'Israeli riot articles repeated it (one op-ed)'],
+  [D.fb.claim + ' of ' + D.fb.total, 'Facebook posts in scope repeat the claim'],
+  ['0', 'French fact-checks found by 20 Oct'],
+].map(([b, s]) => `<div class="kpi"><b>${b}</b><span>${esc(s)}</span></div>`).join('');
+
+document.getElementById('timeline').innerHTML = D.timeline.map(t => `<li><span class="d">${esc(t.d)}</span><span class="dot" style="background:${COLOR[t.k]}"></span><span class="body"><b>${esc(t.who)}</b> · ${t.what}</span></li>`).join('');
+
+document.getElementById('carry').innerHTML = `<thead><tr><th>Day</th><th>Outlet</th><th>Country</th><th>Headline</th><th>How</th></tr></thead><tbody>` +
+  D.carry.map(c => `<tr><td class="num">${esc(c.d)}</td><td>${esc(c.outlet)}</td><td>${esc(c.country)}</td><td>${c.url ? `<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.title)}</a>` : esc(c.title)}</td><td><span class="chip2 ${CHIP[c.how][0]}">${CHIP[c.how][1]}</span></td></tr>`).join('') + '</tbody>';
+const facts = D.carry.filter(c => c.how === 'fact').length, denies = D.carry.filter(c => c.how === 'deny').length;
+document.getElementById('carry-title').textContent = `Greek outlets carried it as an attributed claim; in the Israeli press only one opinion piece repeated it, while ${denies} news reports carried the denial`;
+
+const il = D.israel.frames, mx = Math.max(...il.map(f => f.n));
+document.getElementById('il').innerHTML = il.map(f => `<div class="bar-row" style="cursor:default"><span class="bar-label">${esc(f.label)}</span><span class="track"><span class="fill" style="display:block;width:${f.n / mx * 100}%;background:${f.color}"></span></span><span class="bar-val num">${f.n} · ${Math.round(f.n / D.israel.total * 100)}%</span></div>`).join('');
+document.getElementById('il-title').textContent = `Plain reporting leads; ${il.find(f => f.k === 'antisem').n} of ${D.israel.total} headlines frame the riots around Jewish safety`;
+
+document.getElementById('fb-kpis').innerHTML = [
+  [D.fb.claim, 'posts repeat the claim'],
+  [D.fb.spared, 'say Muslim-owned shops were spared'],
+  [D.fb.counter, 'say Israel or Mossad is behind it, or call the claim fake'],
+  [D.fb.comments, `comments sampled, ${D.fb.repeaters} commenter on 2+ posts`],
+].map(([b, s]) => `<div class="kpi"><b>${b}</b><span>${esc(s)}</span></div>`).join('');
+</script>
+<script>
+(() => {
+  if (window.parent === window) return
+  const send = () => window.parent.postMessage({ type: 'france-riots-height', h: document.body.offsetHeight }, '*')
+  new ResizeObserver(send).observe(document.body)
+  window.addEventListener('load', send)
+  send()
+})()
+</script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"12f0b357057b46bb83fe6869a4d0128b","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>

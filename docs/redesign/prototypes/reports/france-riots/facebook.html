@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="el" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>html,body{margin:0}</style>
+</head>
+<body>
+<title>France Riots on Facebook</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap">
+<style>
+
+/* Layout: one reading column of analysis panels; summary strip first, method note above results, evidence last (Apotypos convention). */
+:root {
+  --bg: #F6F4EF; --surface: #FFFEFB; --surface-2: #EDEAE3; --line: #DDD9D0; --line-strong: #C9C4B9;
+  --ink: #171717; --ink-soft: #404040; --muted: #686A70; --subtle: #99978F;
+  --accent: #315CFF; --accent-soft: #EEF1FF;
+  --f-report: #6B7280; --f-blame: #E85D3F; --f-explain: #16846B; --f-react: #D59524;
+  --f-report-soft: #EEEFF1; --f-blame-soft: #FFF0EB; --f-explain-soft: #E8F7F2; --f-react-soft: #FFF5DD;
+  --sans: "Geist", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --serif: "Source Serif 4", ui-serif, Georgia, serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #131311; --surface: #1B1A18; --surface-2: #24231F; --line: #2F2D29; --line-strong: #44413B;
+  --ink: #EDEBE6; --ink-soft: #CFCCC4; --muted: #9C9A93; --subtle: #77756E;
+  --accent: #7C95FF; --accent-soft: #1E2440;
+  --f-report: #9CA3AF; --f-blame: #F07A5F; --f-explain: #3FB896; --f-react: #E2AD4A;
+  --f-report-soft: #23252A; --f-blame-soft: #3A211B; --f-explain-soft: #15302A; --f-react-soft: #352A15;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #131311; --surface: #1B1A18; --surface-2: #24231F; --line: #2F2D29; --line-strong: #44413B;
+  --ink: #EDEBE6; --ink-soft: #CFCCC4; --muted: #9C9A93; --subtle: #77756E;
+  --accent: #7C95FF; --accent-soft: #1E2440;
+  --f-report: #9CA3AF; --f-blame: #F07A5F; --f-explain: #3FB896; --f-react: #E2AD4A;
+  --f-report-soft: #23252A; --f-blame-soft: #3A211B; --f-explain-soft: #15302A; --f-react-soft: #352A15;
+  color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 32px 64px }
+.wrap { max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px }
+h1, h2 { font-family: var(--serif); font-weight: 600; text-wrap: balance; margin: 0; letter-spacing: -0.01em }
+h1 { font-size: clamp(28px, 4.4vw, 40px); line-height: 1.12 }
+h2 { font-size: 21px; line-height: 1.25 }
+p { margin: 0 }
+.eyebrow { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted) }
+.lede { color: var(--ink-soft); max-width: 68ch; font-size: 16px }
+.muted { color: var(--muted) }
+.small { font-size: 13px }
+.num { font-variant-numeric: tabular-nums }
+header { display: flex; flex-direction: column; gap: 10px; padding-bottom: 4px }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0 }
+.panel-head { display: flex; flex-direction: column; gap: 4px }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px }
+@media (max-width: 820px) { .grid2 { grid-template-columns: minmax(0, 1fr) } }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden }
+.kpi { padding: 14px 16px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); margin: 0 -1px -1px 0; display: flex; flex-direction: column; gap: 2px }
+.kpi b { font-family: var(--serif); font-size: 30px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums }
+.kpi span { font-size: 12.5px; color: var(--muted) }
+.note { border-left: 3px solid var(--line-strong); padding: 10px 14px; background: var(--surface-2); border-radius: 0 8px 8px 0; font-size: 13.5px; color: var(--ink-soft); display: flex; flex-direction: column; gap: 6px }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--ink-soft) }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px }
+/* cluster bars */
+.bars { display: flex; flex-direction: column; gap: 2px }
+.bar-row { display: grid; grid-template-columns: minmax(150px, 290px) minmax(0, 1fr) 76px; gap: 12px; align-items: center; padding: 5px 6px; border-radius: 6px; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; width: 100% }
+.bar-row:hover { background: var(--surface-2) }
+.bar-row[aria-pressed="true"] { background: var(--accent-soft) }
+.bar-row:focus-visible, .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px }
+.bar-label { font-size: 13.5px; line-height: 1.3 }
+.track { height: 14px; background: var(--surface-2); border-radius: 3px; overflow: hidden }
+.fill { height: 100%; border-radius: 3px }
+.bar-val { font-family: var(--mono); font-size: 12.5px; text-align: right; color: var(--ink-soft) }
+@media (max-width: 560px) { .bar-row { grid-template-columns: minmax(0, 1fr) 64px; row-gap: 4px } .bar-row .track { grid-column: 1 / -1; grid-row: 2 } }
+/* heatmap */
+.scroll { overflow-x: auto }
+table { border-collapse: collapse; width: 100%; font-size: 13px }
+th { font-weight: 500; color: var(--muted); text-align: left; padding: 6px 8px; font-size: 12px; white-space: nowrap }
+td { padding: 4px; }
+.heat td.cell { text-align: center; font-family: var(--mono); font-size: 12px; border-radius: 4px; min-width: 64px; padding: 7px 4px }
+.heat td.name { padding: 6px 8px; white-space: nowrap; font-size: 13px }
+.echo td, .echo th { border-bottom: 1px solid var(--line); padding: 9px 8px; vertical-align: top }
+.echo td.j { font-family: var(--mono); white-space: nowrap }
+.svgchart { width: 100%; height: auto; display: block }
+.svgchart text { fill: var(--muted); font-family: var(--mono); font-size: 11px }
+/* evidence */
+.chips { display: flex; flex-wrap: wrap; gap: 6px }
+.chip { font: inherit; font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink-soft); cursor: pointer }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink) }
+.posts { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px }
+.post { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; background: var(--bg) }
+.post .who { font-weight: 600; font-size: 13.5px }
+.post .txt { font-size: 13.5px; color: var(--ink-soft); overflow-wrap: anywhere }
+.post .meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; color: var(--muted) }
+.pill { font-family: var(--mono); font-size: 11px; padding: 1px 7px; border-radius: 999px }
+a { color: var(--accent) }
+.filters { display: flex; flex-direction: column; gap: 8px }
+.filter-row { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 10px; align-items: start }
+.filter-label { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding-top: 6px }
+@media (max-width: 560px) { .filter-row { grid-template-columns: minmax(0, 1fr); gap: 4px } }
+.sig { font-family: var(--mono); font-size: 11px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--ink-soft) }
+.sig.strong { border-color: var(--f-blame); color: var(--f-blame) }
+.score { font-family: var(--mono); font-size: 11.5px; font-weight: 500; padding: 1px 8px; border-radius: 999px; background: var(--surface-2); color: var(--ink-soft) }
+.score.hi { background: var(--f-blame-soft); color: var(--f-blame) }
+.pair { display: flex; flex-direction: column; gap: 3px }
+.pair .track { height: 9px }
+.limits { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; color: var(--ink-soft); font-size: 14px; max-width: 80ch }
+@media (prefers-reduced-motion: no-preference) { .fill { transition: width .5s ease } }
+
+.pair .track + .track { margin-top: 3px }
+.pair .fill.old { opacity: .35 }
+.heat th { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--muted); padding: 6px 4px; text-align: center }
+.echo th { text-align: left }
+.mk { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px }
+@media (max-width: 760px) { .mk { grid-template-columns: minmax(0, 1fr) } }
+.cta { display: inline-flex; gap: 6px; align-items: center; font-weight: 500 }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Apotypos · social narratives · France, 17–20 Oct 2026</div>
+    <h1>The French riots on Facebook: 998 public posts</h1>
+    <p class="lede">This page gives the same analysis as the first sample of 109 posts, on a sample nine times larger. It shows the opinion clusters, who the posts blame, the coordination signals and the Marseille "only Jewish shops" claim. All results are counts. The page does not quote or name personal accounts.</p>
+  </header>
+
+  <section class="kpis" id="kpis" aria-label="Summary"></section>
+
+  <div class="note">
+    <strong>How the sample was made</strong>
+    <span id="method"></span>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div class="eyebrow">Opinion clusters</div>
+      <h2 id="cl-title"></h2>
+      <p class="muted small">Each post has one main cluster. The dark bar is this sample. The light bar is the first sample of 109 posts. Do not read the difference as a change in opinion: this sample has 2 new clusters (Jewish safety, Israel blamed) and 12 searches that name a group.</p>
+    </div>
+    <div class="legend"><span><i style="background:var(--ink-soft)"></i>998-post sample</span><span><i style="background:var(--ink-soft);opacity:.35"></i>First sample, 109 posts</span></div>
+    <div class="bars" id="bars"></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div class="eyebrow">Search terms change the result</div>
+      <h2 id="nl-title"></h2>
+      <p class="muted small">Some searches name a group or a side, for example "France riots Islam" or "France riots Jews". These searches find more posts that blame that group. The dark bar shows posts from neutral searches only. The light bar shows posts from the other searches.</p>
+    </div>
+    <div class="legend"><span><i style="background:var(--ink-soft)"></i>Neutral searches</span><span><i style="background:var(--ink-soft);opacity:.35"></i>Searches that name a group or side</span></div>
+    <div class="bars" id="nl"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel">
+      <div class="panel-head">
+        <div class="eyebrow">Clusters by search language</div>
+        <h2 id="lang-title"></h2>
+        <p class="muted small">Percent of posts in each search language. The language is the language of the search, not of the post.</p>
+      </div>
+      <div class="scroll"><table class="heat" id="heat"></table></div>
+    </section>
+    <section class="panel">
+      <div class="panel-head">
+        <div class="eyebrow">Who or what is blamed</div>
+        <h2 id="bl-title"></h2>
+        <p class="muted small" id="bl-note"></p>
+      </div>
+      <div class="bars" id="blame"></div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div class="eyebrow">Coordination signals</div>
+      <h2 id="sig-title"></h2>
+      <p class="muted small">A signal is a reason to look closer. A signal does not show that a person is paid or that a campaign exists. Each check is a rule on what one search session shows.</p>
+    </div>
+    <div class="kpis" id="sig-kpis"></div>
+    <div class="grid2">
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <div class="eyebrow">How often each signal occurs</div>
+        <div class="bars" id="sig-bars"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <div class="eyebrow">Posts with 2 or more signals, by cluster</div>
+        <div class="bars" id="sig-code"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div class="eyebrow">Copy-paste echoes</div>
+      <h2 id="echo-title"></h2>
+      <p class="muted small">An echo group is a set of posts with near-identical text (5-word sequences, overlap of 50% or more). The table shows counts only.</p>
+    </div>
+    <div class="scroll"><table class="echo" id="echo"></table></div>
+  </section>
+
+  <section class="panel" id="marseille">
+    <div class="panel-head">
+      <div class="eyebrow">The case of Marseille</div>
+      <h2 id="mk-title"></h2>
+      <p class="muted small">On 17 October, a CNews journalist said that rioters in one Marseille street burned only the Jewish-owned shops. The Jewish community security service (SPCJ) said that it had no evidence that the rioters targeted Jewish businesses on purpose. CRIF Marseille said that Jews did not appear to be singled out. This section shows how the claim occurs in the 998 posts.</p>
+    </div>
+    <div class="kpis" id="mk-kpis"></div>
+    <div class="mk">
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <div class="eyebrow">What the targeted searches found</div>
+        <div class="scroll"><table class="echo" id="mk-q"></table></div>
+        <p class="muted small">Facebook search gave travel posts about Marseille for most results of "Marseille Jewish shops". These posts are out of scope.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <div class="eyebrow">Where the claim occurs</div>
+        <div class="bars" id="mk-code"></div>
+        <p class="muted small" id="mk-note"></p>
+        <a class="cta" target="_top" href="../../france-v2.html?tab=claim" target="_top">Open the claim tracker: origin, press and fact-checks ↗</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div class="eyebrow">Comments</div>
+      <h2>The comment samples are too small to show coordination</h2>
+    </div>
+    <div class="kpis" id="c-kpis"></div>
+    <p class="muted small">Commenter names are not kept. Each commenter has a one-way hash and a flag for a name in Greek script. One commenter, who does not have a Greek-script name, occurs under two posts.</p>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><div class="eyebrow">Limitations</div><h2>What this sample can and cannot show</h2></div>
+    <ul class="limits">
+      <li>The posts are Facebook search results for one account. Facebook ranks the results for that account. The sample is not a census of Facebook.</li>
+      <li>The search terms control the mix. A search that names a group finds more posts about that group. Use the neutral-search bars for a less biased share.</li>
+      <li>One coder (a language model) gave each post one cluster from the first 230 characters. A second person did not check the codes.</li>
+      <li>The page does not separate pages from personal profiles, because the poster names are stored as hashes only.</li>
+      <li>"Same poster, 2+ posts" counts posters that occur in two or more searches. News pages occur often, so this signal is weak on its own.</li>
+      <li>The reach signal uses the Facebook "thousand" mark (χιλ.) in the visible counts. It does not separate reactions, comments and shares.</li>
+      <li>65 posts are out of scope: posts from before October 2026 or posts about other events.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+const D = {"total": 998, "inScope": 933, "excluded": 65, "queries": 37, "posters": 796, "labels": {"news": "Factual news report", "grievance": "Cost of living & public services", "migration": "Migration / Islam blamed", "left": "Far left / LFI blamed", "gov": "Macron / government failure", "media": "Media cover-up", "solidarity": "Solidarity with the uprising", "grief": "Grief & condemnation of violence", "spillover": "\"It could happen here\" (Greece, Europe, US)", "counter": "Pushback on alarmism", "spectacle": "Viral spectacle", "antisem": "Jewish safety / antisemitism", "israel": "Israel / Jews blamed", "other": "Other / unclear"}, "order": ["news", "grievance", "migration", "left", "gov", "media", "solidarity", "grief", "spillover", "counter", "spectacle", "antisem", "israel", "other"], "all": {"n": 933, "counts": {"news": 250, "grievance": 32, "migration": 134, "left": 45, "gov": 77, "media": 17, "solidarity": 18, "grief": 51, "spillover": 39, "counter": 27, "spectacle": 108, "antisem": 47, "israel": 4, "other": 84}}, "neutral": {"n": 664, "counts": {"news": 230, "grievance": 22, "migration": 64, "left": 28, "gov": 62, "media": 12, "solidarity": 15, "grief": 47, "spillover": 29, "counter": 7, "spectacle": 83, "antisem": 9, "israel": 1, "other": 55}}, "loaded": {"n": 269, "counts": {"news": 20, "grievance": 10, "migration": 70, "left": 17, "gov": 15, "media": 5, "solidarity": 3, "grief": 4, "spillover": 10, "counter": 20, "spectacle": 25, "antisem": 38, "israel": 3, "other": 29}}, "lang": {"en": {"n": 545, "counts": {"news": 123, "grievance": 21, "migration": 114, "left": 23, "gov": 26, "media": 13, "solidarity": 8, "grief": 21, "spillover": 12, "counter": 18, "spectacle": 78, "antisem": 45, "israel": 4, "other": 39}}, "el": {"n": 238, "counts": {"news": 82, "grievance": 6, "migration": 16, "left": 8, "gov": 30, "media": 4, "solidarity": 8, "grief": 8, "spillover": 25, "counter": 7, "spectacle": 20, "antisem": 0, "israel": 0, "other": 24}}, "fr": {"n": 150, "counts": {"news": 45, "grievance": 5, "migration": 4, "left": 14, "gov": 21, "media": 0, "solidarity": 2, "grief": 22, "spillover": 2, "counter": 2, "spectacle": 10, "antisem": 2, "israel": 0, "other": 21}}}, "blame": [{"k": "migration", "label": "Migrants / Islam", "n": 134}, {"k": "left", "label": "Far left / LFI", "n": 45}, {"k": "gov", "label": "Macron / the government", "n": 77}, {"k": "media", "label": "The media", "n": 17}, {"k": "israel", "label": "Israel / Jews", "n": 4}], "damage": 57, "old": {"n": 109, "counts": {"news": 34, "grievance": 5, "migration": 18, "left": 5, "gov": 8, "media": 5, "solidarity": 3, "grief": 9, "spillover": 6, "counter": 3, "spectacle": 10, "antisem": 0, "israel": 0, "other": 3}}, "signals": {"labels": {"echo": "Near-copy of another post", "repeat": "Same poster, 2+ posts", "reach": "Reach of 1,000+ reactions", "template": "Alarm template (\"BREAKING\", all caps)"}, "counts": {"echo": 31, "repeat": 202, "reach": 136, "template": 37}, "any": 323, "two": 74, "three": 7, "byCode": {"news": {"n": 250, "two": 20}, "grievance": {"n": 32, "two": 1}, "migration": {"n": 134, "two": 18}, "left": {"n": 45, "two": 6}, "gov": {"n": 77, "two": 8}, "media": {"n": 17, "two": 0}, "solidarity": {"n": 18, "two": 0}, "grief": {"n": 51, "two": 4}, "spillover": {"n": 39, "two": 2}, "counter": {"n": 27, "two": 1}, "spectacle": {"n": 108, "two": 11}, "antisem": {"n": 47, "two": 3}, "israel": {"n": 4, "two": 0}, "other": {"n": 84, "two": 0}}, "twoByCode": {"news": 20, "migration": 18, "left": 6, "spectacle": 11, "grief": 4, "gov": 8, "antisem": 3, "spillover": 2, "counter": 1, "grievance": 1}, "repeatPosters": 65, "maxPerPoster": 17}, "echo": [{"size": 4, "posters": 4, "codes": {"spectacle": 4}, "queries": 4, "lang": "en"}, {"size": 3, "posters": 3, "codes": {"spectacle": 3}, "queries": 2, "lang": "en"}, {"size": 3, "posters": 3, "codes": {"news": 2, "counter": 1}, "queries": 3, "lang": "en"}, {"size": 3, "posters": 3, "codes": {"spectacle": 1, "migration": 2}, "queries": 3, "lang": "en"}, {"size": 2, "posters": 2, "codes": {"migration": 2}, "queries": 2, "lang": "en"}, {"size": 2, "posters": 2, "codes": {"news": 2}, "queries": 2, "lang": "en"}, {"size": 2, "posters": 2, "codes": {"gov": 2}, "queries": 1, "lang": "en"}, {"size": 2, "posters": 2, "codes": {"gov": 2}, "queries": 1, "lang": "el"}, {"size": 2, "posters": 2, "codes": {"migration": 2}, "queries": 1, "lang": "en"}, {"size": 2, "posters": 2, "codes": {"spillover": 2}, "queries": 1, "lang": "el"}, {"size": 2, "posters": 1, "codes": {"news": 2}, "queries": 1, "lang": "el"}, {"size": 2, "posters": 1, "codes": {"antisem": 2}, "queries": 2, "lang": "en"}, {"size": 2, "posters": 1, "codes": {"news": 2}, "queries": 2, "lang": "el"}], "marseille": {"claim": 14, "claimByCode": {"antisem": 11, "migration": 3}, "jewishShop": 15, "spared": 2, "mossad": 4, "amar": 6, "synagogue": 26, "antisem": 47, "israel": 4, "counter": 1, "queries": [{"q": "Marseille Jewish shops", "n": 15, "inScope": 2, "claim": 2, "top": [["antisem", 2]]}, {"q": "France riots Jews", "n": 26, "inScope": 24, "claim": 4, "top": [["antisem", 18], ["other", 2], ["migration", 2]]}, {"q": "France riots Mossad", "n": 18, "inScope": 15, "claim": 2, "top": [["migration", 5], ["israel", 3], ["antisem", 2]]}, {"q": "Paris synagogue riots", "n": 35, "inScope": 30, "claim": 1, "top": [["antisem", 16], ["spectacle", 4], ["other", 3]]}, {"q": "Γαλλία Εβραίοι ταραχές", "n": 5, "inScope": 1, "claim": 0, "top": [["other", 1]]}]}, "migr": {"n": 134, "named": 7, "unclear": 7, "keyword": 29}};
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const pct = (n, d) => d ? Math.round(n / d * 100) : 0;
+const COLOR = { news: 'var(--f-report)', migration: 'var(--f-blame)', left: 'var(--f-blame)', gov: 'var(--f-blame)', media: 'var(--f-blame)', israel: 'var(--f-blame)',
+  grievance: 'var(--f-explain)', solidarity: 'var(--f-explain)', counter: 'var(--f-explain)',
+  grief: 'var(--f-react)', spillover: 'var(--f-react)', spectacle: 'var(--f-react)', antisem: 'var(--f-react)', other: 'var(--subtle)' };
+const L = D.labels, N = D.inScope, A = D.all.counts;
+const row = (label, val, fills) => `<div class="bar-row" style="cursor:default"><span class="bar-label">${esc(label)}</span><span class="pair">${fills.map(([w, c, old]) => `<span class="track"><span class="fill${old ? ' old' : ''}" style="display:block;width:${w}%;background:${c}"></span></span>`).join('')}</span><span class="bar-val num">${val}</span></div>`;
+const kpis = (id, list) => { document.getElementById(id).innerHTML = list.map(([b, s]) => `<div class="kpi"><b>${b}</b><span>${esc(s)}</span></div>`).join(''); };
+const byShare = D.order.filter(k => A[k] > 0 || D.old.counts[k] > 0).sort((a, b) => A[b] - A[a]);
+
+kpis('kpis', [
+  [D.total.toLocaleString('en'), `posts collected from ${D.queries} searches`],
+  [N, `posts in scope, from ${D.posters} posters`],
+  [pct(A.news, N) + '%', 'factual news reports'],
+  [pct(A.migration, N) + '%', 'blame migration or Islam'],
+  [pct(D.signals.two, N) + '%', 'have 2 or more coordination signals'],
+]);
+document.getElementById('method').textContent = `On 20 October, Apotypos searched Facebook from one account with ${D.queries} search terms in English, Greek and French, for example "Paris riots", "Γαλλία ταραχές" and "émeutes France". I kept up to about 40 results for each search: ${D.total} posts. ${D.excluded} posts are older or about other events, so ${N} posts are in scope. The poster names are stored as one-way hashes only.`;
+
+const mx = Math.max(...byShare.map(k => Math.max(pct(A[k], N), pct(D.old.counts[k], D.old.n))));
+document.getElementById('bars').innerHTML = byShare.map(k => row(L[k], `${A[k]} · ${pct(A[k], N)}%<br><span class="muted">${pct(D.old.counts[k], D.old.n)}%</span>`,
+  [[pct(A[k], N) / mx * 100, COLOR[k]], [pct(D.old.counts[k], D.old.n) / mx * 100, COLOR[k], true]])).join('');
+document.getElementById('cl-title').textContent = `Factual reporting leads at ${pct(A.news, N)}%, and migration is the most common thing blamed at ${pct(A.migration, N)}%`;
+
+const nu = D.neutral, lo = D.loaded;
+const nlKeys = D.order.filter(k => nu.counts[k] + lo.counts[k] > 0).sort((a, b) => nu.counts[b] / nu.n - nu.counts[a] / nu.n);
+const mx2 = Math.max(...nlKeys.map(k => Math.max(pct(nu.counts[k], nu.n), pct(lo.counts[k], lo.n))));
+document.getElementById('nl').innerHTML = nlKeys.map(k => row(L[k], `${pct(nu.counts[k], nu.n)}%<br><span class="muted">${pct(lo.counts[k], lo.n)}%</span>`,
+  [[pct(nu.counts[k], nu.n) / mx2 * 100, COLOR[k]], [pct(lo.counts[k], lo.n) / mx2 * 100, COLOR[k], true]])).join('');
+document.getElementById('nl-title').textContent = `In the ${nu.n} posts from neutral searches, ${pct(nu.counts.news, nu.n)}% are news and ${pct(nu.counts.migration, nu.n)}% blame migration`;
+
+const LANG = { en: 'English', el: 'Greek', fr: 'French' };
+const hk = byShare.filter(k => A[k] >= 15);
+document.getElementById('heat').innerHTML = `<thead><tr><th></th>${Object.keys(LANG).map(l => `<th>${LANG[l]}<br>${D.lang[l].n}</th>`).join('')}</tr></thead><tbody>` +
+  hk.map(k => `<tr><td class="name">${esc(L[k])}</td>${Object.keys(LANG).map(l => { const v = pct(D.lang[l].counts[k], D.lang[l].n); return `<td class="cell" style="background:color-mix(in srgb, ${COLOR[k]} ${Math.min(80, v * 2.2)}%, transparent)">${v}%</td>`; }).join('')}</tr>`).join('') + '</tbody>';
+const topIn = l => hk.filter(k => k !== 'news').sort((a, b) => D.lang[l].counts[b] - D.lang[l].counts[a])[0];
+document.getElementById('lang-title').textContent = `After news, the largest cluster is "${L[topIn('en')]}" in English searches, "${L[topIn('el')]}" in Greek searches and "${L[topIn('fr')]}" in French searches`;
+
+const bl = D.blame.slice().sort((a, b) => b.n - a.n), bm = bl[0].n;
+document.getElementById('blame').innerHTML = bl.map(b => row(b.label, `${b.n} · ${pct(b.n, N)}%`, [[b.n / bm * 100, 'var(--f-blame)']])).join('');
+const blT = bl.reduce((s, b) => s + b.n, 0);
+document.getElementById('bl-title').textContent = `${pct(blT, N)}% of posts blame a group; migration is ${pct(D.migr.n, blT)}% of that blame`;
+document.getElementById('bl-note').textContent = `Main cluster only. A hand check of the ${D.migr.n} migration posts: ${D.migr.n - D.migr.named - D.migr.unclear} give the blame in the poster's own voice, ${D.migr.named} quote a named speaker (for example Trump or Georgiadis) and ${D.migr.unclear} are not clear.`;
+
+const sg = D.signals;
+kpis('sig-kpis', [
+  [sg.any, `posts have 1 or more signals (${pct(sg.any, N)}%)`],
+  [sg.two, `posts have 2 or more signals (${pct(sg.two, N)}%)`],
+  [sg.three, 'posts have 3 or more signals'],
+  [sg.repeatPosters, `posters occur 2+ times (maximum ${sg.maxPerPoster})`],
+]);
+const sm = Math.max(...Object.values(sg.counts));
+document.getElementById('sig-bars').innerHTML = Object.entries(sg.counts).sort((a, b) => b[1] - a[1]).map(([k, n]) => row(sg.labels[k], `${n} · ${pct(n, N)}%`, [[n / sm * 100, 'var(--accent)']])).join('');
+const sc = D.order.filter(k => sg.byCode[k].n >= 15).map(k => [k, pct(sg.byCode[k].two, sg.byCode[k].n)]).sort((a, b) => b[1] - a[1]);
+const scm = Math.max(...sc.map(x => x[1]));
+document.getElementById('sig-code').innerHTML = sc.map(([k, v]) => row(L[k], `${sg.byCode[k].two} · ${v}%`, [[v / scm * 100, COLOR[k]]])).join('');
+document.getElementById('sig-title').textContent = `${sg.two} posts have 2 or more signals; ${pct(sg.byCode.migration.two, sg.byCode.migration.n)}% of migration posts do, against ${pct(sg.byCode.news.two, sg.byCode.news.n)}% of news posts`;
+
+const eg = D.echo, multi = eg.filter(e => e.posters > 1);
+document.getElementById('echo-title').textContent = `${eg.length} echo groups with ${eg.reduce((s, e) => s + e.size, 0)} posts; ${multi.length} groups come from different posters`;
+document.getElementById('echo').innerHTML = `<thead><tr><th>Group</th><th>Posts</th><th>Posters</th><th>Searches</th><th>Language</th><th>Clusters</th></tr></thead><tbody>` +
+  eg.map((e, i) => `<tr><td class="num">${i + 1}</td><td class="num">${e.size}</td><td class="num">${e.posters}</td><td class="num">${e.queries}</td><td>${LANG[e.lang]}</td><td>${Object.entries(e.codes).map(([k, n]) => `${esc(L[k])}${n > 1 ? ' ×' + n : ''}`).join(', ')}</td></tr>`).join('') + '</tbody>';
+
+const M = D.marseille;
+kpis('mk-kpis', [
+  [M.claim, 'posts repeat the "only Jewish shops" claim'],
+  [M.spared, 'posts say Muslim-owned shops were spared'],
+  [M.amar, 'posts name Paul Amar or CNews'],
+  [M.mossad, 'posts say Israel or Mossad is behind it, or call the claim fake'],
+  [M.antisem, `posts about Jewish safety (${M.synagogue} name a synagogue)`],
+]);
+document.getElementById('mk-title').textContent = `Only ${M.claim} of ${N} posts repeat the claim, and only ${M.counter} post links a fact-check`;
+document.getElementById('mk-q').innerHTML = `<thead><tr><th>Search</th><th>Results</th><th>In scope</th><th>Repeat the claim</th><th>Main clusters</th></tr></thead><tbody>` +
+  M.queries.map(q => `<tr><td>${esc(q.q)}</td><td class="num">${q.n}</td><td class="num">${q.inScope}</td><td class="num">${q.claim}</td><td>${q.top.map(([k, n]) => `${esc(L[k])} ${n}`).join(', ')}</td></tr>`).join('') + '</tbody>';
+const mc = Object.entries(M.claimByCode).sort((a, b) => b[1] - a[1]), mcm = mc[0][1];
+document.getElementById('mk-code').innerHTML = mc.map(([k, n]) => row(L[k], `${n}`, [[n / mcm * 100, COLOR[k]]])).join('');
+document.getElementById('mk-note').textContent = `The claim occurs in two kinds of post. Posts about Jewish safety use it as proof of antisemitism. Posts that blame migration or Islam use it as proof that Muslims organized the riots. ${M.israel} posts blame Israel or Jews for the riots.`;
+
+kpis('c-kpis', [
+  ['38', 'comments analysed under one migration post'],
+  ['34%', 'of those comments mock the shop owner'],
+  ['52', 'comments under 9 claim posts, from 50 commenters'],
+  ['7', 'commenters with a Greek-script name; none of them occur twice'],
+]);
+</script>
+<script>
+(() => {
+  if (window.parent === window) return
+  const send = () => window.parent.postMessage({ type: 'france-riots-height', h: document.body.offsetHeight }, '*')
+  new ResizeObserver(send).observe(document.body)
+  window.addEventListener('load', send)
+  send()
+})()
+</script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"12f0b357057b46bb83fe6869a4d0128b","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>

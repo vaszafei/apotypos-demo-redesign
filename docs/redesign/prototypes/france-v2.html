@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Απότυπος</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css?v=4">
+  <link rel="stylesheet" href="assets/app.css?v=12">
+  <link rel="stylesheet" href="assets/dash.css?v=66">
+  <link rel="stylesheet" href="assets/politics.css?v=1">
+  <link rel="stylesheet" href="assets/world.css?v=1">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/icons.js?v=3"></script>
+  <script src="assets/messages.js?v=17"></script>
+  <script src="assets/messages-v2.js?v=31"></script>
+  <script src="assets/messages-politics.js?v=2"></script>
+  <script src="assets/messages-world.js?v=1"></script>
+  <script src="assets/components.js?v=7"></script>
+  <script src="assets/dash.js?v=11"></script>
+  <script src="assets/politics.js?v=1"></script>
+  <script src="assets/world.js?v=1"></script>
+  <script src="assets/shell.js?v=32"></script>
+  <script src="data/franceRiots.js?v=1"></script>
+  <script>
+    // Αναλύσεις, Γαλλία: ταραχές (#38). A report page: an intro, the figures at a glance, the report tabs and the framed report.
+    // The reports are the live English files, in reports/france-riots/. Rebuilding their 44 cards as shell cards is a later step.
+    const { t, fmt, h, load, params } = App
+    const { reset, card, cardHead, Stat, TopBar } = Dash
+    const result = load('franceRiots', ['reports', 'glance'], (b) => b.reports)
+    const BASE = 'reports/france-riots/'
+
+    Shell.start({
+      id: 'france',
+      route: '/france-riots',
+      dash: true,
+      title: () => t('nav.world'),
+      breadcrumbs: () => [{ label: t('nav.world') }, { label: t('tab.world.france') }],
+      render (content, { tabs }) {
+        content.classList.add('dash', 'minimal')
+        const title = t('tab.world.france')
+        const problem = Dash.stateContent([result], { title, tabs, quiet: true })
+        if (problem) { content.replaceChildren(...problem); return }
+        const d = result.data
+        const bar = TopBar({ title, tabs, quiet: true })
+        let active = d.reports.some((r) => r.key === params.get('tab')) ? params.get('tab') : d.reports[0].key
+
+        const stats = [
+          Stat({ label: t('fr.stat.press'), value: fmt.int(d.press.articles), sub: t('fr.stat.press.sub', { n: d.press.outlets, from: fmt.date(d.window[0], { day: 'numeric' }), to: fmt.date(d.window[1], { day: 'numeric', month: 'long' }) }) }),
+          Stat({ label: t('fr.stat.facebook'), value: fmt.int(d.facebook.posts), sub: t('fr.stat.facebook.sub', { n: fmt.int(d.facebook.inTopic) }) }),
+          Stat({ label: t('fr.stat.israel'), value: fmt.int(d.israel.articles), sub: t('fr.stat.israel.sub') }),
+          Stat({ label: t('fr.stat.reports'), value: fmt.int(d.reports.length), sub: t('fr.stat.reports.sub', { n: d.reports.reduce((a, r) => a + r.cards, 0) }) })
+        ]
+        stats.forEach((x) => x.classList.replace('c-4', 'c-3'))
+
+        // At a glance: the six figures of the comparison report, Facebook beside the press.
+        const value = (g) => (g.of ? t('cov.of', { a: g.n, b: g.of }) : [g.a, g.b].map((v) => (v === undefined ? null : `${v}%`)).filter(Boolean).join(' / '))
+        const glance = card('c-12', cardHead(t('fr.glance.title'), h('span', { class: 'stance-key' },
+          h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: 'var(--side-b)' } }), 'Facebook'),
+          h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: 'var(--ink)' } }), t('fr.press'))), t('fr.glance.info')),
+          h('ul', { class: 'glance' }, d.glance.map((g) => h('li', {},
+            h('p', { class: 'glance-value' }, value(g)),
+            h('p', { class: 'dcard-sub' }, t(`fr.glance.${g.key}`)),
+            g.a !== undefined && g.b !== undefined ? h('span', { class: 'glance-bars' },
+              h('span', { style: `width:${g.a * 2}%;--seg:var(--side-b)` }), h('span', { style: `width:${g.b * 2}%;--seg:var(--ink)` })) : null))))
+
+        // The report tabs and the framed report. The frame takes the height of its report, so the page has one scroll bar.
+        const frame = h('iframe', { class: 'report-frame', title: '', loading: 'lazy' })
+        const fit = () => { try { const doc = frame.contentDocument; if (doc && doc.body) frame.style.height = `${doc.documentElement.scrollHeight}px` } catch { /* another origin */ } }
+        frame.addEventListener('load', () => { fit(); setTimeout(fit, 600); try { new ResizeObserver(fit).observe(frame.contentDocument.body) } catch {} })
+        const open = h('a', { class: 'dcard-link', target: '_blank', rel: 'noopener' }, t('fr.open'), ' ↗')
+        const lead = h('p', { class: 'dcard-sub' })
+        const tabsEl = h('div', { class: 'report-tabs', role: 'tablist', 'aria-label': t('fr.reports') })
+        const show = (key) => {
+          active = key
+          const r = d.reports.find((x) => x.key === key)
+          frame.src = BASE + r.file
+          frame.title = t(`fr.tab.${key}`)
+          open.href = BASE + r.file
+          lead.textContent = t(`fr.lead.${key}`)
+          tabsEl.replaceChildren(...d.reports.map((x) => h('button', { type: 'button', role: 'tab', 'aria-selected': String(x.key === key), onClick: () => show(x.key) },
+            h('span', {}, t(`fr.tab.${x.key}`)), x.n ? h('span', { class: 'tab-n' }, t(`fr.tab.n.${x.key}`, { n: fmt.int(x.n) })) : null)))
+          const url = new URL(location.href)
+          url.searchParams.set('tab', key)
+          history.replaceState(null, '', url)
+        }
+        show(active)
+        const reportCard = card('c-12 report-card', cardHead(t('fr.reports'), open, t('fr.reports.info')), tabsEl, lead,
+          h('p', { class: 'report-note' }, t('fr.english')), frame)
+
+        content.replaceChildren(bar,
+          h('div', { class: 'story-lead' }, h('p', { class: 'quote-meta' }, t('fr.kicker')), h('h2', { class: 'story-lead-title' }, t('fr.title')), h('p', { class: 'hero-lead' }, t('fr.intro', { press: fmt.int(d.press.articles), outlets: d.press.outlets, posts: fmt.int(d.facebook.posts), topic: fmt.int(d.facebook.inTopic) }))),
+          h('div', { class: 'dash-grid' }, ...stats, glance, reportCard),
+          h('p', { class: 'proto-note' }, t('fr.note')))
+      }
+    })
+    reset()
+  </script>
+</body>
+</html>
