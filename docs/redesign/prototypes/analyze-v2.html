@@ -13,8 +13,8 @@
   <div id="app"></div>
   <script src="assets/icons.js?v=3"></script>
   <script src="assets/messages.js?v=16"></script>
-  <script src="assets/messages-v2.js?v=27"></script>
-  <script src="assets/messages-analyze.js?v=1"></script>
+  <script src="assets/messages-v2.js?v=28"></script>
+  <script src="assets/messages-analyze.js?v=2"></script>
   <script src="assets/components.js?v=6"></script>
   <script src="assets/dash.js?v=11"></script>
   <script src="assets/shell.js?v=30"></script>
@@ -24,57 +24,10 @@
     // Αναλύσεις & Ιδιοκτησία, Επισκόπηση (/analyze, issue #8). The data is a snapshot of the 3 endpoints of the live page (scripts/make-analyze.py).
     // The live API returns one window for every ?days=, so the page shows that window and has no period control.
     const { t, fmt, h, load } = App
-    const { fit, reset, niceStep, NO_GROUP, groupColor, card, cardHead, emptyText, Stat, Meter, TopBar } = Dash
+    const { reset, NO_GROUP, groupColor, card, cardHead, emptyText, Stat, Meter, TopBar } = Dash
     const result = load('analyze', ['dates', 'sources', 'groups', 'categories', 'window'], (b) => b.sources)
     const groupsFile = load('groups', ['groups'], (b) => b.groups)
     const slugOf = new Map(groupsFile.kind === 'failed' ? [] : groupsFile.data.groups.map((g) => [g.name, g.slug]))
-    // A day with fewer articles than this is a gap of the crawler, not a quiet day (23 Jun, 26 to 29 Jun 2026).
-    const GAP = 50
-
-    // Stacked columns: one for each day, one segment for each group. A gap day has a dashed band.
-    function VolumeChart ({ dates, stacks, order }) {
-      const totals = stacks.map((s) => s.reduce((a, b) => a + b.value, 0))
-      return fit((holder, width) => {
-        const height = 280
-        const pad = { top: 8, right: 4, bottom: 24, left: 44 }
-        const step = niceStep(Math.max(...totals, 1) / 4)
-        const top = Math.ceil(Math.max(...totals, 1) / step) * step
-        const plotW = width - pad.left - pad.right
-        const plotH = height - pad.top - pad.bottom
-        const bw = plotW / dates.length
-        const y = (v) => pad.top + plotH - (v / top) * plotH
-        const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
-        for (let v = 0; v <= top; v += step) {
-          svg.append(h('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: y(v), y2: y(v) }),
-            h('text', { x: pad.left - 6, y: y(v) + 4, 'text-anchor': 'end' }, fmt.int(v)))
-        }
-        const every = Math.max(7, Math.ceil(64 / bw))
-        stacks.forEach((segs, i) => {
-          const x = pad.left + i * bw
-          const w = Math.max(1, bw * 0.6)
-          const bx = x + (bw - w) / 2
-          if (totals[i] < GAP) svg.append(h('rect', { class: 'gap-band', x: x + 1, y: pad.top, width: Math.max(1, bw - 2), height: plotH }))
-          let base = 0
-          segs.forEach((s) => {
-            if (!s.value) return
-            svg.append(h('rect', { x: bx, y: y(base + s.value), width: w, height: Math.max(0.5, (s.value / top) * plotH - 0.5), fill: s.color }))
-            base += s.value
-          })
-          if (i % every === 0) svg.append(h('text', { x: x + bw / 2, y: height - 7, 'text-anchor': 'middle' }, fmt.date(dates[i], { day: 'numeric', month: 'short' })))
-        })
-        const tipOf = (i) => [t('an.volume.tip', { date: fmt.date(dates[i]), n: fmt.int(totals[i]) }) + (totals[i] < GAP ? ` · ${t('an.volume.gap')}` : ''),
-          ...stacks[i].filter((s) => s.value).slice().reverse().map((s) => t('an.volume.tip.group', { group: s.label, n: fmt.int(s.value) }))].join('\n')
-        const overlay = h('rect', { class: 'overlay', x: pad.left, y: pad.top, width: plotW, height: plotH })
-        const indexAt = (e) => Math.min(dates.length - 1, Math.max(0, Math.floor((e.clientX - svg.getBoundingClientRect().left - pad.left) / bw)))
-        overlay.addEventListener('pointermove', (e) => UI.showTooltip(tipOf(indexAt(e)), e.clientX, e.clientY))
-        overlay.addEventListener('pointerleave', () => UI.hideTooltip())
-        svg.append(overlay)
-        const table = h('div', { class: 'visually-hidden' }, h('table', {}, h('caption', {}, t('an.volume.title')),
-          h('thead', {}, h('tr', {}, h('th', {}, ''), order.map((o) => h('th', { scope: 'col' }, o.label)))),
-          h('tbody', {}, dates.map((d, i) => h('tr', {}, h('th', { scope: 'row' }, fmt.date(d)), stacks[i].map((s) => h('td', {}, fmt.int(s.value))))))))
-        holder.replaceChildren(svg, table)
-      })
-    }
 
     // Small multiples: one row of day columns for each source, on one shared scale.
     function SourceRows ({ rows, max }) {
@@ -136,23 +89,16 @@
             sub: t('an.stat.known.sub', { n: fmt.int(knownVolume), total: fmt.int(volumeTotal), sources: fmt.int(sources.length) }), viz: Meter(knownVolume / (volumeTotal || 1))
           })
 
-          // Row 2: the daily volume, stacked by group. The order of the stack is the order of the groups card, largest at the bottom.
-          const order = [...groups.map((g) => ({ key: g.group, label: g.group, color: groupColor(g.group) })), { key: null, label: t('media2.groups.none'), color: NO_GROUP }]
-            .filter((o) => sources.some((s) => (s.group || null) === o.key))
-          const stacks = d.dates.map((_, i) => order.map((o) => ({ ...o, value: sources.filter((s) => (s.group || null) === o.key).reduce((a, s) => a + s.daily[i], 0) })))
-          const volume = card('c-8', cardHead(t('an.volume.title'), h('span', { class: 'legend-inline' }, order.map((o) => h('span', {}, h('span', { class: 'swatch', style: { background: o.color } }), o.label))),
-            t('an.volume.info', { min: fmt.int(GAP), n: fmt.int(volumeTotal) })),
-          volumeTotal ? VolumeChart({ dates: d.dates, stacks, order }) : emptyText(t('an.empty')))
-
+          // Row 2: the volume of each source, and the groups. The daily volume by group is on Μέσα > Ιδιοκτησία.
           // The 8 largest sources and the rest.
           const top = sources.slice(0, 8).map((s) => ({ label: s.name, color: groupColor(s.group), daily: s.daily }))
           const rest = sources.slice(8)
           if (rest.length) top.push({ label: t('an.sources.rest', { n: fmt.int(rest.length) }), color: NO_GROUP, daily: d.dates.map((_, i) => rest.reduce((a, s) => a + s.daily[i], 0)) })
           const sourceMax = Math.max(1, ...top.flatMap((r) => r.daily))
-          const sourcesCard = card('c-4', cardHead(t('an.sources.title'), null, t('an.sources.info')),
+          const sourcesCard = card('c-6', cardHead(t('an.sources.title'), null, t('an.sources.info')),
             top.length ? SourceRows({ rows: top, max: sourceMax }) : emptyText(t('an.empty')))
 
-          // Row 3: the groups and the categories, as ranked rows with bars. A category bar is grey: the group colors are only for groups.
+          // The groups and the categories, as ranked rows with bars. A category bar is grey: the group colors are only for groups.
           const groupsCard = card('c-6', cardHead(t('an.groups.title'), null, t('an.groups.info', { n: fmt.int(groupTotal), m: fmt.int(volumeTotal) })),
             groups.length
               ? [h('ul', { class: 'rows' }, groups.slice(0, 10).map((g) => h('li', { style: `--bar-color:${groupColor(g.group)}` },
@@ -162,7 +108,7 @@
                   UI.HBar(g.total, groups[0].total)))),
                 h('a', { class: 'dcard-foot quiet-link', href: 'groups-v2.html' }, t('an.groups.all'))]
               : emptyText(t('an.empty')))
-          const catsCard = card('c-6', cardHead(t('an.cats.title'), null, t('an.cats.info', { n: fmt.int(catTotal) })),
+          const catsCard = card('c-12', cardHead(t('an.cats.title'), null, t('an.cats.info', { n: fmt.int(catTotal) })),
             cats.length
               ? h('ul', { class: 'rows' }, cats.slice(0, 10).map((c) => h('li', { style: '--bar-color:var(--text-secondary)' },
                   h('span', { class: 'row-name' }, c.category),
@@ -171,7 +117,7 @@
               : emptyText(t('an.empty')))
 
           const windowNote = h('p', { class: 'dash-window' }, t('an.window', { period }))
-          content.replaceChildren(bar, windowNote, h('div', { class: 'dash-grid' }, statGroups, statTop3, statKnown, volume, sourcesCard, groupsCard, catsCard), protoNote())
+          content.replaceChildren(bar, windowNote, h('div', { class: 'dash-grid' }, statGroups, statTop3, statKnown, sourcesCard, groupsCard, catsCard), protoNote())
         }
         draw()
       }
