@@ -6,20 +6,20 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/app.css?v=12">
+  <link rel="stylesheet" href="assets/app.css?v=13">
   <link rel="stylesheet" href="assets/dash.css?v=66">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=3"></script>
-  <script src="assets/messages.js?v=17"></script>
+  <script src="assets/messages.js?v=19"></script>
   <script src="assets/messages-v2.js?v=31"></script>
   <script src="assets/components.js?v=7"></script>
   <script src="assets/dash.js?v=11"></script>
-  <script src="assets/shell.js?v=32"></script>
+  <script src="assets/shell.js?v=34"></script>
   <script src="data/overton.js?v=1"></script>
   <script>
-    // Topics, Μετατοπίσεις: when the way the coverage describes a topic changes. It reads the overton file (36 topics, 53 weeks of 2025).
+    // Μέσα, Μετατοπίσεις (was Αναλύσεις › Παράθυρο): when the way the coverage describes a topic changes. It reads the overton file (36 topics, 53 weeks of 2025).
     // The file has no drift for each week. It has the strongest shift of each topic, its week and the articles of each week.
     const { t, fmt, h, load } = App
     const { fit, reset, niceStep, card, cardHead, emptyText, Stat, TopBar } = Dash
@@ -73,12 +73,12 @@
       id: 'topics',
       route: '/overton',
       dash: true,
-      title: () => t('tab.world.overton'),
-      breadcrumbs: () => [{ label: t('nav.world') }, { label: t('tab.world.overton') }],
+      title: () => t('tab.media.shifts'),
+      breadcrumbs: () => [{ label: t('nav.media') }, { label: t('tab.media.shifts') }],
       render (content, { tabs }) {
         content.classList.add('dash', 'minimal')
         reset()
-        const bar = TopBar({ title: t('tab.world.overton'), tabs, quiet: true })
+        const bar = TopBar({ title: t('tab.media.shifts'), tabs, quiet: true })
         if (shifts.kind !== 'data') {
           content.replaceChildren(bar, shifts.kind === 'empty' ? h('div', { class: 'dash-grid' }, card('c-12', UI.EmptyState({ text: t('shifts.empty') }))) : UI.ErrorState({ onRetry: () => location.reload() }), protoNote())
           return

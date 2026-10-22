@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Απότυπος</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css?v=4">
+  <link rel="stylesheet" href="assets/app.css?v=13">
+  <link rel="stylesheet" href="assets/dash.css?v=66">
+  <link rel="stylesheet" href="assets/politics.css?v=1">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/icons.js?v=3"></script>
+  <script src="assets/messages.js?v=19"></script>
+  <script src="assets/messages-v2.js?v=31"></script>
+  <script src="assets/messages-politics.js?v=4"></script>
+  <script src="assets/components.js?v=7"></script>
+  <script src="assets/dash.js?v=11"></script>
+  <script src="assets/politics.js?v=1"></script>
+  <script src="assets/shell.js?v=34"></script>
+  <script src="data/speeches.js?v=1"></script>
+  <script>
+    // Αναλύσεις › Ομιλίες ΟΗΕ › Ισραήλ–Παλαιστίνη: the Israel–Palestine part of the 192 speeches of the 81st General Assembly.
+    // It reads the speeches file of Ομιλίες ΟΗΕ. A speech has only its main topics (shares), so the cards count the speeches with the topic among them.
+    const { t, fmt, h, load } = App
+    const { reset, card, cardHead, Stat, TopBar } = Dash
+    const { Rows, dataName } = Politics
+    const result = load('speeches', ['rows', 'agenda'], (b) => b.rows)
+    const TOPIC = 'Israel–Palestine'
+    const REGIONS = ['Middle East', 'Europe', 'Asia-Pacific', 'Africa', 'North America', 'Latin America & Caribbean']
+
+    // The attacks of a speech on a target. A target such as "United States and Israel" counts for Israel.
+    const attacksOn = (r, name) => r.targets.reduce((a, [k, n]) => a + (k.includes(name) ? n : 0), 0)
+
+    Shell.start({
+      id: 'un-israel',
+      route: '/un-israel-palestine',
+      dash: true,
+      title: () => t('nav.world'),
+      breadcrumbs: () => [{ label: t('nav.world') }, { label: t('tab.world.speeches') }, { label: t('tab.world.speeches.pi') }],
+      render (content, { tabs }) {
+        content.classList.add('dash', 'minimal')
+        const title = t('tab.world.speeches.pi')
+        const problem = Dash.stateContent([result], { title, tabs, quiet: true })
+        if (problem) { content.replaceChildren(...problem); return }
+        const d = result.data
+        const bar = TopBar({ title, tabs, quiet: true })
+
+        const total = d.agenda.find((a) => a.topic === TOPIC)
+        const rank = d.agenda.findIndex((a) => a.topic === TOPIC) + 1
+        const rows = d.rows.map((r) => {
+          const share = (r.shares.find(([k]) => k === TOPIC) || [])[1] || 0
+          return { ...r, share, minutes: (share * r.seconds) / 60, israel: attacksOn(r, 'Israel'), hamas: attacksOn(r, 'Hamas') }
+        })
+        const onTopic = rows.filter((r) => r.share > 0).sort((a, b) => b.minutes - a.minutes)
+        const israel = rows.filter((r) => r.israel).sort((a, b) => b.israel - a.israel)
+        const hamas = rows.filter((r) => r.hamas)
+        const sum = (list, k) => list.reduce((a, r) => a + r[k], 0)
+
+        const wide = (stat) => { stat.classList.replace('c-4', 'c-3'); return stat }
+        const stats = [
+          wide(Stat({ label: t('unpi.stat.minutes'), value: fmt.int(Math.round(total ? total.minutes : 0)), sub: t('unpi.stat.minutes.sub', { n: fmt.int(total ? total.leaders : 0) }) })),
+          wide(Stat({ label: t('unpi.stat.rank'), value: t('unpi.stat.rank.value', { n: rank }), sub: t('unpi.stat.rank.sub', { n: fmt.int(d.topics) }) })),
+          wide(Stat({ label: t('unpi.stat.israel'), value: fmt.int(sum(israel, 'israel')), sub: t('unpi.stat.israel.sub', { n: fmt.int(israel.length) }) })),
+          wide(Stat({ label: t('unpi.stat.hamas'), value: fmt.int(sum(hamas, 'hamas')), sub: t('unpi.stat.hamas.sub', { n: fmt.int(hamas.length) }) }))
+        ]
+
+        const leadersCard = card('c-7', cardHead(t('unpi.leaders.title'), null, t('unpi.leaders.info')),
+          Rows(onTopic.slice(0, 15).map((r) => ({ label: r.speaker, sub: t('unpi.leaders.sub', { country: r.country, share: fmt.pct(r.share) }), value: r.minutes, text: t('unpi.leaders.value', { m: fmt.dec(r.minutes) }) })), { cls: 'rows-wrap' }))
+
+        const regions = REGIONS.map((k) => { const list = onTopic.filter((r) => r.region === k); return { k, m: sum(list, 'minutes'), n: list.length } }).filter((x) => x.n)
+        const regionCard = card('', cardHead(t('unpi.regions.title'), null, t('unpi.regions.info')),
+          Rows(regions.map((x) => ({ label: t(`un.region.${x.k}`), value: x.m, text: t('unpi.regions.value', { m: fmt.int(Math.round(x.m)), n: fmt.int(x.n) }) }))))
+        const attackCard = card('', cardHead(t('unpi.attacks.title'), null, t('unpi.attacks.info')),
+          Rows(israel.slice(0, 8).map((r) => ({ label: r.speaker, sub: r.country, value: r.israel, text: t('unpi.attacks.value', { n: fmt.int(r.israel) }), color: 'var(--stance-critical)' }))))
+
+        const tableCard = card('c-12', cardHead(t('unpi.table.title'), null, t('unpi.table.info')),
+          UI.DataTable({
+            rows: onTopic, rankColumn: true, pageSize: 25, moreStep: 25,
+            columns: [
+              { label: t('un.col.leader'), render: (r) => h('span', { class: 'leader-cell' }, h('a', { class: 'quiet-link', href: r.url || `https://www.youtube.com/watch?v=${r.vid}`, target: '_blank', rel: 'noopener' }, r.speaker), h('span', { class: 'row-sub' }, r.role)) },
+              { label: t('unpi.col.country'), phone: false, render: (r) => r.country },
+              { label: t('unpi.col.minutes'), num: true, render: (r) => fmt.dec(r.minutes) },
+              { label: t('unpi.col.share'), num: true, render: (r) => fmt.pct(r.share) },
+              { label: t('unpi.col.israel'), num: true, phone: false, render: (r) => (r.israel ? fmt.int(r.israel) : '–') },
+              { label: t('unpi.col.hamas'), num: true, phone: false, render: (r) => (r.hamas ? fmt.int(r.hamas) : '–') }
+            ]
+          }))
+
+        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...stats, leadersCard, h('div', { class: 'c-5 card-col' }, regionCard, attackCard), tableCard),
+          h('p', { class: 'proto-note' }, t('unpi.note', { n: fmt.int(onTopic.length) })))
+      }
+    })
+    reset()
+  </script>
+</body>
+</html>

@@ -28,36 +28,47 @@
     '/gaza': 'gaza-v2.html',
     '/israel': 'israel-v2.html',
     '/gaza-language': 'language-v2.html',
+    '/un-israel-palestine': 'un-israel-v2.html',
     '/methodology': 'methodology.html'
   }
 
   // The sidebar has 6 items (APO-161: Media and Ownership are one item). The sub-pages of an item are tabs inside the page (shell-spec.md, "Navigation").
-  // The item "world" is Αναλύσεις: its tabs are the pages of the ΑΝΑΛΥΣΗ section of the live sidebar, in the same order (#35).
+  // The item "world" is Αναλύσεις. Πολεμική ρητορική is Πολιτική › Ελληνοτουρκικά and Παράθυρο is Μέσα › Μετατοπίσεις.
+  // A tab can have sub-tabs (a third item of the tab). Its first sub-tab is its page. Ομιλίες ΟΗΕ holds the Israel–Palestine part of the speeches,
+  // Παλαιστίνη–Ισραήλ holds the Gaza and Israel pages.
   // Αναλύσεις & Ιδιοκτησία (/analyze) is not there: ownership is only Μέσα › Ιδιοκτησία, so /analyze opens that tab.
   // ΜΜΕ & πρόσωπα (/media) is not there: its content is Μέσα › Επισκόπηση. Θέματα (/trends) is a tab of Μέσα, not an item of its own.
   // Πρόσωπα is an item: its overview (/fingerprints) and Φάκελος προσώπου (/contradictions), which left Αναλύσεις.
   const NAV = [
     { key: 'home', tabs: [['home', '/']] },
-    { key: 'media', tabs: [['overview', '/media'], ['topics', '/trends'], ['ownership', '/groups'], ['similarity', '/similarity']], details: ['/outlet', '/group', '/topic'] },
+    { key: 'media', tabs: [['overview', '/media'], ['topics', '/trends'], ['shifts', '/overton'], ['ownership', '/groups'], ['similarity', '/similarity']], details: ['/outlet', '/group', '/topic'] },
     { key: 'spread', tabs: [['overview', '/stories']], details: ['/story'] },
     { key: 'people', tabs: [['overview', '/fingerprints'], ['file', '/contradictions']] },
-    { key: 'politics', tabs: [['elections', '/elections'], ['statements', '/track'], ['cases', '/cases'], ['campaigns', '/campaigns']] },
-    { key: 'world', tabs: [['speeches', '/speeches'], ['war', '/war'], ['narrative', '/narrative'], ['gaza', '/gaza'], ['israel', '/israel'],
-      ['language', '/gaza-language'], ['coverage', '/coverage'], ['france', '/france-riots'], ['overton', '/overton']] }
+    { key: 'politics', tabs: [['elections', '/elections'], ['statements', '/track'], ['cases', '/cases'], ['campaigns', '/campaigns'], ['greekturkish', '/war']] },
+    { key: 'world', tabs: [['speeches', '/speeches', [['speeches.all', '/speeches'], ['speeches.pi', '/un-israel-palestine']]],
+      ['pi', '/narrative', [['pi.overview', '/narrative'], ['gaza', '/gaza'], ['israel', '/israel'], ['language', '/gaza-language']]],
+      ['coverage', '/coverage'], ['france', '/france-riots']] }
   ]
   const FOOTER = [['methodology', '/methodology'], ['about', '/about'], ['pages', null]]
 
   const under = (route, base) => route === base || (base !== '/' && route.startsWith(base + '/'))
+  // The pages of an item: each tab, or the sub-tabs of a tab with sub-tabs. Each page is [key, route, parent tab].
+  const pagesOf = (item) => item.tabs.flatMap((tab) => (tab[2] ? tab[2].map(([key, r]) => [key, r, tab]) : [[tab[0], tab[1], null]]))
   function itemOf (route) {
-    return NAV.find((item) => item.tabs.some(([, r]) => under(route, r)) || (item.details || []).some((r) => under(route, r)))
+    return NAV.find((item) => pagesOf(item).some(([, r]) => under(route, r)) || (item.details || []).some((r) => under(route, r)))
   }
-  // The label of the place of a route: "Item" or "Item › Tab". It is null for a route with no sidebar item.
+  // The label of a page of an item: "Item › Tab" or "Item › Tab › Sub-tab". An item with one tab is "Item".
+  function pageLabel (item, [key, , parent]) {
+    if (item.tabs.length < 2) return t(`nav.${item.key}`)
+    return [t(`nav.${item.key}`), parent && t(`tab.${item.key}.${parent[0]}`), t(`tab.${item.key}.${key}`)].filter(Boolean).join(' › ')
+  }
+  // The label of the place of a route. It is null for a route with no sidebar item.
   function placeOf (route) {
     const item = itemOf(route)
     if (!item) return null
-    const tab = item.tabs.find(([, r]) => r === route) || item.tabs.find(([, r]) => under(route, r))
-    if (!tab) return t(`nav.${item.key}`)
-    return item.tabs.length > 1 ? `${t(`nav.${item.key}`)} › ${t(`tab.${item.key}.${tab[0]}`)}` : t(`nav.${item.key}`)
+    const pages = pagesOf(item)
+    const page = pages.find(([, r]) => r === route) || pages.find(([, r]) => under(route, r))
+    return page ? pageLabel(item, page) : t(`nav.${item.key}`)
   }
 
   function routeAnchor (route) {
@@ -98,8 +109,7 @@
     })
   }
   function pageEntries () {
-    const label = (item, key) => (item.tabs.length > 1 ? `${t(`nav.${item.key}`)} › ${t(`tab.${item.key}.${key}`)}` : t(`nav.${item.key}`))
-    return [...NAV.flatMap((item) => item.tabs.map(([key, r]) => ({ label: label(item, key), href: hrefOf(r) }))),
+    return [...NAV.flatMap((item) => pagesOf(item).map((page) => ({ label: pageLabel(item, page), href: hrefOf(page[1]) }))),
       ...FOOTER.filter(([, r]) => r).map(([key, r]) => ({ label: t(`nav.${key}`), href: hrefOf(r) }))]
   }
   function entityEntries (groups, stories) {
@@ -205,7 +215,8 @@
       document.title = `${title()} · ${t('site.name')}`
 
       const item = route ? itemOf(route) : null
-      const exactTab = item && item.tabs.find(([, r]) => r === route)
+      // The tab of the page. For a sub-tab it is the tab that holds it.
+      const exactTab = item && item.tabs.find(([, r, subs]) => r === route || (subs || []).some(([, s]) => s === route))
 
       const navLink = ({ key, href, current }) =>
         h('li', {}, h('a', { class: 'nav-link', href, 'aria-current': current ? 'page' : null }, t(`nav.${key}`)))
@@ -254,15 +265,20 @@
       // The tabs show on the page of a tab. A detail page below a tab has none.
       const tabBar = exactTab && item.tabs.length > 1
         ? h('nav', { class: 'section-tabs', 'aria-label': t(`nav.${item.key}`) }, h('ul', {}, item.tabs.map(([key, r]) =>
+          h('li', {}, h('a', { href: hrefOf(r), 'aria-current': exactTab[1] === r ? (r === route ? 'page' : 'true') : null }, t(`tab.${item.key}.${key}`))))))
+        : null
+      // The sub-tabs of the tab: a second row of underlined tabs under the top bar.
+      const subBar = exactTab && exactTab[2]
+        ? h('nav', { class: 'sub-tabs', 'aria-label': t(`tab.${item.key}.${exactTab[0]}`) }, h('ul', {}, exactTab[2].map(([key, r]) =>
           h('li', {}, h('a', { href: hrefOf(r), 'aria-current': r === route ? 'page' : null }, t(`tab.${item.key}.${key}`))))))
         : null
       // A dash page has its tabs in the center of the top bar. The other pages have them under the top bar.
-      // An item with many tabs (Αναλύσεις has 10) puts them on a second row of the top bar, so they do not push the page wider.
+      // An item with many tabs (more than 6) puts them on a second row of the top bar, so they do not push the page wider.
       if (dash && tabBar) { header.classList.add('has-tabs'); if (item.tabs.length > 6) header.classList.add('many-tabs'); header.append(tabBar) }
       header.append(GlobalSearch())
       const content = h('main', { class: 'content', id: 'content' })
       const shell = h('div', { class: 'shell' }, sidebar, h('div', { class: 'drawer-scrim', onClick: () => setDrawer(false) }),
-        h('div', { class: 'main-column' }, header, dash ? null : tabBar, crumbBar, content, h('footer', { class: 'page-footer' }, t('site.footer'))))
+        h('div', { class: 'main-column' }, header, dash ? null : tabBar, subBar, crumbBar, content, h('footer', { class: 'page-footer' }, t('site.footer'))))
 
       // The open drawer keeps the focus: the rest of the page is inert until the drawer closes.
       const mainColumn = shell.querySelector('.main-column')
@@ -281,8 +297,10 @@
 
       root.replaceChildren(shell)
       // A tab bar that scrolls sideways (phones) shows the current tab.
-      const nav = tabBar && tabBar.querySelector('[aria-current="page"]')
-      if (nav && tabBar.scrollWidth > tabBar.clientWidth) tabBar.scrollLeft = nav.offsetLeft - (tabBar.clientWidth - nav.offsetWidth) / 2
+      ;[tabBar, subBar].forEach((bar) => {
+        const nav = bar && bar.querySelector('[aria-current]')
+        if (nav && bar.scrollWidth > bar.clientWidth) bar.scrollLeft = nav.offsetLeft - (bar.clientWidth - nav.offsetWidth) / 2
+      })
       render(content, { tabs: dash ? null : tabBar })
     }
 

@@ -6,23 +6,23 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/app.css?v=12">
+  <link rel="stylesheet" href="assets/app.css?v=13">
   <link rel="stylesheet" href="assets/dash.css?v=66">
   <link rel="stylesheet" href="assets/politics.css?v=1">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=3"></script>
-  <script src="assets/messages.js?v=17"></script>
+  <script src="assets/messages.js?v=19"></script>
   <script src="assets/messages-v2.js?v=31"></script>
-  <script src="assets/messages-politics.js?v=2"></script>
+  <script src="assets/messages-politics.js?v=4"></script>
   <script src="assets/components.js?v=7"></script>
   <script src="assets/dash.js?v=11"></script>
   <script src="assets/politics.js?v=1"></script>
-  <script src="assets/shell.js?v=32"></script>
+  <script src="assets/shell.js?v=34"></script>
   <script src="data/war.js?v=1"></script>
   <script>
-    // Κόσμος, Ρητορική: how the press writes about Turkey (K20 to K23, C05, C06). It reads the war file (1 Aug to 30 Sep 2026).
+    // Πολιτική, Ελληνοτουρκικά (was Αναλύσεις › Πολεμική ρητορική): how the press writes about Turkey (K20 to K23, C05, C06). It reads the war file (1 Aug to 30 Sep 2026).
     const { t, fmt, h, load } = App
     const { reset, card, cardHead, Stat, TopBar, Spark } = Dash
     const { weekLabel, ColumnChart, Rows, signed } = Politics
@@ -40,11 +40,11 @@
       id: 'war',
       route: '/war',
       dash: true,
-      title: () => t('nav.world'),
-      breadcrumbs: () => [{ label: t('nav.world') }, { label: t('tab.world.war') }],
+      title: () => t('nav.politics'),
+      breadcrumbs: () => [{ label: t('nav.politics') }, { label: t('tab.politics.greekturkish') }],
       render (content, { tabs }) {
         content.classList.add('dash', 'minimal')
-        const title = t('tab.world.war')
+        const title = t('tab.politics.greekturkish')
         const problem = Dash.stateContent([result], { title, tabs, quiet: true })
         if (problem) { content.replaceChildren(...problem); return }
         const d = result.data
