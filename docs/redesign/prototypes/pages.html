@@ -6,16 +6,16 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
-  <link rel="stylesheet" href="assets/app.css?v=17">
+  <link rel="stylesheet" href="assets/app.css?v=19">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
-  <script src="assets/messages.js?v=22"></script>
+  <script src="assets/messages.js?v=23"></script>
   <script src="assets/messages-entities.js"></script>
   <script src="assets/components.js?v=8"></script>
   <script src="assets/motion.js?v=1"></script>
-  <script src="assets/shell.js?v=38"></script>
+  <script src="assets/shell.js?v=40"></script>
   <script src="data/pages.js"></script>
   <script>
     // The table of all 58 routes. scripts/make-pages-table.py makes data/pages.js from the route map.
@@ -55,6 +55,7 @@
             UI.PageHeader({ title: t('pages.title'), hint: t('pages.hint') }),
             h('p', { 'data-testid': 'page-counts' }, t('pages.counts', counts)),
             h('p', {}, h('a', { href: 'entities.html' }, t('entities.link'))),
+            Tree(),
             UI.FilterBar(h('div', { class: 'field' }, t('pages.filter.type'), UI.SegmentedControl({
               label: t('pages.filter.type'), value: view.type, onChange: (v) => { view.type = v; draw() },
               options: [{ value: 'all', label: t('pages.filter.all') }, ...types.map((x) => ({ value: x, label: t(`type.${x}`) }))]
@@ -65,6 +66,16 @@
         draw()
       }
     })
+
+    // The tree of the sidebar (#62): each section with its tabs and sub-tabs, the question of each and its link. It is made from the same NAV as the sidebar.
+    function Tree () {
+      return h('section', { class: 'card page-tree', 'aria-labelledby': 'page-tree-title' },
+        h('h2', { id: 'page-tree-title' }, t('pages.tree.title')),
+        h('p', { class: 'muted-text' }, t('pages.tree.hint')),
+        Shell.tree().map((item) => h('div', {},
+          h('h3', {}, item.label),
+          h('ul', {}, item.pages.map((p) => h('li', {}, h('a', { href: p.href }, p.label), p.question ? h('span', { class: 'muted-text' }, ` · ${p.question}`) : null))))))
+    }
 
     // The rows render after the page loads, so the browser cannot scroll to the hash by itself.
     function markTarget () {

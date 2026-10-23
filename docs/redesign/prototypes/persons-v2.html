@@ -6,26 +6,29 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
-  <link rel="stylesheet" href="assets/app.css?v=17">
+  <link rel="stylesheet" href="assets/app.css?v=19">
   <link rel="stylesheet" href="assets/dash.css?v=69">
   <link rel="stylesheet" href="assets/politics.css?v=2">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
-  <script src="assets/messages.js?v=22"></script>
+  <script src="assets/messages.js?v=23"></script>
   <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-politics.js?v=8"></script>
   <script src="assets/components.js?v=8"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=13"></script>
   <script src="assets/politics.js?v=2"></script>
-  <script src="assets/shell.js?v=38"></script>
+  <script src="assets/shell.js?v=40"></script>
   <script src="data/personFile.js?v=1"></script>
   <script>
     // Πολιτική, Πρόσωπα: the person file. One person, a fixed page (the data has one person today).
     // The statements are verbatim from interviews. The pairs and the verdicts are proposals of models to review.
-    const { t, fmt, h, load, safeUrl } = App
+    // Three sub-tabs (#62): Επισκόπηση (/contradictions), Αντιφάσεις (?tab=pairs) and Έλεγχος στοιχείων (?tab=checks). Each list fills its sub-tab.
+    const { t, fmt, h, load, safeUrl, params } = App
+    const TABS = { overview: '/contradictions', pairs: '/contradictions/pairs', checks: '/contradictions/checks' }
+    const tab = TABS[params.get('tab')] ? params.get('tab') : 'overview'
     const { reset, card, cardHead, Stat, TopBar } = Dash
     const result = load('personFile', ['summary', 'themes', 'pairs', 'checked'], (b) => b.themes)
     const VERDICTS = ['accurate', 'mostly_accurate', 'inaccurate', 'unverifiable']
@@ -38,7 +41,7 @@
 
     Shell.start({
       id: 'persons',
-      route: '/contradictions',
+      route: TABS[tab],
       dash: true,
       title: () => t('nav.people'),
       breadcrumbs: () => [{ label: t('nav.people') }, { label: t('tab.people.file') }],
@@ -50,8 +53,9 @@
           if (problem) { content.replaceChildren(...problem); return }
           const d = result.data
           const s = d.summary
-          const bar = TopBar({ title, tabs, quiet: true })
           const name = App.locale === 'en' ? s.person_en : s.person
+          // The sub-tabs without the person card name the person in the page head.
+          const bar = TopBar({ title, meta: name, tabs, quiet: tab === 'overview' })
 
           const hero = card('c-12 hero',
             h('div', { class: 'hero-main' },
@@ -98,7 +102,7 @@
           const side = (label, x) => h('div', { class: 'pair-side' },
             h('p', { class: 'quote-meta' }, h('strong', {}, label), ' · ', day(x.date), ' · ', h('a', { class: 'quiet-link', href: videoAt(x.video, x.t), target: '_blank', rel: 'noopener' }, t('pf.watch'))),
             h('p', { class: 'quote-text' }, `«${x.quote}»`))
-          const pairCard = card('c-7', cardHead(t('pf.pairs.title'), null, t('pf.pairs.info')),
+          const pairCard = card('c-12', cardHead(t('pf.pairs.title'), null, t('pf.pairs.info')),
             h('ul', { class: 'quote-list' }, pairs.map((p) => h('li', {},
               h('span', { class: 'quote-meta' }, h('span', { class: 'pill pill-hot' }, t(`pf.pair.${p.type}`)), h('span', {}, t(`pf.pair.${p.confidence}`))),
               h('strong', { class: 'pair-conflict' }, p.conflict),
@@ -107,13 +111,14 @@
 
           const order = { inaccurate: 0, accurate: 1, mostly_accurate: 2, unverifiable: 3 }
           const checks = d.checked.slice().sort((a, b) => order[a.verdict] - order[b.verdict] || b.date.localeCompare(a.date)).slice(0, 10)
-          const checkCard = card('c-5 card-top', cardHead(t('pf.checks.title'), null, t('pf.checks.info')),
+          const checkCard = card('c-12', cardHead(t('pf.checks.title'), null, t('pf.checks.info')),
             h('ul', { class: 'quote-list' }, checks.map((c) => h('li', {},
               h('span', { class: 'quote-meta' }, h('span', { class: `pill verdict-${c.verdict}` }, t(`pf.verdict.${c.verdict}`)), day(c.date), ' · ', h('a', { class: 'quiet-link', href: videoAt(c.video, c.t), target: '_blank', rel: 'noopener' }, t('pf.watch'))),
               h('strong', {}, c.assertion_el),
               c.summary_el ? h('span', { class: 'muted-text' }, c.summary_el) : h('span', { class: 'quote-text' }, `«${c.quote}»`)))))
 
-          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, hero, ...stats, monthCard, verdictCard, themeCard, pairCard, checkCard), h('p', { class: 'proto-note' }, t('pf.note')))
+          const cards = { overview: [hero, ...stats, monthCard, verdictCard, themeCard], pairs: [pairCard], checks: [checkCard] }[tab]
+          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...cards), h('p', { class: 'proto-note' }, t('pf.note')))
         }
         paint()
       }

@@ -6,21 +6,21 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
-  <link rel="stylesheet" href="assets/app.css?v=17">
+  <link rel="stylesheet" href="assets/app.css?v=19">
   <link rel="stylesheet" href="assets/dash.css?v=69">
   <link rel="stylesheet" href="assets/mme.css?v=6">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
-  <script src="assets/messages.js?v=22"></script>
+  <script src="assets/messages.js?v=23"></script>
   <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-mme.js?v=5"></script>
   <script src="assets/components.js?v=8"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=13"></script>
   <script src="assets/mme.js?v=5"></script>
-  <script src="assets/shell.js?v=38"></script>
+  <script src="assets/shell.js?v=40"></script>
   <script src="data/home.js?v=3"></script>
   <script src="data/stories.js?v=1"></script>
   <script src="data/mme.js?v=1"></script>
@@ -34,6 +34,10 @@
     // The topic chips and «Ένα θέμα, όλα τα μέσα» of the live page ΜΜΕ & πρόσωπα (data/mme.js), over its whole window.
     const mme = load('mme', ['sets'], (b) => Object.keys(b.sets))
     let mmeTopic = params.has('topic') ? Number(params.get('topic')) : null
+    // The sub-tabs of Θέματα (#62): Επισκόπηση (/trends), Στον χρόνο (?tab=time), Ένα θέμα (?tab=topic) and Ατζέντα μέσων (?tab=agenda).
+    // An old link with ?topic= opens Ένα θέμα, where the topic is now.
+    const TABS = { overview: '/trends', time: '/trends/time', topic: '/trends/topic', agenda: '/trends/agenda' }
+    const tab = TABS[params.get('tab')] ? params.get('tab') : params.has('topic') ? 'topic' : 'overview'
 
     const sumRange = (arr, i0, i1) => { let s = 0; for (let i = i0; i <= i1; i++) s += arr[i]; return s }
     const ROLL = 7
@@ -81,7 +85,7 @@
 
     Shell.start({
       id: 'topics',
-      route: '/trends',
+      route: TABS[tab],
       dash: true,
       title: () => t('nav.topics'),
       breadcrumbs: () => [{ label: t('nav.media') }],
@@ -148,23 +152,29 @@
             }), { max: widest })
             : emptyText(t('media2.empty.list')))
 
-        // The cards of ΜΜΕ & πρόσωπα: a chip opens its topic in «Ένα θέμα, όλα τα μέσα» below. «Η ατζέντα κάθε μέσου» comes last.
+        // The cards of ΜΜΕ & πρόσωπα: on Ένα θέμα a chip opens its topic in «Ένα θέμα, όλα τα μέσα» below. «Η ατζέντα κάθε μέσου» is Ατζέντα μέσων.
         const mmeHolder = h('div', { class: 'c-12 card-col' })
-        if (mme.kind === 'data') {
+        if (mme.kind === 'data' && (tab === 'topic' || tab === 'agenda')) {
           const mset = mme.data.sets.gr
           const MS = Mme.summary(mset, 0, mset.dates.length - 1)
-          const period = h('p', { class: 'dcard-sub' }, t('mme.topics.window', { from: fmt.date(mset.dates[0]), to: fmt.date(mset.dates[mset.dates.length - 1]) }))
-          const agenda = Mme.AgendaCard(MS)
+          const period = () => h('p', { class: 'dcard-sub' }, t('mme.topics.window', { from: fmt.date(mset.dates[0]), to: fmt.date(mset.dates[mset.dates.length - 1]) }))
           const paintMme = (scroll) => {
             const chips = Mme.ChipsCard(MS, { picked: mmeTopic, onPick: (i) => { mmeTopic = i; paintMme(true) } })
-            chips.append(period)
+            chips.append(period())
             const topic = Mme.TopicCard(MS, { topic: mmeTopic, onTopic: (i) => { mmeTopic = i; paintMme(false) } })
-            mmeHolder.replaceChildren(chips, topic, agenda)
+            mmeHolder.replaceChildren(chips, topic)
             if (scroll) topic.scrollIntoView({ behavior: 'smooth', block: 'start' })
           }
-          paintMme(false)
+          if (tab === 'topic') paintMme(false)
+          else mmeHolder.replaceChildren(Mme.AgendaCard(MS))
         }
-        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, h('div', { class: 'card-col c-9' }, table, timeCard), moversCard, mmeHolder), protoNote())
+        const cards = {
+          overview: [h('div', { class: 'card-col c-12' }, table)],
+          time: [h('div', { class: 'card-col c-9' }, timeCard), moversCard],
+          topic: [mmeHolder],
+          agenda: [mmeHolder]
+        }[tab]
+        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...cards), protoNote())
       }
     })
 

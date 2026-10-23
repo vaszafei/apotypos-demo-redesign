@@ -6,7 +6,7 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
-  <link rel="stylesheet" href="assets/app.css?v=17">
+  <link rel="stylesheet" href="assets/app.css?v=19">
   <link rel="stylesheet" href="assets/dash.css?v=69">
   <link rel="stylesheet" href="assets/politics.css?v=2">
   <link rel="stylesheet" href="assets/elections.css?v=3">
@@ -14,20 +14,23 @@
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
-  <script src="assets/messages.js?v=22"></script>
+  <script src="assets/messages.js?v=23"></script>
   <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-politics.js?v=8"></script>
   <script src="assets/components.js?v=8"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=13"></script>
   <script src="assets/politics.js?v=2"></script>
-  <script src="assets/shell.js?v=38"></script>
+  <script src="assets/shell.js?v=40"></script>
   <script src="data/elections.js?v=2"></script>
   <script>
     // Πολιτική, Εκλογές (#19): the cards of the live /elections page (Παρατηρητήριο Εκλογών) for the 10 parties.
     // It reads the snapshot of that page (365 days to 12 Jul 2026, 10 outlets). The live API gives the same data for each period
     // and for parties and leaders, so the page has no period control and no switch.
-    const { t, fmt, h, load } = App
+    // Five tabs (#62): Προβολή (/elections), Μέσα (?tab=outlets), Ιδιοκτησία (?tab=owners), Θέματα (?tab=topics) and Συντάκτες (?tab=bylines).
+    const { t, fmt, h, load, params } = App
+    const TABS = { reach: '/elections', outlets: '/elections/outlets', owners: '/elections/owners', topics: '/elections/topics', bylines: '/elections/bylines' }
+    const tab = TABS[params.get('tab')] ? params.get('tab') : 'reach'
     const { reset, card, cardHead, emptyText, Stat, TopBar } = Dash
     const { LineChart, signed } = Politics
     const result = load('elections', ['parties', 'weeks', 'series', 'outlets'], (b) => b.outlets)
@@ -80,7 +83,7 @@
 
     Shell.start({
       id: 'elections',
-      route: '/elections',
+      route: TABS[tab],
       dash: true,
       title: () => t('nav.politics'),
       breadcrumbs: () => [{ label: t('nav.politics') }, { label: t('tab.politics.elections') }],
@@ -253,7 +256,14 @@
 
         const momentumCard = card('c-6', cardHead(t('elec.momentum.title')), emptyText(t('elec.momentum.empty')))
 
-        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...stats, timeCard, favorCard, leanCard, gapCard, ownerCard, voteCard, pollCard, themeCard, blindCard, momentumCard, anonCard, journCard),
+        const cards = {
+          reach: [...stats, timeCard, voteCard, pollCard, momentumCard],
+          outlets: [favorCard, gapCard],
+          owners: [leanCard, ownerCard],
+          topics: [themeCard, blindCard],
+          bylines: [anonCard, journCard]
+        }[tab]
+        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...cards),
           h('p', { class: 'proto-note' }, t('elec.note', { date: fmt.date(d.reference) })))
       }
     })

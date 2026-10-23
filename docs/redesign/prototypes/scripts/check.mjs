@@ -399,22 +399,30 @@ for (const name of PAGES) {
   const HEIGHT_BEFORE = { 1440: 2335, 390: 4024 }
   for (const width of WIDTHS) {
     const { page, context } = await open(`${base}/topics-v2.html`, width)
+    // #62: «Θέματα σε άνοδο και πτώση» is on the sub-tab Στον χρόνο.
+    const movers = await open(`${base}/topics-v2.html?tab=time`, width)
+    const m = await movers.page.evaluate(() => {
+      const mover = [...document.querySelectorAll('.dcard')].find((c) => c.querySelector('h2')?.textContent === 'Θέματα σε άνοδο και πτώση')
+      return {
+        movers: [...mover.querySelectorAll('.row-name')].map((n) => n.textContent),
+        changes: [...mover.querySelectorAll('.row-value')].map((n) => parseFloat(n.textContent.replace('−', '-').replace(',', '.'))),
+        up: mover.querySelectorAll('.tri-up').length,
+        down: mover.querySelectorAll('.tri-down').length
+      }
+    })
+    await movers.context.close()
     const r = await page.evaluate(() => {
       const cards = [...document.querySelectorAll('.dcard')]
-      const mover = cards.find((c) => c.querySelector('h2')?.textContent === 'Θέματα σε άνοδο και πτώση')
       return {
         height: document.documentElement.scrollHeight,
         titles: cards.map((c) => c.querySelector('h2')?.textContent),
         stats: document.querySelectorAll('.dstat').length,
         columns: [...document.querySelectorAll('.data-table th')].map((th) => th.textContent),
         rows: document.querySelectorAll('.data-table tbody tr').length,
-        movers: [...mover.querySelectorAll('.row-name')].map((n) => n.textContent),
-        changes: [...mover.querySelectorAll('.row-value')].map((n) => parseFloat(n.textContent.replace('−', '-').replace(',', '.'))),
-        up: mover.querySelectorAll('.tri-up').length,
-        down: mover.querySelectorAll('.tri-down').length,
         tabs: [...document.querySelectorAll('.section-tabs a')].map((a) => a.textContent)
       }
     })
+    Object.assign(r, m)
     const expected = ['Όλα τα θέματα', 'Τα μεγαλύτερα θέματα στον χρόνο', 'Θέματα σε άνοδο και πτώση']
     record(`topics ${width}px: 3 cards in the new order, with no stat card and no repeated card`, r.titles.join() === expected.join() && r.stats === 0, { titles: r.titles, stats: r.stats })
     record(`topics ${width}px: the table has 12 rows and no change column`, r.rows === 12 && !r.columns.some((c) => c.includes('Αλλαγή')), { rows: r.rows, columns: r.columns })
