@@ -13,31 +13,33 @@
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=3"></script>
-  <script src="assets/messages.js?v=20"></script>
+  <script src="assets/messages.js?v=21"></script>
   <script src="assets/messages-v2.js?v=32"></script>
-  <script src="assets/messages-politics.js?v=7"></script>
+  <script src="assets/messages-politics.js?v=8"></script>
   <script src="assets/components.js?v=7"></script>
   <script src="assets/dash.js?v=11"></script>
   <script src="assets/politics.js?v=1"></script>
-  <script src="assets/shell.js?v=35"></script>
+  <script src="assets/shell.js?v=36"></script>
   <script src="data/cases.js?v=1"></script>
   <script>
-    // Πολιτική, Υποθέσεις: the coverage of one case in all outlets (K46). The page opens with a result, not an empty input (G6).
+    // Ιστορίες, Υποθέσεις (from Πολιτική): the coverage of one case in all outlets (K46). The page opens with a result, not an empty input (G6).
     // The prototype has one stored answer of the case API, so the input shows that case.
     const { t, fmt, h, load } = App
     const { reset, card, cardHead, Stat, TopBar } = Dash
     const { ColumnChart, Rows } = Politics
     const result = load('cases', ['by_source', 'timeline', 'articles'], (b) => b.articles)
+    // The card of the words and the themes shows one of the two lists. The switch is the one of the time chart of Εκλογές.
+    let words = 'framing'
 
     Shell.start({
       id: 'cases',
       route: '/cases',
       dash: true,
-      title: () => t('nav.politics'),
-      breadcrumbs: () => [{ label: t('nav.politics') }, { label: t('tab.politics.cases') }],
+      title: () => t('nav.spread'),
+      breadcrumbs: () => [{ label: t('nav.spread') }, { label: t('tab.spread.cases') }],
       render (content, { tabs }) {
         content.classList.add('dash', 'minimal')
-        const title = t('tab.politics.cases')
+        const title = t('tab.spread.cases')
         const problem = Dash.stateContent([result], { title, tabs, quiet: true })
         if (problem) { content.replaceChildren(...problem); return }
         const d = result.data
@@ -63,20 +65,30 @@
         const timeCard = card('c-8', cardHead(t('case.time.title'), null, t('case.time.info')),
           ColumnChart({ labels: months.map((m) => month(`${m}-01`)), values: months.map((m) => counts.get(m) || 0), height: 220, aria: t('case.time.title'),
             tips: months.map((m) => `${month(`${m}-01`)} · ${fmt.int(counts.get(m) || 0)}`) }))
+        // The bar of an outlet has the color of its group, as on the other pages.
         const outletCard = card('c-4', cardHead(t('case.outlets.title'), null, t('case.outlets.info')),
-          Rows(d.by_source.map((s) => ({ label: s.source, sub: t('case.outlets.sub', { group: s.group || '–', first: day(s.first), last: day(s.last) }), value: s.count })), { cls: 'rows-wrap' }))
+          Rows(d.by_source.map((s) => ({ label: s.source, sub: t('case.outlets.sub', { group: s.group || '–', first: day(s.first), last: day(s.last) }), value: s.count, color: Dash.groupColor(s.group) })), { cls: 'rows-wrap' }))
 
-        const framingCard = card('c-4', cardHead(t('case.framing.title'), null, t('case.framing.info')),
-          Rows(d.framing.terms.filter((x) => x.total).sort((a, b) => b.total - a.total).map((x) => ({ label: x.label, value: x.total }))))
-        const themeCard = card('c-4', cardHead(t('case.themes.title'), null, t('case.themes.info')),
-          Rows(d.themes.map((x) => ({ label: x.label, value: x.count }))))
-        const entityCard = card('c-4', cardHead(t('case.entities.title'), null, t('case.entities.info')),
+        const lists = {
+          framing: d.framing.terms.filter((x) => x.total).sort((a, b) => b.total - a.total).map((x) => ({ label: x.label, value: x.total })),
+          themes: d.themes.map((x) => ({ label: x.label, value: x.count }))
+        }
+        const wordsHead = h('div', {})
+        const wordsHolder = h('div', {})
+        const drawWords = () => {
+          const pick = UI.SegmentedControl({ label: t('case.words.measure'), value: words, options: ['framing', 'themes'].map((k) => ({ value: k, label: t(`case.words.${k}`) })), onChange: (k) => { words = k; drawWords() } })
+          wordsHead.replaceChildren(cardHead(t(`case.${words}.title`), pick, t(`case.${words}.info`)))
+          wordsHolder.replaceChildren(Rows(lists[words]))
+        }
+        drawWords()
+        const wordsCard = card('c-6', wordsHead, wordsHolder)
+        const entityCard = card('c-6', cardHead(t('case.entities.title'), null, t('case.entities.info')),
           h('div', { class: 'chips case-chips' }, d.entities.map((e) => h('span', { class: 'target-chip' }, e.text, h('strong', {}, fmt.int(e.count))))))
 
         const articles = d.articles.slice().sort((a, b) => b.date.localeCompare(a.date))
         const articleCard = card('c-12', cardHead(t('case.articles.title'), null, t('case.articles.info')),
           UI.DataTable({
-            rows: articles, pageSize: 12,
+            rows: articles, pageSize: 8,
             columns: [
               { label: t('gz.col.outlet'), render: (a) => h('span', { class: 'nowrap' }, a.source) },
               { label: t('case.col.date'), render: (a) => h('span', { class: 'nowrap muted-text' }, day(a.date)) },
@@ -84,7 +96,7 @@
             ]
           }))
 
-        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...stats, timeCard, outletCard, framingCard, themeCard, entityCard, articleCard), h('p', { class: 'proto-note' }, t('case.note')))
+        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...stats, timeCard, outletCard, wordsCard, entityCard, articleCard), h('p', { class: 'proto-note' }, t('case.note')))
       }
     })
     reset()
