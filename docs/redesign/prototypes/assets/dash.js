@@ -1,7 +1,7 @@
 // Shared parts of the dashboard pages (APO-161): the top bar, the compact stat card, the cards and the small charts.
 // Load after components.js. The pages media-v2, groups-v2 and fingerprints-v2 use it.
 (function () {
-  const { t, fmt, h } = window.App
+  const { t, fmt, h, Icon } = window.App
 
   // The charts draw again at their real width. reset() stops the old observers before a page draws again.
   const watchers = []
@@ -67,9 +67,9 @@
   }
 
   const card = (cls, ...children) => h('section', { class: `dcard ${cls}` }, ...children)
-  // Info: the explanation of a card is not on the card. A round button in the top right corner shows it on hover, on focus and on a tap.
+  // Info: the explanation of a card is not on the card. A round icon button (the information-circle of the icon set) in the top right corner shows it on hover, on focus and on a tap.
   function Info (text) {
-    const btn = h('button', { type: 'button', class: 'info-btn', 'aria-label': t('dash.info'), 'aria-expanded': 'false' }, 'i')
+    const btn = h('button', { type: 'button', class: 'info-btn', 'aria-label': t('dash.info'), 'aria-expanded': 'false' }, Icon('information-circle', 'icon'))
     const wrap = h('span', { class: 'info' }, btn, h('span', { class: 'info-pop', role: 'note' }, text))
     btn.addEventListener('click', () => { const open = !wrap.classList.contains('is-open'); closeInfos(); wrap.classList.toggle('is-open', open); btn.setAttribute('aria-expanded', String(open)) })
     return wrap
