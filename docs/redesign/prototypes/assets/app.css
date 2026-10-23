@@ -249,13 +249,25 @@ button, input, select { font: inherit; color: inherit; }
 .dbar-seg.is-right { border-top-right-radius: 4px; border-bottom-right-radius: 4px; }
 .dbar-mid { position: absolute; top: -3px; bottom: -3px; left: 50%; width: 2px; margin-left: -1px; border-radius: 1px; background: #1f1f1f; }
 .dbar.is-faint .dbar-seg { opacity: 0.4; }
-.bar-list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-2); }
-.bar-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--space-3); row-gap: 4px; align-items: center; font-size: var(--text-small); }
+.bar-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.bar-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--space-3); row-gap: 3px; align-items: center; font-size: var(--text-small); }
 .bar-list .row-name { min-width: 0; overflow-wrap: anywhere; }
 .bar-list .row-name > .dot { display: inline-block; margin-right: 6px; vertical-align: -1px; }
 .bar-list .row-sub { display: block; font-size: var(--text-caption); color: var(--text-secondary); }
 .bar-list .row-value { font-size: var(--text-caption); color: var(--text-secondary); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .bar-list li > :nth-child(3) { grid-column: 1 / -1; }
+/* A list of 440 px or more, with no second line under the labels: label, bar and value on one line. The label column is as wide as the longest label, 40% at most,
+   so the bars of all rows have one start and one end (a subgrid). A narrower list keeps the bar under the label. */
+.bar-box { min-width: 0; container-type: inline-size; }
+@container (min-width: 440px) {
+  .bar-list:not(:has(.row-sub)) { grid-template-columns: fit-content(40%) minmax(96px, 1fr) auto; column-gap: var(--space-3); row-gap: 6px; }
+  .bar-list:not(:has(.row-sub)) > li { grid-column: 1 / -1; grid-template-columns: subgrid; }
+  .bar-list:not(:has(.row-sub)) > li > .row-value { grid-column: 3; grid-row: 1; }
+  .bar-list:not(:has(.row-sub)) > li > :nth-child(3) { grid-column: 2; grid-row: 1; }
+}
+/* A long list in columns, and the key of its reference value above it. */
+.bar-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 6px var(--space-5); align-items: start; }
+.bar-list-wrap { display: grid; gap: var(--space-2); min-width: 0; }
 .bar-group { display: grid; gap: 3px; }
 /* A phone shows the value of a bar with a value text, not the bar. */
 @media (max-width: 639px) { .hbar:has(.bar-value) .hbar-track { display: none; } }
@@ -277,6 +289,8 @@ button, input, select { font: inherit; color: inherit; }
 .bar-chart .bar-mark { fill: #ffffff; stroke: #1f1f1f; stroke-width: 1.5; }
 .bar-chart .bar-mark-text { fill: #1f1f1f; font-weight: 600; pointer-events: none; }
 .bar-chart .bar-top { fill: var(--text-primary); }
+.bar-chart .bar-ref { stroke: #1f1f1f; stroke-width: 1; stroke-dasharray: 4 3; pointer-events: none; }
+.bar-chart .bar-ref-text { fill: var(--text-primary); paint-order: stroke; stroke: var(--surface-raised); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
 .bar-chart text.is-picked { fill: var(--text-primary); font-weight: 700; }
 .bar-chart .axis-title { fill: var(--text-secondary); }
 .bar-below { display: grid; gap: 4px; margin-top: 2px; font-size: var(--text-caption); line-height: 1.25; color: var(--text-secondary); text-align: center; }

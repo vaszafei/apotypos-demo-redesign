@@ -71,6 +71,8 @@ Object.assign(window.MESSAGES.el, {
 
   'mme.gov.title': 'Πώς γράφουν για την κυβέρνηση',
   'mme.gov.title.il': 'Πώς γράφουν για την ισραηλινή κυβέρνηση',
+  'mme.gov.finding': 'Πιο επικριτικό για την κυβέρνηση το {most} ({a}), λιγότερο το {least} ({b})',
+  'mme.gov.avg': 'Όλα τα άρθρα: {v} επικριτικά',
   'mme.gov.info': 'Τα άρθρα όπου η κυβέρνηση παίζει ρόλο: επικριτικά, ουδέτερα, υποστηρικτικά. Τα μέσα είναι από το πιο επικριτικό στο λιγότερο. Τα μέσα με λιγότερα από 30 άρθρα είναι στο τέλος.',
 
   'mme.topic.title': 'Ένα θέμα, όλα τα μέσα',
@@ -225,6 +227,8 @@ Object.assign(window.MESSAGES.en, {
 
   'mme.gov.title': 'How they write about the government',
   'mme.gov.title.il': 'How they write about the Israeli government',
+  'mme.gov.finding': 'Most critical of the government: {most} ({a}), least: {least} ({b})',
+  'mme.gov.avg': 'All articles: {v} critical',
   'mme.gov.info': 'The articles where the government has a role: critical, neutral, supportive. The outlets go from the most critical to the least. The outlets with fewer than 30 articles are at the end.',
 
   'mme.topic.title': 'One topic, all outlets',

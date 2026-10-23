@@ -6,24 +6,24 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
-  <link rel="stylesheet" href="assets/app.css?v=19">
-  <link rel="stylesheet" href="assets/dash.css?v=69">
+  <link rel="stylesheet" href="assets/app.css?v=20">
+  <link rel="stylesheet" href="assets/dash.css?v=71">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=23"></script>
-  <script src="assets/messages-v2.js?v=32"></script>
-  <script src="assets/components.js?v=8"></script>
+  <script src="assets/messages-v2.js?v=34"></script>
+  <script src="assets/components.js?v=9"></script>
   <script src="assets/motion.js?v=1"></script>
-  <script src="assets/dash.js?v=13"></script>
+  <script src="assets/dash.js?v=15"></script>
   <script src="assets/shell.js?v=40"></script>
   <script src="data/overton.js?v=1"></script>
   <script>
     // Μέσα, Μετατοπίσεις (was Αναλύσεις › Παράθυρο): when the way the coverage describes a topic changes. It reads the overton file (36 topics, 53 weeks of 2025).
     // The file has no drift for each week. It has the strongest shift of each topic, its week and the articles of each week.
     const { t, fmt, h, load } = App
-    const { reset, card, cardHead, emptyText, Stat, TopBar } = Dash
+    const { reset, card, cardHead, TopBar } = Dash
     const shifts = load('overton', ['topics', 'weeks'], (b) => b.topics)
 
     // Weekly articles of one topic. The dot is the week of the strongest shift. It is blue above the limit and gray below.
@@ -41,9 +41,10 @@
     }
 
     // Bars: how many topics had the strongest shift in each month of 2025.
-    function MonthChart ({ counts }) {
+    function MonthChart ({ counts, avg }) {
       const months = counts.map((_, i) => fmt.date(`2025-${String(i + 1).padStart(2, '0')}-01`, { month: 'short' }))
       return UI.BarChart({ labels: months, values: counts, height: 230, axisLabel: t('shifts.month.axis'), label: t('shifts.month.title'),
+        reference: { value: avg, label: t('shifts.month.avg', { n: fmt.dec(avg) }) },
         tooltipOf: (i) => t('shifts.month.tip', { month: months[i], n: fmt.int(counts[i]) }) })
     }
 
@@ -73,25 +74,27 @@
         moved.forEach((r) => { counts[Number(r.week.slice(5, 7)) - 1]++ })
 
         const ratio = (v) => `${new Intl.NumberFormat('el-GR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}×`
-        const statTopics = Stat({ label: t('shifts.stat.topics'), value: fmt.int(rows.length), sub: t('shifts.stat.topics.sub') })
-        const statShifts = Stat({ label: t('shifts.stat.shifts'), value: fmt.int(moved.length), sub: t('shifts.stat.shifts.sub', { n: fmt.dec(limit) }) })
-        const statTop = Stat({ label: t('shifts.stat.top'), value: ratio(strongest.ratio), sub: t('shifts.stat.top.sub', { topic: name(strongest), date: fmt.date(strongest.week, { day: 'numeric', month: 'short', year: 'numeric' }) }) })
-
-        const table = card('c-8', cardHead(t('shifts.table.title'), null, t('shifts.table.info')),
-          h('p', { class: 'dcard-sub' }, t('shifts.table.sub', { from: fmt.date(d.window[0]), to: fmt.date(d.window[1]) })),
+        // #60: the 3 stat cards repeated the table (its first row) and the chart (the sum of its columns). Their facts are now the title
+        // and the line under it: how many topics are measured, how many shifted above the limit, and the strongest shift.
+        const table = card('c-8', cardHead(t('shifts.table.finding', { n: fmt.int(moved.length), total: fmt.int(rows.length), topic: name(strongest), x: ratio(strongest.ratio) }), null, `${t('shifts.table.title')}. ${t('shifts.table.info')}`),
+          h('p', { class: 'dcard-sub' }, t('shifts.table.lead', { n: fmt.dec(limit), from: fmt.date(d.window[0]), to: fmt.date(d.window[1]) })),
           UI.DataTable({
-            rows, rankColumn: true, pageSize: rows.length, emptyText: t('shifts.empty'),
+            rows, rankColumn: true, pageSize: 12, emptyText: t('shifts.empty'),
             columns: [
               { label: t('media.col.issue'), render: (r) => h('span', { class: 'nowrap' }, name(r)) },
               { label: t('shifts.col.shift'), num: true, render: (r) => (r.ratio >= limit ? h('span', { class: 'delta' }, ratio(r.ratio)) : h('span', { class: 'mini-empty', title: t('shifts.below') }, ratio(r.ratio))) },
-              { label: t('shifts.col.week'), render: (r) => h('span', { class: 'nowrap' }, fmt.date(r.week, { day: 'numeric', month: 'short' })) },
+              { label: t('shifts.col.week'), render: (r) => h('span', { class: 'nowrap' }, weekDate(r.week)) },
               { label: t('shifts.col.articles'), num: true, phone: false, render: (r) => fmt.int(r.size) },
               { label: t('shifts.col.trend'), phone: false, render: (r) => WeekSpark(r, d.weeks, limit) }
             ]
           }))
-        const monthCard = card('c-4', cardHead(t('shifts.month.title'), null, t('shifts.month.info')), MonthChart({ counts }))
+        // The title names the month with the most shifts. The dashed line is the average of the months.
+        const top = Math.max(...counts)
+        const topMonths = counts.map((n, i) => (n === top ? fmt.date(`2025-${String(i + 1).padStart(2, '0')}-01`, { month: 'short' }) : null)).filter(Boolean)
+        const monthCard = card('c-4', cardHead(top ? t('shifts.month.finding', { months: topMonths.join(t('shifts.and')), n: fmt.int(top) }) : t('shifts.month.title'), null, `${t('shifts.month.title')}. ${t('shifts.month.info')}`),
+          MonthChart({ counts, avg: moved.length / 12 }))
 
-        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, statTopics, statShifts, statTop, table, h('div', { class: 'c-4 card-col' }, monthCard)), protoNote())
+        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, table, h('div', { class: 'c-4 card-col' }, monthCard)), protoNote())
       }
     })
 

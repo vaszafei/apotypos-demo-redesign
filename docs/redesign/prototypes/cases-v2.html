@@ -6,19 +6,19 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
-  <link rel="stylesheet" href="assets/app.css?v=19">
-  <link rel="stylesheet" href="assets/dash.css?v=69">
+  <link rel="stylesheet" href="assets/app.css?v=20">
+  <link rel="stylesheet" href="assets/dash.css?v=71">
   <link rel="stylesheet" href="assets/politics.css?v=2">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=23"></script>
-  <script src="assets/messages-v2.js?v=32"></script>
+  <script src="assets/messages-v2.js?v=34"></script>
   <script src="assets/messages-politics.js?v=8"></script>
-  <script src="assets/components.js?v=8"></script>
+  <script src="assets/components.js?v=9"></script>
   <script src="assets/motion.js?v=1"></script>
-  <script src="assets/dash.js?v=13"></script>
+  <script src="assets/dash.js?v=15"></script>
   <script src="assets/politics.js?v=2"></script>
   <script src="assets/shell.js?v=40"></script>
   <script src="data/cases.js?v=1"></script>
@@ -62,11 +62,16 @@
         const counts = new Map(d.timeline.buckets.map((b, i) => [b.slice(0, 7), d.timeline.total[i]]))
         const months = []
         for (let x = new Date(`${d.timeline.buckets[0].slice(0, 7)}-01T00:00:00Z`); x.toISOString().slice(0, 7) <= d.timeline.buckets[d.timeline.buckets.length - 1].slice(0, 7); x.setUTCMonth(x.getUTCMonth() + 1)) months.push(x.toISOString().slice(0, 7))
-        const timeCard = card('c-8', cardHead(t('case.time.title'), null, t('case.time.info')),
-          UI.BarChart({ labels: months.map((m) => month(`${m}-01`)), values: months.map((m) => counts.get(m) || 0), height: 220, label: t('case.time.title'),
+        // #60: the titles say what each chart shows; the topic of the card goes to its info. The dashed line is the average month.
+        const monthly = months.map((m) => counts.get(m) || 0)
+        const peakMonth = monthly.indexOf(Math.max(...monthly))
+        const monthAvg = monthly.reduce((a, b) => a + b, 0) / (monthly.length || 1)
+        const timeCard = card('c-8', cardHead(t('case.time.finding', { month: month(`${months[peakMonth]}-01`), n: fmt.int(monthly[peakMonth]) }), null, `${t('case.time.title')}. ${t('case.time.info')}`),
+          UI.BarChart({ labels: months.map((m) => month(`${m}-01`)), values: monthly, height: 220, label: t('case.time.title'), reference: { value: monthAvg, label: t('find.avg', { n: fmt.int(Math.round(monthAvg)) }) },
             tooltipOf: (i) => `${month(`${months[i]}-01`)} · ${fmt.int(counts.get(months[i]) || 0)}` }))
         // The bar of an outlet has the color of its group, as on the other pages.
-        const outletCard = card('c-4', cardHead(t('case.outlets.title'), null, t('case.outlets.info')),
+        const lead = d.by_source.slice().sort((a, b) => b.count - a.count)[0]
+        const outletCard = card('c-4', cardHead(lead ? t('case.outlets.finding', { name: lead.source, share: fmt.pct(lead.count / (d.total || 1)) }) : t('case.outlets.title'), null, `${t('case.outlets.title')}. ${t('case.outlets.info')}`),
           UI.BarList(d.by_source.map((s) => ({ label: s.source, sub: t('case.outlets.sub', { group: s.group || '–', first: day(s.first), last: day(s.last) }), value: s.count, color: Dash.groupColor(s.group) }))))
 
         const lists = {

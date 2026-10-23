@@ -6,19 +6,19 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
-  <link rel="stylesheet" href="assets/app.css?v=19">
-  <link rel="stylesheet" href="assets/dash.css?v=69">
+  <link rel="stylesheet" href="assets/app.css?v=20">
+  <link rel="stylesheet" href="assets/dash.css?v=71">
   <link rel="stylesheet" href="assets/politics.css?v=2">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=23"></script>
-  <script src="assets/messages-v2.js?v=32"></script>
+  <script src="assets/messages-v2.js?v=34"></script>
   <script src="assets/messages-politics.js?v=8"></script>
-  <script src="assets/components.js?v=8"></script>
+  <script src="assets/components.js?v=9"></script>
   <script src="assets/motion.js?v=1"></script>
-  <script src="assets/dash.js?v=13"></script>
+  <script src="assets/dash.js?v=15"></script>
   <script src="assets/politics.js?v=2"></script>
   <script src="assets/shell.js?v=40"></script>
   <script src="data/personFile.js?v=1"></script>
@@ -62,9 +62,8 @@
               h('p', { class: 'hero-kicker' }, t('pf.kicker')),
               h('h1', { class: 'hero-title' }, name),
               h('p', { class: 'dcard-sub hero-lead' }, t('pf.lead')),
+              // #60: the counts of videos and statements are the first two stat cards, under the title, so they are not chips here too.
               h('div', { class: 'hero-chips' },
-                h('span', { class: 'chip chip-num' }, t('pf.chip.videos', { n: fmt.int(d.videos) })),
-                h('span', { class: 'chip chip-num' }, t('pf.chip.claims', { n: fmt.int(s.claims) })),
                 h('span', { class: 'hero-period' }, h('strong', {}, t('pf.period', { from: day(s.from), to: day(s.to) }))))))
 
           const wide = (stat) => { stat.classList.replace('c-4', 'c-3'); return stat }
@@ -80,12 +79,19 @@
           const months = []
           for (let x = new Date(`${d.claimsByMonth[0][0]}-01T00:00:00Z`); x.toISOString().slice(0, 7) <= d.claimsByMonth[d.claimsByMonth.length - 1][0]; x.setUTCMonth(x.getUTCMonth() + 1)) months.push(x.toISOString().slice(0, 7))
           const monthLabel = (m) => fmt.date(`${m}-01`, { month: 'short', year: '2-digit' })
-          const monthCard = card('c-8', cardHead(t('pf.months.title'), null, t('pf.months.info')),
-            UI.BarChart({ labels: months.map(monthLabel), values: months.map((m) => counts.get(m) || 0), height: 220, label: t('pf.months.title'),
+          // The title names the month with the most statements; the dashed line is the average of the months with an interview.
+          const monthly = months.map((m) => counts.get(m) || 0)
+          const busiest = monthly.indexOf(Math.max(...monthly))
+          const active = monthly.filter((n) => n > 0)
+          const monthAvg = active.reduce((a, b) => a + b, 0) / (active.length || 1)
+          const monthCard = card('c-8', cardHead(t('pf.months.finding', { month: monthLabel(months[busiest]), n: fmt.int(monthly[busiest]) }), null, `${t('pf.months.title')}. ${t('pf.months.info')}`),
+            UI.BarChart({ labels: months.map(monthLabel), values: monthly, height: 220, label: t('pf.months.title'), reference: { value: monthAvg, label: t('find.avg', { n: fmt.int(Math.round(monthAvg)) }) },
               tooltipOf: (i) => `${monthLabel(months[i])} · ${fmt.int(counts.get(months[i]) || 0)}` }))
           const verdictColor = { accurate: 'var(--stance-supportive)', mostly_accurate: '#7fa7e0', inaccurate: 'var(--stance-critical)', unverifiable: 'var(--bar-muted)' }
-          const verdictCard = card('c-4', cardHead(t('pf.verdict.title'), null, t('pf.verdict.info')),
-            UI.BarList(VERDICTS.map((k) => ({ label: t(`pf.verdict.${k}`), value: d.checks.verdicts[k] || 0, color: verdictColor[k] })), { max: d.checks.checked }))
+          // The title gives the share of the checked figures that hold, fully or mostly.
+          const holds = ((d.checks.verdicts.accurate || 0) + (d.checks.verdicts.mostly_accurate || 0)) / (d.checks.checked || 1)
+          const verdictCard = card('c-4', cardHead(d.checks.checked ? t('pf.verdict.finding', { share: fmt.pct(holds) }) : t('pf.verdict.title'), null, `${t('pf.verdict.title')}. ${t('pf.verdict.info')}`),
+            UI.BarList(VERDICTS.map((k) => ({ label: t(`pf.verdict.${k}`), value: d.checks.verdicts[k] || 0, text: `${fmt.int(d.checks.verdicts[k] || 0)} · ${fmt.pct((d.checks.verdicts[k] || 0) / (d.checks.checked || 1))}`, color: verdictColor[k] })), { max: d.checks.checked }))
 
           const themeRows = d.themes.slice().sort((a, b) => b.n - a.n)
           const kindsOf = (x) => KINDS.filter((k) => x.kinds[k]).sort((a, b) => x.kinds[b] - x.kinds[a]).slice(0, 3).map((k) => `${t(`pf.kind.${k}`)} ${fmt.int(x.kinds[k])}`).join(' · ')
