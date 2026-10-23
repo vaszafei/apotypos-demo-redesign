@@ -104,6 +104,15 @@
   }
   const headerV2 = readHeader() === 'v2'
   document.documentElement.dataset.header = headerV2 ? 'v2' : 'v1'
+  // The style of the v2 header: a (white band), b (segmented tabs) or c (editorial). ?hstyle= or the last choice sets it.
+  const HSTYLES = ['a', 'b', 'c']
+  function readHeaderStyle () {
+    const asked = new URLSearchParams(location.search).get('hstyle')
+    let saved = null
+    try { if (HSTYLES.includes(asked)) localStorage.setItem('proto-hstyle', asked); saved = localStorage.getItem('proto-hstyle') } catch {}
+    return [asked, saved].find((x) => HSTYLES.includes(x)) || 'a'
+  }
+  if (headerV2) document.documentElement.dataset.hstyle = readHeaderStyle()
 
   // The global search finds pages, groups, outlets and stories in the snapshot. A data file that the page does not load opens on the first search.
   const fold = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/ς/g, 'σ')
@@ -365,8 +374,16 @@
   }
   // The page head (v2): the title and the page actions on one row, the tabs and sub-tabs under them, the filters of the tab last.
   // Page actions change the whole page: the period, the set of outlets, a view switch. Filters narrow the content of one tab.
+  // The tools of every page, after its actions: how it is measured, copy the link, download the data (prototype: the download is not built).
+  function PageTools () {
+    const tool = (icon, label, onClick) => h('button', { type: 'button', class: 'page-tool', 'aria-label': label, title: label, onClick }, Icon(icon, 'icon'))
+    return h('div', { class: 'page-tools', role: 'group', 'aria-label': t('shell.tools') },
+      tool('information-circle', t('shell.tool.method'), () => { location.href = 'methodology.html' }),
+      tool('link', t('shell.tool.link'), () => navigator.clipboard?.writeText(location.href)),
+      tool('arrow-down-tray', t('shell.tool.download'), null))
+  }
   function PageHead ({ title, meta, actions = [], filters = [], tabs = current.tabs, error }) {
-    actions = actions.filter(Boolean)
+    actions = [...actions.filter(Boolean), PageTools()]
     filters = filters.filter(Boolean)
     return h('header', { class: 'page-head' },
       h('div', { class: 'page-head-row' },

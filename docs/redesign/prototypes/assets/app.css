@@ -456,3 +456,69 @@ button, input, select { font: inherit; color: inherit; }
   :root[data-header="v2"] .page-filters .region-pills { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--space-4)); padding: 0 var(--space-4); }
   :root[data-header="v2"] .page-filters .region-pills button { flex: none; }
 }
+
+/* Page tools (v2): round icon buttons after the page actions. */
+:root[data-header="v2"] .page-tools { display: inline-flex; align-items: center; gap: 2px; margin-left: var(--space-1); }
+:root[data-header="v2"] .page-tool { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; border: 1px solid transparent; border-radius: 50%; background: transparent; color: var(--text-secondary); cursor: pointer; }
+:root[data-header="v2"] .page-tool:hover { border-color: var(--border); background: var(--surface-raised); color: var(--ink); }
+:root[data-header="v2"] .page-tool .icon { width: 20px; height: 20px; }
+
+/* Style A, white band: the top bar and the page head are one white surface. The tabs are underlined at its lower edge.
+   The body starts where the white ends: the change of color is the edge, no line. The sub-tabs and the filters are on the body. */
+:root[data-hstyle="a"] .header-bar { background: var(--surface-raised); backdrop-filter: none; }
+:root[data-hstyle="a"] .global-search-input { border-color: transparent; background: var(--surface-page); }
+:root[data-hstyle="a"] .global-search-input:hover { border-color: var(--border); }
+:root[data-hstyle="a"] .global-search-key { background: var(--surface-raised); }
+:root[data-hstyle="a"] .page-head { margin: 0 calc(-1 * var(--space-5)) var(--space-5); padding: var(--space-2) var(--space-5) 0; background: var(--surface-raised); }
+:root[data-hstyle="a"] .page-head:not(:has(.page-tabs)) { padding-bottom: var(--space-5); }
+:root[data-hstyle="a"] .page-head-title { font-size: 24px; }
+:root[data-hstyle="a"] .page-head .dr-trigger, :root[data-hstyle="a"] .page-head .set-select select, :root[data-hstyle="a"] .page-head .segmented { background: var(--surface-page); border-color: transparent; }
+:root[data-hstyle="a"] .page-tool:hover { background: var(--surface-page); border-color: transparent; }
+:root[data-hstyle="a"] .page-tabs { margin-top: var(--space-3); }
+:root[data-hstyle="a"] .page-tabs .section-tabs { padding: 0; }
+:root[data-hstyle="a"] .page-tabs .section-tabs ul { gap: var(--space-5); }
+:root[data-hstyle="a"] .page-tabs .section-tabs a,
+:root[data-hstyle="a"] .page-tabs .section-tabs a:hover { padding: 10px 0 12px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; box-shadow: none; }
+:root[data-hstyle="a"] .page-tabs .section-tabs a:hover { color: var(--ink); }
+:root[data-hstyle="a"] .page-tabs .section-tabs a[aria-current] { border-bottom-color: var(--ink); box-shadow: none; }
+:root[data-hstyle="a"] .page-tabs .sub-tabs, :root[data-hstyle="a"] .page-head .page-filters { margin: 0 calc(-1 * var(--space-5)); padding: var(--space-4) var(--space-5) 0; background: var(--surface-page); }
+:root[data-hstyle="a"] .page-tabs .sub-tabs ul { gap: var(--space-1); }
+:root[data-hstyle="a"] .page-tabs .sub-tabs a[aria-current="page"] { background: var(--surface-raised); box-shadow: 0 1px 2px rgba(17, 17, 17, 0.08); }
+:root[data-hstyle="a"] .page-tabs .sub-tabs a:hover { background: var(--surface-raised); }
+
+/* Style B, segmented: the tabs are one white track with the current tab in black. The sub-tabs are text with a short line under the current one. */
+:root[data-hstyle="b"] .page-head-title { font-size: 28px; letter-spacing: -0.02em; }
+:root[data-hstyle="b"] .global-search-input { border-color: transparent; box-shadow: 0 1px 0 rgba(17, 17, 17, 0.04), 0 6px 18px -12px rgba(17, 17, 17, 0.35); }
+:root[data-hstyle="b"] .page-tabs { margin-top: var(--space-4); }
+:root[data-hstyle="b"] .page-tabs .section-tabs { padding: 0 0 2px; overflow: visible; }
+:root[data-hstyle="b"] .page-tabs .section-tabs ul { gap: 2px; width: max-content; padding: 4px; border: 1px solid #e4e0d6; border-radius: var(--pill, 999px); background: var(--surface-raised); box-shadow: 0 1px 0 rgba(17, 17, 17, 0.03), 0 10px 24px -18px rgba(17, 17, 17, 0.35); }
+:root[data-hstyle="b"] .page-tabs .section-tabs a { padding: 7px 16px; border: 0; box-shadow: none; }
+:root[data-hstyle="b"] .page-tabs .section-tabs a:hover { background: var(--surface-page); }
+:root[data-hstyle="b"] .page-tabs .section-tabs a[aria-current] { background: var(--ink); color: #ffffff; box-shadow: none; }
+:root[data-hstyle="b"] .page-tabs .sub-tabs { margin-top: var(--space-4); }
+:root[data-hstyle="b"] .page-tabs .sub-tabs ul { gap: var(--space-5); padding-left: 17px; }
+:root[data-hstyle="b"] .page-tabs .sub-tabs a, :root[data-hstyle="b"] .page-tabs .sub-tabs a:hover { padding: 4px 0 6px; border-radius: 0; background: none; font-size: var(--text-small); }
+:root[data-hstyle="b"] .page-tabs .sub-tabs a[aria-current="page"] { background: none; box-shadow: inset 0 -2px 0 var(--ink); }
+:root[data-hstyle="b"] .page-head .dr-trigger, :root[data-hstyle="b"] .page-head .set-select select { border-color: transparent; box-shadow: 0 1px 0 rgba(17, 17, 17, 0.04), 0 6px 18px -12px rgba(17, 17, 17, 0.35); }
+
+/* Style C, editorial: the slash of the logo. "/ Title" in a large heading, the tabs in the small capitals of the card titles. */
+:root[data-hstyle="c"] .header-bar { background: transparent; backdrop-filter: none; }
+:root[data-hstyle="c"] .global-search-input { border-color: transparent; border-radius: 10px; background: rgba(17, 17, 17, 0.05); }
+:root[data-hstyle="c"] .global-search-input:focus { background: var(--surface-raised); }
+:root[data-hstyle="c"] .global-search-key { border-radius: 4px; }
+:root[data-hstyle="c"] .page-head { margin-top: var(--space-3); }
+:root[data-hstyle="c"] .page-head-title { font-size: 36px; font-weight: 700; letter-spacing: -0.025em; }
+:root[data-hstyle="c"] .page-head-title::before { content: "/ "; font-weight: 300; color: var(--text-secondary); }
+:root[data-hstyle="c"] .page-tabs { margin-top: var(--space-4); }
+:root[data-hstyle="c"] .page-tabs .section-tabs { padding: 0; }
+:root[data-hstyle="c"] .page-tabs .section-tabs ul { gap: var(--space-5); }
+:root[data-hstyle="c"] .page-tabs .section-tabs a,
+:root[data-hstyle="c"] .page-tabs .section-tabs a:hover { padding: 6px 0; border: 0; border-radius: 0; background: none; box-shadow: none; font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+:root[data-hstyle="c"] .page-tabs .section-tabs a:hover { color: var(--ink); }
+:root[data-hstyle="c"] .page-tabs .section-tabs a[aria-current] { color: var(--ink); box-shadow: none; }
+:root[data-hstyle="c"] .page-tabs .section-tabs a[aria-current]::before { content: "/ "; }
+:root[data-hstyle="c"] .page-tabs .sub-tabs { margin-top: var(--space-3); }
+:root[data-hstyle="c"] .page-tabs .sub-tabs ul { gap: var(--space-4); }
+:root[data-hstyle="c"] .page-tabs .sub-tabs a, :root[data-hstyle="c"] .page-tabs .sub-tabs a:hover { padding: 4px 0; border-radius: 0; background: none; font-size: var(--text-small); }
+:root[data-hstyle="c"] .page-tabs .sub-tabs a[aria-current="page"] { background: none; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; }
+:root[data-hstyle="c"] .page-tool { border-radius: 8px; }
