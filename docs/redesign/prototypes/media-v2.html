@@ -6,23 +6,23 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/app.css?v=13">
+  <link rel="stylesheet" href="assets/app.css?v=15">
   <link rel="stylesheet" href="assets/dash.css?v=67">
   <link rel="stylesheet" href="assets/mme.css?v=4">
   <link rel="stylesheet" href="assets/date-range.css?v=3">
 </head>
 <body>
   <div id="app"></div>
-  <script src="assets/icons.js?v=3"></script>
-  <script src="assets/messages.js?v=21"></script>
+  <script src="assets/icons.js?v=4"></script>
+  <script src="assets/messages.js?v=22"></script>
   <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-spread.js?v=13"></script>
   <script src="assets/messages-mme.js?v=4"></script>
   <script src="assets/components.js?v=7"></script>
-  <script src="assets/dash.js?v=11"></script>
+  <script src="assets/dash.js?v=12"></script>
   <script src="assets/date-range.js?v=1"></script>
   <script src="assets/mme.js?v=4"></script>
-  <script src="assets/shell.js?v=36"></script>
+  <script src="assets/shell.js?v=38"></script>
   <script src="data/mme.js?v=1"></script>
   <script src="data/groups.js?v=2"></script>
   <script src="data/originality.js?v=1"></script>
@@ -48,6 +48,7 @@
       ['gr', 'il'].map((k) => h('option', { value: k }, t(`mme.set.${k}`))))
     // The drop-down list joins the global search in the top bar of the shell, on its right.
     function placeSetSelect () {
+      if (Shell.headerV2) return
       const search = document.querySelector('.header-bar .global-search')
       if (!search || search.parentElement.classList.contains('header-tools')) return
       // The search comes first and the list of countries is on its right.
@@ -210,7 +211,8 @@
           // The set of outlets (Ελλάδα, Ισραήλ) is a drop-down list next to the global search. The period is one date picker in the top bar.
           setSelect.value = view.set
           const picker = UI.DateRangePicker({ dates, from: view.from, to: view.to, presets: Mme.presets(set), onChange: select })
-          const bar = TopBar({ title: `${t('nav.media')} · ${t('tab.media.overview')}`, tabs, actions: [picker], quiet: true })
+          const setAction = Shell.headerV2 ? h('label', { class: 'set-select' }, h('span', { class: 'visually-hidden' }, t('mme.set')), setSelect) : null
+          const bar = TopBar({ title: `${t('nav.media')} · ${t('tab.media.overview')}`, tabs, actions: [setAction, picker], quiet: true })
 
           // Daily totals of all the outlets: the news are the topics with soft: false.
           const news = dates.map((_, d) => S.outlets.reduce((s, o) => s + set.od[o.k][d * 7 + 1], 0))

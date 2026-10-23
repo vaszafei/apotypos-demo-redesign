@@ -95,6 +95,17 @@
   }
   setFont(readFont())
 
+  // The unified header (v2) is the default. ?header=v1 shows the old header for comparison; ?header= or the last choice sets it.
+  // v2: the top bar holds only the back button and the search. The page head under it holds the tabs, the page actions and the sub-tabs.
+  function readHeader () {
+    const asked = new URLSearchParams(location.search).get('header')
+    let saved = null
+    try { if (asked) localStorage.setItem('proto-header', asked); saved = localStorage.getItem('proto-header') } catch {}
+    return (asked || saved) === 'v1' ? 'v1' : 'v2'
+  }
+  const headerV2 = readHeader() === 'v2'
+  document.documentElement.dataset.header = headerV2 ? 'v2' : 'v1'
+
   // The global search finds pages, groups, outlets and stories in the snapshot. A data file that the page does not load opens on the first search.
   const fold = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/ς/g, 'σ')
   // Most outlet and group names are in Latin letters, so a Greek query also matches in Latin letters ("πολιτ" finds "Politis").
@@ -157,7 +168,8 @@
       role: 'combobox', 'aria-expanded': 'false', 'aria-controls': listId, 'aria-autocomplete': 'list', autocomplete: 'off', spellcheck: 'false'
     })
     const list = h('div', { class: 'global-search-list', id: listId, role: 'listbox', hidden: true })
-    const box = h('div', { class: 'global-search', role: 'search' }, Icon('magnifying-glass', 'icon global-search-icon'), input, list)
+    const box = h('div', { class: 'global-search', role: 'search' }, Icon('magnifying-glass', 'icon global-search-icon'), input,
+      headerV2 ? h('kbd', { class: 'global-search-key', 'aria-hidden': 'true' }, '/') : null, list)
 
     function ensure () {
       if (!loading) loading = Promise.all([loadFixture('groups'), loadFixture('stories')]).then(([g, s]) => { entities = entityEntries(g, s); render() })
@@ -257,6 +269,7 @@
       const detail = item && !exactTab
       const parent = detail ? hrefOf(under(route, '/group') ? '/groups' : item.tabs[0][1]) : null
       const header = h('header', { class: 'header-bar' }, h('div', { class: 'header-left' }, menuButton, detail ? BackButton(parent) : null))
+      if (headerV2) mountV2({ item, header, detail, parent, title })
 
       // Breadcrumbs show only on a page that is not a tab and not Home. A tab page has the tab bar.
       const crumbBar = !exactTab && id !== 'home' && crumbItems
@@ -275,11 +288,14 @@
         : null
       // A dash page has its tabs in the center of the top bar. The other pages have them under the top bar.
       // An item with many tabs (more than 6) puts them on a second row of the top bar, so they do not push the page wider.
-      if (dash && tabBar) { header.classList.add('has-tabs'); if (item.tabs.length > 6) header.classList.add('many-tabs'); header.append(tabBar) }
+      if (dash && tabBar && !headerV2) { header.classList.add('has-tabs'); if (item.tabs.length > 6) header.classList.add('many-tabs'); header.append(tabBar) }
       header.append(GlobalSearch())
+      if (headerV2) header.append(SearchToggle(header))
       const content = h('main', { class: 'content', id: 'content' })
+      // v2: the tabs and the sub-tabs are one block of the page head. The page puts it under its title.
+      const pageTabs = headerV2 && tabBar ? h('div', { class: 'page-tabs' }, tabBar, subBar) : null
       const shell = h('div', { class: 'shell' }, sidebar, h('div', { class: 'drawer-scrim', onClick: () => setDrawer(false) }),
-        h('div', { class: 'main-column' }, header, dash ? null : tabBar, subBar, crumbBar, content, h('footer', { class: 'page-footer' }, t('site.footer'))))
+        h('div', { class: 'main-column' }, header, headerV2 || dash ? null : tabBar, headerV2 ? null : subBar, headerV2 ? null : crumbBar, content, h('footer', { class: 'page-footer' }, t('site.footer'))))
 
       // The open drawer keeps the focus: the rest of the page is inert until the drawer closes.
       const mainColumn = shell.querySelector('.main-column')
@@ -302,11 +318,76 @@
         const nav = bar && bar.querySelector('[aria-current]')
         if (nav && bar.scrollWidth > bar.clientWidth) bar.scrollLeft = nav.offsetLeft - (bar.clientWidth - nav.offsetWidth) / 2
       })
+      if (headerV2) {
+        current = { section: item ? t(`nav.${item.key}`) : title(), tabs: pageTabs }
+        // A tab page that draws no page head of its own gets the plain one: the tabs and the page tools. A section with one tab needs none.
+        if (item && exactTab && item.tabs.length > 1) {
+          const ensureHead = () => { if (!content.querySelector('.page-head')) content.prepend(window.Shell.PageHead({})) }
+          new MutationObserver(ensureHead).observe(content, { childList: true })
+        }
+        render(content, { tabs: pageTabs })
+        return
+      }
       render(content, { tabs: dash ? null : tabBar })
     }
 
     mount()
   }
 
-  window.Shell = { start, routeAnchor, hrefOf, itemOf, placeOf }
+  // v2 (prototype). The top bar: the menu and the back button, the name of the section (phone) or the trail of a detail page (desktop), the search.
+  let current = { section: '', tabs: null }
+  function mountV2 ({ item, header, detail, parent, title }) {
+    header.classList.add('appbar')
+    const left = header.querySelector('.header-left')
+    if (item) left.append(h('span', { class: 'appbar-title' }, t(`nav.${item.key}`)))
+    // A detail page shows where it is: the section, then the page. The section links to the parent page.
+    if (detail) {
+      const trail = [{ label: t(`nav.${item.key}`), href: parent }, { label: title() }]
+      left.append(h('nav', { class: 'appbar-trail', 'aria-label': t('shell.breadcrumbs') }, h('ol', {}, trail.map((c, i, all) =>
+        h('li', {}, i > 0 && Icon('chevron-right', 'icon icon-sm'), i === all.length - 1 ? h('span', { 'aria-current': 'page' }, c.label) : h('a', { href: c.href }, c.label))))))
+    }
+  }
+  // On a phone the search is an icon button. It opens the field over the top bar.
+  function SearchToggle (header) {
+    const button = h('button', { type: 'button', class: 'icon-button search-toggle', 'aria-label': t('shell.search'), 'aria-expanded': 'false' }, Icon('magnifying-glass'))
+    const set = (open) => { header.classList.toggle('search-open', open); button.setAttribute('aria-expanded', String(open)); if (open) header.querySelector('.global-search-input').focus() }
+    button.addEventListener('click', () => set(true))
+    header.addEventListener('focusout', (e) => { if (!header.contains(e.relatedTarget) && !header.querySelector('.global-search-input').value) set(false) })
+    return button
+  }
+  // The "/" key opens the search from anywhere on the page.
+  if (headerV2) {
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== '/' || e.target.closest('input, textarea, select, [contenteditable]')) return
+      e.preventDefault()
+      const header = document.querySelector('.header-bar')
+      header.querySelector('.search-toggle')?.offsetParent ? header.querySelector('.search-toggle').click() : header.querySelector('.global-search-input').focus()
+    })
+  }
+  // The page head (v2): the title and the page actions on one row, the tabs and sub-tabs under them, the filters of the tab last.
+  // Page actions change the whole page: the period, the set of outlets, a view switch. Filters narrow the content of one tab.
+  // The tools of every page, after its actions: how it is measured, copy the link, download the data (prototype: the download is not built).
+  function PageTools () {
+    const tool = (icon, label, onClick) => h('button', { type: 'button', class: 'page-tool', 'aria-label': label, title: label, onClick }, Icon(icon, 'icon'))
+    return h('div', { class: 'page-tools', role: 'group', 'aria-label': t('shell.tools') },
+      tool('information-circle', t('shell.tool.method'), () => { location.href = 'methodology.html' }),
+      tool('link', t('shell.tool.link'), () => navigator.clipboard?.writeText(location.href)),
+      tool('arrow-down-tray', t('shell.tool.download'), null))
+  }
+  function PageHead ({ title, meta, actions = [], filters = [], tabs = current.tabs, error }) {
+    actions = actions.filter(Boolean)
+    filters = filters.filter(Boolean)
+    // A page with no tabs, actions or filters (a section with one tab) has no visible head: only the h1 for screen readers.
+    if (!tabs && !actions.length && !filters.length && !error) return h('header', { class: 'page-head is-empty' }, h('h1', { class: 'visually-hidden' }, title || current.section))
+    actions.push(PageTools())
+    return h('header', { class: 'page-head' },
+      h('div', { class: 'page-head-row' },
+        h('div', { class: 'page-head-titles' }, h('h1', { class: 'page-head-title' }, title || current.section), meta ? h('p', { class: 'page-head-meta' }, meta) : null),
+        actions.length ? h('div', { class: 'page-head-actions' }, actions) : null),
+      tabs,
+      filters.length ? h('div', { class: 'page-filters' }, filters) : null,
+      error ? h('p', { class: 'dash-error', role: 'alert' }, error) : null)
+  }
+
+  window.Shell = { start, routeAnchor, hrefOf, itemOf, placeOf, PageHead, headerV2 }
 })()
