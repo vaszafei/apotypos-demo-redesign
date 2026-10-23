@@ -584,20 +584,11 @@
   })
   // The page head (v2): the title and the page actions on one row, the tabs and sub-tabs under them, the filters of the tab last.
   // Page actions change the whole page: the period, the set of outlets, a view switch. Filters narrow the content of one tab.
-  // The tools of every page, after its actions: how it is measured, copy the link, download the data (prototype: the download is not built).
-  function PageTools () {
-    const tool = (icon, label, onClick) => h('button', { type: 'button', class: 'page-tool', 'aria-label': label, title: label, onClick }, Icon(icon, 'icon'))
-    return h('div', { class: 'page-tools', role: 'group', 'aria-label': t('shell.tools') },
-      tool('information-circle', t('shell.tool.method'), () => { location.href = 'methodology.html' }),
-      tool('link', t('shell.tool.link'), () => navigator.clipboard?.writeText(location.href)),
-      tool('arrow-down-tray', t('shell.tool.download'), null))
-  }
   function PageHead ({ title, meta, actions = [], filters = [], tabs = current.tabs, error }) {
     actions = actions.filter(Boolean)
     filters = filters.filter(Boolean)
     // A page with no tabs, actions or filters (a section with one tab) has no visible head: only the h1 for screen readers.
     if (!tabs && !actions.length && !filters.length && !error) return h('header', { class: 'page-head is-empty' }, h('h1', { class: 'visually-hidden' }, title || current.section))
-    actions.push(PageTools())
     return h('header', { class: 'page-head' },
       h('div', { class: 'page-head-row' },
         h('div', { class: 'page-head-titles' }, h('h1', { class: 'page-head-title' }, title || current.section), meta ? h('p', { class: 'page-head-meta' }, meta) : null),

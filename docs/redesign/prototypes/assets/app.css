@@ -528,19 +528,12 @@ button, input, select { font: inherit; color: inherit; }
   :root[data-header="v2"] .page-head-actions { justify-content: flex-start; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
   :root[data-header="v2"] .page-head-actions > * { flex: none; }
   :root[data-header="v2"] .page-head-actions .dr-days { display: none; }
-  :root[data-header="v2"] .page-tools { display: none; }
   :root[data-header="v2"] .page-tabs { order: 1; margin: 0 calc(-1 * var(--space-4)); padding: 0 var(--space-4); }
   :root[data-header="v2"] .page-tabs .section-tabs, :root[data-header="v2"] .page-tabs .sub-tabs { margin-left: calc(-1 * var(--space-4)); margin-right: calc(-1 * var(--space-4)); padding-left: var(--space-4); padding-right: var(--space-4); }
   :root[data-header="v2"] .page-filters { order: 3; margin-top: var(--space-4); }
   :root[data-header="v2"] .page-filters .region-pills { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--space-4)); padding: 0 var(--space-4); }
   :root[data-header="v2"] .page-filters .region-pills button { flex: none; }
 }
-
-/* Page tools (v2): round icon buttons after the page actions. */
-:root[data-header="v2"] .page-tools { display: inline-flex; align-items: center; gap: 2px; margin-left: var(--space-1); }
-:root[data-header="v2"] .page-tool { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; border: 1px solid transparent; border-radius: 50%; background: transparent; color: var(--text-secondary); cursor: pointer; }
-:root[data-header="v2"] .page-tool:hover { border-color: var(--border); background: var(--surface-raised); color: var(--ink); }
-:root[data-header="v2"] .page-tool .icon { width: 20px; height: 20px; }
 
 /* Style: editorial, from the slash of the logo. The tabs are in the small capitals of the card titles, the current one starts with "/".
    No visible title: the tabs and the page actions share the first row, the sub-tabs and the filters follow. The h1 stays for screen readers. */
@@ -568,12 +561,9 @@ button, input, select { font: inherit; color: inherit; }
 :root[data-header="v2"] .page-tabs .sub-tabs ul { gap: var(--space-4); }
 :root[data-header="v2"] .page-tabs .sub-tabs a, :root[data-header="v2"] .page-tabs .sub-tabs a:hover { padding: 4px 0; border-radius: 0; background: none; font-size: var(--text-small); }
 :root[data-header="v2"] .page-tabs .sub-tabs a[aria-current="page"] { background: none; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; }
-:root[data-header="v2"] .page-tool { border-radius: 8px; }
 
 /* v2: smaller controls in the head. 32 px buttons and fields, 36 px search, 18 px icons. */
 :root[data-header="v2"] .back-button { width: 36px; height: 36px; }
-:root[data-header="v2"] .page-tool { width: 32px; height: 32px; }
-:root[data-header="v2"] .page-tool .icon { width: 18px; height: 18px; }
 :root[data-header="v2"] .page-head .dr-trigger { min-height: 32px; padding: 0 10px 0 8px; gap: 6px; font-size: 13px; }
 :root[data-header="v2"] .page-head .dr-trigger .dr-icon { width: 16px; height: 16px; }
 :root[data-header="v2"] .page-head .set-select select, :root[data-header="v2"] .page-head-actions select { min-height: 32px; font-size: 13px; }
@@ -634,10 +624,10 @@ button, input, select { font: inherit; color: inherit; }
 .chart-holder:empty { height: 220px; border-radius: var(--radius); background: #f1efe9; }
 
 /* Press feedback on every button. A row of a table shows the hover. */
-.button, .segmented button, .page-tool, .icon-button, .back-button, .search-button, .info-btn, .lang-switch button, .mme-chip, .dr-trigger, .dr-preset, .report-tabs button {
+.button, .segmented button, .icon-button, .back-button, .search-button, .info-btn, .lang-switch button, .mme-chip, .dr-trigger, .dr-preset, .report-tabs button {
   transition: transform var(--motion-fast) var(--ease-out);
 }
-:is(.button, .segmented button, .page-tool, .icon-button, .back-button, .search-button, .info-btn, .lang-switch button, .mme-chip, .dr-trigger, .dr-preset, .report-tabs button):active:not(:disabled) { transform: scale(0.96); }
+:is(.button, .segmented button, .icon-button, .back-button, .search-button, .info-btn, .lang-switch button, .mme-chip, .dr-trigger, .dr-preset, .report-tabs button):active:not(:disabled) { transform: scale(0.96); }
 .data-table tbody tr:not(:target, .is-target):hover td { background: rgba(17, 17, 17, 0.035); }
 
 /* Pop-ups fade in: the chart tooltip, an open accordion. The search panel grows from its button (shell.js). */
@@ -685,5 +675,5 @@ svg.chart .bar-col { transform-origin: 50% 100%; }
 @media (prefers-reduced-motion: reduce) {
   .sidebar { transition: none; }
   .skeleton::after, #app:empty::after { animation: none; }
-  :is(.button, .segmented button, .page-tool, .icon-button, .back-button, .search-button, .info-btn, .lang-switch button, .mme-chip, .dr-trigger, .dr-preset, .report-tabs button):active:not(:disabled) { transform: none; }
+  :is(.button, .segmented button, .icon-button, .back-button, .search-button, .info-btn, .lang-switch button, .mme-chip, .dr-trigger, .dr-preset, .report-tabs button):active:not(:disabled) { transform: none; }
 }
