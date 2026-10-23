@@ -80,7 +80,7 @@
 .info-btn { width: 24px; height: 24px; padding: 0; border: 1px solid var(--border); border-radius: 50%; background: transparent; color: var(--text-secondary); font: italic 600 13px/1 Georgia, serif; cursor: pointer; }
 .info-btn:hover, .info-btn:focus-visible { color: var(--accent); border-color: var(--accent); }
 .info-pop { display: none; position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; width: 300px; max-width: 80vw; padding: 10px 12px; border-radius: 6px; background: #1f1f1f; color: #ffffff; font-size: var(--text-caption); font-weight: 400; line-height: 1.45; text-align: left; }
-.info:hover .info-pop, .info:focus-within .info-pop, .info.is-open .info-pop { display: block; }
+.info:hover .info-pop, .info:focus-within .info-pop, .info.is-open .info-pop { display: block; animation: m-drop var(--motion-base) var(--ease-out); }
 .dcard-title { margin: 0; font-size: var(--text-small); font-weight: 600; color: var(--text-primary); }
 .dcard-sub { margin: 0; font-size: var(--text-caption); color: var(--text-secondary); }
 .dcard-link { font-size: var(--text-caption); color: var(--text-secondary); text-underline-offset: 3px; background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
