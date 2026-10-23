@@ -273,7 +273,7 @@ window.MESSAGES = {
     'tab.politics.owners': 'Ιδιοκτησία',
     'tab.politics.topics': 'Θέματα',
     'tab.politics.bylines': 'Συντάκτες',
-    // The question of each tab (#62): one line under the tabs.
+    // The question of each tab (#62), in the table of pages.
     'question.media.overview': 'Ποια μέσα γράφουν τα περισσότερα;',
     'question.media.writing': 'Πώς γράφει κάθε μέσο: ειδήσεις, clickbait, υπογραφές, στάση;',
     'question.media.topics.overview': 'Ποια θέματα γράφονται περισσότερο;',

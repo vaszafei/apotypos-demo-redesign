@@ -52,7 +52,7 @@
   // ΜΜΕ & πρόσωπα (/media) is not there: its content is Μέσα › Επισκόπηση. Θέματα (/trends) is a tab of Μέσα, not an item of its own.
   // Πρόσωπα is an item: its overview (/fingerprints), Δηλώσεις (/track, from Πολιτική) and Φάκελος προσώπου (/contradictions), which left Αναλύσεις.
   // Ιστορίες has Υποθέσεις (/cases) and Μοτίβα διάδοσης (/campaigns), both from Πολιτική.
-  // #62: each tab answers one question, shown under the tabs (question.<item>.<tab>). A new tab is a view of the file of its section (?tab=), so every old route opens the same file.
+  // #62: each tab answers one question (question.<item>.<tab>), listed in the table of pages. A new tab is a view of the file of its section (?tab=), so every old route opens the same file.
   // Θέματα holds the topic pages as sub-tabs, Μετατοπίσεις (/overton) among them. Πολιτική splits the elections page into 5 tabs.
   // A detail route names the tab that lists it: the back button and the trail of the page go there.
   const NAV = [
@@ -306,9 +306,6 @@
         ? h('nav', { class: 'sub-tabs', 'aria-label': t(`tab.${item.key}.${exactTab[0]}`) }, h('ul', {}, exactTab[2].map(([key, r]) =>
           h('li', {}, h('a', { href: hrefOf(r), 'aria-current': r === route ? 'page' : null }, t(`tab.${item.key}.${key}`))))))
         : null
-      // The question of the tab (or sub-tab): one line under the tabs.
-      const pageKey = exactTab && (exactTab[2] ? (exactTab[2].find(([, s]) => s === route) || exactTab[2][0])[0] : exactTab[0])
-      const question = tabBar && hasText(`question.${item.key}.${pageKey}`) ? h('p', { class: 'tab-question' }, t(`question.${item.key}.${pageKey}`)) : null
       // A dash page has its tabs in the center of the top bar. The other pages have them under the top bar.
       // An item with many tabs (more than 6) puts them on a second row of the top bar, so they do not push the page wider.
       if (dash && tabBar && !headerV2) { header.classList.add('has-tabs'); if (item.tabs.length > 6) header.classList.add('many-tabs'); header.append(tabBar) }
@@ -316,9 +313,9 @@
       if (headerV2) header.append(SearchToggle(header))
       const content = h('main', { class: 'content', id: 'content' })
       // v2: the tabs and the sub-tabs are one block of the page head. The page puts it under its title.
-      const pageTabs = headerV2 && tabBar ? h('div', { class: 'page-tabs' }, tabBar, subBar, question) : null
+      const pageTabs = headerV2 && tabBar ? h('div', { class: 'page-tabs' }, tabBar, subBar) : null
       const shell = h('div', { class: 'shell' }, sidebar, h('div', { class: 'drawer-scrim', onClick: () => setDrawer(false) }),
-        h('div', { class: 'main-column' }, header, headerV2 || dash ? null : tabBar, headerV2 ? null : subBar, headerV2 ? null : question, headerV2 ? null : crumbBar, content, h('footer', { class: 'page-footer' }, t('site.footer'))))
+        h('div', { class: 'main-column' }, header, headerV2 || dash ? null : tabBar, headerV2 ? null : subBar, headerV2 ? null : crumbBar, content, h('footer', { class: 'page-footer' }, t('site.footer'))))
 
       // The open drawer keeps the focus: the rest of the page is inert until the drawer closes.
       const mainColumn = shell.querySelector('.main-column')
