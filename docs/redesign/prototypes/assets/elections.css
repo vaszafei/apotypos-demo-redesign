@@ -1,0 +1,81 @@
+/* Πολιτική › Εκλογές. Load after politics.css. */
+
+/* Party chips of the top bar: a dot in the color of the party. */
+.party-pills button { display: inline-flex; align-items: center; gap: 6px; }
+.party-pills button[aria-pressed="false"] { color: var(--text-secondary); }
+.party-pills button[aria-pressed="false"] .dot { opacity: 0.35; }
+.party-pills .dot, .party-key .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dot); }
+
+/* Party tables: one column for each party, its key in the color of the party. */
+.party-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: var(--text-small); font-variant-numeric: tabular-nums; }
+.party-table th, .party-table td { padding: 5px 4px; border-bottom: 1px solid var(--border); text-align: center; white-space: nowrap; }
+.party-table thead th { font-size: var(--text-caption); font-weight: 600; color: var(--party, var(--text-secondary)); }
+.party-table th:first-child, .party-table td:first-child { text-align: left; padding-left: 0; }
+.party-table tbody tr:last-child > * { border-bottom: 0; }
+.party-table .row-name { display: grid; gap: 1px; min-width: 120px; max-width: 220px; }
+.party-table .row-name span { overflow: hidden; text-overflow: ellipsis; font-size: var(--text-caption); color: var(--text-secondary); font-weight: 400; }
+.party-table .row-market th, .party-table .row-market td { background: var(--surface-page); }
+.party-table .num { text-align: right; color: var(--text-secondary); }
+.party-table td.cell { min-width: 52px; border-radius: 6px; background: color-mix(in srgb, var(--party) var(--k, 0%), transparent); }
+.party-table td.is-top { box-shadow: inset 0 0 0 1.5px var(--party); font-weight: 700; }
+.party-table .sub { display: block; font-size: 11px; font-weight: 400; color: var(--text-secondary); }
+.party-table .up { color: var(--emph-more); }
+.party-table .down { color: var(--emph-less); }
+.party-table .pos { color: var(--stance-supportive); }
+.party-table .neg { color: var(--stance-critical); }
+.party-table .faint { opacity: 0.5; }
+.party-table .zero { color: var(--text-secondary); }
+.party-table .anon-hi { color: var(--stance-critical); font-weight: 700; }
+.party-table .anon-mid { color: var(--emph-less); font-weight: 600; }
+
+/* Two bars for each party: the exposure in the color of the party and the vote or the polls in gray. */
+.twin { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; }
+.twin li { display: grid; grid-template-columns: 64px minmax(0, 1fr) 112px 80px; gap: var(--space-3); align-items: center; font-size: var(--text-small); font-variant-numeric: tabular-nums; }
+.twin .twin-key { font-weight: 600; color: var(--party); }
+.twin .twin-bars { display: grid; gap: 3px; }
+.twin .twin-bars span { display: block; height: 7px; border-radius: 4px; background: var(--seg); min-width: 2px; }
+.twin .twin-vals { text-align: right; font-size: var(--text-caption); color: var(--text-secondary); }
+.twin .twin-gap { text-align: right; font-weight: 600; white-space: nowrap; }
+.party-key { display: flex; flex-wrap: wrap; gap: var(--space-3); margin: 0 0 var(--space-2); font-size: var(--text-caption); color: var(--text-secondary); }
+.party-key span { display: inline-flex; align-items: center; gap: 6px; }
+.party-key .bar { width: 16px; height: 7px; border-radius: 4px; background: var(--seg); }
+
+/* Lean of each outlet: a bar from the center, to the right for the government and to the left for the opposition. */
+.lean-bars { margin: 0; padding: 0; list-style: none; display: grid; gap: 5px; }
+.lean-bars li { display: grid; grid-template-columns: minmax(90px, 130px) minmax(0, 1fr) 52px; gap: var(--space-3); align-items: center; font-size: var(--text-small); }
+.lean-bars .lean-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lean-bars .lean-track { position: relative; height: 14px; border-radius: 7px; background: var(--surface-page); }
+.lean-bars .lean-track::after { content: ''; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--text-secondary); }
+.lean-bars .lean-fill { position: absolute; top: 0; height: 100%; border-radius: 7px; background: var(--seg); }
+.lean-bars .is-thin { color: var(--text-secondary); }
+.lean-bars .is-thin .lean-fill { opacity: 0.4; }
+.lean-bars .lean-val { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.lean-ends { display: flex; justify-content: space-between; margin: 0 0 var(--space-2); font-size: var(--text-caption); color: var(--text-secondary); }
+
+/* Who controls the coverage: the share of the largest owner. */
+.owner-rows { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.owner-rows li { display: grid; grid-template-columns: 64px minmax(0, 1fr) minmax(0, 1.1fr) 36px; gap: var(--space-3); align-items: center; font-size: var(--text-small); }
+.owner-rows .twin-key { font-weight: 600; color: var(--party); }
+.owner-rows .owner-track { height: 10px; border-radius: 5px; background: var(--surface-page); overflow: hidden; }
+.owner-rows .owner-fill { display: block; height: 100%; border-radius: 5px; background: color-mix(in srgb, var(--party) 70%, #ffffff); }
+.owner-rows .owner-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-caption); }
+.owner-rows .num { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+
+/* Blindspots: two lists side by side. */
+.blind-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+.blind-col { padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--seg) 8%, var(--surface-raised)); border: 1px solid color-mix(in srgb, var(--seg) 30%, transparent); }
+.blind-col h3 { margin: 0 0 6px; font-size: var(--text-caption); font-weight: 700; color: var(--seg); }
+.blind-col ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.blind-col li { display: flex; justify-content: space-between; gap: var(--space-2); font-size: var(--text-small); }
+.blind-col li span:first-child::first-letter { text-transform: uppercase; }
+.blind-col li span:last-child { white-space: nowrap; font-size: var(--text-caption); color: var(--text-secondary); }
+.blind-col p { margin: 0; font-size: var(--text-small); color: var(--text-secondary); }
+
+@media (max-width: 640px) {
+  .twin li { grid-template-columns: 56px minmax(0, 1fr) 76px; }
+  .twin .twin-vals { display: none; }
+  .owner-rows li { grid-template-columns: 56px minmax(0, 1fr) 36px; }
+  .owner-rows .owner-name { display: none; }
+  .blind-cols { grid-template-columns: minmax(0, 1fr); }
+}
+.party-table tbody th { white-space: normal; }

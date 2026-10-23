@@ -62,6 +62,13 @@
    "read_at": "2026-10-22T11:43:28Z",
    "last_modified": null,
    "bytes": 2952697
+  },
+  {
+   "url": "https://apotypos.org/elections",
+   "status": 200,
+   "read_at": "2026-10-23T08:58:26Z",
+   "last_modified": null,
+   "bytes": 445204
   }
  ]
 }
