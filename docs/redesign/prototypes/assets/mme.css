@@ -41,7 +41,7 @@
 /* One topic, all outlets: three panels. */
 .mme-topic-grid { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 4fr) minmax(0, 3fr); gap: var(--space-5); margin-top: var(--space-3); }
 .mme-panel { min-width: 0; }
-.mme-share { max-height: 520px; overflow-y: auto; padding-right: 4px; }
+.mme-share { max-height: 480px; overflow-y: auto; padding-right: 4px; }
 .mme-rows li { grid-template-columns: minmax(0, 1fr) auto; }
 .mme-gap { margin-top: var(--space-4); }
 @media (max-width: 1023px) { .mme-topic-grid { grid-template-columns: 1fr; } .mme-share { max-height: none; } }

@@ -402,7 +402,8 @@ for (const name of PAGES) {
     // #62: «Θέματα σε άνοδο και πτώση» is on the sub-tab Στον χρόνο.
     const movers = await open(`${base}/topics-v2.html?tab=time`, width)
     const m = await movers.page.evaluate(() => {
-      const mover = [...document.querySelectorAll('.dcard')].find((c) => c.querySelector('h2')?.textContent === 'Θέματα σε άνοδο και πτώση')
+      // #60: the title of the card states its finding, so the card is found by its name.
+      const mover = document.querySelector('.dcard[data-card="movers"]')
       return {
         movers: [...mover.querySelectorAll('.row-name')].map((n) => n.textContent),
         changes: [...mover.querySelectorAll('.row-value')].map((n) => parseFloat(n.textContent.replace('−', '-').replace(',', '.'))),

@@ -2,7 +2,7 @@
 // Μέσα › Επισκόπηση (media-v2) and the page of one outlet (outlet-v2) use them. Each sum is for a period of days i0..i1.
 (function () {
   const { t, fmt, h } = window.App
-  const { card, cardHead, emptyText, tint, textOn } = Dash
+  const { card, cardHead, finding, emptyText, tint, textOn } = Dash
 
   const name = (x) => x[App.locale] || x.el
   const sum = (arr) => arr.reduce((a, b) => a + b, 0)
@@ -230,20 +230,28 @@
   const STANCE_CODES = ['critical', 'neutral', 'supportive']
   const stanceSegments = (st) => STANCE_CODES.map((c, i) => ({ label: t(`stance.${c}`), value: st[i], color: STANCE_COLORS[i] }))
   // The stance shares of an outlet or a topic in one UI.StackedBar.
-  function StanceBar (st, label) {
+  function StanceBar (st, label, marker) {
     const n = sum(st) || 1
-    return UI.StackedBar(stanceSegments(st), { legend: false, label: `${label ? label + ': ' : ''}${STANCE_CODES.map((c, i) => `${t(`stance.${c}`)} ${pct(st[i] / n)}`).join(', ')}` })
+    return UI.StackedBar(stanceSegments(st), { legend: false, marker, label: `${label ? label + ': ' : ''}${STANCE_CODES.map((c, i) => `${t(`stance.${c}`)} ${pct(st[i] / n)}`).join(', ')}` })
   }
   const stanceKey = () => UI.Legend(STANCE_CODES.map((c, i) => ({ label: t(`stance.${c}`), color: STANCE_COLORS[i] })))
 
   // The stance to the government in each outlet: critical, neutral, supportive.
+  // The title says which outlets are the most and the least critical. The tick on each bar is the critical share of all the articles,
+  // and the long list runs in two columns.
   function GovCard (S) {
     const rows = S.active.filter((o) => sum(o.stance) > 0).sort((a, b) => (sum(b.stance) >= 30) - (sum(a.stance) >= 30) || critShare(b.stance) - critShare(a.stance))
-    const title = S.set.country === 'GR' ? t('mme.gov.title') : t('mme.gov.title.il')
-    return card('', cardHead(title, null, t('mme.gov.info')),
-      h('div', { class: 'mme-key-row' }, stanceKey()),
+    const topic = S.set.country === 'GR' ? t('mme.gov.title') : t('mme.gov.title.il')
+    const all = [0, 1, 2].map((j) => sum(rows.map((o) => o.stance[j])))
+    const avg = critShare(all)
+    const scored = rows.filter((o) => sum(o.stance) >= 30)
+    const title = scored.length > 1
+      ? t('mme.gov.finding', { most: scored[0].name, a: pctRound(critShare(scored[0].stance)), least: scored[scored.length - 1].name, b: pctRound(critShare(scored[scored.length - 1].stance)) })
+      : topic
+    return card('', cardHead(finding(title), null, `${topic}. ${t('mme.gov.info')}`),
+      h('div', { class: 'mme-key-row' }, UI.Legend([...STANCE_CODES.map((c, i) => ({ label: t(`stance.${c}`), color: STANCE_COLORS[i] })), { label: t('mme.gov.avg', { v: pctRound(avg) }), tick: true }])),
       rows.length
-        ? UI.BarList(rows.map((o) => ({ cls: sum(o.stance) < 30 ? 'is-faint' : null, label: outletLink(S, o), sub: t('mme.n', { n: fmt.int(sum(o.stance)) }), text: pctRound(critShare(o.stance)), bar: StanceBar(o.stance, o.name) })))
+        ? UI.BarList(rows.map((o) => ({ cls: sum(o.stance) < 30 ? 'is-faint' : null, label: outletLink(S, o), text: `${pctRound(critShare(o.stance))} · ${t('mme.n', { n: fmt.int(sum(o.stance)) })}`, bar: StanceBar(o.stance, o.name, avg) })), { columns: 2 })
         : emptyText(t('media2.empty.list')))
   }
 
@@ -257,8 +265,9 @@
     const x = S.set.issues[i]
     const shares = S.active.filter((o) => o.news > 0).map((o) => ({ o, v: shareOf(o, i), n: o.issues[i] })).sort((a, b) => b.v - a.v)
     const max = Math.max(...shares.map((r) => r.v), S.avgShare[i], 0.0001)
-    const sharePanel = h('div', { class: 'mme-panel' }, h('h3', { class: 'rows-caption' }, t('mme.topic.share')),
-      UI.BarList(shares.map((r) => ({ label: outletLink(S, r.o), text: pct(r.v), value: r.v, marker: S.avgShare[i], tip: `${r.o.name}: ${pct(r.v)}, ${t('mme.avg')} ${pct(S.avgShare[i])}` })), { max, cls: 'mme-share' }))
+    // The key of the tick (the average of the outlets) is on the line of the caption.
+    const sharePanel = h('div', { class: 'mme-panel' }, h('h3', { class: 'rows-caption' }, t('mme.topic.share'), ' · ', h('span', { class: 'swatch-tick', 'aria-hidden': 'true' }), ` ${t('find.avg', { n: pct(S.avgShare[i]) })}`),
+      UI.BarList(shares.map((r) => ({ label: outletLink(S, r.o), text: pct(r.v), value: r.v, tip: `${r.o.name}: ${pct(r.v)}, ${t('mme.avg')} ${pct(S.avgShare[i])}` })), { max, cls: 'mme-share', reference: { value: S.avgShare[i] } }))
     const stories = S.stories.filter((s) => s.issue === i && !s.generic).slice(0, 10)
     const storyPanel = h('div', { class: 'mme-panel' }, h('h3', { class: 'rows-caption' }, t('mme.topic.stories')),
       stories.length
@@ -274,7 +283,11 @@
       voices.length
         ? UI.BarList(voices.map((r) => ({ label: r.p.name, value: r.n })), { max: voiceMax })
         : emptyText(t('mme.topic.voices.empty')))
-    return card('c-12', cardHead(t('mme.topic.title'), pick, t('mme.topic.info')),
+    // #60: the title names the outlet that gives the topic the largest share, against the average of the outlets.
+    // An outlet with fewer than 100 news articles in the period does not lead the title: its share is too noisy.
+    const lead = shares.find((r) => r.o.news >= 100) || shares[0]
+    const title = lead ? t('mme.topic.finding', { outlet: lead.o.name, v: pct(lead.v), avg: pct(S.avgShare[i]) }) : t('mme.topic.title')
+    return card('c-12', cardHead(finding(title), pick, `${t('mme.topic.title')}. ${t('mme.topic.info')}`),
       h('p', { class: 'dcard-sub' }, h('strong', {}, name(x)), ' · ', t('mme.topic.lead', { n: fmt.int(S.issueN[i]), share: pct(S.newsN ? S.issueN[i] / S.newsN : 0) })),
       h('div', { class: 'mme-topic-grid' }, sharePanel, storyPanel, sidePanel))
   }

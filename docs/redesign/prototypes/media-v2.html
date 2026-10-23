@@ -6,23 +6,23 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
-  <link rel="stylesheet" href="assets/app.css?v=19">
-  <link rel="stylesheet" href="assets/dash.css?v=69">
-  <link rel="stylesheet" href="assets/mme.css?v=6">
+  <link rel="stylesheet" href="assets/app.css?v=20">
+  <link rel="stylesheet" href="assets/dash.css?v=70">
+  <link rel="stylesheet" href="assets/mme.css?v=7">
   <link rel="stylesheet" href="assets/date-range.css?v=3">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=23"></script>
-  <script src="assets/messages-v2.js?v=32"></script>
-  <script src="assets/messages-spread.js?v=13"></script>
-  <script src="assets/messages-mme.js?v=5"></script>
-  <script src="assets/components.js?v=8"></script>
+  <script src="assets/messages-v2.js?v=33"></script>
+  <script src="assets/messages-spread.js?v=14"></script>
+  <script src="assets/messages-mme.js?v=6"></script>
+  <script src="assets/components.js?v=9"></script>
   <script src="assets/motion.js?v=1"></script>
-  <script src="assets/dash.js?v=13"></script>
+  <script src="assets/dash.js?v=14"></script>
   <script src="assets/date-range.js?v=1"></script>
-  <script src="assets/mme.js?v=5"></script>
+  <script src="assets/mme.js?v=6"></script>
   <script src="assets/shell.js?v=40"></script>
   <script src="data/mme.js?v=1"></script>
   <script src="data/groups.js?v=2"></script>
@@ -32,7 +32,7 @@
     // The data is the one of the live page (data/mme.js, scripts/make-mme.py): 29 Greek outlets and 10 Israeli outlets, summed for the period.
     // The top bar has the tabs, the set of outlets and the period. Each card holds one measure and one picture of it.
     const { t, fmt, h, load, params } = App
-    const { fit, reset, pct0, NO_GROUP, Spark, Scale, card, cardHead, emptyText, Stat, TopBar } = Dash
+    const { fit, reset, pct0, NO_GROUP, Spark, Scale, card, cardHead, finding, emptyText, Stat, TopBar } = Dash
     const result = load('mme', ['sets'], (b) => Object.keys(b.sets))
     const groupsData = load('groups', ['groups'], (b) => b.groups)
     // The share of articles with no byline comes from the API in its own period (Sep 2025 – Jan 2026), for 5 outlets.
@@ -212,9 +212,12 @@
             points.length > 1 ? Scatter({ points, avgX: newsAvg, avgY: cbAvg }) : emptyText(t('media2.empty.list')))
 
           // The share of articles with no byline, for the 5 outlets that the API scores. The card says its own period.
-          const bylineCard = greek && bylines.kind === 'data' ? card('', cardHead(t('originality.anon.title'), null, t('originality.anon.info')),
+          // The title names the outlet with the most articles with no byline. The tick is the average of the 5 outlets.
+          const anon = bylines.kind === 'data' ? bylines.data.outlets.slice().sort((a, b) => b.anonPct - a.anonPct) : []
+          const anonAvg = anon.reduce((s, r) => s + r.anonPct, 0) / (anon.length || 1)
+          const bylineCard = greek && anon.length ? card('', cardHead(finding(t('originality.anon.finding', { name: anon[0].name, v: fmt.pct(anon[0].anonPct / 100) })), null, `${t('originality.anon.title')}. ${t('originality.anon.info')}`),
             h('p', { class: 'dcard-sub' }, t('originality.meta', { n: bylines.data.outlets.length, from: fmt.date(bylines.data.window[0], { month: 'short', year: 'numeric' }), to: fmt.date(bylines.data.window[1], { month: 'short', year: 'numeric' }) })),
-            UI.BarList(bylines.data.outlets.slice().sort((a, b) => b.anonPct - a.anonPct).map((r) => ({ label: r.name, value: r.anonPct, text: fmt.pct(r.anonPct / 100) })), { max: 100 })) : null
+            UI.BarList(anon.map((r) => ({ label: r.name, value: r.anonPct, text: fmt.pct(r.anonPct / 100) })), { max: 100, reference: { value: anonAvg, label: t('originality.anon.avg', { v: fmt.pct(anonAvg / 100) }) } })) : null
 
           // All the outlets: one row for each, in place of the outlet cards of the live page. The card answers which outlets write the most,
           // and the columns put the clickbait, the critical share and the main topics side by side. The first 10 rows show, a button shows the rest.
@@ -249,10 +252,14 @@
           // The cards of the live page that the dashboard did not have.
           // The topic chips and «Ένα θέμα, όλα τα μέσα» are on Θέματα › Ένα θέμα. «Οι ιστορίες του διαστήματος» is on Ιστορίες › Ανά μέσο. «Τι ξεχωρίζει» is on Αρχική.
           // «Η ατζέντα κάθε μέσου» is on Θέματα › Ατζέντα μέσων. «Τα πρόσωπα» and «Πώς παρουσιάζει κάθε μέσο τα πρόσωπα» are on Πρόσωπα.
+          // Πώς γράφουν: the scatter and the bylines side by side, the stance of all the outlets under them in two columns.
           const gov = Mme.GovCard(S)
+          gov.classList.add('c-12')
+          scatterCard.classList.add(bylineCard ? 'c-6' : 'c-12')
+          bylineCard?.classList.add('c-6')
 
           const cards = tab === 'writing'
-            ? [h('div', { class: 'c-6 card-col' }, scatterCard, bylineCard), h('div', { class: 'c-6 card-col' }, gov)]
+            ? [scatterCard, bylineCard, gov]
             : [statOutlets, statArticles, statStories, statPeople, ranking, h('div', { class: 'c-12 card-col' }, volume)]
           content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...cards), Mme.MethodNote(S), protoNote())
         }

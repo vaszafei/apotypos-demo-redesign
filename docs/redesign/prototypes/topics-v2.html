@@ -6,20 +6,20 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
-  <link rel="stylesheet" href="assets/app.css?v=19">
-  <link rel="stylesheet" href="assets/dash.css?v=69">
-  <link rel="stylesheet" href="assets/mme.css?v=6">
+  <link rel="stylesheet" href="assets/app.css?v=20">
+  <link rel="stylesheet" href="assets/dash.css?v=70">
+  <link rel="stylesheet" href="assets/mme.css?v=7">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=23"></script>
-  <script src="assets/messages-v2.js?v=32"></script>
-  <script src="assets/messages-mme.js?v=5"></script>
-  <script src="assets/components.js?v=8"></script>
+  <script src="assets/messages-v2.js?v=33"></script>
+  <script src="assets/messages-mme.js?v=6"></script>
+  <script src="assets/components.js?v=9"></script>
   <script src="assets/motion.js?v=1"></script>
-  <script src="assets/dash.js?v=13"></script>
-  <script src="assets/mme.js?v=5"></script>
+  <script src="assets/dash.js?v=14"></script>
+  <script src="assets/mme.js?v=6"></script>
   <script src="assets/shell.js?v=40"></script>
   <script src="data/home.js?v=3"></script>
   <script src="data/stories.js?v=1"></script>
@@ -28,7 +28,7 @@
     // Topics, Επισκόπηση: the first dashboard of Θέματα. It reads the topics file (36 topics, 61 days). The stories are in the tab Ιστορίες.
     // The page has no buttons in the top bar. Each card holds one measure and one picture of it, and no measure shows twice (APO-168).
     const { t, fmt, h, load, params } = App
-    const { fit, reset, niceStep, SLOTS, Spark, card, cardHead, emptyText, TopBar } = Dash
+    const { fit, reset, niceStep, SLOTS, Spark, card, cardHead, finding, emptyText, TopBar } = Dash
     const topics = load('home', ['dates', 'issues', 'issueDaily'], (b) => b.dates)
     const stories = load('stories', ['stories'], (b) => b.stories)
     // The topic chips and «Ένα θέμα, όλα τα μέσα» of the live page ΜΜΕ & πρόσωπα (data/mme.js), over its whole window.
@@ -120,15 +120,18 @@
         // Left column: all topics, and the topics over time. Right column: the topics that rise and fall.
         const largest = rows.slice(0, 6)
         const series = largest.map((r, i) => ({ name: name(r.issue), color: SLOTS[i], values: r.daily.map((_, j) => (j < ROLL - 1 ? 0 : sumRange(r.daily, j - ROLL + 1, j) / ROLL)) }))
+        // #60: the titles say what each card shows; the topic of the card goes to its info.
         const timeCard = card('',
-          cardHead(t('topics2.time.title'), null, t('topics2.time.sub')),
+          cardHead(finding(largest.length ? t('topics2.time.finding', { name: name(largest[0].issue), share: fmt.pct(largest[0].count / (base || 1)) }) : t('topics2.time.title')), null, `${t('topics2.time.title')}. ${t('topics2.time.sub')}`),
           LinesChart({ dates: d.dates, series }),
           h('ul', { class: 'legend-inline legend-list' }, series.map((s) => h('li', {}, h('span', { class: 'swatch', style: { background: s.color } }), s.name))))
 
         // A catch-all topic is not a mover.
-        const table = card('', cardHead(t('topics2.all.title'), null, t('topics2.all.sub')),
+        // The first 12 topics show, a button shows all of them.
+        const top3 = rows.slice(0, 3).reduce((a, r) => a + r.count, 0)
+        const table = card('', cardHead(finding(rows.length > 3 ? t('topics2.all.finding', { share: fmt.pct(top3 / (base || 1)) }) : t('topics2.all.title')), null, `${t('topics2.all.title')}. ${t('topics2.all.sub')}`),
           UI.DataTable({
-            rows, rankColumn: true, pageSize: rows.length, emptyText: t('media.empty'),
+            rows, rankColumn: true, pageSize: 12, emptyText: t('media.empty'),
             columns: [
               { label: t('media.col.issue'), render: (r) => h('span', { class: 'nowrap' }, UI.EntityLink({ type: 'topic', key: String(d.issues.indexOf(r.issue)), label: name(r.issue) })) },
               { label: t('media.col.articles'), num: true, render: (r) => fmt.int(r.count) },
@@ -142,15 +145,24 @@
         const sorted = movers.filter((r) => !r.issue.catchAll).sort((a, b) => b.change - a.change)
         const list = [...sorted.filter((r) => r.change > 0).slice(0, 6), ...sorted.filter((r) => r.change < 0).slice(-6)]
         const widest = Math.max(...list.map((r) => Math.abs(r.change)), 0)
-        const moversCard = card('c-3 card-top',
-          cardHead(t('topics2.move.title'), null, t('topics2.move.sub')),
+        // The rising topics and the falling topics side by side under the lines, on one scale. The title names the largest change of each side.
+        const moverRow = (r) => {
+          const color = r.change > 0 ? 'var(--emph-more)' : 'var(--emph-less)'
+          return { label: UI.EntityLink({ type: 'topic', key: String(d.issues.indexOf(r.issue)), label: name(r.issue) }), value: Math.abs(r.change), color,
+            text: [h('span', { class: `tri ${r.change > 0 ? 'tri-up' : 'tri-down'}`, style: { color }, 'aria-hidden': 'true' }), ` ${fmt.signed(r.change * 100)}%`] }
+        }
+        const up = list.filter((r) => r.change > 0)
+        // In falling order: the largest fall is the last row.
+        const down = list.filter((r) => r.change < 0)
+        const moveTitle = up.length && down.length
+          ? t('topics2.move.finding', { up: name(up[0].issue), a: `${fmt.signed(up[0].change * 100)}%`, down: name(down[down.length - 1].issue), b: `${fmt.signed(down[down.length - 1].change * 100)}%` })
+          : t('topics2.move.title')
+        const moversCard = card('c-12',
+          cardHead(finding(moveTitle), null, `${t('topics2.move.title')}. ${t('topics2.move.sub')}`),
           list.length
-            ? UI.BarList(list.map((r) => {
-              const color = r.change > 0 ? 'var(--emph-more)' : 'var(--emph-less)'
-              return { label: UI.EntityLink({ type: 'topic', key: String(d.issues.indexOf(r.issue)), label: name(r.issue) }), value: Math.abs(r.change), color,
-                text: [h('span', { class: `tri ${r.change > 0 ? 'tri-up' : 'tri-down'}`, style: { color }, 'aria-hidden': 'true' }), ` ${fmt.signed(r.change * 100)}%`] }
-            }), { max: widest })
+            ? h('div', { class: 'bar-cols' }, [up, down].filter((part) => part.length).map((part) => UI.BarList(part.map(moverRow), { max: widest })))
             : emptyText(t('media2.empty.list')))
+        moversCard.dataset.card = 'movers'
 
         // The cards of ΜΜΕ & πρόσωπα: on Ένα θέμα a chip opens its topic in «Ένα θέμα, όλα τα μέσα» below. «Η ατζέντα κάθε μέσου» is Ατζέντα μέσων.
         const mmeHolder = h('div', { class: 'c-12 card-col' })
@@ -170,7 +182,7 @@
         }
         const cards = {
           overview: [h('div', { class: 'card-col c-12' }, table)],
-          time: [h('div', { class: 'card-col c-9' }, timeCard), moversCard],
+          time: [h('div', { class: 'card-col c-12' }, timeCard), moversCard],
           topic: [mmeHolder],
           agenda: [mmeHolder]
         }[tab]

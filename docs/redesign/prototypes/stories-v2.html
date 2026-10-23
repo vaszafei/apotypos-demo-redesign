@@ -6,21 +6,21 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
-  <link rel="stylesheet" href="assets/app.css?v=19">
-  <link rel="stylesheet" href="assets/dash.css?v=69">
-  <link rel="stylesheet" href="assets/mme.css?v=6">
+  <link rel="stylesheet" href="assets/app.css?v=20">
+  <link rel="stylesheet" href="assets/dash.css?v=70">
+  <link rel="stylesheet" href="assets/mme.css?v=7">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=23"></script>
-  <script src="assets/messages-v2.js?v=32"></script>
-  <script src="assets/messages-spread.js?v=13"></script>
-  <script src="assets/messages-mme.js?v=5"></script>
-  <script src="assets/components.js?v=8"></script>
+  <script src="assets/messages-v2.js?v=33"></script>
+  <script src="assets/messages-spread.js?v=14"></script>
+  <script src="assets/messages-mme.js?v=6"></script>
+  <script src="assets/components.js?v=9"></script>
   <script src="assets/motion.js?v=1"></script>
-  <script src="assets/dash.js?v=13"></script>
-  <script src="assets/mme.js?v=5"></script>
+  <script src="assets/dash.js?v=14"></script>
+  <script src="assets/mme.js?v=6"></script>
   <script src="assets/spread.js?v=6"></script>
   <script src="assets/shell.js?v=40"></script>
   <script src="data/stories.js?v=1"></script>
@@ -33,7 +33,7 @@
     // Two tabs (#62): Επισκόπηση (/stories) and Ανά μέσο (?tab=outlets, /stories/outlets) with the stories × outlets matrix.
     const { t, fmt, h, load, params } = App
     const tab = params.get('tab') === 'outlets' ? 'outlets' : 'overview'
-    const { reset, NO_GROUP, Spark, card, cardHead } = Dash
+    const { reset, NO_GROUP, Spark, card, cardHead, finding } = Dash
     const list = load('stories', ['dates', 'issues', 'stories'], (b) => b.stories)
     const detail = load('storyDetail', ['outlets', 'stories'], (b) => b.stories)
     const groupsData = load('groups', ['groups'], (b) => b.groups)
@@ -58,6 +58,7 @@
       const totals = dates.map((_, i) => series.reduce((sum, x) => sum + x.values[i], 0))
       return UI.BarChart({
         dates, series, height: 190, label: t('stories.daily.aria'),
+        reference: { value: totals.reduce((a, b) => a + b, 0) / (totals.length || 1), label: t('find.avg', { n: fmt.int(Math.round(totals.reduce((a, b) => a + b, 0) / (totals.length || 1))) }) },
         tooltipOf: (i) => { const parts = series.filter((x) => x.values[i]).map((x) => `${x.name} ${x.values[i]}`).join(' · '); return `${t('stories.daily.tip', { date: fmt.date(dates[i]), n: fmt.int(totals[i]) })}${parts ? `: ${parts}` : ''}` }
       })
     }
@@ -121,6 +122,7 @@
             rows.filter((s) => s.p.type === key).forEach((s) => { values[s.start]++ })
             return { name: t(`stories.type.${key}`), color, values }
           })
+          // #60: each title says what its chart shows. The topic of the card goes to its info.
           const dailyCard = card('c-5', cardHead(t('stories.daily.title'), null, t('stories.daily.info')), DailyChart({ series, dates: d.dates }),
             UI.Legend(series.map((x) => ({ label: x.name, color: x.color }))))
 
@@ -150,11 +152,13 @@
           const tableCard = card('c-12', cardHead(t('topics2.stories.title'), filters.length ? h('span', { class: 'legend-inline' }, filters) : null, t('topics2.stories.note', { n: fmt.int(stories.length) })),
             h('p', { class: 'dcard-sub' }, rows.length === stories.length ? t('stories.count', { n: fmt.int(rows.length) }) : t('stories.count.of', { n: fmt.int(rows.length), total: fmt.int(stories.length) })), table)
           const pickReach = (n) => { state.reach = state.reach === n ? null : n; draw() }
-          const reachCard = card('c-3', cardHead(t('stories.reach.title'), null, t('stories.reach.info', { min: Spread.ECHO_MIN })),
+          const echo = reachCounts.slice(Spread.ECHO_MIN - 1).reduce((a, b) => a + b, 0)
+          const allReach = reachCounts.reduce((a, b) => a + b, 0)
+          const reachCard = card('c-3', cardHead(finding(allReach ? t('stories.reach.finding', { share: fmt.pct(echo / allReach), n: Spread.ECHO_MIN }) : t('stories.reach.title')), null, `${t('stories.reach.title')}. ${t('stories.reach.info', { min: Spread.ECHO_MIN })}`),
             ReachChart({ counts: reachCounts, selected: state.reach, onPick: pickReach, label: t('stories.reach.aria') }),
             UI.Legend([{ label: t('stories.reach.echo', { n: Spread.ECHO_MIN }), color: 'var(--series-news)' }, { label: t('stories.reach.noecho'), color: 'var(--bar-muted)' }]))
           const pickSolo = (i) => { state.solo = state.solo === i ? null : i; draw() }
-          const soloCard = card('c-4', cardHead(t('stories.solo.title'), null, t('stories.solo.info')),
+          const soloCard = card('c-4', cardHead(finding(soloRows[0]?.started ? t('stories.solo.finding', { name: soloRows[0].g, share: fmt.pct(soloRows[0].share) }) : t('stories.solo.title')), null, `${t('stories.solo.title')}. ${t('stories.solo.info')}`),
             UI.BarList(soloRows.map((r) => ({
               label: [h('span', { class: 'dot', style: `--dot:${colorOf(r.i)}` }), r.g], value: r.share, color: colorOf(r.i),
               text: t('stories.solo.row', { share: fmt.pct(r.share), n: fmt.int(r.started) }),
