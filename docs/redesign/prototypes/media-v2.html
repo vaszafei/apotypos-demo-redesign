@@ -231,7 +231,7 @@
           }
           const columns = [
             { label: t('media.col.outlet'), render: outletCell },
-            { label: t('mme.rank.sort.n'), num: true, render: (o) => h('div', { class: 'mme-rank-n' }, UI.HBar(o.n, nMax), h('span', {}, fmt.int(o.n))) },
+            { label: t('mme.rank.sort.n'), num: true, render: (o) => UI.HBar(o.n, nMax, { text: fmt.int(o.n) }) },
             { label: t('media.col.clickbait'), num: true, render: (o) => cb(o) < 0 ? none(t('group.clickbait.none')) : h('div', { class: 'mme-rank-cb' }, Scale(cb(o), 0, cbMax, cbAvg, fmt.pct(cb(o)), fmt.pct(cbAvg)), h('span', {}, fmt.pct(cb(o)))) },
             { label: t('mme.rank.sort.crit'), num: true, render: (o) => crit(o) < 0 ? none(t('stance.few', { n: 30 })) : pct0(crit(o)) },
             { label: t('mme.rank.topics'), phone: false, render: (o) => h('p', { class: 'mme-rank-topics' }, Mme.topIssues(S, o, 3).map((r) => `${r.x[App.locale] || r.x.el} ${Math.round(r.v * 100)}%`).join(' · ')) }

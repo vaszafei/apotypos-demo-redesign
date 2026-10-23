@@ -86,15 +86,12 @@
 .mme-rank-group a, .mme-rank-group span:not(.dot) { overflow: hidden; text-overflow: ellipsis; }
 .mme-rank-group a { color: var(--text-secondary); }
 .mme-rank-group a:hover { color: var(--ink); }
-.mme-rank-n, .mme-rank-cb { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-2); font-variant-numeric: tabular-nums; }
-.mme-rank-n .hbar { flex: none; width: 160px; min-width: 0; }
-.mme-rank-n > span { min-width: 48px; }
+.mme-rank-cb { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-2); font-variant-numeric: tabular-nums; }
 .mme-rank-cb > span { min-width: 40px; }
 .mme-rank .data-table .num { font-variant-numeric: tabular-nums; }
 .mme-rank-topics { display: -webkit-box; max-width: 380px; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: var(--text-caption); color: var(--text-secondary); }
-@media (max-width: 1023px) { .mme-rank-n .hbar { width: 96px; } }
 @media (max-width: 639px) {
-  .mme-rank-n .hbar, .mme-rank-cb .scale { display: none; }
+  .mme-rank-cb .scale { display: none; }
   .dash .mme-rank .data-table th, .dash .mme-rank .data-table td { padding-left: 4px; padding-right: 4px; }
   .dash .mme-rank .data-table .rank { width: 20px; }
   .mme-rank-id { max-width: 136px; }
