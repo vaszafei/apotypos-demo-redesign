@@ -7,17 +7,17 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=20">
-  <link rel="stylesheet" href="assets/dash.css?v=70">
+  <link rel="stylesheet" href="assets/dash.css?v=71">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=23"></script>
-  <script src="assets/messages-v2.js?v=33"></script>
+  <script src="assets/messages-v2.js?v=34"></script>
   <script src="assets/messages-spread.js?v=14"></script>
   <script src="assets/components.js?v=9"></script>
   <script src="assets/motion.js?v=1"></script>
-  <script src="assets/dash.js?v=14"></script>
+  <script src="assets/dash.js?v=15"></script>
   <script src="assets/spread.js?v=6"></script>
   <script src="assets/shell.js?v=40"></script>
   <script src="data/stories.js?v=1"></script>
@@ -28,7 +28,7 @@
     // Media, Ομοιότητα και πρωτοτυπία: who writes the stories that other outlets also write. The matrix and the panel of an outlet use the rows of the stories.
     // Originality reads the API in its own period (Sep 2025 – Jan 2026), so it has its own section with its own period.
     const { t, fmt, h, load } = App
-    const { reset, NO_GROUP, card, cardHead, finding, TopBar, select } = Dash
+    const { reset, NO_GROUP, card, cardHead, TopBar, select } = Dash
     const list = load('stories', ['dates'], (b) => b.stories)
     const detail = load('storyDetail', ['outlets', 'stories'], (b) => b.stories)
     const orig = load('originality', ['window', 'outlets'], (b) => b.outlets)
@@ -139,7 +139,7 @@
           tip: (it) => t('sim.same.tip', { name: it.name, n: fmt.int(it.n), score: fmt.pct(it.score) })
         })
         // #60: the titles say what each card shows; the topic of the card goes to its info.
-        const sameCard = card('c-12', cardHead(finding(sameRows.every((r) => r.n) ? t('sim.same.finding', { same: fmt.pct(sameRows[0].score), other: fmt.pct(sameRows[1].score) }) : t('sim.same.title')), null, `${t('sim.same.title')}. ${t('sim.same.info')}`),
+        const sameCard = card('c-12', cardHead(sameRows.every((r) => r.n) ? t('sim.same.finding', { same: fmt.pct(sameRows[0].score), other: fmt.pct(sameRows[1].score) }) : t('sim.same.title'), null, `${t('sim.same.title')}. ${t('sim.same.info')}`),
           h('div', { class: 'ring-stack' }, sameRing,
             h('ul', { class: 'ring-list' }, sameRows.map((r) => h('li', {},
               h('span', { class: 'dot', style: `--dot:${sameColors[r.key]}` }), h('span', {}, t(`sim.group.${r.key}`)),
@@ -176,7 +176,7 @@
         const maxLag = Math.max(...rows.map((r) => r.lagMin), 1)
         const fastest = by('lagMin')[0]
         const avgLag = rows.reduce((sum, r) => sum + r.lagMin, 0) / rows.length
-        const lagCard = card('c-4', cardHead(finding(t('originality.lag.finding', { name: fastest.name, lag: lagText(fastest.lagMin) })), null, `${t('originality.lag.title')}. ${t('originality.lag.info')}`),
+        const lagCard = card('c-4', cardHead(t('originality.lag.finding', { name: fastest.name, lag: lagText(fastest.lagMin) }), null, `${t('originality.lag.title')}. ${t('originality.lag.info')}`),
           UI.BarList(by('lagMin').map((r) => ({ label: r.name, value: r.lagMin, text: lagText(r.lagMin) })), { max: maxLag, reference: { value: avgLag, label: t('originality.lag.avg', { lag: lagText(avgLag) }) } }))
 
         // The table of all pairs is the table view of the matrix. It stays closed until the reader opens it.

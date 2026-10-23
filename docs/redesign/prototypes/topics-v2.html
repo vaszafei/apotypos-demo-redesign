@@ -7,18 +7,18 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=20">
-  <link rel="stylesheet" href="assets/dash.css?v=70">
+  <link rel="stylesheet" href="assets/dash.css?v=71">
   <link rel="stylesheet" href="assets/mme.css?v=7">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=23"></script>
-  <script src="assets/messages-v2.js?v=33"></script>
+  <script src="assets/messages-v2.js?v=34"></script>
   <script src="assets/messages-mme.js?v=6"></script>
   <script src="assets/components.js?v=9"></script>
   <script src="assets/motion.js?v=1"></script>
-  <script src="assets/dash.js?v=14"></script>
+  <script src="assets/dash.js?v=15"></script>
   <script src="assets/mme.js?v=6"></script>
   <script src="assets/shell.js?v=40"></script>
   <script src="data/home.js?v=3"></script>
@@ -28,7 +28,7 @@
     // Topics, Επισκόπηση: the first dashboard of Θέματα. It reads the topics file (36 topics, 61 days). The stories are in the tab Ιστορίες.
     // The page has no buttons in the top bar. Each card holds one measure and one picture of it, and no measure shows twice (APO-168).
     const { t, fmt, h, load, params } = App
-    const { fit, reset, niceStep, SLOTS, Spark, card, cardHead, finding, emptyText, TopBar } = Dash
+    const { fit, reset, niceStep, SLOTS, Spark, card, cardHead, emptyText, TopBar } = Dash
     const topics = load('home', ['dates', 'issues', 'issueDaily'], (b) => b.dates)
     const stories = load('stories', ['stories'], (b) => b.stories)
     // The topic chips and «Ένα θέμα, όλα τα μέσα» of the live page ΜΜΕ & πρόσωπα (data/mme.js), over its whole window.
@@ -122,14 +122,14 @@
         const series = largest.map((r, i) => ({ name: name(r.issue), color: SLOTS[i], values: r.daily.map((_, j) => (j < ROLL - 1 ? 0 : sumRange(r.daily, j - ROLL + 1, j) / ROLL)) }))
         // #60: the titles say what each card shows; the topic of the card goes to its info.
         const timeCard = card('',
-          cardHead(finding(largest.length ? t('topics2.time.finding', { name: name(largest[0].issue), share: fmt.pct(largest[0].count / (base || 1)) }) : t('topics2.time.title')), null, `${t('topics2.time.title')}. ${t('topics2.time.sub')}`),
+          cardHead(largest.length ? t('topics2.time.finding', { name: name(largest[0].issue), share: fmt.pct(largest[0].count / (base || 1)) }) : t('topics2.time.title'), null, `${t('topics2.time.title')}. ${t('topics2.time.sub')}`),
           LinesChart({ dates: d.dates, series }),
           h('ul', { class: 'legend-inline legend-list' }, series.map((s) => h('li', {}, h('span', { class: 'swatch', style: { background: s.color } }), s.name))))
 
         // A catch-all topic is not a mover.
         // The first 12 topics show, a button shows all of them.
         const top3 = rows.slice(0, 3).reduce((a, r) => a + r.count, 0)
-        const table = card('', cardHead(finding(rows.length > 3 ? t('topics2.all.finding', { share: fmt.pct(top3 / (base || 1)) }) : t('topics2.all.title')), null, `${t('topics2.all.title')}. ${t('topics2.all.sub')}`),
+        const table = card('', cardHead(rows.length > 3 ? t('topics2.all.finding', { share: fmt.pct(top3 / (base || 1)) }) : t('topics2.all.title'), null, `${t('topics2.all.title')}. ${t('topics2.all.sub')}`),
           UI.DataTable({
             rows, rankColumn: true, pageSize: 12, emptyText: t('media.empty'),
             columns: [
@@ -158,7 +158,7 @@
           ? t('topics2.move.finding', { up: name(up[0].issue), a: `${fmt.signed(up[0].change * 100)}%`, down: name(down[down.length - 1].issue), b: `${fmt.signed(down[down.length - 1].change * 100)}%` })
           : t('topics2.move.title')
         const moversCard = card('c-12',
-          cardHead(finding(moveTitle), null, `${t('topics2.move.title')}. ${t('topics2.move.sub')}`),
+          cardHead(moveTitle, null, `${t('topics2.move.title')}. ${t('topics2.move.sub')}`),
           list.length
             ? h('div', { class: 'bar-cols' }, [up, down].filter((part) => part.length).map((part) => UI.BarList(part.map(moverRow), { max: widest })))
             : emptyText(t('media2.empty.list')))

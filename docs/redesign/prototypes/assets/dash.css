@@ -382,7 +382,6 @@
 .minimal .dcard { gap: 10px; padding: 16px 18px; border: 1px solid #e4e0d6; border-radius: 14px; background: var(--surface-raised); box-shadow: 0 1px 0 rgba(17, 17, 17, 0.03), 0 12px 28px -18px rgba(17, 17, 17, 0.3); }
 .minimal .dcard-title { font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); }
 .minimal .dcard-title::before { content: "/"; display: inline; width: auto; height: auto; margin-right: 6px; border-radius: 0; background: none; color: var(--ink); vertical-align: baseline; }
-.minimal .dcard-title:has(> .is-finding) { font-size: var(--text-small); font-weight: 600; letter-spacing: 0; text-transform: none; line-height: 1.35; }
 @media (max-width: 719px) { .minimal .dcard { padding: 12px 14px; } }
 /* Every link in a table or a list has the same quiet look. */
 .minimal .data-table a, .minimal .rows a, .minimal .entity-link { color: var(--text-primary); text-decoration-color: var(--rule); text-underline-offset: 3px; }

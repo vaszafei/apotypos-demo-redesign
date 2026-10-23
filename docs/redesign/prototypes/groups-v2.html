@@ -7,16 +7,16 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=20">
-  <link rel="stylesheet" href="assets/dash.css?v=70">
+  <link rel="stylesheet" href="assets/dash.css?v=71">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=23"></script>
-  <script src="assets/messages-v2.js?v=33"></script>
+  <script src="assets/messages-v2.js?v=34"></script>
   <script src="assets/components.js?v=9"></script>
   <script src="assets/motion.js?v=1"></script>
-  <script src="assets/dash.js?v=14"></script>
+  <script src="assets/dash.js?v=15"></script>
   <script src="assets/vendor/d3-hierarchy.min.js"></script>
   <script src="assets/shell.js?v=40"></script>
   <script src="data/groups.js?v=2"></script>
@@ -25,7 +25,7 @@
     // Media, Ιδιοκτησία: dashboard of APO-161. The group, the owner and the articles come from the static files,
     // so the period is fixed (1 Aug to 30 Sep 2026): there is no period control. The period is in the note of the table.
     const { t, fmt, h, load } = App
-    const { fit, reset, NO_GROUP, card, cardHead, finding, emptyText, TopBar, textOn, tint } = Dash
+    const { fit, reset, NO_GROUP, card, cardHead, emptyText, TopBar, textOn, tint } = Dash
     const result = load('groups', ['groups', 'ungrouped', 'totalCollected', 'window'], (b) => b.groups)
     // The daily articles of each outlet (the same period and the same groups as the groups file).
     const media = load('media', ['dates', 'outlets', 'outletDaily'], (b) => b.outlets)
@@ -328,7 +328,7 @@
             total ? OwnerBubbles({ groups: treeGroups, total }) : emptyText(t('groups.empty')))
           // #60: the title says how much the 3 largest groups write; the topic of the card goes to its info.
           const top3 = treeGroups.filter((g) => g.key !== null).sort((a, b) => b.value - a.value).slice(0, 3).reduce((a, g) => a + g.value, 0)
-          const shareCard = card('c-5', cardHead(finding(total ? t('g2.share.finding', { share: fmt.pct(top3 / total) }) : t('media2.groups.title')), null, [t('media2.groups.title'), total ? t('media2.groups.known', { share: fmt.pct(grouped / total) }) : null].filter(Boolean).join('. ')),
+          const shareCard = card('c-5', cardHead(total ? t('g2.share.finding', { share: fmt.pct(top3 / total) }) : t('media2.groups.title'), null, [t('media2.groups.title'), total ? t('media2.groups.known', { share: fmt.pct(grouped / total) }) : null].filter(Boolean).join('. ')),
             total
               ? h('div', { class: 'donut-wrap sun-wrap' },
                   h('ul', { class: 'rows rows-groups rows-owners' }, treeGroups.map((g) => {
@@ -359,7 +359,7 @@
           }).filter((r) => r.n >= 30)
           const scale = Math.max(...stanceRows.map((r) => Math.max(r.crit + r.neu / 2, r.sup + r.neu / 2)), 0.01)
           const critical = stanceRows.slice().sort((a, b) => b.crit - a.crit)
-          const stanceCard = card('c-4', cardHead(finding(critical.length > 1 ? t('g2.stance.finding', { most: critical[0].g.name, a: fmt.pct(critical[0].crit), least: critical[critical.length - 1].g.name, b: fmt.pct(critical[critical.length - 1].crit) }) : t('g2.stance.title')), null, `${t('g2.stance.title')}. ${t('g2.stance.sub')}`),
+          const stanceCard = card('c-4', cardHead(critical.length > 1 ? t('g2.stance.finding', { most: critical[0].g.name, a: fmt.pct(critical[0].crit), least: critical[critical.length - 1].g.name, b: fmt.pct(critical[critical.length - 1].crit) }) : t('g2.stance.title'), null, `${t('g2.stance.title')}. ${t('g2.stance.sub')}`),
             stanceRows.length
               ? [UI.Legend(['critical', 'neutral', 'supportive'].map((nm, i) => ({ label: t(`stance.${nm}`), color: UI.STANCE_COLORS[i] }))),
                 UI.BarList(stanceRows.map((r) => ({

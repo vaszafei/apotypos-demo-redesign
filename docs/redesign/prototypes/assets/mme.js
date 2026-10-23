@@ -2,7 +2,7 @@
 // Μέσα › Επισκόπηση (media-v2) and the page of one outlet (outlet-v2) use them. Each sum is for a period of days i0..i1.
 (function () {
   const { t, fmt, h } = window.App
-  const { card, cardHead, finding, emptyText, tint, textOn } = Dash
+  const { card, cardHead, emptyText, tint, textOn } = Dash
 
   const name = (x) => x[App.locale] || x.el
   const sum = (arr) => arr.reduce((a, b) => a + b, 0)
@@ -248,7 +248,7 @@
     const title = scored.length > 1
       ? t('mme.gov.finding', { most: scored[0].name, a: pctRound(critShare(scored[0].stance)), least: scored[scored.length - 1].name, b: pctRound(critShare(scored[scored.length - 1].stance)) })
       : topic
-    return card('', cardHead(finding(title), null, `${topic}. ${t('mme.gov.info')}`),
+    return card('', cardHead(title, null, `${topic}. ${t('mme.gov.info')}`),
       h('div', { class: 'mme-key-row' }, UI.Legend([...STANCE_CODES.map((c, i) => ({ label: t(`stance.${c}`), color: STANCE_COLORS[i] })), { label: t('mme.gov.avg', { v: pctRound(avg) }), tick: true }])),
       rows.length
         ? UI.BarList(rows.map((o) => ({ cls: sum(o.stance) < 30 ? 'is-faint' : null, label: outletLink(S, o), text: `${pctRound(critShare(o.stance))} · ${t('mme.n', { n: fmt.int(sum(o.stance)) })}`, bar: StanceBar(o.stance, o.name, avg) })), { columns: 2 })
@@ -287,7 +287,7 @@
     // An outlet with fewer than 100 news articles in the period does not lead the title: its share is too noisy.
     const lead = shares.find((r) => r.o.news >= 100) || shares[0]
     const title = lead ? t('mme.topic.finding', { outlet: lead.o.name, v: pct(lead.v), avg: pct(S.avgShare[i]) }) : t('mme.topic.title')
-    return card('c-12', cardHead(finding(title), pick, `${t('mme.topic.title')}. ${t('mme.topic.info')}`),
+    return card('c-12', cardHead(title, pick, `${t('mme.topic.title')}. ${t('mme.topic.info')}`),
       h('p', { class: 'dcard-sub' }, h('strong', {}, name(x)), ' · ', t('mme.topic.lead', { n: fmt.int(S.issueN[i]), share: pct(S.newsN ? S.issueN[i] / S.newsN : 0) })),
       h('div', { class: 'mme-topic-grid' }, sharePanel, storyPanel, sidePanel))
   }

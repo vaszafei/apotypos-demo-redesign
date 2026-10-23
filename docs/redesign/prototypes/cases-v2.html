@@ -7,18 +7,18 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=20">
-  <link rel="stylesheet" href="assets/dash.css?v=70">
+  <link rel="stylesheet" href="assets/dash.css?v=71">
   <link rel="stylesheet" href="assets/politics.css?v=2">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=23"></script>
-  <script src="assets/messages-v2.js?v=33"></script>
+  <script src="assets/messages-v2.js?v=34"></script>
   <script src="assets/messages-politics.js?v=8"></script>
   <script src="assets/components.js?v=9"></script>
   <script src="assets/motion.js?v=1"></script>
-  <script src="assets/dash.js?v=14"></script>
+  <script src="assets/dash.js?v=15"></script>
   <script src="assets/politics.js?v=2"></script>
   <script src="assets/shell.js?v=40"></script>
   <script src="data/cases.js?v=1"></script>
@@ -26,7 +26,7 @@
     // Ιστορίες, Υποθέσεις (from Πολιτική): the coverage of one case in all outlets (K46). The page opens with a result, not an empty input (G6).
     // The prototype has one stored answer of the case API, so the input shows that case.
     const { t, fmt, h, load } = App
-    const { reset, card, cardHead, finding, Stat, TopBar } = Dash
+    const { reset, card, cardHead, Stat, TopBar } = Dash
     const result = load('cases', ['by_source', 'timeline', 'articles'], (b) => b.articles)
     // The card of the words and the themes shows one of the two lists. The switch is the one of the time chart of Εκλογές.
     let words = 'framing'
@@ -66,12 +66,12 @@
         const monthly = months.map((m) => counts.get(m) || 0)
         const peakMonth = monthly.indexOf(Math.max(...monthly))
         const monthAvg = monthly.reduce((a, b) => a + b, 0) / (monthly.length || 1)
-        const timeCard = card('c-8', cardHead(finding(t('case.time.finding', { month: month(`${months[peakMonth]}-01`), n: fmt.int(monthly[peakMonth]) })), null, `${t('case.time.title')}. ${t('case.time.info')}`),
+        const timeCard = card('c-8', cardHead(t('case.time.finding', { month: month(`${months[peakMonth]}-01`), n: fmt.int(monthly[peakMonth]) }), null, `${t('case.time.title')}. ${t('case.time.info')}`),
           UI.BarChart({ labels: months.map((m) => month(`${m}-01`)), values: monthly, height: 220, label: t('case.time.title'), reference: { value: monthAvg, label: t('find.avg', { n: fmt.int(Math.round(monthAvg)) }) },
             tooltipOf: (i) => `${month(`${months[i]}-01`)} · ${fmt.int(counts.get(months[i]) || 0)}` }))
         // The bar of an outlet has the color of its group, as on the other pages.
         const lead = d.by_source.slice().sort((a, b) => b.count - a.count)[0]
-        const outletCard = card('c-4', cardHead(finding(lead ? t('case.outlets.finding', { name: lead.source, share: fmt.pct(lead.count / (d.total || 1)) }) : t('case.outlets.title')), null, `${t('case.outlets.title')}. ${t('case.outlets.info')}`),
+        const outletCard = card('c-4', cardHead(lead ? t('case.outlets.finding', { name: lead.source, share: fmt.pct(lead.count / (d.total || 1)) }) : t('case.outlets.title'), null, `${t('case.outlets.title')}. ${t('case.outlets.info')}`),
           UI.BarList(d.by_source.map((s) => ({ label: s.source, sub: t('case.outlets.sub', { group: s.group || '–', first: day(s.first), last: day(s.last) }), value: s.count, color: Dash.groupColor(s.group) }))))
 
         const lists = {

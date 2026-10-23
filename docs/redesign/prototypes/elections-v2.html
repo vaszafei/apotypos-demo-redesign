@@ -7,7 +7,7 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=20">
-  <link rel="stylesheet" href="assets/dash.css?v=70">
+  <link rel="stylesheet" href="assets/dash.css?v=71">
   <link rel="stylesheet" href="assets/politics.css?v=2">
   <link rel="stylesheet" href="assets/elections.css?v=3">
 </head>
@@ -15,11 +15,11 @@
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=23"></script>
-  <script src="assets/messages-v2.js?v=33"></script>
+  <script src="assets/messages-v2.js?v=34"></script>
   <script src="assets/messages-politics.js?v=8"></script>
   <script src="assets/components.js?v=9"></script>
   <script src="assets/motion.js?v=1"></script>
-  <script src="assets/dash.js?v=14"></script>
+  <script src="assets/dash.js?v=15"></script>
   <script src="assets/politics.js?v=2"></script>
   <script src="assets/shell.js?v=40"></script>
   <script src="data/elections.js?v=2"></script>
@@ -31,7 +31,7 @@
     const { t, fmt, h, load, params } = App
     const TABS = { reach: '/elections', outlets: '/elections/outlets', owners: '/elections/owners', topics: '/elections/topics', bylines: '/elections/bylines' }
     const tab = TABS[params.get('tab')] ? params.get('tab') : 'reach'
-    const { reset, card, cardHead, finding, emptyText, TopBar } = Dash
+    const { reset, card, cardHead, emptyText, TopBar } = Dash
     const { LineChart, signed } = Politics
     const result = load('elections', ['parties', 'weeks', 'series', 'outlets'], (b) => b.outlets)
     // The colors of the live page: each party has one color on every card.
@@ -159,7 +159,7 @@
         const drawLines = () => {
           const reach = measure === 'reach'
           const modeSwitch = UI.SegmentedControl({ label: t('elec.time.measure'), value: measure, options: ['reach', 'tone'].map((m) => ({ value: m, label: t(`elec.time.${m}`) })), onChange: (m) => { measure = m; drawLines() } })
-          timeHead.replaceChildren(cardHead(finding(reach ? reachTitle : t('elec.tone.title')), modeSwitch, reach ? `${t('elec.reach.title')}. ${t('elec.reach.info')}` : t('elec.tone.info')))
+          timeHead.replaceChildren(cardHead(reach ? reachTitle : t('elec.tone.title'), modeSwitch, reach ? `${t('elec.reach.title')}. ${t('elec.reach.info')}` : t('elec.tone.info')))
           legend.replaceChildren(...parties.map((p) => h('li', {}, h('button', { type: 'button', 'aria-pressed': String(shown.has(p.key)), title: p.name, onClick: () => { shown.has(p.key) ? shown.delete(p.key) : shown.add(p.key); drawLines() } },
             h('span', { class: 'swatch', style: { background: color(p.key) } }), p.key))))
           const pick = keys.map((k, i) => i).filter((i) => shown.has(keys[i]))
@@ -208,7 +208,7 @@
         }).sort((a, b) => (b.gap ?? -9) - (a.gap ?? -9))
         const gapMax = Math.max(0.2, ...gapRows.map((r) => Math.abs(r.gap ?? 0)))
         const leaning = gapRows.filter((r) => r.gap !== null && !r.thin)
-        const gapCard = card('c-6', cardHead(finding(leaning.length > 1 ? t('elec.gap.finding', { gov: leaning[0].name, a: signed(leaning[0].gap), opp: leaning[leaning.length - 1].name, b: signed(leaning[leaning.length - 1].gap) }) : t('elec.gap.title')), null, `${t('elec.gap.title')}. ${t('elec.gap.info')}`),
+        const gapCard = card('c-6', cardHead(leaning.length > 1 ? t('elec.gap.finding', { gov: leaning[0].name, a: signed(leaning[0].gap), opp: leaning[leaning.length - 1].name, b: signed(leaning[leaning.length - 1].gap) }) : t('elec.gap.title'), null, `${t('elec.gap.title')}. ${t('elec.gap.info')}`),
           h('p', { class: 'lean-ends' }, h('span', {}, `← ${t('elec.gap.opp')}`), h('span', {}, `${t('elec.gap.gov')} →`)),
           UI.BarList(gapRows.map((r) => ({
             cls: r.thin ? 'is-thin' : null, label: r.name, text: signed(r.gap),
@@ -224,14 +224,14 @@
           return { key: k, top: shares[0], hhi: Math.round(shares.reduce((a, s) => a + s.share ** 2, 0) * 100) }
         })
         const tight = ownerRows.slice().sort((x, y) => y.top.share - x.top.share)[0]
-        const ownerCard = card('c-6', cardHead(finding(t('elec.owner.finding', { party: tight.key, share: fmt.pct(tight.top.share), owner: tight.top.owner })), null, `${t('elec.owner.title')}. ${t('elec.owner.info')}`),
+        const ownerCard = card('c-6', cardHead(t('elec.owner.finding', { party: tight.key, share: fmt.pct(tight.top.share), owner: tight.top.owner }), null, `${t('elec.owner.title')}. ${t('elec.owner.info')}`),
           UI.BarList(ownerRows.map((r) => ({
             label: partyKey(r.key), text: `${t('elec.owner.row', { share: Politics.pctOf(r.top.share * 100), owner: r.top.owner })} · HHI ${fmt.int(r.hhi)}`,
             value: r.top.share, color: color(r.key), tip: `${r.key}: ${t('elec.owner.row', { share: fmt.pct(r.top.share), owner: r.top.owner })}, HHI ${r.hhi}`
           })), { max: 1 }))
 
-        const voteCard = card('c-6', cardHead(finding(twinTitle(voteRows, 'elec.vote.finding')), null, `${t('elec.vote.title')}. ${t('elec.vote.info')}`), Twin(voteRows, [t('elec.vote.a'), t('elec.vote.b')], Math.max(...voteRows.flatMap((r) => [r.a, r.b]))))
-        const pollCard = card('c-6', cardHead(finding(twinTitle(pollRows, 'elec.polls.finding')), null, t('elec.polls.title') + '. ' + t('elec.polls.info', { months: months.map((m) => fmt.date(`${m}-01`, { month: 'short', year: 'numeric' })).join(', ') })),
+        const voteCard = card('c-6', cardHead(twinTitle(voteRows, 'elec.vote.finding'), null, `${t('elec.vote.title')}. ${t('elec.vote.info')}`), Twin(voteRows, [t('elec.vote.a'), t('elec.vote.b')], Math.max(...voteRows.flatMap((r) => [r.a, r.b]))))
+        const pollCard = card('c-6', cardHead(twinTitle(pollRows, 'elec.polls.finding'), null, t('elec.polls.title') + '. ' + t('elec.polls.info', { months: months.map((m) => fmt.date(`${m}-01`, { month: 'short', year: 'numeric' })).join(', ') })),
           Twin(pollRows, [t('elec.polls.a'), t('elec.polls.b')], Math.max(...pollRows.flatMap((r) => [r.a, r.b]))))
 
         // 5. Topic agenda × party. The frame is the party with the largest share of its coverage in the topic.

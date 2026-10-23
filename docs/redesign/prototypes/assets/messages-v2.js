@@ -578,7 +578,7 @@ Object.assign(window.MESSAGES.el, {
   'pf.months.finding': 'Οι περισσότερες δηλώσεις: {month}, {n}',
   'pf.verdict.finding': 'Στέκει το {share} των στοιχείων',
   'f2.lead': 'Πρώτο: {outlet} για {person} ({v})',
-  'st.table.finding': '{name}: {share} των δηλώσεων'
+  'st.table.finding': 'Πρώτος: {name} ({share})'
 })
 Object.assign(window.MESSAGES.en, {
   'find.avg': 'avg {n}',
@@ -603,5 +603,5 @@ Object.assign(window.MESSAGES.en, {
   'pf.months.finding': 'Most statements: {month}, {n}',
   'pf.verdict.finding': '{share} of the figures hold',
   'f2.lead': 'First: {outlet} on {person} ({v})',
-  'st.table.finding': '{name}: {share} of the statements'
+  'st.table.finding': 'First: {name} ({share})'
 })

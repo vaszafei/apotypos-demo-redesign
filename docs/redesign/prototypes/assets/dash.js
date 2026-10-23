@@ -80,8 +80,6 @@
   const cardHead = (title, aside, info) => h('div', { class: 'dcard-head' }, h('h2', { class: 'dcard-title' }, title),
     aside || info ? h('div', { class: 'dcard-tools' }, aside, info ? Info(info) : null) : null)
   const emptyText = (text) => h('p', { class: 'dcard-empty' }, text)
-  // A title that states the finding of its card (#60), a sentence: the card title in sentence case. cardHead(finding(text), aside, info).
-  const finding = (text) => h('span', { class: 'is-finding' }, text)
 
   // Stat card: small. A label, a number, one short line and a small picture of the same measure.
   function Stat ({ label, value, sub, viz, kpi, empty }) {
@@ -123,5 +121,5 @@
     return [head, bad.kind === 'empty' ? h('div', { class: 'dash-grid' }, card('c-12', UI.EmptyState({ text: t('topics2.empty') }))) : UI.ErrorState({ onRetry: () => location.reload() })]
   }
 
-  window.Dash = { stateContent, select, fit, reset, niceStep, pct0, SLOTS, NO_GROUP, groupColors, groupColor, newsStories, textOn, tint, Spark, Scale, card, cardHead, finding, Info, emptyText, Stat, TopBar }
+  window.Dash = { stateContent, select, fit, reset, niceStep, pct0, SLOTS, NO_GROUP, groupColors, groupColor, newsStories, textOn, tint, Spark, Scale, card, cardHead, Info, emptyText, Stat, TopBar }
 })()

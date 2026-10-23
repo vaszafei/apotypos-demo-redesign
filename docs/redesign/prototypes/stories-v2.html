@@ -7,19 +7,19 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=20">
-  <link rel="stylesheet" href="assets/dash.css?v=70">
+  <link rel="stylesheet" href="assets/dash.css?v=71">
   <link rel="stylesheet" href="assets/mme.css?v=7">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=23"></script>
-  <script src="assets/messages-v2.js?v=33"></script>
+  <script src="assets/messages-v2.js?v=34"></script>
   <script src="assets/messages-spread.js?v=14"></script>
   <script src="assets/messages-mme.js?v=6"></script>
   <script src="assets/components.js?v=9"></script>
   <script src="assets/motion.js?v=1"></script>
-  <script src="assets/dash.js?v=14"></script>
+  <script src="assets/dash.js?v=15"></script>
   <script src="assets/mme.js?v=6"></script>
   <script src="assets/spread.js?v=6"></script>
   <script src="assets/shell.js?v=40"></script>
@@ -33,7 +33,7 @@
     // Two tabs (#62): Επισκόπηση (/stories) and Ανά μέσο (?tab=outlets, /stories/outlets) with the stories × outlets matrix.
     const { t, fmt, h, load, params } = App
     const tab = params.get('tab') === 'outlets' ? 'outlets' : 'overview'
-    const { reset, NO_GROUP, Spark, card, cardHead, finding } = Dash
+    const { reset, NO_GROUP, Spark, card, cardHead } = Dash
     const list = load('stories', ['dates', 'issues', 'stories'], (b) => b.stories)
     const detail = load('storyDetail', ['outlets', 'stories'], (b) => b.stories)
     const groupsData = load('groups', ['groups'], (b) => b.groups)
@@ -154,11 +154,11 @@
           const pickReach = (n) => { state.reach = state.reach === n ? null : n; draw() }
           const echo = reachCounts.slice(Spread.ECHO_MIN - 1).reduce((a, b) => a + b, 0)
           const allReach = reachCounts.reduce((a, b) => a + b, 0)
-          const reachCard = card('c-3', cardHead(finding(allReach ? t('stories.reach.finding', { share: fmt.pct(echo / allReach), n: Spread.ECHO_MIN }) : t('stories.reach.title')), null, `${t('stories.reach.title')}. ${t('stories.reach.info', { min: Spread.ECHO_MIN })}`),
+          const reachCard = card('c-3', cardHead(allReach ? t('stories.reach.finding', { share: fmt.pct(echo / allReach), n: Spread.ECHO_MIN }) : t('stories.reach.title'), null, `${t('stories.reach.title')}. ${t('stories.reach.info', { min: Spread.ECHO_MIN })}`),
             ReachChart({ counts: reachCounts, selected: state.reach, onPick: pickReach, label: t('stories.reach.aria') }),
             UI.Legend([{ label: t('stories.reach.echo', { n: Spread.ECHO_MIN }), color: 'var(--series-news)' }, { label: t('stories.reach.noecho'), color: 'var(--bar-muted)' }]))
           const pickSolo = (i) => { state.solo = state.solo === i ? null : i; draw() }
-          const soloCard = card('c-4', cardHead(finding(soloRows[0]?.started ? t('stories.solo.finding', { name: soloRows[0].g, share: fmt.pct(soloRows[0].share) }) : t('stories.solo.title')), null, `${t('stories.solo.title')}. ${t('stories.solo.info')}`),
+          const soloCard = card('c-4', cardHead(soloRows[0]?.started ? t('stories.solo.finding', { name: soloRows[0].g, share: fmt.pct(soloRows[0].share) }) : t('stories.solo.title'), null, `${t('stories.solo.title')}. ${t('stories.solo.info')}`),
             UI.BarList(soloRows.map((r) => ({
               label: [h('span', { class: 'dot', style: `--dot:${colorOf(r.i)}` }), r.g], value: r.share, color: colorOf(r.i),
               text: t('stories.solo.row', { share: fmt.pct(r.share), n: fmt.int(r.started) }),

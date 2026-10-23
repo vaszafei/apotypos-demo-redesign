@@ -7,18 +7,18 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=20">
-  <link rel="stylesheet" href="assets/dash.css?v=70">
+  <link rel="stylesheet" href="assets/dash.css?v=71">
   <link rel="stylesheet" href="assets/politics.css?v=2">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=23"></script>
-  <script src="assets/messages-v2.js?v=33"></script>
+  <script src="assets/messages-v2.js?v=34"></script>
   <script src="assets/messages-politics.js?v=8"></script>
   <script src="assets/components.js?v=9"></script>
   <script src="assets/motion.js?v=1"></script>
-  <script src="assets/dash.js?v=14"></script>
+  <script src="assets/dash.js?v=15"></script>
   <script src="assets/politics.js?v=2"></script>
   <script src="assets/shell.js?v=40"></script>
   <script src="data/statements.js?v=1"></script>
@@ -26,7 +26,7 @@
     // Πρόσωπα, Δηλώσεις (from Πολιτική): the statement tracker (C11). The two names of one person are one row, and the rank has its own column.
     // The totals are the sub line of the table card, not stat cards. The counts are not the «δηλώσεις» of the overview, which come from ΜΜΕ & πρόσωπα.
     const { t, fmt, h, load } = App
-    const { reset, card, cardHead, finding, TopBar } = Dash
+    const { reset, card, cardHead, TopBar } = Dash
     const result = load('statements', ['rows'], (b) => b.rows)
 
     Shell.start({
@@ -46,7 +46,7 @@
         const max = rows[0] ? rows[0].total : 1
         // #60: the title names the person quoted the most and the share of all the statements.
         const all = rows.reduce((a, r) => a + r.total, 0)
-        const table = card('c-12', cardHead(finding(rows[0] ? t('st.table.finding', { name: rows[0].speaker, share: fmt.pct(rows[0].total / (all || 1)) }) : t('st.table.title')), null, `${t('st.table.title')}. ${t('st.table.info')}`),
+        const table = card('c-12', cardHead(rows[0] ? t('st.table.finding', { name: rows[0].speaker, share: fmt.pct(rows[0].total / (all || 1)) }) : t('st.table.title'), null, `${t('st.table.title')}. ${t('st.table.info')}`),
           h('p', { class: 'dcard-sub' }, t('st.table.sub', { total: sum('total'), promises: sum('promises'), predictions: sum('predictions'), n: fmt.int(rows.length) })),
           UI.DataTable({
             rows, rankColumn: true, pageSize: 10,
