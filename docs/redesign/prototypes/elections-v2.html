@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="assets/app.css?v=13">
   <link rel="stylesheet" href="assets/dash.css?v=66">
   <link rel="stylesheet" href="assets/politics.css?v=1">
-  <link rel="stylesheet" href="assets/elections.css?v=1">
+  <link rel="stylesheet" href="assets/elections.css?v=2">
 </head>
 <body>
   <div id="app"></div>
@@ -68,7 +68,7 @@
 
     // Two bars for each party. rows: [{ key, a, b, gap }].
     const Twin = (rows, names, max) => h('div', {},
-      h('p', { class: 'party-key' }, h('span', {}, h('span', { class: 'bar', style: '--seg:var(--series-news)' }), names[0]), h('span', {}, h('span', { class: 'bar', style: '--seg:var(--bar-muted)' }), names[1])),
+      h('p', { class: 'legend-inline twin-legend' }, h('span', {}, h('span', { class: 'swatch', style: { background: 'var(--series-news)' } }), names[0]), h('span', {}, h('span', { class: 'swatch', style: { background: 'var(--bar-muted)' } }), names[1])),
       h('ul', { class: 'twin' }, rows.map((r) => h('li', { style: partyStyle(r.key), 'aria-label': `${r.key}: ${names[0]} ${pct1(r.a)}, ${names[1]} ${pct1(r.b)}, ${pp(r.gap)}` },
         h('span', { class: 'twin-key' }, r.key),
         h('span', { class: 'twin-bars' }, h('span', { style: `width:${(r.a / max) * 100}%;--seg:${color(r.key)}` }), h('span', { style: `width:${(r.b / max) * 100}%;--seg:var(--bar-muted)` })),
@@ -135,19 +135,18 @@
         ]
 
         // The party chips: they choose the lines of the two time charts.
-        // One time chart. The party chips are its legend and choose its lines. The switch changes the measure: exposure or stance.
-        const pills = h('div', { class: 'region-pills party-pills', role: 'group', 'aria-label': t('elec.parties') })
-        const modeHolder = h('div', { class: 'region-pills', role: 'group', 'aria-label': t('elec.time.measure') })
+        // One time chart. The switch changes the measure (exposure or stance). The legend under the chart shows or hides a party.
+        const legend = h('ul', { class: 'legend-inline legend-list legend-pick', 'aria-label': t('elec.parties') })
         const timeHead = h('div', {})
         const timeHolder = h('div', {})
         const labels = weeks.map((w) => fmt.date(w, { day: 'numeric', month: 'short' }))
         const tips = weeks.map((w) => fmt.date(w))
         const drawLines = () => {
           const reach = measure === 'reach'
-          timeHead.replaceChildren(cardHead(t(reach ? 'elec.reach.title' : 'elec.tone.title'), modeHolder, t(reach ? 'elec.reach.info' : 'elec.tone.info')))
-          modeHolder.replaceChildren(...['reach', 'tone'].map((m) => h('button', { type: 'button', 'aria-pressed': String(measure === m), onClick: () => { measure = m; drawLines() } }, t(`elec.time.${m}`))))
-          pills.replaceChildren(...parties.map((p) => h('button', { type: 'button', 'aria-pressed': String(shown.has(p.key)), title: p.name, onClick: () => { shown.has(p.key) ? shown.delete(p.key) : shown.add(p.key); drawLines() } },
-            h('span', { class: 'dot', style: `--dot:${color(p.key)}` }), p.key)))
+          const modeSwitch = UI.SegmentedControl({ label: t('elec.time.measure'), value: measure, options: ['reach', 'tone'].map((m) => ({ value: m, label: t(`elec.time.${m}`) })), onChange: (m) => { measure = m; drawLines() } })
+          timeHead.replaceChildren(cardHead(t(reach ? 'elec.reach.title' : 'elec.tone.title'), modeSwitch, t(reach ? 'elec.reach.info' : 'elec.tone.info')))
+          legend.replaceChildren(...parties.map((p) => h('li', {}, h('button', { type: 'button', 'aria-pressed': String(shown.has(p.key)), title: p.name, onClick: () => { shown.has(p.key) ? shown.delete(p.key) : shown.add(p.key); drawLines() } },
+            h('span', { class: 'swatch', style: { background: color(p.key) } }), p.key))))
           const pick = keys.map((k, i) => i).filter((i) => shown.has(keys[i]))
           const series = pick.map((i) => ({ label: keys[i], color: color(keys[i]), values: (reach ? mentions : tones)[i], dots: false }))
           timeHolder.replaceChildren(!pick.length
@@ -158,7 +157,7 @@
         }
         drawLines()
         const bar = TopBar({ title, tabs, quiet: true })
-        const timeCard = card('c-12', timeHead, pills, timeHolder)
+        const timeCard = card('c-12', timeHead, timeHolder, legend)
 
         // 1. Outlet × party: the share of coverage and the stance. The frame is the party with the largest share in the outlet.
         const favorRows = d.outlets.map((o) => {
