@@ -618,28 +618,31 @@ details[open] > :not(summary) { animation: m-rise var(--motion-base) var(--ease-
 
 /* The first view of a chart (motion.js): bars and lines grow, points pop, numbers count up.
    Before its view, a chart below the fold waits with its marks hidden. .m-intro covers the first frame, before motion.js sorts the cards. */
-:is(.card, .dcard, .kpi-tile, .mme-tile) :is(svg.chart .bar, svg.chart .line-series, svg.spark path) { transform-box: fill-box; }
-svg.chart .bar { transform-origin: 50% 100%; }
+:is(.card, .dcard, .kpi-tile) :is(svg.chart .bar-col, svg.chart .line-series, svg.spark path) { transform-box: fill-box; }
+svg.chart .bar-col { transform-origin: 50% 100%; }
 :is(svg.chart .line-series, svg.spark path) { transform-origin: 0 50%; }
 :is(svg.chart .pt, svg.chart .line-dot) { transform-box: fill-box; transform-origin: 50% 50%; }
 :is(svg.chart .slice, svg.chart .ring-arc) { transform-box: view-box; transform-origin: 50% 50%; }
-:is(.hbar-fill, .meter-fill, .stacked, .stack, .mme-tile-vol > span, .mme-tile-bar > span) { transform-origin: 0 50%; }
+:is(.hbar-fill, .stacked) { transform-origin: 0 50%; }
+.dbar-seg { transform-origin: 50% 50%; }
+.dbar-seg.is-left { transform-origin: 100% 50%; }
+.dbar-seg.is-right { transform-origin: 0 50%; }
 
-.m-intro :is(.card, .dcard, .kpi-tile, .mme-tile):not(.m-play, .m-done) :is(svg.chart, svg.spark),
+.m-intro :is(.card, .dcard, .kpi-tile):not(.m-play, .m-done) :is(svg.chart, svg.spark),
 .m-wait :is(svg.chart, svg.spark) { opacity: 0; }
-.m-intro :is(.card, .dcard, .kpi-tile, .mme-tile):not(.m-play, .m-done) :is(.hbar-fill, .meter-fill, .stacked, .stack, .mme-tile-vol > span, .mme-tile-bar > span),
-.m-wait :is(.hbar-fill, .meter-fill, .stacked, .stack, .mme-tile-vol > span, .mme-tile-bar > span) { transform: scaleX(0); }
-.m-intro :is(.card, .dcard, .kpi-tile, .mme-tile):not(.m-play, .m-done) :is(.kpi-value, .dstat-value),
+.m-intro :is(.card, .dcard, .kpi-tile):not(.m-play, .m-done) :is(.hbar-fill, .stacked, .dbar-seg),
+.m-wait :is(.hbar-fill, .stacked, .dbar-seg) { transform: scaleX(0); }
+.m-intro :is(.card, .dcard, .kpi-tile):not(.m-play, .m-done) :is(.kpi-value, .dstat-value),
 .m-wait :is(.kpi-value, .dstat-value), .is-counting { -webkit-text-fill-color: transparent; }
-.m-intro .mme-tile:not(.m-play, .m-done), .mme-tile.m-wait { opacity: 0; }
+.m-intro .mme-rank:not(.m-play, .m-done) tbody tr, .m-wait.mme-rank tbody tr { opacity: 0; }
 
 .m-play :is(svg.chart, svg.spark) { animation: m-fade var(--motion-base) var(--ease-out) var(--m-delay, 0ms) both; }
-.m-play svg.chart .bar { animation: m-grow-y var(--motion-chart) var(--ease-out) calc(var(--m-delay, 0ms) + var(--m-i, 0) * 8ms) both; }
+.m-play svg.chart .bar-col { animation: m-grow-y var(--motion-chart) var(--ease-out) calc(var(--m-delay, 0ms) + var(--m-i, 0) * 8ms) both; }
 .m-play :is(svg.chart .line-series, svg.spark path) { animation: m-grow-x var(--motion-chart) var(--ease-in-out) var(--m-delay, 0ms) both; }
 .m-play :is(svg.chart .pt, svg.chart .line-dot) { animation: m-pop var(--motion-slow) var(--ease-spring) calc(var(--m-delay, 0ms) + 200ms + var(--m-i, 0) * 6ms) both; }
 .m-play :is(svg.chart .slice, svg.chart .ring-arc) { animation: m-pop var(--motion-chart) var(--ease-out) calc(var(--m-delay, 0ms) + var(--m-i, 0) * 30ms) both; }
-.m-play :is(.hbar-fill, .meter-fill, .stacked, .stack, .mme-tile-vol > span, .mme-tile-bar > span) { animation: m-grow-x var(--motion-chart) var(--ease-out) var(--m-delay, 0ms) both; }
-.m-play.mme-tile { animation: m-rise var(--motion-slow) var(--ease-out) var(--m-delay, 0ms) both; }
+.m-play :is(.hbar-fill, .stacked, .dbar-seg) { animation: m-grow-x var(--motion-chart) var(--ease-out) var(--m-delay, 0ms) both; }
+.m-play.mme-rank tbody tr { animation: m-rise var(--motion-slow) var(--ease-out) calc(var(--m-delay, 0ms) + var(--m-i, 0) * 35ms) both; }
 .count-ghost { position: absolute; z-index: 1; margin: 0; pointer-events: none; white-space: nowrap; }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,5 +1,5 @@
 // Motion (#56): the page entrance, the fade of what a period or a filter changes, the thumb of a segmented control, the "/" of the current tab,
-// the first view of the charts and the numbers, and the move of sorted tiles. The durations and easings are the tokens in tokens.css.
+// the first view of the charts and the numbers, and the move of sorted rows. The durations and easings are the tokens in tokens.css.
 // Only transform and opacity move. With reduced motion the entrance and the changes only fade, and the rest is instant.
 // Load after components.js and before shell.js.
 (function () {
@@ -10,8 +10,8 @@
   const token = (name) => getComputedStyle(root).getPropertyValue(name).trim()
   const ms = (name) => parseFloat(token(name)) || 0
 
-  // A card that plays its first view on its own. A card that holds other cards (the tiles of Μέσα) leaves it to them.
-  const UNIT = '.card, .dcard, .kpi-tile, .mme-tile'
+  // A card that plays its first view on its own. A card that holds other cards leaves it to them.
+  const UNIT = '.card, .dcard, .kpi-tile'
   // The page head keeps still: its controls are what the visitor just used.
   const HEAD = '.page-head, .page-header, .dash-bar'
   const COUNTED = '.kpi-value, .dstat-value'
@@ -48,14 +48,7 @@
     }, { rootMargin: '0px 0px -15% 0px' })
     : null
 
-  // A tile waits for the tiles before it in its row (and its row, on the first view), so the grid fills as a diagonal wave.
   function delayOf (unit, k, first) {
-    if (unit.matches('.mme-tile') && unit.parentElement) {
-      const tiles = [...unit.parentElement.children]
-      const col = tiles.filter((x) => x.offsetTop === unit.offsetTop && x.offsetLeft < unit.offsetLeft).length
-      const row = first ? new Set(tiles.filter((x) => x.offsetTop < unit.offsetTop && visible(x)).map((x) => x.offsetTop)).size : 0
-      return 120 + (row + col) * 60
-    }
     return (first ? 100 : 0) + Math.min(k, 8) * ms('--motion-stagger')
   }
 
@@ -64,6 +57,7 @@
     unit.classList.remove('m-wait')
     unit.classList.add('m-play')
     unit.querySelectorAll('svg.chart').forEach(indexMarks)
+    if (unit.matches('.mme-rank')) unit.querySelectorAll('tbody tr').forEach((tr, i) => tr.style.setProperty('--m-i', Math.min(i, 14)))
     unit.querySelectorAll(COUNTED).forEach((el) => countUp(el, unit, delay))
     // After the longest entrance (a bar chart with its wave), the card is done: a later redraw, such as a resize, draws at once.
     setTimeout(() => unit.classList.replace('m-play', 'm-done'), delay + 2400)
@@ -71,7 +65,7 @@
 
   // The wave of a bar chart and the order of the points: each mark knows its index.
   function indexMarks (svg) {
-    for (const cls of ['bar', 'pt', 'line-dot', 'slice', 'ring-arc']) svg.querySelectorAll(`.${cls}`).forEach((el, i) => el.style.setProperty('--m-i', i))
+    for (const cls of ['bar-col', 'pt', 'line-dot', 'slice', 'ring-arc']) svg.querySelectorAll(`.${cls}`).forEach((el, i) => el.style.setProperty('--m-i', i))
   }
 
   // Count up: the number stays in the page for screen readers and tests. A copy over it, hidden from them, counts from 0.
@@ -158,7 +152,7 @@
   }
   function fadeChanged (before, after, depth) {
     after.forEach((el, i) => {
-      if (el.matches(HEAD) || el.querySelector('[data-flip-key]')) return
+      if (el.matches(HEAD) || el.querySelector(FLIPPED)) return
       const old = before[i]
       if (old && old.outerHTML === el.outerHTML) return
       if (old && depth < 2 && el.matches('.dash-grid, .card-col, .kpi-strip') && old.children.length === el.children.length) {
@@ -260,13 +254,15 @@
     })
   }
 
-  // 6. Sorted tiles move to their new place (FLIP). An element with data-flip-key keeps its key when the page draws it again.
+  // 6. Sorted rows move to their new place (FLIP). A row of the outlet ranking is keyed by its outlet name.
+  const FLIPPED = '.mme-rank tbody tr'
+  const flipKey = (el) => el.querySelector('.mme-rank-name')?.textContent
   let flipFrom = null
   function keepPlaces () {
     if (still()) return
-    const els = document.querySelectorAll('[data-flip-key]')
+    const els = document.querySelectorAll(FLIPPED)
     if (!els.length) return
-    flipFrom = new Map([...els].map((el) => [el.dataset.flipKey, el.getBoundingClientRect()]))
+    flipFrom = new Map([...els].map((el) => [flipKey(el), el.getBoundingClientRect()]))
     requestAnimationFrame(flip)
   }
   document.addEventListener('click', keepPlaces, true)
@@ -276,8 +272,8 @@
     flipFrom = null
     if (!from) return
     const inView = (r) => r.bottom > 0 && r.top < window.innerHeight
-    for (const el of document.querySelectorAll('[data-flip-key]')) {
-      const old = from.get(el.dataset.flipKey)
+    for (const el of document.querySelectorAll(FLIPPED)) {
+      const old = from.get(flipKey(el))
       const now = el.getBoundingClientRect()
       if (!old) { el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: ms('--motion-slow'), easing: token('--ease-out') }); continue }
       const dx = old.left - now.left
