@@ -8,17 +8,17 @@
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=22">
   <link rel="stylesheet" href="assets/dash.css?v=72">
-  <link rel="stylesheet" href="assets/mme.css?v=7">
+  <link rel="stylesheet" href="assets/mme.css?v=8">
   <link rel="stylesheet" href="assets/date-range.css?v=3">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=25"></script>
-  <script src="assets/messages-v2.js?v=34"></script>
+  <script src="assets/messages-v2.js?v=35"></script>
   <script src="assets/messages-spread.js?v=14"></script>
-  <script src="assets/messages-mme.js?v=6"></script>
-  <script src="assets/components.js?v=9"></script>
+  <script src="assets/messages-mme.js?v=7"></script>
+  <script src="assets/components.js?v=10"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
   <script src="assets/date-range.js?v=1"></script>
@@ -32,7 +32,7 @@
     // The data is the one of the live page (data/mme.js, scripts/make-mme.py): 29 Greek outlets and 10 Israeli outlets, summed for the period.
     // The top bar has the tabs, the set of outlets and the period. Each card holds one measure and one picture of it.
     const { t, fmt, h, load, params } = App
-    const { fit, reset, pct0, NO_GROUP, Spark, Scale, card, cardHead, emptyText, Stat, TopBar } = Dash
+    const { fit, reset, pct0, NO_GROUP, Spark, card, cardHead, emptyText, Stat, TopBar } = Dash
     const result = load('mme', ['sets'], (b) => Object.keys(b.sets))
     const groupsData = load('groups', ['groups'], (b) => b.groups)
     // The share of articles with no byline comes from the API in its own period (Sep 2025 – Jan 2026), for 5 outlets.
@@ -44,7 +44,7 @@
     // Two tabs (#62): Επισκόπηση (/media) and Πώς γράφουν (?tab=writing, /media/writing). Both have the set of outlets and the period.
     const tab = params.get('tab') === 'writing' ? 'writing' : 'overview'
     // ?ds=il opens the Israeli set, as on the live page.
-    const view = { set: params.get('ds') === 'il' ? 'il' : 'gr', from: null, to: null, sort: 'n' }
+    const view = { set: params.get('ds') === 'il' ? 'il' : 'gr', from: null, to: null }
     let lastValid = null
     let draw = () => {}
     const setSelect = h('select', { 'aria-label': t('mme.set'), onChange: (e) => { view.set = e.target.value; view.from = null; lastValid = null; draw() } },
@@ -197,7 +197,7 @@
           // The lead chart: articles per day, news and other. A drag selects a period.
           let peakDay = i0
           for (let i = i0; i <= i1; i++) if (totals[i] > totals[peakDay]) peakDay = i
-          const volume = card('',
+          const volume = card('c-4 mme-side',
             cardHead(t('media2.chart.title'), UI.Legend([{ label: t('media2.chart.news'), color: 'var(--series-news)' }, { label: t('media2.chart.other'), color: 'var(--series-other)' }]),
               analysed > 0 ? `${t('media2.chart.peak', { date: fmt.date(dates[peakDay]), n: fmt.int(totals[peakDay]) })} · ${t('media2.chart.hint')}` : null),
             analysed > 0 ? VolumeChart({ dates, news, other, i0, i1, onSelect: select }) : emptyText(t('media2.chart.empty')))
@@ -220,32 +220,24 @@
             UI.BarList(anon.map((r) => ({ label: r.name, value: r.anonPct, text: fmt.pct(r.anonPct / 100) })), { max: 100, reference: { value: anonAvg, label: t('originality.anon.avg', { v: fmt.pct(anonAvg / 100) }) } })) : null
 
           // All the outlets: one row for each, in place of the outlet cards of the live page. The card answers which outlets write the most,
-          // and the columns put the clickbait, the critical share and the main topics side by side. The first 10 rows show, a button shows the rest.
-          const cbMax = Math.max(...cbOutlets.map((o) => o.cbYes / o.cbKnown), 0.01)
-          const crit = (o) => { const n = o.stance[0] + o.stance[1] + o.stance[2]; return n >= 30 ? o.stance[0] / n : -1 }
-          const cb = (o) => (o.cbKnown >= 100 ? o.cbYes / o.cbKnown : -1)
-          const SORTS = { n: (a, b) => b.n - a.n, cb: (a, b) => cb(b) - cb(a), crit: (a, b) => crit(b) - crit(a), name: (a, b) => a.name.localeCompare(b.name, App.locale) }
-          const rows = S.active.slice().sort(SORTS[view.sort] || SORTS.n)
-          const nMax = Math.max(...S.active.map((o) => o.n), 1)
+          // and the columns put the clickbait, the critical share and the main topics side by side. The headers of the three measures sort.
+          const crit = (o) => { const n = o.stance[0] + o.stance[1] + o.stance[2]; return n >= 30 ? o.stance[0] / n : null }
+          const cb = (o) => (o.cbKnown >= 100 ? o.cbYes / o.cbKnown : null)
           // A value that is not measured is a dash. Its reason is in the title and for a screen reader.
           const none = (reason) => h('span', { class: 'muted-text', title: reason }, '—', h('span', { class: 'visually-hidden' }, reason))
-          const outletCell = (o) => {
-            const color = o.group ? colorOfGroup.get(o.group) || NO_GROUP : null
-            const group = !greek ? null : h('p', { class: 'mme-rank-group' }, h('span', { class: o.group ? 'dot' : 'dot dot-none', style: color ? `--dot:${color}` : null, 'aria-hidden': 'true' }),
-              !o.group ? h('span', {}, t('media.col.group.none')) : slugOfGroup.has(o.group) ? h('a', { href: `group-v2.html?g=${slugOfGroup.get(o.group)}` }, o.group) : o.group)
-            return h('div', { class: 'mme-rank-id' }, h('p', { class: 'mme-rank-name' }, Mme.outletLink(S, o)), group)
-          }
+          const groupCell = (o) => h('p', { class: 'mme-rank-group' }, h('span', { class: o.group ? 'dot' : 'dot dot-none', style: o.group ? `--dot:${colorOfGroup.get(o.group) || NO_GROUP}` : null, 'aria-hidden': 'true' }),
+            !o.group ? h('span', {}, t('media.col.group.none')) : slugOfGroup.has(o.group) ? h('a', { href: `group-v2.html?g=${slugOfGroup.get(o.group)}` }, o.group) : o.group)
           const columns = [
-            { label: t('media.col.outlet'), render: outletCell },
-            { label: t('mme.rank.sort.n'), num: true, render: (o) => UI.HBar(o.n, nMax, { text: fmt.int(o.n) }) },
-            { label: t('media.col.clickbait'), num: true, render: (o) => cb(o) < 0 ? none(t('group.clickbait.none')) : h('div', { class: 'mme-rank-cb' }, Scale(cb(o), 0, cbMax, cbAvg, fmt.pct(cb(o)), fmt.pct(cbAvg)), h('span', {}, fmt.pct(cb(o)))) },
-            { label: t('mme.rank.sort.crit'), num: true, render: (o) => crit(o) < 0 ? none(t('stance.few', { n: 30 })) : pct0(crit(o)) },
+            { label: t('media.col.outlet'), render: (o) => h('p', { class: 'mme-rank-name' }, Mme.outletLink(S, o)) },
+            greek && { label: t('media.col.group'), phone: false, render: groupCell },
+            { label: t('mme.rank.sort.n'), num: true, sortable: true, sortKey: 'n', sortValue: (o) => o.n, render: (o) => fmt.int(o.n) },
+            { label: t('media.col.clickbait'), num: true, sortable: true, sortKey: 'cb', sortValue: cb, render: (o) => cb(o) === null ? none(t('group.clickbait.none')) : fmt.pct(cb(o)) },
+            { label: t('mme.rank.sort.crit'), num: true, sortable: true, sortKey: 'crit', sortValue: crit, render: (o) => crit(o) === null ? none(t('stance.few', { n: 30 })) : pct0(crit(o)) },
             { label: t('mme.rank.topics'), phone: false, render: (o) => h('p', { class: 'mme-rank-topics' }, Mme.topIssues(S, o, 3).map((r) => `${r.x[App.locale] || r.x.el} ${Math.round(r.v * 100)}%`).join(' · ')) }
-          ]
-          const sorter = UI.SegmentedControl({ label: t('mme.rank.sort'), value: view.sort, options: ['n', 'cb', 'crit', 'name'].map((k) => ({ value: k, label: t(`mme.rank.sort.${k}`) })), onChange: (k) => { view.sort = k; draw() } })
-          const ranking = card('c-12 mme-rank', cardHead(t('mme.rank.all'), sorter, `${t('mme.rank.note')} ${t('media2.rank.outlets.note')}`),
+          ].filter(Boolean)
+          const ranking = card('c-8 mme-rank', cardHead(t('mme.rank.all'), null, `${t('mme.rank.note')}`),
             h('p', { class: 'dcard-sub' }, t('mme.rank.sub')),
-            UI.DataTable({ columns, rows, rankColumn: view.sort !== 'name', emptyText: t('media.empty') }))
+            UI.DataTable({ columns, rows: S.active, rankColumn: true, pageSize: Infinity, sort: { key: 'n', dir: 'desc' }, emptyText: t('media.empty') }))
           ranking.id = 'ranking'
           ranking.setAttribute('aria-live', 'polite')
 
@@ -260,7 +252,7 @@
 
           const cards = tab === 'writing'
             ? [scatterCard, bylineCard, gov]
-            : [statOutlets, statArticles, statStories, statPeople, ranking, h('div', { class: 'c-12 card-col' }, volume)]
+            : [statOutlets, statArticles, statStories, statPeople, volume, ranking]
           content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...cards), Mme.MethodNote(S), protoNote())
         }
         placeSetSelect()

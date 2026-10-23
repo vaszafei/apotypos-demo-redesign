@@ -281,17 +281,43 @@
   const cellClass = (c) => [c.num && 'num', c.phone === false && 'hide-phone'].filter(Boolean).join(' ') || null
 
   // DataTable: the first 10 rows, and a control for the rest (C07, G19). With moreStep, the control adds that number of rows each time (APO-180).
-  function DataTable ({ columns, rows, rankColumn = false, pageSize = 10, moreStep = 0, caption, emptyText, emptyAction, rowId }) {
+  // A column with sortable: true has a sort button in its header. sortValue(row) is the value (default row[sortKey]); no value (null, NaN) always sorts last.
+  // The first click sorts high to low, the second low to high. sort: { key, dir } is the order at first ('desc' or 'asc'). The rank column follows the sort.
+  function DataTable ({ columns, rows, rankColumn = false, pageSize = 10, moreStep = 0, caption, emptyText, emptyAction, rowId, sort }) {
     if (rows.length === 0) return EmptyState({ text: emptyText, action: emptyAction })
     let expanded = false
     let shown = pageSize
+    let order = sort ? { key: sort.key, dir: sort.dir || 'desc' } : null
+    const keyOf = (c, i) => c.sortKey ?? c.key ?? String(i)
+    const valueOf = (c, row) => (c.sortValue ? c.sortValue(row) : row[c.sortKey ?? c.key])
+    const isNone = (v) => v === null || v === undefined || (typeof v === 'number' && Number.isNaN(v))
+    const sorted = () => {
+      const col = order && columns.find((c, i) => c.sortable && keyOf(c, i) === order.key)
+      if (!col) return rows
+      const sign = order.dir === 'asc' ? 1 : -1
+      return rows.slice().sort((a, b) => {
+        const x = valueOf(col, a)
+        const y = valueOf(col, b)
+        if (isNone(x) || isNone(y)) return isNone(x) && isNone(y) ? 0 : isNone(x) ? 1 : -1
+        return sign * (typeof x === 'string' ? x.localeCompare(y, App.locale) : x - y)
+      })
+    }
     const wrap = h('div', moreStep ? { tabindex: '-1' } : {})
+    const head = (c, i) => {
+      if (!c.sortable) return h('th', { scope: 'col', class: cellClass(c) }, c.label)
+      const key = keyOf(c, i)
+      const active = order?.key === key
+      return h('th', { scope: 'col', class: cellClass(c), 'aria-sort': active ? (order.dir === 'asc' ? 'ascending' : 'descending') : null },
+        h('button', { type: 'button', class: 'sort-button', 'data-sort': key, onClick: () => { order = { key, dir: active && order.dir === 'desc' ? 'asc' : 'desc' }; render(); wrap.querySelector(`[data-sort="${key}"]`)?.focus() } },
+          c.label, h('span', { class: 'sort-arrow', 'aria-hidden': 'true' }, active ? (order.dir === 'asc' ? '↑' : '↓') : '')))
+    }
     const render = () => {
-      const visible = moreStep ? rows.slice(0, shown) : expanded ? rows : rows.slice(0, pageSize)
+      const list = sorted()
+      const visible = moreStep ? list.slice(0, shown) : expanded ? list : list.slice(0, pageSize)
       const table = h('table', { class: 'data-table' },
         caption && h('caption', {}, caption),
         h('thead', {}, h('tr', {}, rankColumn && h('th', { class: 'rank', scope: 'col' }, t('table.rank')),
-          columns.map((c) => h('th', { scope: 'col', class: cellClass(c) }, c.label)))),
+          columns.map(head))),
         h('tbody', {}, visible.map((row, i) => h('tr', { id: rowId ? rowId(row) : null },
           rankColumn && h('td', { class: 'rank' }, String(i + 1)),
           columns.map((c) => h('td', { class: cellClass(c) }, c.render ? c.render(row) : row[c.key]))))))

@@ -34,11 +34,8 @@ Object.assign(window.MESSAGES.el, {
   'mme.hl.stance': 'Στάση απέναντι στην κυβέρνηση: το {a} είναι επικριτικό στο {pa} των σχετικών άρθρων του, το {b} στο {pb} (υποστηρικτικό στο {sb}).',
 
   'mme.rank.topics': 'Κύρια θέματα',
-  'mme.rank.sort': 'Ταξινόμηση των μέσων',
   'mme.rank.sort.n': 'Άρθρα',
-  'mme.rank.sort.cb': 'Clickbait',
   'mme.rank.sort.crit': 'Επικριτικά',
-  'mme.rank.sort.name': 'Α–Ω',
   'mme.rank.sub': 'Πόσα άρθρα γράφει κάθε μέσο, πόσο clickbait και πόσο επικριτικά προς την κυβέρνηση.',
   'mme.home.note': 'Από τα μέσα της Ελλάδας, για το διάστημα που διαλέξατε.',
   'mme.rank.note': 'Τα μέσα με τουλάχιστον 500 άρθρα στο διάστημα της ανάλυσης. Επικριτικά: το μερίδιο των άρθρων με επικριτική στάση προς την κυβέρνηση, στα άρθρα όπου η κυβέρνηση παίζει ρόλο. Κύρια θέματα: τα τρία μεγαλύτερα θέματα του μέσου. Η παύλα είναι μέσο χωρίς αρκετά άρθρα για τη μέτρηση.',
@@ -190,11 +187,8 @@ Object.assign(window.MESSAGES.en, {
   'mme.hl.stance': 'Stance to the government: {a} is critical in {pa} of its relevant articles, {b} in {pb} (supportive in {sb}).',
 
   'mme.rank.topics': 'Main topics',
-  'mme.rank.sort': 'Sort the outlets',
   'mme.rank.sort.n': 'Articles',
-  'mme.rank.sort.cb': 'Clickbait',
   'mme.rank.sort.crit': 'Critical',
-  'mme.rank.sort.name': 'A–Z',
   'mme.rank.sub': 'How many articles each outlet writes, how much clickbait and how critical of the government.',
   'mme.home.note': 'From the Greek outlets, for the period you chose.',
   'mme.rank.note': 'The outlets with at least 500 articles in the window of the analysis. Critical: the share of articles with a critical stance to the government, in the articles where the government has a role. Main topics: the three largest topics of the outlet. A dash is an outlet without enough articles for the measure.',

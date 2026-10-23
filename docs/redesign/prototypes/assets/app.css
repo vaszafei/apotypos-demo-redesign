@@ -344,6 +344,9 @@ button, input, select { font: inherit; color: inherit; }
 .data-table th { padding: var(--space-2); border-bottom: 1px solid var(--border); text-align: left; font-size: var(--text-caption); font-weight: 600; color: var(--text-secondary); }
 .data-table td { padding: var(--space-2); border-bottom: 1px solid var(--border); vertical-align: top; }
 .data-table .num { text-align: right; white-space: nowrap; }
+.data-table .sort-button { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; }
+.data-table .sort-button:hover, .data-table th[aria-sort] .sort-button { color: var(--ink); }
+.data-table .sort-arrow { display: inline-block; min-width: 1ch; }
 .data-table .rank { width: 40px; color: var(--text-secondary); }
 .data-table tr:target td, .data-table tr.is-target td { background: #fff6cc; }
 .table-more { margin-top: var(--space-3); }
