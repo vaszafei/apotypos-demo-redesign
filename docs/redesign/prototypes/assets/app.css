@@ -506,3 +506,4 @@ button, input, select { font: inherit; color: inherit; }
 :root[data-header="v2"] .page-head-actions .segmented button { min-height: 26px; padding: 0 12px; font-size: 13px; }
 :root[data-header="v2"] .page-filters select, :root[data-header="v2"] .page-filters .search-input { min-height: 32px; font-size: 13px; }
 :root[data-header="v2"] .page-filters .button { min-height: 32px; font-size: 13px; }
+:root[data-header="v2"] .page-head.is-empty { margin: 0 0 var(--space-4); }

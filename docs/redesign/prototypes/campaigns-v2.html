@@ -6,23 +6,23 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/app.css?v=13">
+  <link rel="stylesheet" href="assets/app.css?v=15">
   <link rel="stylesheet" href="assets/dash.css?v=67">
 </head>
 <body>
   <div id="app"></div>
-  <script src="assets/icons.js?v=3"></script>
-  <script src="assets/messages.js?v=20"></script>
+  <script src="assets/icons.js?v=4"></script>
+  <script src="assets/messages.js?v=22"></script>
   <script src="assets/messages-v2.js?v=32"></script>
-  <script src="assets/messages-spread.js?v=12"></script>
+  <script src="assets/messages-spread.js?v=13"></script>
   <script src="assets/components.js?v=7"></script>
-  <script src="assets/dash.js?v=11"></script>
-  <script src="assets/shell.js?v=35"></script>
+  <script src="assets/dash.js?v=12"></script>
+  <script src="assets/shell.js?v=38"></script>
   <script src="data/campaigns.js?v=1"></script>
   <script>
-    // Politics, Καμπάνιες (moved from News spread on 2026-10-21): the 4 detector lists of the API. A row is a sign to check, not a proof. In this read only the political list has rows.
+    // Ιστορίες, Μοτίβα διάδοσης (the name of the live page; it was Πολιτική › Καμπάνιες): the 4 detector lists of the API. A row is a sign to check, not a proof. In this read only the political list has rows.
     const { t, fmt, h, load } = App
-    const { reset, card, cardHead, emptyText, TopBar } = Dash
+    const { reset, card, cardHead, emptyText, Info, TopBar } = Dash
     const result = load('campaigns', ['window', 'political', 'other'], (b) => b.political)
     // The kind of a row. Orange is an attack, teal is praise and gray is ambiguous. There is no red and green for good and bad.
     const KIND_COLOR = { ΕΠΙΘΕΣΗ: 'var(--emph-less)', ΑΠΟΘΕΩΣΗ: 'var(--emph-more)' }
@@ -53,12 +53,12 @@
       id: 'campaigns',
       route: '/campaigns',
       dash: true,
-      title: () => t('nav.politics'),
-      breadcrumbs: () => [{ label: t('nav.politics') }],
+      title: () => t('nav.spread'),
+      breadcrumbs: () => [{ label: t('nav.spread') }, { label: t('tab.spread.campaigns') }],
       render (content, { tabs }) {
         content.classList.add('dash', 'minimal')
         reset()
-        const title = t('nav.politics')
+        const title = t('tab.spread.campaigns')
         const problem = Dash.stateContent([result], { title, tabs, quiet: true })
         if (problem) { content.replaceChildren(...problem.filter(Boolean), protoNote()); return }
         const d = result.data
@@ -67,12 +67,22 @@
         const others = [['sustained', 'camp.sustained'], ['bursts', 'camp.bursts'], ['dissemination', 'camp.dissem']]
         // The API names the lists political, pushes, sustained and dissemination. The page order follows the current app: political, sustained, bursts (pushes), dissemination.
         const countOf = { sustained: d.other.sustained, bursts: d.other.pushes, dissemination: d.other.dissemination }
+        const range = (iso) => fmt.date(iso, { day: 'numeric', month: 'short', year: 'numeric' })
+        // The 3 other lists are rows of one card, not 3 cards: in this read they have no rows.
+        const othersCard = card('c-12', cardHead(t('camp.others.title'), null, t('camp.others.info')),
+          UI.DataTable({
+            rows: others, pageSize: others.length,
+            columns: [
+              { label: t('camp.col.pattern'), render: ([, msg]) => h('span', { class: 'leader-cell' }, t(`${msg}.title`), ' ', Info(t(`${msg}.info`))) },
+              { label: t('camp.col.found'), num: true, render: ([key]) => (countOf[key] ? fmt.int(countOf[key]) : h('span', { class: 'mini-empty' }, t('camp.empty'))) }
+            ]
+          }))
         content.replaceChildren(bar, h('div', { class: 'dash-grid' },
           card('c-12', cardHead(t('camp.political.title'), null, t('camp.political.info')),
+            h('p', { class: 'dcard-sub' }, t('camp.meta', { from: range(d.window[0]), to: range(d.window[1]), date: range(d.referenceDate) })),
             political.length ? h('ul', { class: 'camp-list' }, political.map(Item)) : emptyText(t('camp.empty')),
             h('p', { class: 'dcard-sub' }, t('camp.market', { n: d.marketAnonPct }))),
-          others.map(([key, msg]) => card('c-4', cardHead(t(`${msg}.title`), null, t(`${msg}.info`)),
-            countOf[key] ? h('p', { class: 'dcard-sub' }, countOf[key]) : emptyText(t('camp.empty'))))), protoNote())
+          othersCard), protoNote())
       }
     })
 

@@ -6,20 +6,20 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/app.css?v=13">
+  <link rel="stylesheet" href="assets/app.css?v=15">
   <link rel="stylesheet" href="assets/dash.css?v=67">
   <link rel="stylesheet" href="assets/politics.css?v=1">
 </head>
 <body>
   <div id="app"></div>
-  <script src="assets/icons.js?v=3"></script>
-  <script src="assets/messages.js?v=20"></script>
+  <script src="assets/icons.js?v=4"></script>
+  <script src="assets/messages.js?v=22"></script>
   <script src="assets/messages-v2.js?v=32"></script>
-  <script src="assets/messages-politics.js?v=7"></script>
+  <script src="assets/messages-politics.js?v=8"></script>
   <script src="assets/components.js?v=7"></script>
-  <script src="assets/dash.js?v=11"></script>
+  <script src="assets/dash.js?v=12"></script>
   <script src="assets/politics.js?v=1"></script>
-  <script src="assets/shell.js?v=35"></script>
+  <script src="assets/shell.js?v=38"></script>
   <script src="data/war.js?v=1"></script>
   <script>
     // Αναλύσεις, Ελληνοτουρκικά (was Πολεμική ρητορική, then a tab of Πολιτική): how the press writes about Turkey (K20 to K23, C05, C06). It reads the war file (1 Aug to 30 Sep 2026).
@@ -40,7 +40,7 @@
       id: 'war',
       route: '/war',
       dash: true,
-      title: () => t('nav.politics'),
+      title: () => t('nav.world'),
       breadcrumbs: () => [{ label: t('nav.world') }, { label: t('tab.world.greekturkish') }],
       render (content, { tabs }) {
         content.classList.add('dash', 'minimal')

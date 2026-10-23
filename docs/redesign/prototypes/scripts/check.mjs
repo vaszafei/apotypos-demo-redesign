@@ -461,7 +461,7 @@ for (const name of PAGES) {
     await page.goto(`${base}/story-v2.html?id=999999`)
     record('story page: an id that is not in the data shows the 404 page', (await page.locator('.error-code').textContent()) === '404', {})
     await context.close()
-    for (const [file, tab] of [['echoes-v2.html', 'Ηχώ'], ['similarity-v2.html', 'Ομοιότητα και πρωτοτυπία'], ['campaigns-v2.html', 'Καμπάνιες']]) {
+    for (const [file, tab] of [['echoes-v2.html', 'Ηχώ'], ['similarity-v2.html', 'Ομοιότητα και πρωτοτυπία'], ['campaigns-v2.html', 'Μοτίβα διάδοσης']]) {
       const view = await open(`${base}/${file}`)
       const r = await view.page.evaluate(() => ({ tab: document.querySelector('.section-tabs [aria-current]')?.textContent, statCards: document.querySelectorAll('.dstat').length, selects: [...document.querySelectorAll('.dash-actions select')].map((x) => Math.round(x.getBoundingClientRect().height)), overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth }))
       record(`${file}: the tab ${tab} is current, no stat card, the lists have one height, and the page has no horizontal scroll`, r.tab === tab && r.statCards === 0 && new Set(r.selects).size <= 1 && !r.overflow, r)
