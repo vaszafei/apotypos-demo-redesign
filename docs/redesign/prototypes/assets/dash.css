@@ -483,6 +483,31 @@
   .entity-grid .hero-title { font-size: 24px; }
 }
 @media (max-width: 1023px) { .minimal .dash-bar { top: 56px; } }
+/* Entity pages, third pass: a compact title card as wide as its content, then the cards in rows of two that end level. */
+.entity-grid.entity-rows { align-items: stretch; }
+.entity-grid .ecard { justify-self: start; width: fit-content; max-width: 100%; gap: 6px; padding: 12px 18px 13px; }
+.ecard-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 20px; }
+.ecard-name { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.ecard-name .hero-kicker { font-size: 11px; }
+.entity-grid .ecard .hero-title { margin: 0; font: 600 20px/1.2 var(--font-heading); letter-spacing: -0.01em; color: var(--ink); }
+.ecard-meta { margin: 0; font-size: var(--text-caption); color: var(--text-secondary); }
+.ecard-meta a { color: var(--text-primary); text-decoration-color: var(--rule); text-underline-offset: 3px; }
+.ecard-facts { display: flex; flex-wrap: wrap; gap: 4px 24px; margin: 0; }
+.ecard-fact { display: flex; align-items: baseline; gap: 6px; font-size: var(--text-caption); color: var(--text-secondary); }
+.ecard-fact dd { display: flex; align-items: baseline; gap: 6px; margin: 0; }
+.ecard-fact strong { font-size: 15px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.ecard-fact a { color: var(--ink); font-size: 14px; font-weight: 600; text-decoration-color: var(--rule); text-underline-offset: 3px; }
+.ecard-sub { white-space: nowrap; }
+.ecard-fact .ecard-sub a { font-size: inherit; font-weight: 400; color: inherit; }
+.ecard-fact svg { align-self: center; }
+.entity-stack { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+@media (max-width: 1023px) { .entity-stack { grid-column: span 12; } }
+@media (max-width: 719px) {
+  .entity-grid .ecard { width: auto; justify-self: stretch; }
+  .ecard-name { flex-direction: column; gap: 0; }
+  .ecard-facts { gap: 4px 16px; }
+  .ecard-fact svg { display: none; }
+}
 .topic-cell { display: block; max-width: 150px; }
 
 /* Αναλύσεις & Ιδιοκτησία hub (analyze-v2.html, #8). */
