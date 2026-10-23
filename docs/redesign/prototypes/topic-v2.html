@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/app.css?v=15">
-  <link rel="stylesheet" href="assets/dash.css?v=67">
+  <link rel="stylesheet" href="assets/tokens.css?v=5">
+  <link rel="stylesheet" href="assets/app.css?v=16">
+  <link rel="stylesheet" href="assets/dash.css?v=68">
 </head>
 <body>
   <div id="app"></div>
@@ -15,10 +15,10 @@
   <script src="assets/messages.js?v=22"></script>
   <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-spread.js?v=13"></script>
-  <script src="assets/components.js?v=7"></script>
-  <script src="assets/dash.js?v=12"></script>
-  <script src="assets/spread.js?v=5"></script>
-  <script src="assets/entity-cards.js?v=4"></script>
+  <script src="assets/components.js?v=8"></script>
+  <script src="assets/dash.js?v=13"></script>
+  <script src="assets/spread.js?v=6"></script>
+  <script src="assets/entity-cards.js?v=5"></script>
   <script src="assets/shell.js?v=38"></script>
   <script src="data/home.js"></script>
   <script src="data/stories.js?v=1"></script>
@@ -28,7 +28,7 @@
     // Topics, page of one topic: /topic/<i>. A compact title card, then the cards in rows of two. No tab bar, no breadcrumbs.
     // The page is open at ?i=<index of the topic in the 36 topics> (the first topic when there is none). All 36 topics of the snapshot work.
     const { t, fmt, h, load, params } = App
-    const { reset, Spark, Meter, card, cardHead } = Dash
+    const { reset, Spark, card, cardHead } = Dash
     const home = load('home', ['dates', 'issues', 'issueDaily'], (b) => b.issueDaily)
     const list = load('stories', ['issues', 'stories'], (b) => b.stories)
     const detail = load('storyDetail', ['outlets', 'stories', 'base'], (b) => b.stories)
@@ -131,7 +131,7 @@
         })
 
         const dailyCard = card('c-8', cardHead(t('topic2.daily.title'), null, t('topic2.daily.info')),
-          Entity.DailyChart({ dates, stacks: daily.map((v) => [{ name: name(issue), v, fill: 'var(--series-news)' }]), height: 300 }))
+          Entity.DailyChart({ dates, series: [{ name: name(issue), color: 'var(--series-news)', values: daily }], height: 300 }))
 
         // The outlets: the share of the articles of an outlet in this topic, against the share of the topic in all outlets. An outlet needs 200 articles in stories.
         const usual = rowsAll ? rowsTopic / rowsAll : 0
@@ -145,7 +145,7 @@
         }).sort((a, b) => (b.value - b.usual) - (a.value - a.usual))
         const diffKey = Entity.diffKey()
         const scale = scaleOf([...more, ...less, ...groupsRows])
-        const rowsOf = (rows) => h('ul', { class: 'diverge diverge-3' }, rows.map((r) => DiffRow({ ...r, scale, tipKey: 'topic2.how.tip' })))
+        const rowsOf = (rows) => UI.BarList(rows.map((r) => DiffRow({ ...r, scale, tipKey: 'topic2.how.tip' })))
         const outletsCard = card('c-8', cardHead(t('topic2.outlets.title'), diffKey, t('topic2.outlets.info')),
           outletRows.length
             ? [h('div', { class: 'how-grid how-grid-2' },
@@ -175,7 +175,7 @@
         ]
         const howScale = Math.max(0.05, ...panels.flatMap((p) => p.rows.map((r) => Math.abs(r.value - r.usual))))
         const panel = (p) => h('div', { class: 'how-panel' }, h('h3', { class: 'rows-caption' }, p.title),
-          p.rows.length ? h('ul', { class: 'diverge diverge-3' }, p.rows.map((r) => DiffRow({ ...r, scale: howScale, tipKey: 'topic2.how.tip' }))) : null, p.note ? h('p', { class: 'dcard-sub' }, p.note) : null)
+          p.rows.length ? UI.BarList(p.rows.map((r) => DiffRow({ ...r, scale: howScale, tipKey: 'topic2.how.tip' }))) : null, p.note ? h('p', { class: 'dcard-sub' }, p.note) : null)
         const howCard = card('c-6', cardHead(t('topic2.how.title'), null, t('topic2.how.info')),
           h('div', { class: 'how-grid how-grid-2' }, panel(panels[0]), h('div', {}, panel(panels[1]), panel(panels[3]))), diffKey.cloneNode(true))
         const stanceCard = Entity.StanceCard({
@@ -194,9 +194,7 @@
         // The topics with a daily line like this one. The catch-all topic is not a match.
         const similar = issues.map((x, k) => ({ x, k, r: k === index || x.catchAll ? -1 : correlation(daily, hd.issueDaily[k]) })).filter((r) => r.r >= MIN_LINK).sort((a, b) => b.r - a.r).slice(0, SIMILAR)
         const similarCard = card('', cardHead(t('topic2.similar.title'), null, t('topic2.similar.info')),
-          similar.length ? h('ul', { class: 'rows-related' }, similar.map((r) => h('li', {},
-            h('span', { class: 'related-main' }, UI.EntityLink({ type: 'topic', key: String(r.k), label: name(r.x) })),
-            Meter(r.r), h('span', { class: 'row-value' }, twoDecimals.format(r.r))))) : h('p', { class: 'dcard-empty' }, t('topic2.similar.empty')))
+          similar.length ? UI.BarList(similar.map((r) => ({ label: UI.EntityLink({ type: 'topic', key: String(r.k), label: name(r.x) }), value: r.r, text: twoDecimals.format(r.r) })), { max: 1 }) : h('p', { class: 'dcard-empty' }, t('topic2.similar.empty')))
 
         // The title card, then the cards in rows of two: the daily columns beside the stance and the similar topics, the outlets and the stories, the groups and how it is written.
         content.replaceChildren(h('div', { class: 'dash-grid entity-grid entity-rows' },

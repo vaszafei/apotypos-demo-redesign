@@ -93,13 +93,6 @@
     return { per, ids, order: clusters[0] || [], left: per.map((_, i) => i).filter((i) => !ids.includes(i)), shared, cover, lift }
   }
 
-  // A bar with a round top. The radius is never more than half of the width or the full height.
-  function topRound (x, y, w, hgt, radius) {
-    const r = Math.min(radius, w / 2, hgt)
-    if (r <= 0) return `M${x} ${y}h${w}v${hgt}h${-w}z`
-    return `M${x} ${y + hgt}V${y + r}a${r} ${r} 0 0 1 ${r} ${-r}h${w - 2 * r}a${r} ${r} 0 0 1 ${r} ${r}V${y + hgt}z`
-  }
-
   // A ring: one arc for each item { name, n, color }. The arcs share the sum of n. The center has a number and a caption. A small gap separates the arcs.
   // tip(item) gives the text of the tooltip of an arc.
   function Ring (items, { center, caption, aria, tip }) {
@@ -128,16 +121,11 @@
     return svg
   }
 
-  // The track of a difference bar. The center line is the usual value. The bar goes right (teal) when the value is more, left (orange) when it is less.
+  // A difference bar (UI.DivergingBar). The center line is the usual value. The bar goes right (teal) when the value is more, left (orange) when it is less.
   // diff is the value minus the usual value, scale is the diff that fills half of the track.
   function DiffTrack (diff, scale, tip) {
-    const { h } = window.App
-    const half = Math.min(50, (Math.abs(diff) / scale) * 50)
-    const more = diff >= 0
-    return h('span', { class: 'div-track', role: 'img', 'aria-label': tip },
-      h('span', { class: 'div-mid' }),
-      h('span', { class: 'div-seg', style: `--seg:${more ? 'var(--emph-more)' : 'var(--emph-less)'};left:${more ? 50 : 50 - half}%;width:${half}%` }))
+    return UI.DivergingBar({ left: -diff, right: diff, scale, colors: ['var(--emph-less)', null, 'var(--emph-more)'], label: tip })
   }
 
-  window.Spread = { ECHO_MIN, profiles, pairs, matrix, topRound, Ring, DiffTrack }
+  window.Spread = { ECHO_MIN, profiles, pairs, matrix, Ring, DiffTrack }
 })()

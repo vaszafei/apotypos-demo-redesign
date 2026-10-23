@@ -2,7 +2,7 @@
 // Load after politics.js.
 (function () {
   const { fmt, h } = window.App
-  const { fit, niceStep } = window.Dash
+  const { fit } = window.Dash
   const { tip } = window.Politics
 
   // A share in percent with one decimal, in the Greek style: 8.9 gives "8,9".
@@ -16,64 +16,6 @@
   // Outlet chips: a name and an optional count.
   const Chips = (items, cls = '') => h('ul', { class: `chips ${cls}` }, items.map((x) => h('li', { class: 'chip', style: x.color ? `--chip:${x.color}` : null },
     x.color ? h('span', { class: 'dot', style: `--dot:${x.color}` }) : null, x.label, x.n ? h('strong', {}, String(x.n)) : null)))
-
-  // A rect with rounded top corners only.
-  function topRounded (x, y, w, hgt, r) {
-    r = Math.max(0, Math.min(r, w / 2, hgt))
-    return `M${x} ${y + hgt}V${y + r}Q${x} ${y} ${x + r} ${y}H${x + w - r}Q${x + w} ${y} ${x + w} ${y + r}V${y + hgt}Z`
-  }
-
-  // Stacked columns. The top of each column is round. A click on a column picks it.
-  // series: [{ color, values }], bottom first. top: a small text above each column. below: a second line of label, in HTML, so it can wrap.
-  function StackColumns ({ labels, below, top, series, tips, picked, onPick, yFormat = fmt.int, height = 240, aria, minWidth = 0 }) {
-    const wrap = h('div', { class: 'stack-cols', style: minWidth ? `min-width:${minWidth}px` : null })
-    const chart = fit((holder, width) => {
-      const pad = { top: top ? 24 : 12, right: 4, bottom: 22, left: 36 }
-      const totals = labels.map((_, i) => series.reduce((a, s) => a + (s.values[i] || 0), 0))
-      const step = niceStep(Math.max(...totals, 1) / 4)
-      const hi = Math.ceil(Math.max(...totals, 1) / step) * step
-      const plotW = width - pad.left - pad.right
-      const plotH = height - pad.top - pad.bottom
-      const bw = plotW / labels.length
-      const gap = Math.min(14, bw * 0.3)
-      const y = (v) => pad.top + plotH - (v / hi) * plotH
-      const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': aria })
-      for (let v = 0; v <= hi + step / 2; v += step) svg.append(h('line', { class: 'grid-line', x1: pad.left, x2: pad.left + plotW, y1: y(v), y2: y(v) }), h('text', { x: pad.left - 6, y: y(v) + 4, 'text-anchor': 'end' }, yFormat(v)))
-      const groups = labels.map((label, i) => {
-        const bx = pad.left + i * bw + gap / 2
-        const w = Math.max(2, bw - gap)
-        const g = h('g', { class: `col-group${picked && picked() === i ? ' is-picked' : ''}` })
-        let base = 0
-        const last = series.map((s, k) => (s.values[i] ? k : -1)).reduce((a, b) => Math.max(a, b), -1)
-        series.forEach((s, k) => {
-          const v = s.values[i] || 0
-          if (!v) return
-          const y0 = y(base + v)
-          const hgt = y(base) - y0
-          g.append(k === last ? h('path', { d: topRounded(bx, y0, w, hgt, 5), fill: s.color }) : h('rect', { x: bx, y: y0, width: w, height: Math.max(0, hgt - 1), fill: s.color }))
-          base += v
-        })
-        if (top && top[i]) g.append(h('text', { class: 'pt-label', x: bx + w / 2, y: y(totals[i]) - 6, 'text-anchor': 'middle' }, top[i]))
-        g.append(h('text', { x: bx + w / 2, y: pad.top + plotH + 16, 'text-anchor': 'middle' }, label))
-        const hit = tip(h('rect', { class: 'hit', x: pad.left + i * bw, y: pad.top, width: bw, height: plotH + pad.bottom }), tips ? tips[i] : label)
-        if (onPick) {
-          hit.style.cursor = 'pointer'
-          hit.addEventListener('click', () => { groups.forEach((x, j) => x.classList.toggle('is-picked', j === i)); onPick(i) })
-        }
-        g.append(hit)
-        svg.append(g)
-        return g
-      })
-      holder.replaceChildren(svg)
-      if (below) {
-        const row = h('div', { class: 'stack-below', style: `padding-left:${pad.left}px;padding-right:${pad.right}px;grid-template-columns:repeat(${labels.length},minmax(0,1fr))` },
-          below.map((b) => h('span', {}, b)))
-        holder.append(row)
-      }
-    })
-    wrap.append(chart)
-    return wrap
-  }
 
   // A time strip from one date to another: small gray dots for the moments, numbered black circles for the cases.
   // The circles move apart so they do not touch.
@@ -101,5 +43,5 @@
     })
   }
 
-  window.World = { dec1, el, Verdict, Chips, StackColumns, TimeStrip, topRounded }
+  window.World = { dec1, el, Verdict, Chips, TimeStrip }
 })()

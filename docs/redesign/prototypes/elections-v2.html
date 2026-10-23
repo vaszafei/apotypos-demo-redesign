@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/app.css?v=15">
-  <link rel="stylesheet" href="assets/dash.css?v=67">
-  <link rel="stylesheet" href="assets/politics.css?v=1">
-  <link rel="stylesheet" href="assets/elections.css?v=2">
+  <link rel="stylesheet" href="assets/tokens.css?v=5">
+  <link rel="stylesheet" href="assets/app.css?v=16">
+  <link rel="stylesheet" href="assets/dash.css?v=68">
+  <link rel="stylesheet" href="assets/politics.css?v=2">
+  <link rel="stylesheet" href="assets/elections.css?v=3">
 </head>
 <body>
   <div id="app"></div>
@@ -17,9 +17,9 @@
   <script src="assets/messages.js?v=22"></script>
   <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-politics.js?v=8"></script>
-  <script src="assets/components.js?v=7"></script>
-  <script src="assets/dash.js?v=12"></script>
-  <script src="assets/politics.js?v=1"></script>
+  <script src="assets/components.js?v=8"></script>
+  <script src="assets/dash.js?v=13"></script>
+  <script src="assets/politics.js?v=2"></script>
   <script src="assets/shell.js?v=38"></script>
   <script src="data/elections.js?v=2"></script>
   <script>
@@ -66,14 +66,16 @@
     const tinted = (key, k, top, title, ...children) => h('td', { class: `cell${top ? ' is-top' : ''}`, style: `${partyStyle(key)};--k:${Math.round(k * 32)}%`, title, 'aria-label': title }, ...children)
     const toneSub = (tone, n) => (tone === null ? null : h('span', { class: `sub ${cls(tone, 'pos', 'neg')}${n < MIN_TONE ? ' faint' : ''}` }, signed(tone)))
 
-    // Two bars for each party. rows: [{ key, a, b, gap }].
+    // The name of a party in its color.
+    const partyKey = (key) => h('span', { class: 'party-key', style: partyStyle(key) }, key)
+    // Two bars for each party, in a UI.BarList. rows: [{ key, a, b, gap }].
     const Twin = (rows, names, max) => h('div', {},
-      h('p', { class: 'legend-inline twin-legend' }, h('span', {}, h('span', { class: 'swatch', style: { background: 'var(--series-news)' } }), names[0]), h('span', {}, h('span', { class: 'swatch', style: { background: 'var(--bar-muted)' } }), names[1])),
-      h('ul', { class: 'twin' }, rows.map((r) => h('li', { style: partyStyle(r.key), 'aria-label': `${r.key}: ${names[0]} ${pct1(r.a)}, ${names[1]} ${pct1(r.b)}, ${pp(r.gap)}` },
-        h('span', { class: 'twin-key' }, r.key),
-        h('span', { class: 'twin-bars' }, h('span', { style: `width:${(r.a / max) * 100}%;--seg:${color(r.key)}` }), h('span', { style: `width:${(r.b / max) * 100}%;--seg:var(--bar-muted)` })),
-        h('span', { class: 'twin-vals' }, `${pct1(r.a)} / ${pct1(r.b)}`),
-        h('span', { class: `twin-gap ${r.gap > 2 ? 'up' : r.gap < -2 ? 'down' : ''}` }, pp(r.gap))))))
+      UI.Legend([{ label: names[0], color: 'var(--series-news)' }, { label: names[1], color: 'var(--bar-muted)' }]),
+      UI.BarList(rows.map((r) => ({
+        label: partyKey(r.key),
+        text: h('span', {}, `${pct1(r.a)} / ${pct1(r.b)} `, h('span', { class: `twin-gap ${r.gap > 2 ? 'up' : r.gap < -2 ? 'down' : ''}` }, pp(r.gap))),
+        bars: [{ value: r.a, color: color(r.key), label: `${r.key}: ${names[0]} ${pct1(r.a)}` }, { value: r.b, color: 'var(--bar-muted)', label: `${r.key}: ${names[1]} ${pct1(r.b)}` }]
+      })), { max, cls: 'twin' }))
 
     Shell.start({
       id: 'elections',
@@ -200,13 +202,10 @@
         const gapMax = Math.max(0.2, ...gapRows.map((r) => Math.abs(r.gap ?? 0)))
         const gapCard = card('c-6', cardHead(t('elec.gap.title'), null, t('elec.gap.info')),
           h('p', { class: 'lean-ends' }, h('span', {}, `← ${t('elec.gap.opp')}`), h('span', {}, `${t('elec.gap.gov')} →`)),
-          h('ul', { class: 'lean-bars' }, gapRows.map((r) => {
-            const w = r.gap === null ? 0 : (Math.abs(r.gap) / gapMax) * 50
-            return h('li', { class: r.thin ? 'is-thin' : null, 'aria-label': t('elec.gap.row', { outlet: r.name, gap: signed(r.gap), sov: pp(r.sov) }), title: t('elec.gap.row', { outlet: r.name, gap: signed(r.gap), sov: pp(r.sov) }) },
-              h('span', { class: 'lean-name' }, r.name),
-              h('span', { class: 'lean-track' }, r.gap === null ? null : h('span', { class: 'lean-fill', style: `${r.gap >= 0 ? 'left:50%' : `left:${50 - w}%`};width:${w}%;--seg:${r.gap >= 0 ? 'var(--side-a)' : 'var(--side-b)'}` })),
-              h('span', { class: 'lean-val' }, signed(r.gap)))
-          })))
+          UI.BarList(gapRows.map((r) => ({
+            cls: r.thin ? 'is-thin' : null, label: r.name, text: signed(r.gap),
+            bar: UI.DivergingBar({ left: -(r.gap ?? 0), right: r.gap ?? 0, scale: gapMax, colors: ['var(--side-b)', null, 'var(--side-a)'], faint: r.thin, label: t('elec.gap.row', { outlet: r.name, gap: signed(r.gap), sov: pp(r.sov) }) })
+          })), { cls: 'lean-bars' }))
 
         // 4. Who controls the coverage of each party: the share of the largest owner and the HHI.
         const ownerRows = keys.map((k, i) => {
@@ -217,11 +216,10 @@
           return { key: k, top: shares[0], hhi: Math.round(shares.reduce((a, s) => a + s.share ** 2, 0) * 100) }
         })
         const ownerCard = card('c-6', cardHead(t('elec.owner.title'), null, t('elec.owner.info')),
-          h('ul', { class: 'owner-rows' }, ownerRows.map((r) => h('li', { style: partyStyle(r.key), 'aria-label': `${r.key}: ${t('elec.owner.row', { share: fmt.pct(r.top.share), owner: r.top.owner })}, HHI ${r.hhi}` },
-            h('span', { class: 'twin-key' }, r.key),
-            h('span', { class: 'owner-track' }, h('span', { class: 'owner-fill', style: `width:${r.top.share * 100}%` })),
-            h('span', { class: 'owner-name', title: r.top.owner }, t('elec.owner.row', { share: Politics.pctOf(r.top.share * 100), owner: r.top.owner })),
-            h('span', { class: 'num' }, fmt.int(r.hhi))))))
+          UI.BarList(ownerRows.map((r) => ({
+            label: partyKey(r.key), text: `${t('elec.owner.row', { share: Politics.pctOf(r.top.share * 100), owner: r.top.owner })} · HHI ${fmt.int(r.hhi)}`,
+            value: r.top.share, color: color(r.key), tip: `${r.key}: ${t('elec.owner.row', { share: fmt.pct(r.top.share), owner: r.top.owner })}, HHI ${r.hhi}`
+          })), { max: 1 }))
 
         const voteCard = card('c-6', cardHead(t('elec.vote.title'), null, t('elec.vote.info')), Twin(voteRows, [t('elec.vote.a'), t('elec.vote.b')], Math.max(...voteRows.flatMap((r) => [r.a, r.b]))))
         const pollCard = card('c-6', cardHead(t('elec.polls.title'), null, t('elec.polls.info', { months: months.map((m) => fmt.date(`${m}-01`, { month: 'short', year: 'numeric' })).join(', ') })),

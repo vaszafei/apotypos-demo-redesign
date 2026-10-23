@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/app.css?v=15">
-  <link rel="stylesheet" href="assets/dash.css?v=67">
-  <link rel="stylesheet" href="assets/politics.css?v=1">
+  <link rel="stylesheet" href="assets/tokens.css?v=5">
+  <link rel="stylesheet" href="assets/app.css?v=16">
+  <link rel="stylesheet" href="assets/dash.css?v=68">
+  <link rel="stylesheet" href="assets/politics.css?v=2">
 </head>
 <body>
   <div id="app"></div>
@@ -16,9 +16,9 @@
   <script src="assets/messages.js?v=22"></script>
   <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-politics.js?v=8"></script>
-  <script src="assets/components.js?v=7"></script>
-  <script src="assets/dash.js?v=12"></script>
-  <script src="assets/politics.js?v=1"></script>
+  <script src="assets/components.js?v=8"></script>
+  <script src="assets/dash.js?v=13"></script>
+  <script src="assets/politics.js?v=2"></script>
   <script src="assets/shell.js?v=38"></script>
   <script src="data/gazaCoverage.js?v=1"></script>
   <script>
@@ -26,7 +26,7 @@
     // The five questions of the live page, each in one small card.
     const { t, fmt, h, load } = App
     const { reset, card, cardHead, Stat, TopBar } = Dash
-    const { weekLabel, ColumnChart, LineChart, Rows, PairRows, pctOf, signed } = Politics
+    const { weekLabel, LineChart, PairRows, pctOf, signed } = Politics
     const result = load('gazaCoverage', ['daily', 'overall', 'outlets'], (b) => b.daily)
     const TERMS = ['genocide', 'famine', 'occupation', 'terrorism', 'war', 'war_crimes']
     const WEEK_TERMS = ['genocide', 'famine', 'occupation', 'terrorism', 'war_crimes']
@@ -62,13 +62,13 @@
         // The days, with the six peaks and two headlines of each peak.
         const marks = Object.fromEntries(d.peaks.map((p, i) => [d.daily.findIndex((x) => x.date === p.date), i + 1]))
         const dailyCard = card('c-12', cardHead(t('gz.daily.title'), null, t('gz.daily.info')),
-          ColumnChart({
-            labels: d.daily.map((x) => day(x.date)),
+          UI.BarChart({
+            dates: d.daily.map((x) => x.date),
             values: d.daily.map((x) => x.gaza),
-            marks,
+            markers: marks,
             height: 240,
-            tips: d.daily.map((x) => t('gz.daily.tip', { date: fmt.date(x.date, { weekday: 'short', day: 'numeric', month: 'short' }), n: fmt.int(x.gaza), per: fmt.dec(x.per1k) })),
-            aria: t('gz.daily.title')
+            tooltipOf: (i) => { const x = d.daily[i]; return t('gz.daily.tip', { date: fmt.date(x.date, { weekday: 'short', day: 'numeric', month: 'short' }), n: fmt.int(x.gaza), per: fmt.dec(x.per1k) }) },
+            label: t('gz.daily.title')
           }),
           h('ol', { class: 'peak-list' }, d.peaks.map((p, i) => h('li', {},
             h('span', { class: 'marker-num' }, String(i + 1)),
@@ -83,22 +83,17 @@
         const q3 = card('c-4', cardHead(t('gz.q3.title'), null, t('gz.q3.info')),
           PairRows([pair(t('gz.q3.row'), o.named_pal, o.named_isr)], { names, max: 100 }))
         const q4 = card('c-4', cardHead(t('gz.q4.title'), null, t('gz.q4.info')),
-          h('div', { class: 'dstat-row' }, h('p', { class: 'dstat-value' }, pctOf(o.hamas_label)), h('p', { class: 'dstat-sub' }, t('gz.q4.label'), h('br'), t('gz.q4.value', { n: fmt.int(o.with_figures) })), Dash.Meter(o.hamas_label / 100)))
+          h('div', { class: 'dstat-row' }, h('p', { class: 'dstat-value' }, pctOf(o.hamas_label)), h('p', { class: 'dstat-sub' }, t('gz.q4.label'), h('br'), t('gz.q4.value', { n: fmt.int(o.with_figures) })), UI.HBar(o.hamas_label, 100, { label: pctOf(o.hamas_label) })))
         const q5 = card('c-6', cardHead(t('gz.q5.title'), null, t('gz.q5.info')),
-          h('span', { class: 'stance-key' },
-            h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: 'var(--ink)' } }), t('gz.q5.own')),
-            h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: 'var(--bar-muted)' } }), t('gz.q5.quoted'))),
-          h('ul', { class: 'rows' }, TERMS.map((k) => {
+          UI.Legend([{ label: t('gz.q5.own'), color: 'var(--ink)' }, { label: t('gz.q5.quoted'), color: 'var(--bar-muted)' }]),
+          UI.BarList(TERMS.map((k) => {
             const own = o[`o_${k}`]
             const quoted = o[`q_${k}`]
-            const scale = 30
-            return h('li', {}, h('span', { class: 'row-name' }, t(`gz.term.${k}`)), h('span', { class: 'row-value' }, `${pctOf(own)} · ${pctOf(quoted)}`),
-              h('div', { class: 'stack term-stack', role: 'img', 'aria-label': `${t(`gz.term.${k}`)}: ${t('gz.q5.own')} ${pctOf(own)}, ${t('gz.q5.quoted')} ${pctOf(quoted)}` },
-                h('span', { style: `width:${Math.min(100, (own / scale) * 100)}%;--seg:var(--ink)` }),
-                h('span', { style: `width:${Math.min(100, (quoted / scale) * 100)}%;--seg:var(--bar-muted)` })))
-          })))
+            return { label: t(`gz.term.${k}`), text: `${pctOf(own)} · ${pctOf(quoted)}`,
+              bars: [{ value: own, color: 'var(--ink)', label: `${t(`gz.term.${k}`)}: ${t('gz.q5.own')} ${pctOf(own)}` }, { value: quoted, color: 'var(--bar-muted)', label: `${t(`gz.term.${k}`)}: ${t('gz.q5.quoted')} ${pctOf(quoted)}` }] }
+          }), { max: 30 }))
         const q6 = card('c-6', cardHead(t('gz.q6.title'), null, t('gz.q6.info')),
-          Rows([{ label: t('gz.q6.oct7'), value: o.ctx_oct7, text: pctOf(o.ctx_oct7) }, { label: t('gz.q6.occupation'), value: o.ctx_occupation, text: pctOf(o.ctx_occupation) }], { max: 100, cls: 'rows-wrap' }))
+          UI.BarList([{ label: t('gz.q6.oct7'), value: o.ctx_oct7, text: pctOf(o.ctx_oct7) }, { label: t('gz.q6.occupation'), value: o.ctx_occupation, text: pctOf(o.ctx_occupation) }], { max: 100 }))
 
         // The words for each week. A control picks the term.
         const termHolder = h('div', {})
@@ -121,12 +116,12 @@
         const share = (obj) => Object.entries(obj).filter(([k]) => k !== 'other').sort((a, b) => b[1] - a[1])
         const perspCard = card('c-6', cardHead(t('gz.persp.title'), null, t('gz.persp.info')),
           h('div', { class: 'how-grid' },
-            h('div', { class: 'how-panel' }, h('h3', { class: 'rows-caption' }, t('gz.persp.head')), Rows(share(o.persp).map(([k, v]) => ({ label: t(`gz.persp.${k}`), value: v, text: pctOf(v) })), { max: 100 })),
-            h('div', { class: 'how-panel' }, h('h3', { class: 'rows-caption' }, t('gz.frames.head')), Rows(share(o.frames).slice(0, 8).map(([k, v]) => ({ label: t(`gz.frame.${k}`), value: v, text: pctOf(v) })), { max: 40 }))))
+            h('div', { class: 'how-panel' }, h('h3', { class: 'rows-caption' }, t('gz.persp.head')), UI.BarList(share(o.persp).map(([k, v]) => ({ label: t(`gz.persp.${k}`), value: v, text: pctOf(v) })), { max: 100 })),
+            h('div', { class: 'how-panel' }, h('h3', { class: 'rows-caption' }, t('gz.frames.head')), UI.BarList(share(o.frames).slice(0, 8).map(([k, v]) => ({ label: t(`gz.frame.${k}`), value: v, text: pctOf(v) })), { max: 40 }))))
 
         const g = d.greece
         const greeceCard = card('c-5', cardHead(t('gz.greece.title'), null, t('gz.greece.info')),
-          Rows(Object.entries(g.roles).filter(([k]) => k !== 'other').sort((a, b) => b[1] - a[1]).map(([k, v]) => ({ label: t(`gz.role.${k}`), value: v }))),
+          UI.BarList(Object.entries(g.roles).filter(([k]) => k !== 'other').sort((a, b) => b[1] - a[1]).map(([k, v]) => ({ label: t(`gz.role.${k}`), value: v }))),
           h('div', { class: 'dstat-row callout' }, h('p', { class: 'dstat-value' }, pctOf(g.deals_mention_gaza)), h('p', { class: 'dstat-sub' }, t('gz.greece.deals', { n: fmt.int(g.deals) }))))
 
         // Sample headlines for one measure.

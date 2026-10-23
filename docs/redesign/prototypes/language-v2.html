@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/app.css?v=15">
-  <link rel="stylesheet" href="assets/dash.css?v=67">
-  <link rel="stylesheet" href="assets/politics.css?v=1">
+  <link rel="stylesheet" href="assets/tokens.css?v=5">
+  <link rel="stylesheet" href="assets/app.css?v=16">
+  <link rel="stylesheet" href="assets/dash.css?v=68">
+  <link rel="stylesheet" href="assets/politics.css?v=2">
 </head>
 <body>
   <div id="app"></div>
@@ -16,9 +16,9 @@
   <script src="assets/messages.js?v=22"></script>
   <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-politics.js?v=8"></script>
-  <script src="assets/components.js?v=7"></script>
-  <script src="assets/dash.js?v=12"></script>
-  <script src="assets/politics.js?v=1"></script>
+  <script src="assets/components.js?v=8"></script>
+  <script src="assets/dash.js?v=13"></script>
+  <script src="assets/politics.js?v=2"></script>
   <script src="assets/shell.js?v=38"></script>
   <script src="data/conflictLanguage.js?v=1"></script>
   <script>
@@ -26,7 +26,7 @@
     // Each card compares the two sides on the same base. A list in the top bar picks one outlet.
     const { t, fmt, h, load } = App
     const { reset, card, cardHead, TopBar, select } = Dash
-    const { PairRows, Rows } = Politics
+    const { PairRows } = Politics
     const result = load('conflictLanguage', ['keys', 'total', 'outlets', 'months'], (b) => b.outlets)
     const MIN_OUTLET = 20
     // Each card: [message key, value of Palestinians, base, value of Israelis, base, evidence keys]. A card with no base compares counts.
@@ -96,7 +96,7 @@
           })
           const genTotal = v('gen_own') + v('gen_quoted') + v('gen_scare_quotes')
           const genCard = card('c-6', cardHead(t('lang.gen.title'), null, t('lang.gen.info')),
-            Rows([['own', 'gen_own'], ['quoted', 'gen_quoted'], ['scare', 'gen_scare_quotes']].map(([k, key]) => ({ label: t(`lang.gen.${k}`), value: v(key), text: `${fmt.int(v(key))} · ${fmt.pct(share(v(key), genTotal))}`, color: k === 'own' ? 'var(--ink)' : 'var(--bar-muted)' }))),
+            UI.BarList([['own', 'gen_own'], ['quoted', 'gen_quoted'], ['scare', 'gen_scare_quotes']].map(([k, key]) => ({ label: t(`lang.gen.${k}`), value: v(key), text: `${fmt.int(v(key))} · ${fmt.pct(share(v(key), genTotal))}`, color: k === 'own' ? 'var(--ink)' : 'var(--bar-muted)' }))),
             evidence(['gen_own', 'gen_quoted', 'gen_scare_quotes']))
 
           const pctPair = (o, a, b, base1, base2) => {

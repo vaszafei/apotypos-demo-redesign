@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/app.css?v=15">
-  <link rel="stylesheet" href="assets/dash.css?v=67">
-  <link rel="stylesheet" href="assets/politics.css?v=1">
-  <link rel="stylesheet" href="assets/world.css?v=1">
+  <link rel="stylesheet" href="assets/tokens.css?v=5">
+  <link rel="stylesheet" href="assets/app.css?v=16">
+  <link rel="stylesheet" href="assets/dash.css?v=68">
+  <link rel="stylesheet" href="assets/politics.css?v=2">
+  <link rel="stylesheet" href="assets/world.css?v=2">
 </head>
 <body>
   <div id="app"></div>
@@ -18,10 +18,10 @@
   <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-politics.js?v=8"></script>
   <script src="assets/messages-world.js?v=1"></script>
-  <script src="assets/components.js?v=7"></script>
-  <script src="assets/dash.js?v=12"></script>
-  <script src="assets/politics.js?v=1"></script>
-  <script src="assets/world.js?v=1"></script>
+  <script src="assets/components.js?v=8"></script>
+  <script src="assets/dash.js?v=13"></script>
+  <script src="assets/politics.js?v=2"></script>
+  <script src="assets/world.js?v=2"></script>
   <script src="assets/shell.js?v=38"></script>
   <script src="data/storyCoverage.js?v=1"></script>
   <script>
@@ -29,8 +29,7 @@
     // The page is a «story case»: any story with a list of facts, outlets and articles fills it.
     const { t, fmt, h, load, safeUrl } = App
     const { reset, card, cardHead, Stat, TopBar } = Dash
-    const { Rows } = Politics
-    const { Chips, StackColumns, el } = World
+    const { Chips, el } = World
     const result = load('storyCoverage', ['facts', 'outlets', 'articles'], (b) => b.articles)
     // The facts in four groups, as on the live page. The matrix shows the phrase and the AKTOR part.
     const GROUPS = [['phrase', ['threat', 'romania']], ['aktor', ['aktor', 'marafatsos', 'lobbyist', 'exarchos', 'fee', 'jet', 'undisclosed', 'deals']],
@@ -110,8 +109,7 @@
           h('p', { class: 'dcard-sub' }, t('cov.facts.sub', { n })),
           h('div', { class: 'fact-groups' }, GROUPS.map(([g, keys]) => h('div', { class: 'fact-group' },
             h('h3', { class: 'rows-caption' }, t(`cov.group.${g}`)),
-            h('ul', { class: 'rows fact-rows' }, keys.map((k) => h('li', { class: 'is-clickable', style: g === 'aktor' ? '--bar-color:var(--side-b)' : null, onClick: () => showList('', k), title: t('cov.facts.click') },
-              h('span', { class: 'row-name', title: factName(k) }, factName(k)), h('span', { class: 'row-value' }, `${count(k)} / ${n}`), UI.HBar(count(k), n))))))),
+            UI.BarList(keys.map((k) => ({ label: factName(k), value: count(k), text: `${count(k)} / ${n}`, color: g === 'aktor' ? 'var(--side-b)' : null, onClick: () => showList('', k), title: t('cov.facts.click') })), { max: n })))),
           h('p', { class: 'dcard-sub' }, t('cov.facts.note')))
 
         // Μέσο προς μέσο: a dot for each outlet and fact. A filled dot opens the articles.
@@ -154,7 +152,7 @@
           })))
         const absentCard = card('c-4', cardHead(t('cov.absent.title'), null, t('cov.absent.info')),
           h('p', { class: 'dcard-sub' }, t('cov.absent.sub')),
-          Rows(absent.map((o) => ({ label: o.outlet, value: o.published, text: t('cov.absent.row', { n: fmt.int(o.published) }), sub: o.other_guilfoyle ? t('cov.absent.other', { n: o.other_guilfoyle }) : null, color: 'var(--bar-muted)' }))),
+          UI.BarList(absent.map((o) => ({ label: o.outlet, value: o.published, text: t('cov.absent.row', { n: fmt.int(o.published) }), sub: o.other_guilfoyle ? t('cov.absent.other', { n: o.other_guilfoyle }) : null, color: 'var(--bar-muted)' }))),
           h('p', { class: 'dcard-sub' }, t('cov.absent.note')))
 
         // The outlets of the owner group, and Μαραφάτσος before and after the story.
@@ -193,22 +191,20 @@
         const angles = d.angles.map((a) => ({ ...a, n: about.filter((x) => x.angle === a.key).length })).sort((a, b) => b.n - a.n)
         const anglesCard = card('c-4', cardHead(t('cov.angles.title'), null, t('cov.angles.info')),
           h('p', { class: 'dcard-sub' }, t('cov.angles.sub', { n: about.length })),
-          Rows(angles.map((a) => ({ label: el([a.el, a.en]), value: a.n, text: `${a.n} (${Math.round((a.n / about.length) * 100)}%)`, color: a.key === 'lobby' ? 'var(--side-b)' : null }))),
+          UI.BarList(angles.map((a) => ({ label: el([a.el, a.en]), value: a.n, text: `${a.n} (${Math.round((a.n / about.length) * 100)}%)`, color: a.key === 'lobby' ? 'var(--side-b)' : null }))),
           h('p', { class: 'dcard-sub' }, t('cov.angles.note')))
         const days = Object.keys(d.window.corpus_days).sort()
         const firsts = []
         d.articles.forEach((a) => { if (!firsts.some((x) => x.outlet === a.outlet)) firsts.push(a) })
-        const whenCard = card('c-5', cardHead(t('cov.when.title'), h('span', { class: 'stance-key' },
-          h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: 'var(--side-b)' } }), t('cov.when.aktor')),
-          h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: 'var(--series-news)' } }), t('cov.when.other'))), t('cov.when.info')),
+        const whenCard = card('c-5', cardHead(t('cov.when.title'), UI.Legend([{ label: t('cov.when.aktor'), color: 'var(--side-b)' }, { label: t('cov.when.other'), color: 'var(--series-news)' }]), t('cov.when.info')),
           h('p', { class: 'dcard-sub' }, t('cov.when.sub')),
-          StackColumns({
+          UI.BarChart({
             labels: days.map((x) => `${x.slice(8, 10)}/${x.slice(5, 7)}`),
-            series: [{ color: 'var(--series-news)', values: days.map((x) => about.filter((a) => a.t.startsWith(x) && !hasAktor(a)).length) },
-              { color: 'var(--side-b)', values: days.map((x) => about.filter((a) => a.t.startsWith(x) && hasAktor(a)).length) }],
-            top: days.map((x) => { const v = d.daily[x] || 0; return v ? String(v) : '' }),
-            tips: days.map((x) => t('cov.when.tip', { day: fmt.date(x), n: d.daily[x] || 0, all: fmt.int(d.window.corpus_days[x]) })),
-            height: 180, aria: t('cov.when.title')
+            series: [{ name: t('cov.when.other'), color: 'var(--series-news)', values: days.map((x) => about.filter((a) => a.t.startsWith(x) && !hasAktor(a)).length) },
+              { name: t('cov.when.aktor'), color: 'var(--side-b)', values: days.map((x) => about.filter((a) => a.t.startsWith(x) && hasAktor(a)).length) }],
+            topLabels: days.map((x) => { const v = d.daily[x] || 0; return v ? String(v) : '' }),
+            tooltipOf: (i) => t('cov.when.tip', { day: fmt.date(days[i]), n: d.daily[days[i]] || 0, all: fmt.int(d.window.corpus_days[days[i]]) }),
+            height: 180, label: t('cov.when.title'), minWidth: 720
           }),
           h('p', { class: 'rows-caption' }, t('cov.when.first')),
           h('ol', { class: 'first-list' }, firsts.slice(0, 8).map((a) => h('li', {}, h('strong', {}, a.outlet), h('span', { class: 'muted-text' }, time(a.t))))),

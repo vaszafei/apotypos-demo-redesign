@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/app.css?v=15">
-  <link rel="stylesheet" href="assets/dash.css?v=67">
-  <link rel="stylesheet" href="assets/mme.css?v=4">
+  <link rel="stylesheet" href="assets/tokens.css?v=5">
+  <link rel="stylesheet" href="assets/app.css?v=16">
+  <link rel="stylesheet" href="assets/dash.css?v=68">
+  <link rel="stylesheet" href="assets/mme.css?v=5">
 </head>
 <body>
   <div id="app"></div>
@@ -17,11 +17,11 @@
   <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-spread.js?v=13"></script>
   <script src="assets/messages-mme.js?v=4"></script>
-  <script src="assets/components.js?v=7"></script>
-  <script src="assets/dash.js?v=12"></script>
-  <script src="assets/spread.js?v=5"></script>
-  <script src="assets/entity-cards.js?v=4"></script>
-  <script src="assets/mme.js?v=4"></script>
+  <script src="assets/components.js?v=8"></script>
+  <script src="assets/dash.js?v=13"></script>
+  <script src="assets/spread.js?v=6"></script>
+  <script src="assets/entity-cards.js?v=5"></script>
+  <script src="assets/mme.js?v=5"></script>
   <script src="assets/shell.js?v=38"></script>
   <script src="data/media.js"></script>
   <script src="data/home.js"></script>
@@ -129,7 +129,7 @@
             .sort((a, b) => b.value - a.value).slice(0, TOPICS)
           : []
         const topicScale = scaleOf(topicRows)
-        const topicList = (rows) => h('ul', { class: 'diverge diverge-3' }, rows.map((r) => DiffRow({ ...r, scale: topicScale })))
+        const topicList = (rows) => UI.BarList(rows.map((r) => DiffRow({ ...r, scale: topicScale })))
         const diffKey = Entity.diffKey()
         const topicsCard = card('c-12', cardHead(t('outlet2.topics.title'), diffKey, t('outlet2.topics.info')),
           topicRows.length
@@ -150,7 +150,7 @@
         const stanceAll = [0, 1, 2].map((i) => sum(files.map((o) => o.stance[i])))
         const stanceN = sum(stanceMine)
         const howScale = scaleOf([...newsRows, ...clickRows])
-        const rowsOf = (rows) => (rows.length ? h('ul', { class: 'diverge diverge-3' }, rows.map((r) => DiffRow({ ...r, scale: howScale }))) : null)
+        const rowsOf = (rows) => (rows.length ? UI.BarList(rows.map((r) => DiffRow({ ...r, scale: howScale }))) : null)
         const note = (text) => h('p', { class: 'dcard-sub' }, text)
         const howCard = card('c-12', cardHead(t('outlet2.how.title'), diffKey, t('outlet2.how.info')),
           h('div', { class: 'how-panel' }, rowsOf([...newsRows, ...clickRows]), note(t('outlet2.how.news.n', { n: fmt.int(analysed) })),
@@ -218,12 +218,11 @@
         const topScore = Math.max(...related.map((r) => r.score || 0), 0.0001)
         const relatedCard = card('c-12', cardHead(t('outlet2.related.title'), null, t('outlet2.related.info')),
           related.length
-            ? h('ul', { class: 'rows-related' }, related.map((r) => h('li', {},
-              h('span', { class: 'related-main' },
-                h('span', { class: 'related-name' }, h('span', { class: 'dot', style: `--dot:${groupColor(r.group)}` }), UI.EntityLink({ type: 'outlet', key: r.slug, label: r.name }), r.same ? h('span', { class: 'chip chip-sm' }, t('outlet2.related.same')) : null),
-                h('span', { class: 'muted-text' }, t('outlet2.related.row', { shared: fmt.int(r.shared) }))),
-              r.score === null ? h('span', {}) : Dash.Meter(r.score / topScore),
-              h('span', { class: 'row-value' }, r.score === null ? '—' : fmt.pct(r.score)))))
+            ? UI.BarList(related.map((r) => ({
+              label: h('span', { class: 'related-name' }, h('span', { class: 'dot', style: `--dot:${groupColor(r.group)}` }), UI.EntityLink({ type: 'outlet', key: r.slug, label: r.name }), r.same ? h('span', { class: 'chip chip-sm' }, t('outlet2.related.same')) : null),
+              sub: t('outlet2.related.row', { shared: fmt.int(r.shared) }),
+              value: r.score || 0, text: r.score === null ? '—' : fmt.pct(r.score)
+            })), { max: topScore })
             : h('p', { class: 'dcard-empty' }, t('outlet2.related.empty')))
 
         // The title card is the first card of the main column on the left. The main cards are under it, and the lists are on the right. On a narrow screen the columns join in one.

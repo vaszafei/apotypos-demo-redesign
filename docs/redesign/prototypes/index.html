@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/app.css?v=15">
-  <link rel="stylesheet" href="assets/dash.css?v=67">
-  <link rel="stylesheet" href="assets/mme.css?v=4">
+  <link rel="stylesheet" href="assets/tokens.css?v=5">
+  <link rel="stylesheet" href="assets/app.css?v=16">
+  <link rel="stylesheet" href="assets/dash.css?v=68">
+  <link rel="stylesheet" href="assets/mme.css?v=5">
 </head>
 <body>
   <div id="app"></div>
@@ -16,9 +16,9 @@
   <script src="assets/messages.js?v=22"></script>
   <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-mme.js?v=4"></script>
-  <script src="assets/components.js?v=7"></script>
-  <script src="assets/dash.js?v=12"></script>
-  <script src="assets/mme.js?v=4"></script>
+  <script src="assets/components.js?v=8"></script>
+  <script src="assets/dash.js?v=13"></script>
+  <script src="assets/mme.js?v=5"></script>
   <script src="assets/shell.js?v=38"></script>
   <script src="data/home.js"></script>
   <script src="data/mme.js?v=1"></script>
@@ -79,10 +79,11 @@
             UI.KpiTile({ kpiId: 'K04', label: t('home.k04'), value: newsTotal ? fmt.pct(news[0].count / newsTotal) : '', hint: newsTotal ? t('home.k04.hint', { issue: name(news[0].issue) }) : null, emptyText: t('home.k03.empty'), state: newsTotal ? 'ready' : 'empty' })
           ])
 
-          const daily = empty ? [] : dates.slice(i0, i1 + 1).map((d, j) => ({ key: d, value: data.outlets.reduce((s, o) => s + o.daily[i0 + j], 0) }))
+          const days = dates.slice(i0, i1 + 1)
+          const daily = empty ? [] : days.map((d, j) => data.outlets.reduce((s, o) => s + o.daily[i0 + j], 0))
           const dailyCard = UI.ChartCard({
             title: t('home.daily.title'), note: t('home.daily.note'),
-            body: daily.length ? UI.BarChart({ values: daily, label: t('home.daily.title'), tooltipOf: (v) => `${fmt.date(v.key)}: ${fmt.int(v.value)}`, tickEvery: len > 20 ? 7 : 2 }) : UI.EmptyState({ text: t('home.k01.empty') })
+            body: daily.length ? UI.BarChart({ dates: days, values: daily, label: t('home.daily.title'), tooltipOf: (i) => `${fmt.date(days[i])}: ${fmt.int(daily[i])}` }) : UI.EmptyState({ text: t('home.k01.empty') })
           })
           const topicsCard = UI.ChartCard({
             title: t('home.topics.title'), note: t('home.topics.note'),

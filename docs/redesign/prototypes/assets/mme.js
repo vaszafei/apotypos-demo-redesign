@@ -2,7 +2,7 @@
 // Μέσα › Επισκόπηση (media-v2) and the page of one outlet (outlet-v2) use them. Each sum is for a period of days i0..i1.
 (function () {
   const { t, fmt, h } = window.App
-  const { card, cardHead, emptyText, fit, tint, textOn } = Dash
+  const { card, cardHead, emptyText, tint, textOn } = Dash
 
   const name = (x) => x[App.locale] || x.el
   const sum = (arr) => arr.reduce((a, b) => a + b, 0)
@@ -228,12 +228,13 @@
 
   const STANCE_COLORS = ['var(--stance-critical)', 'var(--stance-neutral)', 'var(--stance-supportive)']
   const STANCE_CODES = ['critical', 'neutral', 'supportive']
+  const stanceSegments = (st) => STANCE_CODES.map((c, i) => ({ label: t(`stance.${c}`), value: st[i], color: STANCE_COLORS[i] }))
+  // The stance shares of an outlet or a topic in one UI.StackedBar.
   function StanceBar (st, label) {
     const n = sum(st) || 1
-    return h('div', { class: 'stack mme-stack', role: 'img', 'aria-label': `${label ? label + ': ' : ''}${STANCE_CODES.map((c, i) => `${t(`stance.${c}`)} ${pct(st[i] / n)}`).join(', ')}` },
-      st.map((v, i) => (v ? h('span', { style: `width:${(v / n) * 100}%;--seg:${STANCE_COLORS[i]}`, title: `${t(`stance.${STANCE_CODES[i]}`)}: ${pct(v / n)}` }) : null)))
+    return UI.StackedBar(stanceSegments(st), { legend: false, label: `${label ? label + ': ' : ''}${STANCE_CODES.map((c, i) => `${t(`stance.${c}`)} ${pct(st[i] / n)}`).join(', ')}` })
   }
-  const stanceKey = () => h('span', { class: 'legend-inline' }, STANCE_CODES.map((c, i) => h('span', {}, h('span', { class: 'swatch', style: { background: STANCE_COLORS[i] } }), t(`stance.${c}`))))
+  const stanceKey = () => UI.Legend(STANCE_CODES.map((c, i) => ({ label: t(`stance.${c}`), color: STANCE_COLORS[i] })))
 
   // The stance to the government in each outlet: critical, neutral, supportive.
   function GovCard (S) {
@@ -242,11 +243,7 @@
     return card('', cardHead(title, null, t('mme.gov.info')),
       h('div', { class: 'mme-key-row' }, stanceKey()),
       rows.length
-        ? h('ul', { class: 'mme-gov' }, rows.map((o) => h('li', { class: sum(o.stance) < 30 ? 'is-few' : null },
-          h('span', { class: 'mme-gov-name' }, outletLink(S, o)),
-          h('span', { class: 'muted-text mme-gov-n' }, t('mme.n', { n: fmt.int(sum(o.stance)) })),
-          StanceBar(o.stance, o.name),
-          h('span', { class: 'row-value' }, pctRound(critShare(o.stance))))))
+        ? UI.BarList(rows.map((o) => ({ cls: sum(o.stance) < 30 ? 'is-faint' : null, label: outletLink(S, o), sub: t('mme.n', { n: fmt.int(sum(o.stance)) }), text: pctRound(critShare(o.stance)), bar: StanceBar(o.stance, o.name) })))
         : emptyText(t('media2.empty.list')))
   }
 
@@ -261,11 +258,7 @@
     const shares = S.active.filter((o) => o.news > 0).map((o) => ({ o, v: shareOf(o, i), n: o.issues[i] })).sort((a, b) => b.v - a.v)
     const max = Math.max(...shares.map((r) => r.v), S.avgShare[i], 0.0001)
     const sharePanel = h('div', { class: 'mme-panel' }, h('h3', { class: 'rows-caption' }, t('mme.topic.share')),
-      h('ul', { class: 'rows rows-share mme-share' }, shares.map((r) => h('li', {},
-        h('span', { class: 'row-name' }, outletLink(S, r.o)), h('span', { class: 'row-value' }, pct(r.v)),
-        h('span', { class: 'share', role: 'img', 'aria-label': `${r.o.name}: ${pct(r.v)}, ${t('mme.avg')} ${pct(S.avgShare[i])}` },
-          h('span', { class: 'share-fill', style: { display: 'block', width: `${(r.v / max) * 100}%` } }),
-          h('span', { class: 'share-tick', style: { left: `${(S.avgShare[i] / max) * 100}%` } }))))))
+      UI.BarList(shares.map((r) => ({ label: outletLink(S, r.o), text: pct(r.v), value: r.v, marker: S.avgShare[i], tip: `${r.o.name}: ${pct(r.v)}, ${t('mme.avg')} ${pct(S.avgShare[i])}` })), { max, cls: 'mme-share' }))
     const stories = S.stories.filter((s) => s.issue === i && !s.generic).slice(0, 10)
     const storyPanel = h('div', { class: 'mme-panel' }, h('h3', { class: 'rows-caption' }, t('mme.topic.stories')),
       stories.length
@@ -276,10 +269,10 @@
     const voiceMax = Math.max(...voices.map((r) => r.n), 1)
     const sidePanel = h('div', { class: 'mme-panel' },
       h('h3', { class: 'rows-caption' }, t('mme.topic.stance', { n: fmt.int(sum(st)) })),
-      sum(st) ? [StanceBar(st, name(x)), h('ul', { class: 'legend' }, STANCE_CODES.map((c, j) => h('li', {}, h('span', { class: 'swatch', style: { background: STANCE_COLORS[j] } }), `${t(`stance.${c}`)} ${pctRound(st[j] / sum(st))}`)))] : emptyText(t('media2.empty.list')),
+      sum(st) ? UI.StackedBar(stanceSegments(st)) : emptyText(t('media2.empty.list')),
       h('h3', { class: 'rows-caption mme-gap' }, t('mme.topic.voices')),
       voices.length
-        ? h('ul', { class: 'rows' }, voices.map((r) => h('li', {}, h('span', { class: 'row-name' }, r.p.name), h('span', { class: 'row-value' }, fmt.int(r.n)), UI.HBar(r.n, voiceMax))))
+        ? UI.BarList(voices.map((r) => ({ label: r.p.name, value: r.n })), { max: voiceMax })
         : emptyText(t('mme.topic.voices.empty')))
     return card('c-12', cardHead(t('mme.topic.title'), pick, t('mme.topic.info')),
       h('p', { class: 'dcard-sub' }, h('strong', {}, name(x)), ' · ', t('mme.topic.lead', { n: fmt.int(S.issueN[i]), share: pct(S.newsN ? S.issueN[i] / S.newsN : 0) })),
@@ -359,40 +352,14 @@
     const series = [...top.map((i, j) => ({ label: name(set.issues[i]), color: TOPIC_SLOTS[j], of: (w) => w.issues[i] })),
       { label: t('mme.o.weekly.rest'), color: 'var(--bar-muted)', of: (w) => w.n - sum(top.map((i) => w.issues[i])) }]
     const label = (w) => `${fmt.date(set.dates[w.i0], { day: 'numeric', month: 'short' })} – ${fmt.date(set.dates[w.i1], { day: 'numeric', month: 'short' })}`
-    const chart = fit((holder, width) => {
-      const height = 230
-      const pad = { top: 6, bottom: 40, left: 36, right: 4 }
-      const plotH = height - pad.top - pad.bottom
-      const slot = (width - pad.left - pad.right) / weeks.length
-      const bw = Math.min(56, slot * 0.72)
-      const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
-      ;[0, 0.25, 0.5, 0.75, 1].forEach((v) => {
-        const y = pad.top + plotH * (1 - v)
-        svg.append(h('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: y, y2: y }), h('text', { x: pad.left - 6, y: y + 4, 'text-anchor': 'end' }, `${v * 100}%`))
-      })
-      weeks.forEach((w, j) => {
-        const x = pad.left + j * slot + (slot - bw) / 2
-        let y = pad.top + plotH
-        series.forEach((s) => {
-          const v = w.n ? s.of(w) / w.n : 0
-          if (v <= 0) return
-          const hgt = v * plotH
-          y -= hgt
-          const r = h('rect', { x, y, width: bw, height: Math.max(0, hgt - 1), fill: s.color })
-          const tip = (e) => UI.showTooltip(t('mme.o.weekly.tip', { week: label(w), topic: s.label, share: pct(v), n: fmt.int(s.of(w)) }), e.clientX, e.clientY)
-          r.addEventListener('pointermove', tip)
-          r.addEventListener('pointerleave', () => UI.hideTooltip())
-          svg.append(r)
-        })
-        svg.append(h('text', { x: x + bw / 2, y: height - 22, 'text-anchor': 'middle' }, fmt.date(set.dates[w.i0], { day: 'numeric', month: 'short' })),
-          h('text', { x: x + bw / 2, y: height - 8, 'text-anchor': 'middle', class: 'muted-text' }, `n=${fmt.int(w.n)}`))
-      })
-      const table = h('div', { class: 'visually-hidden' }, h('table', {}, h('caption', {}, t('mme.o.weekly.title')),
-        h('thead', {}, h('tr', {}, h('th', {}, ''), series.map((s) => h('th', { scope: 'col' }, s.label)))),
-        h('tbody', {}, weeks.map((w) => h('tr', {}, h('th', { scope: 'row' }, `${label(w)} (n=${w.n})`), series.map((s) => h('td', {}, pct(w.n ? s.of(w) / w.n : 0))))))))
-      holder.replaceChildren(svg, table)
+    const chart = UI.BarChart({
+      labels: weeks.map((w) => fmt.date(set.dates[w.i0], { day: 'numeric', month: 'short' })),
+      below: weeks.map((w) => `n=${fmt.int(w.n)}`),
+      series: series.map((s) => ({ name: s.label, color: s.color, values: weeks.map((w) => (w.n ? s.of(w) / w.n : 0)) })),
+      max: 1, valueFormat: pctRound, height: 230, label: t('mme.o.weekly.title'),
+      tooltipOf: (j) => `${label(weeks[j])} (n=${fmt.int(weeks[j].n)}): ${series.map((s) => `${s.label} ${pct(weeks[j].n ? s.of(weeks[j]) / weeks[j].n : 0)}`).join(' · ')}`
     })
-    const legend = h('ul', { class: 'legend legend-wrap mme-legend' }, series.map((s) => h('li', {}, h('span', { class: 'swatch', style: { background: s.color } }), s.label)))
+    const legend = UI.Legend(series.map((s) => ({ label: s.label, color: s.color })))
     return card('c-12', cardHead(t('mme.o.weekly.title'), null, t('mme.o.weekly.info')), legend, chart)
   }
 
@@ -429,14 +396,10 @@
     }).filter((r) => !r.x.soft && r.n >= 5).sort((a, b) => critShare(b.mine) - critShare(a.mine))
     return card('c-12', cardHead(t('mme.o.stance.title'), stanceKey(), t('mme.o.stance.info')),
       rows.length
-        ? h('ul', { class: 'mme-diverge' }, rows.map((r) => {
+        ? UI.BarList(rows.map((r) => {
           const c = r.mine[0] / r.n
           const s = r.mine[2] / r.n
-          return h('li', { 'aria-label': t('mme.o.stance.row', { topic: name(r.x), crit: pct(c), sup: pct(s), n: r.n, all: pct(r.allCrit) }) },
-            h('span', { class: 'mme-dv-name' }, name(r.x)),
-            h('span', { class: 'mme-dv-left', 'aria-hidden': 'true' }, h('span', { class: 'mme-dv-crit', style: { width: `${c * 100}%` } }), h('span', { class: 'mme-dv-tick', style: { right: `${r.allCrit * 100}%` } })),
-            h('span', { class: 'mme-dv-right', 'aria-hidden': 'true' }, h('span', { class: 'mme-dv-sup', style: { width: `${s * 100}%` } })),
-            h('span', { class: 'row-value' }, fmt.int(r.n)))
+          return { label: name(r.x), text: fmt.int(r.n), bar: UI.DivergingBar({ left: c, right: s, scale: 1, colors: [STANCE_COLORS[0], null, STANCE_COLORS[2]], marker: -r.allCrit, label: t('mme.o.stance.row', { topic: name(r.x), crit: pct(c), sup: pct(s), n: r.n, all: pct(r.allCrit) }) }) }
         }))
         : emptyText(t('media2.empty.list')))
   }
@@ -455,8 +418,8 @@
     const sections = set.sections.map((code, j) => ({ code, v: sec[j] / ns })).filter((r) => r.v > 0).sort((a, b) => b.v - a.v)
     return card('c-12', cardHead(t('mme.o.frames.title'), Entity.diffKey(), t('mme.o.frames.info')),
       h('div', { class: 'how-grid how-grid-2' },
-        h('div', { class: 'how-panel' }, h('ul', { class: 'diverge diverge-3' }, rows.slice(0, 4).map((r) => Entity.DiffRow({ ...r, scale })))),
-        h('div', { class: 'how-panel' }, h('ul', { class: 'diverge diverge-3' }, rows.slice(4).map((r) => Entity.DiffRow({ ...r, scale }))))),
+        h('div', { class: 'how-panel' }, UI.BarList(rows.slice(0, 4).map((r) => Entity.DiffRow({ ...r, scale })))),
+        h('div', { class: 'how-panel' }, UI.BarList(rows.slice(4).map((r) => Entity.DiffRow({ ...r, scale }))))),
       h('h3', { class: 'rows-caption mme-gap' }, t('mme.o.sections')),
       h('ul', { class: 'mme-chips' }, sections.map((r) => h('li', {}, h('span', { class: 'mme-chip is-static' }, t(`section.${r.code}`), h('span', { class: 'mme-chip-n' }, pctRound(r.v)))))))
   }
@@ -475,10 +438,9 @@
     const parties = [...all.keys()].map((p) => ({ p, v: (mine.get(p) || 0) / nm, usual: all.get(p) / na })).sort((a, b) => b.v - a.v)
     const attacks = set.attacks[k] || []
     return card('c-12', cardHead(t('mme.o.voices.title'), null, t('mme.o.voices.info')),
-      people.length ? h('ul', { class: 'rows' }, people.map((r) => h('li', {}, h('span', { class: 'row-name' }, r.p.name), h('span', { class: 'row-value' }, fmt.int(r.n)), UI.HBar(r.n, max)))) : emptyText(t('media2.empty.list')),
+      people.length ? UI.BarList(people.map((r) => ({ label: r.p.name, value: r.n })), { max }) : emptyText(t('media2.empty.list')),
       parties.length ? [h('h3', { class: 'rows-caption mme-gap' }, t('mme.o.parties')), h('p', { class: 'dcard-sub' }, t('mme.o.parties.n', { n: fmt.int(sum([...mine.values()])) })),
-        h('ul', { class: 'rows rows-share mme-share' }, parties.map((r) => h('li', {}, h('span', { class: 'row-name' }, r.p), h('span', { class: 'row-value' }, `${pctRound(r.v)} / ${pctRound(r.usual)}`),
-          h('span', { class: 'share', 'aria-hidden': 'true' }, h('span', { class: 'share-fill', style: { display: 'block', width: `${r.v * 100}%` } }), h('span', { class: 'share-tick', style: { left: `${r.usual * 100}%` } })))))] : null,
+        UI.BarList(parties.map((r) => ({ label: r.p, text: `${pctRound(r.v)} / ${pctRound(r.usual)}`, value: r.v, marker: r.usual })), { max: 1, cls: 'mme-share' })] : null,
       attacks.length ? [h('h3', { class: 'rows-caption mme-gap' }, t('mme.o.attacks')),
         h('ul', { class: 'rows mme-rows' }, attacks.map(([a, b, n]) => h('li', {}, h('span', { class: 'row-name' }, `${a} → ${b}`), h('span', { class: 'row-value' }, fmt.int(n)))))] : null)
   }

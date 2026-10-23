@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/app.css?v=15">
-  <link rel="stylesheet" href="assets/dash.css?v=67">
-  <link rel="stylesheet" href="assets/politics.css?v=1">
+  <link rel="stylesheet" href="assets/tokens.css?v=5">
+  <link rel="stylesheet" href="assets/app.css?v=16">
+  <link rel="stylesheet" href="assets/dash.css?v=68">
+  <link rel="stylesheet" href="assets/politics.css?v=2">
 </head>
 <body>
   <div id="app"></div>
@@ -16,9 +16,9 @@
   <script src="assets/messages.js?v=22"></script>
   <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-politics.js?v=8"></script>
-  <script src="assets/components.js?v=7"></script>
-  <script src="assets/dash.js?v=12"></script>
-  <script src="assets/politics.js?v=1"></script>
+  <script src="assets/components.js?v=8"></script>
+  <script src="assets/dash.js?v=13"></script>
+  <script src="assets/politics.js?v=2"></script>
   <script src="assets/shell.js?v=38"></script>
   <script src="data/statements.js?v=1"></script>
   <script>
@@ -49,7 +49,7 @@
             rows, rankColumn: true, pageSize: 10,
             columns: [
               { label: t('st.col.person'), render: (r) => h('span', { class: 'leader-cell' }, r.speaker, r.names.length > 1 ? h('span', { class: 'row-sub' }, t('st.names', { names: r.names.filter((n) => n !== r.speaker).join(', ') })) : null) },
-              { label: t('st.col.total'), num: true, render: (r) => h('div', { class: 'bar-cell' }, h('span', { class: 'bar-num' }, fmt.int(r.total)), UI.HBar(r.total, max)) },
+              { label: t('st.col.total'), num: true, render: (r) => UI.HBar(r.total, max, { text: fmt.int(r.total) }) },
               { label: t('st.col.promises'), num: true, render: (r) => (r.promises ? fmt.int(r.promises) : h('span', { class: 'mini-empty' }, '0')) },
               { label: t('st.col.predictions'), num: true, render: (r) => (r.predictions ? fmt.int(r.predictions) : h('span', { class: 'mini-empty' }, '0')) }
             ]

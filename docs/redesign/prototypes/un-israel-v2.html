@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/app.css?v=15">
-  <link rel="stylesheet" href="assets/dash.css?v=67">
-  <link rel="stylesheet" href="assets/politics.css?v=1">
+  <link rel="stylesheet" href="assets/tokens.css?v=5">
+  <link rel="stylesheet" href="assets/app.css?v=16">
+  <link rel="stylesheet" href="assets/dash.css?v=68">
+  <link rel="stylesheet" href="assets/politics.css?v=2">
 </head>
 <body>
   <div id="app"></div>
@@ -16,9 +16,9 @@
   <script src="assets/messages.js?v=22"></script>
   <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-politics.js?v=8"></script>
-  <script src="assets/components.js?v=7"></script>
-  <script src="assets/dash.js?v=12"></script>
-  <script src="assets/politics.js?v=1"></script>
+  <script src="assets/components.js?v=8"></script>
+  <script src="assets/dash.js?v=13"></script>
+  <script src="assets/politics.js?v=2"></script>
   <script src="assets/shell.js?v=38"></script>
   <script src="data/speeches.js?v=1"></script>
   <script>
@@ -26,7 +26,7 @@
     // It reads the speeches file of Ομιλίες ΟΗΕ. A speech has only its main topics (shares), so the cards count the speeches with the topic among them.
     const { t, fmt, h, load } = App
     const { reset, card, cardHead, Stat, TopBar } = Dash
-    const { Rows, dataName } = Politics
+    const { dataName } = Politics
     const result = load('speeches', ['rows', 'agenda'], (b) => b.rows)
     const TOPIC = 'Israel–Palestine'
     const REGIONS = ['Middle East', 'Europe', 'Asia-Pacific', 'Africa', 'North America', 'Latin America & Caribbean']
@@ -68,13 +68,13 @@
         ]
 
         const leadersCard = card('c-7', cardHead(t('unpi.leaders.title'), null, t('unpi.leaders.info')),
-          Rows(onTopic.slice(0, 15).map((r) => ({ label: r.speaker, sub: t('unpi.leaders.sub', { country: r.country, share: fmt.pct(r.share) }), value: r.minutes, text: t('unpi.leaders.value', { m: fmt.dec(r.minutes) }) })), { cls: 'rows-wrap' }))
+          UI.BarList(onTopic.slice(0, 15).map((r) => ({ label: r.speaker, sub: t('unpi.leaders.sub', { country: r.country, share: fmt.pct(r.share) }), value: r.minutes, text: t('unpi.leaders.value', { m: fmt.dec(r.minutes) }) }))))
 
         const regions = REGIONS.map((k) => { const list = onTopic.filter((r) => r.region === k); return { k, m: sum(list, 'minutes'), n: list.length } }).filter((x) => x.n)
         const regionCard = card('', cardHead(t('unpi.regions.title'), null, t('unpi.regions.info')),
-          Rows(regions.map((x) => ({ label: t(`un.region.${x.k}`), value: x.m, text: t('unpi.regions.value', { m: fmt.int(Math.round(x.m)), n: fmt.int(x.n) }) }))))
+          UI.BarList(regions.map((x) => ({ label: t(`un.region.${x.k}`), value: x.m, text: t('unpi.regions.value', { m: fmt.int(Math.round(x.m)), n: fmt.int(x.n) }) }))))
         const attackCard = card('', cardHead(t('unpi.attacks.title'), null, t('unpi.attacks.info')),
-          Rows(israel.slice(0, 8).map((r) => ({ label: r.speaker, sub: r.country, value: r.israel, text: t('unpi.attacks.value', { n: fmt.int(r.israel) }), color: 'var(--stance-critical)' }))))
+          UI.BarList(israel.slice(0, 8).map((r) => ({ label: r.speaker, sub: r.country, value: r.israel, text: t('unpi.attacks.value', { n: fmt.int(r.israel) }), color: 'var(--stance-critical)' }))))
 
         const tableCard = card('c-12', cardHead(t('unpi.table.title'), null, t('unpi.table.info')),
           UI.DataTable({

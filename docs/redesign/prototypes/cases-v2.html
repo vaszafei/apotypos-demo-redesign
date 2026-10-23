@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/app.css?v=15">
-  <link rel="stylesheet" href="assets/dash.css?v=67">
-  <link rel="stylesheet" href="assets/politics.css?v=1">
+  <link rel="stylesheet" href="assets/tokens.css?v=5">
+  <link rel="stylesheet" href="assets/app.css?v=16">
+  <link rel="stylesheet" href="assets/dash.css?v=68">
+  <link rel="stylesheet" href="assets/politics.css?v=2">
 </head>
 <body>
   <div id="app"></div>
@@ -16,9 +16,9 @@
   <script src="assets/messages.js?v=22"></script>
   <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-politics.js?v=8"></script>
-  <script src="assets/components.js?v=7"></script>
-  <script src="assets/dash.js?v=12"></script>
-  <script src="assets/politics.js?v=1"></script>
+  <script src="assets/components.js?v=8"></script>
+  <script src="assets/dash.js?v=13"></script>
+  <script src="assets/politics.js?v=2"></script>
   <script src="assets/shell.js?v=38"></script>
   <script src="data/cases.js?v=1"></script>
   <script>
@@ -26,7 +26,6 @@
     // The prototype has one stored answer of the case API, so the input shows that case.
     const { t, fmt, h, load } = App
     const { reset, card, cardHead, Stat, TopBar } = Dash
-    const { ColumnChart, Rows } = Politics
     const result = load('cases', ['by_source', 'timeline', 'articles'], (b) => b.articles)
     // The card of the words and the themes shows one of the two lists. The switch is the one of the time chart of Εκλογές.
     let words = 'framing'
@@ -63,11 +62,11 @@
         const months = []
         for (let x = new Date(`${d.timeline.buckets[0].slice(0, 7)}-01T00:00:00Z`); x.toISOString().slice(0, 7) <= d.timeline.buckets[d.timeline.buckets.length - 1].slice(0, 7); x.setUTCMonth(x.getUTCMonth() + 1)) months.push(x.toISOString().slice(0, 7))
         const timeCard = card('c-8', cardHead(t('case.time.title'), null, t('case.time.info')),
-          ColumnChart({ labels: months.map((m) => month(`${m}-01`)), values: months.map((m) => counts.get(m) || 0), height: 220, aria: t('case.time.title'),
-            tips: months.map((m) => `${month(`${m}-01`)} · ${fmt.int(counts.get(m) || 0)}`) }))
+          UI.BarChart({ labels: months.map((m) => month(`${m}-01`)), values: months.map((m) => counts.get(m) || 0), height: 220, label: t('case.time.title'),
+            tooltipOf: (i) => `${month(`${months[i]}-01`)} · ${fmt.int(counts.get(months[i]) || 0)}` }))
         // The bar of an outlet has the color of its group, as on the other pages.
         const outletCard = card('c-4', cardHead(t('case.outlets.title'), null, t('case.outlets.info')),
-          Rows(d.by_source.map((s) => ({ label: s.source, sub: t('case.outlets.sub', { group: s.group || '–', first: day(s.first), last: day(s.last) }), value: s.count, color: Dash.groupColor(s.group) })), { cls: 'rows-wrap' }))
+          UI.BarList(d.by_source.map((s) => ({ label: s.source, sub: t('case.outlets.sub', { group: s.group || '–', first: day(s.first), last: day(s.last) }), value: s.count, color: Dash.groupColor(s.group) }))))
 
         const lists = {
           framing: d.framing.terms.filter((x) => x.total).sort((a, b) => b.total - a.total).map((x) => ({ label: x.label, value: x.total })),
@@ -78,7 +77,7 @@
         const drawWords = () => {
           const pick = UI.SegmentedControl({ label: t('case.words.measure'), value: words, options: ['framing', 'themes'].map((k) => ({ value: k, label: t(`case.words.${k}`) })), onChange: (k) => { words = k; drawWords() } })
           wordsHead.replaceChildren(cardHead(t(`case.${words}.title`), pick, t(`case.${words}.info`)))
-          wordsHolder.replaceChildren(Rows(lists[words]))
+          wordsHolder.replaceChildren(UI.BarList(lists[words]))
         }
         drawWords()
         const wordsCard = card('c-6', wordsHead, wordsHolder)
