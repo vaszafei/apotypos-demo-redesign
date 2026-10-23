@@ -97,6 +97,12 @@
   // Top bar: the title, then the tabs of the page, then the actions of the active tab. It stays on screen while the page scrolls.
   // quiet: the page has no visible title and no line of counts, only the tabs. The title stays for screen readers.
   function TopBar ({ title, meta, aside, actions, tabs, error, quiet }) {
+    // The unified header (prototype, ?header=v2): the date range, the set of outlets and a view switch are page actions. The rest are filters of the tab.
+    if (window.Shell?.headerV2) {
+      const list = [aside, ...(actions || [])].filter(Boolean)
+      const isPage = (el) => el.matches?.('.dr, .segmented, .set-select')
+      return Shell.PageHead({ meta: quiet ? null : meta, actions: list.filter(isPage), filters: list.filter((el) => !isPage(el)), tabs, error })
+    }
     return h('header', { class: 'dash-bar' },
       quiet ? h('h1', { class: 'visually-hidden' }, title)
         : h('div', { class: 'dash-head' }, h('h1', { class: 'dash-title' }, title), meta && h('span', { class: 'dash-meta' }, meta), aside && h('div', { class: 'dash-aside' }, aside)),
