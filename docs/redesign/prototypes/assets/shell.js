@@ -38,13 +38,14 @@
   // Παλαιστίνη–Ισραήλ holds the Gaza and Israel pages.
   // Αναλύσεις & Ιδιοκτησία (/analyze) is not there: ownership is only Μέσα › Ιδιοκτησία, so /analyze opens that tab.
   // ΜΜΕ & πρόσωπα (/media) is not there: its content is Μέσα › Επισκόπηση. Θέματα (/trends) is a tab of Μέσα, not an item of its own.
-  // Πρόσωπα is an item: its overview (/fingerprints) and Φάκελος προσώπου (/contradictions), which left Αναλύσεις.
+  // Πρόσωπα is an item: its overview (/fingerprints), Δηλώσεις (/track, from Πολιτική) and Φάκελος προσώπου (/contradictions), which left Αναλύσεις.
+  // Ιστορίες has Υποθέσεις (/cases) and Μοτίβα διάδοσης (/campaigns), both from Πολιτική, so Πολιτική has only Εκλογές.
   const NAV = [
     { key: 'home', tabs: [['home', '/']] },
     { key: 'media', tabs: [['overview', '/media'], ['topics', '/trends'], ['shifts', '/overton'], ['ownership', '/groups'], ['similarity', '/similarity']], details: ['/outlet', '/group', '/topic'] },
-    { key: 'spread', tabs: [['overview', '/stories']], details: ['/story'] },
-    { key: 'people', tabs: [['overview', '/fingerprints'], ['file', '/contradictions']] },
-    { key: 'politics', tabs: [['elections', '/elections'], ['statements', '/track'], ['cases', '/cases'], ['campaigns', '/campaigns']] },
+    { key: 'spread', tabs: [['overview', '/stories'], ['cases', '/cases'], ['campaigns', '/campaigns']], details: ['/story'] },
+    { key: 'people', tabs: [['overview', '/fingerprints'], ['statements', '/track'], ['file', '/contradictions']] },
+    { key: 'politics', tabs: [['elections', '/elections']] },
     { key: 'world', tabs: [['speeches', '/speeches', [['speeches.all', '/speeches'], ['speeches.pi', '/un-israel-palestine']]],
       ['pi', '/narrative', [['pi.overview', '/narrative'], ['gaza', '/gaza'], ['israel', '/israel'], ['language', '/gaza-language']]],
       ['greekturkish', '/war'], ['coverage', '/coverage'], ['france', '/france-riots']] }
