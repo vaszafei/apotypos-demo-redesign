@@ -7,25 +7,25 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=4">
   <link rel="stylesheet" href="assets/app.css?v=13">
-  <link rel="stylesheet" href="assets/dash.css?v=66">
+  <link rel="stylesheet" href="assets/dash.css?v=67">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=3"></script>
   <script src="assets/messages.js?v=20"></script>
-  <script src="assets/messages-v2.js?v=31"></script>
+  <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-spread.js?v=12"></script>
   <script src="assets/components.js?v=7"></script>
   <script src="assets/dash.js?v=11"></script>
   <script src="assets/spread.js?v=5"></script>
-  <script src="assets/entity-cards.js?v=3"></script>
+  <script src="assets/entity-cards.js?v=4"></script>
   <script src="assets/shell.js?v=35"></script>
   <script src="data/media.js"></script>
   <script src="data/stories.js?v=1"></script>
   <script src="data/storyDetail.js?v=1"></script>
   <script src="data/groups.js?v=1"></script>
   <script>
-    // Media, page of one ownership group: /group/<slug>. The structure of the page of an outlet: a title card on the left, the cards on the right.
+    // Media, page of one ownership group: /group/<slug>. A compact title card, then the cards in rows of two.
     // The page is open at ?g=<slug> (Politis Group when there is none). All 8 groups of the snapshot work.
     const { t, fmt, h, load, params } = App
     const { reset, Spark, card, cardHead } = Dash
@@ -38,7 +38,7 @@
     const group = groupsData.data ? groupsData.data.groups.find((g) => g.slug === slug) : null
     const colorOfGroup = Dash.groupColors(groupsData.data ? groupsData.data.groups : [])
     const TOPICS = 10
-    const STORIES = 8
+    const STORIES = 4
 
     Shell.start({
       id: 'group',
@@ -101,20 +101,22 @@
         })
         mine.sort((a, b) => b.n - a.n)
 
-        const heroCard = card('c-12 hero',
-          h('p', { class: 'hero-kicker' }, t('hero.kind.group')),
-          h('h1', { class: 'hero-title' }, group.name),
-          h('div', { class: 'hero-chips' },
-            h('span', { class: 'chip' }, h('span', { class: 'swatch', style: { background: color } }), t('outlet2.chip.owner', { name: group.owner })),
-            h('span', { class: 'chip' }, t('group2.chip.lean', { lean: group.lean || t('groups.lean.none') })),
-            h('span', { class: 'chip chip-num' }, t('story.hero.chip.outlets', { n: fmt.int(group.outlets.length) })),
-            h('span', { class: 'chip chip-num' }, t('story.hero.chip.articles', { n: fmt.int(group.collected) })),
-            h('span', { class: 'chip chip-num' }, t('group2.chip.share', { n: fmt.pct(group.collected / g.totalCollected) }))),
-          h('p', { class: 'hero-period' }, h('strong', {}, fmt.period(g.window[0], g.window[1])), h('span', { class: 'muted-text' }, ` · ${t('story.hero.days', { n: end - start + 1 })}`)))
+        // The title card: the group, its period once, and one line of facts.
+        const titleCard = Entity.TitleCard({
+          kind: t('hero.kind.group'),
+          title: h('span', { class: 'group-cell' }, h('span', { class: 'dot', style: `--dot:${color}`, 'aria-hidden': 'true' }), group.name),
+          meta: `${fmt.period(g.window[0], g.window[1])} · ${t('entity.fact.days', { n: end - start + 1 })}`,
+          facts: [
+            { label: t('entity.fact.owner'), value: group.owner },
+            { label: t('entity.fact.lean'), value: group.lean || t('groups.lean.none') },
+            { label: t('entity.fact.outlets'), value: fmt.int(group.outlets.length) },
+            { label: t('entity.fact.articles'), value: fmt.int(group.collected), sub: t('group2.chip.share', { n: fmt.pct(group.collected / g.totalCollected) }) }
+          ]
+        })
 
         const dailyCard = Entity.DailyCard({ dates, daily, topicDays, issues: d.issues, info: t('group2.daily.info') })
 
-        const outletsCard = card('c-12', cardHead(t('group2.outlets.title'), null, t('group2.outlets.info')), UI.DataTable({
+        const outletsCard = card('c-8', cardHead(t('group2.outlets.title'), null, t('group2.outlets.info')), UI.DataTable({
           rows: group.outlets, rankColumn: true, pageSize: 10, emptyText: t('group.empty'),
           columns: [
             { label: t('group.col.outlet'), render: (o) => UI.EntityLink({ type: 'outlet', key: o.slug, label: o.name }) },
@@ -139,7 +141,7 @@
         const topicScale = scaleOf(topicRows)
         const topicList = (rows) => h('ul', { class: 'diverge diverge-3' }, rows.map((r) => DiffRow({ ...r, scale: topicScale })))
         const diffKey = Entity.diffKey()
-        const topicsCard = card('c-12', cardHead(t('group2.topics.title'), diffKey, t('group2.topics.info')),
+        const topicsCard = card('c-8', cardHead(t('group2.topics.title'), diffKey, t('group2.topics.info')),
           topicRows.length
             ? [h('div', { class: 'how-grid how-grid-2' }, h('div', { class: 'how-panel' }, topicList(topicRows.slice(0, 5))), h('div', { class: 'how-panel' }, topicList(topicRows.slice(5)))),
               h('p', { class: 'dcard-sub' }, t('group2.topics.sub', { n: fmt.int(nGroup) }))]
@@ -155,18 +157,18 @@
         const stanceMine = [0, 1, 2].map((i) => sum(group.outlets.map((o) => o.stance[i])))
         const stanceAll = [0, 1, 2].map((i) => sum(files.map((o) => o.stance[i])))
         const stanceN = sum(stanceMine)
-        const stanceRows = stanceN >= 30 ? ['critical', 'neutral', 'supportive'].map((code, i) => ({ label: t(`stance.${code}`), value: stanceMine[i] / stanceN, usual: stanceAll[i] / sum(stanceAll) })) : []
-        const howScale = scaleOf([...newsRows, ...clickRows, ...stanceRows])
+        const howScale = scaleOf([...newsRows, ...clickRows])
         const rowsOf = (rows) => (rows.length ? h('ul', { class: 'diverge diverge-3' }, rows.map((r) => DiffRow({ ...r, scale: howScale, tipKey: 'group2.how.tip' }))) : null)
         const note = (text) => h('p', { class: 'dcard-sub' }, text)
-        const howCard = card('c-12', cardHead(t('group2.how.title'), diffKey, t('group2.how.info')),
-          h('div', { class: 'how-grid how-grid-2' },
-            h('div', { class: 'how-panel' }, rowsOf([...newsRows, ...clickRows]), note(t('outlet2.how.news.n', { n: fmt.int(analysed) })),
-              note(clickRows.length ? t('outlet2.how.clickbait.n', { baited: fmt.int(mineOf('cbYes')), scored: fmt.int(mineOf('cbKnown')) }) : t('outlet2.how.clickbait.none'))),
-            h('div', { class: 'how-panel' }, h('h3', { class: 'rows-caption' }, t('outlet2.how.stance')), rowsOf(stanceRows),
-              note(stanceRows.length ? t('outlet2.how.stance.n', { n: fmt.int(stanceN) }) : t('outlet2.how.stance.none')))))
+        const howCard = card('c-4', cardHead(t('group2.how.title'), null, t('group2.how.info')),
+          rowsOf([...newsRows, ...clickRows]), note(t('outlet2.how.news.n', { n: fmt.int(analysed) })),
+          note(clickRows.length ? t('outlet2.how.clickbait.n', { baited: fmt.int(mineOf('cbYes')), scored: fmt.int(mineOf('cbKnown')) }) : t('outlet2.how.clickbait.none')), diffKey.cloneNode(true))
+        const stanceCard = Entity.StanceCard({
+          rows: [{ label: t('entity.stance.group'), color, counts: stanceMine }, { label: t('entity.stance.all'), color: Dash.NO_GROUP, counts: stanceAll }],
+          foot: stanceN >= 30 ? t('outlet2.how.stance.n', { n: fmt.int(stanceN) }) : null
+        })
 
-        const storiesCard = card('c-12', cardHead(t('group2.stories.title'), null, t('group2.stories.info')),
+        const storiesCard = card('c-4', cardHead(t('group2.stories.title'), null, t('group2.stories.info')),
           mine.length
             ? [withOthers ? h('p', { class: 'dcard-sub' }, t('group2.stories.alone', { n: fmt.int(alone), total: fmt.int(withOthers) })) : null,
               h('ul', { class: 'rows-related' }, mine.filter((r) => r.story).slice(0, STORIES).map((r) => h('li', {},
@@ -175,11 +177,10 @@
                 h('span', { class: 'row-value' }, fmt.int(r.n)))))]
             : h('p', { class: 'dcard-empty' }, t('outlet2.stories.empty')))
 
-        // The title card is the first card of the main column on the left. The main cards are under it, and the stories are on the right. On a narrow screen the columns join in one.
-        const at = (n, el) => { el.style.order = n; return el }
-        content.replaceChildren(h('div', { class: 'dash-grid story-grid entity-grid' },
-          h('div', { class: 'card-col c-8 story-col' }, at(0, heroCard), at(1, dailyCard), at(2, outletsCard), at(3, topicsCard), at(4, howCard)),
-          h('div', { class: 'card-col c-4 story-col' }, at(5, storiesCard))), protoNote())
+        // The title card, then the cards in rows: the daily columns and the stance, the outlets and how the group writes, the topics and the stories.
+        dailyCard.classList.replace('c-12', 'c-8')
+        content.replaceChildren(h('div', { class: 'dash-grid entity-grid entity-rows' },
+          titleCard, dailyCard, stanceCard, outletsCard, howCard, topicsCard, storiesCard), protoNote())
       }
     })
 
