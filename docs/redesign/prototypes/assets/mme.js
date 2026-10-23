@@ -317,20 +317,26 @@
     return { rank: 1 + list.filter((o) => value(o) > mine).length, n: list.length }
   }
 
-  function OutletStats (S, k) {
+  // The numbers of an outlet with its ranks: { label, value, sub }. The outlet page shows them in its title card, Μέσα shows them in a card.
+  function outletFacts (S, k) {
     const o = S.outlets[k]
     const st = sum(o.stance)
     const news = rankOf(S, k, (x) => x.news / x.n, (x) => x.n)
     const crit = rankOf(S, k, (x) => critShare(x.stance), (x) => sum(x.stance))
     const cb = rankOf(S, k, (x) => x.cbYes / x.cbKnown, (x) => x.cbKnown)
-    const item = (label, value, sub) => h('div', { class: 'mme-ostat' }, h('p', { class: 'dstat-label' }, label), h('p', { class: 'mme-ostat-value' }, value), h('p', { class: 'muted-text' }, sub))
+    return {
+      posts: { label: t('mme.o.posts'), value: fmt.int(o.n), sub: t('mme.o.posts.sub') },
+      news: { label: t('mme.o.news'), value: pctRound(o.news / (o.n || 1)), sub: news ? t('mme.o.rank', { rank: news.rank, n: news.n }) : '' },
+      critical: { label: t('mme.o.critical'), value: st ? pctRound(o.stance[0] / st) : '—', sub: crit ? t('mme.o.rank.critical', { rank: crit.rank, n: fmt.int(st) }) : t('mme.n', { n: fmt.int(st) }) },
+      supportive: { label: t('mme.o.supportive'), value: st ? pctRound(o.stance[2] / st) : '—', sub: t('mme.o.supportive.sub') },
+      clickbait: { label: t('mme.o.clickbait'), value: o.cbKnown ? pctRound(o.cbYes / o.cbKnown) : '—', sub: o.cbKnown ? (cb ? t('mme.o.rank', { rank: cb.rank, n: cb.n }) : t('mme.n', { n: fmt.int(o.cbKnown) })) : t('mme.o.none') }
+    }
+  }
+  function OutletStats (S, k) {
+    const f = outletFacts(S, k)
+    const item = ({ label, value, sub }) => h('div', { class: 'mme-ostat' }, h('p', { class: 'dstat-label' }, label), h('p', { class: 'mme-ostat-value' }, value), h('p', { class: 'muted-text' }, sub))
     return card('c-12', cardHead(t('mme.o.title'), null, t('mme.o.info')),
-      h('div', { class: 'mme-ostats' },
-        item(t('mme.o.posts'), fmt.int(o.n), t('mme.o.posts.sub')),
-        item(t('mme.o.news'), pctRound(o.news / (o.n || 1)), news ? t('mme.o.rank', { rank: news.rank, n: news.n }) : ''),
-        item(t('mme.o.critical'), st ? pctRound(o.stance[0] / st) : '—', crit ? t('mme.o.rank.critical', { rank: crit.rank, n: fmt.int(st) }) : t('mme.n', { n: fmt.int(st) })),
-        item(t('mme.o.supportive'), st ? pctRound(o.stance[2] / st) : '—', t('mme.o.supportive.sub')),
-        item(t('mme.o.clickbait'), o.cbKnown ? pctRound(o.cbYes / o.cbKnown) : '—', o.cbKnown ? (cb ? t('mme.o.rank', { rank: cb.rank, n: cb.n }) : t('mme.n', { n: fmt.int(o.cbKnown) })) : t('mme.o.none'))))
+      h('div', { class: 'mme-ostats' }, [f.posts, f.news, f.critical, f.supportive, f.clickbait].map(item)))
   }
 
   // The weeks of a set, Monday to Sunday. The first and the last week can be short.
@@ -505,5 +511,5 @@
       angle ? h('span', { class: 'mme-angle' }, angle) : null))
   }
 
-  window.Mme = { presets, summary, sumPairs, ChipsCard, HighlightsCard, StoriesCard, AgendaCard, PeopleCard, GovCard, TopicCard, PersonsCard, MethodNote, OutletStats, WeeklyAgenda, PushSkip, StanceByTopic, FramesCard, VoicesCard, PortrayalCard, Headlines, topIssues, shareOf, StanceBar, critShare, outletLink }
+  window.Mme = { presets, summary, sumPairs, ChipsCard, HighlightsCard, StoriesCard, AgendaCard, PeopleCard, GovCard, TopicCard, PersonsCard, MethodNote, OutletStats, outletFacts, WeeklyAgenda, PushSkip, StanceByTopic, FramesCard, VoicesCard, PortrayalCard, Headlines, topIssues, shareOf, StanceBar, critShare, outletLink }
 })()

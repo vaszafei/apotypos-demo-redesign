@@ -7,21 +7,21 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=4">
   <link rel="stylesheet" href="assets/app.css?v=13">
-  <link rel="stylesheet" href="assets/dash.css?v=66">
+  <link rel="stylesheet" href="assets/dash.css?v=67">
   <link rel="stylesheet" href="assets/mme.css?v=4">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=3"></script>
   <script src="assets/messages.js?v=21"></script>
-  <script src="assets/messages-v2.js?v=31"></script>
+  <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-spread.js?v=13"></script>
   <script src="assets/messages-mme.js?v=4"></script>
   <script src="assets/components.js?v=7"></script>
   <script src="assets/dash.js?v=11"></script>
   <script src="assets/spread.js?v=5"></script>
-  <script src="assets/entity-cards.js?v=3"></script>
-  <script src="assets/mme.js?v=3"></script>
+  <script src="assets/entity-cards.js?v=4"></script>
+  <script src="assets/mme.js?v=4"></script>
   <script src="assets/shell.js?v=36"></script>
   <script src="data/media.js"></script>
   <script src="data/home.js"></script>
@@ -118,17 +118,6 @@
         const record = group ? groupsData.data.groups.find((g) => g.name === group) : null
         const groupColor = (g) => (g && colorOfGroup.get(g)) || NO_GROUP
 
-        const heroCard = card('c-12 hero',
-          h('p', { class: 'hero-kicker' }, t('hero.kind.outlet')),
-          h('h1', { class: 'hero-title' }, outlet.name),
-          h('div', { class: 'hero-chips' },
-            record ? h('span', { class: 'chip' }, UI.EntityLink({ type: 'group', key: record.slug, label: group, color: groupColor(group) })) : h('span', { class: 'chip chip-quiet' }, t('story.nogroup')),
-            outlet.owner ? h('span', { class: 'chip' }, t('outlet2.chip.owner', { name: outlet.owner })) : null,
-            h('span', { class: 'chip chip-num' }, t('story.hero.chip.articles', { n: fmt.int(collectedTotal) })),
-            h('span', { class: 'chip chip-num' }, t('outlet2.chip.stories', { n: fmt.int(mine.length) }))),
-          h('p', { class: 'hero-period' }, h('strong', {}, `${dayLabel(start)} → ${fmt.date(dates[end])}`),
-            h('span', { class: 'muted-text' }, ` · ${t('story.hero.days', { n: end - start + 1 })}${start > 0 ? ` · ${t('outlet2.hero.since', { date: dayLabel(start) })}` : ''}`)))
-
         const dailyCard = Entity.DailyCard({ dates, daily: m.outletDaily[k], topicDays, issues: d.issues, info: t('outlet2.daily.info') })
 
         // The topics of the stories of the outlet, against the topics of all outlets. The topic of the catch-all rows does not count.
@@ -160,16 +149,17 @@
         const stanceMine = stanceOf(mineFile)
         const stanceAll = [0, 1, 2].map((i) => sum(files.map((o) => o.stance[i])))
         const stanceN = sum(stanceMine)
-        const stanceRows = stanceN >= 30 ? ['critical', 'neutral', 'supportive'].map((code, i) => ({ label: t(`stance.${code}`), value: stanceMine[i] / stanceN, usual: stanceAll[i] / sum(stanceAll) })) : []
-        const howScale = scaleOf([...newsRows, ...clickRows, ...stanceRows])
+        const howScale = scaleOf([...newsRows, ...clickRows])
         const rowsOf = (rows) => (rows.length ? h('ul', { class: 'diverge diverge-3' }, rows.map((r) => DiffRow({ ...r, scale: howScale }))) : null)
         const note = (text) => h('p', { class: 'dcard-sub' }, text)
         const howCard = card('c-12', cardHead(t('outlet2.how.title'), diffKey, t('outlet2.how.info')),
-          h('div', { class: 'how-grid how-grid-2' },
-            h('div', { class: 'how-panel' }, rowsOf([...newsRows, ...clickRows]), note(t('outlet2.how.news.n', { n: fmt.int(analysed) })),
-              note(clickRows.length ? t('outlet2.how.clickbait.n', { baited: fmt.int(mineFile.cbYes), scored: fmt.int(mineFile.cbKnown) }) : t('outlet2.how.clickbait.none'))),
-            h('div', { class: 'how-panel' }, h('h3', { class: 'rows-caption' }, t('outlet2.how.stance')), rowsOf(stanceRows),
-              note(stanceRows.length ? t('outlet2.how.stance.n', { n: fmt.int(stanceN) }) : t('outlet2.how.stance.none')))))
+          h('div', { class: 'how-panel' }, rowsOf([...newsRows, ...clickRows]), note(t('outlet2.how.news.n', { n: fmt.int(analysed) })),
+            note(clickRows.length ? t('outlet2.how.clickbait.n', { baited: fmt.int(mineFile.cbYes), scored: fmt.int(mineFile.cbKnown) }) : t('outlet2.how.clickbait.none'))))
+        const stanceCard = Entity.StanceCard({
+          cls: 'c-12',
+          rows: [{ label: t('entity.stance.outlet'), color: groupColor(group), counts: stanceMine }, { label: t('entity.stance.all'), color: NO_GROUP, counts: stanceAll }],
+          foot: stanceN >= 30 ? t('outlet2.how.stance.n', { n: fmt.int(stanceN) }) : null
+        })
 
         // The stories with the most articles of the outlet, each with the days of the outlet. The first-day count says how often the outlet is first.
         const firsts = mine.filter((r) => r.first === r.storyStart).length
@@ -187,10 +177,25 @@
         const mk = mset ? mset.outlets.findIndex((o) => o.slug === slug) : -1
         const MS = mk >= 0 ? Mme.summary(mset, 0, mset.dates.length - 1) : null
         const live = MS ? {
-          stats: Mme.OutletStats(MS, mk), weekly: Mme.WeeklyAgenda(mset, mk), pushSkip: Mme.PushSkip(MS, mk), stance: Mme.StanceByTopic(MS, mk),
+          weekly: Mme.WeeklyAgenda(mset, mk), pushSkip: Mme.PushSkip(MS, mk), stance: Mme.StanceByTopic(MS, mk),
           frames: Mme.FramesCard(MS, mk), voices: Mme.VoicesCard(MS, mk), portrayal: Mme.PortrayalCard(MS, mk)
         } : null
         const liveHeadlines = MS ? Mme.Headlines(mset, mk) : []
+
+        // The title card: the outlet, its period once, and one line of facts. The live numbers with their ranks join the facts when the outlet has them.
+        const facts = MS ? Mme.outletFacts(MS, mk) : null
+        const titleCard = Entity.TitleCard({
+          kind: t('hero.kind.outlet'),
+          title: outlet.name,
+          meta: `${dayLabel(start)} → ${fmt.date(dates[end])} · ${t('entity.fact.days', { n: end - start + 1 })}`,
+          facts: [
+            { label: t('entity.fact.group'), value: record ? UI.EntityLink({ type: 'group', key: record.slug, label: group }) : t('story.nogroup') },
+            outlet.owner ? { label: t('entity.fact.owner'), value: outlet.owner } : null,
+            { label: t('entity.fact.articles'), value: fmt.int(collectedTotal), spark: Spark(collected, start, end, t('outlet2.daily.title'), { w: 56, hgt: 16 }) },
+            { label: t('entity.fact.stories'), value: fmt.int(mine.length) },
+            facts && facts.news, facts && facts.clickbait
+          ]
+        })
 
         const headlines = sample.kind === 'data' && sample.data.slug === slug ? sample.data.headlines : []
         const headlinesCard = liveHeadlines.length
@@ -224,9 +229,9 @@
         // The title card is the first card of the main column on the left. The main cards are under it, and the lists are on the right. On a narrow screen the columns join in one.
         const at = (n, el) => { el.style.order = n; return el }
         content.replaceChildren(h('div', { class: 'dash-grid story-grid entity-grid' },
-          h('div', { class: 'card-col c-8 story-col' }, at(0, heroCard), live && at(1, live.stats), at(2, dailyCard), live && at(3, live.weekly), at(4, topicsCard), at(5, howCard),
+          h('div', { class: 'card-col c-8 story-col' }, at(0, titleCard), at(2, dailyCard), live && at(3, live.weekly), at(4, topicsCard), at(5, howCard),
             live && at(6, live.frames), live && at(7, live.stance), at(8, storiesCard), live && at(9, live.portrayal)),
-          h('div', { class: 'card-col c-4 story-col' }, at(10, relatedCard), live && at(11, live.pushSkip[0]), live && at(12, live.pushSkip[1]), live && at(13, live.voices), at(14, headlinesCard))), protoNote())
+          h('div', { class: 'card-col c-4 story-col' }, at(5, stanceCard), at(10, relatedCard), live && at(11, live.pushSkip[0]), live && at(12, live.pushSkip[1]), live && at(13, live.voices), at(14, headlinesCard))), protoNote())
       }
     })
 
