@@ -94,25 +94,16 @@
   }
   setFont(readFont())
 
-  // Prototype only: the unified header (?header=v2) for the decision of the project lead. ?header= or the last choice sets it.
-  // v2: the top bar holds only the back button and the search. The page head under it holds the title, the page actions and the tabs.
+  // The unified header (v2) is the default. ?header=v1 shows the old header for comparison; ?header= or the last choice sets it.
+  // v2: the top bar holds only the back button and the search. The page head under it holds the tabs, the page actions and the sub-tabs.
   function readHeader () {
     const asked = new URLSearchParams(location.search).get('header')
     let saved = null
     try { if (asked) localStorage.setItem('proto-header', asked); saved = localStorage.getItem('proto-header') } catch {}
-    return (asked || saved) === 'v2' ? 'v2' : 'v1'
+    return (asked || saved) === 'v1' ? 'v1' : 'v2'
   }
   const headerV2 = readHeader() === 'v2'
   document.documentElement.dataset.header = headerV2 ? 'v2' : 'v1'
-  // The style of the v2 header: a (white band), b (segmented tabs) or c (editorial). ?hstyle= or the last choice sets it.
-  const HSTYLES = ['a', 'b', 'c']
-  function readHeaderStyle () {
-    const asked = new URLSearchParams(location.search).get('hstyle')
-    let saved = null
-    try { if (HSTYLES.includes(asked)) localStorage.setItem('proto-hstyle', asked); saved = localStorage.getItem('proto-hstyle') } catch {}
-    return [asked, saved].find((x) => HSTYLES.includes(x)) || 'a'
-  }
-  if (headerV2) document.documentElement.dataset.hstyle = readHeaderStyle()
 
   // The global search finds pages, groups, outlets and stories in the snapshot. A data file that the page does not load opens on the first search.
   const fold = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/ς/g, 'σ')
@@ -328,8 +319,8 @@
       })
       if (headerV2) {
         current = { section: item ? t(`nav.${item.key}`) : title(), tabs: pageTabs }
-        // A tab page that draws no page head of its own gets the plain one: the title and the tabs.
-        if (item && exactTab && id !== 'home') {
+        // A tab page that draws no page head of its own gets the plain one: the tabs and the page tools. A section with one tab needs none.
+        if (item && exactTab && item.tabs.length > 1) {
           const ensureHead = () => { if (!content.querySelector('.page-head')) content.prepend(window.Shell.PageHead({})) }
           new MutationObserver(ensureHead).observe(content, { childList: true })
         }
