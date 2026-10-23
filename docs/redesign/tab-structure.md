@@ -43,10 +43,10 @@ Each tab answers one question. Heights are the page height at 1440 × 900 px on 
 | | | Προβολή και εκλογική δύναμη | Is a party covered more or less than its vote? | keep (Προβολή) |
 | | | Προβολή και δημοσκοπήσεις | Is a party covered more or less than its polls? | keep (Προβολή) |
 | | | Momentum | How does now compare with the period before? | keep (Προβολή) |
-| | | Ποιο κόμμα προβάλλει κάθε μέσο | Which party does each outlet cover most? | move to Πολιτική › Μέσα και ιδιοκτησία |
-| | | Προβολή ανά πολιτική κλίση ιδιοκτησίας | Does the lean of the owner change the coverage? | move to Πολιτική › Μέσα και ιδιοκτησία |
-| | | Κυβέρνηση ή αντιπολίτευση | Does each outlet lean to the government or the opposition? | move to Πολιτική › Μέσα και ιδιοκτησία |
-| | | Ποιος ελέγχει την κάλυψη κάθε κόμματος | Which owner controls the coverage of each party? | move to Πολιτική › Μέσα και ιδιοκτησία |
+| | | Ποιο κόμμα προβάλλει κάθε μέσο | Which party does each outlet cover most? | move to Πολιτική › Μέσα |
+| | | Προβολή ανά πολιτική κλίση ιδιοκτησίας | Does the lean of the owner change the coverage? | move to Πολιτική › Ιδιοκτησία |
+| | | Κυβέρνηση ή αντιπολίτευση | Does each outlet lean to the government or the opposition? | move to Πολιτική › Μέσα |
+| | | Ποιος ελέγχει την κάλυψη κάθε κόμματος | Which owner controls the coverage of each party? | move to Πολιτική › Ιδιοκτησία |
 | | | Θεματολογική ατζέντα ανά κόμμα | With which topics is each party covered? | move to Πολιτική › Θέματα |
 | | | Τυφλά σημεία | Which stories only one side covers? | move to Πολιτική › Θέματα |
 | | | Κάλυψη χωρίς υπογραφή | How much political coverage has no byline? | move to Πολιτική › Συντάκτες |
@@ -84,7 +84,8 @@ Each tab answers one question. Heights are the page height at 1440 × 900 px on 
 | | Φάκελος › Αντιφάσεις (`/contradictions/pairs`, new) | Πού αντιφάσκουν οι δηλώσεις του προσώπου; | Ενδείξεις αντίφασης |
 | | Φάκελος › Έλεγχος στοιχείων (`/contradictions/checks`, new) | Ποια στοιχεία του προσώπου στέκουν; | Έλεγχος στοιχείων |
 | Πολιτική | Προβολή (`/elections`) | Πόση προβολή παίρνει κάθε κόμμα, και πώς συγκρίνεται με τη δύναμή του; | 3 stat cards, Προβολή στον χρόνο, Προβολή και εκλογική δύναμη, Προβολή και δημοσκοπήσεις, Momentum |
-| | Μέσα και ιδιοκτησία (`/elections/outlets`, new) | Ποιο κόμμα προβάλλει κάθε μέσο και κάθε ιδιοκτήτης; | Ποιο κόμμα προβάλλει κάθε μέσο, Προβολή ανά πολιτική κλίση ιδιοκτησίας, Κυβέρνηση ή αντιπολίτευση, Ποιος ελέγχει την κάλυψη κάθε κόμματος |
+| | Μέσα (`/elections/outlets`, new) | Ποιο κόμμα προβάλλει κάθε μέσο, και προς τα πού γέρνει; | Ποιο κόμμα προβάλλει κάθε μέσο, Κυβέρνηση ή αντιπολίτευση |
+| | Ιδιοκτησία (`/elections/owners`, new) | Αλλάζει η ιδιοκτησία την κάλυψη των κομμάτων; | Προβολή ανά πολιτική κλίση ιδιοκτησίας, Ποιος ελέγχει την κάλυψη κάθε κόμματος |
 | | Θέματα (`/elections/topics`, new) | Με ποια θέματα καλύπτεται κάθε κόμμα; | Θεματολογική ατζέντα ανά κόμμα, Τυφλά σημεία |
 | | Συντάκτες (`/elections/bylines`, new) | Ποιος υπογράφει την πολιτική κάλυψη; | Κάλυψη χωρίς υπογραφή, Ποιος γράφει την πολιτική κάλυψη |
 
@@ -99,10 +100,30 @@ Each tab answers one question. Heights are the page height at 1440 × 900 px on 
 7. **Ιστορίες › Ανά μέσο (new)**: the stories × outlets matrix of the live page asks which outlets wrote a story, not how stories spread across groups.
 8. **Ιστορίες › Επισκόπηση, first page of the table**: the table shows 12 rows first (was 25) so that the charts that filter it stay on the same screen; «Δείξε 25 ακόμη» still adds 25.
 9. **Πρόσωπα › Έμφαση και στάση (new)**: the measure switch changes only the strongest pairs and the range chart, so they are one question of their own.
-10. **Φάκελος προσώπου gets sub-tabs Αντιφάσεις and Έλεγχος στοιχείων**: each of the two lists is 1700–2000 px long; side by side they made the tab 4.1 screens.
-11. **Πολιτική gets 4 tabs**: 15 cards in one tab (5.5 screens) answer four questions: how much coverage, from which outlets and owners, on which topics, and by whom.
+10. **Φάκελος προσώπου gets sub-tabs Αντιφάσεις and Έλεγχος στοιχείων**: each of the two lists is 1700–2000 px long side by side, and they made the tab 4.1 screens; alone in its sub-tab each list takes the full width.
+11. **Πολιτική gets 5 tabs**: 15 cards in one tab (5.5 screens) answer five questions: how much coverage, from which outlets, under which owners, on which topics, and by whom. (The first proposal had outlets and owners in one tab; at 2.06 screens it was too long, so it is two.)
 12. **Routes**: every route of today opens the same file as before. A new tab is the same file with `?tab=`, so no page moves and no redirect is needed; `/topic` detail pages now go back to Θέματα, not to Μέσα › Επισκόπηση.
 
-## 5. Limits
+## 5. Result
 
-- Three cards are longer than 2 screens on their own, so their tab is too, whatever the tab holds: «Πώς γράφουν για την κυβέρνηση» (1894 px), «Ενδείξεις αντίφασης» (1743 px) and «Έλεγχος στοιχείων» (2030 px). Making a card shorter is restyling, which is #60.
+Page height at 1440 × 900 px after the change, with the site footer (1800 px = 2 screens):
+
+| Tab | Height | Tab | Height |
+|---|---|---|---|
+| Μέσα › Επισκόπηση | 1436 px | Ιστορίες › Επισκόπηση | 1660 px |
+| Μέσα › Πώς γράφουν | 2255 px (see Limits) | Ιστορίες › Ανά μέσο | 1453 px |
+| Μέσα › Θέματα › Επισκόπηση | 1701 px | Ιστορίες › Υποθέσεις | 1803 px (see Limits) |
+| Μέσα › Θέματα › Στον χρόνο | 964 px | Ιστορίες › Μοτίβα διάδοσης | 900 px |
+| Μέσα › Θέματα › Ένα θέμα | 1318 px | Πρόσωπα › Επισκόπηση | 1177 px |
+| Μέσα › Θέματα › Ατζέντα μέσων | 1446 px | Πρόσωπα › Έμφαση και στάση | 1065 px |
+| Μέσα › Θέματα › Μετατοπίσεις | 1838 px (see Limits) | Πρόσωπα › Δηλώσεις | 900 px |
+| Μέσα › Ιδιοκτησία | 1197 px | Φάκελος › Επισκόπηση | 1724 px |
+| Μέσα › Ομοιότητα | 1690 px | Φάκελος › Αντιφάσεις | 1662 px |
+| Πολιτική › Προβολή | 1594 px | Φάκελος › Έλεγχος στοιχείων | 1589 px |
+| Πολιτική › Μέσα | 1501 px | Πολιτική › Θέματα | 1183 px |
+| Πολιτική › Ιδιοκτησία | 1139 px | Πολιτική › Συντάκτες | 1388 px |
+
+## 6. Limits
+
+- «Πώς γράφουν για την κυβέρνηση» is 1894 px on its own (one row for each of the 36 outlets), so Μέσα › Πώς γράφουν is 2.5 screens whatever else it holds. Making the card shorter is restyling, which is #60.
+- Μετατοπίσεις (1768 → 1838 px) and Υποθέσεις (1774 → 1803 px) kept their cards; the sub-tab row and the question line add the extra height.

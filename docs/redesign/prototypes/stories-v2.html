@@ -6,14 +6,14 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
-  <link rel="stylesheet" href="assets/app.css?v=17">
+  <link rel="stylesheet" href="assets/app.css?v=18">
   <link rel="stylesheet" href="assets/dash.css?v=69">
   <link rel="stylesheet" href="assets/mme.css?v=6">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
-  <script src="assets/messages.js?v=22"></script>
+  <script src="assets/messages.js?v=23"></script>
   <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-spread.js?v=13"></script>
   <script src="assets/messages-mme.js?v=5"></script>
@@ -22,7 +22,7 @@
   <script src="assets/dash.js?v=13"></script>
   <script src="assets/mme.js?v=5"></script>
   <script src="assets/spread.js?v=6"></script>
-  <script src="assets/shell.js?v=38"></script>
+  <script src="assets/shell.js?v=39"></script>
   <script src="data/stories.js?v=1"></script>
   <script src="data/storyDetail.js?v=1"></script>
   <script src="data/groups.js?v=1"></script>
@@ -30,7 +30,9 @@
   <script>
     // Stories: one page for all stories (APO-180). The cards show how stories spread across the ownership groups, and the table lists every story.
     // A click on a column of the first card or on a group of the third card filters the table and the chart of days. The filter shows as a chip in the table card.
-    const { t, fmt, h, load } = App
+    // Two tabs (#62): Επισκόπηση (/stories) and Ανά μέσο (?tab=outlets, /stories/outlets) with the stories × outlets matrix.
+    const { t, fmt, h, load, params } = App
+    const tab = params.get('tab') === 'outlets' ? 'outlets' : 'overview'
     const { reset, NO_GROUP, Spark, card, cardHead } = Dash
     const list = load('stories', ['dates', 'issues', 'stories'], (b) => b.stories)
     const detail = load('storyDetail', ['outlets', 'stories'], (b) => b.stories)
@@ -40,6 +42,8 @@
     const mmeView = { generic: false }
     const colorOfGroup = Dash.groupColors(groupsData.data ? groupsData.data.groups : [])
     const STEP = 25
+    // The first page of the table is shorter, so the charts that filter it stay on the same screen (#62).
+    const FIRST = 12
     const MAX_GROUPS = 8
     // The 4 ways a story starts, from the first day with an outlet that has a group. The first 3 are teal and gray, so they do not use the colors of the groups.
     const TYPES = [
@@ -70,7 +74,7 @@
 
     Shell.start({
       id: 'stories',
-      route: '/stories',
+      route: tab === 'outlets' ? '/stories/outlets' : '/stories',
       dash: true,
       title: () => t('nav.spread'),
       breadcrumbs: () => [{ label: t('nav.spread') }],
@@ -126,7 +130,7 @@
           ].filter(Boolean)
           const day = (i) => fmt.date(d.dates[i], { day: 'numeric', month: 'short' })
           const table = UI.DataTable({
-            rows, rankColumn: true, pageSize: STEP, moreStep: STEP, emptyText: t('media.empty'),
+            rows, rankColumn: true, pageSize: FIRST, moreStep: STEP, emptyText: t('media.empty'),
             columns: [
               // The echo sits under the name: 4 or more groups wrote the story on one day.
               { label: t('media.col.story'), render: (s) => h('div', { class: 'name-cell' }, UI.EntityLink({ type: 'story', key: String(s.id), label: name(s) }),
@@ -157,15 +161,16 @@
               title: t('stories.solo.tip', { name: r.g, started: fmt.int(r.started), wrote: fmt.int(r.wrote) }),
               onClick: () => pickSolo(r.i), pressed: state.solo === r.i
             })), { max: soloMax }))
-          // The stories × outlets matrix of ΜΜΕ & πρόσωπα. Its toggle draws only this card again.
+          // The stories × outlets matrix of ΜΜΕ & πρόσωπα, on Ανά μέσο. Its toggle draws only this card again.
           const mmeCard = h('div', { class: 'c-12 card-col' })
-          if (mme.kind === 'data') {
+          if (tab === 'outlets' && mme.kind === 'data') {
             const mset = mme.data.sets.gr
             const MS = Mme.summary(mset, 0, mset.dates.length - 1)
             const paintMme = () => mmeCard.replaceChildren(Mme.StoriesCard(MS, { generic: mmeView.generic, onGeneric: (v) => { mmeView.generic = v; paintMme() } }))
             paintMme()
           }
-          grid.replaceChildren(reachCard, dailyCard, soloCard, tableCard, mmeCard)
+          if (tab === 'outlets') grid.replaceChildren(mmeCard)
+          else grid.replaceChildren(reachCard, dailyCard, soloCard, tableCard)
         }
         draw()
 

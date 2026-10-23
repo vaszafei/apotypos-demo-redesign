@@ -6,21 +6,21 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
-  <link rel="stylesheet" href="assets/app.css?v=17">
+  <link rel="stylesheet" href="assets/app.css?v=18">
   <link rel="stylesheet" href="assets/dash.css?v=69">
   <link rel="stylesheet" href="assets/mme.css?v=6">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
-  <script src="assets/messages.js?v=22"></script>
+  <script src="assets/messages.js?v=23"></script>
   <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/components.js?v=8"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/messages-mme.js?v=5"></script>
   <script src="assets/dash.js?v=13"></script>
   <script src="assets/mme.js?v=5"></script>
-  <script src="assets/shell.js?v=38"></script>
+  <script src="assets/shell.js?v=39"></script>
   <script src="data/fingerprints.js?v=2"></script>
   <script src="data/stanceRatings.js?v=2"></script>
   <script src="data/groups.js?v=2"></script>
@@ -28,8 +28,9 @@
   <script>
     // Πρόσωπα › Επισκόπηση (formerly Μέσα › Αποτυπώματα): dashboard of APO-161.
     // First «Τα πρόσωπα» and «Πώς παρουσιάζει κάθε μέσο τα πρόσωπα» of the live page ΜΜΕ & πρόσωπα (data/mme.js, the Greek outlets over the whole window), with its own tone and voice control.
-    // Then the 15 persons of the API: the strongest cells in a list and the range chart. The measure control (emphasis or stance) is in the top bar, on the right.
-    const { t, fmt, h, load } = App
+    // Πρόσωπα › Έμφαση και στάση (?tab=spread, #62): the 15 persons of the API, the strongest cells in a list and the range chart. The measure control (emphasis or stance) is in the top bar, on the right.
+    const { t, fmt, h, load, params } = App
+    const tab = params.get('tab') === 'spread' ? 'spread' : 'overview'
     const { fit, reset, NO_GROUP, card, cardHead, emptyText, TopBar } = Dash
     const sources = {
       persons: load('fingerprints', ['entities', 'sources', 'days', 'referenceDate'], (b) => b.sources),
@@ -192,7 +193,7 @@
 
     Shell.start({
       id: 'fingerprints',
-      route: '/fingerprints',
+      route: tab === 'spread' ? '/fingerprints/spread' : '/fingerprints',
       dash: true,
       title: () => t('fp.title'),
       breadcrumbs: () => [{ label: t('nav.people') }],
@@ -203,14 +204,18 @@
           const focused = [...document.querySelectorAll('.dash-bar .segmented button')].indexOf(document.activeElement)
           const m = personsModel()
           const measure = UI.SegmentedControl({ label: t('fp.mode'), value: state.mode, onChange: (mode) => { state.mode = mode; draw() }, options: ['attention', 'stance'].map((mode) => ({ value: mode, label: t(`fp.mode.${mode}`) })) })
-          const bar = TopBar({ title: t('nav.people'), actions: [measure], tabs, quiet: true })
-          if (m.failed) { content.replaceChildren(bar, UI.ErrorState({ onRetry: () => location.reload() }), protoNote()); return }
-          if (m.empty) { content.replaceChildren(bar, h('div', { class: 'dash-grid' }, card('c-12', cardHead(t('fp.matrix.title')), UI.EmptyState({ text: t('fp.empty') }))), protoNote()); return }
+          const bar = TopBar({ title: t('nav.people'), actions: tab === 'spread' ? [measure] : [], tabs, quiet: true })
+          if (m.failed || (tab === 'overview' && !mmeSummary)) { content.replaceChildren(bar, UI.ErrorState({ onRetry: () => location.reload() }), protoNote()); return }
+          if (m.empty && tab === 'spread') { content.replaceChildren(bar, h('div', { class: 'dash-grid' }, card('c-12', cardHead(t('fp.matrix.title')), UI.EmptyState({ text: t('fp.empty') }))), protoNote()); return }
 
-          // Row 1: the person cards and the people × outlets of the live page. Row 2: the strongest cells in a narrow column and the range chart.
+          // Επισκόπηση: the person cards and the people × outlets of the live page. Έμφαση και στάση: the strongest cells in a narrow column and the range chart.
           const personCards = mmeSummary ? Mme.PersonsCard(mmeSummary) : null
           const people = mmeSummary ? Mme.PeopleCard(mmeSummary, { mode: state.people, onMode: (mode) => { state.people = mode; draw() } }) : null
           if (people) people.append(h('p', { class: 'dcard-sub' }, t('mme.topics.window', { from: fmt.date(mmeSummary.set.dates[0]), to: fmt.date(mmeSummary.set.dates[mmeSummary.set.dates.length - 1]) })))
+          if (tab === 'overview') {
+            content.replaceChildren(bar, h('div', { class: 'dash-grid fp-people' }, personCards, people), protoNote())
+            return
+          }
           const strip = card('card-main', cardHead(t('f2.strip.persons'), h('span', { class: 'legend-inline' },
               h('span', {}, h('span', { class: 'swatch swatch-band' }), t('f2.strip.key.band')),
               h('span', {}, h('span', { class: 'swatch swatch-tick' }), t('f2.strip.key.median')),
@@ -218,7 +223,7 @@
             t('f2.strip.sub')), RangeChart(m))
           strip.append(h('p', { class: 'dcard-sub' }, m.note))
 
-          content.replaceChildren(bar, people ? h('div', { class: 'dash-grid fp-people' }, personCards, people) : null, h('div', { class: 'dash-grid dash-grid-side' }, CellList(m, 'top'), strip), protoNote())
+          content.replaceChildren(bar, h('div', { class: 'dash-grid dash-grid-side' }, CellList(m, 'top'), strip), protoNote())
           if (focused >= 0) document.querySelectorAll('.dash-bar .segmented button')[focused]?.focus()
         }
         draw()

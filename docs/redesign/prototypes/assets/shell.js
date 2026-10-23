@@ -6,19 +6,31 @@
   const PROTOTYPES = {
     '/': 'index.html',
     '/trends': 'topics-v2.html',
+    '/trends/time': 'topics-v2.html?tab=time',
+    '/trends/topic': 'topics-v2.html?tab=topic',
+    '/trends/agenda': 'topics-v2.html?tab=agenda',
     '/overton': 'overton-v2.html',
     '/stories': 'stories-v2.html',
+    '/stories/outlets': 'stories-v2.html?tab=outlets',
     '/echoes': 'stories-v2.html',
     '/similarity': 'similarity-v2.html',
     '/originality': 'similarity-v2.html#originality',
     '/campaigns': 'campaigns-v2.html',
     '/media': 'media-v2.html',
+    '/media/writing': 'media-v2.html?tab=writing',
     '/fingerprints': 'fingerprints-v2.html',
+    '/fingerprints/spread': 'fingerprints-v2.html?tab=spread',
     '/groups': 'groups-v2.html',
     '/analyze': 'groups-v2.html',
     '/elections': 'elections-v2.html',
+    '/elections/outlets': 'elections-v2.html?tab=outlets',
+    '/elections/owners': 'elections-v2.html?tab=owners',
+    '/elections/topics': 'elections-v2.html?tab=topics',
+    '/elections/bylines': 'elections-v2.html?tab=bylines',
     '/speeches': 'speeches-v2.html',
     '/contradictions': 'persons-v2.html',
+    '/contradictions/pairs': 'persons-v2.html?tab=pairs',
+    '/contradictions/checks': 'persons-v2.html?tab=checks',
     '/track': 'statements-v2.html',
     '/cases': 'cases-v2.html',
     '/war': 'war-v2.html',
@@ -39,24 +51,31 @@
   // Αναλύσεις & Ιδιοκτησία (/analyze) is not there: ownership is only Μέσα › Ιδιοκτησία, so /analyze opens that tab.
   // ΜΜΕ & πρόσωπα (/media) is not there: its content is Μέσα › Επισκόπηση. Θέματα (/trends) is a tab of Μέσα, not an item of its own.
   // Πρόσωπα is an item: its overview (/fingerprints), Δηλώσεις (/track, from Πολιτική) and Φάκελος προσώπου (/contradictions), which left Αναλύσεις.
-  // Ιστορίες has Υποθέσεις (/cases) and Μοτίβα διάδοσης (/campaigns), both from Πολιτική, so Πολιτική has only Εκλογές.
+  // Ιστορίες has Υποθέσεις (/cases) and Μοτίβα διάδοσης (/campaigns), both from Πολιτική.
+  // #62: each tab answers one question, shown under the tabs (question.<item>.<tab>). A new tab is a view of the file of its section (?tab=), so every old route opens the same file.
+  // Θέματα holds the topic pages as sub-tabs, Μετατοπίσεις (/overton) among them. Πολιτική splits the elections page into 5 tabs.
+  // A detail route names the tab that lists it: the back button and the trail of the page go there.
   const NAV = [
     { key: 'home', tabs: [['home', '/']] },
-    { key: 'media', tabs: [['overview', '/media'], ['topics', '/trends'], ['shifts', '/overton'], ['ownership', '/groups'], ['similarity', '/similarity']], details: ['/outlet', '/group', '/topic'] },
-    { key: 'spread', tabs: [['overview', '/stories'], ['cases', '/cases'], ['campaigns', '/campaigns']], details: ['/story'] },
-    { key: 'people', tabs: [['overview', '/fingerprints'], ['statements', '/track'], ['file', '/contradictions']] },
-    { key: 'politics', tabs: [['elections', '/elections']] },
+    { key: 'media', tabs: [['overview', '/media'], ['writing', '/media/writing'],
+      ['topics', '/trends', [['topics.overview', '/trends'], ['topics.time', '/trends/time'], ['topics.topic', '/trends/topic'], ['topics.agenda', '/trends/agenda'], ['shifts', '/overton']]],
+      ['ownership', '/groups'], ['similarity', '/similarity']], details: [['/outlet', '/media'], ['/group', '/groups'], ['/topic', '/trends']] },
+    { key: 'spread', tabs: [['overview', '/stories'], ['outlets', '/stories/outlets'], ['cases', '/cases'], ['campaigns', '/campaigns']], details: [['/story', '/stories']] },
+    { key: 'people', tabs: [['overview', '/fingerprints'], ['spread', '/fingerprints/spread'], ['statements', '/track'],
+      ['file', '/contradictions', [['file.overview', '/contradictions'], ['file.pairs', '/contradictions/pairs'], ['file.checks', '/contradictions/checks']]]] },
+    { key: 'politics', tabs: [['reach', '/elections'], ['outlets', '/elections/outlets'], ['owners', '/elections/owners'], ['topics', '/elections/topics'], ['bylines', '/elections/bylines']] },
     { key: 'world', tabs: [['speeches', '/speeches', [['speeches.all', '/speeches'], ['speeches.pi', '/un-israel-palestine']]],
       ['pi', '/narrative', [['pi.overview', '/narrative'], ['gaza', '/gaza'], ['israel', '/israel'], ['language', '/gaza-language']]],
       ['greekturkish', '/war'], ['coverage', '/coverage'], ['france', '/france-riots']] }
   ]
   const FOOTER = [['methodology', '/methodology'], ['about', '/about'], ['pages', null]]
 
+  const hasText = (key) => key in window.MESSAGES.el
   const under = (route, base) => route === base || (base !== '/' && route.startsWith(base + '/'))
   // The pages of an item: each tab, or the sub-tabs of a tab with sub-tabs. Each page is [key, route, parent tab].
   const pagesOf = (item) => item.tabs.flatMap((tab) => (tab[2] ? tab[2].map(([key, r]) => [key, r, tab]) : [[tab[0], tab[1], null]]))
   function itemOf (route) {
-    return NAV.find((item) => pagesOf(item).some(([, r]) => under(route, r)) || (item.details || []).some((r) => under(route, r)))
+    return NAV.find((item) => pagesOf(item).some(([, r]) => under(route, r)) || (item.details || []).some(([r]) => under(route, r)))
   }
   // The label of a page of an item: "Item › Tab" or "Item › Tab › Sub-tab". An item with one tab is "Item".
   function pageLabel (item, [key, , parent]) {
@@ -265,9 +284,10 @@
         i === all.length - 1 ? h('span', { 'aria-current': 'page' }, c.label) : h('a', { href: c.href }, c.label)))
 
       // The top bar of every page: the back button and the global search. Below 1024 px it also holds the menu button for the drawer.
-      // A detail page is a page of an item that is not one of its tabs. Its parent page is the tab that lists it: Ownership for a group, the first tab for the rest.
+      // A detail page is a page of an item that is not one of its tabs. Its parent page is the tab that lists it (NAV details), else the first tab.
       const detail = item && !exactTab
-      const parent = detail ? hrefOf(under(route, '/group') ? '/groups' : item.tabs[0][1]) : null
+      const parentRoute = detail && ((item.details || []).find(([r]) => under(route, r)) || [])[1]
+      const parent = detail ? hrefOf(parentRoute || item.tabs[0][1]) : null
       const header = h('header', { class: 'header-bar' }, h('div', { class: 'header-left' }, menuButton, detail ? BackButton(parent) : null))
       if (headerV2) mountV2({ item, header, detail, parent, title })
 
@@ -286,6 +306,9 @@
         ? h('nav', { class: 'sub-tabs', 'aria-label': t(`tab.${item.key}.${exactTab[0]}`) }, h('ul', {}, exactTab[2].map(([key, r]) =>
           h('li', {}, h('a', { href: hrefOf(r), 'aria-current': r === route ? 'page' : null }, t(`tab.${item.key}.${key}`))))))
         : null
+      // The question of the tab (or sub-tab): one line under the tabs.
+      const pageKey = exactTab && (exactTab[2] ? (exactTab[2].find(([, s]) => s === route) || exactTab[2][0])[0] : exactTab[0])
+      const question = tabBar && hasText(`question.${item.key}.${pageKey}`) ? h('p', { class: 'tab-question' }, t(`question.${item.key}.${pageKey}`)) : null
       // A dash page has its tabs in the center of the top bar. The other pages have them under the top bar.
       // An item with many tabs (more than 6) puts them on a second row of the top bar, so they do not push the page wider.
       if (dash && tabBar && !headerV2) { header.classList.add('has-tabs'); if (item.tabs.length > 6) header.classList.add('many-tabs'); header.append(tabBar) }
@@ -293,9 +316,9 @@
       if (headerV2) header.append(SearchToggle(header))
       const content = h('main', { class: 'content', id: 'content' })
       // v2: the tabs and the sub-tabs are one block of the page head. The page puts it under its title.
-      const pageTabs = headerV2 && tabBar ? h('div', { class: 'page-tabs' }, tabBar, subBar) : null
+      const pageTabs = headerV2 && tabBar ? h('div', { class: 'page-tabs' }, tabBar, subBar, question) : null
       const shell = h('div', { class: 'shell' }, sidebar, h('div', { class: 'drawer-scrim', onClick: () => setDrawer(false) }),
-        h('div', { class: 'main-column' }, header, headerV2 || dash ? null : tabBar, headerV2 ? null : subBar, headerV2 ? null : crumbBar, content, h('footer', { class: 'page-footer' }, t('site.footer'))))
+        h('div', { class: 'main-column' }, header, headerV2 || dash ? null : tabBar, headerV2 ? null : subBar, headerV2 ? null : question, headerV2 ? null : crumbBar, content, h('footer', { class: 'page-footer' }, t('site.footer'))))
 
       // The open drawer keeps the focus: the rest of the page is inert until the drawer closes.
       const mainColumn = shell.querySelector('.main-column')
@@ -313,11 +336,12 @@
       document.onkeydown = (e) => { if (e.key === 'Escape' && shell.classList.contains('drawer-open')) setDrawer(false) }
 
       root.replaceChildren(shell)
-      // A tab bar that scrolls sideways (phones) shows the current tab.
-      ;[tabBar, subBar].forEach((bar) => {
+      // A tab bar that scrolls sideways (phones) shows the current tab. v2 puts the bars in the page head, so it runs again after the page renders.
+      const centerTabs = () => [tabBar, subBar].forEach((bar) => {
         const nav = bar && bar.querySelector('[aria-current]')
-        if (nav && bar.scrollWidth > bar.clientWidth) bar.scrollLeft = nav.offsetLeft - (bar.clientWidth - nav.offsetWidth) / 2
+        if (nav && bar.scrollWidth > bar.clientWidth) bar.scrollLeft += nav.getBoundingClientRect().left - bar.getBoundingClientRect().left - (bar.clientWidth - nav.offsetWidth) / 2
       })
+      centerTabs()
       if (headerV2) {
         current = { section: item ? t(`nav.${item.key}`) : title(), tabs: pageTabs }
         // A tab page that draws no page head of its own gets the plain one: the tabs and the page tools. A section with one tab needs none.
@@ -326,6 +350,7 @@
           new MutationObserver(ensureHead).observe(content, { childList: true })
         }
         render(content, { tabs: pageTabs })
+        centerTabs()
         return
       }
       render(content, { tabs: dash ? null : tabBar })
@@ -389,5 +414,12 @@
       error ? h('p', { class: 'dash-error', role: 'alert' }, error) : null)
   }
 
-  window.Shell = { start, routeAnchor, hrefOf, itemOf, placeOf, PageHead, headerV2 }
+  // The tree of the sidebar: each item with its pages (label, link and question), for the table of pages.
+  function tree () {
+    return NAV.map((item) => ({ key: item.key, label: t(`nav.${item.key}`), pages: pagesOf(item).map((page) => ({
+      route: page[1], label: pageLabel(item, page), href: hrefOf(page[1]), question: hasText(`question.${item.key}.${page[0]}`) ? t(`question.${item.key}.${page[0]}`) : null
+    })) }))
+  }
+
+  window.Shell = { start, routeAnchor, hrefOf, itemOf, placeOf, tree, PageHead, headerV2 }
 })()

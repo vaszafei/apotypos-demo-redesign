@@ -6,7 +6,7 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
-  <link rel="stylesheet" href="assets/app.css?v=17">
+  <link rel="stylesheet" href="assets/app.css?v=18">
   <link rel="stylesheet" href="assets/dash.css?v=69">
   <link rel="stylesheet" href="assets/mme.css?v=6">
   <link rel="stylesheet" href="assets/date-range.css?v=3">
@@ -14,7 +14,7 @@
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
-  <script src="assets/messages.js?v=22"></script>
+  <script src="assets/messages.js?v=23"></script>
   <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-spread.js?v=13"></script>
   <script src="assets/messages-mme.js?v=5"></script>
@@ -23,12 +23,12 @@
   <script src="assets/dash.js?v=13"></script>
   <script src="assets/date-range.js?v=1"></script>
   <script src="assets/mme.js?v=5"></script>
-  <script src="assets/shell.js?v=38"></script>
+  <script src="assets/shell.js?v=39"></script>
   <script src="data/mme.js?v=1"></script>
   <script src="data/groups.js?v=2"></script>
   <script src="data/originality.js?v=1"></script>
   <script>
-    // Μέσα › Επισκόπηση: the dashboard of APO-161 with everything of the live page ΜΜΕ & πρόσωπα (apotypos.org/media).
+    // Μέσα › Επισκόπηση and Μέσα › Πώς γράφουν: the dashboard of APO-161 with everything of the live page ΜΜΕ & πρόσωπα (apotypos.org/media).
     // The data is the one of the live page (data/mme.js, scripts/make-mme.py): 29 Greek outlets and 10 Israeli outlets, summed for the period.
     // The top bar has the tabs, the set of outlets and the period. Each card holds one measure and one picture of it.
     const { t, fmt, h, load, params } = App
@@ -41,6 +41,8 @@
     const slugOfGroup = new Map(groupList.map((g) => [g.name, g.slug]))
     const colorOfGroup = Dash.groupColors(groupList)
 
+    // Two tabs (#62): Επισκόπηση (/media) and Πώς γράφουν (?tab=writing, /media/writing). Both have the set of outlets and the period.
+    const tab = params.get('tab') === 'writing' ? 'writing' : 'overview'
     // ?ds=il opens the Israeli set, as on the live page.
     const view = { set: params.get('ds') === 'il' ? 'il' : 'gr', from: null, to: null, sort: 'n' }
     let lastValid = null
@@ -126,7 +128,7 @@
 
     Shell.start({
       id: 'media',
-      route: '/media',
+      route: tab === 'writing' ? '/media/writing' : '/media',
       dash: true,
       title: () => t('nav.media'),
       breadcrumbs: () => [{ label: t('nav.media') }],
@@ -154,7 +156,7 @@
           setSelect.value = view.set
           const picker = UI.DateRangePicker({ dates, from: view.from, to: view.to, presets: Mme.presets(set), onChange: select })
           const setAction = Shell.headerV2 ? h('label', { class: 'set-select' }, h('span', { class: 'visually-hidden' }, t('mme.set')), setSelect) : null
-          const bar = TopBar({ title: `${t('nav.media')} · ${t('tab.media.overview')}`, tabs, actions: [setAction, picker], quiet: true })
+          const bar = TopBar({ title: `${t('nav.media')} · ${t(`tab.media.${tab}`)}`, tabs, actions: [setAction, picker], quiet: true })
 
           // Daily totals of all the outlets: the news are the topics with soft: false.
           const news = dates.map((_, d) => S.outlets.reduce((s, o) => s + set.od[o.k][d * 7 + 1], 0))
@@ -245,13 +247,14 @@
           ranking.setAttribute('aria-live', 'polite')
 
           // The cards of the live page that the dashboard did not have.
-          // The topic chips and «Ένα θέμα, όλα τα μέσα» are on the page Θέματα. «Οι ιστορίες του διαστήματος» is on the page Ιστορίες. «Τι ξεχωρίζει» is on Αρχική.
-          // «Η ατζέντα κάθε μέσου» is on Θέματα. «Τα πρόσωπα» and «Πώς παρουσιάζει κάθε μέσο τα πρόσωπα» are on Πρόσωπα.
+          // The topic chips and «Ένα θέμα, όλα τα μέσα» are on Θέματα › Ένα θέμα. «Οι ιστορίες του διαστήματος» is on Ιστορίες › Ανά μέσο. «Τι ξεχωρίζει» is on Αρχική.
+          // «Η ατζέντα κάθε μέσου» is on Θέματα › Ατζέντα μέσων. «Τα πρόσωπα» and «Πώς παρουσιάζει κάθε μέσο τα πρόσωπα» are on Πρόσωπα.
           const gov = Mme.GovCard(S)
 
-          content.replaceChildren(bar, h('div', { class: 'dash-grid' },
-            statOutlets, statArticles, statStories, statPeople,
-            ranking, h('div', { class: 'c-6 card-col' }, volume, scatterCard, bylineCard), h('div', { class: 'c-6 card-col' }, gov)), Mme.MethodNote(S), protoNote())
+          const cards = tab === 'writing'
+            ? [h('div', { class: 'c-6 card-col' }, scatterCard, bylineCard), h('div', { class: 'c-6 card-col' }, gov)]
+            : [statOutlets, statArticles, statStories, statPeople, ranking, h('div', { class: 'c-12 card-col' }, volume)]
+          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...cards), Mme.MethodNote(S), protoNote())
         }
         placeSetSelect()
         draw()
