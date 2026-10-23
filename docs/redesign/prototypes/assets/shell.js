@@ -125,9 +125,12 @@
   const headerV2 = readHeader() === 'v2'
   document.documentElement.dataset.header = headerV2 ? 'v2' : 'v1'
 
-  // The global search finds pages, groups, outlets and stories in the snapshot. A data file that the page does not load opens on the first search.
+  // The global search (#61): a compact button in the top bar that grows into a search over the whole site.
+  // It finds the pages and tabs, the outlets, groups and topics, the stories, cases and spread patterns, the people and statements,
+  // the parties and bylines of Πολιτική and the UN speeches. data/search.js (scripts/make-search.mjs) holds all but the pages: it loads on the first open.
   const fold = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/ς/g, 'σ')
-  // Most outlet and group names are in Latin letters, so a Greek query also matches in Latin letters ("πολιτ" finds "Politis").
+  // Most outlet and group names are in Latin letters, so a Greek query also matches in Latin letters ("πολιτ" finds "Politis"),
+  // and a Latin query matches a Greek name in Latin letters ("tsipras" finds "Τσίπρας").
   const LATIN = { α: 'a', β: 'v', γ: 'g', δ: 'd', ε: 'e', ζ: 'z', η: 'i', θ: 'th', ι: 'i', κ: 'k', λ: 'l', μ: 'm', ν: 'n', ξ: 'x', ο: 'o', π: 'p', ρ: 'r', σ: 's', τ: 't', υ: 'y', φ: 'f', χ: 'ch', ψ: 'ps', ω: 'o' }
   const latin = (s) => s.replace(/[α-ω]/g, (c) => LATIN[c] ?? c)
   function loadFixture (key) {
@@ -139,94 +142,294 @@
       document.head.append(script)
     })
   }
+  // The kinds in the order of the results. Each shows its best 3 to 6 and "Εμφάνιση όλων" for the rest.
+  const KINDS = ['pages', 'outlets', 'groups', 'topics', 'stories', 'cases', 'campaigns', 'people', 'statements', 'parties', 'bylines', 'speeches']
+  // "Εμφάνιση όλων" draws up to 300 of a kind: a query that finds more (one letter) asks for more letters.
+  const SHOW_ALL = 300
+  const LIMITS = { pages: 5, outlets: 5, groups: 3, topics: 4, stories: 6, cases: 3, campaigns: 3, people: 5, statements: 3, parties: 3, bylines: 3, speeches: 4 }
+  // A page or tab: its own name, and where it lives (the section, and the tab of a sub-tab).
   function pageEntries () {
-    return [...NAV.flatMap((item) => pagesOf(item).map((page) => ({ label: pageLabel(item, page), href: hrefOf(page[1]) }))),
-      ...FOOTER.filter(([, r]) => r).map(([key, r]) => ({ label: t(`nav.${key}`), href: hrefOf(r) }))]
+    const named = NAV.flatMap((item) => pagesOf(item).map((page) => {
+      const path = pageLabel(item, page).split(' › ')
+      return { kind: 'pages', n: path.pop(), where: path.join(' › '), h: hrefOf(page[1]) }
+    }))
+    return [...named, ...FOOTER.filter(([, r]) => r).map(([key, r]) => ({ kind: 'pages', n: t(`nav.${key}`), where: '', h: hrefOf(r) }))]
   }
-  function entityEntries (groups, stories) {
-    const name = (x) => x[window.App.locale] || x.el
-    const out = { groups: [], outlets: [], topics: [], stories: [] }
-    if (groups) {
-      groups.groups.forEach((g) => {
-        out.groups.push({ label: g.name, sub: g.owner, href: `group-v2.html?g=${encodeURIComponent(g.slug)}` })
-        g.outlets.forEach((o) => out.outlets.push({ label: o.name, sub: g.name, href: `outlet-v2.html?slug=${o.slug}` }))
-      })
-      ;(groups.ungrouped || []).forEach((o) => out.outlets.push({ label: o.name, sub: t('story.nogroup'), href: `outlet-v2.html?slug=${o.slug}` }))
-    }
-    if (stories) {
-      stories.issues.forEach((x, i) => out.topics.push({ label: name(x), href: `topic-v2.html?i=${i}` }))
-      stories.stories.filter((s) => !s.generic).sort((a, b) => b.outlets - a.outlets)
-        .forEach((s) => out.stories.push({ label: name(s), sub: name(stories.issues[s.issue]), href: `story-v2.html?id=${s.id}` }))
-    }
+  // The entries of the index, in the language of the page. The place of an entry is the page that lists it.
+  function indexEntries (index) {
+    const name = (x) => (window.App.locale === 'en' && x.en) || x.n
+    const topics = index.kinds.topics
+    const where = (x) => [placeOf(x.r), x.s && t(`shell.search.set.${x.s}`)].filter(Boolean).join(' · ')
+    const out = {}
+    for (const kind of KINDS.slice(1)) out[kind] = (index.kinds[kind] || []).map((x) => ({ kind, n: name(x), d: x.d, h: x.h, where: where(x), alt: [x.n, x.en, ...(x.a || [])] }))
+    const storyWhere = placeOf('/stories')
+    out.stories.unshift(...index.storyRows.map(([id, el, issue, outlets, en]) =>
+      ({ kind: 'stories', n: (window.App.locale === 'en' && en) || el, d: topics[issue] && name(topics[issue]), h: `story-v2.html?id=${id}`, where: storyWhere, alt: [el, en], outlets })))
     return out
   }
-  const LIMITS = { pages: 4, groups: 4, outlets: 6, topics: 4, stories: 6 }
-  function match (entries, query, limit) {
+  function keysOf (e) {
+    if (!e.key) {
+      e.key = fold([e.n, e.where && e.kind === 'pages' ? e.where : '', ...(e.alt || [])].filter(Boolean).join(' '))
+      e.latinKey = latin(e.key)
+    }
+    return e
+  }
+  // All the hits of a query, the best first: a name that starts with the query, then a word that starts with it, then the rest.
+  function match (entries, query) {
     const words = fold(query).split(/\s+/).filter(Boolean)
     const latinWords = words.map(latin)
     const hits = []
     for (const e of entries) {
-      const key = e.key || (e.key = fold(e.label))
-      const found = [words, latinWords].find((list) => list.every((w) => key.includes(w)))
-      if (!found) continue
-      hits.push({ e, rank: key.startsWith(found[0]) ? 0 : 1 })
-      if (hits.length >= limit * 8) break
+      keysOf(e)
+      const key = [[words, e.key], [latinWords, e.key], [words, e.latinKey]].find(([list, k]) => list.every((w) => k.includes(w)))
+      if (!key) continue
+      const [list, k] = key
+      hits.push({ e, rank: k.startsWith(list[0]) ? 0 : k.includes(' ' + list[0]) ? 1 : 2 })
     }
-    return hits.sort((a, b) => a.rank - b.rank).slice(0, limit).map((x) => x.e)
+    return hits.sort((a, b) => a.rank - b.rank).map((x) => x.e)
   }
+
+  // The last pages and searches of the visitor, in this browser only.
+  const RECENT_KEY = 'proto-search-recent'
+  function readRecent () {
+    try { const r = JSON.parse(localStorage.getItem(RECENT_KEY)); return { pages: r?.pages || [], queries: r?.queries || [] } } catch { return { pages: [], queries: [] } }
+  }
+  function remember (kind, value, same) {
+    const recent = readRecent()
+    recent[kind] = [value, ...recent[kind].filter((x) => !same(x))].slice(0, 6)
+    try { localStorage.setItem(RECENT_KEY, JSON.stringify(recent)) } catch {}
+  }
+  const hereHref = () => location.pathname.split('/').pop() + location.search
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+  const token = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+  let searchOverlay = null
 
   function GlobalSearch () {
     const pages = pageEntries()
     let entities = null
     let loading = null
+    let failed = false
     let options = []
     let active = -1
+    let expanded = new Set()
+    const limits = {}
+    let isOpen = false
+    let motion = []
     const listId = 'global-search-list'
+    const panelId = 'global-search-panel'
+
+    // Collapsed: the button. Its place in the bar stays the same when the search opens, so the page does not move.
+    const button = h('button', {
+      type: 'button', class: 'search-button', 'aria-label': t('shell.search'), title: t('shell.search'),
+      'aria-haspopup': 'dialog', 'aria-expanded': 'false', 'aria-controls': panelId, 'aria-keyshortcuts': '/'
+    }, Icon('magnifying-glass', 'icon search-button-icon'), h('span', { class: 'search-button-label', 'aria-hidden': 'true' }, t('shell.search')),
+    h('kbd', { class: 'global-search-key', 'aria-hidden': 'true' }, '/'))
+    const box = h('div', { class: 'global-search' }, button)
+
+    // Open: the field, the results and a short line of keys, over a light scrim.
     const input = h('input', {
       type: 'search', class: 'global-search-input', placeholder: t('shell.search.placeholder'), 'aria-label': t('shell.search'),
-      role: 'combobox', 'aria-expanded': 'false', 'aria-controls': listId, 'aria-autocomplete': 'list', autocomplete: 'off', spellcheck: 'false'
+      role: 'combobox', 'aria-expanded': 'false', 'aria-controls': listId, 'aria-autocomplete': 'list', autocomplete: 'off', spellcheck: 'false', enterkeyhint: 'go'
     })
-    const list = h('div', { class: 'global-search-list', id: listId, role: 'listbox', hidden: true })
-    const box = h('div', { class: 'global-search', role: 'search' }, Icon('magnifying-glass', 'icon global-search-icon'), input,
-      headerV2 ? h('kbd', { class: 'global-search-key', 'aria-hidden': 'true' }, '/') : null, list)
+    const closeButton = h('button', { type: 'button', class: 'search-close', 'aria-label': t('shell.search.close'), title: t('shell.search.close') }, Icon('x-mark', 'icon'))
+    const list = h('div', { class: 'global-search-list', id: listId, role: 'listbox', 'aria-label': t('shell.search') })
+    const status = h('div', { class: 'visually-hidden', role: 'status' })
+    const panel = h('div', { class: 'search-panel', id: panelId, role: 'dialog', 'aria-label': t('shell.search'), hidden: true },
+      h('div', { class: 'search-field' }, Icon('magnifying-glass', 'icon global-search-icon'), input, closeButton),
+      list, status, h('p', { class: 'search-keys', 'aria-hidden': 'true' }, t('shell.search.keys')))
+    const scrim = h('div', { class: 'search-scrim', hidden: true })
+    // A new language mounts the shell again: the old search leaves the page.
+    searchOverlay?.forEach((el) => el.remove())
+    searchOverlay = [scrim, panel]
+    document.body.append(scrim, panel)
 
     function ensure () {
-      if (!loading) loading = Promise.all([loadFixture('groups'), loadFixture('stories')]).then(([g, s]) => { entities = entityEntries(g, s); render() })
+      if (loading) return
+      loading = loadFixture('search').then((index) => {
+        if (index) entities = indexEntries(index)
+        else failed = true
+        if (isOpen) render()
+      })
     }
+
     function setActive (i) {
       active = i
       options.forEach((el, k) => el.setAttribute('aria-selected', String(k === i)))
       input.setAttribute('aria-activedescendant', i >= 0 ? options[i].id : '')
       if (i >= 0) options[i].scrollIntoView({ block: 'nearest' })
     }
-    function close () { list.hidden = true; input.setAttribute('aria-expanded', 'false'); setActive(-1) }
-    function render () {
-      const query = input.value.trim()
-      if (!query) { close(); return }
-      const sections = [['pages', match(pages, query, LIMITS.pages)]]
-      if (entities) ['groups', 'outlets', 'topics', 'stories'].forEach((k) => sections.push([k, match(entities[k], query, LIMITS[k])]))
-      let n = 0
-      const blocks = sections.filter(([, hits]) => hits.length).map(([k, hits]) => h('div', { class: 'global-search-group', role: 'group', 'aria-label': t(`shell.search.${k}`) },
-        h('div', { class: 'global-search-kind', 'aria-hidden': 'true' }, t(`shell.search.${k}`)),
-        hits.map((e) => h('a', { class: 'global-search-option', id: `gs-${n++}`, role: 'option', href: e.href, 'aria-selected': 'false' },
-          h('span', { class: 'global-search-label' }, e.label), e.sub ? h('span', { class: 'global-search-sub' }, e.sub) : null))))
-      const note = !entities ? h('p', { class: 'global-search-note' }, t('shell.search.loading'))
-        : blocks.length ? null : h('p', { class: 'global-search-note' }, t('shell.search.none', { q: query }))
-      list.replaceChildren(...blocks, ...(note ? [note] : []))
-      options = [...list.querySelectorAll('[role="option"]')]
-      list.hidden = false
-      input.setAttribute('aria-expanded', 'true')
-      setActive(options.length ? 0 : -1)
+
+    let n = 0
+    function option (e) {
+      const where = [t(`shell.search.one.${e.kind}`), e.where].filter(Boolean).join(' · ')
+      return h('a', { class: 'global-search-option', id: `gs-${n++}`, role: 'option', href: e.h, tabindex: '-1', 'aria-selected': 'false' },
+        h('span', { class: 'global-search-name' }, h('span', { class: 'global-search-label' }, e.n), e.d ? h('span', { class: 'global-search-sub' }, e.d) : null),
+        h('span', { class: 'global-search-where' }, where))
     }
-    input.addEventListener('focus', ensure)
-    input.addEventListener('input', () => { ensure(); render() })
+    // A group of results: the kind, the count, the best ones and "Εμφάνιση όλων" for the rest.
+    function section (key, label, hits, limit) {
+      const all = expanded.has(key)
+      limits[key] = limit
+      const shown = hits.slice(0, all ? SHOW_ALL : limit)
+      const labelId = `gs-kind-${key}`
+      return h('div', { class: 'global-search-group', role: 'group', 'aria-labelledby': labelId },
+        h('div', { class: 'global-search-kind', id: labelId }, h('span', {}, label), h('span', { class: 'global-search-count' }, fmtInt(hits.length))),
+        shown.map(option),
+        hits.length > shown.length && !all
+          ? h('div', { class: 'global-search-option global-search-more', id: `gs-${n++}`, role: 'option', tabindex: '-1', 'aria-selected': 'false', 'data-more': key }, t('shell.search.all', { n: fmtInt(hits.length) }))
+          : null,
+        all && hits.length > shown.length ? h('p', { class: 'global-search-note' }, t('shell.search.more', { n: fmtInt(shown.length), total: fmtInt(hits.length) })) : null)
+    }
+    const fmtInt = (x) => window.App.fmt.int(x)
+    const note = (text) => h('p', { class: 'global-search-note' }, text)
+    const loadingNote = () => h('div', { class: 'global-search-loading' }, h('span', { class: 'skeleton' }), h('span', { class: 'skeleton' }), note(t('shell.search.loading')))
+
+    // Before typing: the last pages and searches of the visitor, then the stories in the most outlets and the groups.
+    function renderStart () {
+      const recent = readRecent()
+      const here = hereHref()
+      const recentPages = recent.pages.filter((p) => p.h !== here).slice(0, 4).map((p) => {
+        const page = pages.find((x) => x.h === p.h)
+        return page || { kind: 'pages', n: p.n, where: p.r ? placeOf(p.r) : '', h: p.h }
+      })
+      const queries = recent.queries.slice(0, 4)
+      const blocks = []
+      if (recentPages.length) blocks.push(section('recent-pages', t('shell.search.recent.pages'), recentPages, 4))
+      if (queries.length) {
+        blocks.push(h('div', { class: 'global-search-group', role: 'group', 'aria-labelledby': 'gs-kind-recent-queries' },
+          h('div', { class: 'global-search-kind', id: 'gs-kind-recent-queries' }, h('span', {}, t('shell.search.recent.queries'))),
+          queries.map((q) => h('div', { class: 'global-search-option is-query', id: `gs-${n++}`, role: 'option', tabindex: '-1', 'aria-selected': 'false', 'data-query': q },
+            Icon('magnifying-glass', 'icon icon-sm'), h('span', { class: 'global-search-label' }, q)))))
+      }
+      if (entities) {
+        blocks.push(section('suggest-stories', t('shell.search.suggest.stories'), entities.stories.filter((s) => s.outlets).slice(0, 5), 5))
+        blocks.push(section('suggest-groups', t('shell.search.groups'), entities.groups, 4))
+      } else blocks.push(failed ? note(t('shell.search.failed')) : loadingNote())
+      return blocks
+    }
+
+    function render () {
+      n = 0
+      const query = input.value.trim()
+      let blocks
+      let count = null
+      if (!query) blocks = renderStart()
+      else {
+        const sections = [['pages', match(pages, query)]]
+        if (entities) KINDS.slice(1).forEach((k) => sections.push([k, match(entities[k], query)]))
+        const found = sections.filter(([, hits]) => hits.length)
+        count = found.reduce((s, [, hits]) => s + hits.length, 0)
+        blocks = found.map(([k, hits]) => section(k, t(`shell.search.${k}`), hits, LIMITS[k]))
+        if (!entities) blocks.push(failed ? note(t('shell.search.failed')) : loadingNote())
+        else if (!found.length) blocks.push(note(t('shell.search.none', { q: query })))
+      }
+      list.replaceChildren(...blocks)
+      options = [...list.querySelectorAll('[role="option"]')]
+      input.setAttribute('aria-expanded', String(options.length > 0))
+      setActive(query && options.length ? 0 : -1)
+      status.textContent = count == null ? '' : count === 1 ? t('shell.search.count.one') : count ? t('shell.search.count', { n: fmtInt(count) }) : t('shell.search.none', { q: query })
+    }
+
+    // The panel sits over the button: centered on it on a wide screen, the full width of the screen on a phone (CSS).
+    function place () {
+      if (smallScreen.matches) { panel.style.left = panel.style.top = panel.style.width = ''; return }
+      const b = button.getBoundingClientRect()
+      const width = Math.min(640, window.innerWidth - 32)
+      panel.style.width = `${width}px`
+      panel.style.left = `${Math.max(16, Math.min(b.left + b.width / 2 - width / 2, window.innerWidth - 16 - width))}px`
+      panel.style.top = `${Math.max(8, b.top - 4)}px`
+    }
+    // The button grows into the panel and the panel shrinks back into the button: transform and opacity only.
+    // With reduced motion the panel only fades.
+    function morph (opening) {
+      motion.forEach((a) => a.cancel())
+      const from = button.getBoundingClientRect()
+      const to = panel.getBoundingClientRect()
+      const small = { opacity: 0 }
+      const big = { opacity: 1 }
+      if (!reduceMotion.matches) {
+        small.transform = `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width}, ${from.height / to.height})`
+        big.transform = 'none'
+      }
+      const timing = { duration: parseFloat(token('--motion-base')) || 0, easing: token(opening ? '--ease-out' : '--ease-in-out'), fill: 'both' }
+      motion = [
+        panel.animate(opening ? [small, big] : [big, small], timing),
+        scrim.animate(opening ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }], timing),
+        button.animate(opening ? [{ opacity: 1 }, { opacity: 0 }] : [{ opacity: 0 }, { opacity: 1 }], { ...timing, duration: parseFloat(token('--motion-fast')) || 0 })
+      ]
+      return motion[0].finished.catch(() => null)
+    }
+
+    function open () {
+      if (isOpen) { input.focus(); return }
+      isOpen = true
+      ensure()
+      expanded = new Set()
+      input.value = ''
+      panel.hidden = scrim.hidden = false
+      box.classList.add('is-open')
+      button.setAttribute('aria-expanded', 'true')
+      place()
+      render()
+      input.focus()
+      morph(true).then(() => { if (isOpen) motion.forEach((a) => a.cancel()) })
+    }
+    function close ({ focus = true } = {}) {
+      if (!isOpen) return
+      isOpen = false
+      button.setAttribute('aria-expanded', 'false')
+      input.setAttribute('aria-expanded', 'false')
+      if (focus) button.focus({ preventScroll: true })
+      morph(false).then(() => {
+        if (isOpen) return
+        panel.hidden = scrim.hidden = true
+        box.classList.remove('is-open')
+        motion.forEach((a) => a.cancel())
+      })
+    }
+    // Choose: open a result, show all of a kind, or search a recent query again.
+    function choose (el) {
+      if (el.dataset.more) {
+        // The first of the rest becomes the active result.
+        const kind = el.dataset.more
+        expanded.add(kind)
+        render()
+        const rows = options.filter((o) => o.parentElement.getAttribute('aria-labelledby') === `gs-kind-${kind}`)
+        setActive(options.indexOf(rows[limits[kind]] || rows[0]))
+        input.focus()
+        return
+      }
+      if (el.dataset.query) { input.value = el.dataset.query; render(); input.focus(); return }
+      const query = input.value.trim()
+      if (query) remember('queries', query, (q) => fold(q) === fold(query))
+      close({ focus: false })
+      location.href = el.getAttribute('href')
+    }
+
+    button.addEventListener('click', open)
+    closeButton.addEventListener('click', () => close())
+    scrim.addEventListener('click', () => close({ focus: false }))
+    input.addEventListener('input', () => { expanded = new Set(); render() })
+    list.addEventListener('mousedown', (e) => e.preventDefault())
+    list.addEventListener('click', (e) => {
+      const el = e.target.closest('[role="option"]')
+      if (!el || e.ctrlKey || e.metaKey || e.shiftKey) return
+      e.preventDefault()
+      choose(el)
+    })
     input.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowDown' && options.length) { e.preventDefault(); setActive((active + 1) % options.length) }
       else if (e.key === 'ArrowUp' && options.length) { e.preventDefault(); setActive((active - 1 + options.length) % options.length) }
-      else if (e.key === 'Enter' && active >= 0) { e.preventDefault(); location.href = options[active].href }
-      else if (e.key === 'Escape') { if (!list.hidden) { e.stopPropagation(); close() } else input.value = '' }
+      else if (e.key === 'Enter' && active >= 0) { e.preventDefault(); choose(options[active]) }
     })
-    box.addEventListener('focusout', (e) => { if (!box.contains(e.relatedTarget)) close() })
+    // Esc closes from anywhere in the panel. Tab moves between the field and the close button; the focus stays in the panel while it is open.
+    panel.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close() }
+      else if (e.key === 'Tab') { e.preventDefault(); (document.activeElement === input ? closeButton : input).focus() }
+    })
+    window.addEventListener('resize', () => { if (isOpen) place() })
+    box.open = open
     return box
   }
 
@@ -241,6 +444,9 @@
 
   function start ({ id, route, title, breadcrumbs, render, dash = false }) {
     const root = document.getElementById('app')
+    // The search lists the last pages of the visitor.
+    const here = hereHref()
+    remember('pages', { h: here, n: title(), r: route }, (p) => p.h === here)
 
     function mount () {
       document.documentElement.lang = window.App.locale
@@ -310,7 +516,6 @@
       // An item with many tabs (more than 6) puts them on a second row of the top bar, so they do not push the page wider.
       if (dash && tabBar && !headerV2) { header.classList.add('has-tabs'); if (item.tabs.length > 6) header.classList.add('many-tabs'); header.append(tabBar) }
       header.append(GlobalSearch())
-      if (headerV2) header.append(SearchToggle(header))
       const content = h('main', { class: 'content', id: 'content' })
       // v2: the tabs and the sub-tabs are one block of the page head. The page puts it under its title.
       const pageTabs = headerV2 && tabBar ? h('div', { class: 'page-tabs' }, tabBar, subBar) : null
@@ -369,23 +574,14 @@
         h('li', {}, i > 0 && Icon('chevron-right', 'icon icon-sm'), i === all.length - 1 ? h('span', { 'aria-current': 'page' }, c.label) : h('a', { href: c.href }, c.label))))))
     }
   }
-  // On a phone the search is an icon button. It opens the field over the top bar.
-  function SearchToggle (header) {
-    const button = h('button', { type: 'button', class: 'icon-button search-toggle', 'aria-label': t('shell.search'), 'aria-expanded': 'false' }, Icon('magnifying-glass'))
-    const set = (open) => { header.classList.toggle('search-open', open); button.setAttribute('aria-expanded', String(open)); if (open) header.querySelector('.global-search-input').focus() }
-    button.addEventListener('click', () => set(true))
-    header.addEventListener('focusout', (e) => { if (!header.contains(e.relatedTarget) && !header.querySelector('.global-search-input').value) set(false) })
-    return button
-  }
   // The "/" key opens the search from anywhere on the page.
-  if (headerV2) {
-    document.addEventListener('keydown', (e) => {
-      if (e.key !== '/' || e.target.closest('input, textarea, select, [contenteditable]')) return
-      e.preventDefault()
-      const header = document.querySelector('.header-bar')
-      header.querySelector('.search-toggle')?.offsetParent ? header.querySelector('.search-toggle').click() : header.querySelector('.global-search-input').focus()
-    })
-  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey || e.target.closest('input, textarea, select, [contenteditable]')) return
+    const search = document.querySelector('.header-bar .global-search')
+    if (!search) return
+    e.preventDefault()
+    search.open()
+  })
   // The page head (v2): the title and the page actions on one row, the tabs and sub-tabs under them, the filters of the tab last.
   // Page actions change the whole page: the period, the set of outlets, a view switch. Filters narrow the content of one tab.
   // The tools of every page, after its actions: how it is measured, copy the link, download the data (prototype: the download is not built).
