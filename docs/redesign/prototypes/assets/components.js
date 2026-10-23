@@ -187,7 +187,8 @@
   // - A column is 70% of its slot and 32 px wide at most, with round top corners (4 px). The parts of a stacked column have a gap of 1 px.
   // - The value axis has 4 to 5 grid lines and 12 px labels on the left. A date axis keeps 64 px or more between two labels.
   // - The caller formats the values (fmt.int for counts, fmt.pct for shares). In a list the value is on the line of the label,
-  //   on the right, and the bar is under them. In a table cell the value is on the left of the bar.
+  //   on the right, and the bar is under them; in a list 440 px wide or more the bar is between them (#60). In a table cell the value is on the left of the bar.
+  // - Each chart shows what it says (#60): a column chart labels its highest column, and a reference value (an average) is a tick or a dashed line with its key.
   // - Hover shows the shared tooltip. The same text is the label for a screen reader.
   // - Legend: Legend() above the bars, a swatch of 10 px for each color.
   // - Empty: a value of 0 shows the track only. A stacked bar under minN shows a text. A chart with no value is the page's EmptyState.
@@ -253,19 +254,27 @@
     return h('div', { class: 'bar-group' }, bars.map((b) => HBar(b.value, max, { color: b.color, label: b.label })))
   }
 
-  // BarList: rows with a label, a value on the right and a bar under them.
+  // BarList: rows with a label, a value on the right and a bar under them. In a list 440 px wide or more (app.css), the bar is
+  // between the label and the value, on the same line, and the bars of all rows start and end at the same place.
   // rows: [{ label, sub, value, text, color, marker, tip, bar, bars, cls, title, onClick, pressed }]. text: the value as shown (fmt.int of value if none).
   // onClick: the row is a button that picks a filter, pressed when the filter is on.
   // bar: another bar of this file (a DivergingBar, a StackedBar). bars: [{ value, color, label }], two or more values to compare, one bar each.
-  function BarList (rows, { max, cls } = {}) {
-    const top = max ?? Math.max(...rows.flatMap((r) => (r.bars ? r.bars.map((b) => b.value) : [r.value || 0])), 1)
+  // reference: { value, label }, a reference value (an average) as a tick on each bar of one value, with its key above the list (none without a label).
+  // columns: a long list runs in this number of columns, side by side where they fit (360 px or more each), one under the other where not.
+  function BarList (rows, { max, cls, reference, columns } = {}) {
+    const top = max ?? Math.max(...rows.flatMap((r) => (r.bars ? r.bars.map((b) => b.value) : [r.value || 0])), reference ? reference.value : 0, 1)
     const button = (r) => (r.onClick ? { tabindex: 0, role: 'button', 'aria-pressed': r.pressed === undefined ? null : String(r.pressed), onKeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); r.onClick() } } } : {})
-    return h('ul', { class: cls ? `bar-list ${cls}` : 'bar-list' }, rows.map((r) => h('li', { class: [r.cls, r.onClick && 'is-pick', r.pressed && 'is-picked'].filter(Boolean).join(' ') || null, onClick: r.onClick, title: r.title, ...button(r) },
+    const list = (part) => h('div', { class: 'bar-box' }, h('ul', { class: cls ? `bar-list ${cls}` : 'bar-list' }, part.map((r) => h('li', { class: [r.cls, r.onClick && 'is-pick', r.pressed && 'is-picked'].filter(Boolean).join(' ') || null, onClick: r.onClick, title: r.title, ...button(r) },
       h('span', { class: 'row-name', title: typeof r.label === 'string' ? r.label : null }, r.label, r.sub ? h('span', { class: 'row-sub' }, r.sub) : null),
       h('span', { class: 'row-value' }, r.text ?? fmt.int(r.value)),
       r.bar ?? (r.bars
         ? BarGroup(r.bars, top)
-        : HBar(r.value, top, { color: r.color, marker: r.marker, label: r.tip })))))
+        : HBar(r.value, top, { color: r.color, marker: r.marker ?? reference?.value, label: r.tip }))))))
+    const size = columns > 1 ? Math.ceil(rows.length / columns) : rows.length
+    const parts = []
+    for (let i = 0; i < rows.length || !parts.length; i += size || 1) parts.push(rows.slice(i, i + size))
+    const body = parts.length > 1 ? h('div', { class: 'bar-cols' }, parts.map(list)) : list(parts[0])
+    return reference?.label ? h('div', { class: 'bar-list-wrap' }, Legend([{ label: reference.label, tick: true }]), body) : body
   }
 
   // A column with phone: false is hidden below 640 px.
@@ -318,7 +327,9 @@
   // Variants with a real need: max (a fixed top, 1 for shares), colorOf(i) (a column in another color), markers (a number above a column),
   // muted(i) (outside the chosen period), flagged(i) (a gap in the data), onPick(n)/picked (a click on a column picks it),
   // onSelect({ from, to }) (a drag over the days picks a period), minWidth (below 720 px the chart keeps this width and scrolls).
-  function BarChart ({ values, series, dates, labels, below, axisLabel, height = 220, label, tooltipOf, valueFormat = fmt.int, max, colorOf, topLabels, markers = {}, muted, flagged, picked = null, onPick, onSelect, minWidth }) {
+  // The highest column has its value above it (peak: false leaves it out, topLabels replace it). reference: { value, label }, a reference value
+  // (an average, the previous period) as a dashed line across the columns, with its label on the right of the columns.
+  function BarChart ({ values, series, dates, labels, below, axisLabel, height = 220, label, tooltipOf, valueFormat = fmt.int, max, colorOf, topLabels, markers = {}, muted, flagged, picked = null, onPick, onSelect, minWidth, peak = true, reference }) {
     const n = (dates || labels).length
     const parts = series || [{ name: label, values }]
     const totals = Array.from({ length: n }, (_, i) => parts.reduce((a, s) => a + (s.values[i] || 0), 0))
@@ -331,7 +342,11 @@
       const width = Math.floor(holder.getBoundingClientRect().width)
       if (!width) return
       const hasMarks = Object.keys(markers).length > 0
-      const pad = { top: (hasMarks ? 26 : 0) + (topLabels ? 18 : 0) + 12, right: 8, bottom: axisLabel ? 40 : 24, left: 44 }
+      // The peak: the highest total, on up to 3 columns that share it.
+      const highest = Math.max(...totals)
+      const peaks = peak && !topLabels && highest > 0 ? totals.map((v, i) => (v === highest ? i : -1)).filter((i) => i >= 0) : []
+      const peakAt = new Set(peaks.length <= 3 ? peaks : peaks.slice(0, 1))
+      const pad = { top: (hasMarks ? 26 : 0) + (topLabels || peakAt.size ? 18 : 0) + 12, right: reference ? Math.max(8, String(reference.label).length * 7 + 10) : 8, bottom: axisLabel ? 40 : 24, left: 44 }
       const step = niceStep((max ?? Math.max(...totals, 1)) / 4)
       const top = max ?? Math.ceil(Math.max(...totals, 1) / step) * step
       const plotW = width - pad.left - pad.right
@@ -376,6 +391,8 @@
         svg.append(col)
         cols.push(col)
         if (topLabels && topLabels[i]) svg.append(h('text', { class: 'bar-top', x: x + slot / 2, y: y(totals[i]) - 6, 'text-anchor': 'middle' }, topLabels[i]))
+        // The value of the peak stays inside the plot when its column is at an edge.
+        if (peakAt.has(i) && markers[i] === undefined) svg.append(h('text', { class: 'bar-top', x: Math.min(width - pad.right, Math.max(pad.left, x + slot / 2)), y: y(totals[i]) - 6, 'text-anchor': x + slot / 2 < pad.left + 16 ? 'start' : x + slot / 2 > width - pad.right - 16 ? 'end' : 'middle' }, valueFormat(totals[i])))
         if (markers[i] !== undefined) {
           const cy = y(totals[i]) - (topLabels && topLabels[i] ? 30 : 13)
           svg.append(h('circle', { class: 'bar-mark', cx: x + slot / 2, cy, r: 9 }), h('text', { class: 'bar-mark-text', x: x + slot / 2, y: cy + 4, 'text-anchor': 'middle' }, String(markers[i])))
@@ -384,6 +401,11 @@
           const text = dates ? fmt.date(dates[i], { day: 'numeric', month: 'short' }) : labels[i]
           svg.append(h('text', { class: sel === i ? 'is-picked' : null, x: x + slot / 2, y: pad.top + plotH + 16, 'text-anchor': 'middle' }, text))
         }
+      }
+      if (reference && reference.value > 0) {
+        const ry = y(reference.value)
+        svg.append(h('line', { class: 'bar-ref', x1: pad.left, x2: width - pad.right, y1: ry, y2: ry }),
+          h('text', { class: 'bar-ref-text', x: width - pad.right + 6, y: ry + 4, 'text-anchor': 'start' }, reference.label))
       }
       if (axisLabel) svg.append(h('text', { class: 'axis-title', x: pad.left + plotW / 2, y: height - 4, 'text-anchor': 'middle' }, axisLabel))
       const indexAt = (e) => Math.min(n - 1, Math.max(0, Math.floor((e.clientX - svg.getBoundingClientRect().left - pad.left) / slot)))

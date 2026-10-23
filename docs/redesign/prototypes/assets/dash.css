@@ -70,7 +70,8 @@
 .dash-grid-side { grid-template-columns: 232px minmax(0, 1fr); }
 .dash-grid-side > .card-side, .dash-grid-side > .card-main { grid-column: auto; }
 .dash-grid-side > .card-wide { grid-column: 1 / -1; }
-.card-side .bar-list { flex: 1; align-content: space-between; }
+.card-side .bar-box { flex: 1; display: grid; }
+.card-side .bar-list { align-content: space-between; }
 .card-col { min-width: 0; display: flex; flex-direction: column; gap: var(--space-3); }
 
 .dcard { position: relative; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding: var(--space-3) 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-raised); }
@@ -243,11 +244,12 @@
 
 /* Story page (News spread). */
 .rows-caption { margin: var(--space-2) 0 0; font-size: var(--text-caption); font-weight: 600; color: var(--text-secondary); }
+.rows-caption .swatch-tick { display: inline-block; vertical-align: -2px; }
 .nowrap { white-space: nowrap; }
 .reach { display: inline-flex; align-items: center; gap: 3px; }
 .reach .dot { width: 9px; height: 9px; }
 .reach-n { margin-left: var(--space-2); font-size: var(--text-caption); color: var(--text-secondary); }
-@media (max-width: 640px) { .dcard-head { flex-wrap: wrap; } }
+@media (max-width: 640px) { .dcard-head { flex-wrap: wrap; } .dcard-head > .dcard-title { flex: 1 1 12em; min-width: 0; } }
 .clip { display: block; max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Campaigns: a row of a detector list. The row opens to show its numbers and the headlines. */
@@ -380,6 +382,8 @@
 .minimal .dcard { gap: 10px; padding: 16px 18px; border: 1px solid #e4e0d6; border-radius: 14px; background: var(--surface-raised); box-shadow: 0 1px 0 rgba(17, 17, 17, 0.03), 0 12px 28px -18px rgba(17, 17, 17, 0.3); }
 .minimal .dcard-title { font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); }
 .minimal .dcard-title::before { content: "/"; display: inline; width: auto; height: auto; margin-right: 6px; border-radius: 0; background: none; color: var(--ink); vertical-align: baseline; }
+.minimal .dcard-title:has(> .is-finding) { font-size: var(--text-small); font-weight: 600; letter-spacing: 0; text-transform: none; line-height: 1.35; }
+@media (max-width: 719px) { .minimal .dcard { padding: 12px 14px; } }
 /* Every link in a table or a list has the same quiet look. */
 .minimal .data-table a, .minimal .rows a, .minimal .entity-link { color: var(--text-primary); text-decoration-color: var(--rule); text-underline-offset: 3px; }
 .minimal .data-table a:hover, .minimal .rows a:hover, .minimal .entity-link:hover { color: var(--accent); text-decoration-color: currentColor; }
