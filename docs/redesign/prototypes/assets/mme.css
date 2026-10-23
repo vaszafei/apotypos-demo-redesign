@@ -101,7 +101,9 @@
 .home-dash { margin-bottom: var(--space-4); }
 /* Πρόσωπα: the people card sits above the grid of the persons of the API. */
 .fp-people { margin-bottom: var(--space-4); }
-/* The volume chart sits next to the table of all the outlets and stays in view while the table scrolls. */
+/* Wide screens: the volume chart sits next to the table of all the outlets. The table scrolls inside its card, with the header in view, so the two columns are about as tall. */
 @media (min-width: 1100px) {
-  .mme-side { align-self: start; position: sticky; top: var(--space-3); }
+  .mme-side { align-self: start; }
+  .mme-rank .table-wrap { max-height: 560px; overflow-y: auto; }
+  .mme-rank .data-table thead th { position: sticky; top: 0; z-index: 1; background: var(--surface-raised); }
 }
