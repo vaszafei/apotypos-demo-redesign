@@ -79,3 +79,4 @@
   .blind-cols { grid-template-columns: minmax(0, 1fr); }
 }
 .party-table tbody th { white-space: normal; }
+.party-pills { margin: 0 0 var(--space-2); }

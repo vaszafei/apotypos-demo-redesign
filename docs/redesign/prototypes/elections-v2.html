@@ -16,7 +16,7 @@
   <script src="assets/icons.js?v=3"></script>
   <script src="assets/messages.js?v=19"></script>
   <script src="assets/messages-v2.js?v=31"></script>
-  <script src="assets/messages-politics.js?v=5"></script>
+  <script src="assets/messages-politics.js?v=6"></script>
   <script src="assets/components.js?v=7"></script>
   <script src="assets/dash.js?v=11"></script>
   <script src="assets/politics.js?v=1"></script>
@@ -36,6 +36,7 @@
     const MIN_TONE = 5
     const THIN_GAP = 30
     let shown = null
+    let measure = 'reach'
 
     const pct1 = (v) => fmt.pct(v / 100)
     const pp = (v) => t('elec.pp', { v: fmt.signed(v) })
@@ -134,22 +135,30 @@
         ]
 
         // The party chips: they choose the lines of the two time charts.
+        // One time chart. The party chips are its legend and choose its lines. The switch changes the measure: exposure or stance.
         const pills = h('div', { class: 'region-pills party-pills', role: 'group', 'aria-label': t('elec.parties') })
-        const reachHolder = h('div', {})
-        const toneHolder = h('div', {})
+        const modeHolder = h('div', { class: 'region-pills', role: 'group', 'aria-label': t('elec.time.measure') })
+        const timeHead = h('div', {})
+        const timeHolder = h('div', {})
         const labels = weeks.map((w) => fmt.date(w, { day: 'numeric', month: 'short' }))
         const tips = weeks.map((w) => fmt.date(w))
         const drawLines = () => {
+          const reach = measure === 'reach'
+          timeHead.replaceChildren(cardHead(t(reach ? 'elec.reach.title' : 'elec.tone.title'), modeHolder, t(reach ? 'elec.reach.info' : 'elec.tone.info')))
+          modeHolder.replaceChildren(...['reach', 'tone'].map((m) => h('button', { type: 'button', 'aria-pressed': String(measure === m), onClick: () => { measure = m; drawLines() } }, t(`elec.time.${m}`))))
           pills.replaceChildren(...parties.map((p) => h('button', { type: 'button', 'aria-pressed': String(shown.has(p.key)), title: p.name, onClick: () => { shown.has(p.key) ? shown.delete(p.key) : shown.add(p.key); drawLines() } },
             h('span', { class: 'dot', style: `--dot:${color(p.key)}` }), p.key)))
           const pick = keys.map((k, i) => i).filter((i) => shown.has(keys[i]))
-          reachHolder.replaceChildren(pick.length ? LineChart({ labels, tips, series: pick.map((i) => ({ label: keys[i], color: color(keys[i]), values: mentions[i], dots: false })), yFormat: fmt.int, zero: true, height: 240, aria: t('elec.reach.aria') }) : emptyText(t('topics2.empty')))
-          toneHolder.replaceChildren(pick.length ? LineChart({ labels, tips, series: pick.map((i) => ({ label: keys[i], color: color(keys[i]), values: tones[i], dots: false })), yFormat: (v) => signed(v, 1), min: -1, max: 1, height: 240, aria: t('elec.tone.aria') }) : emptyText(t('topics2.empty')))
+          const series = pick.map((i) => ({ label: keys[i], color: color(keys[i]), values: (reach ? mentions : tones)[i], dots: false }))
+          timeHolder.replaceChildren(!pick.length
+            ? emptyText(t('topics2.empty'))
+            : reach
+              ? LineChart({ labels, tips, series, yFormat: fmt.int, zero: true, height: 300, aria: t('elec.reach.aria') })
+              : LineChart({ labels, tips, series, yFormat: (v) => signed(v, 1), min: -1, max: 1, height: 300, aria: t('elec.tone.aria') }))
         }
         drawLines()
-        const bar = TopBar({ title, tabs, quiet: true, actions: [pills] })
-        const reachCard = card('c-6', cardHead(t('elec.reach.title'), null, t('elec.reach.info')), reachHolder)
-        const toneCard = card('c-6', cardHead(t('elec.tone.title'), null, t('elec.tone.info')), toneHolder)
+        const bar = TopBar({ title, tabs, quiet: true })
+        const timeCard = card('c-12', timeHead, pills, timeHolder)
 
         // 1. Outlet × party: the share of coverage and the stance. The frame is the party with the largest share in the outlet.
         const favorRows = d.outlets.map((o) => {
@@ -240,7 +249,7 @@
 
         const momentumCard = card('c-6', cardHead(t('elec.momentum.title')), emptyText(t('elec.momentum.empty')))
 
-        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...stats, reachCard, toneCard, favorCard, leanCard, gapCard, ownerCard, voteCard, pollCard, themeCard, blindCard, momentumCard, anonCard, journCard),
+        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...stats, timeCard, favorCard, leanCard, gapCard, ownerCard, voteCard, pollCard, themeCard, blindCard, momentumCard, anonCard, journCard),
           h('p', { class: 'proto-note' }, t('elec.note', { date: fmt.date(d.reference) })))
       }
     })
