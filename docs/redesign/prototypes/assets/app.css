@@ -522,3 +522,16 @@ button, input, select { font: inherit; color: inherit; }
 :root[data-hstyle="c"] .page-tabs .sub-tabs a, :root[data-hstyle="c"] .page-tabs .sub-tabs a:hover { padding: 4px 0; border-radius: 0; background: none; font-size: var(--text-small); }
 :root[data-hstyle="c"] .page-tabs .sub-tabs a[aria-current="page"] { background: none; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; }
 :root[data-hstyle="c"] .page-tool { border-radius: 8px; }
+
+/* v2: smaller controls in the head. 32 px buttons and fields, 36 px search, 18 px icons. */
+:root[data-header="v2"] .global-search-input { min-height: 36px; font-size: 13px; }
+:root[data-header="v2"] .back-button { width: 36px; height: 36px; }
+:root[data-header="v2"] .page-tool { width: 32px; height: 32px; }
+:root[data-header="v2"] .page-tool .icon { width: 18px; height: 18px; }
+:root[data-header="v2"] .page-head .dr-trigger { min-height: 32px; padding: 0 10px 0 8px; gap: 6px; font-size: 13px; }
+:root[data-header="v2"] .page-head .dr-trigger .dr-icon { width: 16px; height: 16px; }
+:root[data-header="v2"] .page-head .set-select select, :root[data-header="v2"] .page-head-actions select { min-height: 32px; font-size: 13px; }
+:root[data-header="v2"] .page-head-actions .segmented button { min-height: 26px; padding: 0 12px; font-size: 13px; }
+:root[data-header="v2"] .page-filters select, :root[data-header="v2"] .page-filters .search-input { min-height: 32px; font-size: 13px; }
+:root[data-header="v2"] .page-filters .button { min-height: 32px; font-size: 13px; }
+:root[data-hstyle="b"] .page-tabs .section-tabs a { padding: 5px 14px; font-size: 13px; }
