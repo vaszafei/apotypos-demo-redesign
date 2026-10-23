@@ -90,9 +90,6 @@
     if (kpi) el.dataset.kpi = kpi
     return el
   }
-  function Meter (share) {
-    return h('div', { class: 'meter', role: 'img', 'aria-label': fmt.pct(share) }, h('div', { class: 'meter-fill', style: { width: `${Math.max(0, Math.min(1, share)) * 100}%` } }))
-  }
 
   // Top bar: the title, then the tabs of the page, then the actions of the active tab. It stays on screen while the page scrolls.
   // quiet: the page has no visible title and no line of counts, only the tabs. The title stays for screen readers.
@@ -124,5 +121,5 @@
     return [head, bad.kind === 'empty' ? h('div', { class: 'dash-grid' }, card('c-12', UI.EmptyState({ text: t('topics2.empty') }))) : UI.ErrorState({ onRetry: () => location.reload() })]
   }
 
-  window.Dash = { stateContent, select, fit, reset, niceStep, pct0, SLOTS, NO_GROUP, groupColors, groupColor, newsStories, textOn, tint, Spark, Scale, card, cardHead, Info, emptyText, Stat, Meter, TopBar }
+  window.Dash = { stateContent, select, fit, reset, niceStep, pct0, SLOTS, NO_GROUP, groupColors, groupColor, newsStories, textOn, tint, Spark, Scale, card, cardHead, Info, emptyText, Stat, TopBar }
 })()

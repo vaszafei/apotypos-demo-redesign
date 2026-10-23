@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/app.css?v=15">
-  <link rel="stylesheet" href="assets/dash.css?v=67">
-  <link rel="stylesheet" href="assets/mme.css?v=4">
+  <link rel="stylesheet" href="assets/tokens.css?v=5">
+  <link rel="stylesheet" href="assets/app.css?v=16">
+  <link rel="stylesheet" href="assets/dash.css?v=68">
+  <link rel="stylesheet" href="assets/mme.css?v=5">
 </head>
 <body>
   <div id="app"></div>
@@ -16,9 +16,9 @@
   <script src="assets/messages.js?v=22"></script>
   <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-mme.js?v=4"></script>
-  <script src="assets/components.js?v=7"></script>
-  <script src="assets/dash.js?v=12"></script>
-  <script src="assets/mme.js?v=4"></script>
+  <script src="assets/components.js?v=8"></script>
+  <script src="assets/dash.js?v=13"></script>
+  <script src="assets/mme.js?v=5"></script>
   <script src="assets/shell.js?v=38"></script>
   <script src="data/home.js?v=3"></script>
   <script src="data/stories.js?v=1"></script>
@@ -140,10 +140,11 @@
         const moversCard = card('c-3 card-top',
           cardHead(t('topics2.move.title'), null, t('topics2.move.sub')),
           list.length
-            ? h('ul', { class: 'rows rows-wrap' }, list.map((r) => h('li', { style: `--bar-color:${r.change > 0 ? 'var(--emph-more)' : 'var(--emph-less)'}` },
-              h('span', { class: 'row-name', title: name(r.issue) }, UI.EntityLink({ type: 'topic', key: String(d.issues.indexOf(r.issue)), label: name(r.issue) })),
-              h('span', { class: 'row-value' }, h('span', { class: `tri ${r.change > 0 ? 'tri-up' : 'tri-down'}`, style: 'color:var(--bar-color)', 'aria-hidden': 'true' }), ` ${fmt.signed(r.change * 100)}%`),
-              UI.HBar(Math.abs(r.change), widest))))
+            ? UI.BarList(list.map((r) => {
+              const color = r.change > 0 ? 'var(--emph-more)' : 'var(--emph-less)'
+              return { label: UI.EntityLink({ type: 'topic', key: String(d.issues.indexOf(r.issue)), label: name(r.issue) }), value: Math.abs(r.change), color,
+                text: [h('span', { class: `tri ${r.change > 0 ? 'tri-up' : 'tri-down'}`, style: { color }, 'aria-hidden': 'true' }), ` ${fmt.signed(r.change * 100)}%`] }
+            }), { max: widest })
             : emptyText(t('media2.empty.list')))
 
         // The cards of ΜΜΕ & πρόσωπα: a chip opens its topic in «Ένα θέμα, όλα τα μέσα» below. «Η ατζέντα κάθε μέσου» comes last.

@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/app.css?v=15">
-  <link rel="stylesheet" href="assets/dash.css?v=67">
-  <link rel="stylesheet" href="assets/politics.css?v=1">
+  <link rel="stylesheet" href="assets/tokens.css?v=5">
+  <link rel="stylesheet" href="assets/app.css?v=16">
+  <link rel="stylesheet" href="assets/dash.css?v=68">
+  <link rel="stylesheet" href="assets/politics.css?v=2">
 </head>
 <body>
   <div id="app"></div>
@@ -16,9 +16,9 @@
   <script src="assets/messages.js?v=22"></script>
   <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-politics.js?v=8"></script>
-  <script src="assets/components.js?v=7"></script>
-  <script src="assets/dash.js?v=12"></script>
-  <script src="assets/politics.js?v=1"></script>
+  <script src="assets/components.js?v=8"></script>
+  <script src="assets/dash.js?v=13"></script>
+  <script src="assets/politics.js?v=2"></script>
   <script src="assets/shell.js?v=38"></script>
   <script src="data/personFile.js?v=1"></script>
   <script>
@@ -26,7 +26,6 @@
     // The statements are verbatim from interviews. The pairs and the verdicts are proposals of models to review.
     const { t, fmt, h, load, safeUrl } = App
     const { reset, card, cardHead, Stat, TopBar } = Dash
-    const { ColumnChart, Rows } = Politics
     const result = load('personFile', ['summary', 'themes', 'pairs', 'checked'], (b) => b.themes)
     const VERDICTS = ['accurate', 'mostly_accurate', 'inaccurate', 'unverifiable']
     const KINDS = ['fact', 'position', 'accusation', 'prediction', 'promise', 'claim']
@@ -77,11 +76,11 @@
           for (let x = new Date(`${d.claimsByMonth[0][0]}-01T00:00:00Z`); x.toISOString().slice(0, 7) <= d.claimsByMonth[d.claimsByMonth.length - 1][0]; x.setUTCMonth(x.getUTCMonth() + 1)) months.push(x.toISOString().slice(0, 7))
           const monthLabel = (m) => fmt.date(`${m}-01`, { month: 'short', year: '2-digit' })
           const monthCard = card('c-8', cardHead(t('pf.months.title'), null, t('pf.months.info')),
-            ColumnChart({ labels: months.map(monthLabel), values: months.map((m) => counts.get(m) || 0), height: 220, aria: t('pf.months.title'),
-              tips: months.map((m) => `${monthLabel(m)} · ${fmt.int(counts.get(m) || 0)}`) }))
+            UI.BarChart({ labels: months.map(monthLabel), values: months.map((m) => counts.get(m) || 0), height: 220, label: t('pf.months.title'),
+              tooltipOf: (i) => `${monthLabel(months[i])} · ${fmt.int(counts.get(months[i]) || 0)}` }))
           const verdictColor = { accurate: 'var(--stance-supportive)', mostly_accurate: '#7fa7e0', inaccurate: 'var(--stance-critical)', unverifiable: 'var(--bar-muted)' }
           const verdictCard = card('c-4', cardHead(t('pf.verdict.title'), null, t('pf.verdict.info')),
-            Rows(VERDICTS.map((k) => ({ label: t(`pf.verdict.${k}`), value: d.checks.verdicts[k] || 0, color: verdictColor[k] })), { max: d.checks.checked }))
+            UI.BarList(VERDICTS.map((k) => ({ label: t(`pf.verdict.${k}`), value: d.checks.verdicts[k] || 0, color: verdictColor[k] })), { max: d.checks.checked }))
 
           const themeRows = d.themes.slice().sort((a, b) => b.n - a.n)
           const kindsOf = (x) => KINDS.filter((k) => x.kinds[k]).sort((a, b) => x.kinds[b] - x.kinds[a]).slice(0, 3).map((k) => `${t(`pf.kind.${k}`)} ${fmt.int(x.kinds[k])}`).join(' · ')
@@ -89,8 +88,7 @@
             h('ul', { class: 'theme-list' }, themeRows.map((x) => h('li', {}, h('details', {},
               h('summary', {},
                 h('span', { class: 'theme-name' }, x.el),
-                h('span', { class: 'theme-bar' }, UI.HBar(x.n, themeRows[0].n)),
-                h('span', { class: 'num' }, fmt.int(x.n)),
+                UI.HBar(x.n, themeRows[0].n, { text: fmt.int(x.n) }),
                 h('span', { class: 'muted-text theme-kinds' }, kindsOf(x)),
                 h('span', { class: 'muted-text nowrap' }, `${fmt.date(x.from, { month: 'short', year: 'numeric' })} → ${fmt.date(x.to, { month: 'short', year: 'numeric' })}`)),
               h('p', { class: 'theme-summary' }, x.summary))))))

@@ -108,6 +108,9 @@
   --stance-critical: #c23b3b;
   --stance-neutral: #9a978f;
   --stance-supportive: #2a62c4;
+  /* Bars (#54): the fill of a bar with no color of its own, and the track under a bar. */
+  --bar-fill: var(--series-1);
+  --bar-track: #ece9e0;
 
   /* Spacing and shape. */
   --space-1: 4px;

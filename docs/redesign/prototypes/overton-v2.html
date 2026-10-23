@@ -5,24 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/app.css?v=15">
-  <link rel="stylesheet" href="assets/dash.css?v=67">
+  <link rel="stylesheet" href="assets/tokens.css?v=5">
+  <link rel="stylesheet" href="assets/app.css?v=16">
+  <link rel="stylesheet" href="assets/dash.css?v=68">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=22"></script>
   <script src="assets/messages-v2.js?v=32"></script>
-  <script src="assets/components.js?v=7"></script>
-  <script src="assets/dash.js?v=12"></script>
+  <script src="assets/components.js?v=8"></script>
+  <script src="assets/dash.js?v=13"></script>
   <script src="assets/shell.js?v=38"></script>
   <script src="data/overton.js?v=1"></script>
   <script>
     // Μέσα, Μετατοπίσεις (was Αναλύσεις › Παράθυρο): when the way the coverage describes a topic changes. It reads the overton file (36 topics, 53 weeks of 2025).
     // The file has no drift for each week. It has the strongest shift of each topic, its week and the articles of each week.
     const { t, fmt, h, load } = App
-    const { fit, reset, niceStep, card, cardHead, emptyText, Stat, TopBar } = Dash
+    const { reset, card, cardHead, emptyText, Stat, TopBar } = Dash
     const shifts = load('overton', ['topics', 'weeks'], (b) => b.topics)
 
     // Weekly articles of one topic. The dot is the week of the strongest shift. It is blue above the limit and gray below.
@@ -41,32 +41,9 @@
 
     // Bars: how many topics had the strongest shift in each month of 2025.
     function MonthChart ({ counts }) {
-      return fit((holder, width) => {
-        const height = 230
-        const pad = { top: 12, right: 8, bottom: 40, left: 30 }
-        const max = Math.max(...counts, 1)
-        const step = niceStep(max / 4)
-        const top = Math.ceil(max / step) * step
-        const plotW = width - pad.left - pad.right
-        const plotH = height - pad.top - pad.bottom
-        const bw = plotW / counts.length
-        const y = (v) => pad.top + plotH - (v / top) * plotH
-        const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
-        for (let v = 0; v <= top; v += step) svg.append(h('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: y(v), y2: y(v) }), h('text', { x: pad.left - 6, y: y(v) + 4, 'text-anchor': 'end' }, fmt.int(v)))
-        counts.forEach((v, i) => {
-          const month = fmt.date(`2025-${String(i + 1).padStart(2, '0')}-01`, { month: 'short' })
-          const bx = pad.left + i * bw + bw * 0.18
-          const text = t('shifts.month.tip', { month, n: fmt.int(v) })
-          if (v) svg.append(h('rect', { x: bx, y: y(v), width: bw * 0.64, height: pad.top + plotH - y(v), rx: 3, fill: 'var(--series-news)' }))
-          svg.append(h('text', { x: pad.left + i * bw + bw / 2, y: height - 20, 'text-anchor': 'middle' }, month))
-          const hit = h('rect', { class: 'hit', x: pad.left + i * bw, y: pad.top, width: bw, height: plotH + 20 })
-          hit.addEventListener('pointermove', (e) => UI.showTooltip(text, e.clientX, e.clientY))
-          hit.addEventListener('pointerleave', () => UI.hideTooltip())
-          svg.append(hit)
-        })
-        svg.append(h('text', { class: 'axis-month', x: pad.left + plotW / 2, y: height - 4, 'text-anchor': 'middle' }, t('shifts.month.axis')))
-        holder.replaceChildren(svg)
-      })
+      const months = counts.map((_, i) => fmt.date(`2025-${String(i + 1).padStart(2, '0')}-01`, { month: 'short' }))
+      return UI.BarChart({ labels: months, values: counts, height: 230, axisLabel: t('shifts.month.axis'), label: t('shifts.month.title'),
+        tooltipOf: (i) => t('shifts.month.tip', { month: months[i], n: fmt.int(counts[i]) }) })
     }
 
     Shell.start({

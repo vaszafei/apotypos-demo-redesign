@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/app.css?v=15">
-  <link rel="stylesheet" href="assets/dash.css?v=67">
+  <link rel="stylesheet" href="assets/tokens.css?v=5">
+  <link rel="stylesheet" href="assets/app.css?v=16">
+  <link rel="stylesheet" href="assets/dash.css?v=68">
 </head>
 <body>
   <div id="app"></div>
@@ -15,9 +15,9 @@
   <script src="assets/messages.js?v=22"></script>
   <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-spread.js?v=13"></script>
-  <script src="assets/components.js?v=7"></script>
-  <script src="assets/dash.js?v=12"></script>
-  <script src="assets/spread.js?v=5"></script>
+  <script src="assets/components.js?v=8"></script>
+  <script src="assets/dash.js?v=13"></script>
+  <script src="assets/spread.js?v=6"></script>
   <script src="assets/shell.js?v=38"></script>
   <script src="data/stories.js?v=1"></script>
   <script src="data/storyDetail.js?v=1"></script>
@@ -115,11 +115,10 @@
           panelHolder.replaceChildren(card('c-12', cardHead(t('sim.sel.title', { name: outletName(a) }), null, t('sim.sel.info')),
             h('div', { class: 'mx-select' }, select(t('sim.sel.pick'), a, options, (v) => pick(Number(v)))),
             h('p', { class: 'dcard-sub' }, t('sim.sel.stories', { n: fmt.int(mx.per[a]) })),
-            h('ul', { class: 'rows rows-groups' }, rows.map((r) => h('li', { style: `--bar-color:${groupColor(r.b)}` },
-              dot(r.b),
-              h('span', { class: 'row-name' }, UI.EntityLink({ type: 'outlet', key: dd.outlets[r.b].slug, label: outletName(r.b) })),
-              h('span', { class: 'row-value' }, state.mode === 'share' ? t('sim.sel.row', { pct: fmt.pct(r.cover), back: fmt.pct(r.back) }) : t('sim.sel.row.lift', { lift: fmt.dec(r.v), pct: fmt.pct(r.cover) })),
-              UI.HBar(r.v - m.low, m.high - m.low))))))
+            UI.BarList(rows.map((r) => ({
+              label: [dot(r.b), UI.EntityLink({ type: 'outlet', key: dd.outlets[r.b].slug, label: outletName(r.b) })], value: r.v - m.low, color: groupColor(r.b),
+              text: state.mode === 'share' ? t('sim.sel.row', { pct: fmt.pct(r.cover), back: fmt.pct(r.back) }) : t('sim.sel.row.lift', { lift: fmt.dec(r.v), pct: fmt.pct(r.cover) })
+            })), { max: m.high - m.low })))
         }
         const modeButtons = Object.keys(MODES).map((key) => h('button', { type: 'button', 'aria-pressed': String(key === state.mode), onClick: () => { state.mode = key; modeButtons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === key))); draw() } }, t(`sim.mx.mode.${key}`)))
         modeButtons.forEach((b, i) => { b.dataset.mode = Object.keys(MODES)[i] })
@@ -156,10 +155,7 @@
         mark(rows[rows.length - 1], 'worst')
         mark(by('lagMin')[0], 'fast')
         const period = t('originality.meta', { n: rows.length, from: fmt.date(d.window[0], { month: 'short', year: 'numeric' }), to: fmt.date(d.window[1], { month: 'short', year: 'numeric' }) })
-        const origKey = h('span', { class: 'legend-inline' },
-          h('span', {}, h('span', { class: 'swatch', style: { background: 'var(--series-news)' } }), t('originality.key.original')),
-          h('span', {}, h('span', { class: 'swatch', style: { background: 'var(--bar-muted)' } }), t('originality.key.rewrite')),
-          h('span', {}, h('span', { class: 'swatch-tick' }), t('originality.key.avg', { pct: fmt.pct(average) })))
+        const origKey = UI.Legend([{ label: t('originality.key.original'), color: 'var(--series-news)' }, { label: t('originality.key.rewrite'), color: 'var(--bar-muted)' }, { label: t('originality.key.avg', { pct: fmt.pct(average) }), tick: true }])
         const origTable = UI.DataTable({
           rows, rankColumn: true, pageSize: 10, emptyText: t('media.empty'),
           columns: [
@@ -168,19 +164,16 @@
             { label: t('originality.col.scored'), num: true, phone: false, render: (r) => fmt.int(r.scored) },
             { label: t('originality.col.pct'), render: (r) => {
               const tip = t('originality.share.tip', { name: r.name, originals: fmt.int(r.originals), rewrites: fmt.int(r.rewrites) })
-              return h('div', { class: 'orig-cell', title: tip },
+              return h('div', { class: 'orig-cell' },
                 h('strong', {}, pct(r.pct)),
-                h('div', { class: 'orig-bar', role: 'img', 'aria-label': tip },
-                  h('div', { class: 'stack stack-fill' },
-                    h('span', { style: `width:${(r.originals / r.scored) * 100}%;--seg:var(--series-news)` }), h('span', { style: `width:${(r.rewrites / r.scored) * 100}%` })),
-                  h('span', { class: 'avg-tick', style: `left:${average * 100}%` })))
+                UI.StackedBar([{ label: t('originality.key.original'), value: r.originals, color: 'var(--series-news)' }, { label: t('originality.key.rewrite'), value: r.rewrites, color: 'var(--bar-muted)' }], { legend: false, marker: average, label: tip }))
             } },
             { label: t('originality.col.lag'), num: true, phone: false, render: (r) => lagText(r.lagMin) }
           ]
         })
         const maxLag = Math.max(...rows.map((r) => r.lagMin), 1)
         const lagCard = card('c-4', cardHead(t('originality.lag.title'), null, t('originality.lag.info')),
-          h('ul', { class: 'rows' }, rows.map((r) => h('li', {}, h('span', { class: 'row-name' }, r.name), h('span', { class: 'row-value' }, lagText(r.lagMin)), UI.HBar(r.lagMin, maxLag)))))
+          UI.BarList(rows.map((r) => ({ label: r.name, value: r.lagMin, text: lagText(r.lagMin) })), { max: maxLag }))
 
         // The table of all pairs is the table view of the matrix. It stays closed until the reader opens it.
         const pairRows = all.slice().sort((a, b) => b.score - a.score || b.shared - a.shared)
@@ -192,7 +185,7 @@
             columns: [
               { label: t('sim.col.pair'), render: (p) => h('span', { class: 'pair' }, name(p.a), h('span', { class: 'muted-text' }, ' ↔ '), name(p.b)) },
               { label: t('sim.col.shared'), num: true, phone: false, render: (p) => fmt.int(p.shared) },
-              { label: t('sim.col.score'), num: true, render: (p) => h('div', { class: 'bar-cell' }, h('span', { class: 'bar-num' }, fmt.pct(p.score)), UI.HBar(p.score, topScore)) }
+              { label: t('sim.col.score'), num: true, render: (p) => UI.HBar(p.score, topScore, { text: fmt.pct(p.score) }) }
             ]
           })))
 

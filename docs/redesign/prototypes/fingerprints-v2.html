@@ -5,20 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/app.css?v=15">
-  <link rel="stylesheet" href="assets/dash.css?v=67">
-  <link rel="stylesheet" href="assets/mme.css?v=4">
+  <link rel="stylesheet" href="assets/tokens.css?v=5">
+  <link rel="stylesheet" href="assets/app.css?v=16">
+  <link rel="stylesheet" href="assets/dash.css?v=68">
+  <link rel="stylesheet" href="assets/mme.css?v=5">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=22"></script>
   <script src="assets/messages-v2.js?v=32"></script>
-  <script src="assets/components.js?v=7"></script>
+  <script src="assets/components.js?v=8"></script>
   <script src="assets/messages-mme.js?v=4"></script>
-  <script src="assets/dash.js?v=12"></script>
-  <script src="assets/mme.js?v=4"></script>
+  <script src="assets/dash.js?v=13"></script>
+  <script src="assets/mme.js?v=5"></script>
   <script src="assets/shell.js?v=38"></script>
   <script src="data/fingerprints.js?v=2"></script>
   <script src="data/stanceRatings.js?v=2"></script>
@@ -130,10 +130,7 @@
       const color = stepColors(direction === 'top' ? 3 : -3, m.palette).background
       return card('card-side', cardHead(t(`f2.${direction}.${m.kind}`)),
         sorted.length
-          ? h('ul', { class: 'rows rows-cells' }, sorted.map((c) => h('li', { title: c.title, style: `--bar-color:${color}` },
-            h('span', { class: 'row-name' }, m.rows[c.ri].name, h('span', { class: 'row-person' }, m.cols[c.ci].title)),
-            h('span', { class: 'row-value' }, c.label),
-            UI.HBar(Math.abs(c.z), max))))
+          ? UI.BarList(sorted.map((c) => ({ label: m.rows[c.ri].name, sub: m.cols[c.ci].title, text: c.label, value: Math.abs(c.z), color, tip: c.title })), { max })
           : emptyText(t('f2.empty')))
     }
 

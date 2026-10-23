@@ -222,9 +222,6 @@ button, input, select { font: inherit; color: inherit; }
 .chart { width: 100%; height: auto; display: block; overflow: visible; }
 .chart text { font-family: var(--font-text); font-size: 12px; fill: var(--text-secondary); }
 .chart .grid-line { stroke: var(--border); stroke-width: 1; }
-.chart .bar { fill: var(--series-1); }
-.chart .bar-hit { fill: transparent; }
-.chart .bar-hit:hover + .bar, .chart .bar.is-active { fill: #1c5cab; }
 
 .tooltip {
   position: fixed; z-index: 50; pointer-events: none;
@@ -232,17 +229,62 @@ button, input, select { font: inherit; color: inherit; }
   background: #1f1f1f; color: #ffffff; font-size: var(--text-caption); line-height: 1.4;
 }
 
-.hbar { display: flex; align-items: center; gap: var(--space-2); min-width: 120px; }
-.hbar-track { flex: 1; height: 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.06); }
-.hbar-fill { height: 100%; border-radius: 4px; background: var(--series-1); }
-
-.stacked { display: flex; height: 16px; gap: 2px; margin: var(--space-2) 0; }
-.stacked span { height: 100%; }
+/* Bars (#54): the one style of every bar. The spec is in components.js, above HBar. */
+.hbar { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.hbar-track { position: relative; flex: 1; min-width: 48px; height: 8px; border-radius: 4px; background: var(--bar-track); }
+.hbar-fill { height: 100%; border-radius: 4px; background: var(--bar-fill); }
+.hbar .bar-value { flex: none; min-width: 48px; text-align: right; font-variant-numeric: tabular-nums; }
+.bar-marker { position: absolute; top: -3px; width: 2px; height: 14px; margin-left: -1px; border-radius: 1px; background: #1f1f1f; }
+.stacked { position: relative; display: flex; gap: 2px; min-width: 96px; height: 8px; }
+.stacked span:not(.bar-marker) { height: 100%; }
 .stacked span:first-child { border-radius: 4px 0 0 4px; }
-.stacked span:last-child { border-radius: 0 4px 4px 0; }
+.stacked span:nth-last-child(1 of :not(.bar-marker)) { border-radius: 0 4px 4px 0; }
+.stacked span:only-child { border-radius: 4px; }
+.stacked.is-empty { border-radius: 4px; background: var(--bar-track); }
+.stacked-wrap { display: grid; gap: var(--space-2); margin: var(--space-2) 0; }
+.bar-empty { font-size: var(--text-caption); color: var(--text-secondary); white-space: nowrap; }
+.dbar { position: relative; min-width: 96px; height: 8px; border-radius: 4px; background: var(--bar-track); }
+.dbar-seg { position: absolute; top: 0; height: 100%; }
+.dbar-seg.is-left { border-top-left-radius: 4px; border-bottom-left-radius: 4px; }
+.dbar-seg.is-right { border-top-right-radius: 4px; border-bottom-right-radius: 4px; }
+.dbar-mid { position: absolute; top: -3px; bottom: -3px; left: 50%; width: 2px; margin-left: -1px; border-radius: 1px; background: #1f1f1f; }
+.dbar.is-faint .dbar-seg { opacity: 0.4; }
+.bar-list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-2); }
+.bar-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--space-3); row-gap: 4px; align-items: center; font-size: var(--text-small); }
+.bar-list .row-name { min-width: 0; overflow-wrap: anywhere; }
+.bar-list .row-name > .dot { display: inline-block; margin-right: 6px; vertical-align: -1px; }
+.bar-list .row-sub { display: block; font-size: var(--text-caption); color: var(--text-secondary); }
+.bar-list .row-value { font-size: var(--text-caption); color: var(--text-secondary); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.bar-list li > :nth-child(3) { grid-column: 1 / -1; }
+.bar-group { display: grid; gap: 3px; }
+/* A phone shows the value of a bar with a value text, not the bar. */
+@media (max-width: 639px) { .hbar:has(.bar-value) .hbar-track { display: none; } }
+.bar-list li.is-pick { cursor: pointer; margin: 0 -4px; padding: 2px 4px; border-radius: 6px; }
+.bar-list li.is-pick:hover, .bar-list li.is-picked { background: var(--surface-page); }
+.bar-list li.is-picked .row-name { font-weight: 600; }
+.bar-list li.is-faint { opacity: 0.6; }
+.chart-holder { width: 100%; }
+.chart-scroll { overflow-x: auto; }
+@media (max-width: 719px) { .chart-scroll > .chart-holder { min-width: var(--chart-min); } }
+.bar-chart .bar-col.is-muted { opacity: 0.3; }
+.bar-chart .bar-hover { fill: color-mix(in srgb, var(--bar-fill) 8%, transparent); }
+.bar-chart .bar-band { fill: var(--accent); opacity: 0.12; }
+.bar-chart .bar-flag { fill: var(--surface-page); stroke: var(--border); stroke-width: 1; stroke-dasharray: 2 3; }
+.bar-chart .bar-hit { fill: transparent; }
+.bar-chart .bar-hit.is-select { cursor: crosshair; touch-action: pan-y; }
+.bar-chart .bar-hit[role="button"] { cursor: pointer; }
+.bar-chart .bar-hit:focus-visible { outline: 2px solid #1f1f1f; }
+.bar-chart .bar-mark { fill: #ffffff; stroke: #1f1f1f; stroke-width: 1.5; }
+.bar-chart .bar-mark-text { fill: #1f1f1f; font-weight: 600; pointer-events: none; }
+.bar-chart .bar-top { fill: var(--text-primary); }
+.bar-chart text.is-picked { fill: var(--text-primary); font-weight: 700; }
+.bar-chart .axis-title { fill: var(--text-secondary); }
+.bar-below { display: grid; gap: 4px; margin-top: 2px; font-size: var(--text-caption); line-height: 1.25; color: var(--text-secondary); text-align: center; }
+.bar-below span { display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; hyphens: auto; }
 .legend { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); margin: 0; padding: 0; list-style: none; font-size: var(--text-caption); color: var(--text-secondary); }
 .legend li { display: inline-flex; align-items: center; gap: var(--space-1); }
 .swatch { width: 10px; height: 10px; border-radius: 2px; }
+.swatch-tick { width: 2px; height: 14px; border-radius: 1px; background: #1f1f1f; }
 
 /* Tables */
 
@@ -344,8 +386,7 @@ button, input, select { font: inherit; color: inherit; }
 .row-details dt { font-weight: 600; }
 .row-details dd { margin: 0; }
 
-/* APO-161: compact stance bar and the ownership map. */
-.stacked-mini { height: 10px; margin: 0; min-width: 96px; }
+/* APO-161: the ownership map. */
 .mini-empty { font-size: var(--text-caption); color: var(--text-secondary); }
 .owner-map { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-4); }
 .owner-row { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(0, 2fr); gap: var(--space-5); align-items: start; }

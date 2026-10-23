@@ -180,9 +180,92 @@
     return h('dl', { class: 'fact-list' }, facts.map((f) => [h('dt', {}, f.label), h('dd', {}, f.value)]))
   }
 
-  function HBar (share, max = 1) {
-    return h('div', { class: 'hbar' },
-      h('div', { class: 'hbar-track' }, h('div', { class: 'hbar-fill', style: { width: `${Math.max(0, Math.min(1, share / max)) * 100}%` } })))
+  // Bars (#54). Every bar of every page comes from the components below, with one spec:
+  // - A horizontal bar is 8 px high with round ends (4 px) on a track of --bar-track. The fill is --bar-fill,
+  //   or the color of the data (a group, a party, a stance, a side). A reference value (an average) is a tick of 2 px.
+  // - The parts of a stacked bar have a gap of 2 px. A diverging bar grows to both sides of a center line of 2 px.
+  // - A column is 70% of its slot and 32 px wide at most, with round top corners (4 px). The parts of a stacked column have a gap of 1 px.
+  // - The value axis has 4 to 5 grid lines and 12 px labels on the left. A date axis keeps 64 px or more between two labels.
+  // - The caller formats the values (fmt.int for counts, fmt.pct for shares). In a list the value is on the line of the label,
+  //   on the right, and the bar is under them. In a table cell the value is on the left of the bar.
+  // - Hover shows the shared tooltip. The same text is the label for a screen reader.
+  // - Legend: Legend() above the bars, a swatch of 10 px for each color.
+  // - Empty: a value of 0 shows the track only. A stacked bar under minN shows a text. A chart with no value is the page's EmptyState.
+  function withTip (el, text) {
+    if (!text) return el
+    el.setAttribute('aria-label', text)
+    const show = (e) => showTooltip(text, e.clientX, e.clientY)
+    el.addEventListener('pointerenter', show)
+    el.addEventListener('pointermove', show)
+    el.addEventListener('pointerleave', hideTooltip)
+    return el
+  }
+  const clamp01 = (v) => Math.max(0, Math.min(1, v || 0))
+  const pctOfMax = (v, max) => `${clamp01(v / (max || 1)) * 100}%`
+
+  // Legend: a swatch and a name for each color of a chart. items: [{ label, color }], or { label, tick: true } for the marker of a reference value.
+  function Legend (items) {
+    return h('ul', { class: 'legend' }, items.map((i) => h('li', {}, i.tick ? h('span', { class: 'swatch-tick' }) : h('span', { class: 'swatch', style: { background: i.color } }), i.label)))
+  }
+
+  // HBar: one value on a track. color: the color of the data. marker: a reference value on the same scale, as a tick.
+  // text: the value in a table cell, on the left of the bar. label: the tooltip and the text for a screen reader.
+  function HBar (value, max = 1, { color, marker, text, label } = {}) {
+    const fill = h('div', { class: 'hbar-fill', style: color ? { width: pctOfMax(value, max), background: color } : { width: pctOfMax(value, max) } })
+    const bar = h('div', { class: 'hbar', role: label ? 'img' : null },
+      text !== undefined && h('span', { class: 'bar-value' }, text),
+      h('div', { class: 'hbar-track' }, fill, marker !== undefined && h('span', { class: 'bar-marker', style: { left: pctOfMax(marker, max) } })))
+    return withTip(bar, label)
+  }
+
+  // StackedBar: the parts of one whole. segments: [{ label, value, color }].
+  // legend: false in a row or a table cell. minN: under this total the bar is a text. marker: a share of the whole, as a tick.
+  function StackedBar (segments, { legend = true, minN = 0, marker, label } = {}) {
+    const total = segments.reduce((s, x) => s + (x.value || 0), 0)
+    if (minN && total < minN) return h('span', { class: 'bar-empty' }, t('stance.few', { n: minN }))
+    const share = (s) => fmt.pct(total ? s.value / total : 0)
+    const text = label ?? segments.map((s) => `${s.label} ${share(s)}`).join(', ')
+    const bar = withTip(h('div', { class: total ? 'stacked' : 'stacked is-empty', role: 'img' },
+      segments.filter((s) => s.value > 0).map((s) => h('span', { style: { width: `${(s.value / total) * 100}%`, background: s.color } })),
+      marker !== undefined && h('span', { class: 'bar-marker', style: { left: `${clamp01(marker) * 100}%` } })), text)
+    return legend ? h('div', { class: 'stacked-wrap' }, bar, Legend(segments.map((s) => ({ label: `${s.label} ${share(s)}`, color: s.color })))) : bar
+  }
+
+  // DivergingBar: shares on the two sides of a center line. middle: a share across the line (the neutral stance), half on each side.
+  // scale: the value that fills half of the track. colors: [left, middle, right]. faint: a value from few articles.
+  // marker: a reference value as a tick, on the same scale, negative to the left of the center line.
+  const STANCE_COLORS = ['var(--stance-critical)', 'var(--stance-neutral)', 'var(--stance-supportive)']
+  function DivergingBar ({ left = 0, middle = 0, right = 0, scale = 1, colors = STANCE_COLORS, label, faint = false, marker }) {
+    const half = (v) => Math.min(50, (Math.max(0, v) / (scale || 1)) * 50)
+    const m = half(middle / 2)
+    const l = Math.min(half(left), 50 - m)
+    const r = Math.min(half(right), 50 - m)
+    // The outer end of a part is round, the end at the center line or at the next part is square, as in StackedBar.
+    const seg = (from, width, color, ends) => (width > 0 ? h('span', { class: ['dbar-seg', ...ends.map((e) => `is-${e}`)].join(' '), style: { left: `${from}%`, width: `${width}%`, background: color } }) : null)
+    return withTip(h('div', { class: faint ? 'dbar is-faint' : 'dbar', role: label ? 'img' : null },
+      seg(50 - m - l, l, colors[0], ['left']), seg(50 - m, 2 * m, colors[1], [!l && 'left', !r && 'right'].filter(Boolean)), seg(50 + m, r, colors[2], ['right']),
+      h('span', { class: 'dbar-mid' }),
+      marker !== undefined && h('span', { class: 'bar-marker', style: { left: `${50 + Math.sign(marker) * half(Math.abs(marker))}%` } })), label)
+  }
+
+  // BarGroup: two or more values to compare, one bar each, on one scale. bars: [{ value, color, label }].
+  function BarGroup (bars, max) {
+    return h('div', { class: 'bar-group' }, bars.map((b) => HBar(b.value, max, { color: b.color, label: b.label })))
+  }
+
+  // BarList: rows with a label, a value on the right and a bar under them.
+  // rows: [{ label, sub, value, text, color, marker, tip, bar, bars, cls, title, onClick, pressed }]. text: the value as shown (fmt.int of value if none).
+  // onClick: the row is a button that picks a filter, pressed when the filter is on.
+  // bar: another bar of this file (a DivergingBar, a StackedBar). bars: [{ value, color, label }], two or more values to compare, one bar each.
+  function BarList (rows, { max, cls } = {}) {
+    const top = max ?? Math.max(...rows.flatMap((r) => (r.bars ? r.bars.map((b) => b.value) : [r.value || 0])), 1)
+    const button = (r) => (r.onClick ? { tabindex: 0, role: 'button', 'aria-pressed': r.pressed === undefined ? null : String(r.pressed), onKeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); r.onClick() } } } : {})
+    return h('ul', { class: cls ? `bar-list ${cls}` : 'bar-list' }, rows.map((r) => h('li', { class: [r.cls, r.onClick && 'is-pick', r.pressed && 'is-picked'].filter(Boolean).join(' ') || null, onClick: r.onClick, title: r.title, ...button(r) },
+      h('span', { class: 'row-name', title: typeof r.label === 'string' ? r.label : null }, r.label, r.sub ? h('span', { class: 'row-sub' }, r.sub) : null),
+      h('span', { class: 'row-value' }, r.text ?? fmt.int(r.value)),
+      r.bar ?? (r.bars
+        ? BarGroup(r.bars, top)
+        : HBar(r.value, top, { color: r.color, marker: r.marker, label: r.tip })))))
   }
 
   // A column with phone: false is hidden below 640 px.
@@ -228,62 +311,144 @@
   }
   function hideTooltip () { if (tooltip) tooltip.hidden = true }
 
-  // BarChart: one series. It draws at the real width, so the 12 px labels never scale down.
-  function BarChart ({ values, height = 220, tooltipOf, markers = {}, label, tickEvery = 7, valueFormat = fmt.int }) {
-    const holder = h('div', { class: 'chart-holder' })
+  // BarChart: columns. values: one series, or series: [{ name, color, values }], stacked from the bottom.
+  // dates: the columns are days, with a label each 64 px or more. labels: the columns are categories, each with its label.
+  // below: a second line of label under each column, in HTML, so it wraps. axisLabel: the name of the axis under the labels.
+  // topLabels: a short value above each column (a share). tooltipOf(i): the text of column i, for the tooltip and the table for a screen reader. It draws at the real width, so the 12 px labels never scale down.
+  // Variants with a real need: max (a fixed top, 1 for shares), colorOf(i) (a column in another color), markers (a number above a column),
+  // muted(i) (outside the chosen period), flagged(i) (a gap in the data), onPick(n)/picked (a click on a column picks it),
+  // onSelect({ from, to }) (a drag over the days picks a period), minWidth (below 720 px the chart keeps this width and scrolls).
+  function BarChart ({ values, series, dates, labels, below, axisLabel, height = 220, label, tooltipOf, valueFormat = fmt.int, max, colorOf, topLabels, markers = {}, muted, flagged, picked = null, onPick, onSelect, minWidth }) {
+    const n = (dates || labels).length
+    const parts = series || [{ name: label, values }]
+    const totals = Array.from({ length: n }, (_, i) => parts.reduce((a, s) => a + (s.values[i] || 0), 0))
+    const tipOf = tooltipOf || ((i) => `${dates ? fmt.date(dates[i]) : labels[i]}: ${valueFormat(totals[i])}`)
+    const holder = h('div', { class: 'chart-holder', style: minWidth ? `--chart-min:${minWidth}px` : null })
+    // A pick shows at once. The page can draw the chart again with its own state.
+    let sel = picked
     const draw = () => {
-      const width = holder.clientWidth || 600
-      const pad = { top: 16, right: 8, bottom: 28, left: 48 }
-      const max = Math.max(...values.map((v) => v.value), 1)
-      const step = niceStep(max / 4)
-      const top = Math.ceil(max / step) * step
+      // A fractional width rounds up in clientWidth, so the drawing would shrink below 12 px. Round down.
+      const width = Math.floor(holder.getBoundingClientRect().width)
+      if (!width) return
+      const hasMarks = Object.keys(markers).length > 0
+      const pad = { top: (hasMarks ? 26 : 0) + (topLabels ? 18 : 0) + 12, right: 8, bottom: axisLabel ? 40 : 24, left: 44 }
+      const step = niceStep((max ?? Math.max(...totals, 1)) / 4)
+      const top = max ?? Math.ceil(Math.max(...totals, 1) / step) * step
       const plotW = width - pad.left - pad.right
       const plotH = height - pad.top - pad.bottom
-      const bw = plotW / values.length
-      // Keep 64 px or more between two date labels.
-      const every = Math.max(tickEvery, Math.ceil(64 / bw))
-      const y = (v) => pad.top + plotH - (v / top) * plotH
-      const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' },
-        h('title', {}, label))
-      for (let v = 0; v <= top; v += step) {
+      const slot = plotW / n
+      const w = Math.max(1, Math.min(32, slot * 0.7))
+      const r = Math.min(4, w / 2)
+      const y = (v) => pad.top + plotH - (Math.min(v, top) / top) * plotH
+      const uid = Math.random().toString(36).slice(2, 7)
+      const svg = h('svg', { class: 'chart bar-chart', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
+      for (let v = 0; v <= top + step / 2; v += step) {
         svg.append(h('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: y(v), y2: y(v) }),
           h('text', { x: pad.left - 6, y: y(v) + 4, 'text-anchor': 'end' }, valueFormat(v)))
       }
-      values.forEach((v, i) => {
-        const x = pad.left + i * bw
-        const barH = Math.max(0, pad.top + plotH - y(v.value))
-        const bar = h('rect', { class: 'bar', x: x + 1, y: y(v.value), width: Math.max(1, bw - 2), height: barH, rx: Math.min(4, bw / 3) })
-        const hit = h('rect', {
-          class: 'bar-hit', x, y: pad.top, width: bw, height: plotH,
-          onMouseenter: (e) => { bar.classList.add('is-active'); showTooltip(tooltipOf(v), e.clientX, e.clientY) },
-          onMousemove: (e) => showTooltip(tooltipOf(v), e.clientX, e.clientY),
-          onMouseleave: () => { bar.classList.remove('is-active'); hideTooltip() }
+      // Dates: 64 px or more between two labels, and a label each week (7, 14 days) on more than 20 days.
+      // Categories: each label, or fewer labels when the longest one (about 7 px a letter at 12 px) does not fit its slot.
+      const dateStep = Math.ceil(64 / slot)
+      const every = dates ? (n > 20 ? Math.ceil(dateStep / 7) * 7 : dateStep) : Math.max(1, Math.ceil((Math.max(...labels.map((l) => String(l).length)) * 7 + 12) / slot))
+      const cols = []
+      for (let i = 0; i < n; i++) {
+        const x = pad.left + i * slot
+        const bx = x + (slot - w) / 2
+        if (flagged && flagged(i)) svg.append(h('rect', { class: 'bar-flag', x: x + 1, y: pad.top, width: Math.max(1, slot - 2), height: plotH }))
+        const dim = (muted && muted(i)) || (sel !== null && sel !== i)
+        const col = h('g', { class: dim ? 'bar-col is-muted' : 'bar-col' })
+        if (totals[i] > 0) {
+          // The column has round top corners (a clip path) and a gap of 1 px between its parts.
+          const yt = y(totals[i])
+          const yb = y(0)
+          const clip = `bc-${uid}-${i}`
+          svg.append(h('defs', {}, h('clipPath', { id: clip }, h('path', { d: `M${bx} ${yb}V${yt + r}Q${bx} ${yt} ${bx + r} ${yt}H${bx + w - r}Q${bx + w} ${yt} ${bx + w} ${yt + r}V${yb}Z` }))))
+          col.setAttribute('clip-path', `url(#${clip})`)
+          let base = 0
+          parts.forEach((s) => {
+            const v = s.values[i] || 0
+            if (!v) return
+            const gap = base + v < totals[i] ? 1 : 0
+            col.append(h('rect', { x: bx, y: y(base + v), width: w, height: Math.max(0.5, y(base) - y(base + v) - gap), fill: s.color || (colorOf && colorOf(i)) || 'var(--bar-fill)' }))
+            base += v
+          })
+        }
+        svg.append(col)
+        cols.push(col)
+        if (topLabels && topLabels[i]) svg.append(h('text', { class: 'bar-top', x: x + slot / 2, y: y(totals[i]) - 6, 'text-anchor': 'middle' }, topLabels[i]))
+        if (markers[i] !== undefined) {
+          const cy = y(totals[i]) - (topLabels && topLabels[i] ? 30 : 13)
+          svg.append(h('circle', { class: 'bar-mark', cx: x + slot / 2, cy, r: 9 }), h('text', { class: 'bar-mark-text', x: x + slot / 2, y: cy + 4, 'text-anchor': 'middle' }, String(markers[i])))
+        }
+        if (i % every === 0) {
+          const text = dates ? fmt.date(dates[i], { day: 'numeric', month: 'short' }) : labels[i]
+          svg.append(h('text', { class: sel === i ? 'is-picked' : null, x: x + slot / 2, y: pad.top + plotH + 16, 'text-anchor': 'middle' }, text))
+        }
+      }
+      if (axisLabel) svg.append(h('text', { class: 'axis-title', x: pad.left + plotW / 2, y: height - 4, 'text-anchor': 'middle' }, axisLabel))
+      const indexAt = (e) => Math.min(n - 1, Math.max(0, Math.floor((e.clientX - svg.getBoundingClientRect().left - pad.left) / slot)))
+      const hover = h('rect', { class: 'bar-hover', x: 0, y: pad.top, width: slot, height: plotH, visibility: 'hidden' })
+      const band = h('rect', { class: 'bar-band', x: 0, y: pad.top, width: 0, height: plotH, visibility: 'hidden' })
+      svg.prepend(hover, band)
+      const showAt = (e) => { const i = indexAt(e); hover.setAttribute('x', pad.left + i * slot); hover.setAttribute('visibility', 'visible'); showTooltip(tipOf(i), e.clientX, e.clientY); return i }
+      const leave = () => { hover.setAttribute('visibility', 'hidden'); hideTooltip() }
+      if (onPick) {
+        // Each column is a button, so the keyboard can pick it.
+        for (let i = 0; i < n; i++) {
+          const hit = h('rect', { class: 'bar-hit', x: pad.left + i * slot, y: pad.top, width: slot, height: plotH + 20, tabindex: 0, role: 'button', 'aria-pressed': String(sel === i), 'aria-label': tipOf(i) })
+          hit.addEventListener('pointermove', showAt)
+          hit.addEventListener('pointerleave', leave)
+          const pick = () => { sel = i; draw(); holder.querySelectorAll('.bar-hit')[i]?.focus(); onPick(i) }
+          hit.addEventListener('click', pick)
+          hit.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick() } })
+          svg.append(hit)
+        }
+        svg.removeAttribute('aria-hidden')
+        svg.setAttribute('role', 'group')
+        svg.setAttribute('aria-label', label)
+      } else {
+        const overlay = h('rect', { class: onSelect ? 'bar-hit is-select' : 'bar-hit', x: pad.left, y: pad.top, width: plotW, height: plotH })
+        let anchor = null
+        overlay.addEventListener('pointermove', (e) => {
+          const i = showAt(e)
+          if (anchor === null) return
+          const lo = Math.min(anchor, i)
+          band.setAttribute('x', pad.left + lo * slot)
+          band.setAttribute('width', (Math.max(anchor, i) - lo + 1) * slot)
+          band.setAttribute('visibility', 'visible')
         })
-        svg.append(bar, hit)
-        if (markers[i]) svg.append(h('text', { x: x + bw / 2, y: y(v.value) - 4, 'text-anchor': 'middle', style: { fill: 'var(--text-primary)', fontWeight: 600 } }, markers[i]))
-        if (i % every === 0) svg.append(h('text', { x: x + bw / 2, y: height - 8, 'text-anchor': 'middle' }, fmt.date(v.key, { day: 'numeric', month: 'short' })))
-      })
+        overlay.addEventListener('pointerleave', leave)
+        if (onSelect) {
+          overlay.addEventListener('pointerdown', (e) => { anchor = indexAt(e); overlay.setPointerCapture(e.pointerId) })
+          overlay.addEventListener('pointerup', (e) => {
+            const i = indexAt(e)
+            const a = anchor
+            anchor = null
+            leave()
+            band.setAttribute('visibility', 'hidden')
+            if (a !== null && a !== i) onSelect({ from: dates[Math.min(a, i)], to: dates[Math.max(a, i)] })
+          })
+          overlay.addEventListener('pointercancel', () => { anchor = null; band.setAttribute('visibility', 'hidden') })
+        }
+        svg.append(overlay)
+      }
+      const nodes = [svg]
+      if (below) nodes.push(h('div', { class: 'bar-below', style: { paddingLeft: `${pad.left}px`, paddingRight: `${pad.right}px`, gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` } }, below.map((b) => h('span', {}, b))))
       // The same values as a table for a screen reader and the keyboard. The tooltip needs a mouse.
       // A table does not obey the 1 px width of .visually-hidden, so a div holds it.
-      const table = h('div', { class: 'visually-hidden' }, h('table', {}, h('caption', {}, label),
-        h('tbody', {}, values.map((v) => h('tr', {}, h('th', { scope: 'row' }, fmt.date(v.key)), h('td', {}, tooltipOf(v)))))))
-      holder.replaceChildren(svg, table)
+      if (!onPick) {
+        nodes.push(h('div', { class: 'visually-hidden' }, h('table', {}, h('caption', {}, label),
+          h('tbody', {}, totals.map((_, i) => h('tr', {}, h('th', { scope: 'row' }, dates ? fmt.date(dates[i]) : labels[i]), h('td', {}, tipOf(i))))))))
+      }
+      holder.replaceChildren(...nodes)
     }
     requestAnimationFrame(draw)
     new ResizeObserver(() => draw()).observe(holder)
-    return holder
+    return minWidth ? h('div', { class: 'chart-scroll' }, holder) : holder
   }
   function niceStep (raw) {
     const p = 10 ** Math.floor(Math.log10(raw || 1))
     return [1, 2, 2.5, 5, 10].map((m) => m * p).find((s) => s >= raw) || p * 10
-  }
-
-  function StackedBar (segments) {
-    const total = segments.reduce((s, x) => s + x.value, 0) || 1
-    return h('div', {},
-      h('div', { class: 'stacked', role: 'img', 'aria-label': segments.map((s) => `${s.label} ${fmt.pct(s.value / total)}`).join(', ') },
-        segments.map((s) => h('span', { style: { width: `${(s.value / total) * 100}%`, background: s.color }, title: `${s.label}: ${fmt.pct(s.value / total)}` }))),
-      h('ul', { class: 'legend' }, segments.map((s) => h('li', {}, h('span', { class: 'swatch', style: { background: s.color } }), `${s.label} ${fmt.pct(s.value / total)}`))))
   }
 
   // MatrixChart: a diverging scale with a gray middle. Labels do not rotate (C04, G18).
@@ -301,12 +466,10 @@
   }
 
 
-  // MiniStance: a stacked bar with no legend, for a table cell. The text alternative gives the shares.
+  // MiniStance: a StackedBar with no legend, for a table cell. The text alternative gives the shares and the number of articles.
   function MiniStance (segments, minN = 30) {
     const total = segments.reduce((s, x) => s + x.value, 0)
-    if (total < minN) return h('span', { class: 'mini-empty' }, t('stance.few', { n: minN }))
-    return h('div', { class: 'stacked stacked-mini', role: 'img', 'aria-label': segments.map((s) => `${s.label} ${fmt.pct(s.value / total)}`).join(', ') + ` · n = ${fmt.int(total)}` },
-      segments.map((s) => h('span', { style: { width: `${(s.value / total) * 100}%`, background: s.color }, title: `${s.label}: ${fmt.pct(s.value / total)}` })))
+    return StackedBar(segments, { legend: false, minN, label: segments.map((s) => `${s.label} ${fmt.pct(total ? s.value / total : 0)}`).join(', ') + ` · n = ${fmt.int(total)}` })
   }
 
   // OwnershipMap: two columns, the owner on the left and the outlets on the right. A line joins them.
@@ -343,5 +506,5 @@
     }, color && h('span', { class: 'swatch', style: { background: color } }), label, count !== undefined && h('span', { class: 'entity-count' }, count), !page && h('span', { class: 'visually-hidden' }, ` (${t('entity.link.missing.short')})`))
   }
 
-  window.UI = { EntityLink, ENTITY_ROUTES, PageHeader, SegmentedControl, RangeControl, periodPresets, FilterBar, KpiStrip, KpiTile, ChartCard, EmptyState, ErrorState, ErrorPage, DataNotice, FactList, HBar, DataTable, BarChart, StackedBar, MiniStance, OwnershipMap, MatrixChart, showTooltip, hideTooltip }
+  window.UI = { EntityLink, ENTITY_ROUTES, PageHeader, SegmentedControl, RangeControl, periodPresets, FilterBar, KpiStrip, KpiTile, ChartCard, EmptyState, ErrorState, ErrorPage, DataNotice, FactList, HBar, Legend, BarGroup, BarList, DivergingBar, STANCE_COLORS, DataTable, BarChart, StackedBar, MiniStance, OwnershipMap, MatrixChart, showTooltip, hideTooltip }
 })()

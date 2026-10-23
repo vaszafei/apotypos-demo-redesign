@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/app.css?v=15">
-  <link rel="stylesheet" href="assets/dash.css?v=67">
-  <link rel="stylesheet" href="assets/politics.css?v=1">
-  <link rel="stylesheet" href="assets/world.css?v=1">
+  <link rel="stylesheet" href="assets/tokens.css?v=5">
+  <link rel="stylesheet" href="assets/app.css?v=16">
+  <link rel="stylesheet" href="assets/dash.css?v=68">
+  <link rel="stylesheet" href="assets/politics.css?v=2">
+  <link rel="stylesheet" href="assets/world.css?v=2">
 </head>
 <body>
   <div id="app"></div>
@@ -18,10 +18,10 @@
   <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-politics.js?v=8"></script>
   <script src="assets/messages-world.js?v=1"></script>
-  <script src="assets/components.js?v=7"></script>
-  <script src="assets/dash.js?v=12"></script>
-  <script src="assets/politics.js?v=1"></script>
-  <script src="assets/world.js?v=1"></script>
+  <script src="assets/components.js?v=8"></script>
+  <script src="assets/dash.js?v=13"></script>
+  <script src="assets/politics.js?v=2"></script>
+  <script src="assets/world.js?v=2"></script>
   <script src="assets/shell.js?v=38"></script>
   <script src="data/narrative.js?v=1"></script>
   <script>
@@ -29,8 +29,8 @@
     // The cards of Γάζα and Ισραήλ are short here and link to their tabs.
     const { t, fmt, h, load, safeUrl } = App
     const { reset, card, cardHead, Stat, TopBar } = Dash
-    const { Rows, PairRows, ToneBar, pctOf, signed } = Politics
-    const { Verdict, Chips, StackColumns, dec1, el } = World
+    const { PairRows, ToneBar, pctOf, signed } = Politics
+    const { Verdict, Chips, dec1, el } = World
     // The label of a moment without its date: «16 Σεπ 2025: Επιτροπή ΟΗΕ: γενοκτονία» gives «Επιτροπή ΟΗΕ: γενοκτονία».
     const tail = (label) => el(label).slice(el(label).indexOf(':') + 1).trim()
     const result = load('narrative', ['moments', 'snapshot', 'cases', 'statements'], (b) => b.moments)
@@ -147,19 +147,20 @@
         }
         drawMoment(d.moments.indexOf(un))
         const short = (m) => fmt.date(m.start, { month: '2-digit', year: '2-digit' })
-        const momentsCard = card('c-12', cardHead(t('nar.moments.title'), h('span', { class: 'stance-key' }, VOICES.map(([k, c]) => h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: c } }), t(`nar.voice.${k}`)))), t('nar.moments.info')),
+        const momentsCard = card('c-12', cardHead(t('nar.moments.title'), UI.Legend(VOICES.map(([k, color]) => ({ label: t(`nar.voice.${k}`), color }))), t('nar.moments.info')),
           h('p', { class: 'dcard-sub' }, t('nar.moments.sub', { n: fmt.int(d.moments.reduce((a, m) => a + m.n, 0)), o: d.outlets.length })),
-          StackColumns({
+          UI.BarChart({
             labels: d.moments.map(short),
             below: d.moments.map((m) => tail(m.label)),
-            top: d.moments.map((m) => `${dec1(m.genocide_any_pct)}%`),
-            series: VOICES.map(([k, color]) => ({ color, values: d.moments.map((m) => m.genocide_pct[k]) })),
-            tips: d.moments.map((m) => `${el(m.label)} · n=${fmt.int(m.n)} · ${VOICES.map(([k]) => `${t(`nar.voice.${k}`)} ${dec1(m.genocide_pct[k])}%`).join(' · ')}`),
-            picked: () => moment,
+            topLabels: d.moments.map((m) => `${dec1(m.genocide_any_pct)}%`),
+            series: VOICES.map(([k, color]) => ({ name: t(`nar.voice.${k}`), color, values: d.moments.map((m) => m.genocide_pct[k]) })),
+            tooltipOf: (i) => { const m = d.moments[i]; return `${el(m.label)} · n=${fmt.int(m.n)} · ${VOICES.map(([k]) => `${t(`nar.voice.${k}`)} ${dec1(m.genocide_pct[k])}%`).join(' · ')}` },
+            picked: moment,
             onPick: drawMoment,
-            yFormat: (v) => `${v}%`,
+            valueFormat: (v) => `${v}%`,
             height: 260,
-            aria: t('nar.moments.title')
+            minWidth: 720,
+            label: t('nar.moments.title')
           }),
           momentNote)
 
@@ -193,15 +194,9 @@
         const termMax = Math.max(...TERMS.flatMap((k) => [s.terms_own[k], s.terms_quoted[k]]))
         const wordsCard = card('c-6', cardHead(t('nar.words.title'), link('language-v2.html', 'nar.more.language'), t('nar.words.info')),
           h('p', { class: 'dcard-sub' }, t('nar.words.sub')),
-          h('span', { class: 'stance-key' },
-            h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: 'var(--ink)' } }), t('nar.words.own')),
-            h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: 'var(--bar-muted)' } }), t('nar.words.quoted'))),
-          h('ul', { class: 'term-pairs' }, TERMS.map((k) => h('li', {},
-            h('span', { class: 'row-name' }, t(`nar.term.${k}`)),
-            h('span', { class: 'term-bars' },
-              h('span', { class: 'term-bar', style: `width:${(s.terms_own[k] / termMax) * 100}%;--seg:var(--ink)`, title: `${t('nar.words.own')} ${dec1(s.terms_own[k])}%` }),
-              h('span', { class: 'term-bar', style: `width:${(s.terms_quoted[k] / termMax) * 100}%;--seg:var(--bar-muted)`, title: `${t('nar.words.quoted')} ${dec1(s.terms_quoted[k])}%` })),
-            h('span', { class: 'row-value' }, `${dec1(s.terms_own[k])}% · ${dec1(s.terms_quoted[k])}%`)))))
+          UI.Legend([{ label: t('nar.words.own'), color: 'var(--ink)' }, { label: t('nar.words.quoted'), color: 'var(--bar-muted)' }]),
+          UI.BarList(TERMS.map((k) => ({ label: t(`nar.term.${k}`), text: `${dec1(s.terms_own[k])}% · ${dec1(s.terms_quoted[k])}%`,
+            bars: [{ value: s.terms_own[k], color: 'var(--ink)', label: `${t('nar.words.own')} ${dec1(s.terms_own[k])}%` }, { value: s.terms_quoted[k], color: 'var(--bar-muted)', label: `${t('nar.words.quoted')} ${dec1(s.terms_quoted[k])}%` }] })), { max: termMax }))
 
         // 5. Δύο εικόνες του Ισραήλ: the same state in four contexts, and what the 302 articles on the Achilles Shield discussed.
         const imagesCard = card('c-8', cardHead(t('nar.images.title'), link('israel-v2.html', 'nar.more.israel'), t('nar.images.info')),
@@ -215,7 +210,7 @@
           h('p', { class: 'dcard-sub' }, t('nar.images.note', { occ: dec1(s.israel_by_context.gaza.occupier), ally: dec1(s.israel_by_context.gr_defense_energy.ally), str: dec1(s.israel_by_context.gr_defense_energy.strategic), g: dec1(s.achilles.mention_gaza) })))
         const achillesCard = card('c-4', cardHead(t('nar.achilles.title'), null, t('nar.achilles.info')),
           h('p', { class: 'dcard-sub' }, t('nar.achilles.sub', { n: fmt.int(s.achilles.n), date: fmt.date(s.achilles.signed) })),
-          Rows(ACHILLES.map((k) => ({ label: t(`nar.ach.${k}`), value: s.achilles.issues[k], text: `${dec1(s.achilles.issues[k])}%`, color: k === 'gaza' ? 'var(--side-b)' : null })), { max: 50 }))
+          UI.BarList(ACHILLES.map((k) => ({ label: t(`nar.ach.${k}`), value: s.achilles.issues[k], text: `${dec1(s.achilles.issues[k])}%`, color: k === 'gaza' ? 'var(--side-b)' : null })), { max: 50 }))
 
         // 6. Επιρροή, λόμπι, ιδιοκτησία: a time strip with the moments and the cases, then one card for each case.
         const cases = [...d.cases].sort((a, b) => a.date.localeCompare(b.date))
@@ -245,8 +240,7 @@
           const max = Math.max(...(r.bars || []).map((b) => b.v), 1)
           return card(r.bars?.length ? 'c-4 research-card' : 'c-6 research-card', cardHead(el([r.q_el, r.q_en])),
             h('p', { class: 'research-verdict' }, el([r.verdict_el, r.verdict_en])),
-            r.bars?.length ? h('ul', { class: 'rows research-rows' }, r.bars.map((b) => h('li', { class: b.ours ? 'is-ours' : null, style: b.ours ? '--bar-color:var(--ink)' : '--bar-color:var(--bar-muted)' },
-              h('span', { class: 'row-name' }, el([b.l, b.le])), h('span', { class: 'row-value' }, r.theme === 'voices' ? `${fmt.dec(b.v)}×` : `${String(b.v).replace('.', ',')}%`), UI.HBar(b.v, max)))) : null,
+            r.bars?.length ? UI.BarList(r.bars.map((b) => ({ cls: b.ours ? 'is-ours' : null, label: el([b.l, b.le]), value: b.v, text: r.theme === 'voices' ? `${fmt.dec(b.v)}×` : `${String(b.v).replace('.', ',')}%`, color: b.ours ? 'var(--ink)' : 'var(--bar-muted)' })), { max, cls: 'research-rows' }) : null,
             r.bars?.length ? h('p', { class: 'dcard-sub' }, el([r.bars_unit_el, r.bars_unit_en])) : null,
             h('p', { class: 'dcard-sub' }, el([r.ours_el, r.ours_en])),
             h('details', { class: 'case-summary' }, h('summary', {}, t('nar.research.sources')),

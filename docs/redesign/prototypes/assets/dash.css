@@ -70,7 +70,7 @@
 .dash-grid-side { grid-template-columns: 232px minmax(0, 1fr); }
 .dash-grid-side > .card-side, .dash-grid-side > .card-main { grid-column: auto; }
 .dash-grid-side > .card-wide { grid-column: 1 / -1; }
-.card-side .rows { flex: 1; align-content: space-between; }
+.card-side .bar-list { flex: 1; align-content: space-between; }
 .card-col { min-width: 0; display: flex; flex-direction: column; gap: var(--space-3); }
 
 .dcard { position: relative; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding: var(--space-3) 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-raised); }
@@ -94,8 +94,7 @@
 .dstat-value { margin: 0; font-size: 22px; font-weight: 600; line-height: 1.15; color: #1f1f1f; }
 .dstat-sub { margin: 0; font-size: var(--text-caption); line-height: 1.3; color: var(--text-secondary); }
 .delta { font-weight: 600; color: var(--text-primary); }
-.meter { width: 96px; height: 8px; border-radius: 4px; background: var(--series-other); overflow: hidden; }
-.meter-fill { height: 100%; background: var(--series-news); border-radius: 4px 0 0 4px; }
+.dstat-row > .hbar { width: 96px; }
 
 /* Sparkline */
 .spark { display: block; overflow: visible; flex: none; }
@@ -104,10 +103,6 @@
 
 /* Charts */
 .fit { width: 100%; }
-.dash .chart .bar-news { fill: var(--series-news); }
-.dash .chart .bar-other { fill: var(--series-other); }
-.dash .chart .is-muted { opacity: 0.3; }
-.dash .chart .band { fill: var(--accent); opacity: 0.12; }
 .dash .chart .marker-dot { fill: #1f1f1f; }
 .dash .chart .marker-text { fill: #ffffff; font-weight: 600; text-anchor: middle; }
 .dash .chart .overlay { fill: transparent; cursor: crosshair; touch-action: pan-y; }
@@ -121,7 +116,6 @@
 .dash .chart .range-band:hover { fill: #b9b4a8; }
 .dash .chart .range-median { stroke: #1f1f1f; stroke-width: 2.5; stroke-linecap: round; pointer-events: none; }
 .swatch-band { width: 18px; height: 10px; border-radius: 3px; background: var(--bar-muted); }
-.swatch-tick { width: 3px; height: 14px; border-radius: 1px; background: #1f1f1f; }
 .dash .chart .axis-title { fill: var(--text-secondary); font-size: 12px; }
 .dash .chart .row-label { fill: var(--text-primary); font-size: 12px; }
 .dash .chart .tile-label { font-size: 12px; pointer-events: none; }
@@ -149,7 +143,6 @@
 .bubble-fact { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .bubble-facts dt { color: var(--text-secondary); font-size: var(--text-caption); }
 .bubble-facts dd { margin: 0; min-width: 0; }
-.bubble-fact .stacked { margin: 3px 0 0; height: 10px; width: 120px; }
 .rows-owners { gap: 6px; }
 .rows-owners li { row-gap: 0; }
 .rows-owners .row-sub { grid-column: 2 / -1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-caption); color: var(--text-secondary); }
@@ -172,34 +165,11 @@
 .rows li { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--space-3); row-gap: 3px; align-items: center; font-size: var(--text-small); }
 .rows .row-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rows .row-value { color: var(--text-secondary); font-size: var(--text-caption); text-align: right; }
-.rows .hbar { grid-column: 1 / -1; min-width: 0; }
-.rows .hbar-track { height: 6px; }
-.rows .hbar-fill { background: var(--bar-color, var(--series-news)); }
 .rows-groups { gap: 3px; }
 .rows-groups li { grid-template-columns: 10px minmax(0, 1fr) auto; }
-.rows-stories li { grid-template-columns: minmax(0, 1fr) 84px 44px; }
-.rows-stories .row-name { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.3; }
 .card-top { align-self: start; }
-.rows-wrap .row-name { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.3; }
-.rows-cells li { grid-template-columns: minmax(0, 1fr) auto; }
-.rows-cells .row-name { white-space: normal; line-height: 1.3; }
-.rows-cells .row-person { display: block; font-size: var(--text-caption); color: var(--text-secondary); }
-.stack { display: flex; gap: 2px; height: 14px; }
-.stack span { display: block; height: 100%; background: var(--seg, var(--bar-muted)); }
-.stack span:first-child { border-radius: 4px 0 0 4px; }
-.stack span:last-child { border-radius: 0 4px 4px 0; }
 
-/* Diverging bars: the neutral share is in the center, the critical share goes left and the supportive share goes right. */
-.diverge { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; }
-.diverge li { display: grid; grid-template-columns: minmax(96px, 150px) minmax(0, 1fr); gap: var(--space-3); align-items: center; font-size: var(--text-small); }
-.diverge .div-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.diverge .div-track { position: relative; height: 22px; }
-.diverge .div-seg { position: absolute; top: 3px; height: 16px; background: var(--seg); }
-.diverge .div-mid { position: absolute; top: 0; bottom: 0; width: 1px; left: 50%; background: var(--text-secondary); }
-.diverge .div-val { position: absolute; top: 3px; line-height: 16px; font-size: var(--text-caption); }
-.diverge .div-val { white-space: nowrap; color: var(--text-primary); }
-.diverge .div-val-l { margin-right: 6px; }
-.diverge .div-val-r { margin-left: 6px; }
+/* Keys of the colors of a chart that is not a bar chart. */
 .stance-key { display: flex; flex-wrap: wrap; gap: var(--space-3); font-size: var(--text-caption); color: var(--text-secondary); }
 .key-item { display: inline-flex; align-items: center; gap: var(--space-1); }
 
@@ -232,15 +202,9 @@
 .rank-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3) var(--space-5); }
 .rank-toolbar .filter-bar { margin: 0; align-items: center; }
 .search-input { min-height: 36px; width: 240px; max-width: 100%; padding: 0 var(--space-4); border: 1px solid var(--border); background: var(--surface-raised); font-size: var(--text-small); }
-.bar-cell { display: grid; grid-template-columns: 56px minmax(60px, 120px); align-items: center; justify-content: end; gap: var(--space-2); }
-.bar-cell .bar-num { text-align: right; }
-.bar-cell .hbar { min-width: 0; }
-.bar-cell .hbar-fill { background: var(--series-news); }
 .scale-cell { display: inline-grid; grid-template-columns: 52px 96px; align-items: center; justify-content: end; gap: var(--space-2); }
 .scale-cell .scale-num { text-align: right; }
 .scale { display: block; overflow: visible; }
-.c-7 .bar-cell { grid-template-columns: 48px 56px; }
-.c-7 .bar-cell .hbar { min-width: 0; }
 .c-7 .scale-cell, .c-8 .scale-cell { grid-template-columns: 44px 60px; }
 .c-7 .scale, .c-8 .scale { width: 60px; }
 .scale .scale-line { stroke: var(--rule); stroke-width: 2; stroke-linecap: round; }
@@ -265,12 +229,8 @@
   .c-3, .c-4, .c-5, .c-6, .c-7, .c-8 { grid-column: span 12; }
   .dstat-row { grid-template-columns: auto minmax(0, 1fr); }
   .dstat-row > :last-child:not(.dstat-sub) { display: none; }
-  .bar-cell { grid-template-columns: auto; }
-  .bar-cell .hbar, .scale-cell .scale { display: none; }
   .scale-cell { grid-template-columns: auto; }
-  .rows-stories li { grid-template-columns: minmax(0, 1fr) 44px; }
-  .rows-stories .spark { display: none; }
-  .diverge li { grid-template-columns: 1fr; gap: 2px; }
+  .scale-cell .scale { display: none; }
 }
 
 @media (max-width: 719px) {
@@ -281,24 +241,14 @@
   .dash-actions { width: 100%; min-width: 0; }
 }
 
-/* Story page (News spread). A share: the bar is the story and the tick is all articles. */
+/* Story page (News spread). */
 .rows-caption { margin: var(--space-2) 0 0; font-size: var(--text-caption); font-weight: 600; color: var(--text-secondary); }
-.rows-share { gap: 6px; }
-.rows-share li { row-gap: 2px; }
-.rows-share .row-value { color: var(--text-primary); }
-.share { position: relative; grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--series-other); }
-.share-fill { height: 100%; border-radius: 3px; background: var(--series-news); }
-.share-tick { position: absolute; top: -3px; width: 2px; height: 12px; margin-left: -1px; border-radius: 1px; background: #1f1f1f; }
-.legend-wrap { margin: 0; padding: 0; list-style: none; flex-wrap: wrap; }
-.legend-wrap li { display: inline-flex; align-items: center; gap: var(--space-1); }
-.stack-wide { width: 160px; max-width: 100%; }
 .nowrap { white-space: nowrap; }
 .reach { display: inline-flex; align-items: center; gap: 3px; }
 .reach .dot { width: 9px; height: 9px; }
 .reach-n { margin-left: var(--space-2); font-size: var(--text-caption); color: var(--text-secondary); }
 @media (max-width: 640px) { .dcard-head { flex-wrap: wrap; } }
 .clip { display: block; max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.stack-fill { width: 100%; min-width: 96px; }
 
 /* Campaigns: a row of a detector list. The row opens to show its numbers and the headlines. */
 .camp-list { margin: 0; padding: 0; list-style: none; }
@@ -330,21 +280,6 @@
 .dcard-tools .segmented button { min-height: 26px; padding: 0 10px; font-size: var(--text-caption); }
 .how-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: var(--space-4); }
 .how-panel { min-width: 0; }
-.diverge-3 { gap: 8px; }
-.diverge-3 li { grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--space-2); }
-.diverge-3 .div-name { white-space: normal; }
-.diverge-3 .div-num { text-align: right; font-size: var(--text-caption); color: var(--text-primary); }
-.diverge-3 .div-track, .diff-cell .div-track { grid-column: 1 / -1; height: 10px; border-radius: 5px; background: var(--surface-sunken, #ece9e0); }
-.diverge-3 .div-seg, .diff-cell .div-seg { top: 1px; height: 8px; border-radius: 4px; }
-.diverge-groups { gap: 10px; margin-top: var(--space-2); }
-.diverge-groups .div-name { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
-.diverge-groups .div-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.diverge-groups .div-track { height: 12px; background: none; }
-.diverge-groups .div-seg { top: 0; height: 12px; border-radius: 6px; box-shadow: 0 0 0 1px var(--surface-raised); }
-.diverge-groups .div-num-c, .diverge-groups .div-num-s { font-variant-numeric: tabular-nums; }
-.diverge-groups .div-num-c::before, .diverge-groups .div-num-s::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 4px; border-radius: 2px; background: var(--stance-critical); }
-.diverge-groups .div-num-s::before { background: var(--stance-supportive); }
-.diverge-3 .div-mid, .diff-cell .div-mid { top: -2px; bottom: -2px; width: 2px; margin-left: -1px; border-radius: 1px; background: #1f1f1f; }
 .story-grid { margin-top: var(--space-4); }
 @media (max-width: 1279px) { .story-col { display: contents; } }
 
@@ -404,10 +339,6 @@
 .ring-list li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; column-gap: var(--space-2); align-items: center; padding: 4px 0; border-bottom: 1px solid var(--border); }
 .ring-list li:last-child { border-bottom: 0; }
 .ring-list .muted-text { font-size: var(--text-caption); text-align: right; }
-.diff-cell { display: grid; grid-template-columns: minmax(80px, 1fr); min-width: 120px; }
-.diff-cell .div-track { position: relative; display: block; }
-.diff-cell .div-seg { position: absolute; background: var(--seg); }
-.diff-cell .div-mid { position: absolute; left: 50%; background: #1f1f1f; }
 
 /* The matrix of Ομοιότητα και πρωτοτυπία: a grid of squares, the labels of the rows as buttons and the labels of the columns standing up. */
 .mx { display: grid; grid-template-columns: 112px repeat(var(--n), minmax(0, 1fr)); gap: 2px; align-items: stretch; font-size: var(--text-caption); }
@@ -425,9 +356,6 @@
 .mx-select { display: none; margin-bottom: var(--space-2); }
 .pairs-details > summary { cursor: pointer; margin-bottom: var(--space-3); }
 .orig-cell { display: grid; grid-template-columns: 52px minmax(120px, 1fr); gap: var(--space-2); align-items: center; }
-.orig-bar { position: relative; }
-.orig-bar .stack { height: 14px; }
-.orig-bar .avg-tick { position: absolute; top: -3px; bottom: -3px; width: 0; border-left: 2px dashed #1f1f1f; }
 @media (max-width: 719px) { .mx-card { display: none; } .mx-select { display: block; } }
 .name-cell .chip-sm { border-radius: 10px; }
 @media (max-width: 719px) { .orig-cell { grid-template-columns: minmax(0, 1fr); gap: 4px; } }
@@ -435,8 +363,6 @@
 .chart .hit { fill: transparent; cursor: pointer; }
 .chart .hit:hover { fill: color-mix(in srgb, var(--series-news) 6%, transparent); }
 .chart .hit:focus-visible { outline: 2px solid #1f1f1f; }
-.rows-pick li { cursor: pointer; border-radius: 6px; padding: 2px 4px; margin: 0 -4px; }
-.rows-pick li:hover, .rows-pick li.is-picked { background: var(--bar-muted); }
 .story-top { margin-top: var(--space-4); }
 
 /* Page of one outlet (outlet-v2.html). */
@@ -512,7 +438,6 @@
 
 /* Αναλύσεις & Ιδιοκτησία hub (analyze-v2.html, #8). */
 .dash-window { margin: 0 0 var(--space-3); font-size: var(--text-caption); color: var(--text-secondary); }
-.dash .chart .gap-band { fill: var(--surface-page); stroke: var(--rule); stroke-width: 1; stroke-dasharray: 2 3; }
 .dot-row { display: inline-flex; flex-wrap: wrap; gap: 4px; max-width: 64px; }
 .src-rows { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
 .src-rows li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: end; column-gap: var(--space-3); font-size: var(--text-small); }

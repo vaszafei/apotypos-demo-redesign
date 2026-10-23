@@ -27,36 +27,11 @@
 .party-table .anon-hi { color: var(--stance-critical); font-weight: 700; }
 .party-table .anon-mid { color: var(--emph-less); font-weight: 600; }
 
-/* Two bars for each party: the exposure in the color of the party and the vote or the polls in gray. */
-.twin { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; }
-.twin li { display: grid; grid-template-columns: 64px minmax(0, 1fr) 112px 80px; gap: var(--space-3); align-items: center; font-size: var(--text-small); font-variant-numeric: tabular-nums; }
-.twin .twin-key { font-weight: 600; color: var(--party); }
-.twin .twin-bars { display: grid; gap: 3px; }
-.twin .twin-bars span { display: block; height: 7px; border-radius: 4px; background: var(--seg); min-width: 2px; }
-.twin .twin-vals { text-align: right; font-size: var(--text-caption); color: var(--text-secondary); }
-.twin .twin-gap { text-align: right; font-weight: 600; white-space: nowrap; }
-.twin-legend { margin: 0 0 var(--space-2); }
-
-/* Lean of each outlet: a bar from the center, to the right for the government and to the left for the opposition. */
-.lean-bars { margin: 0; padding: 0; list-style: none; display: grid; gap: 5px; }
-.lean-bars li { display: grid; grid-template-columns: minmax(90px, 130px) minmax(0, 1fr) 52px; gap: var(--space-3); align-items: center; font-size: var(--text-small); }
-.lean-bars .lean-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lean-bars .lean-track { position: relative; height: 14px; border-radius: 7px; background: var(--surface-page); }
-.lean-bars .lean-track::after { content: ''; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--text-secondary); }
-.lean-bars .lean-fill { position: absolute; top: 0; height: 100%; border-radius: 7px; background: var(--seg); }
+/* The bars are UI.BarList (components.js). The name of a party is in its color, the gap of a party is in bold. */
+.party-key { font-weight: 600; color: var(--party); }
+.twin .twin-gap { font-weight: 600; color: var(--text-primary); }
 .lean-bars .is-thin { color: var(--text-secondary); }
-.lean-bars .is-thin .lean-fill { opacity: 0.4; }
-.lean-bars .lean-val { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
 .lean-ends { display: flex; justify-content: space-between; margin: 0 0 var(--space-2); font-size: var(--text-caption); color: var(--text-secondary); }
-
-/* Who controls the coverage: the share of the largest owner. */
-.owner-rows { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
-.owner-rows li { display: grid; grid-template-columns: 64px minmax(0, 1fr) minmax(0, 1.1fr) 36px; gap: var(--space-3); align-items: center; font-size: var(--text-small); }
-.owner-rows .twin-key { font-weight: 600; color: var(--party); }
-.owner-rows .owner-track { height: 10px; border-radius: 5px; background: var(--surface-page); overflow: hidden; }
-.owner-rows .owner-fill { display: block; height: 100%; border-radius: 5px; background: color-mix(in srgb, var(--party) 70%, #ffffff); }
-.owner-rows .owner-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-caption); }
-.owner-rows .num { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
 
 /* Blindspots: two lists side by side. */
 .blind-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }

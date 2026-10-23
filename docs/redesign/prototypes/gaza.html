@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/app.css?v=15">
+  <link rel="stylesheet" href="assets/tokens.css?v=5">
+  <link rel="stylesheet" href="assets/app.css?v=16">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=22"></script>
-  <script src="assets/components.js?v=7"></script>
+  <script src="assets/components.js?v=8"></script>
   <script src="assets/shell.js?v=38"></script>
   <script src="data/gaza.js"></script>
   <script>
@@ -51,8 +51,8 @@
         const dailyCard = UI.ChartCard({
           title: t('gaza.daily.title'), note: t('gaza.daily.note', { period }),
           body: UI.BarChart({
-            values: d.daily.map((x) => ({ key: x.date, value: x.per1k, gaza: x.gaza })), markers, label: t('gaza.daily.title'),
-            valueFormat: (v) => fmt.int(v), tooltipOf: (v) => t('gaza.daily.tooltip', { date: fmt.date(v.key), gaza: fmt.int(v.gaza), rate: fmt.dec(v.value) })
+            dates: d.daily.map((x) => x.date), values: d.daily.map((x) => x.per1k), markers, label: t('gaza.daily.title'),
+            valueFormat: (v) => fmt.int(v), tooltipOf: (i) => t('gaza.daily.tooltip', { date: fmt.date(d.daily[i].date), gaza: fmt.int(d.daily[i].gaza), rate: fmt.dec(d.daily[i].per1k) })
           })
         })
 

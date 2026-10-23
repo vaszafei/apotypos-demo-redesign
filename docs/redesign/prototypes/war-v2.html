@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/app.css?v=15">
-  <link rel="stylesheet" href="assets/dash.css?v=67">
-  <link rel="stylesheet" href="assets/politics.css?v=1">
+  <link rel="stylesheet" href="assets/tokens.css?v=5">
+  <link rel="stylesheet" href="assets/app.css?v=16">
+  <link rel="stylesheet" href="assets/dash.css?v=68">
+  <link rel="stylesheet" href="assets/politics.css?v=2">
 </head>
 <body>
   <div id="app"></div>
@@ -16,16 +16,16 @@
   <script src="assets/messages.js?v=22"></script>
   <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-politics.js?v=8"></script>
-  <script src="assets/components.js?v=7"></script>
-  <script src="assets/dash.js?v=12"></script>
-  <script src="assets/politics.js?v=1"></script>
+  <script src="assets/components.js?v=8"></script>
+  <script src="assets/dash.js?v=13"></script>
+  <script src="assets/politics.js?v=2"></script>
   <script src="assets/shell.js?v=38"></script>
   <script src="data/war.js?v=1"></script>
   <script>
     // Αναλύσεις, Ελληνοτουρκικά (was Πολεμική ρητορική, then a tab of Πολιτική): how the press writes about Turkey (K20 to K23, C05, C06). It reads the war file (1 Aug to 30 Sep 2026).
     const { t, fmt, h, load } = App
     const { reset, card, cardHead, Stat, TopBar, Spark } = Dash
-    const { weekLabel, ColumnChart, Rows, signed } = Politics
+    const { weekLabel, signed } = Politics
     const result = load('war', ['weeks', 'daily', 'outlets'], (b) => b.weeks)
     const MIN_OUTLET = 20
     const MIN_CELL = 5
@@ -73,19 +73,19 @@
 
         // Row 2: the weeks, with the events under the chart.
         const marks = Object.fromEntries(d.events.map((e, i) => [d.weeks.findIndex((w) => w.week === e.week), i + 1]).filter(([i]) => i >= 0))
-        const weeksCard = card('c-8', cardHead(t('war.weeks.title'), h('span', { class: 'stance-key' },
-          h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: 'var(--stance-critical)' } }), t('war.weeks.legend.hot')),
-          h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: 'var(--bar-muted)' } }), t('war.weeks.legend.rest'))), t('war.weeks.info')),
-        ColumnChart({
+        const weeksCard = card('c-8', cardHead(t('war.weeks.title'), UI.Legend([{ label: t('war.weeks.legend.hot'), color: 'var(--stance-critical)' }, { label: t('war.weeks.legend.rest'), color: 'var(--bar-muted)' }]), t('war.weeks.info')),
+        UI.BarChart({
           labels: labels.map((l) => l.short),
-          values: d.weeks.map((w) => w.gt),
-          part: d.weeks.map((w) => w.hot),
-          top: d.weeks.map((w) => fmt.pct(share(w.hot, w.gt))),
+          series: [
+            { name: t('war.weeks.legend.hot'), color: 'var(--stance-critical)', values: d.weeks.map((w) => w.hot) },
+            { name: t('war.weeks.legend.rest'), color: 'var(--bar-muted)', values: d.weeks.map((w) => w.gt - w.hot) }
+          ],
+          topLabels: d.weeks.map((w) => fmt.pct(share(w.hot, w.gt))),
           below: d.weeks.map((w) => fmt.int((d.airspace[w.week] || {}).violations || 0)),
-          marks,
+          markers: marks,
           height: 280,
-          tips: d.weeks.map((w, i) => t('war.weeks.tip', { week: labels[i].long, gt: fmt.int(w.gt), hot: fmt.int(w.hot), share: fmt.pct(share(w.hot, w.gt)), air: fmt.int((d.airspace[w.week] || {}).violations || 0) })),
-          aria: t('war.weeks.title')
+          tooltipOf: (i) => { const w = d.weeks[i]; return t('war.weeks.tip', { week: labels[i].long, gt: fmt.int(w.gt), hot: fmt.int(w.hot), share: fmt.pct(share(w.hot, w.gt)), air: fmt.int((d.airspace[w.week] || {}).violations || 0) }) },
+          label: t('war.weeks.title')
         }),
         h('p', { class: 'dcard-sub' }, t('war.weeks.air')),
         h('ol', { class: 'marker-row' }, d.events.map((e, i) => h('li', {}, h('span', { class: 'marker-num' }, String(i + 1)), h('span', { class: 'name' }, e[App.locale] || e.el)))))
@@ -97,7 +97,7 @@
         }
         const gradeKeys = ['calm', 'e1', 'e2', 'e3', 'war']
         const scaleCard = card('c-4', cardHead(t('war.scale.title'), null, t('war.scale.info')),
-          Rows(grades.map(([g, n], i) => ({
+          UI.BarList(grades.map(([g, n], i) => ({
             label: t(`war.scale.${g}`), value: n, color: ['#2a78d6', 'var(--bar-muted)', '#e8a37a', 'var(--stance-critical)', '#7d1f1f'][i],
             text: `${fmt.pct(share(n, all.gt))} · ${fmt.pct(gradeMonth('aug', gradeKeys[i]))} → ${fmt.pct(gradeMonth('sep', gradeKeys[i]))}`
           }))))
@@ -106,11 +106,11 @@
         const voices = {}
         d.weeks.forEach((w) => Object.entries(w.voices).forEach(([k, n]) => { voices[k] = (voices[k] || 0) + n }))
         const voiceCard = card('c-4', cardHead(t('war.voice.title'), null, t('war.voice.info')),
-          Rows(VOICES.filter((k) => voices[k]).map((k) => ({ label: t(`war.voice.${k}`), value: voices[k], text: `${fmt.int(voices[k])} · ${fmt.pct(share(voices[k], all.hot))}`, color: k === 'outlet' ? 'var(--stance-critical)' : null }))))
+          UI.BarList(VOICES.filter((k) => voices[k]).map((k) => ({ label: t(`war.voice.${k}`), value: voices[k], text: `${fmt.int(voices[k])} · ${fmt.pct(share(voices[k], all.hot))}`, color: k === 'outlet' ? 'var(--stance-critical)' : null }))))
         const frames = {}
         d.weeks.forEach((w) => Object.entries(w.frames).forEach(([k, n]) => { frames[k] = (frames[k] || 0) + n }))
         const frameCard = card('c-4', cardHead(t('war.frames.title'), null, t('war.frames.info')),
-          Rows(Object.entries(frames).filter(([k]) => k !== 'other').sort((a, b) => b[1] - a[1]).map(([k, n]) => ({ label: t(`war.frame.${k}`), value: share(n, all.gt), text: fmt.pct(share(n, all.gt)) })), { max: 1 }))
+          UI.BarList(Object.entries(frames).filter(([k]) => k !== 'other').sort((a, b) => b[1] - a[1]).map(([k, n]) => ({ label: t(`war.frame.${k}`), value: share(n, all.gt), text: fmt.pct(share(n, all.gt)) })), { max: 1 }))
 
         const metricRows = METRICS.map(([k, base]) => {
           const weekly = d.weeks.map((w) => share(w[k], w[base]))

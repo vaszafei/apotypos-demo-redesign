@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/app.css?v=15">
-  <link rel="stylesheet" href="assets/dash.css?v=67">
+  <link rel="stylesheet" href="assets/tokens.css?v=5">
+  <link rel="stylesheet" href="assets/app.css?v=16">
+  <link rel="stylesheet" href="assets/dash.css?v=68">
 </head>
 <body>
   <div id="app"></div>
@@ -15,10 +15,10 @@
   <script src="assets/messages.js?v=22"></script>
   <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-spread.js?v=13"></script>
-  <script src="assets/components.js?v=7"></script>
-  <script src="assets/dash.js?v=12"></script>
-  <script src="assets/spread.js?v=5"></script>
-  <script src="assets/entity-cards.js?v=4"></script>
+  <script src="assets/components.js?v=8"></script>
+  <script src="assets/dash.js?v=13"></script>
+  <script src="assets/spread.js?v=6"></script>
+  <script src="assets/entity-cards.js?v=5"></script>
   <script src="assets/shell.js?v=38"></script>
   <script src="data/media.js"></script>
   <script src="data/stories.js?v=1"></script>
@@ -139,7 +139,7 @@
         const topicRows = keep.filter(({ i }) => group.topics[i]).map(({ issue, i }) => ({ label: name(issue), value: group.topics[i] / nGroup, usual: g.topicsAll[i] / nAll, tipKey: 'group2.how.tip' }))
           .sort((a, b) => b.value - a.value).slice(0, TOPICS)
         const topicScale = scaleOf(topicRows)
-        const topicList = (rows) => h('ul', { class: 'diverge diverge-3' }, rows.map((r) => DiffRow({ ...r, scale: topicScale })))
+        const topicList = (rows) => UI.BarList(rows.map((r) => DiffRow({ ...r, scale: topicScale })))
         const diffKey = Entity.diffKey()
         const topicsCard = card('c-8', cardHead(t('group2.topics.title'), diffKey, t('group2.topics.info')),
           topicRows.length
@@ -158,7 +158,7 @@
         const stanceAll = [0, 1, 2].map((i) => sum(files.map((o) => o.stance[i])))
         const stanceN = sum(stanceMine)
         const howScale = scaleOf([...newsRows, ...clickRows])
-        const rowsOf = (rows) => (rows.length ? h('ul', { class: 'diverge diverge-3' }, rows.map((r) => DiffRow({ ...r, scale: howScale, tipKey: 'group2.how.tip' }))) : null)
+        const rowsOf = (rows) => (rows.length ? UI.BarList(rows.map((r) => DiffRow({ ...r, scale: howScale, tipKey: 'group2.how.tip' }))) : null)
         const note = (text) => h('p', { class: 'dcard-sub' }, text)
         const howCard = card('c-4', cardHead(t('group2.how.title'), null, t('group2.how.info')),
           rowsOf([...newsRows, ...clickRows]), note(t('outlet2.how.news.n', { n: fmt.int(analysed) })),

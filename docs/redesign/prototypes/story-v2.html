@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/app.css?v=15">
-  <link rel="stylesheet" href="assets/dash.css?v=67">
+  <link rel="stylesheet" href="assets/tokens.css?v=5">
+  <link rel="stylesheet" href="assets/app.css?v=16">
+  <link rel="stylesheet" href="assets/dash.css?v=68">
 </head>
 <body>
   <div id="app"></div>
@@ -15,10 +15,10 @@
   <script src="assets/messages.js?v=22"></script>
   <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-spread.js?v=13"></script>
-  <script src="assets/components.js?v=7"></script>
-  <script src="assets/dash.js?v=12"></script>
-  <script src="assets/spread.js?v=5"></script>
-  <script src="assets/entity-cards.js?v=4"></script>
+  <script src="assets/components.js?v=8"></script>
+  <script src="assets/dash.js?v=13"></script>
+  <script src="assets/spread.js?v=6"></script>
+  <script src="assets/entity-cards.js?v=5"></script>
   <script src="assets/shell.js?v=38"></script>
   <script src="data/stories.js?v=1"></script>
   <script src="data/storyDetail.js?v=1"></script>
@@ -36,12 +36,8 @@
     const MIN_DAYS = 14
     const RELATED = 6
 
-    // A row of the difference view. The center line is the share in all articles. The bar goes right (teal) when the story has more, left (orange) when it has less.
-    function DiffRow ({ label, value, usual, scale }) {
-      const diff = value - usual
-      const tip = t('story.how.tip', { label, value: fmt.pct(value), usual: fmt.pct(usual), diff: `${diff >= 0 ? '+' : '−'}${fmt.pct(Math.abs(diff))}` })
-      return h('li', { title: tip }, h('span', { class: 'div-name' }, label), h('span', { class: 'div-num' }, fmt.pct(value)), Spread.DiffTrack(diff, scale, tip))
-    }
+    // A row of the difference view, for UI.BarList. The center line is the share in all articles. The bar goes right (teal) when the story has more, left (orange) when it has less.
+    const DiffRow = (r) => Entity.DiffRow({ ...r, tipKey: 'story.how.tip' })
 
     // Related stories. The topic is too general: the topic "Θάνατος Μαζωνάκη" holds 11 other deaths. A story is related when its title has rare words in common
     // (the stem is the first 6 letters, so the endings of Greek words do not matter) or when it has articles on the same days. Common words have no weight.
@@ -151,8 +147,8 @@
         const series = groups.map((g) => ({ name: groupName(g.group), color: groupColor(g.group), values: g.values }))
         const shown = d.dates.slice(lo, hi + 1)
         const dailyCard = card('c-8', cardHead(t('story.daily.title'), null, t('story.daily.info')),
-          Entity.DailyChart({ dates: shown, stacks: shown.map((_, i) => series.map((x) => ({ name: x.name, v: x.values[lo + i], fill: x.color }))) }),
-          h('ul', { class: 'legend-inline legend-wrap' }, series.map((x) => h('li', {}, h('span', { class: 'swatch', style: { background: x.color } }), x.name))))
+          Entity.DailyChart({ dates: shown, series: series.map((x) => ({ ...x, values: x.values.slice(lo, hi + 1) })) }),
+          UI.Legend(series.map((x) => ({ label: x.name, color: x.color }))))
 
         // The groups and their outlets in one card, as Άρθρα ανά όμιλο of Ιδιοκτησία: the groups with their outlets under each name, and the sunburst.
         const groupRecord = new Map((groupsData.data ? groupsData.data.groups : []).map((g) => [g.name, g]))
@@ -190,12 +186,10 @@
         const scale = Math.max(0.05, ...panels.flatMap((p) => p.rows.map((r) => Math.abs(r.value - r.usual))))
         const column = (items) => h('div', { class: 'how-panel' }, items.map((p) => [
           h('h3', { class: 'rows-caption' }, p.title),
-          p.rows.length ? h('ul', { class: 'diverge diverge-3' }, p.rows.map((r) => DiffRow({ ...r, scale }))) : null,
+          p.rows.length ? UI.BarList(p.rows.map((r) => DiffRow({ ...r, scale }))) : null,
           p.note ? h('p', { class: 'dcard-sub' }, p.note) : null
         ]))
-        const howKey = h('span', { class: 'legend-inline' },
-          h('span', {}, h('span', { class: 'swatch', style: { background: 'var(--emph-more)' } }), t('story.how.more')),
-          h('span', {}, h('span', { class: 'swatch', style: { background: 'var(--emph-less)' } }), t('story.how.less')))
+        const howKey = Entity.diffKey()
         const howCard = card('c-6', cardHead(t('story.how.title'), null, t('story.how.info')),
           h('div', { class: 'how-grid how-grid-2' }, column([panels[0]]), column([panels[1], panels[3]])), howKey)
         const stanceCard = Entity.StanceCard({
@@ -210,9 +204,7 @@
             { label: t('story.people.col.person'), render: (r) => h('div', {}, h('div', {}, r.person.name), h('span', { class: 'muted-text' }, [r.person.role, r.person.party].filter(Boolean).join(' · '))) },
             { label: t('story.people.col.mentions'), num: true, render: (r) => fmt.int(total(r.counts)) },
             { label: t('story.people.col.portrayal'), phone: false, render: (r) => {
-              const sum = total(r.counts)
-              const text = r.counts.map((n, i) => `${t(`story.portrayal.${dd.portrayals[i]}`)} ${fmt.pct(n / sum)}`).join(', ')
-              return h('div', { class: 'stack stack-wide', role: 'img', 'aria-label': text, title: text }, r.counts.map((n, i) => n ? h('span', { style: `width:${(n / sum) * 100}%;--seg:${SEG[i]}` }) : null))
+              return UI.StackedBar(r.counts.map((n, i) => ({ label: t(`story.portrayal.${dd.portrayals[i]}`), value: n, color: SEG[i] })), { legend: false })
             } }
           ]
         }))

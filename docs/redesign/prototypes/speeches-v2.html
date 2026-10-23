@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=4">
-  <link rel="stylesheet" href="assets/app.css?v=15">
-  <link rel="stylesheet" href="assets/dash.css?v=67">
-  <link rel="stylesheet" href="assets/politics.css?v=1">
+  <link rel="stylesheet" href="assets/tokens.css?v=5">
+  <link rel="stylesheet" href="assets/app.css?v=16">
+  <link rel="stylesheet" href="assets/dash.css?v=68">
+  <link rel="stylesheet" href="assets/politics.css?v=2">
 </head>
 <body>
   <div id="app"></div>
@@ -16,9 +16,9 @@
   <script src="assets/messages.js?v=22"></script>
   <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-politics.js?v=8"></script>
-  <script src="assets/components.js?v=7"></script>
-  <script src="assets/dash.js?v=12"></script>
-  <script src="assets/politics.js?v=1"></script>
+  <script src="assets/components.js?v=8"></script>
+  <script src="assets/dash.js?v=13"></script>
+  <script src="assets/politics.js?v=2"></script>
   <script src="assets/shell.js?v=38"></script>
   <script src="data/speeches.js?v=1"></script>
   <script>
@@ -26,7 +26,7 @@
     // The region pills in the top bar filter every card.
     const { t, fmt, h, load } = App
     const { reset, card, cardHead, Stat, TopBar, SLOTS } = Dash
-    const { Rows, dataName } = Politics
+    const { dataName } = Politics
     const result = load('speeches', ['rows', 'agenda'], (b) => b.rows)
     const REGIONS = ['Africa', 'Europe', 'Asia-Pacific', 'Latin America & Caribbean', 'Middle East', 'North America']
     const DOMESTIC = 'Domestic affairs'
@@ -77,14 +77,14 @@
             : d.agenda
           const shown = agenda.filter((a) => a.topic !== DOMESTIC).slice(0, 12)
           const agendaCard = card('c-7', cardHead(t('un.agenda.title'), null, t('un.agenda.info', { n: fmt.int(d.topics) })),
-            Rows(shown.map((a) => ({ label: topic(a.topic), sub: t('un.agenda.top', { names: a.top.join(', ') }), value: a.minutes, text: t('un.agenda.value', { m: fmt.int(Math.round(a.minutes)), n: fmt.int(a.leaders) }) })), { cls: 'rows-wrap' }))
+            UI.BarList(shown.map((a) => ({ label: topic(a.topic), sub: t('un.agenda.top', { names: a.top.join(', ') }), value: a.minutes, text: t('un.agenda.value', { m: fmt.int(Math.round(a.minutes)), n: fmt.int(a.leaders) }) }))))
 
           const targets = {}
           // Two names of the data can have one Greek name (for example Western nations and Western countries). The shown name is the key.
           rows.forEach((r) => new Map(r.targets.map(([k, n]) => [dataName('un.target', k), n])).forEach((n, k) => { const e = targets[k] || (targets[k] = { n: 0, leaders: 0 }); e.n += n; e.leaders++ }))
           const targetRows = Object.entries(targets).sort((a, b) => b[1].n - a[1].n).slice(0, 8)
           const targetCard = card('', cardHead(t('un.targets.title'), null, t('un.targets.info')),
-            Rows(targetRows.map(([k, e]) => ({ label: k, value: e.n, text: t('un.targets.value', { n: fmt.int(e.n), l: fmt.int(e.leaders) }), color: 'var(--stance-critical)' }))))
+            UI.BarList(targetRows.map(([k, e]) => ({ label: k, value: e.n, text: t('un.targets.value', { n: fmt.int(e.n), l: fmt.int(e.leaders) }), color: 'var(--stance-critical)' }))))
 
           const greek = rows.filter((r) => r.greece.n).sort((a, b) => b.greece.n - a.greece.n)
           const greeceCard = card('', cardHead(t('un.greece.title'), null, t('un.greece.info')),
@@ -99,14 +99,11 @@
           const colorOf = new Map(d.agenda.filter((a) => a.topic !== DOMESTIC).slice(0, SLOTS.length).map((a, i) => [a.topic, SLOTS[i]]))
           colorOf.set(DOMESTIC, '#5c5a55')
           const segColor = (k) => colorOf.get(k) || '#d6d2c8'
-          const legend = h('span', { class: 'stance-key' }, [...colorOf.keys()].map((k) => h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: colorOf.get(k) } }), topic(k))),
-            h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: '#d6d2c8' } }), t('un.other')))
+          const legend = UI.Legend([...[...colorOf.keys()].map((k) => ({ label: topic(k), color: colorOf.get(k) })), { label: t('un.other'), color: '#d6d2c8' }])
           const Print = (r) => {
             const rest = Math.max(0, 1 - r.shares.reduce((a, [, s]) => a + s, 0))
             const label = r.shares.map(([k, s]) => `${topic(k)} ${fmt.pct(s)}`).join(', ')
-            return h('div', { class: 'print', role: 'img', 'aria-label': label, title: label },
-              r.shares.map(([k, s]) => h('span', { style: `width:${s * 100}%;--seg:${segColor(k)}` })),
-              rest > 0.01 ? h('span', { style: `width:${rest * 100}%;--seg:#ebe8e1` }) : null)
+            return UI.StackedBar([...r.shares.map(([k, s]) => ({ label: topic(k), value: s, color: segColor(k) })), { label: t('un.other'), value: rest > 0.01 ? rest : 0, color: '#ebe8e1' }], { legend: false, label })
           }
           const sorted = rows.slice().sort((a, b) => b.seconds - a.seconds)
           const tableCard = card('c-12', cardHead(t('un.table.title'), null, t('un.table.info')), legend,

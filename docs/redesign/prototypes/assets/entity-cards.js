@@ -1,67 +1,21 @@
 // Cards that the entity pages (topic, story, outlet, group) share: the title card, the daily columns, the difference bars, the stance card and the groups card. Load after dash.js and spread.js.
 (function () {
   const { t, fmt, h } = window.App
-  const { fit, niceStep } = window.Dash
 
-  // A row of the difference view. The center line is the share in all outlets. The bar goes right (teal) when the outlet has more, left (orange) when it has less.
+  // A row of the difference view, for UI.BarList. The center line is the share in all outlets. The bar goes right (teal) when the outlet has more, left (orange) when it has less.
   function DiffRow ({ label, value, usual, scale, tipKey = 'outlet2.how.tip' }) {
     const diff = value - usual
-    const tip = t(tipKey, { label, value: fmt.pct(value), usual: fmt.pct(usual), diff: `${diff >= 0 ? '+' : '−'}${fmt.pct(Math.abs(diff))}` })
-    return h('li', { title: tip }, h('span', { class: 'div-name' }, label), h('span', { class: 'div-num' }, fmt.pct(value)), Spread.DiffTrack(diff, scale, tip))
+    const tip = t(tipKey, { label: typeof label === 'string' ? label : label.textContent, value: fmt.pct(value), usual: fmt.pct(usual), diff: `${diff >= 0 ? '+' : '−'}${fmt.pct(Math.abs(diff))}` })
+    return { label, text: fmt.pct(value), bar: Spread.DiffTrack(diff, scale, tip) }
   }
   const scaleOf = (rows) => Math.max(0.05, ...rows.map((r) => Math.abs(r.value - r.usual)))
 
-  // The daily columns of Ιδιοκτησία: a round top, a gap of 1 px between the parts and a date label each week. stacks[i] is the parts of day i
-  // from the bottom to the top: { name, v, fill }. A day with no articles has no column.
-  function DailyChart ({ dates, stacks, height = 220 }) {
-    const uid = Math.random().toString(36).slice(2, 7)
-    const days = stacks.length
-    const totals = stacks.map((parts) => parts.reduce((a, p) => a + p.v, 0))
-    return fit((holder, width) => {
-      const pad = { top: 8, right: 4, bottom: 24, left: 44 }
-      const step = niceStep(Math.max(...totals, 1) / 4)
-      const top = Math.ceil(Math.max(...totals, 1) / step) * step
-      const plotW = width - pad.left - pad.right
-      const plotH = height - pad.top - pad.bottom
-      const bw = plotW / days
-      const y = (v) => pad.top + plotH - (v / top) * plotH
-      const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
-      for (let v = 0; v <= top; v += step) {
-        svg.append(h('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: y(v), y2: y(v) }), h('text', { x: pad.left - 6, y: y(v) + 4, 'text-anchor': 'end' }, fmt.int(v)))
-      }
-      const every = Math.max(7, Math.ceil(64 / bw))
-      stacks.forEach((parts, i) => {
-        const x = pad.left + i * bw
-        const w = Math.max(1, Math.min(14, bw * 0.78))
-        const bx = x + (bw - w) / 2
-        if (totals[i]) {
-          const rr = Math.min(4, w / 2)
-          const yt = y(totals[i])
-          const yb = y(0)
-          const clip = `ec-${uid}-${i}`
-          svg.append(h('clipPath', { id: clip }, h('path', { d: `M${bx} ${yb}V${yt + rr}Q${bx} ${yt} ${bx + rr} ${yt}H${bx + w - rr}Q${bx + w} ${yt} ${bx + w} ${yt + rr}V${yb}Z` })))
-          const col = h('g', { 'clip-path': `url(#${clip})` })
-          let base = 0
-          parts.forEach((p) => {
-            if (!p.v) return
-            col.append(h('rect', { x: bx, y: y(base + p.v), width: w, height: Math.max(0.5, (p.v / top) * plotH - 1), fill: p.fill }))
-            base += p.v
-          })
-          svg.append(col)
-        }
-        if (i % every === 0) svg.append(h('text', { x: x + bw / 2, y: height - 7, 'text-anchor': 'middle' }, fmt.date(dates[i], { day: 'numeric', month: 'short' })))
-      })
-      const overlay = h('rect', { class: 'overlay', x: pad.left, y: pad.top, width: plotW, height: plotH })
-      overlay.addEventListener('pointermove', (e) => {
-        const i = Math.min(days - 1, Math.max(0, Math.floor((e.clientX - svg.getBoundingClientRect().left - pad.left) / bw)))
-        const list = stacks[i].filter((p) => p.v > 0).reverse().map((p) => `${p.name} ${fmt.int(p.v)}`).join(' · ')
-        UI.showTooltip(`${t('story.daily.tip', { date: fmt.date(dates[i]), n: fmt.int(totals[i]) })}${list ? `: ${list}` : ''}`, e.clientX, e.clientY)
-      })
-      overlay.addEventListener('pointerleave', () => UI.hideTooltip())
-      svg.append(overlay)
-      const table = h('div', { class: 'visually-hidden' }, h('table', {}, h('caption', {}, t('outlet2.daily.aria')),
-        h('tbody', {}, totals.map((v, i) => h('tr', {}, h('th', { scope: 'row' }, fmt.date(dates[i])), h('td', {}, fmt.int(v)))))))
-      holder.replaceChildren(svg, table)
+  // The daily columns of Ιδιοκτησία (UI.BarChart). series: [{ name, color, values }], from the bottom to the top.
+  function DailyChart ({ dates, series, height = 220 }) {
+    const totals = dates.map((_, i) => series.reduce((a, x) => a + (x.values[i] || 0), 0))
+    return UI.BarChart({
+      dates, series, height, label: t('outlet2.daily.aria'),
+      tooltipOf: (i) => { const list = series.filter((x) => x.values[i] > 0).reverse().map((x) => `${x.name} ${fmt.int(x.values[i])}`).join(' · '); return `${t('story.daily.tip', { date: fmt.date(dates[i]), n: fmt.int(totals[i]) })}${list ? `: ${list}` : ''}` }
     })
   }
 
@@ -74,22 +28,18 @@
     const ranked = [...topicDays].map(([issue, values]) => ({ issue, values, total: values.reduce((a, b) => a + b, 0) })).sort((a, b) => b.total - a.total)
     const lead = ranked.filter((r) => !issues[r.issue].catchAll).slice(0, TOP_TOPICS)
     const rest = ranked.filter((r) => !lead.includes(r))
-    const series = lead.map((r, k) => ({ name: name(issues[r.issue]), fill: SLOTS[k], values: r.values }))
-    if (rest.length) series.push({ name: t('outlet2.daily.topic.rest'), fill: NO_GROUP, values: dates.map((_, i) => rest.reduce((a, r) => a + r.values[i], 0)) })
+    const series = lead.map((r, k) => ({ name: name(issues[r.issue]), color: SLOTS[k], values: r.values }))
+    if (rest.length) series.push({ name: t('outlet2.daily.topic.rest'), color: NO_GROUP, values: dates.map((_, i) => rest.reduce((a, r) => a + r.values[i], 0)) })
     const modes = {
-      news: {
-        stacks: daily.map(([total, news]) => [{ name: t('outlet2.daily.news'), v: news, fill: 'var(--series-news)' }, { name: t('outlet2.daily.other'), v: total - news, fill: 'var(--series-other)' }]),
-        key: [{ name: t('outlet2.daily.news'), fill: 'var(--series-news)' }, { name: t('outlet2.daily.other'), fill: 'var(--series-other)' }]
-      },
-      topic: { stacks: dates.map((_, i) => series.map((x) => ({ name: x.name, v: x.values[i], fill: x.fill }))), key: series }
+      news: [{ name: t('outlet2.daily.news'), color: 'var(--series-news)', values: daily.map(([, news]) => news) }, { name: t('outlet2.daily.other'), color: 'var(--series-other)', values: daily.map(([total, news]) => total - news) }],
+      topic: series
     }
     let mode = 'news'
     const body = h('div', {})
     const tools = h('div', {})
     const draw = () => {
       const m = modes[mode]
-      body.replaceChildren(DailyChart({ dates, stacks: m.stacks }),
-        h('ul', { class: 'legend-inline legend-wrap' }, m.key.map((x) => h('li', {}, h('span', { class: 'swatch', style: { background: x.fill } }), x.name))))
+      body.replaceChildren(DailyChart({ dates, series: m }), UI.Legend(m.map((x) => ({ label: x.name, color: x.color }))))
       tools.replaceChildren(UI.SegmentedControl({ label: t('outlet2.daily.mode'), value: mode, onChange: (v) => { mode = v; draw() },
         options: [{ value: 'news', label: t('outlet2.daily.mode.news') }, { value: 'topic', label: t('outlet2.daily.mode.topic') }] }))
     }
@@ -98,9 +48,7 @@
   }
 
   // The key of the difference bars: teal is more than usual, orange is less.
-  const diffKey = () => h('span', { class: 'legend-inline' },
-    h('span', {}, h('span', { class: 'swatch', style: { background: 'var(--emph-more)' } }), t('story.how.more')),
-    h('span', {}, h('span', { class: 'swatch', style: { background: 'var(--emph-less)' } }), t('story.how.less')))
+  const diffKey = () => UI.Legend([{ label: t('story.how.more'), color: 'var(--emph-more)' }, { label: t('story.how.less'), color: 'var(--emph-less)' }])
 
 
   // The title card: the kind and the name, the period once on the right, and one line of facts under them. The card is as wide as its content.
@@ -124,18 +72,14 @@
     }).filter((r) => r.n >= 30)
     const head = cardHead(t('entity.stance.title'), null, t('entity.stance.info'))
     if (shown.length < 2) return card(cls, head, h('p', { class: 'dcard-empty' }, t('entity.stance.none')))
-    const unit = 40 / Math.max(...shown.map((r) => Math.max(r.crit + r.neu / 2, r.sup + r.neu / 2)))
-    const seg = (name, left, width) => h('span', { class: 'div-seg', style: `--seg:var(--stance-${name});left:${left}%;width:${width}%` })
+    const scale = Math.max(...shown.map((r) => Math.max(r.crit + r.neu / 2, r.sup + r.neu / 2)))
     return card(cls, head,
-      h('span', { class: 'stance-key' }, ['critical', 'neutral', 'supportive'].map((nm) => h('span', { class: 'key-item' }, h('span', { class: 'swatch', style: { background: `var(--stance-${nm})` } }), t(`stance.${nm}`)))),
-      h('ul', { class: 'diverge diverge-3 diverge-groups' }, shown.map((r) => h('li', { 'aria-label': t('g2.stance.row', { group: r.label, critical: fmt.pct(r.crit), neutral: fmt.pct(r.neu), supportive: fmt.pct(r.sup), n: fmt.int(r.n) }) },
-        h('span', { class: 'div-name' }, h('span', { class: 'dot', style: `--dot:${r.color}`, 'aria-hidden': 'true' }), h('span', { class: 'div-label' }, r.label)),
-        h('span', { class: 'div-num' }, h('span', { class: 'div-num-c' }, fmt.pct(r.crit)), ' · ', h('span', { class: 'div-num-s' }, fmt.pct(r.sup))),
-        h('span', { class: 'div-track' },
-          seg('critical', 50 - (r.neu / 2) * unit - r.crit * unit, r.crit * unit),
-          seg('neutral', 50 - (r.neu / 2) * unit, r.neu * unit),
-          seg('supportive', 50 + (r.neu / 2) * unit, r.sup * unit),
-          h('span', { class: 'div-mid' }))))),
+      UI.Legend(['critical', 'neutral', 'supportive'].map((nm, i) => ({ label: t(`stance.${nm}`), color: UI.STANCE_COLORS[i] }))),
+      UI.BarList(shown.map((r) => ({
+        label: [h('span', { class: 'dot', style: `--dot:${r.color}`, 'aria-hidden': 'true' }), r.label],
+        text: `${fmt.pct(r.crit)} · ${fmt.pct(r.sup)}`,
+        bar: UI.DivergingBar({ left: r.crit, middle: r.neu, right: r.sup, scale, label: t('g2.stance.row', { group: r.label, critical: fmt.pct(r.crit), neutral: fmt.pct(r.neu), supportive: fmt.pct(r.sup), n: fmt.int(r.n) }) })
+      }))),
       foot ? h('p', { class: 'dcard-sub' }, foot) : null)
   }
 
