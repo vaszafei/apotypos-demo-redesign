@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="assets/tokens.css?v=5">
   <link rel="stylesheet" href="assets/app.css?v=16">
   <link rel="stylesheet" href="assets/dash.css?v=68">
-  <link rel="stylesheet" href="assets/mme.css?v=5">
+  <link rel="stylesheet" href="assets/mme.css?v=6">
   <link rel="stylesheet" href="assets/date-range.css?v=3">
 </head>
 <body>
@@ -17,7 +17,7 @@
   <script src="assets/messages.js?v=22"></script>
   <script src="assets/messages-v2.js?v=32"></script>
   <script src="assets/messages-spread.js?v=13"></script>
-  <script src="assets/messages-mme.js?v=4"></script>
+  <script src="assets/messages-mme.js?v=5"></script>
   <script src="assets/components.js?v=8"></script>
   <script src="assets/dash.js?v=13"></script>
   <script src="assets/date-range.js?v=1"></script>
@@ -213,45 +213,33 @@
             h('p', { class: 'dcard-sub' }, t('originality.meta', { n: bylines.data.outlets.length, from: fmt.date(bylines.data.window[0], { month: 'short', year: 'numeric' }), to: fmt.date(bylines.data.window[1], { month: 'short', year: 'numeric' }) })),
             UI.BarList(bylines.data.outlets.slice().sort((a, b) => b.anonPct - a.anonPct).map((r) => ({ label: r.name, value: r.anonPct, text: fmt.pct(r.anonPct / 100) })), { max: 100 })) : null
 
-          // All the outlets: one tile for each, in place of the outlet cards of the live page. A tile has the articles, the three largest topics, clickbait and stance.
+          // All the outlets: one row for each, in place of the outlet cards of the live page. The card answers which outlets write the most,
+          // and the columns put the clickbait, the critical share and the main topics side by side. The first 10 rows show, a button shows the rest.
           const cbMax = Math.max(...cbOutlets.map((o) => o.cbYes / o.cbKnown), 0.01)
           const crit = (o) => { const n = o.stance[0] + o.stance[1] + o.stance[2]; return n >= 30 ? o.stance[0] / n : -1 }
           const cb = (o) => (o.cbKnown >= 100 ? o.cbYes / o.cbKnown : -1)
           const SORTS = { n: (a, b) => b.n - a.n, cb: (a, b) => cb(b) - cb(a), crit: (a, b) => crit(b) - crit(a), name: (a, b) => a.name.localeCompare(b.name, App.locale) }
           const rows = S.active.slice().sort(SORTS[view.sort] || SORTS.n)
           const nMax = Math.max(...S.active.map((o) => o.n), 1)
-          const tile = (o, i) => {
+          // A value that is not measured is a dash. Its reason is in the title and for a screen reader.
+          const none = (reason) => h('span', { class: 'muted-text', title: reason }, '—', h('span', { class: 'visually-hidden' }, reason))
+          const outletCell = (o) => {
             const color = o.group ? colorOfGroup.get(o.group) || NO_GROUP : null
-            const group = !greek ? null : o.group
-              ? h('p', { class: 'mme-tile-group' }, h('span', { class: 'dot', style: `--dot:${color}`, 'aria-hidden': 'true' }),
-                slugOfGroup.has(o.group) ? h('a', { href: `group-v2.html?g=${slugOfGroup.get(o.group)}` }, o.group) : o.group)
-              : h('p', { class: 'mme-tile-group' }, h('span', { class: 'dot dot-none', 'aria-hidden': 'true' }), t('media.col.group.none'))
-            const stanceN = o.stance[0] + o.stance[1] + o.stance[2]
-            const top = Mme.topIssues(S, o, 3)
-            const topMax = Math.max(...top.map((r) => r.v), 0.01)
-            return h('li', { class: 'mme-tile', style: color ? `--gc:${color}` : '' },
-              h('div', { class: 'mme-tile-head' },
-                h('div', { class: 'mme-tile-id' },
-                  h('p', { class: 'mme-tile-name' }, view.sort === 'name' ? null : h('span', { class: 'mme-tile-rank' }, `${i + 1}`), Mme.outletLink(S, o)),
-                  group),
-                h('p', { class: 'mme-tile-n' }, fmt.int(o.n), h('small', {}, t('mme.tile.articles')))),
-              UI.HBar(o.n, nMax, { label: `${fmt.int(o.n)} ${t('mme.tile.articles')}` }),
-              h('div', { 'aria-label': t('mme.rank.topics'), role: 'group' }, UI.BarList(top.map((r) => ({ label: r.x[App.locale] || r.x.el, value: r.v, text: `${Math.round(r.v * 100)}%` })), { max: topMax, cls: 'mme-tile-topics' })),
-              h('div', { class: 'mme-tile-metrics' },
-                h('div', { class: 'mme-tile-metric' },
-                  h('p', { class: 'mme-tile-label' }, t('mme.tile.cb')),
-                  o.cbKnown >= 100
-                    ? [h('p', { class: 'mme-tile-val' }, fmt.pct(o.cbYes / o.cbKnown)), Scale(o.cbYes / o.cbKnown, 0, cbMax, cbAvg, fmt.pct(o.cbYes / o.cbKnown), fmt.pct(cbAvg))]
-                    : h('p', { class: 'mme-tile-none' }, t('group.clickbait.none'))),
-                h('div', { class: 'mme-tile-metric' },
-                  h('p', { class: 'mme-tile-label' }, t('mme.rank.stance')),
-                  stanceN >= 30
-                    ? [h('p', { class: 'mme-tile-val' }, t('mme.tile.crit', { p: pct0(o.stance[0] / stanceN) })), Mme.StanceBar(o.stance, o.name)]
-                    : h('p', { class: 'mme-tile-none' }, t('stance.few', { n: 30 })))))
+            const group = !greek ? null : h('p', { class: 'mme-rank-group' }, h('span', { class: o.group ? 'dot' : 'dot dot-none', style: color ? `--dot:${color}` : null, 'aria-hidden': 'true' }),
+              !o.group ? h('span', {}, t('media.col.group.none')) : slugOfGroup.has(o.group) ? h('a', { href: `group-v2.html?g=${slugOfGroup.get(o.group)}` }, o.group) : o.group)
+            return h('div', { class: 'mme-rank-id' }, h('p', { class: 'mme-rank-name' }, Mme.outletLink(S, o)), group)
           }
+          const columns = [
+            { label: t('media.col.outlet'), render: outletCell },
+            { label: t('mme.rank.sort.n'), num: true, render: (o) => h('div', { class: 'mme-rank-n' }, UI.HBar(o.n, nMax), h('span', {}, fmt.int(o.n))) },
+            { label: t('media.col.clickbait'), num: true, render: (o) => cb(o) < 0 ? none(t('group.clickbait.none')) : h('div', { class: 'mme-rank-cb' }, Scale(cb(o), 0, cbMax, cbAvg, fmt.pct(cb(o)), fmt.pct(cbAvg)), h('span', {}, fmt.pct(cb(o)))) },
+            { label: t('mme.rank.sort.crit'), num: true, render: (o) => crit(o) < 0 ? none(t('stance.few', { n: 30 })) : pct0(crit(o)) },
+            { label: t('mme.rank.topics'), phone: false, render: (o) => h('p', { class: 'mme-rank-topics' }, Mme.topIssues(S, o, 3).map((r) => `${r.x[App.locale] || r.x.el} ${Math.round(r.v * 100)}%`).join(' · ')) }
+          ]
           const sorter = UI.SegmentedControl({ label: t('mme.rank.sort'), value: view.sort, options: ['n', 'cb', 'crit', 'name'].map((k) => ({ value: k, label: t(`mme.rank.sort.${k}`) })), onChange: (k) => { view.sort = k; draw() } })
           const ranking = card('c-12 mme-rank', cardHead(t('mme.rank.all'), sorter, `${t('mme.rank.note')} ${t('media2.rank.outlets.note')}`),
-            rows.length ? h('ul', { class: 'mme-tiles' }, rows.map(tile)) : emptyText(t('media.empty')))
+            h('p', { class: 'dcard-sub' }, t('mme.rank.sub')),
+            UI.DataTable({ columns, rows, rankColumn: view.sort !== 'name', emptyText: t('media.empty') }))
           ranking.id = 'ranking'
           ranking.setAttribute('aria-live', 'polite')
 
