@@ -340,16 +340,15 @@ button, input, select { font: inherit; color: inherit; }
 .data-notice { display: flex; gap: var(--space-2); margin-bottom: var(--space-4); padding: var(--space-3) var(--space-4); border-left: 4px solid #b7791f; border-radius: 4px; background: #fdf3df; font-size: var(--text-small); color: #5c3d0e; }
 .error-page { max-width: 560px; padding: var(--space-6) 0; }
 .error-code { margin: 0; font-size: var(--text-figure); font-weight: 600; color: var(--text-secondary); }
-.skeleton { height: 1em; border-radius: 4px; background: linear-gradient(90deg, #e4e1da, #f1efe9, #e4e1da); }
 
 .proto-note { margin-top: var(--space-5); font-size: var(--text-caption); color: var(--text-secondary); }
 
 /* Tablet and phone: the sidebar becomes a drawer. */
 
 @media (max-width: 1023px) {
-  .sidebar { transform: translateX(-100%); transition: transform 0.2s ease; width: min(300px, 85vw); }
+  .sidebar { transform: translateX(-100%); transition: transform var(--motion-base) var(--ease-out); width: min(300px, 85vw); }
   .shell.drawer-open .sidebar { transform: none; }
-  .shell.drawer-open .drawer-scrim { display: block; position: fixed; inset: 0; z-index: 25; background: rgba(0, 0, 0, 0.4); }
+  .shell.drawer-open .drawer-scrim { display: block; position: fixed; inset: 0; z-index: 25; background: rgba(0, 0, 0, 0.4); animation: m-fade var(--motion-base) var(--ease-out); }
   .shell { background: none; }
   .icon-button.sidebar-close { display: inline-flex; color: var(--ink); }
   .main-column { margin-left: 0; }
@@ -373,10 +372,6 @@ button, input, select { font: inherit; color: inherit; }
   .card { padding: var(--space-4); }
   .toc ol { columns: 1; }
   .hide-phone { display: none; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sidebar { transition: none; }
 }
 
 /* Table of pages: the details of a route open on demand. */
@@ -548,3 +543,110 @@ button, input, select { font: inherit; color: inherit; }
 :root[data-header="v2"] .page-filters select, :root[data-header="v2"] .page-filters .search-input { min-height: 32px; font-size: 13px; }
 :root[data-header="v2"] .page-filters .button { min-height: 32px; font-size: 13px; }
 :root[data-header="v2"] .page-head.is-empty { margin: 0 0 var(--space-4); }
+
+/* Motion (#56). The tokens are in tokens.css and assets/motion.js plays the rest: the page entrance, the fade of the cards
+   that a period or a filter changes, the thumb of a segmented control, the "/" of the current tab, the first view of the charts.
+   Only transform and opacity move. Reduced motion keeps the fades and drops the movement. */
+
+@keyframes m-fade { from { opacity: 0; } }
+@keyframes m-rise { from { opacity: 0; transform: translateY(var(--motion-distance)); } }
+@keyframes m-drop { from { opacity: 0; transform: translateY(calc(-0.5 * var(--motion-distance))); } }
+@keyframes m-grow-x { from { transform: scaleX(0); } }
+@keyframes m-grow-y { from { transform: scaleY(0); } }
+@keyframes m-pop { from { opacity: 0; transform: scale(0); } }
+@keyframes m-shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+/* Loading. The page is empty until its scripts run: a skeleton of the shell, a row of tiles, a chart card and a table shows in its place.
+   It appears after a short delay, so a fast load never flashes it. */
+.skeleton { position: relative; overflow: hidden; height: 1em; border-radius: 4px; background: #e8e5de; }
+.skeleton::after, #app:empty::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  animation: m-shimmer 1.4s var(--ease-in-out) infinite;
+}
+#app:empty {
+  position: relative; min-height: 100vh; overflow: hidden;
+  background:
+    linear-gradient(var(--ink), var(--ink)) calc(var(--sidebar-width) - 2px) 0 / 2px 100% no-repeat,
+    linear-gradient(#e8e5de, #e8e5de) 20px 32px / 150px 40px no-repeat,
+    repeating-linear-gradient(180deg, #efede7 0 18px, transparent 0 43px) 24px 120px / 120px 240px no-repeat,
+    linear-gradient(var(--surface-sidebar), var(--surface-sidebar)) 0 0 / var(--sidebar-width) 100% no-repeat;
+  animation: m-fade var(--motion-slow) 150ms both;
+}
+#app:empty::before {
+  content: ""; position: absolute; top: 72px; left: calc(var(--sidebar-width) + var(--space-6)); right: var(--space-6); max-width: 1176px; height: 860px;
+  background:
+    linear-gradient(#e8e5de, #e8e5de) 0 0 / min(380px, 60%) 28px no-repeat,
+    linear-gradient(#efede7, #efede7) 0 44px / min(260px, 40%) 14px no-repeat,
+    repeating-linear-gradient(90deg, var(--surface-raised) 0 calc(25% - 16px), transparent 0 25%) 0 96px / calc(100% + 16px) 112px no-repeat,
+    linear-gradient(#e8e5de, #e8e5de) 24px 256px / min(300px, 50%) 18px no-repeat,
+    repeating-linear-gradient(90deg, #e8e5de 0 12px, transparent 0 20px) 24px 312px / calc(100% - 48px) 200px no-repeat,
+    linear-gradient(var(--surface-raised), var(--surface-raised)) 0 232px / 100% 312px no-repeat,
+    repeating-linear-gradient(180deg, #efede7 0 14px, transparent 0 40px) 24px 592px / calc(100% - 48px) 228px no-repeat,
+    linear-gradient(var(--surface-raised), var(--surface-raised)) 0 568px / 100% 280px no-repeat;
+}
+@media (max-width: 1023px) {
+  #app:empty { background: none; }
+  #app:empty::before { left: var(--space-4); right: var(--space-4); top: 72px; }
+}
+@media (max-width: 639px) {
+  #app:empty::before { background-size: min(380px, 60%) 28px, min(260px, 40%) 14px, calc(200% + 32px) 112px, min(300px, 50%) 18px, calc(100% - 48px) 200px, 100% 312px, calc(100% - 48px) 228px, 100% 280px; }
+}
+/* A chart draws in the next frame. Its place keeps the height of the chart until then. */
+.chart-holder:empty { height: 220px; border-radius: var(--radius); background: #f1efe9; }
+
+/* Press feedback on every button. A row of a table shows the hover. */
+.button, .segmented button, .page-tool, .icon-button, .back-button, .info-btn, .lang-switch button, .mme-chip, .dr-trigger, .dr-preset, .report-tabs button {
+  transition: transform var(--motion-fast) var(--ease-out);
+}
+:is(.button, .segmented button, .page-tool, .icon-button, .back-button, .info-btn, .lang-switch button, .mme-chip, .dr-trigger, .dr-preset, .report-tabs button):active:not(:disabled) { transform: scale(0.96); }
+.data-table tbody tr:not(:target, .is-target):hover td { background: rgba(17, 17, 17, 0.035); }
+
+/* Pop-ups fade in: the chart tooltip, the search results, an open accordion. */
+.tooltip:not([hidden]) { animation: m-fade var(--motion-fast) var(--ease-out); }
+.global-search-list:not([hidden]) { animation: m-drop var(--motion-base) var(--ease-out); }
+details[open] > :not(summary) { animation: m-rise var(--motion-base) var(--ease-out); }
+
+/* The thumb of a segmented control slides from the old choice to the new one (motion.js). The new choice shows its pill when the thumb lands. */
+.segmented { position: relative; isolation: isolate; }
+.seg-thumb { position: absolute; z-index: -1; pointer-events: none; transform-origin: 0 0; }
+.segmented button.is-landing { background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: var(--text-primary); }
+/* The "/" of the current tab glides from the tab of the last page (motion.js). */
+.section-tabs { position: relative; }
+.tab-glide { position: absolute; pointer-events: none; white-space: pre; }
+.section-tabs a.is-landing::before { opacity: 0; }
+
+/* The first view of a chart (motion.js): bars and lines grow, points pop, numbers count up.
+   Before its view, a chart below the fold waits with its marks hidden. .m-intro covers the first frame, before motion.js sorts the cards. */
+:is(.card, .dcard, .kpi-tile) :is(svg.chart .bar-col, svg.chart .line-series, svg.spark path) { transform-box: fill-box; }
+svg.chart .bar-col { transform-origin: 50% 100%; }
+:is(svg.chart .line-series, svg.spark path) { transform-origin: 0 50%; }
+:is(svg.chart .pt, svg.chart .line-dot) { transform-box: fill-box; transform-origin: 50% 50%; }
+:is(svg.chart .slice, svg.chart .ring-arc) { transform-box: view-box; transform-origin: 50% 50%; }
+:is(.hbar-fill, .stacked) { transform-origin: 0 50%; }
+.dbar-seg { transform-origin: 50% 50%; }
+.dbar-seg.is-left { transform-origin: 100% 50%; }
+.dbar-seg.is-right { transform-origin: 0 50%; }
+
+.m-intro :is(.card, .dcard, .kpi-tile):not(.m-play, .m-done) :is(svg.chart, svg.spark),
+.m-wait :is(svg.chart, svg.spark) { opacity: 0; }
+.m-intro :is(.card, .dcard, .kpi-tile):not(.m-play, .m-done) :is(.hbar-fill, .stacked, .dbar-seg),
+.m-wait :is(.hbar-fill, .stacked, .dbar-seg) { transform: scaleX(0); }
+.m-intro :is(.card, .dcard, .kpi-tile):not(.m-play, .m-done) :is(.kpi-value, .dstat-value),
+.m-wait :is(.kpi-value, .dstat-value), .is-counting { -webkit-text-fill-color: transparent; }
+.m-intro .mme-rank:not(.m-play, .m-done) tbody tr, .m-wait.mme-rank tbody tr { opacity: 0; }
+
+.m-play :is(svg.chart, svg.spark) { animation: m-fade var(--motion-base) var(--ease-out) var(--m-delay, 0ms) both; }
+.m-play svg.chart .bar-col { animation: m-grow-y var(--motion-chart) var(--ease-out) calc(var(--m-delay, 0ms) + var(--m-i, 0) * 8ms) both; }
+.m-play :is(svg.chart .line-series, svg.spark path) { animation: m-grow-x var(--motion-chart) var(--ease-in-out) var(--m-delay, 0ms) both; }
+.m-play :is(svg.chart .pt, svg.chart .line-dot) { animation: m-pop var(--motion-slow) var(--ease-spring) calc(var(--m-delay, 0ms) + 200ms + var(--m-i, 0) * 6ms) both; }
+.m-play :is(svg.chart .slice, svg.chart .ring-arc) { animation: m-pop var(--motion-chart) var(--ease-out) calc(var(--m-delay, 0ms) + var(--m-i, 0) * 30ms) both; }
+.m-play :is(.hbar-fill, .stacked, .dbar-seg) { animation: m-grow-x var(--motion-chart) var(--ease-out) var(--m-delay, 0ms) both; }
+.m-play.mme-rank tbody tr { animation: m-rise var(--motion-slow) var(--ease-out) calc(var(--m-delay, 0ms) + var(--m-i, 0) * 35ms) both; }
+.count-ghost { position: absolute; z-index: 1; margin: 0; pointer-events: none; white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar { transition: none; }
+  .skeleton::after, #app:empty::after { animation: none; }
+  :is(.button, .segmented button, .page-tool, .icon-button, .back-button, .info-btn, .lang-switch button, .mme-chip, .dr-trigger, .dr-preset, .report-tabs button):active:not(:disabled) { transform: none; }
+}
