@@ -16,7 +16,7 @@
   <script src="assets/icons.js?v=3"></script>
   <script src="assets/messages.js?v=19"></script>
   <script src="assets/messages-v2.js?v=31"></script>
-  <script src="assets/messages-politics.js?v=6"></script>
+  <script src="assets/messages-politics.js?v=7"></script>
   <script src="assets/components.js?v=7"></script>
   <script src="assets/dash.js?v=11"></script>
   <script src="assets/politics.js?v=1"></script>
@@ -98,6 +98,12 @@
         const mentions = d.series.map((s) => weeks.map((w) => (s[w] ? s[w][0] : null)))
         const tones = d.series.map((s) => weeks.map((w) => (s[w] ? s[w][1] : null)))
         const totalOf = (i) => mentions[i].reduce((a, v) => a + (v || 0), 0)
+        // The lines show the mean of 3 weeks (the week and its two neighbours). A week without data stays empty.
+        const smooth = (values) => values.map((v, j) => {
+          if (v === null) return null
+          const near = values.slice(Math.max(0, j - 1), j + 2).filter((x) => x !== null)
+          return near.reduce((a, x) => a + x, 0) / near.length
+        })
         // The live page starts with the 5 parties with the most mentions.
         if (!shown) shown = new Set(keys.map((k, i) => [k, totalOf(i)]).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k]) => k))
 
@@ -148,11 +154,11 @@
           legend.replaceChildren(...parties.map((p) => h('li', {}, h('button', { type: 'button', 'aria-pressed': String(shown.has(p.key)), title: p.name, onClick: () => { shown.has(p.key) ? shown.delete(p.key) : shown.add(p.key); drawLines() } },
             h('span', { class: 'swatch', style: { background: color(p.key) } }), p.key))))
           const pick = keys.map((k, i) => i).filter((i) => shown.has(keys[i]))
-          const series = pick.map((i) => ({ label: keys[i], color: color(keys[i]), values: (reach ? mentions : tones)[i], dots: false }))
+          const series = pick.map((i) => ({ label: keys[i], color: color(keys[i]), values: smooth((reach ? mentions : tones)[i]), dots: false }))
           timeHolder.replaceChildren(!pick.length
             ? emptyText(t('topics2.empty'))
             : reach
-              ? LineChart({ labels, tips, series, yFormat: fmt.int, zero: true, height: 300, aria: t('elec.reach.aria') })
+              ? LineChart({ labels, tips, series, yFormat: (v) => fmt.int(Math.round(v)), zero: true, height: 300, aria: t('elec.reach.aria') })
               : LineChart({ labels, tips, series, yFormat: (v) => signed(v, 1), min: -1, max: 1, height: 300, aria: t('elec.tone.aria') }))
         }
         drawLines()
