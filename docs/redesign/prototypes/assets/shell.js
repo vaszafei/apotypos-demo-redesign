@@ -6,7 +6,7 @@
   const PROTOTYPES = {
     '/': 'index.html',
     '/trends': 'topics-v2.html',
-    '/trends/time': 'topics-v2.html?tab=time',
+    '/trends/time': 'topics-v2.html',
     '/trends/topic': 'topics-v2.html?tab=topic',
     '/trends/agenda': 'topics-v2.html?tab=agenda',
     '/overton': 'overton-v2.html',
@@ -58,7 +58,7 @@
   const NAV = [
     { key: 'home', tabs: [['home', '/']] },
     { key: 'media', tabs: [['overview', '/media'], ['writing', '/media/writing'],
-      ['topics', '/trends', [['topics.overview', '/trends'], ['topics.time', '/trends/time'], ['topics.topic', '/trends/topic'], ['topics.agenda', '/trends/agenda'], ['shifts', '/overton']]],
+      ['topics', '/trends', [['topics.overview', '/trends'], ['topics.topic', '/trends/topic'], ['topics.agenda', '/trends/agenda'], ['shifts', '/overton']]],
       ['ownership', '/groups'], ['similarity', '/similarity']], details: [['/outlet', '/media'], ['/group', '/groups'], ['/topic', '/trends']] },
     { key: 'spread', tabs: [['overview', '/stories'], ['outlets', '/stories/outlets'], ['cases', '/cases'], ['campaigns', '/campaigns']], details: [['/story', '/stories']] },
     { key: 'people', tabs: [['overview', '/fingerprints'], ['spread', '/fingerprints/spread'], ['statements', '/track'],
