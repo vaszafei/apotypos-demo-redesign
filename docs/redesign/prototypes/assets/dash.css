@@ -214,6 +214,7 @@
 
 @media (max-width: 1279px) {
   .c-3, .c-4, .c-5 { grid-column: span 6; }
+  .story-top .c-5 { grid-column: span 12; }
   .c-7, .c-8, .c-9, .card-col { grid-column: span 12; }
   .dash-grid-side { grid-template-columns: minmax(0, 1fr); }
 }
@@ -248,7 +249,6 @@
 .nowrap { white-space: nowrap; }
 .reach { display: inline-flex; align-items: center; gap: 3px; }
 .reach .dot { width: 9px; height: 9px; }
-.reach-n { margin-left: var(--space-2); font-size: var(--text-caption); color: var(--text-secondary); }
 @media (max-width: 640px) { .dcard-head { flex-wrap: wrap; } .dcard-head > .dcard-title { flex: 1 1 12em; min-width: 0; } }
 .clip { display: block; max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -294,8 +294,6 @@
 .hero-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: var(--pill); font-size: var(--text-caption); background: color-mix(in srgb, var(--series-news) 12%, #ffffff); color: #1f1f1f; text-decoration: none; }
 .chip a, .chip a:hover { color: inherit; text-decoration: none; }
-.chip-echo { background: color-mix(in srgb, var(--emph-more) 16%, #ffffff); font-weight: 600; }
-.chip-echo:hover { background: color-mix(in srgb, var(--emph-more) 26%, #ffffff); }
 .chip-quiet { background: var(--bar-muted); }
 .hero-period { margin: 0; font-size: var(--text-small); }
 .chart.life .life-area { fill: var(--series-news); fill-opacity: 0.16; }
@@ -361,11 +359,10 @@
 @media (max-width: 719px) { .mx-card { display: none; } .mx-select { display: block; } }
 .name-cell .chip-sm { border-radius: 10px; }
 @media (max-width: 719px) { .orig-cell { grid-template-columns: minmax(0, 1fr); gap: 4px; } }
-.chip-filter { border: 0; cursor: pointer; font: inherit; font-size: var(--text-caption); background: color-mix(in srgb, var(--emph-more) 16%, #ffffff); }
 .chart .hit { fill: transparent; cursor: pointer; }
 .chart .hit:hover { fill: color-mix(in srgb, var(--series-news) 6%, transparent); }
 .chart .hit:focus-visible { outline: 2px solid #1f1f1f; }
-.story-top { margin-top: var(--space-4); }
+.story-top { margin-top: var(--space-4); align-items: start; }
 
 /* Page of one outlet (outlet-v2.html). */
 .how-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -389,8 +386,7 @@
 .minimal .chip { border: 1px solid var(--border); border-radius: var(--pill); background: var(--surface-raised); }
 .minimal .chip-num { border-color: var(--ink); background: var(--surface-raised); font-variant-numeric: tabular-nums; }
 .minimal .chip-quiet { background: var(--surface-page); }
-.minimal .chip-echo { border-color: transparent; background: color-mix(in srgb, var(--series-news) 14%, #ffffff); }
-/* The bar of the tabs has no line and stays under the global bar of the shell. The active tab is a black pill. */
+.minimal /* The bar of the tabs has no line and stays under the global bar of the shell. The active tab is a black pill. */
 .minimal .dash-bar:not(:has(.dash-actions, .dash-error)) { margin: 0; padding: 0; }
 .minimal .dash-bar { top: 64px; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); margin-bottom: var(--space-3); padding-top: var(--space-2); padding-bottom: var(--space-2); border-bottom: 0; }
 .minimal .dash-actions { margin-left: auto; padding: 0; border-top: 0; }

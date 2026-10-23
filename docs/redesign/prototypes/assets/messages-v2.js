@@ -555,7 +555,6 @@ Object.assign(window.MESSAGES.en, {
 // #60: the titles that state the finding of a chart, and the labels of its reference values.
 Object.assign(window.MESSAGES.el, {
   'find.avg': 'μ.ό. {n}',
-  'stories.reach.finding': 'Ηχώ: το {share} των ιστοριών',
   'stories.solo.finding': 'Ξεκινά μόνος πιο συχνά: {name}',
   'topics2.all.finding': 'Τα 3 μεγαλύτερα θέματα έχουν το {share} των άρθρων',
   'topics2.time.finding': 'Πρώτο θέμα: {name} ({share})',
@@ -580,7 +579,6 @@ Object.assign(window.MESSAGES.el, {
 })
 Object.assign(window.MESSAGES.en, {
   'find.avg': 'avg {n}',
-  'stories.reach.finding': 'Echo: {share} of the stories',
   'stories.solo.finding': 'Starts alone most often: {name}',
   'topics2.all.finding': 'The 3 largest topics have {share} of the articles',
   'topics2.time.finding': 'Largest topic: {name} ({share})',

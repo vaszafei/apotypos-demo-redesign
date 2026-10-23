@@ -7,14 +7,14 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=22">
-  <link rel="stylesheet" href="assets/dash.css?v=72">
+  <link rel="stylesheet" href="assets/dash.css?v=73">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
-  <script src="assets/messages.js?v=25"></script>
-  <script src="assets/messages-v2.js?v=34"></script>
-  <script src="assets/messages-spread.js?v=14"></script>
+  <script src="assets/messages.js?v=26"></script>
+  <script src="assets/messages-v2.js?v=36"></script>
+  <script src="assets/messages-spread.js?v=15"></script>
   <script src="assets/components.js?v=9"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
@@ -29,7 +29,7 @@
     // Originality reads the API in its own period (Sep 2025 – Jan 2026), so it has its own section with its own period.
     const { t, fmt, h, load } = App
     const { reset, NO_GROUP, card, cardHead, TopBar, select } = Dash
-    const list = load('stories', ['dates'], (b) => b.stories)
+    const list = load('stories', ['dates', 'stories'], (b) => b.stories)
     const detail = load('storyDetail', ['outlets', 'stories'], (b) => b.stories)
     const orig = load('originality', ['window', 'outlets'], (b) => b.outlets)
     const groupsData = load('groups', ['groups'], (b) => b.groups)
@@ -173,6 +173,22 @@
             { label: t('originality.col.lag'), num: true, phone: false, render: (r) => lagText(r.lagMin) }
           ]
         })
+        // Who starts alone: the share of the stories that a group wrote together with other groups, in which it wrote first and alone and the others followed.
+        const prof = Spread.profiles(dd)
+        const profileOf = new Map(prof.list.map((p) => [p.id, p]))
+        const stories = list.data.stories.filter((s) => !s.generic && profileOf.has(s.id)).map((s) => profileOf.get(s.id))
+        const soloRows = prof.groups.map((g, i) => {
+          const wrote = stories.filter((p) => p.groupsAll.length >= 2 && p.groupsAll.includes(i))
+          const started = wrote.filter((p) => p.type === 'follow' && p.firstGroups[0] === i)
+          return { i, g, wrote: wrote.length, started: started.length, share: wrote.length ? started.length / wrote.length : 0 }
+        }).sort((a, b) => b.share - a.share)
+        const soloMax = Math.max(...soloRows.map((r) => r.share), 0.0001)
+                const soloCard = card('c-12', cardHead(t('stories.solo.title'), null, `${soloRows[0]?.started ? `${t('stories.solo.finding', { name: soloRows[0].g })} (${fmt.pct(soloRows[0].share)}). ` : ''}${t('stories.solo.info')}`),
+          UI.BarList(soloRows.map((r) => ({
+            label: [h('span', { class: 'dot', style: `--dot:${colorOfGroup.get(r.g) || NO_GROUP}` }), r.g], value: r.share, color: colorOfGroup.get(r.g) || NO_GROUP,
+            text: t('stories.solo.row', { share: fmt.pct(r.share), n: fmt.int(r.started) }),
+            title: t('stories.solo.tip', { name: r.g, started: fmt.int(r.started), wrote: fmt.int(r.wrote) })
+          })), { max: soloMax }))
         const maxLag = Math.max(...rows.map((r) => r.lagMin), 1)
         const fastest = by('lagMin')[0]
         const avgLag = rows.reduce((sum, r) => sum + r.lagMin, 0) / rows.length
@@ -202,6 +218,7 @@
           h('div', { class: 'card-col c-4' }, panelHolder, sameCard),
           card('c-8', cardHead(t('originality.title'), origKey, t('originality.info')), h('p', { class: 'dcard-sub' }, period), origTable),
           lagCard,
+          soloCard,
           pairsCard), protoNote())
       }
     })
