@@ -33,7 +33,7 @@
   }
 
   // The sidebar has 6 items (APO-161: Media and Ownership are one item). The sub-pages of an item are tabs inside the page (shell-spec.md, "Navigation").
-  // The item "world" is Αναλύσεις. Πολεμική ρητορική is Πολιτική › Ελληνοτουρκικά and Παράθυρο is Μέσα › Μετατοπίσεις.
+  // The item "world" is Αναλύσεις. Πολεμική ρητορική is Αναλύσεις › Ελληνοτουρκικά (/war, it left Πολιτική) and Παράθυρο is Μέσα › Μετατοπίσεις.
   // A tab can have sub-tabs (a third item of the tab). Its first sub-tab is its page. Ομιλίες ΟΗΕ holds the Israel–Palestine part of the speeches,
   // Παλαιστίνη–Ισραήλ holds the Gaza and Israel pages.
   // Αναλύσεις & Ιδιοκτησία (/analyze) is not there: ownership is only Μέσα › Ιδιοκτησία, so /analyze opens that tab.
@@ -44,10 +44,10 @@
     { key: 'media', tabs: [['overview', '/media'], ['topics', '/trends'], ['shifts', '/overton'], ['ownership', '/groups'], ['similarity', '/similarity']], details: ['/outlet', '/group', '/topic'] },
     { key: 'spread', tabs: [['overview', '/stories']], details: ['/story'] },
     { key: 'people', tabs: [['overview', '/fingerprints'], ['file', '/contradictions']] },
-    { key: 'politics', tabs: [['elections', '/elections'], ['statements', '/track'], ['cases', '/cases'], ['campaigns', '/campaigns'], ['greekturkish', '/war']] },
+    { key: 'politics', tabs: [['elections', '/elections'], ['statements', '/track'], ['cases', '/cases'], ['campaigns', '/campaigns']] },
     { key: 'world', tabs: [['speeches', '/speeches', [['speeches.all', '/speeches'], ['speeches.pi', '/un-israel-palestine']]],
       ['pi', '/narrative', [['pi.overview', '/narrative'], ['gaza', '/gaza'], ['israel', '/israel'], ['language', '/gaza-language']]],
-      ['coverage', '/coverage'], ['france', '/france-riots']] }
+      ['greekturkish', '/war'], ['coverage', '/coverage'], ['france', '/france-riots']] }
   ]
   const FOOTER = [['methodology', '/methodology'], ['about', '/about'], ['pages', null]]
 
