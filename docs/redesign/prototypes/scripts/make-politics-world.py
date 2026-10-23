@@ -1,6 +1,6 @@
 """Read the public data of the sections Πολιτική and Κόσμος one time and write their fixtures.
 
-Usage: python3 -I make-politics-world.py <cache-dir> <out-dir>
+Usage: python3 -I make-politics-world.py <cache-dir> <out-dir> [fixture ...]
 
 It uses fetch() and write() of make-fixtures.py, so the cache and the fixture format are the same.
 It writes only the fixtures of these two sections. The other fixtures stay as they are.
@@ -11,7 +11,6 @@ import json
 import re
 import sys
 from collections import Counter
-from datetime import date, timedelta
 from pathlib import Path
 
 spec = importlib.util.spec_from_file_location("make_fixtures", Path(__file__).with_name("make-fixtures.py"))
@@ -28,7 +27,10 @@ FILES = {
     "statement_speakers": "/api/statements/speakers?limit=25",
     "cases_coverage": "/api/cases/coverage?q=%CE%A1%CE%BF%CF%85%CE%B2%CE%AF%CE%BA%CF%89%CE%BD%CE%B1%CF%82",
     "page_contradictions": "/contradictions",
+    "page_elections": "/elections",
 }
+# The files each fixture reads. A run with fixture names after the two directories reads and writes only those.
+NEEDS = {"elections": ["page_elections"]}
 # The statement tracker lists one person under two names (C11). The short name joins the full name.
 SPEAKER_ALIASES = {"Τραμπ": "Ντόναλντ Τραμπ", "Ζελένσκι": "Βολοντίμιρ Ζελένσκι", "Ερντογάν": "Ρετζέπ Ταγίπ Ερντογάν"}
 
@@ -63,47 +65,49 @@ def nuxt_payload(text):
     return value(0)
 
 
-def week_of(iso):
-    d = date.fromisoformat(iso)
-    return (d - timedelta(days=d.weekday())).isoformat()
+# Two constants of the live /elections page (its script, not its API): the 2023 vote (June 2023) and the monthly poll averages of 2025.
+VOTE_2023 = {"ΝΔ": 40.56, "ΣΥΡΙΖΑ": 17.83, "ΠΑΣΟΚ": 11.85, "ΚΚΕ": 7.69, "ΕΛ": 4.45, "ΠΛΕΥΣΗ": 3.17, "ΝΙΚΗ": 3.69, "ΜΕΡΑ25": 2.5}
+POLLS_2025 = {
+    "2025-01": {"ΝΔ": 30.3, "ΣΥΡΙΖΑ": 7.3, "ΠΑΣΟΚ": 16, "ΚΚΕ": 9, "ΕΛ": 9.1, "ΠΛΕΥΣΗ": 4.7, "ΜΕΡΑ25": 2.8, "ΝΙΚΗ": 3.5, "ΦΛ": 1.5, "ΝΕΑΡ": 4.2},
+    "2025-02": {"ΝΔ": 28.1, "ΣΥΡΙΖΑ": 7.3, "ΠΑΣΟΚ": 15.1, "ΚΚΕ": 9.3, "ΕΛ": 10.4, "ΠΛΕΥΣΗ": 8.9, "ΜΕΡΑ25": 2.7, "ΝΙΚΗ": 3.5, "ΦΛ": 2, "ΝΕΑΡ": 5},
+    "2025-03": {"ΝΔ": 26.9, "ΣΥΡΙΖΑ": 6.8, "ΠΑΣΟΚ": 14, "ΚΚΕ": 8.9, "ΕΛ": 10.5, "ΠΛΕΥΣΗ": 14.6, "ΜΕΡΑ25": 2.9, "ΝΙΚΗ": 3.4, "ΦΛ": 2.3, "ΝΕΑΡ": 4},
+    "2025-04": {"ΝΔ": 28, "ΣΥΡΙΖΑ": 6.2, "ΠΑΣΟΚ": 13, "ΚΚΕ": 8.3, "ΕΛ": 10.3, "ΠΛΕΥΣΗ": 12.6, "ΜΕΡΑ25": 3.2, "ΝΙΚΗ": 3, "ΦΛ": 2.1, "ΝΕΑΡ": 3.6},
+    "2025-05": {"ΝΔ": 30.2, "ΣΥΡΙΖΑ": 5.9, "ΠΑΣΟΚ": 13.6, "ΚΚΕ": 8.5, "ΕΛ": 9.4, "ΠΛΕΥΣΗ": 13.8, "ΜΕΡΑ25": 3.3, "ΝΙΚΗ": 3.2, "ΦΛ": 2.8, "ΝΕΑΡ": 3.5},
+    "2025-06": {"ΝΔ": 30.1, "ΣΥΡΙΖΑ": 5.8, "ΠΑΣΟΚ": 13.7, "ΚΚΕ": 8.6, "ΕΛ": 10, "ΠΛΕΥΣΗ": 12.6, "ΜΕΡΑ25": 3.5, "ΝΙΚΗ": 3, "ΦΛ": 2.5, "ΝΕΑΡ": 3.2},
+    "2025-07": {"ΝΔ": 28.7, "ΣΥΡΙΖΑ": 6.8, "ΠΑΣΟΚ": 13.5, "ΚΚΕ": 8.5, "ΕΛ": 10.8, "ΠΛΕΥΣΗ": 12.3, "ΜΕΡΑ25": 4.4, "ΝΙΚΗ": 2.5, "ΦΛ": 2, "ΝΕΑΡ": 3.8},
+    "2025-08": {"ΝΔ": 26.5, "ΣΥΡΙΖΑ": 9.9, "ΠΑΣΟΚ": 14, "ΚΚΕ": 10.4, "ΕΛ": 10.5, "ΠΛΕΥΣΗ": 4.8},
+    "2025-09": {"ΝΔ": 28.4, "ΣΥΡΙΖΑ": 6.4, "ΠΑΣΟΚ": 14.5, "ΚΚΕ": 9, "ΕΛ": 10.8, "ΠΛΕΥΣΗ": 9, "ΜΕΡΑ25": 4, "ΝΙΚΗ": 2.5, "ΦΛ": 2.8, "ΝΕΑΡ": 4.5},
+    "2025-10": {"ΝΔ": 29.5, "ΣΥΡΙΖΑ": 6.7, "ΠΑΣΟΚ": 14.5, "ΚΚΕ": 9.2, "ΕΛ": 10.6, "ΠΛΕΥΣΗ": 9.5, "ΜΕΡΑ25": 3.1, "ΝΙΚΗ": 3, "ΦΛ": 2, "ΝΕΑΡ": 3.8},
+    "2025-11": {"ΝΔ": 29.8, "ΣΥΡΙΖΑ": 6, "ΠΑΣΟΚ": 14.8, "ΚΚΕ": 9.4, "ΕΛ": 10.6, "ΠΛΕΥΣΗ": 7.1, "ΜΕΡΑ25": 3.1, "ΝΙΚΗ": 3.1, "ΦΛ": 1.8, "ΝΕΑΡ": 3.5},
+    "2025-12": {"ΝΔ": 29.4, "ΣΥΡΙΖΑ": 7.1, "ΠΑΣΟΚ": 17.8, "ΚΚΕ": 9.2, "ΕΛ": 9.4, "ΠΛΕΥΣΗ": 5.8, "ΜΕΡΑ25": 2.8, "ΝΙΚΗ": 3.2, "ΦΛ": 2.3, "ΝΕΑΡ": 4.1},
+}
 
 
 def elections(raw, meta):
-    """Stance to the government: each article of `a` has a stance (0 n/a, 1 critical, 2 neutral, 3 supportive).
-    A row of `v` is [row of `a`, person, act, target]. A row of `m` is [row of `a`, person, portrayal]."""
-    f = json.loads(raw["topics_facts"].read_text())
-    n_o, n_i, n_p = len(f["outlets"]), len(f["issues"]), len(f["people"])
-    weeks = sorted({week_of(d) for d in f["dates"]})
-    day_week = [weeks.index(week_of(d)) for d in f["dates"]]
-    stance = [[0, 0, 0] for _ in range(n_o)]
-    stance_week = [[[0, 0, 0] for _ in weeks] for _ in range(n_o)]
-    issue_stance = [[0, 0, 0] for _ in range(n_i)]
-    analysed = [0] * n_o
-    for o, day, issue, _story, _frame, s, _cb, _sec in f["a"]:
-        analysed[o] += 1
-        if s > 0:
-            stance[o][s - 1] += 1
-            stance_week[o][day_week[day]][s - 1] += 1
-            issue_stance[issue][s - 1] += 1
-    mention_week = [[0] * len(weeks) for _ in range(n_p)]
-    portrayal = [[0, 0, 0] for _ in range(n_p)]
-    for row, p, pr in f["m"]:
-        mention_week[p][day_week[f["a"][row][1]]] += 1
-        portrayal[p][pr] += 1
-    acts = [[0] * len(f["acts"]) for _ in range(n_p)]
-    attacks = [Counter() for _ in range(n_p)]
-    for _row, p, act, target in f["v"]:
-        acts[p][act] += 1
-        if f["acts"][act] == "attack" and target >= 0:
-            attacks[p][f["targets"][target]] += 1
+    """The snapshot of the live /elections page (Παρατηρητήριο Εκλογών). Its Nuxt payload holds the answers of 7 API calls.
+    The API gives the same 365 days for each period and for parties and leaders, so one read is the whole page.
+    A point is [week, mentions, net tone or null]. A cell is [articles, share of coverage in percent, tone or null, scored articles]."""
+    d = nuxt_payload(raw["page_elections"].read_text())["data"]["election-dashboard"]
+    tl, sc = d["timeline"], d["scorecard"]
+    keys = [p["key"] for p in sc["parties"]]
+    assert [s["key"] for s in tl["series"]] == keys
+    by_key = lambda cells, *fields: [[c[f] for f in fields] for c in sorted(cells, key=lambda c: keys.index(c["key"]))]
     return {
-        "window": f["window"],
-        "weeks": weeks,
-        "analysed": sum(analysed),
-        "outlets": [{"name": o["name"], "slug": o["slug"], "analysed": analysed[k], "stance": stance[k], "weeks": stance_week[k]} for k, o in enumerate(f["outlets"])],
-        "issues": [{"el": i["el"], "en": i["en"], "soft": i["soft"], "stance": issue_stance[k]} for k, i in enumerate(f["issues"])],
-        "acts": f["acts"],
-        "people": [{**p, "weeks": mention_week[k], "portrayal": portrayal[k], "acts": acts[k], "attacks": attacks[k].most_common(8)} for k, p in enumerate(f["people"])],
+        "reference": tl["reference_date"],
+        "days": tl["window_days"],
+        "parties": [{"key": p["key"], "name": p["name"], "gov": p["lean"] == "Κυβέρνηση"} for p in sc["parties"]],
+        "weeks": sorted({pt["week"] for s in tl["series"] for pt in s["points"]}),
+        "series": [{pt["week"]: [pt["mentions"], pt["tone"]] for pt in s["points"]} for s in tl["series"]],
+        "outlets": [{"name": o["source"], "group": o["group_slug"], "owner": o["owner"], "lean": o["political_lean"], "cells": by_key(o["cells"], "articles", "sov_pct", "tone", "tone_n")} for o in sc["outlets"]],
+        "themes": [{"label": x["label"], "total": x["total"], "cells": by_key(x["cells"], "n", "pct")} for x in d["issues"]["themes"]],
+        "blindspots": {k: d["blindspots"][k] for k in ["min_size", "stories_total", "covered_both"]} | {
+            side: [{"topic": x["topic"], "articles": x["articles"]} for x in d["blindspots"][side]] for side in ["nd_only", "other_only"]},
+        "anonymity": [{"lean": b["lean"], "cells": by_key(b["cells"], "total", "anon_pct")} for b in d["anonymity"]["buckets"]],
+        "journalists": [{"name": j["author"], "outlets": j["outlets"], "total": j["total"], "cells": by_key(j["cells"], "n", "tone", "tone_n")} for j in d["journalists"]["journalists"]],
+        # The page asks for the period before the window too (Momentum). The API answers with the same window, so the page has no change to show.
+        "previousSame": d["previous"] == sc,
+        "vote2023": VOTE_2023,
+        "polls": POLLS_2025,
     }
 
 
@@ -255,12 +259,18 @@ def cases(raw, meta):
 def main():
     cache, out = Path(sys.argv[1]), Path(sys.argv[2])
     cache.mkdir(parents=True, exist_ok=True)
+    only = sys.argv[3:]
+    names = [n for k in only for n in NEEDS.get(k, FILES)] if only else list(FILES)
     raw, meta = {}, {}
-    for name, path in FILES.items():
-        raw[name], meta[name] = base.fetch(cache, name, path)
+    for name in names:
+        raw[name], meta[name] = base.fetch(cache, name, FILES[name])
     for key, fn in [("elections", elections), ("war", war), ("israel", israel), ("gazaCoverage", gaza_coverage), ("conflictLanguage", conflict_language), ("speeches", speeches), ("statements", statements), ("personFile", person_file), ("cases", cases)]:
-        print(f"{base.write(out, key, fn(raw, meta)):>8} {key}.js")
-    (out / "sources-politics-world.json").write_text(json.dumps({"reads": list(meta.values())}, indent=1, ensure_ascii=False) + "\n")
+        if not only or key in only:
+            print(f"{base.write(out, key, fn(raw, meta)):>8} {key}.js")
+    sources = out / "sources-politics-world.json"
+    reads = {r["url"]: r for r in (json.loads(sources.read_text())["reads"] if only and sources.exists() else [])}
+    reads.update((m["url"], m) for m in meta.values())
+    sources.write_text(json.dumps({"reads": list(reads.values())}, indent=1, ensure_ascii=False) + "\n")
 
 
 if __name__ == "__main__":
