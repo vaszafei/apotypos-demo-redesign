@@ -403,14 +403,14 @@
   }
 
   // Critical articles to the left and supportive to the right, for each topic. The tick is the critical share of all outlets in the topic.
-  function StanceByTopic (S, k) {
+  function StanceByTopic (S, k, limit) {
     const set = S.set
     const rows = set.issues.map((x, i) => {
       const mine = sumRows(set.os[k][i], 4, S.i0, S.i1)
       const all = [0, 1, 2].map((j) => sum(S.outlets.map((o) => sumRows(set.os[o.k][i], 4, S.i0, S.i1)[j])))
       return { x, mine, n: sum(mine), allCrit: critShare(all) }
-    }).filter((r) => !r.x.soft && r.n >= 5).sort((a, b) => critShare(b.mine) - critShare(a.mine))
-    return card('c-12', cardHead(t('mme.o.stance.title'), stanceKey(), t('mme.o.stance.info')),
+    }).filter((r) => !r.x.soft && r.n >= 5).sort((a, b) => (limit ? b.n - a.n : 0)).slice(0, limit || Infinity).sort((a, b) => critShare(b.mine) - critShare(a.mine))
+    return card('c-12', cardHead(t('mme.o.stance.title'), stanceKey(), limit ? `${t('mme.o.stance.info')} ${t('mme.o.stance.limit', { n: limit })}` : t('mme.o.stance.info')),
       rows.length
         ? UI.BarList(rows.map((r) => {
           const c = r.mine[0] / r.n
@@ -447,7 +447,8 @@
         h('p', { class: 'dcard-sub' }, t('mme.o.emph.sub', { n: fmt.int(topicN) }))] : emptyText(t('outlet2.topics.empty')))
   }
 
-  // Whom the outlet quotes, its parties against all outlets, and who attacks whom.
+  // Whom the outlet quotes, its parties against all outlets, and who attacks whom (the 6 pairs with the most statements).
+  const ATTACKS = 6
   function VoicesCard (S, k) {
     const set = S.set
     const o = S.outlets[k]
@@ -465,10 +466,11 @@
       parties.length ? [h('h3', { class: 'rows-caption mme-gap' }, t('mme.o.parties')), h('p', { class: 'dcard-sub' }, t('mme.o.parties.n', { n: fmt.int(sum([...mine.values()])) })),
         UI.BarList(parties.map((r) => ({ label: r.p, text: `${pctRound(r.v)} / ${pctRound(r.usual)}`, value: r.v, marker: r.usual })), { max: 1, cls: 'mme-share' })] : null,
       attacks.length ? [h('h3', { class: 'rows-caption mme-gap' }, t('mme.o.attacks')),
-        h('ul', { class: 'rows mme-rows' }, attacks.map(([a, b, n]) => h('li', {}, h('span', { class: 'row-name' }, `${a} → ${b}`), h('span', { class: 'row-value' }, fmt.int(n)))))] : null)
+        UI.BarList(attacks.slice(0, ATTACKS).map(([a, b, n]) => ({ label: h('span', { title: `${a} → ${b}` }, `${a.split(' ').pop()} → ${b.split(' ').pop()}`), value: n })), { max: Math.max(...attacks.slice(0, ATTACKS).map((r) => r[2]), 1), cls: 'mme-attacks' })] : null)
   }
 
-  // The tone of the outlet about each person, here and in the other outlets.
+  // The tone of the outlet about each person: the bar goes left (critical, red) or right (supportive, blue) from the center line, and the tick is the tone in the other outlets.
+  // The distance between the end of the bar and the tick is how far the outlet is from the others.
   function PortrayalCard (S, k) {
     const set = S.set
     const o = S.outlets[k]
@@ -477,15 +479,16 @@
       const other = [0, 1, 2].map((x) => sum(S.outlets.filter((y) => y.k !== k).map((y) => y.tone[j][x])))
       return { p, n: sum(here), here: netOf(here), else: netOf(other) }
     }).filter((r) => r.n >= 5).sort((a, b) => b.n - a.n)
-    const val = (r) => t('mme.o.portray.row', { here: signed(r.here), else: signed(r.else) })
-    const more = rows.filter((r) => r.here - r.else >= 0.1).sort((a, b) => (b.here - b.else) - (a.here - a.else))
-    const less = rows.filter((r) => r.else - r.here >= 0.1).sort((a, b) => (b.else - b.here) - (a.else - a.here))
-    const list = (items) => h('ul', { class: 'rows mme-rows' }, items.map((r) => h('li', {}, h('span', { class: 'row-name' }, r.p.name, ' ', h('span', { class: 'muted-text' }, fmt.int(r.n))),
-      h('span', { class: 'row-value' }, h('span', { class: 'mme-net', style: netColor(r.here) }, signed(r.here)), ' / ', h('span', { class: 'mme-net', style: netColor(r.else) }, signed(r.else))))))
+    const scale = Math.max(0.3, ...rows.map((r) => Math.max(Math.abs(r.here), Math.abs(r.else))))
+    const key = UI.Legend([{ label: t('stance.critical'), color: UI.STANCE_COLORS[0] }, { label: t('stance.supportive'), color: UI.STANCE_COLORS[2] }, { label: t('mme.o.portray.else'), tick: true }])
     return card('c-12', cardHead(t('mme.o.portray.title'), null, t('mme.o.portray.info')),
-      rows.length ? list(rows) : emptyText(t('media2.empty.list')),
-      more.length ? [h('h3', { class: 'rows-caption mme-gap' }, t('mme.o.portray.more')), h('p', { class: 'dcard-sub' }, more.map((r) => `${r.p.name} ${val(r)}`).join(' · '))] : null,
-      less.length ? [h('h3', { class: 'rows-caption mme-gap' }, t('mme.o.portray.less')), h('p', { class: 'dcard-sub' }, less.map((r) => `${r.p.name} ${val(r)}`).join(' · '))] : null)
+      rows.length
+        ? [h('div', { class: 'mme-key-row' }, key),
+          UI.BarList(rows.map((r) => ({
+            label: [r.p.name, ' ', h('span', { class: 'muted-text' }, fmt.int(r.n))], text: signed(r.here),
+            bar: UI.DivergingBar({ left: Math.max(0, -r.here), right: Math.max(0, r.here), scale, colors: [UI.STANCE_COLORS[0], null, UI.STANCE_COLORS[2]], marker: r.else, label: `${r.p.name}: ${t('mme.o.portray.row', { here: signed(r.here), else: signed(r.else) })}` })
+          })))]
+        : emptyText(t('media2.empty.list')))
   }
 
   // The newest headlines of the outlet: the title as a link, the day, the frame and the angle.

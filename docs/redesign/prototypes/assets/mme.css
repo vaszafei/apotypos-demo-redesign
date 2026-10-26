@@ -152,3 +152,5 @@
 .latest-stories .story-line a { display: inline; }
 .latest-stories .story-line .muted-text { font-size: var(--text-caption); }
 @media (max-width: 719px) { .latest-stories li { grid-template-columns: minmax(0, 1fr) 40px 28px; } .latest-stories li > :nth-child(3) { display: none; } }
+/* Who attacks whom: bars, with the pair as the label. */
+.mme-attacks .bar-label { font-size: var(--text-small); }

@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=25">
   <link rel="stylesheet" href="assets/dash.css?v=79">
-  <link rel="stylesheet" href="assets/mme.css?v=29">
+  <link rel="stylesheet" href="assets/mme.css?v=30">
 </head>
 <body>
   <div id="app"></div>
@@ -16,14 +16,14 @@
   <script src="assets/messages.js?v=28"></script>
   <script src="assets/messages-v2.js?v=46"></script>
   <script src="assets/messages-spread.js?v=16"></script>
-  <script src="assets/messages-mme.js?v=13"></script>
+  <script src="assets/messages-mme.js?v=14"></script>
   <script src="assets/components.js?v=9"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
   <script src="assets/politics.js?v=5"></script>
   <script src="assets/spread.js?v=6"></script>
   <script src="assets/entity-cards.js?v=7"></script>
-  <script src="assets/mme.js?v=15"></script>
+  <script src="assets/mme.js?v=17"></script>
   <script src="assets/shell.js?v=44"></script>
   <script src="data/media.js"></script>
   <script src="data/home.js"></script>
@@ -179,7 +179,7 @@
         const mk = mset ? mset.outlets.findIndex((o) => o.slug === slug) : -1
         const MS = mk >= 0 ? Mme.summary(mset, 0, mset.dates.length - 1) : null
         const live = MS ? {
-          weekly: Mme.WeeklyAgenda(mset, mk), coverage: Mme.CoverageCard(MS, mk), stance: Mme.StanceByTopic(MS, mk),
+          weekly: Mme.WeeklyAgenda(mset, mk), coverage: Mme.CoverageCard(MS, mk), stance: Mme.StanceByTopic(MS, mk, 20),
           voices: Mme.VoicesCard(MS, mk), portrayal: Mme.PortrayalCard(MS, mk)
         } : null
         const emphasisCard = Mme.EmphasisCard(MS, mk, topicShares, mineTotal)
@@ -279,7 +279,7 @@
           overview: [[[6, [relatedCard]], [6, [latestCard]]]],
           topics: [[[12, [live && live.weekly]]], [[12, [emphasisCard]]]],
           stories: [[[7, [storiesCard]], [5, [live && live.coverage]]]],
-          people: [[[6, [live && live.portrayal, howCard, stanceCard]], [6, [live && live.voices]]], [[12, [live && live.stance]]]]
+          people: [[[6, [stanceCard, howCard, live && live.stance]], [6, [live && live.portrayal, live && live.voices]]]]
         }
         // A row keeps its columns with cards. One column alone, or two that are 8 and 4 wide, share the 12 columns.
         const tabRows = (key) => layouts[key].map((row) => row.map(([span, cards]) => [span, cards.filter(Boolean)]).filter(([, cards]) => cards.length))
