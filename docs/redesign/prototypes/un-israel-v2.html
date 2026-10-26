@@ -7,7 +7,7 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=22">
-  <link rel="stylesheet" href="assets/dash.css?v=77">
+  <link rel="stylesheet" href="assets/dash.css?v=78">
   <link rel="stylesheet" href="assets/politics.css?v=2">
 </head>
 <body>
@@ -60,7 +60,7 @@
         const hamas = rows.filter((r) => r.hamas)
         const sum = (list, k) => list.reduce((a, r) => a + r[k], 0)
 
-        const wide = (stat) => { stat.classList.replace('c-4', 'c-3'); return stat }
+        const wide = (stat) => { stat.classList.remove('c-4'); return stat }
         const stats = [
           wide(Stat({ label: t('unpi.stat.minutes'), value: fmt.int(Math.round(total ? total.minutes : 0)), sub: t('unpi.stat.minutes.sub', { n: fmt.int(total ? total.leaders : 0) }) })),
           wide(Stat({ label: t('unpi.stat.rank'), value: t('unpi.stat.rank.value', { n: rank }), sub: t('unpi.stat.rank.sub', { n: fmt.int(d.topics) }) })),
@@ -90,7 +90,7 @@
             ]
           }))
 
-        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...stats, leadersCard, h('div', { class: 'c-5 card-col' }, regionCard, attackCard), tableCard),
+        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, leadersCard, h('div', { class: 'c-5 card-col' }, h('div', { class: 'stats-2x2' }, ...stats), regionCard, attackCard), tableCard),
           h('p', { class: 'proto-note' }, t('unpi.note', { n: fmt.int(onTopic.length) })))
       }
     })

@@ -464,8 +464,8 @@
 @media (max-width: 1279px) { .dossier-hero, .dossier-stats { grid-column: span 12; } }
 @media (max-width: 519px) { .dossier-stats, .stats-2x2 { grid-template-columns: minmax(0, 1fr); } }
 
-/* Αναλύσεις › Ομιλίες ΟΗΕ: the region pills sit on the row of the sub-tabs, on the right (header v2, 1024 px and wider). */
+/* Αναλύσεις › Ομιλίες ΟΗΕ: the region pills have their own row under the tabs, on the right (header v2, 1024 px and wider). */
 @media (min-width: 1024px) {
-  :root[data-header="v2"] .filters-right .page-head .page-filters { grid-column: 1 / -1; grid-row: 2; justify-self: end; max-width: calc(100% - 300px); margin-top: var(--space-3); }
+  :root[data-header="v2"] .filters-right .page-head .page-filters { justify-self: end; max-width: 100%; }
   :root[data-header="v2"] .filters-right .page-head .page-filters .region-pills { justify-content: flex-end; }
 }
