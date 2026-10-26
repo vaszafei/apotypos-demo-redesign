@@ -9,7 +9,7 @@
 
   // The lookups of a day: the stories of stories.js ranked by articles for each day, the story of the media set with the same name (it has the articles of each outlet),
   // and the headlines of the set for each date. A generic story ("Άλλα διεθνή") is not a story, so it does not count.
-  function index ({ stories, set, groups }) {
+  function index ({ stories, set }) {
     const byDay = stories.dates.map(() => [])
     stories.stories.forEach((s) => {
       if (s.generic) return
@@ -24,10 +24,10 @@
         headlines.get(date).push({ k, title, url, angle, story })
       }))
     }
-    return { byDay, mmeOf, headlines, set, dates: stories.dates, issues: stories.issues, groupSlug: new Map((groups || []).map((g) => [g.name, g.slug])) }
+    return { byDay, mmeOf, headlines, set, dates: stories.dates, issues: stories.issues }
   }
 
-  // Everything the card says about one day: its top story, the outlets and groups that ran it, a few headlines and the next stories.
+  // Everything the card says about one day: its top story, the outlets that ran it, a few headlines and the next stories.
   function dayInfo (ix, d) {
     const lead = ix.byDay[d]?.[0]
     if (!lead) return null
@@ -40,40 +40,37 @@
       for (let j = 0; j < rows.length; j += 3) if (rows[j + 1] === d) perOutlet.set(rows[j], rows[j + 2])
     }
     const outlets = [...perOutlet].map(([k, c]) => ({ ...ix.set.outlets[k], k, n: c })).sort((a, b) => b.n - a.n)
-    const groups = new Map()
-    outlets.filter((o) => o.group).forEach((o) => {
-      const g = groups.get(o.group) || { name: o.group, count: 0, n: 0 }
-      g.count++
-      g.n += o.n
-      groups.set(o.group, g)
-    })
     const seen = new Set()
     const articles = (ix.headlines.get(date) || []).filter((x) => x.story === s.el && !seen.has(x.k) && seen.add(x.k)).slice(0, 3)
       .map((x) => ({ ...x, outlet: ix.set.outlets[x.k].name }))
-    return { d, date, story: s, n, topic: ix.issues[s.issue], outlets, groups: [...groups.values()].sort((a, b) => b.count - a.count || b.n - a.n),
-      noGroup: outlets.filter((o) => !o.group).length, articles, others: ix.byDay[d].slice(1, 6), known: m !== undefined }
+    // How the story ran: its articles on each day from two days before its first to two days after its last.
+    const first = Math.max(0, s.days[0] - 2)
+    const last = Math.min(ix.dates.length - 1, s.days[s.days.length - 2] + 2)
+    const values = ix.dates.slice(first, last + 1).map(() => 0)
+    for (let k = 0; k < s.days.length; k += 2) values[s.days[k] - first] = s.days[k + 1]
+    const timeline = { dates: ix.dates.slice(first, last + 1), values, at: d - first }
+    return { d, date, story: s, n, topic: ix.issues[s.issue], outlets, timeline, articles, others: ix.byDay[d].slice(1, 6), known: m !== undefined }
   }
 
-  const arrow = (v) => `${v >= 0 ? '▲' : '▼'} ${fmt.dec(Math.abs(v * 100))}%`
-  const chipLink = (href, label, color, extra) => h('a', { class: 'chip home-chip', href },
-    color ? h('span', { class: 'dot', style: `--dot:${color}`, 'aria-hidden': 'true' }) : null, label, extra ? h('span', { class: 'home-chip-n' }, extra) : null)
-  const CHIPS = 8
+  const OUTLETS = 8
 
-  // The top story of a day. The totals are the articles of all the outlets for each day, to compare the day with the day before and with the same day a week earlier.
-  function DayCard (info, { totals, isLast, groupSlug }) {
+  // The top story of a day. The bars are the articles of each outlet on the day, in the color of its group (the group is under the name).
+  function DayCard (info, { isLast }) {
     if (!info) return card('c-5 home-day', cardHead(t('home.day.title'), null, t('home.day.info')), emptyText(t('home.day.empty')))
-    const { d, story, topic } = info
-    const ref = (i) => (i >= 0 && totals[i] > 0 ? (totals[d] - totals[i]) / totals[i] : null)
-    const fact = (label, value) => h('div', { class: 'home-fact' }, h('dt', {}, label), h('dd', {}, value))
-    const compare = h('dl', { class: 'home-compare' },
-      fact(t('home.day.total'), fmt.int(totals[d])),
-      ...[[t('home.day.vsPrev'), ref(d - 1)], [t('home.day.vsWeek'), ref(d - 7)]].map(([label, v]) => fact(label, v === null ? '–' : arrow(v))))
-
-    const list = (label, items) => (items.length ? h('div', { class: 'home-block' }, h('p', { class: 'home-label' }, label), h('div', { class: 'home-chips' }, items)) : null)
-    const outletChips = info.outlets.slice(0, CHIPS).map((o) => chipLink(`outlet-v2.html?slug=${o.slug}`, o.name, groupColor(o.group)))
-    if (info.outlets.length > CHIPS) outletChips.push(h('span', { class: 'chip chip-quiet' }, `+${info.outlets.length - CHIPS}`))
-    const groupChips = info.groups.map((g) => chipLink(groupSlug.get(g.name) ? `group-v2.html?g=${encodeURIComponent(groupSlug.get(g.name))}` : '404.html', g.name, groupColor(g.name), fmt.int(g.count)))
-    if (info.noGroup) groupChips.push(h('span', { class: 'chip chip-quiet' }, t('home.day.nogroup', { n: info.noGroup })))
+    const { story, topic } = info
+    const shown = info.outlets.slice(0, OUTLETS)
+    const tl = info.timeline
+    const timeline = tl.dates.length > 1
+      ? h('div', { class: 'home-block' }, h('p', { class: 'home-label' }, t('home.day.timeline')),
+        UI.BarChart({ dates: tl.dates, values: tl.values, height: 130, label: t('home.day.timeline'), peak: false, picked: tl.at,
+          tooltipOf: (i) => `${fmt.date(tl.dates[i])}: ${t('home.day.meta', { n: fmt.int(tl.values[i]) })}` }))
+      : null
+    const outlets = shown.length
+      ? h('div', { class: 'home-block' }, h('p', { class: 'home-label' }, t('home.day.outlets')),
+        UI.BarList(shown.map((o) => ({ label: h('span', { class: 'home-outlet' }, h('a', { href: `outlet-v2.html?slug=${o.slug}` }, o.name), h('span', { class: 'muted-text' }, o.group || t('home.day.nogroup'))),
+          text: fmt.int(o.n), value: o.n, color: groupColor(o.group) })), { max: shown[0].n }),
+        info.outlets.length > OUTLETS ? h('p', { class: 'dcard-sub' }, t('home.day.outlets.more', { n: info.outlets.length - OUTLETS })) : null)
+      : null
 
     const articles = info.articles.length
       ? h('div', { class: 'home-block' }, h('p', { class: 'home-label' }, t('home.day.articles')),
@@ -92,9 +89,8 @@
       h('p', { class: 'home-day-date' }, fmt.date(info.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })),
       h('h3', { class: 'home-day-story' }, name(story)),
       h('p', { class: 'home-day-meta' }, topic ? [h('strong', {}, name(topic)), ' · '] : null, meta),
-      compare,
-      list(t('home.day.outlets'), outletChips),
-      list(t('home.day.groups'), groupChips),
+      timeline,
+      outlets,
       articles,
       others,
       h('div', { class: 'home-actions' },
