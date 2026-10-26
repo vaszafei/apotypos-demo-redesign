@@ -89,8 +89,8 @@
           h('p', { class: 'report-note' }, t('fr.english')), frame)
 
         content.replaceChildren(bar,
-          h('div', { class: 'story-lead' }, h('p', { class: 'quote-meta' }, t('fr.kicker')), h('h2', { class: 'story-lead-title' }, t('fr.title')), h('p', { class: 'hero-lead' }, t('fr.intro', { press: fmt.int(d.press.articles), outlets: d.press.outlets, posts: fmt.int(d.facebook.posts), topic: fmt.int(d.facebook.inTopic) }))),
-          h('div', { class: 'dash-grid' }, ...stats, glance, reportCard),
+          h('div', { class: 'dash-grid' }, card('c-6 hero dossier-hero', h('div', { class: 'hero-main' }, h('p', { class: 'hero-kicker' }, t('fr.kicker')), h('h2', { class: 'hero-title' }, t('fr.title')), h('p', { class: 'dcard-sub hero-lead' }, t('fr.intro', { press: fmt.int(d.press.articles), outlets: d.press.outlets, posts: fmt.int(d.facebook.posts), topic: fmt.int(d.facebook.inTopic) })))),
+            h('div', { class: 'c-6 dossier-stats' }, ...stats), glance, reportCard),
           h('p', { class: 'proto-note' }, t('fr.note')))
       }
     })
