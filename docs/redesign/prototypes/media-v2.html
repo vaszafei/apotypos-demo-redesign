@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=23">
   <link rel="stylesheet" href="assets/dash.css?v=79">
-  <link rel="stylesheet" href="assets/mme.css?v=14">
+  <link rel="stylesheet" href="assets/mme.css?v=15">
   <link rel="stylesheet" href="assets/date-range.css?v=3">
 </head>
 <body>
@@ -17,13 +17,13 @@
   <script src="assets/messages.js?v=28"></script>
   <script src="assets/messages-v2.js?v=37"></script>
   <script src="assets/messages-spread.js?v=15"></script>
-  <script src="assets/messages-mme.js?v=9"></script>
+  <script src="assets/messages-mme.js?v=10"></script>
   <script src="assets/components.js?v=10"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
   <script src="assets/date-range.js?v=1"></script>
   <script src="assets/mme.js?v=8"></script>
-  <script src="assets/shell.js?v=42"></script>
+  <script src="assets/shell.js?v=44"></script>
   <script src="data/mme.js?v=1"></script>
   <script src="data/groups.js?v=2"></script>
   <script src="data/originality.js?v=1"></script>
@@ -63,9 +63,9 @@
     const sumRange = (arr, i0, i1, pick = (x) => x) => { let s = 0; for (let i = i0; i <= i1; i++) s += pick(arr[i]); return s }
 
     // Stacked columns, one for each day: news and not news. A drag selects a period.
-    function VolumeChart ({ dates, news, other, i0, i1, onSelect }) {
+    function VolumeChart ({ dates, news, other, i0, i1, onSelect, height = 170 }) {
       return UI.BarChart({
-        dates, height: window.matchMedia('(min-width: 1280px)').matches ? 520 : 170, label: t('media2.chart.title'), onSelect,
+        dates, height, label: t('media2.chart.title'), onSelect,
         series: [{ name: t('media2.chart.news'), color: 'var(--series-news)', values: news }, { name: t('media2.chart.other'), color: 'var(--series-other)', values: other }],
         muted: (i) => i < i0 || i > i1,
         tooltipOf: (i) => t('media2.chart.day', { date: fmt.date(dates[i]), n: fmt.int(news[i] + other[i]), news: fmt.int(news[i]) })
@@ -133,7 +133,7 @@
       title: () => t('nav.media'),
       breadcrumbs: () => [{ label: t('nav.media') }],
       render (content, { tabs }) {
-        content.classList.add('dash', 'minimal')
+        content.classList.add('dash', 'minimal', 'filters-right')
         draw = () => {
           reset()
           if (result.kind === 'failed' || result.kind === 'notFound') {
@@ -156,7 +156,8 @@
           setSelect.value = view.set
           const picker = UI.DateRangePicker({ dates, from: view.from, to: view.to, presets: Mme.presets(set), onChange: select })
           const setAction = Shell.headerV2 ? h('label', { class: 'set-select' }, h('span', { class: 'visually-hidden' }, t('mme.set')), setSelect) : null
-          const bar = TopBar({ title: `${t('nav.media')} · ${t(`tab.media.${tab}`)}`, tabs, actions: [setAction, picker], quiet: true })
+          // Header v2: the two controls have their own row under the tabs, on the right (a wrapper is a filter of the tab, not a page action).
+          const bar = TopBar({ title: `${t('nav.media')} · ${t(`tab.media.${tab}`)}`, tabs, actions: [setAction ? h('div', { class: 'mme-filters' }, setAction, picker) : picker], quiet: true })
 
           // Daily totals of all the outlets: the news are the topics with soft: false.
           const news = dates.map((_, d) => S.outlets.reduce((s, o) => s + set.od[o.k][d * 7 + 1], 0))
@@ -167,8 +168,8 @@
           const storiesPerDay = dates.map(() => 0)
           set.sd.forEach((pairs) => { for (let j = 0; j < pairs.length; j += 2) storiesPerDay[pairs[j]]++ })
 
-          // Row 1: 4 small stat cards on two lines. Each has a number and a small picture of the same measure.
-          const c3 = (el) => { el.classList.replace('c-4', 'c-3'); el.classList.add('mme-kpi'); return el }
+          // The 4 small stat cards, two by two at the top of the right column. Each has a number and a small picture of the same measure.
+          const c3 = (el) => { el.classList.remove('c-4'); el.classList.add('mme-kpi'); return el }
           const groupCount = new Set(S.active.map((o) => o.group).filter(Boolean)).size
           const statOutlets = c3(Stat({
             kpi: 'K05', label: t('mme.stat.outlets'), empty: !S.active.length, value: fmt.int(S.active.length),
@@ -197,10 +198,10 @@
           // The lead chart: articles per day, news and other. A drag selects a period.
           let peakDay = i0
           for (let i = i0; i <= i1; i++) if (totals[i] > totals[peakDay]) peakDay = i
-          const volume = card('c-6 mme-side',
+          const volume = card('mme-side',
             cardHead(t('media2.chart.title'), UI.Legend([{ label: t('media2.chart.news'), color: 'var(--series-news)' }, { label: t('media2.chart.other'), color: 'var(--series-other)' }]),
               analysed > 0 ? `${t('media2.chart.peak', { date: fmt.date(dates[peakDay]), n: fmt.int(totals[peakDay]) })} · ${t('media2.chart.hint')}` : null),
-            analysed > 0 ? VolumeChart({ dates, news, other, i0, i1, onSelect: select }) : emptyText(t('media2.chart.empty')))
+            analysed > 0 ? VolumeChart({ dates, news, other, i0, i1, onSelect: select, height: window.matchMedia('(min-width: 1280px)').matches ? 340 : 170 }) : emptyText(t('media2.chart.empty')))
 
           // The scatter: news share and clickbait share of each outlet.
           const cbOutlets = S.active.filter((o) => o.cbKnown >= 100)
@@ -220,20 +221,15 @@
             UI.BarList(anon.map((r) => ({ label: r.name, value: r.anonPct, text: fmt.pct(r.anonPct / 100) })), { max: 100, reference: { value: anonAvg, label: t('originality.anon.avg', { v: fmt.pct(anonAvg / 100) }) } })) : null
 
           // All the outlets: one row for each, in place of the outlet cards of the live page. The card answers which outlets write the most,
-          // and the columns put the group, the articles and the clickbait side by side. The headers of the two measures sort.
-          const cb = (o) => (o.cbKnown >= 100 ? o.cbYes / o.cbKnown : null)
-          // A value that is not measured is a dash. Its reason is in the title and for a screen reader.
-          const none = (reason) => h('span', { class: 'muted-text', title: reason }, '—', h('span', { class: 'visually-hidden' }, reason))
+          // and the columns put the group and the articles side by side. The header of the articles sorts.
           const groupCell = (o) => h('p', { class: 'mme-rank-group' }, h('span', { class: o.group ? 'dot' : 'dot dot-none', style: o.group ? `--dot:${colorOfGroup.get(o.group) || NO_GROUP}` : null, 'aria-hidden': 'true' }),
             !o.group ? h('span', {}, t('media.col.group.none')) : slugOfGroup.has(o.group) ? h('a', { href: `group-v2.html?g=${slugOfGroup.get(o.group)}` }, o.group) : o.group)
           const columns = [
             { label: t('media.col.outlet'), render: (o) => h('p', { class: 'mme-rank-name' }, Mme.outletLink(S, o)) },
             greek && { label: t('media.col.group'), phone: false, render: groupCell },
-            { label: t('mme.rank.sort.n'), num: true, sortable: true, sortKey: 'n', sortValue: (o) => o.n, render: (o) => fmt.int(o.n) },
-            { label: t('media.col.clickbait'), num: true, sortable: true, sortKey: 'cb', sortValue: cb, render: (o) => cb(o) === null ? none(t('group.clickbait.none')) : fmt.pct(cb(o)) }
+            { label: t('mme.rank.sort.n'), num: true, sortable: true, sortKey: 'n', sortValue: (o) => o.n, render: (o) => fmt.int(o.n) }
           ].filter(Boolean)
           const ranking = card('c-6 mme-rank', cardHead(t('mme.rank.all'), null, `${t('mme.rank.note')}`),
-            h('p', { class: 'dcard-sub' }, t('mme.rank.sub')),
             UI.DataTable({ columns, rows: S.active, rankColumn: true, pageSize: Infinity, sort: { key: 'n', dir: 'desc' }, emptyText: t('media.empty') }))
           ranking.id = 'ranking'
           ranking.setAttribute('aria-live', 'polite')
@@ -249,8 +245,17 @@
 
           const cards = tab === 'writing'
             ? [scatterCard, bylineCard, gov]
-            : [statOutlets, statArticles, statStories, statPeople, ranking, volume]
+            : [ranking, h('div', { class: 'c-6 card-col card-col-fill' }, h('div', { class: 'stats-2x2' }, statOutlets, statArticles, statStories, statPeople), volume)]
           content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...cards), Mme.MethodNote(S), protoNote())
+          // Side by side, the right column is as tall as the table: the chart takes the height that the stat cards leave.
+          if (tab !== 'writing' && analysed > 0) {
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+              if (!window.matchMedia('(min-width: 1280px)').matches || !volume.isConnected) return
+              const chartEl = volume.lastElementChild
+              const slack = volume.getBoundingClientRect().bottom - parseFloat(getComputedStyle(volume).paddingBottom) - chartEl.getBoundingClientRect().bottom
+              if (slack > 4) chartEl.replaceWith(VolumeChart({ dates, news, other, i0, i1, onSelect: select, height: 340 + Math.floor(slack) }))
+            }))
+          }
         }
         placeSetSelect()
         draw()

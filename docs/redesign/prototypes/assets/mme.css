@@ -82,7 +82,6 @@
 @media (max-width: 1023px) { .mme-kpi.c-3 { grid-column: span 6; } }
 
 /* All outlets: one row for each outlet in a compact table. The headers of the three measures sort. */
-.mme-rank .dcard-sub { margin-bottom: var(--space-2); }
 .mme-rank p { margin: 0; }
 .mme-rank-name { overflow: hidden; max-width: 160px; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
 .mme-rank-group { display: flex; align-items: center; gap: 6px; min-width: 0; max-width: 170px; white-space: nowrap; color: var(--text-secondary); }
@@ -106,7 +105,9 @@
 /* Πρόσωπα: the people card sits above the grid of the persons of the API. */
 .fp-people { margin-bottom: var(--space-4); }
 /* Μέσα › Επισκόπηση: the table and the chart are half and half, and stack when the table no longer fits in a half. */
-@media (max-width: 1279px) { .mme-rank, .mme-side { grid-column: span 12; } }
+@media (max-width: 1279px) { .mme-rank { grid-column: span 12; } }
+/* Μέσα: the set of outlets and the period, together in the filters row. */
+.mme-filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 /* Wide screens: the table of all the outlets sits next to the volume chart, and the chart is tall to fill the card. The table scrolls inside its card, with the header in view, so the two columns are about as tall. */
 @media (min-width: 1100px) {
   .mme-rank .table-wrap { max-height: 560px; overflow-y: auto; }
