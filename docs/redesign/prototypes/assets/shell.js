@@ -473,7 +473,7 @@
 
       const closeButton = h('button', { type: 'button', class: 'icon-button sidebar-close', 'aria-label': t('shell.close'), onClick: () => setDrawer(false) }, Icon('x-mark'))
       const sidebar = h('nav', { class: 'sidebar', id: 'sidebar', 'aria-label': t('shell.nav') },
-        h('div', { class: 'sidebar-logo' }, h('a', { class: 'logo-link', href: 'index.html' }, h('img', { class: 'logo-img', src: 'assets/logo.svg?v=5', alt: t('site.name'), width: 335, height: 100 })), closeButton),
+        h('div', { class: 'sidebar-logo' }, h('a', { class: 'logo-link', href: 'index.html' }, h('img', { class: 'logo-img', src: 'assets/logo.svg?v=6', alt: t('site.name'), width: 335, height: 141 })), closeButton),
         h('ul', { class: 'nav-list nav-main' }, mainLinks),
         h('div', { class: 'nav-footer' },
           h('ul', { class: 'nav-list', 'aria-label': t('section.footer') }, footerLinks),
