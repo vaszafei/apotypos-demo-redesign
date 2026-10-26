@@ -154,3 +154,9 @@
 @media (max-width: 719px) { .latest-stories li { grid-template-columns: minmax(0, 1fr) 40px 28px; } .latest-stories li > :nth-child(3) { display: none; } }
 /* Who attacks whom: bars, with the pair as the label. */
 .mme-attacks .bar-label { font-size: var(--text-small); }
+/* Two bars on one center line: the outlet, and under it a thin gray bar for the others. */
+.pair-dbar { display: grid; gap: 3px; min-width: 96px; }
+.pair-dbar .dbar + .dbar { height: 4px; border-radius: 2px; }
+.pair-dbar .dbar + .dbar .dbar-mid { top: -1px; bottom: -1px; }
+.pair-dbar .dbar + .dbar .dbar-seg { border-radius: 2px; }
+.pair-dbar .dbar-mid { background: var(--text-secondary); opacity: 0.55; }

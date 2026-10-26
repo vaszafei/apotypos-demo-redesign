@@ -403,20 +403,28 @@
   }
 
   // Critical articles to the left and supportive to the right, for each topic. The tick is the critical share of all outlets in the topic.
+  // Two bars, one under the other, on one center line: the outlet (red to the left, blue to the right) and, thin and gray, all the other articles to compare with.
+  const ALL_GRAY = '#9a978f'
+  function PairBars (here, others, scale, label) {
+    return h('div', { class: 'pair-dbar' },
+      UI.DivergingBar({ left: here.left, right: here.right, scale, colors: [STANCE_COLORS[0], null, STANCE_COLORS[2]], label }),
+      UI.DivergingBar({ left: others.left, right: others.right, scale, colors: [ALL_GRAY, null, ALL_GRAY] }))
+  }
+
   function StanceByTopic (S, k, limit) {
     const set = S.set
     const rows = set.issues.map((x, i) => {
       const mine = sumRows(set.os[k][i], 4, S.i0, S.i1)
       const all = [0, 1, 2].map((j) => sum(S.outlets.map((o) => sumRows(set.os[o.k][i], 4, S.i0, S.i1)[j])))
-      return { x, mine, n: sum(mine), allCrit: critShare(all) }
+      return { x, mine, n: sum(mine), allCrit: critShare(all), allSup: sum(all) ? all[2] / sum(all) : 0 }
     }).filter((r) => !r.x.soft && r.n >= 5).sort((a, b) => (limit ? b.n - a.n : 0)).slice(0, limit || Infinity).sort((a, b) => critShare(b.mine) - critShare(a.mine))
-    return card('c-12', cardHead(t('mme.o.stance.title'), stanceKey(), limit ? `${t('mme.o.stance.info')} ${t('mme.o.stance.limit', { n: limit })}` : t('mme.o.stance.info')),
+    return card('c-12', cardHead(t('mme.o.stance.title'), UI.Legend([{ label: t('stance.critical'), color: STANCE_COLORS[0] }, { label: t('stance.supportive'), color: STANCE_COLORS[2] }, { label: t('mme.o.stance.all'), color: ALL_GRAY }]), limit ? `${t('mme.o.stance.info')} ${t('mme.o.stance.limit', { n: limit })}` : t('mme.o.stance.info')),
       rows.length
         ? UI.BarList(rows.map((r) => {
           const c = r.mine[0] / r.n
           const s = r.mine[2] / r.n
-          return { label: name(r.x), text: fmt.int(r.n), bar: UI.DivergingBar({ left: c, right: s, scale: 1, colors: [STANCE_COLORS[0], null, STANCE_COLORS[2]], marker: -r.allCrit, label: t('mme.o.stance.row', { topic: name(r.x), crit: pct(c), sup: pct(s), n: r.n, all: pct(r.allCrit) }) }) }
-        }), { columns: 2 })
+          return { label: name(r.x), text: fmt.int(r.n), bar: PairBars({ left: c, right: s }, { left: r.allCrit, right: r.allSup }, 1, t('mme.o.stance.row', { topic: name(r.x), crit: pct(c), sup: pct(s), n: r.n, all: pct(r.allCrit) })) }
+        }), { columns: limit ? 1 : 2 })
         : emptyText(t('media2.empty.list')))
   }
 
@@ -469,8 +477,7 @@
         UI.BarList(attacks.slice(0, ATTACKS).map(([a, b, n]) => ({ label: h('span', { title: `${a} → ${b}` }, `${a.split(' ').pop()} → ${b.split(' ').pop()}`), value: n })), { max: Math.max(...attacks.slice(0, ATTACKS).map((r) => r[2]), 1), cls: 'mme-attacks' })] : null)
   }
 
-  // The tone of the outlet about each person: the bar goes left (critical, red) or right (supportive, blue) from the center line, and the tick is the tone in the other outlets.
-  // The distance between the end of the bar and the tick is how far the outlet is from the others.
+  // The tone of the outlet about each person: the bar goes left (critical, red) or right (supportive, blue) from the center line, and the thin gray bar under it is the tone in the other outlets.
   function PortrayalCard (S, k) {
     const set = S.set
     const o = S.outlets[k]
@@ -480,13 +487,13 @@
       return { p, n: sum(here), here: netOf(here), else: netOf(other) }
     }).filter((r) => r.n >= 5).sort((a, b) => b.n - a.n)
     const scale = Math.max(0.3, ...rows.map((r) => Math.max(Math.abs(r.here), Math.abs(r.else))))
-    const key = UI.Legend([{ label: t('stance.critical'), color: UI.STANCE_COLORS[0] }, { label: t('stance.supportive'), color: UI.STANCE_COLORS[2] }, { label: t('mme.o.portray.else'), tick: true }])
+    const key = UI.Legend([{ label: t('stance.critical'), color: STANCE_COLORS[0] }, { label: t('stance.supportive'), color: STANCE_COLORS[2] }, { label: t('mme.o.portray.else'), color: ALL_GRAY }])
     return card('c-12', cardHead(t('mme.o.portray.title'), null, t('mme.o.portray.info')),
       rows.length
         ? [h('div', { class: 'mme-key-row' }, key),
           UI.BarList(rows.map((r) => ({
             label: [r.p.name, ' ', h('span', { class: 'muted-text' }, fmt.int(r.n))], text: signed(r.here),
-            bar: UI.DivergingBar({ left: Math.max(0, -r.here), right: Math.max(0, r.here), scale, colors: [UI.STANCE_COLORS[0], null, UI.STANCE_COLORS[2]], marker: r.else, label: `${r.p.name}: ${t('mme.o.portray.row', { here: signed(r.here), else: signed(r.else) })}` })
+            bar: PairBars({ left: Math.max(0, -r.here), right: Math.max(0, r.here) }, { left: Math.max(0, -r.else), right: Math.max(0, r.else) }, scale, `${r.p.name}: ${t('mme.o.portray.row', { here: signed(r.here), else: signed(r.else) })}`)
           })))]
         : emptyText(t('media2.empty.list')))
   }
