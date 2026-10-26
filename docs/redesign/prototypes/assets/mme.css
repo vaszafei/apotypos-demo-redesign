@@ -113,14 +113,17 @@
   .mme-rank .table-wrap { max-height: 560px; overflow-y: auto; }
   .mme-rank .data-table thead th { position: sticky; top: 0; z-index: 1; background: var(--surface-raised); }
 }
-/* Μέσα › one outlet: the title card holds the name on its own row, and its chips have a gap between the label and the value. */
-.outlet-hero .mme-ostats { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: auto; padding-top: var(--space-3); border-top: 1px solid var(--border); }
-.outlet-hero .mme-ostat svg { display: block; margin-top: 4px; }
-@media (max-width: 719px) { .outlet-hero .mme-ostats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 /* The latest articles scroll inside their card; the card is as tall as the title card beside it. */
 .outlet-latest { display: flex; flex-direction: column; }
 .latest-scroll { position: relative; flex: 1; min-height: 160px; }
 .latest-scroll > ul { position: absolute; inset: 0; overflow-y: auto; padding-right: var(--space-2); }
 .latest-scroll .plain-list li:last-child { border-bottom: 0; }
-@media (max-width: 1279px) { .outlet-hero, .outlet-latest { grid-column: span 12; } .latest-scroll { min-height: 320px; } }
-.outlet-hero .hero-chips .chip { gap: 5px; }
+@media (max-width: 1279px) { .outlet-stats, .outlet-latest { grid-column: span 12; } .latest-scroll { min-height: 320px; } }
+/* The related outlets: the pie, and the list that is its text. */
+.rose-slice:hover { opacity: 0.85; }
+.rose-legend { margin: var(--space-2) 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.rose-legend li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: var(--space-2); align-items: baseline; font-size: var(--text-small); }
+.rose-swatch { width: 10px; height: 10px; border-radius: 2px; align-self: center; }
+.rose-name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px var(--space-2); min-width: 0; }
+.rose-name .muted-text { font-size: var(--text-caption); }
+.rose-legend .row-value { color: var(--text-secondary); font-size: var(--text-caption); font-variant-numeric: tabular-nums; }
