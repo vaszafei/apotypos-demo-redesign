@@ -379,27 +379,27 @@
     return card('c-12', cardHead(t('mme.o.weekly.title'), null, t('mme.o.weekly.info')), legend, chart)
   }
 
-  // The stories the outlet pushes (twice the average share of the others) and the big stories it did not run.
-  function PushSkip (S, k) {
+  // The stories the outlet pushes (twice the average share of the others) and the big stories it did not run, in one card: two lists of 5, the first over-covered, the second missing.
+  const COVERAGE = 5
+  function CoverageCard (S, k) {
     const o = S.outlets[k]
     const others = S.active.filter((x) => x.k !== k)
     const news = (s) => !s.generic && s.issue >= 0 && S.hard[s.issue]
     const push = S.stories.filter((s) => news(s) && s.per[k] >= 5).map((s) => {
       const avg = sum(others.map((x) => s.per[x.k] / x.n)) / (others.length || 1)
       return { s, ratio: avg ? s.per[k] / o.n / avg : Infinity }
-    }).filter((r) => r.ratio >= 2).sort((a, b) => b.ratio - a.ratio).slice(0, 8)
+    }).filter((r) => r.ratio >= 2).sort((a, b) => b.ratio - a.ratio).slice(0, COVERAGE)
     const skip = S.stories.filter((s) => news(s) && !s.per[k] && s.reach >= S.active.length / 2).map((s) => {
       const covering = S.active.filter((x) => s.per[x.k])
       const expected = (sum(covering.map((x) => s.per[x.k] / x.n)) / covering.length) * o.n
       return { s, expected }
-    }).sort((a, b) => b.expected - a.expected).slice(0, 8)
-    const pushCard = card('c-12', cardHead(t('mme.o.push.title'), null, t('mme.o.push.info')),
-      push.length ? h('ul', { class: 'rows-related mme-related' }, push.map((r) => h('li', {}, h('span', { class: 'related-main' }, h('span', {}, name(r.s)),
-        h('span', { class: 'muted-text' }, t('mme.o.push.row', { n: fmt.int(r.s.per[k]), ratio: fmt.dec(r.ratio) }))), h('span', {}), h('span', {})))) : emptyText(t('mme.o.push.empty')))
-    const skipCard = card('c-12', cardHead(t('mme.o.skip.title'), null, t('mme.o.skip.info')),
-      skip.length ? h('ul', { class: 'rows-related mme-related' }, skip.map((r) => h('li', {}, h('span', { class: 'related-main' }, h('span', {}, name(r.s)),
-        h('span', { class: 'muted-text' }, t('mme.o.skip.row', { reach: r.s.reach, n: fmt.int(r.s.n), expected: fmt.dec(r.expected) }))), h('span', {}), h('span', {})))) : emptyText(t('mme.o.skip.empty')))
-    return [pushCard, skipCard]
+    }).sort((a, b) => b.expected - a.expected).slice(0, COVERAGE)
+    const list = (rows, line) => h('ul', { class: 'rows-related mme-related' }, rows.map((r) => h('li', {}, h('span', { class: 'related-main' }, h('span', {}, name(r.s)), h('span', { class: 'muted-text' }, line(r))))))
+    return card('c-12', cardHead(t('mme.o.cover.title'), null, t('mme.o.cover.info')),
+      h('h3', { class: 'rows-caption' }, t('mme.o.push.title')),
+      push.length ? list(push, (r) => t('mme.o.push.row', { n: fmt.int(r.s.per[k]), ratio: fmt.dec(r.ratio) })) : emptyText(t('mme.o.push.empty')),
+      h('h3', { class: 'rows-caption mme-gap' }, t('mme.o.skip.title')),
+      skip.length ? list(skip, (r) => t('mme.o.skip.row', { reach: r.s.reach, n: fmt.int(r.s.n), expected: fmt.dec(r.expected) })) : emptyText(t('mme.o.skip.empty')))
   }
 
   // Critical articles to the left and supportive to the right, for each topic. The tick is the critical share of all outlets in the topic.
@@ -496,5 +496,5 @@
       angle ? h('span', { class: 'mme-angle' }, angle) : null))
   }
 
-  window.Mme = { presets, summary, sumPairs, ChipsCard, HighlightsCard, StoriesCard, AgendaCard, PeopleCard, GovCard, TopicCard, PersonsCard, MethodNote, OutletStats, outletFacts, WeeklyAgenda, PushSkip, StanceByTopic, EmphasisCard, VoicesCard, PortrayalCard, Headlines, topIssues, shareOf, StanceBar, critShare, outletLink }
+  window.Mme = { presets, summary, sumPairs, ChipsCard, HighlightsCard, StoriesCard, AgendaCard, PeopleCard, GovCard, TopicCard, PersonsCard, MethodNote, OutletStats, outletFacts, WeeklyAgenda, CoverageCard, StanceByTopic, EmphasisCard, VoicesCard, PortrayalCard, Headlines, topIssues, shareOf, StanceBar, critShare, outletLink }
 })()
