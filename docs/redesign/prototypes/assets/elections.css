@@ -51,3 +51,12 @@
   .blind-cols { grid-template-columns: minmax(0, 1fr); }
 }
 .party-table tbody th { white-space: normal; }
+
+/* Μέσα: the outlets table is compact and sits beside the card of the lean. Below 1280 px the two cards stack. */
+.party-table-compact th, .party-table-compact td { padding: 2px 3px; }
+.party-table-compact .row-name { min-width: 84px; max-width: 150px; }
+.party-table-compact .row-name span { display: none; }
+.party-table-compact td.cell { min-width: 44px; font-size: var(--text-caption); line-height: 1.25; }
+.party-table-compact .sub { font-size: 10px; line-height: 1.1; }
+@media (max-width: 1279px) { .elec-pair { grid-column: span 12; } }
+
