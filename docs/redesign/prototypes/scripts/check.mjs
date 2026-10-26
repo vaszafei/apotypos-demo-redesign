@@ -399,7 +399,7 @@ for (const name of PAGES) {
   const HEIGHT_BEFORE = { 1440: 2335, 390: 4024 }
   for (const width of WIDTHS) {
     const { page, context } = await open(`${base}/topics-v2.html`, width)
-    // #62: «Θέματα σε άνοδο και πτώση» is on the sub-tab Στον χρόνο.
+    // #68: «Θέματα σε άνοδο και πτώση» is the last card of Επισκόπηση, and the old ?tab=time opens it.
     const movers = await open(`${base}/topics-v2.html?tab=time`, width)
     const m = await movers.page.evaluate(() => {
       // #60: the title of the card states its finding, so the card is found by its name.
@@ -424,10 +424,9 @@ for (const name of PAGES) {
       }
     })
     Object.assign(r, m)
-    const expected = ['Όλα τα θέματα', 'Τα μεγαλύτερα θέματα στον χρόνο', 'Θέματα σε άνοδο και πτώση']
-    record(`topics ${width}px: 3 cards in the new order, with no stat card and no repeated card`, r.titles.join() === expected.join() && r.stats === 0, { titles: r.titles, stats: r.stats })
+    record(`topics ${width}px: 3 cards in the new order, with no stat card and no repeated card`, r.titles.length === 3 && r.titles[0] === 'Όλα τα θέματα' && r.titles[1] === 'Τάσεις' && r.titles[2].startsWith('Πιο πολύ ανεβαίνει') && r.stats === 0, { titles: r.titles, stats: r.stats })
     record(`topics ${width}px: the table has 12 rows and no change column`, r.rows === 12 && !r.columns.some((c) => c.includes('Αλλαγή')), { rows: r.rows, columns: r.columns })
-    record(`topics ${width}px: one column of 6 rises and 6 falls in falling order, and no catch-all topic`, r.up === 6 && r.down === 6 && r.changes.length === 12 && r.changes.every((v, i) => i === 0 || v <= r.changes[i - 1]) && !r.movers.includes('Άλλα'), { up: r.up, down: r.down, changes: r.changes, movers: r.movers })
+    record(`topics ${width}px: one column of 5 rises and 5 falls in falling order, and no catch-all topic`, r.up === 5 && r.down === 5 && r.changes.length === 10 && r.changes.every((v, i) => i === 0 || v <= r.changes[i - 1]) && !r.movers.includes('Άλλα'), { up: r.up, down: r.down, changes: r.changes, movers: r.movers })
     record(`topics ${width}px: the page is shorter than before (${HEIGHT_BEFORE[width]} px)`, r.height < HEIGHT_BEFORE[width], { height: r.height })
     record(`topics ${width}px: the tabs are Επισκόπηση and Overton, and no story card`, r.tabs.join() === 'Επισκόπηση,Overton', { tabs: r.tabs })
     await context.close()
