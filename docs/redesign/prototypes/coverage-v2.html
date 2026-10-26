@@ -7,14 +7,14 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=22">
-  <link rel="stylesheet" href="assets/dash.css?v=76">
+  <link rel="stylesheet" href="assets/dash.css?v=79">
   <link rel="stylesheet" href="assets/politics.css?v=3">
   <link rel="stylesheet" href="assets/world.css?v=2">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
-  <script src="assets/messages.js?v=27"></script>
+  <script src="assets/messages.js?v=28"></script>
   <script src="assets/messages-v2.js?v=37"></script>
   <script src="assets/messages-politics.js?v=9"></script>
   <script src="assets/messages-world.js?v=1"></script>
@@ -242,8 +242,8 @@
           h('p', { class: 'dcard-sub' }, t('cov.method.data', { date: d.generated })))
 
         content.replaceChildren(bar,
-          h('div', { class: 'story-lead' }, h('p', { class: 'quote-meta' }, t('cov.lead.kicker', { date: fmt.date(d.story.published) })), h('h2', { class: 'story-lead-title' }, t('cov.lead.title')), h('p', { class: 'hero-lead' }, t('cov.lead.text'))),
-          h('div', { class: 'dash-grid' }, ...stats, waffleCard, factsCard, matrixCard, quietCard, loudCard, absentCard, ownerCard, priorCard, anglesCard, whenCard, nonPaperCard, listCard, methodCard),
+          h('div', { class: 'dash-grid' }, card('c-6 hero dossier-hero', h('div', { class: 'hero-main' }, h('p', { class: 'hero-kicker' }, t('cov.lead.kicker', { date: fmt.date(d.story.published) })), h('h2', { class: 'hero-title' }, t('cov.lead.title')), h('p', { class: 'dcard-sub hero-lead' }, t('cov.lead.text')))),
+            h('div', { class: 'c-6 dossier-stats' }, ...stats), waffleCard, factsCard, matrixCard, quietCard, loudCard, absentCard, ownerCard, priorCard, anglesCard, whenCard, nonPaperCard, listCard, methodCard),
           h('p', { class: 'proto-note' }, t('cov.note')))
       }
     })

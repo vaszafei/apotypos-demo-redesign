@@ -7,13 +7,13 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=22">
-  <link rel="stylesheet" href="assets/dash.css?v=76">
+  <link rel="stylesheet" href="assets/dash.css?v=79">
   <link rel="stylesheet" href="assets/politics.css?v=3">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
-  <script src="assets/messages.js?v=27"></script>
+  <script src="assets/messages.js?v=28"></script>
   <script src="assets/messages-v2.js?v=37"></script>
   <script src="assets/messages-politics.js?v=9"></script>
   <script src="assets/components.js?v=9"></script>
@@ -35,7 +35,7 @@
 
     const share = (a, b) => (b ? a / b : 0)
     const points = (v) => `${v > 0 ? '+' : v < 0 ? '−' : '±'}${fmt.dec(Math.abs(v * 100))}`
-    const wide = (stat) => { stat.classList.replace('c-4', 'c-3'); return stat }
+    const wide = (stat) => { stat.classList.remove('c-4'); return stat }
 
     Shell.start({
       id: 'war',
@@ -165,7 +165,7 @@
             h('a', { class: 'quiet-link', href: e.url, target: '_blank', rel: 'noopener' }, e.title),
             e.phrase ? h('span', { class: 'quote-text' }, `«${e.phrase}»`) : null))))
 
-        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...stats, weeksCard, scaleCard, voiceCard, frameCard, metricCard, heatCard, outletCard, exampleCard),
+        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, weeksCard, h('div', { class: 'c-4 card-col card-col-fill' }, h('div', { class: 'stats-2x2' }, ...stats), scaleCard), voiceCard, frameCard, metricCard, heatCard, outletCard, exampleCard),
           h('p', { class: 'proto-note' }, t('war.note')))
       }
     })
