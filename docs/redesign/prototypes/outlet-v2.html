@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=25">
   <link rel="stylesheet" href="assets/dash.css?v=79">
-  <link rel="stylesheet" href="assets/mme.css?v=22">
+  <link rel="stylesheet" href="assets/mme.css?v=25">
 </head>
 <body>
   <div id="app"></div>
@@ -244,9 +244,11 @@
             holder.replaceChildren(svg)
           })
         }
+        const slugOfGroup = new Map(groupsData.data.groups.map((g) => [g.name, g.slug]))
         const roseLegend = h('ul', { class: 'rose-legend' }, slices.map((r) => h('li', { title: t('outlet2.related.row', { shared: fmt.int(r.shared) }) },
           h('span', { class: 'rose-swatch', style: `background:${groupColor(r.group)}`, 'aria-hidden': 'true' }),
-          h('span', { class: 'rose-name' }, UI.EntityLink({ type: 'outlet', key: r.slug, label: r.name }), r.same ? h('span', { class: 'chip chip-sm' }, t('outlet2.related.same')) : null),
+          h('span', { class: 'rose-name' }, UI.EntityLink({ type: 'outlet', key: r.slug, label: r.name }),
+            h('span', { class: 'rose-group', title: r.group || t('story.nogroup') }, '/ ', r.group && slugOfGroup.has(r.group) ? UI.EntityLink({ type: 'group', key: slugOfGroup.get(r.group), label: r.group }) : r.group || t('story.nogroup'))),
           h('span', { class: 'row-value' }, fmt.pct(r.score)))))
         const relatedCard = card('c-12', cardHead(t('outlet2.related.title'), null, t('outlet2.related.info')),
           related.length
@@ -254,14 +256,18 @@
               unscored.length ? h('p', { class: 'dcard-sub' }, `${t('outlet2.related.few')} `, unscored.map((r, i) => [i ? ', ' : '', UI.EntityLink({ type: 'outlet', key: r.slug, label: r.name })])) : null]
             : h('p', { class: 'dcard-empty' }, t('outlet2.related.empty')))
 
-        // The four numbers are stat cards, two by two, on the left of the latest articles. The live numbers with their ranks come from ΜΜΕ & πρόσωπα;
+        // The outlet, its group and the numbers are stat cards, two by two, on the left of the daily chart. The live numbers with their ranks come from ΜΜΕ & πρόσωπα;
         // an outlet that is not in it gets the numbers of the groups file, with no rank.
         const facts = MS ? Mme.outletFacts(MS, mk) : null
         const fileNews = mineFile && mineFile.analysed ? { label: t('outlet2.how.news'), value: fmt.pct(mineFile.news / mineFile.analysed), sub: '' } : null
         const fileClick = mineFile && mineFile.cbKnown ? { label: t('outlet2.how.clickbait'), value: fmt.pct(mineFile.cbYes / mineFile.cbKnown), sub: '' } : null
         const wide = (stat) => { stat.classList.remove('c-4'); return stat }
         const factStat = (f) => (f ? wide(Stat({ label: f.label, value: f.value, sub: f.sub })) : null)
+        // The first card names the outlet, the second its group, then the numbers.
+        const named = (stat) => { stat.querySelector('.dstat-value').classList.add('is-text'); return stat }
         const statGrid = h('div', { class: 'c-3 stats-2x2 outlet-stats' },
+          named(wide(Stat({ label: t('hero.kind.outlet'), value: outlet.name, sub: '' }))),
+          named(wide(Stat({ label: t('entity.fact.group'), value: record ? UI.EntityLink({ type: 'group', key: record.slug, label: group }) : t('story.nogroup'), sub: outlet.owner ? `${t('entity.fact.owner')}: ${outlet.owner}` : '' }))),
           wide(Stat({ label: t('entity.fact.articles'), value: fmt.int(collectedTotal), sub: '', viz: Spark(collected, start, end, t('outlet2.daily.title'), { w: 56, hgt: 16 }) })),
           wide(Stat({ label: t('entity.fact.stories'), value: fmt.int(mine.length), sub: '' })),
           factStat(facts ? facts.news : fileNews), factStat(facts ? facts.clickbait : fileClick))

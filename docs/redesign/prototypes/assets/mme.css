@@ -126,7 +126,8 @@
 .rose-legend { flex: 1 1 220px; min-width: 0; margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
 .rose-legend li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: var(--space-2); align-items: baseline; font-size: var(--text-small); }
 .rose-swatch { width: 10px; height: 10px; border-radius: 2px; align-self: center; }
-.rose-name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px var(--space-2); min-width: 0; }
+.rose-name { display: flex; flex-wrap: nowrap; align-items: baseline; gap: 2px var(--space-2); min-width: 0; }
+.rose-name > a { flex: none; white-space: nowrap; }
 .rose-name .muted-text { font-size: var(--text-caption); }
 .rose-legend .row-value { color: var(--text-secondary); font-size: var(--text-caption); font-variant-numeric: tabular-nums; }
 /* Μέσα › one outlet: the four numbers are a narrow column, so the number, its rank and its small chart are one under the other, centered in the card. */
@@ -135,3 +136,8 @@
 .outlet-stats .dstat-row > svg { display: block; margin-top: 2px; }
 .outlet-stats .dstat-sub:empty { display: none; }
 @media (max-width: 1279px) { .outlet-stats .dstat-row { grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-3); } }
+/* The name of the outlet and its group are text, not a number: smaller, and they wrap. */
+.outlet-stats .dstat-value.is-text { font-size: 17px; line-height: 1.25; overflow-wrap: anywhere; }
+.outlet-stats .dstat-value a { color: inherit; }
+.rose-group { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-caption); color: var(--text-secondary); }
+.rose-group a { display: inline; color: inherit; }
