@@ -129,3 +129,9 @@
 .rose-name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px var(--space-2); min-width: 0; }
 .rose-name .muted-text { font-size: var(--text-caption); }
 .rose-legend .row-value { color: var(--text-secondary); font-size: var(--text-caption); font-variant-numeric: tabular-nums; }
+/* Μέσα › one outlet: the four numbers are a narrow column, so the number, its rank and its small chart are one under the other, centered in the card. */
+.outlet-stats .dstat { justify-content: center; }
+.outlet-stats .dstat-row { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+.outlet-stats .dstat-row > svg { display: block; margin-top: 2px; }
+.outlet-stats .dstat-sub:empty { display: none; }
+@media (max-width: 1279px) { .outlet-stats .dstat-row { grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-3); } }

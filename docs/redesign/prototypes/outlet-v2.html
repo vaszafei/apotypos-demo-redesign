@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=25">
   <link rel="stylesheet" href="assets/dash.css?v=79">
-  <link rel="stylesheet" href="assets/mme.css?v=21">
+  <link rel="stylesheet" href="assets/mme.css?v=22">
 </head>
 <body>
   <div id="app"></div>
@@ -119,7 +119,11 @@
         const record = group ? groupsData.data.groups.find((g) => g.name === group) : null
         const groupColor = (g) => (g && colorOfGroup.get(g)) || NO_GROUP
 
-        const makeDaily = (height) => Entity.DailyCard({ dates, daily: m.outletDaily[k], topicDays, issues: d.issues, info: t('outlet2.daily.info'), topics: false, height })
+        const makeDaily = (height) => {
+          const el = Entity.DailyCard({ dates, daily: m.outletDaily[k], topicDays, issues: d.issues, info: t('outlet2.daily.info'), topics: false, height })
+          el.classList.replace('c-12', 'c-9')
+          return el
+        }
         const dailyCard = makeDaily()
 
         // The topics of the stories of the outlet, against the topics of all outlets. The topic of the catch-all rows does not count.
@@ -257,7 +261,7 @@
         const fileClick = mineFile && mineFile.cbKnown ? { label: t('outlet2.how.clickbait'), value: fmt.pct(mineFile.cbYes / mineFile.cbKnown), sub: '' } : null
         const wide = (stat) => { stat.classList.remove('c-4'); return stat }
         const factStat = (f) => (f ? wide(Stat({ label: f.label, value: f.value, sub: f.sub })) : null)
-        const statGrid = h('div', { class: 'c-6 stats-2x2 outlet-stats' },
+        const statGrid = h('div', { class: 'c-3 stats-2x2 outlet-stats' },
           wide(Stat({ label: t('entity.fact.articles'), value: fmt.int(collectedTotal), sub: '', viz: Spark(collected, start, end, t('outlet2.daily.title'), { w: 56, hgt: 16 }) })),
           wide(Stat({ label: t('entity.fact.stories'), value: fmt.int(mine.length), sub: '' })),
           factStat(facts ? facts.news : fileNews), factStat(facts ? facts.clickbait : fileClick))
@@ -267,7 +271,7 @@
         // The outlets of ΜΜΕ & πρόσωπα have the live cards. The others have the two cards of the groups file, and those stay on the first tab.
         // The outlets of ΜΜΕ & πρόσωπα have the live cards. The others have the two cards of the groups file only.
         const layouts = {
-          overview: [[[6, [relatedCard]], [6, [dailyCard]]]],
+          overview: [[[6, [relatedCard]], [6, [latestCard]]]],
           topics: [[[12, [live && live.weekly]]], [[12, [topicsCard]]], [[12, [live && live.frames]]], [[12, [live && live.stance]]]],
           stories: [[[12, [storiesCard]]], [[6, [live && live.pushSkip[0]]], [6, [live && live.pushSkip[1]]]]],
           people: [[[6, [live && live.portrayal, howCard, stanceCard]], [6, [live && live.voices]]]]
@@ -283,8 +287,8 @@
         const bar = Dash.TopBar({ title: outlet.name, tabs: Shell.headerV2 ? h('div', { class: 'page-tabs' }, tabNav) : tabNav, quiet: true })
         const columns = h('div', { class: 'dash-grid story-grid entity-grid entity-rows' },
           tabRows(tab).flat().map(([span, cards]) => h('div', { class: `card-col card-col-fill c-${span} story-col` }, ...cards)))
-        content.replaceChildren(bar, ...(tab === 'overview' ? [h('div', { class: 'dash-grid' }, statGrid, latestCard)] : []), columns, protoNote())
-        // Side by side, the daily chart takes the height that the related outlets leave under it, so the two cards end level.
+        content.replaceChildren(bar, ...(tab === 'overview' ? [h('div', { class: 'dash-grid' }, statGrid, dailyCard)] : []), columns, protoNote())
+        // Side by side, the daily chart takes the height that the four numbers leave, so the cards of the row end level.
         if (tab === 'overview') {
           requestAnimationFrame(() => requestAnimationFrame(() => {
             if (!window.matchMedia('(min-width: 1280px)').matches || !dailyCard.isConnected) return
