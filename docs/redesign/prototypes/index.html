@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="assets/dash.css?v=80">
   <link rel="stylesheet" href="assets/mme.css?v=33">
   <link rel="stylesheet" href="assets/date-range.css?v=4">
-  <link rel="stylesheet" href="assets/home.css?v=4">
+  <link rel="stylesheet" href="assets/home.css?v=6">
 </head>
 <body>
   <div id="app"></div>
@@ -137,7 +137,7 @@
 
           const topicsCard = card('c-7', cardHead(t('home.topics.title'), null, t('home.topics.note')),
             UI.DataTable({
-              rankColumn: true, emptyText: t('home.topics.empty'), pageSize: 20, moreStep: 10,
+              rankColumn: true, emptyText: t('home.topics.empty'), pageSize: 14, moreStep: 10,
               rows: news.filter((x) => x.count > 0),
               columns: [
                 { label: t('home.col.issue'), render: (r) => name(r.issue) },
@@ -148,11 +148,11 @@
             }))
 
           const statRow = h('div', { class: 'c-12 stats-2x2 home-stats' }, ...stats)
-          const main = h('div', { class: 'c-7 card-col card-col-fill' }, dailyCard, topicsCard)
+          const main = h('div', { class: 'c-7 card-col card-col-fill' }, strip.node, dailyCard, topicsCard)
           const aside = h('div', { class: 'c-5 card-col card-col-fill' }, day, Home.TrendsCard({ home: data, i0, i1 }))
           const hl = highlights()
           content.replaceChildren(Dash.TopBar({ title: t('home.title'), actions: [picker], quiet: true }),
-            h('div', { class: 'dash-grid home-grid' }, strip.node, statRow, main, aside, hl, Home.AnalysesCard()), protoNote())
+            h('div', { class: 'dash-grid home-grid' }, statRow, main, aside, hl, Home.AnalysesCard()), protoNote())
         }
         draw()
       }

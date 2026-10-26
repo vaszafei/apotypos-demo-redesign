@@ -105,7 +105,6 @@
 
   // The calendar: one tile for each day of the period, with the number of articles and a bar of the same number. It scrolls sideways and a tile picks the day.
   function DayStrip ({ dates, totals, i0, i1, selected, onPick }) {
-    const max = Math.max(...totals.slice(i0, i1 + 1), 1)
     const list = h('ul', { class: 'home-days' })
     const buttons = new Map()
     for (let i = i0; i <= i1; i++) {
@@ -115,8 +114,8 @@
         'aria-label': t('home.days.aria', { date: fmt.date(iso), n: fmt.int(totals[i]) }), onClick: () => onPick(i) },
       h('span', { class: 'home-day-dow' }, fmt.date(iso, { weekday: 'short' })),
       h('span', { class: 'home-day-num' }, String(Number(iso.slice(8)))),
-      h('span', { class: 'home-day-bar', 'aria-hidden': 'true' }, h('i', { style: `height:${Math.max(4, Math.round((totals[i] / max) * 100))}%` })),
-      h('span', { class: 'home-day-n' }, fmt.int(totals[i])))
+      h('span', { class: 'home-day-n' }, fmt.int(totals[i])),
+      h('span', { class: 'home-day-delta' }, i > 0 && totals[i - 1] > 0 ? `${fmt.signed(((totals[i] - totals[i - 1]) / totals[i - 1]) * 100)}%` : '–'))
       buttons.set(i, btn)
       list.append(h('li', {}, h('span', { class: 'home-day-month' }, i === i0 || iso.endsWith('-01') ? fmt.date(iso, { month: 'long' }) : ''), btn))
     }
@@ -126,7 +125,7 @@
     }
     const step = (dir) => h('button', { type: 'button', class: 'icon-button', 'aria-label': t(dir < 0 ? 'home.days.prev' : 'home.days.next'),
       onClick: () => list.scrollBy({ left: dir * list.clientWidth * 0.8, behavior: 'smooth' }) }, Icon(dir < 0 ? 'chevron-left' : 'chevron-right', 'icon'))
-    const node = card('c-12 home-calendar', cardHead(t('home.days.title'), h('div', { class: 'home-steps' }, step(-1), step(1)), t('home.days.info')), list)
+    const node = card('home-calendar', cardHead(t('home.days.title'), h('div', { class: 'home-steps' }, step(-1), step(1)), t('home.days.info')), list)
     requestAnimationFrame(() => center(selected))
     return {
       node,
