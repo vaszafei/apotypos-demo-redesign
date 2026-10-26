@@ -31,7 +31,7 @@
 .quote-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: var(--text-caption); color: var(--text-secondary); }
 .quote-text { font-style: italic; color: var(--text-secondary); }
 .pill { display: inline-block; padding: 1px 8px; border: 1px solid var(--border); border-radius: var(--pill); font-size: 11px; color: var(--text-primary); background: var(--surface-page); white-space: nowrap; }
-.pill-hot { border-color: color-mix(in srgb, var(--stance-critical) 40%, #ffffff); color: var(--stance-critical); background: color-mix(in srgb, var(--stance-critical) 7%, #ffffff); }
+.pill-hot { border-color: color-mix(in srgb, var(--stance-critical) 40%, var(--surface-raised)); color: var(--stance-critical); background: color-mix(in srgb, var(--stance-critical) 7%, var(--surface-raised)); }
 
 .region-pills { display: flex; flex-wrap: wrap; gap: 6px; }
 .region-pills button { padding: 4px 12px; border: 1px solid var(--border); border-radius: var(--pill); background: var(--surface-raised); font: inherit; font-size: var(--text-caption); cursor: pointer; }
@@ -54,8 +54,8 @@
 .evidence summary { cursor: pointer; font-size: var(--text-caption); color: var(--text-secondary); }
 .evidence summary:hover { color: var(--accent); }
 .leader-cell { display: grid; gap: 1px; min-width: 180px; }
-.tone-hostile, .tone-critical { border-color: color-mix(in srgb, var(--stance-critical) 45%, #ffffff); color: var(--stance-critical); }
-.tone-conciliatory, .tone-supportive { border-color: color-mix(in srgb, var(--stance-supportive) 45%, #ffffff); color: var(--stance-supportive); }
+.tone-hostile, .tone-critical { border-color: color-mix(in srgb, var(--stance-critical) 45%, var(--surface-raised)); color: var(--stance-critical); }
+.tone-conciliatory, .tone-supportive { border-color: color-mix(in srgb, var(--stance-supportive) 45%, var(--surface-raised)); color: var(--stance-supportive); }
 .minimal .dash-actions .region-pills { justify-content: flex-end; }
 
 /* The person file. */
@@ -73,8 +73,8 @@
 .pair-sides { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); margin-top: 4px; }
 .pair-side { padding: 8px 10px; border-radius: 10px; background: var(--surface-page); }
 .pair-side p { margin: 0; }
-.verdict-accurate, .verdict-mostly_accurate { border-color: color-mix(in srgb, var(--stance-supportive) 45%, #ffffff); color: var(--stance-supportive); }
-.verdict-inaccurate { border-color: color-mix(in srgb, var(--stance-critical) 45%, #ffffff); color: var(--stance-critical); }
+.verdict-accurate, .verdict-mostly_accurate { border-color: color-mix(in srgb, var(--stance-supportive) 45%, var(--surface-raised)); color: var(--stance-supportive); }
+.verdict-inaccurate { border-color: color-mix(in srgb, var(--stance-critical) 45%, var(--surface-raised)); color: var(--stance-critical); }
 @media (max-width: 1023px) {
   .theme-list summary { grid-template-columns: minmax(0, 1fr) auto; }
   .theme-list .theme-kinds, .theme-list summary > .nowrap { display: none; }

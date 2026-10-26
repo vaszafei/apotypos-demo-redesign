@@ -5,19 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=6">
-  <link rel="stylesheet" href="assets/app.css?v=25">
-  <link rel="stylesheet" href="assets/dash.css?v=79">
+  <link rel="stylesheet" href="assets/tokens.css?v=10">
+  <link rel="stylesheet" href="assets/app.css?v=29">
+  <link rel="stylesheet" href="assets/dash.css?v=80">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
-  <script src="assets/messages.js?v=28"></script>
+  <script src="assets/messages.js?v=30"></script>
   <script src="assets/messages-v2.js?v=46"></script>
   <script src="assets/components.js?v=9"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
-  <script src="assets/shell.js?v=44"></script>
+  <script src="assets/shell.js?v=47"></script>
   <script src="data/overton.js?v=1"></script>
   <script>
     // Μέσα, Μετατοπίσεις (was Αναλύσεις › Παράθυρο): when the way the coverage describes a topic changes. It reads the overton file (36 topics, 53 weeks of 2025).
@@ -37,7 +37,7 @@
       const label = t('shifts.spark', { topic: topic.label })
       return h('svg', { class: 'spark', width: w, height: hgt, viewBox: `0 0 ${w} ${hgt}`, role: 'img', 'aria-label': label },
         h('path', { class: 'spark-range', d: topic.n.map((v, k) => `${k ? 'L' : 'M'}${x(k).toFixed(1)} ${y(v).toFixed(1)}`).join(' ') }),
-        at >= 0 ? h('circle', { cx: x(at), cy: y(topic.n[at]), r: 3, fill: topic.ratio >= limit ? 'var(--emph-less)' : 'var(--bar-muted)', stroke: '#ffffff', 'stroke-width': 1.5 }) : null)
+        at >= 0 ? h('circle', { cx: x(at), cy: y(topic.n[at]), r: 3, fill: topic.ratio >= limit ? 'var(--emph-less)' : 'var(--bar-muted)', stroke: 'var(--surface-raised)', 'stroke-width': 1.5 }) : null)
     }
 
     // Bars: how many topics had the strongest shift in each month of 2025.

@@ -4,8 +4,8 @@
 .mme-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .mme-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--pill); background: var(--surface-raised); color: var(--ink); font: inherit; font-size: var(--text-small); cursor: pointer; }
 .mme-chip:hover { border-color: var(--ink); }
-.mme-chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #ffffff; }
-.mme-chip[aria-pressed="true"] .mme-chip-n { color: #ffffff; }
+.mme-chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+.mme-chip[aria-pressed="true"] .mme-chip-n { color: var(--on-ink); }
 .mme-chip.is-static { cursor: default; }
 .mme-chip.is-static:hover { border-color: var(--border); }
 .mme-chip-n { font-size: var(--text-caption); color: var(--text-secondary); font-variant-numeric: tabular-nums; }

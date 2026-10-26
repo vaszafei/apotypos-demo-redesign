@@ -28,7 +28,7 @@
 .party-table .anon-mid { color: var(--emph-less); font-weight: 600; }
 
 /* The bars are UI.BarList (components.js). The name of a party is in its color, the gap of a party is in bold. */
-.party-key { font-weight: 600; color: var(--party); }
+.party-key { font-weight: 600; color: color-mix(in srgb, var(--party) 70%, var(--ink)); }
 .twin .twin-gap { font-weight: 600; color: var(--text-primary); }
 .lean-bars .is-thin { color: var(--text-secondary); }
 .lean-ends { display: flex; justify-content: space-between; margin: 0 0 var(--space-2); font-size: var(--text-caption); color: var(--text-secondary); }
