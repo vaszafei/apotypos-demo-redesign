@@ -7,7 +7,7 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=22">
-  <link rel="stylesheet" href="assets/dash.css?v=75">
+  <link rel="stylesheet" href="assets/dash.css?v=76">
   <link rel="stylesheet" href="assets/politics.css?v=2">
 </head>
 <body>
@@ -57,7 +57,7 @@
           // The sub-tabs without the person card name the person in the page head.
           const bar = TopBar({ title, meta: name, tabs, quiet: tab === 'overview' })
 
-          const hero = card('c-12 hero',
+          const hero = card('c-6 hero dossier-hero',
             h('div', { class: 'hero-main' },
               h('p', { class: 'hero-kicker' }, t('pf.kicker')),
               h('h1', { class: 'hero-title' }, name),
@@ -66,13 +66,15 @@
               h('div', { class: 'hero-chips' },
                 h('span', { class: 'hero-period' }, h('strong', {}, t('pf.period', { from: day(s.from), to: day(s.to) }))))))
 
-          const wide = (stat) => { stat.classList.replace('c-4', 'c-3'); return stat }
+          const wide = (stat) => { stat.classList.remove('c-4'); return stat }
           const stats = [
             wide(Stat({ label: t('pf.stat.videos'), value: fmt.int(d.videos), sub: t('pf.stat.videos.sub', { n: fmt.int(d.videosSampled), x: fmt.int(d.noCaptions) }) })),
             wide(Stat({ label: t('pf.stat.claims'), value: fmt.int(s.claims), sub: t('pf.stat.claims.sub') })),
             wide(Stat({ label: t('pf.stat.pairs'), value: fmt.int(d.pairs.length), sub: t('pf.stat.pairs.sub') })),
             wide(Stat({ label: t('pf.stat.checked'), value: fmt.int(d.checks.checked), sub: t('pf.stat.checked.sub', { n: fmt.int(d.checks.checkable) }) }))
           ]
+          // The title card takes the left half and the four stat cards the right half, in two rows of two (#dossier).
+          const statGrid = h('div', { class: 'c-6 dossier-stats' }, ...stats)
 
           // The months from the first to the last statement. A month with no interview is a gap, not a zero line.
           const counts = new Map(d.claimsByMonth)
@@ -84,13 +86,13 @@
           const busiest = monthly.indexOf(Math.max(...monthly))
           const active = monthly.filter((n) => n > 0)
           const monthAvg = active.reduce((a, b) => a + b, 0) / (active.length || 1)
-          const monthCard = card('c-8', cardHead(t('pf.months.finding', { month: monthLabel(months[busiest]), n: fmt.int(monthly[busiest]) }), null, `${t('pf.months.title')}. ${t('pf.months.info')}`),
+          const monthCard = card('c-8', cardHead(t('pf.months.title'), null, `${t('pf.months.finding', { month: monthLabel(months[busiest]), n: fmt.int(monthly[busiest]) })}. ${t('pf.months.info')}`),
             UI.BarChart({ labels: months.map(monthLabel), values: monthly, height: 220, label: t('pf.months.title'), reference: { value: monthAvg, label: t('find.avg', { n: fmt.int(Math.round(monthAvg)) }) },
               tooltipOf: (i) => `${monthLabel(months[i])} · ${fmt.int(counts.get(months[i]) || 0)}` }))
           const verdictColor = { accurate: 'var(--stance-supportive)', mostly_accurate: '#7fa7e0', inaccurate: 'var(--stance-critical)', unverifiable: 'var(--bar-muted)' }
           // The title gives the share of the checked figures that hold, fully or mostly.
           const holds = ((d.checks.verdicts.accurate || 0) + (d.checks.verdicts.mostly_accurate || 0)) / (d.checks.checked || 1)
-          const verdictCard = card('c-4', cardHead(d.checks.checked ? t('pf.verdict.finding', { share: fmt.pct(holds) }) : t('pf.verdict.title'), null, `${t('pf.verdict.title')}. ${t('pf.verdict.info')}`),
+          const verdictCard = card('c-4', cardHead(t('pf.verdict.title'), null, `${d.checks.checked ? `${t('pf.verdict.finding', { share: fmt.pct(holds) })}. ` : ''}${t('pf.verdict.info')}`),
             UI.BarList(VERDICTS.map((k) => ({ label: t(`pf.verdict.${k}`), value: d.checks.verdicts[k] || 0, text: `${fmt.int(d.checks.verdicts[k] || 0)} · ${fmt.pct((d.checks.verdicts[k] || 0) / (d.checks.checked || 1))}`, color: verdictColor[k] })), { max: d.checks.checked }))
 
           const themeRows = d.themes.slice().sort((a, b) => b.n - a.n)
@@ -123,7 +125,7 @@
               h('strong', {}, c.assertion_el),
               c.summary_el ? h('span', { class: 'muted-text' }, c.summary_el) : h('span', { class: 'quote-text' }, `«${c.quote}»`)))))
 
-          const cards = { overview: [hero, ...stats, monthCard, verdictCard, themeCard], pairs: [pairCard], checks: [checkCard] }[tab]
+          const cards = { overview: [hero, statGrid, monthCard, verdictCard, themeCard], pairs: [pairCard], checks: [checkCard] }[tab]
           content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...cards), h('p', { class: 'proto-note' }, t('pf.note')))
         }
         paint()

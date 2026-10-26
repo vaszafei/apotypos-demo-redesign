@@ -457,3 +457,9 @@
 .card-tight .data-table th, .card-tight .data-table td { padding: 3px 4px; }
 .card-tight .data-table .rank { width: 20px; }
 .card-tight .data-table th.num { white-space: normal; }
+
+/* Φάκελος προσώπου › Επισκόπηση: the stat cards are the right half of the title row, in two rows of two. */
+.dossier-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 1fr; gap: var(--space-3); min-width: 0; }
+.dossier-stats > .dstat { grid-column: auto; }
+@media (max-width: 1279px) { .dossier-hero, .dossier-stats { grid-column: span 12; } }
+@media (max-width: 519px) { .dossier-stats { grid-template-columns: minmax(0, 1fr); } }
