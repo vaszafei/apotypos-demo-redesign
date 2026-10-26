@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=23">
   <link rel="stylesheet" href="assets/dash.css?v=79">
-  <link rel="stylesheet" href="assets/mme.css?v=13">
+  <link rel="stylesheet" href="assets/mme.css?v=14">
   <link rel="stylesheet" href="assets/date-range.css?v=3">
 </head>
 <body>
@@ -197,7 +197,7 @@
           // The lead chart: articles per day, news and other. A drag selects a period.
           let peakDay = i0
           for (let i = i0; i <= i1; i++) if (totals[i] > totals[peakDay]) peakDay = i
-          const volume = card('c-4 mme-side',
+          const volume = card('c-6 mme-side',
             cardHead(t('media2.chart.title'), UI.Legend([{ label: t('media2.chart.news'), color: 'var(--series-news)' }, { label: t('media2.chart.other'), color: 'var(--series-other)' }]),
               analysed > 0 ? `${t('media2.chart.peak', { date: fmt.date(dates[peakDay]), n: fmt.int(totals[peakDay]) })} · ${t('media2.chart.hint')}` : null),
             analysed > 0 ? VolumeChart({ dates, news, other, i0, i1, onSelect: select }) : emptyText(t('media2.chart.empty')))
@@ -232,7 +232,7 @@
             { label: t('mme.rank.sort.n'), num: true, sortable: true, sortKey: 'n', sortValue: (o) => o.n, render: (o) => fmt.int(o.n) },
             { label: t('media.col.clickbait'), num: true, sortable: true, sortKey: 'cb', sortValue: cb, render: (o) => cb(o) === null ? none(t('group.clickbait.none')) : fmt.pct(cb(o)) }
           ].filter(Boolean)
-          const ranking = card('c-8 mme-rank', cardHead(t('mme.rank.all'), null, `${t('mme.rank.note')}`),
+          const ranking = card('c-6 mme-rank', cardHead(t('mme.rank.all'), null, `${t('mme.rank.note')}`),
             h('p', { class: 'dcard-sub' }, t('mme.rank.sub')),
             UI.DataTable({ columns, rows: S.active, rankColumn: true, pageSize: Infinity, sort: { key: 'n', dir: 'desc' }, emptyText: t('media.empty') }))
           ranking.id = 'ranking'
