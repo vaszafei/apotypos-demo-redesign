@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=25">
   <link rel="stylesheet" href="assets/dash.css?v=79">
-  <link rel="stylesheet" href="assets/mme.css?v=25">
+  <link rel="stylesheet" href="assets/mme.css?v=27">
 </head>
 <body>
   <div id="app"></div>
@@ -256,21 +256,23 @@
               unscored.length ? h('p', { class: 'dcard-sub' }, `${t('outlet2.related.few')} `, unscored.map((r, i) => [i ? ', ' : '', UI.EntityLink({ type: 'outlet', key: r.slug, label: r.name })])) : null]
             : h('p', { class: 'dcard-empty' }, t('outlet2.related.empty')))
 
-        // The outlet, its group and the numbers are stat cards, two by two, on the left of the daily chart. The live numbers with their ranks come from ΜΜΕ & πρόσωπα;
+        // The outlet card (its group and the numbers inside it) is on the left of the daily chart. The live numbers with their ranks come from ΜΜΕ & πρόσωπα;
         // an outlet that is not in it gets the numbers of the groups file, with no rank.
         const facts = MS ? Mme.outletFacts(MS, mk) : null
         const fileNews = mineFile && mineFile.analysed ? { label: t('outlet2.how.news'), value: fmt.pct(mineFile.news / mineFile.analysed), sub: '' } : null
         const fileClick = mineFile && mineFile.cbKnown ? { label: t('outlet2.how.clickbait'), value: fmt.pct(mineFile.cbYes / mineFile.cbKnown), sub: '' } : null
         const wide = (stat) => { stat.classList.remove('c-4'); return stat }
         const factStat = (f) => (f ? wide(Stat({ label: f.label, value: f.value, sub: f.sub })) : null)
-        // The first card names the outlet, the second its group, then the numbers.
+        // One card with the outlet as its title (the period is in its info), and the group and the numbers in small cards inside it. The group card is as wide as the card.
         const named = (stat) => { stat.querySelector('.dstat-value').classList.add('is-text'); return stat }
-        const statGrid = h('div', { class: 'c-3 stats-2x2 outlet-stats' },
-          named(wide(Stat({ label: t('hero.kind.outlet'), value: outlet.name, sub: '' }))),
-          named(wide(Stat({ label: t('entity.fact.group'), value: record ? UI.EntityLink({ type: 'group', key: record.slug, label: group }) : t('story.nogroup'), sub: outlet.owner ? `${t('entity.fact.owner')}: ${outlet.owner}` : '' }))),
-          wide(Stat({ label: t('entity.fact.articles'), value: fmt.int(collectedTotal), sub: '', viz: Spark(collected, start, end, t('outlet2.daily.title'), { w: 56, hgt: 16 }) })),
-          wide(Stat({ label: t('entity.fact.stories'), value: fmt.int(mine.length), sub: '' })),
-          factStat(facts ? facts.news : fileNews), factStat(facts ? facts.clickbait : fileClick))
+        const groupStat = named(wide(Stat({ label: t('entity.fact.group'), value: record ? UI.EntityLink({ type: 'group', key: record.slug, label: group }) : t('story.nogroup'), sub: outlet.owner ? `${t('entity.fact.owner')}: ${outlet.owner}` : '' })))
+        groupStat.classList.add('is-wide')
+        const statGrid = card('c-3 outlet-card', cardHead(outlet.name, null, `${dayLabel(start)} → ${fmt.date(dates[end])} · ${t('entity.fact.days', { n: end - start + 1 })}`),
+          h('div', { class: 'stats-2x2 outlet-stats' },
+            groupStat,
+            wide(Stat({ label: t('entity.fact.articles'), value: fmt.int(collectedTotal), sub: '', viz: Spark(collected, start, end, t('outlet2.daily.title'), { w: 56, hgt: 16 }) })),
+            wide(Stat({ label: t('entity.fact.stories'), value: fmt.int(mine.length), sub: '' })),
+            factStat(facts ? facts.news : fileNews), factStat(facts ? facts.clickbait : fileClick)))
 
         // The tabs: each card has one tab. A tab is rows of one, two or three columns (spans of 12), and the last card of a column takes the height that is left.
         // The tabs with no cards are not shown (the people and the topics of the live page are for the outlets of ΜΜΕ & πρόσωπα only).
