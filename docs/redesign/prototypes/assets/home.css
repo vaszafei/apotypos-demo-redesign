@@ -44,23 +44,21 @@
 .home-story-pick .muted-text { font-size: var(--text-caption); font-variant-numeric: tabular-nums; }
 .home-story-go { display: inline-flex; align-items: center; gap: 2px; margin-right: 6px; white-space: nowrap; text-decoration: none; }
 
-/* The calendar of a month: seven columns, a row for each week. */
+/* The calendar of a month: a strip of day tiles that scrolls sideways, with the month and its arrows in the head. */
 .home-month-nav { display: inline-flex; align-items: center; gap: 2px; }
 .home-month-name { min-width: 9em; text-align: center; font-size: var(--text-small); font-weight: 600; text-transform: capitalize; color: var(--text-primary); }
 .home-month-nav .icon-button:disabled { opacity: 0.3; cursor: default; }
-.home-month { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
-.home-wd { padding-bottom: 2px; font-size: var(--text-caption); font-weight: 600; text-align: center; text-transform: capitalize; color: var(--text-secondary); }
-.home-cell { display: grid; align-content: start; justify-items: center; gap: 1px; min-height: 66px; padding: 6px 2px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-raised); color: var(--text-primary); font: inherit; }
-.home-cell.is-blank { border-color: transparent; background: transparent; }
-.home-cell.is-off { border-style: dashed; background: transparent; color: var(--text-secondary); opacity: 0.55; }
-button.home-cell { cursor: pointer; }
-button.home-cell:hover { border-color: var(--ink); }
-.home-cell.is-weekend { background: var(--surface-page); }
-.home-cell[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--on-ink); }
-.home-cell-num { font-size: var(--text-caption); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-.home-cell-n { font-size: var(--text-small); font-weight: 600; font-variant-numeric: tabular-nums; }
-.home-cell-delta { font-size: 11px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-.home-cell[aria-pressed="true"] .home-cell-num, .home-cell[aria-pressed="true"] .home-cell-delta { color: var(--on-ink); opacity: 0.75; }
+.home-days { position: relative; display: flex; gap: 6px; margin: 0; padding: 0 0 var(--space-2); list-style: none; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: thin; }
+.home-days > li { flex: none; scroll-snap-align: center; }
+.home-day-btn { display: grid; justify-items: center; align-content: start; gap: 2px; width: 62px; padding: 8px 4px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-raised); color: var(--text-primary); font: inherit; cursor: pointer; }
+.home-day-btn:hover { border-color: var(--ink); }
+.home-day-btn.is-weekend { background: var(--surface-page); }
+.home-day-btn[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--on-ink); }
+.home-day-dow { font-size: var(--text-caption); text-transform: capitalize; color: var(--text-secondary); }
+.home-day-num { font-size: 20px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.home-day-n { margin-top: 4px; font-size: var(--text-caption); font-weight: 600; font-variant-numeric: tabular-nums; }
+.home-day-delta { font-size: var(--text-caption); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.home-day-btn[aria-pressed="true"] .home-day-dow, .home-day-btn[aria-pressed="true"] .home-day-delta { color: var(--on-ink); opacity: 0.75; }
 
 /* The shortcuts to the analyses: one row of tiles that wraps. */
 .home-links { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-3); }
@@ -76,9 +74,6 @@ button.home-cell:hover { border-color: var(--ink); }
 
 @media (max-width: 1279px) { .home-grid > .c-5 { grid-column: span 12; } }
 @media (max-width: 519px) {
-  .home-month { gap: 4px; }
-  .home-cell { min-height: 58px; padding: 4px 1px; }
-  .home-cell-delta { font-size: 10px; }
   .home-month-name { min-width: 7em; }
   .home-story-go { font-size: 0; gap: 0; padding: 0 8px; }
 }

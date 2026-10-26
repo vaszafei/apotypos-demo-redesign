@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="assets/app.css?v=29">
   <link rel="stylesheet" href="assets/dash.css?v=80">
   <link rel="stylesheet" href="assets/mme.css?v=33">
-  <link rel="stylesheet" href="assets/home.css?v=10">
+  <link rel="stylesheet" href="assets/home.css?v=11">
 </head>
 <body>
   <div id="app"></div>
@@ -23,7 +23,7 @@
   <script src="assets/dash.js?v=16"></script>
   <script src="assets/mme.js?v=19"></script>
   <script src="assets/spread.js?v=6"></script>
-  <script src="assets/home.js?v=4"></script>
+  <script src="assets/home.js?v=5"></script>
   <script src="assets/shell.js?v=47"></script>
   <script src="data/home.js"></script>
   <script src="data/stories.js?v=1"></script>
@@ -114,7 +114,7 @@
 
           const topicsCard = card('c-7', cardHead(t('home.topics.title'), null, t('home.topics.note')),
             UI.DataTable({
-              rankColumn: true, emptyText: t('home.topics.empty'), pageSize: 13, moreStep: 10,
+              rankColumn: true, emptyText: t('home.topics.empty'), pageSize: 20, moreStep: 10,
               rows: news.filter((x) => x.count > 0),
               columns: [
                 { label: t('home.col.issue'), render: (r) => name(r.issue) },

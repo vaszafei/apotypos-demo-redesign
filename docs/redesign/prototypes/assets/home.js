@@ -121,44 +121,42 @@
       stories)
   }
 
-  // The calendar of a month: a cell for each day, with the articles of all the outlets and the change against the day before. The arrows change the month and a cell picks the day.
+  // The calendar of a month: a strip of tiles, one for each day, that scrolls sideways. A tile has the day, the articles of all the outlets and the change against the day before.
+  // The arrows and the name of the month are at the top right of the card, and a tile picks the day.
   function Calendar ({ dates, totals, selected, onPick }) {
     const at = new Map(dates.map((d, i) => [d, i]))
     const months = [...new Set(dates.map((d) => d.slice(0, 7)))]
     let month = dates[selected].slice(0, 7)
     let current = selected
-    const weekdays = [0, 1, 2, 3, 4, 5, 6].map((i) => fmt.date(new Date(Date.UTC(2026, 7, 3 + i)).toISOString().slice(0, 10), { weekday: 'short' }))
-    const grid = h('div', { class: 'home-month' })
-    const name = h('span', { class: 'home-month-name', 'aria-live': 'polite' })
+    const list = h('ul', { class: 'home-days' })
+    const label = h('span', { class: 'home-month-name', 'aria-live': 'polite' })
     const step = (dir) => h('button', { type: 'button', class: 'icon-button', 'aria-label': t(dir < 0 ? 'home.month.prev' : 'home.month.next'),
       onClick: () => { month = months[months.indexOf(month) + dir]; paint() } }, Icon(dir < 0 ? 'chevron-left' : 'chevron-right', 'icon'))
     const prev = step(-1)
     const next = step(1)
 
     function paint () {
-      const [y, m] = month.split('-').map(Number)
-      const count = new Date(Date.UTC(y, m, 0)).getUTCDate()
-      const lead = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7
-      const cells = weekdays.map((w) => h('span', { class: 'home-wd' }, w))
-      for (let k = 0; k < lead; k++) cells.push(h('span', { class: 'home-cell is-blank', 'aria-hidden': 'true' }))
-      for (let day = 1; day <= count; day++) {
-        const iso = `${month}-${String(day).padStart(2, '0')}`
-        const i = at.get(iso)
-        if (i === undefined) { cells.push(h('span', { class: 'home-cell is-off' }, h('span', { class: 'home-cell-num' }, String(day)))); continue }
+      const tiles = new Map()
+      dates.forEach((iso, i) => {
+        if (!iso.startsWith(month)) return
         const weekday = new Date(`${iso}T00:00:00Z`).getUTCDay()
-        cells.push(h('button', { type: 'button', class: weekday === 0 || weekday === 6 ? 'home-cell is-weekend' : 'home-cell', 'aria-pressed': String(i === current),
+        tiles.set(i, h('li', {}, h('button', { type: 'button', class: weekday === 0 || weekday === 6 ? 'home-day-btn is-weekend' : 'home-day-btn', 'aria-pressed': String(i === current),
           'aria-label': t('home.days.aria', { date: fmt.date(iso), n: fmt.int(totals[i]) }), onClick: () => { current = i; paint(); onPick(i) } },
-        h('span', { class: 'home-cell-num' }, String(day)),
-        h('span', { class: 'home-cell-n' }, fmt.int(totals[i])),
-        h('span', { class: 'home-cell-delta' }, i > 0 && totals[i - 1] > 0 ? `${fmt.signed(((totals[i] - totals[i - 1]) / totals[i - 1]) * 100)}%` : '–')))
-      }
-      name.textContent = fmt.date(`${month}-01`, { month: 'long', year: 'numeric' })
+        h('span', { class: 'home-day-dow' }, fmt.date(iso, { weekday: 'short' })),
+        h('span', { class: 'home-day-num' }, String(Number(iso.slice(8)))),
+        h('span', { class: 'home-day-n' }, fmt.int(totals[i])),
+        h('span', { class: 'home-day-delta' }, i > 0 && totals[i - 1] > 0 ? `${fmt.signed(((totals[i] - totals[i - 1]) / totals[i - 1]) * 100)}%` : '–'))))
+      })
+      label.textContent = fmt.date(`${month}-01`, { month: 'long', year: 'numeric' })
       prev.disabled = months.indexOf(month) === 0
       next.disabled = months.indexOf(month) === months.length - 1
-      grid.replaceChildren(...cells)
+      list.replaceChildren(...tiles.values())
+      // The picked day is in the middle of the strip when it is in this month; any other month starts at its first day.
+      const tile = tiles.get(current)?.firstChild
+      requestAnimationFrame(() => { list.scrollLeft = tile ? tile.offsetLeft - (list.clientWidth - tile.offsetWidth) / 2 : 0 })
     }
     paint()
-    const node = card('home-calendar', cardHead(t('home.days.title'), h('div', { class: 'home-month-nav' }, prev, name, next), t('home.days.info')), grid)
+    const node = card('home-calendar', cardHead(t('home.days.title'), h('div', { class: 'home-month-nav' }, prev, label, next), t('home.days.info')), list)
     return { node, select (i) { current = i; month = dates[i].slice(0, 7); paint() } }
   }
 
