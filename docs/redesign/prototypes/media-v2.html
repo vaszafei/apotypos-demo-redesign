@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=23">
   <link rel="stylesheet" href="assets/dash.css?v=79">
-  <link rel="stylesheet" href="assets/mme.css?v=11">
+  <link rel="stylesheet" href="assets/mme.css?v=13">
   <link rel="stylesheet" href="assets/date-range.css?v=3">
 </head>
 <body>
@@ -17,7 +17,7 @@
   <script src="assets/messages.js?v=28"></script>
   <script src="assets/messages-v2.js?v=37"></script>
   <script src="assets/messages-spread.js?v=15"></script>
-  <script src="assets/messages-mme.js?v=8"></script>
+  <script src="assets/messages-mme.js?v=9"></script>
   <script src="assets/components.js?v=10"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
@@ -65,7 +65,7 @@
     // Stacked columns, one for each day: news and not news. A drag selects a period.
     function VolumeChart ({ dates, news, other, i0, i1, onSelect }) {
       return UI.BarChart({
-        dates, height: 170, label: t('media2.chart.title'), onSelect,
+        dates, height: window.matchMedia('(min-width: 1280px)').matches ? 520 : 170, label: t('media2.chart.title'), onSelect,
         series: [{ name: t('media2.chart.news'), color: 'var(--series-news)', values: news }, { name: t('media2.chart.other'), color: 'var(--series-other)', values: other }],
         muted: (i) => i < i0 || i > i1,
         tooltipOf: (i) => t('media2.chart.day', { date: fmt.date(dates[i]), n: fmt.int(news[i] + other[i]), news: fmt.int(news[i]) })
@@ -220,8 +220,7 @@
             UI.BarList(anon.map((r) => ({ label: r.name, value: r.anonPct, text: fmt.pct(r.anonPct / 100) })), { max: 100, reference: { value: anonAvg, label: t('originality.anon.avg', { v: fmt.pct(anonAvg / 100) }) } })) : null
 
           // All the outlets: one row for each, in place of the outlet cards of the live page. The card answers which outlets write the most,
-          // and the columns put the clickbait, the critical share and the main topics side by side. The headers of the three measures sort.
-          const crit = (o) => { const n = o.stance[0] + o.stance[1] + o.stance[2]; return n >= 30 ? o.stance[0] / n : null }
+          // and the columns put the group, the articles and the clickbait side by side. The headers of the two measures sort.
           const cb = (o) => (o.cbKnown >= 100 ? o.cbYes / o.cbKnown : null)
           // A value that is not measured is a dash. Its reason is in the title and for a screen reader.
           const none = (reason) => h('span', { class: 'muted-text', title: reason }, '—', h('span', { class: 'visually-hidden' }, reason))
@@ -231,9 +230,7 @@
             { label: t('media.col.outlet'), render: (o) => h('p', { class: 'mme-rank-name' }, Mme.outletLink(S, o)) },
             greek && { label: t('media.col.group'), phone: false, render: groupCell },
             { label: t('mme.rank.sort.n'), num: true, sortable: true, sortKey: 'n', sortValue: (o) => o.n, render: (o) => fmt.int(o.n) },
-            { label: t('media.col.clickbait'), num: true, sortable: true, sortKey: 'cb', sortValue: cb, render: (o) => cb(o) === null ? none(t('group.clickbait.none')) : fmt.pct(cb(o)) },
-            { label: t('mme.rank.sort.crit'), num: true, sortable: true, sortKey: 'crit', sortValue: crit, render: (o) => crit(o) === null ? none(t('stance.few', { n: 30 })) : pct0(crit(o)) },
-            { label: t('mme.rank.topics'), phone: false, render: (o) => h('p', { class: 'mme-rank-topics' }, Mme.topIssues(S, o, 3).map((r) => `${r.x[App.locale] || r.x.el} ${Math.round(r.v * 100)}%`).join(' · ')) }
+            { label: t('media.col.clickbait'), num: true, sortable: true, sortKey: 'cb', sortValue: cb, render: (o) => cb(o) === null ? none(t('group.clickbait.none')) : fmt.pct(cb(o)) }
           ].filter(Boolean)
           const ranking = card('c-8 mme-rank', cardHead(t('mme.rank.all'), null, `${t('mme.rank.note')}`),
             h('p', { class: 'dcard-sub' }, t('mme.rank.sub')),
@@ -252,7 +249,7 @@
 
           const cards = tab === 'writing'
             ? [scatterCard, bylineCard, gov]
-            : [statOutlets, statArticles, statStories, statPeople, volume, ranking]
+            : [statOutlets, statArticles, statStories, statPeople, ranking, volume]
           content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...cards), Mme.MethodNote(S), protoNote())
         }
         placeSetSelect()
