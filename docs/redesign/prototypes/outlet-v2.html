@@ -8,13 +8,13 @@
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=22">
   <link rel="stylesheet" href="assets/dash.css?v=79">
-  <link rel="stylesheet" href="assets/mme.css?v=15">
+  <link rel="stylesheet" href="assets/mme.css?v=16">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=28"></script>
-  <script src="assets/messages-v2.js?v=37"></script>
+  <script src="assets/messages-v2.js?v=41"></script>
   <script src="assets/messages-spread.js?v=16"></script>
   <script src="assets/messages-mme.js?v=10"></script>
   <script src="assets/components.js?v=9"></script>
@@ -22,7 +22,7 @@
   <script src="assets/dash.js?v=16"></script>
   <script src="assets/spread.js?v=6"></script>
   <script src="assets/entity-cards.js?v=5"></script>
-  <script src="assets/mme.js?v=9"></script>
+  <script src="assets/mme.js?v=11"></script>
   <script src="assets/shell.js?v=44"></script>
   <script src="data/media.js"></script>
   <script src="data/home.js"></script>
@@ -32,12 +32,12 @@
   <script src="data/outlet.js"></script>
   <script src="data/mme.js?v=1"></script>
   <script>
-    // Media, page of one outlet: /outlet/<slug>. It has the structure of the Story page: a title card on the left, the cards in two columns, no tab bar, no breadcrumbs.
+    // Media, page of one outlet: /outlet/<slug>. A title card with four stat cards on the Επισκόπηση tab, then the cards of the tab in two columns. Tabs: Επισκόπηση, Θέματα, Ιστορίες, Πρόσωπα.
     // The page is open at ?slug=<slug> (Rosa.gr when there is none). All 36 outlets of the snapshot work.
     // The 29 outlets of the live page ΜΜΕ & πρόσωπα also get its profile cards (data/mme.js, whole window): the numbers with ranks, the weekly agenda,
     // the stories it pushes or skips, the stance by topic, the frames, whom it quotes, how it presents the people and the newest headlines.
     const { t, fmt, h, load, params } = App
-    const { reset, NO_GROUP, Spark, card, cardHead } = Dash
+    const { reset, NO_GROUP, Spark, card, cardHead, Stat } = Dash
     const media = load('media', ['dates', 'outlets', 'outletDaily', 'issues'], (b) => b.outlets)
     const home = load('home', ['outlets'], (b) => b.outlets)
     const list = load('stories', ['issues', 'stories'], (b) => b.stories)
@@ -183,21 +183,6 @@
         } : null
         const liveHeadlines = MS ? Mme.Headlines(mset, mk) : []
 
-        // The title card: the outlet, its period once, and one line of facts. The live numbers with their ranks join the facts when the outlet has them.
-        const facts = MS ? Mme.outletFacts(MS, mk) : null
-        const titleCard = Entity.TitleCard({
-          kind: t('hero.kind.outlet'),
-          title: outlet.name,
-          meta: `${dayLabel(start)} → ${fmt.date(dates[end])} · ${t('entity.fact.days', { n: end - start + 1 })}`,
-          facts: [
-            { label: t('entity.fact.group'), value: record ? UI.EntityLink({ type: 'group', key: record.slug, label: group }) : t('story.nogroup') },
-            outlet.owner ? { label: t('entity.fact.owner'), value: outlet.owner } : null,
-            { label: t('entity.fact.articles'), value: fmt.int(collectedTotal), spark: Spark(collected, start, end, t('outlet2.daily.title'), { w: 56, hgt: 16 }) },
-            { label: t('entity.fact.stories'), value: fmt.int(mine.length) },
-            facts && facts.news, facts && facts.clickbait
-          ]
-        })
-
         const headlines = sample.kind === 'data' && sample.data.slug === slug ? sample.data.headlines : []
         const headlinesCard = liveHeadlines.length
           ? card('c-12', cardHead(t('outlet2.headlines.title'), null, t('mme.o.headlines.info')), h('ul', { class: 'plain-list' }, liveHeadlines))
@@ -226,12 +211,51 @@
             })), { max: topScore })
             : h('p', { class: 'dcard-empty' }, t('outlet2.related.empty')))
 
-        // The title card is the first card of the main column on the left. The main cards are under it, and the lists are on the right. On a narrow screen the columns join in one.
-        const at = (n, el) => { el.style.order = n; return el }
-        content.replaceChildren(h('div', { class: 'dash-grid story-grid entity-grid' },
-          h('div', { class: 'card-col c-8 story-col' }, at(0, titleCard), at(2, dailyCard), live && at(3, live.weekly), at(4, topicsCard), at(5, howCard),
-            live && at(6, live.frames), live && at(7, live.stance), at(8, storiesCard), live && at(9, live.portrayal)),
-          h('div', { class: 'card-col c-4 story-col' }, at(5, stanceCard), at(10, relatedCard), live && at(11, live.pushSkip[0]), live && at(12, live.pushSkip[1]), live && at(13, live.voices), at(14, headlinesCard))), protoNote())
+        // The title card (the dossier hero of the people): the kind, the name on its own row, the period and the group and owner. The four stat cards are 2×2 on its right.
+        // The live numbers with their ranks come from ΜΜΕ & πρόσωπα; an outlet that is not in it gets the numbers of the groups file, with no rank.
+        const facts = MS ? Mme.outletFacts(MS, mk) : null
+        const fileNews = mineFile && mineFile.analysed ? { label: t('outlet2.how.news'), value: fmt.pct(mineFile.news / mineFile.analysed), sub: '' } : null
+        const fileClick = mineFile && mineFile.cbKnown ? { label: t('outlet2.how.clickbait'), value: fmt.pct(mineFile.cbYes / mineFile.cbKnown), sub: '' } : null
+        const chip = (label, value) => h('span', { class: 'chip' }, h('span', { class: 'muted-text' }, `${label}:`), ' ', value)
+        const heroCard = card('c-6 hero dossier-hero outlet-hero',
+          h('div', { class: 'hero-main' },
+            h('p', { class: 'hero-kicker' }, t('hero.kind.outlet')),
+            h('h1', { class: 'hero-title' }, outlet.name),
+            h('p', { class: 'dcard-sub hero-lead' }, `${dayLabel(start)} → ${fmt.date(dates[end])} · ${t('entity.fact.days', { n: end - start + 1 })}`),
+            h('div', { class: 'hero-chips' },
+              chip(t('entity.fact.group'), record ? UI.EntityLink({ type: 'group', key: record.slug, label: group }) : t('story.nogroup')),
+              outlet.owner ? chip(t('entity.fact.owner'), outlet.owner) : null)))
+        const wide = (stat) => { stat.classList.remove('c-4'); return stat }
+        const factStat = (f) => (f ? wide(Stat({ label: f.label, value: f.value, sub: f.sub })) : null)
+        const statGrid = h('div', { class: 'c-6 dossier-stats' },
+          wide(Stat({ label: t('entity.fact.articles'), value: fmt.int(collectedTotal), sub: '', viz: Spark(collected, start, end, t('outlet2.daily.title'), { w: 56, hgt: 16 }) })),
+          wide(Stat({ label: t('entity.fact.stories'), value: fmt.int(mine.length), sub: '' })),
+          factStat(facts ? facts.news : fileNews), factStat(facts ? facts.clickbait : fileClick))
+
+        // The tabs: each card has one tab. A tab is rows of one, two or three columns (spans of 12), and the last card of a column takes the height that is left.
+        // The tabs with no cards are not shown (the people and the topics of the live page are for the outlets of ΜΜΕ & πρόσωπα only).
+        // The outlets of ΜΜΕ & πρόσωπα have the live cards. The others have the two cards of the groups file, and those stay on the first tab.
+        // The list of related outlets is as tall as the daily chart for 5 outlets, and taller for more: the weekly agenda goes under the daily chart then, and in Θέματα otherwise.
+        const longRelated = related.length > 7
+        const layouts = {
+          overview: [[[8, live ? [dailyCard, longRelated && live.weekly] : [dailyCard, stanceCard]], [4, [relatedCard, live ? null : howCard]]]],
+          topics: [[[12, [live && !longRelated && live.weekly]]], [[12, [topicsCard]]], [[12, [live && live.frames]]], [[12, [live && live.stance]]]],
+          stories: [[[12, [storiesCard]]], [[6, [live && live.pushSkip[0]]], [6, [live && live.pushSkip[1]]]]],
+          people: [[[6, [live && live.portrayal, live && howCard, live && stanceCard]], [6, [live && live.voices]]]],
+          headlines: [[[12, [headlinesCard]]]]
+        }
+        // A row keeps its columns with cards. One column alone, or two that are 8 and 4 wide, share the 12 columns.
+        const tabRows = (key) => layouts[key].map((row) => row.map(([span, cards]) => [span, cards.filter(Boolean)]).filter(([, cards]) => cards.length))
+          .filter((row) => row.length).map((row) => (row.length === 1 ? [[12, row[0][1]]] : row))
+        const tabKeys = Object.keys(layouts).filter((key) => tabRows(key).length)
+        const tab = tabKeys.includes(params.get('tab')) ? params.get('tab') : 'overview'
+        const tabHref = (key) => { const q = new URLSearchParams(location.search); q.set('slug', slug); if (key === 'overview') q.delete('tab'); else q.set('tab', key); return `?${q}` }
+        const tabNav = h('nav', { class: 'section-tabs', 'aria-label': outlet.name }, h('ul', {},
+          tabKeys.map((key) => h('li', {}, h('a', { href: tabHref(key), 'aria-current': key === tab ? 'page' : null }, t(`outlet2.tab.${key}`))))))
+        const bar = Dash.TopBar({ title: outlet.name, tabs: Shell.headerV2 ? h('div', { class: 'page-tabs' }, tabNav) : tabNav, quiet: true })
+        const columns = h('div', { class: 'dash-grid story-grid entity-grid entity-rows' },
+          tabRows(tab).flat().map(([span, cards]) => h('div', { class: `card-col card-col-fill c-${span} story-col` }, ...cards)))
+        content.replaceChildren(bar, ...(tab === 'overview' ? [h('div', { class: 'dash-grid' }, heroCard, statGrid)] : []), columns, protoNote())
       }
     })
 

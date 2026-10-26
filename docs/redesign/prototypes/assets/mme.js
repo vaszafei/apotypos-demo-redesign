@@ -396,7 +396,7 @@
       const covering = S.active.filter((x) => s.per[x.k])
       const expected = (sum(covering.map((x) => s.per[x.k] / x.n)) / covering.length) * o.n
       return { s, expected }
-    }).sort((a, b) => b.expected - a.expected).slice(0, 10)
+    }).sort((a, b) => b.expected - a.expected).slice(0, 8)
     const pushCard = card('c-12', cardHead(t('mme.o.push.title'), null, t('mme.o.push.info')),
       push.length ? h('ul', { class: 'rows-related mme-related' }, push.map((r) => h('li', {}, h('span', { class: 'related-main' }, h('span', {}, name(r.s)),
         h('span', { class: 'muted-text' }, t('mme.o.push.row', { n: fmt.int(r.s.per[k]), ratio: fmt.dec(r.ratio) }))), h('span', {}), h('span', {})))) : emptyText(t('mme.o.push.empty')))
@@ -420,7 +420,7 @@
           const c = r.mine[0] / r.n
           const s = r.mine[2] / r.n
           return { label: name(r.x), text: fmt.int(r.n), bar: UI.DivergingBar({ left: c, right: s, scale: 1, colors: [STANCE_COLORS[0], null, STANCE_COLORS[2]], marker: -r.allCrit, label: t('mme.o.stance.row', { topic: name(r.x), crit: pct(c), sup: pct(s), n: r.n, all: pct(r.allCrit) }) }) }
-        }))
+        }), { columns: 2 })
         : emptyText(t('media2.empty.list')))
   }
 

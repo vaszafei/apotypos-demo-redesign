@@ -113,3 +113,6 @@
   .mme-rank .table-wrap { max-height: 560px; overflow-y: auto; }
   .mme-rank .data-table thead th { position: sticky; top: 0; z-index: 1; background: var(--surface-raised); }
 }
+/* Μέσα › one outlet: the title card holds the name on its own row, and its chips have a gap between the label and the value. */
+.outlet-hero { justify-content: center; }
+.outlet-hero .hero-chips .chip { gap: 5px; }

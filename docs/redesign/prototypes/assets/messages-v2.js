@@ -262,6 +262,11 @@ Object.assign(window.MESSAGES.en, {
 
 // Messages of the page of one outlet (outlet-v2.html).
 Object.assign(window.MESSAGES.el, {
+  'outlet2.tab.overview': 'Επισκόπηση',
+  'outlet2.tab.topics': 'Θέματα',
+  'outlet2.tab.stories': 'Ιστορίες',
+  'outlet2.tab.people': 'Στάση και πρόσωπα',
+  'outlet2.tab.headlines': 'Τίτλοι',
   'outlet2.related.title': 'Σχετικά μέσα',
   'outlet2.related.info': 'Τα άλλα μέσα του ίδιου ομίλου και τα μέσα που γράφουν τις ίδιες ιστορίες. Η τελεία είναι ο όμιλος του μέσου. Η ομοιότητα είναι οι κοινές ιστορίες δύο μέσων, διαιρεμένες με τις ιστορίες που έγραψε τουλάχιστον ένα από τα δύο. Κάθε ζεύγος χρειάζεται 10 κοινές ιστορίες, αλλιώς δείχνει «—». Τα μεγάλα μέσα έχουν υψηλή ομοιότητα με όλα.',
   'outlet2.related.same': 'Ίδιος όμιλος',
@@ -305,6 +310,11 @@ Object.assign(window.MESSAGES.el, {
   'outlet2.headlines.empty': 'Το δείγμα δεν έχει τίτλους για αυτό το μέσο.'
 })
 Object.assign(window.MESSAGES.en, {
+  'outlet2.tab.overview': 'Overview',
+  'outlet2.tab.topics': 'Topics',
+  'outlet2.tab.stories': 'Stories',
+  'outlet2.tab.people': 'Stance and people',
+  'outlet2.tab.headlines': 'Headlines',
   'outlet2.related.title': 'Related outlets',
   'outlet2.related.info': 'The other outlets of the same group and the outlets that write the same stories. The dot is the group of the outlet. Similarity is the shared stories of two outlets divided by the stories that at least one of them wrote. A pair needs 10 shared stories, or it shows "—". Large outlets have a high similarity with all outlets.',
   'outlet2.related.same': 'Same group',
