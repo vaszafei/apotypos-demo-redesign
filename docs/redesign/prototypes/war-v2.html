@@ -7,7 +7,7 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=22">
-  <link rel="stylesheet" href="assets/dash.css?v=78">
+  <link rel="stylesheet" href="assets/dash.css?v=79">
   <link rel="stylesheet" href="assets/politics.css?v=2">
 </head>
 <body>
@@ -35,7 +35,7 @@
 
     const share = (a, b) => (b ? a / b : 0)
     const points = (v) => `${v > 0 ? '+' : v < 0 ? '−' : '±'}${fmt.dec(Math.abs(v * 100))}`
-    const wide = (stat) => { stat.classList.replace('c-4', 'c-3'); return stat }
+    const wide = (stat) => { stat.classList.remove('c-4'); return stat }
 
     Shell.start({
       id: 'war',
@@ -165,7 +165,7 @@
             h('a', { class: 'quiet-link', href: e.url, target: '_blank', rel: 'noopener' }, e.title),
             e.phrase ? h('span', { class: 'quote-text' }, `«${e.phrase}»`) : null))))
 
-        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...stats, weeksCard, scaleCard, voiceCard, frameCard, metricCard, heatCard, outletCard, exampleCard),
+        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, weeksCard, h('div', { class: 'c-4 card-col card-col-fill' }, h('div', { class: 'stats-2x2' }, ...stats), scaleCard), voiceCard, frameCard, metricCard, heatCard, outletCard, exampleCard),
           h('p', { class: 'proto-note' }, t('war.note')))
       }
     })

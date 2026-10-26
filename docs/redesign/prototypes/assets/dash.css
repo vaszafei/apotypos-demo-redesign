@@ -469,3 +469,6 @@
   :root[data-header="v2"] .filters-right .page-head .page-filters { justify-self: end; max-width: 100%; }
   :root[data-header="v2"] .filters-right .page-head .page-filters .region-pills { justify-content: flex-end; }
 }
+
+/* The last card of a column takes the height that is left, so a column is as tall as the card beside it. */
+.card-col-fill > :last-child { flex: 1; }
