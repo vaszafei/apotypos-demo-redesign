@@ -373,7 +373,7 @@
     const series = top.map((i, j) => ({ label: name(set.issues[i]), color: TOPIC_SLOTS[j], values: weeks.map((w) => (w.n ? w.issues[i] / w.n : null)) }))
     const chart = Politics.LineChart({
       labels: weeks.map((w) => day(w.i0)), tips: weeks.map((w) => `${day(w.i0)} – ${day(w.i1)} (n=${fmt.int(w.n)})`),
-      series, height: 260, zero: true, yFormat: pctRound, endLabels: false, aria: t('mme.o.weekly.title')
+      series, height: 260, zero: true, yFormat: pctRound, endLabels: false, smooth: true, aria: t('mme.o.weekly.title')
     })
     const legend = UI.Legend(series.map((s) => ({ label: s.label, color: s.color })))
     return card('c-12', cardHead(t('mme.o.weekly.title'), null, t('mme.o.weekly.info')), legend, chart)
@@ -420,24 +420,31 @@
         : emptyText(t('media2.empty.list')))
   }
 
-  // The frames of the articles of the outlet against all outlets, and the sections.
-  function FramesCard (S, k) {
-    const set = S.set
-    const mine = set.frames.map((_, f) => sumPairs(set.of[k][f], S.i0, S.i1))
-    const all = set.frames.map((_, f) => sum(S.outlets.map((o) => sumPairs(set.of[o.k][f], S.i0, S.i1))))
-    const nm = sum(mine) || 1
-    const na = sum(all) || 1
-    const rows = set.frames.map((code, f) => ({ label: t(`frame.${code}`), value: mine[f] / nm, usual: all[f] / na })).sort((a, b) => b.value - a.value)
-    const scale = Entity.scaleOf(rows)
-    const sec = set.osec[k]
-    const ns = sum(sec) || 1
-    const sections = set.sections.map((code, j) => ({ code, v: sec[j] / ns })).filter((r) => r.v > 0).sort((a, b) => b.v - a.v)
-    return card('c-12', cardHead(t('mme.o.frames.title'), Entity.diffKey(), t('mme.o.frames.info')),
-      h('div', { class: 'how-grid how-grid-2' },
-        h('div', { class: 'how-panel' }, UI.BarList(rows.slice(0, 4).map((r) => Entity.DiffRow({ ...r, scale })))),
-        h('div', { class: 'how-panel' }, UI.BarList(rows.slice(4).map((r) => Entity.DiffRow({ ...r, scale }))))),
-      h('h3', { class: 'rows-caption mme-gap' }, t('mme.o.sections')),
-      h('ul', { class: 'mme-chips' }, sections.map((r) => h('li', {}, h('span', { class: 'mme-chip is-static' }, t(`section.${r.code}`), h('span', { class: 'mme-chip-n' }, pctRound(r.v)))))))
+  // What the outlet stresses more or less than all outlets: topics, frames and sections in one list, by how many times its share is the share of all outlets (x1,3 is 30% more often).
+  // topics: [{ label, value, usual }] are the shares of the topics in its stories, from the page. S is null for an outlet that is not in ΜΜΕ & πρόσωπα: it has no frames and no sections.
+  const EMPHASIS = 5
+  function EmphasisCard (S, k, topics, topicN) {
+    const rows = topics.map((r) => ({ kind: 'topic', ...r }))
+    if (S) {
+      const set = S.set
+      const frames = set.frames.map((_, f) => sumPairs(set.of[k][f], S.i0, S.i1))
+      const framesAll = set.frames.map((_, f) => sum(S.outlets.map((o) => sumPairs(set.of[o.k][f], S.i0, S.i1))))
+      set.frames.forEach((code, f) => rows.push({ kind: 'frame', label: t(`frame.${code}`), value: frames[f] / (sum(frames) || 1), usual: framesAll[f] / (sum(framesAll) || 1) }))
+      const sections = set.osec[k]
+      const sectionsAll = set.sections.map((_, j) => sum(S.outlets.map((o) => set.osec[o.k][j])))
+      set.sections.forEach((code, j) => rows.push({ kind: 'section', label: t(`section.${code}`), value: sections[j] / (sum(sections) || 1), usual: sectionsAll[j] / (sum(sectionsAll) || 1) }))
+    }
+    const rated = rows.filter((r) => r.usual >= 0.02).map((r) => ({ ...r, ratio: r.value / r.usual }))
+    const more = rated.filter((r) => r.ratio > 1).sort((a, b) => b.ratio - a.ratio).slice(0, EMPHASIS)
+    const less = rated.filter((r) => r.ratio < 1).sort((a, b) => a.ratio - b.ratio).slice(0, EMPHASIS)
+    const top = Math.max(...[...more, ...less].map((r) => Math.abs(r.ratio - 1)), 0.01)
+    const panel = (list, key, color) => h('div', { class: 'how-panel' }, h('h3', { class: 'rows-caption' }, t(`mme.o.emph.${key}`)),
+      list.length
+        ? UI.BarList(list.map((r) => ({ label: r.label, sub: t('mme.o.emph.row', { kind: t(`mme.o.kind.${r.kind}`), value: pct(r.value), usual: pct(r.usual) }), value: Math.abs(r.ratio - 1), text: `×${fmt.dec(r.ratio)}`, color })), { max: top })
+        : emptyText(t('media2.empty.list')))
+    return card('c-12', cardHead(t('mme.o.emph.title'), null, t('mme.o.emph.info')),
+      topics.length || S ? [h('div', { class: 'how-grid how-grid-2' }, panel(more, 'more', 'var(--emph-more)'), panel(less, 'less', 'var(--emph-less)')),
+        h('p', { class: 'dcard-sub' }, t('mme.o.emph.sub', { n: fmt.int(topicN) }))] : emptyText(t('outlet2.topics.empty')))
   }
 
   // Whom the outlet quotes, its parties against all outlets, and who attacks whom.
@@ -489,5 +496,5 @@
       angle ? h('span', { class: 'mme-angle' }, angle) : null))
   }
 
-  window.Mme = { presets, summary, sumPairs, ChipsCard, HighlightsCard, StoriesCard, AgendaCard, PeopleCard, GovCard, TopicCard, PersonsCard, MethodNote, OutletStats, outletFacts, WeeklyAgenda, PushSkip, StanceByTopic, FramesCard, VoicesCard, PortrayalCard, Headlines, topIssues, shareOf, StanceBar, critShare, outletLink }
+  window.Mme = { presets, summary, sumPairs, ChipsCard, HighlightsCard, StoriesCard, AgendaCard, PeopleCard, GovCard, TopicCard, PersonsCard, MethodNote, OutletStats, outletFacts, WeeklyAgenda, PushSkip, StanceByTopic, EmphasisCard, VoicesCard, PortrayalCard, Headlines, topIssues, shareOf, StanceBar, critShare, outletLink }
 })()

@@ -14,16 +14,16 @@
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=28"></script>
-  <script src="assets/messages-v2.js?v=43"></script>
+  <script src="assets/messages-v2.js?v=44"></script>
   <script src="assets/messages-spread.js?v=16"></script>
-  <script src="assets/messages-mme.js?v=11"></script>
+  <script src="assets/messages-mme.js?v=12"></script>
   <script src="assets/components.js?v=9"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
-  <script src="assets/politics.js?v=4"></script>
+  <script src="assets/politics.js?v=5"></script>
   <script src="assets/spread.js?v=6"></script>
   <script src="assets/entity-cards.js?v=7"></script>
-  <script src="assets/mme.js?v=13"></script>
+  <script src="assets/mme.js?v=14"></script>
   <script src="assets/shell.js?v=44"></script>
   <script src="data/media.js"></script>
   <script src="data/home.js"></script>
@@ -49,7 +49,6 @@
     const colorOfGroup = Dash.groupColors(groupsData.data ? groupsData.data.groups : [])
     const slug = params.get('slug') || '17661f5754'
     const outlet = media.data ? media.data.outlets.find((o) => o.slug === slug) : null
-    const TOPICS = 10
     const SIMILAR = 12
     const STORIES = 8
     const MIN_SHARED = 10
@@ -127,22 +126,14 @@
         }
         const dailyCard = makeDaily()
 
-        // The topics of the stories of the outlet, against the topics of all outlets. The topic of the catch-all rows does not count.
+        // The share of each topic in the stories of the outlet, and in all outlets. The topic of the catch-all rows does not count.
         const mineTotal = sum(topicMine.filter((_, i) => !d.issues[i].catchAll))
         const allTotal = sum(topicAll.filter((_, i) => !d.issues[i].catchAll))
-        const topicRows = mineTotal
-          ? d.issues.map((issue, i) => ({ issue, i })).filter(({ issue, i }) => !issue.catchAll && topicMine[i])
+        const topicShares = mineTotal
+          ? d.issues.map((issue, i) => ({ issue, i })).filter(({ issue, i }) => !issue.catchAll && topicAll[i])
             .map(({ issue, i }) => ({ label: name(issue), value: topicMine[i] / mineTotal, usual: topicAll[i] / allTotal }))
-            .sort((a, b) => b.value - a.value).slice(0, TOPICS)
           : []
-        const topicScale = scaleOf(topicRows)
-        const topicList = (rows) => UI.BarList(rows.map((r) => DiffRow({ ...r, scale: topicScale })))
         const diffKey = Entity.diffKey()
-        const topicsCard = card('c-12', cardHead(t('outlet2.topics.title'), diffKey, t('outlet2.topics.info')),
-          topicRows.length
-            ? [h('div', { class: 'how-grid how-grid-2' }, h('div', { class: 'how-panel' }, topicList(topicRows.slice(0, 5))), h('div', { class: 'how-panel' }, topicList(topicRows.slice(5)))),
-              h('p', { class: 'dcard-sub' }, t('outlet2.topics.sub', { n: fmt.int(mineTotal) }))]
-            : h('p', { class: 'dcard-empty' }, t('outlet2.topics.empty')))
 
         // How the outlet writes: the news share, the clickbait share and the stance, each against all outlets. Stance and clickbait come from the groups file.
         const files = [...groupsData.data.groups.flatMap((g) => g.outlets), ...(groupsData.data.ungrouped || [])]
@@ -185,8 +176,9 @@
         const MS = mk >= 0 ? Mme.summary(mset, 0, mset.dates.length - 1) : null
         const live = MS ? {
           weekly: Mme.WeeklyAgenda(mset, mk), pushSkip: Mme.PushSkip(MS, mk), stance: Mme.StanceByTopic(MS, mk),
-          frames: Mme.FramesCard(MS, mk), voices: Mme.VoicesCard(MS, mk), portrayal: Mme.PortrayalCard(MS, mk)
+          voices: Mme.VoicesCard(MS, mk), portrayal: Mme.PortrayalCard(MS, mk)
         } : null
+        const emphasisCard = Mme.EmphasisCard(MS, mk, topicShares, mineTotal)
         const liveHeadlines = MS ? Mme.Headlines(mset, mk) : []
 
         const headlines = sample.kind === 'data' && sample.data.slug === slug ? sample.data.headlines : []
@@ -281,9 +273,9 @@
         // The outlets of ΜΜΕ & πρόσωπα have the live cards. The others have the two cards of the groups file only.
         const layouts = {
           overview: [[[6, [relatedCard]], [6, [latestCard]]]],
-          topics: [[[12, [live && live.weekly]]], [[12, [topicsCard]]], [[12, [live && live.frames]]], [[12, [live && live.stance]]]],
+          topics: [[[12, [live && live.weekly]]], [[12, [emphasisCard]]]],
           stories: [[[12, [storiesCard]]], [[6, [live && live.pushSkip[0]]], [6, [live && live.pushSkip[1]]]]],
-          people: [[[6, [live && live.portrayal, howCard, stanceCard]], [6, [live && live.voices]]]]
+          people: [[[6, [live && live.portrayal, howCard, stanceCard]], [6, [live && live.voices]]], [[12, [live && live.stance]]]]
         }
         // A row keeps its columns with cards. One column alone, or two that are 8 and 4 wide, share the 12 columns.
         const tabRows = (key) => layouts[key].map((row) => row.map(([span, cards]) => [span, cards.filter(Boolean)]).filter(([, cards]) => cards.length))

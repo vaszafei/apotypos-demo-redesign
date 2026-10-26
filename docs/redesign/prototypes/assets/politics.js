@@ -20,9 +20,39 @@
     return { short: day(from), long: `${day(from)} – ${day(to)}` }
   }
 
-  // Lines on one axis. Each series has a color and a label at its end (endLabels: false leaves the labels to a legend above). The hover line gives all values of one point.
+  // A smooth line through the points: a monotone cubic curve (it never swings above or below the points it joins). A gap or a missing value starts a new curve.
+  function smoothPath (pts, gapAt) {
+    const parts = []
+    let seg = []
+    pts.forEach((p, i) => {
+      if (!p) { if (seg.length) parts.push(seg); seg = []; return }
+      if (gapAt.has(i) && seg.length) { parts.push(seg); seg = [] }
+      seg.push(p)
+    })
+    if (seg.length) parts.push(seg)
+    const f = (v) => v.toFixed(1)
+    return parts.map((s) => {
+      const n = s.length
+      if (n === 1) return `M${f(s[0][0])} ${f(s[0][1])}`
+      const dx = s.slice(1).map((q, i) => q[0] - s[i][0])
+      const m = s.slice(1).map((q, i) => (q[1] - s[i][1]) / dx[i])
+      const tan = s.map((_, i) => (i === 0 ? m[0] : i === n - 1 ? m[n - 2] : m[i - 1] * m[i] <= 0 ? 0 : (m[i - 1] + m[i]) / 2))
+      m.forEach((slope, i) => {
+        if (slope === 0) { tan[i] = 0; tan[i + 1] = 0; return }
+        const a = tan[i] / slope
+        const b = tan[i + 1] / slope
+        const k = a * a + b * b
+        if (k > 9) { const tau = 3 / Math.sqrt(k); tan[i] = tau * a * slope; tan[i + 1] = tau * b * slope }
+      })
+      let d = `M${f(s[0][0])} ${f(s[0][1])}`
+      for (let i = 0; i < n - 1; i++) d += `C${f(s[i][0] + dx[i] / 3)} ${f(s[i][1] + (tan[i] * dx[i]) / 3)} ${f(s[i + 1][0] - dx[i] / 3)} ${f(s[i + 1][1] - (tan[i + 1] * dx[i]) / 3)} ${f(s[i + 1][0])} ${f(s[i + 1][1])}`
+      return d
+    }).join('')
+  }
+
+  // Lines on one axis. Each series has a color and a label at its end (endLabels: false leaves the labels to a legend above; smooth: true draws curves). The hover line gives all values of one point.
   // gaps: [{ at, text }]. A stretch of time with no data is not drawn to scale: the point `at` follows a gap of 1.5 steps, marked by a dashed line and its text, and no line crosses it.
-  function LineChart ({ labels, tips, series, height = 240, yFormat = fmt.dec, min, max, zero = false, aria, gaps = [], endLabels = true }) {
+  function LineChart ({ labels, tips, series, height = 240, yFormat = fmt.dec, min, max, zero = false, aria, gaps = [], endLabels = true, smooth = false }) {
     return fit((holder, width) => {
       const pad = { top: 14, right: endLabels ? 96 : 28, bottom: 28, left: 40 }
       const all = series.flatMap((s) => s.values).filter((v) => v !== null)
@@ -63,7 +93,8 @@
       series.forEach((s) => {
         const pts = s.values.map((v, i) => (v === null ? null : [x(i), y(v)]))
         let d = ''
-        pts.forEach((p, i) => { if (p) d += `${d && pts[i - 1] && !gapAt.has(i) ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}` })
+        if (smooth) d = smoothPath(pts, gapAt)
+        else pts.forEach((p, i) => { if (p) d += `${d && pts[i - 1] && !gapAt.has(i) ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}` })
         svg.append(h('path', { d, fill: 'none', stroke: s.color, 'stroke-width': s.width || 2, 'stroke-linejoin': 'round', 'stroke-dasharray': s.dash || null }))
         pts.forEach((p) => { if (p && s.dots !== false) svg.append(h('circle', { cx: p[0], cy: p[1], r: 3, fill: s.color, stroke: '#ffffff', 'stroke-width': 1.5 })) })
         const last = pts.map((p, i) => [p, i]).filter(([p]) => p).pop()
