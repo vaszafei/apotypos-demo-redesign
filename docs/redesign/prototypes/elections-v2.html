@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="assets/app.css?v=22">
   <link rel="stylesheet" href="assets/dash.css?v=76">
   <link rel="stylesheet" href="assets/politics.css?v=3">
-  <link rel="stylesheet" href="assets/elections.css?v=3">
+  <link rel="stylesheet" href="assets/elections.css?v=4">
 </head>
 <body>
   <div id="app"></div>
@@ -56,13 +56,13 @@
     }
 
     // A table with one column for each party. rows: [{ name, sub, cells: [node], cls, total }].
-    function PartyTable ({ parties, first, rows, total, caption }) {
-      return h('div', { class: 'table-wrap' }, h('table', { class: 'party-table' },
+    function PartyTable ({ parties, first, rows, total, caption, compact }) {
+      return h('div', { class: 'table-wrap' }, h('table', { class: `party-table${compact ? ' party-table-compact' : ''}` },
         h('caption', { class: 'visually-hidden' }, caption),
         h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, first), total ? h('th', { scope: 'col', class: 'num' }, total) : null,
           parties.map((p) => h('th', { scope: 'col', style: partyStyle(p.key), title: p.name }, p.key)))),
         h('tbody', {}, rows.map((r) => h('tr', { class: r.cls || null },
-          h('th', { scope: 'row' }, h('span', { class: 'row-name' }, r.name, r.sub ? h('span', { title: r.sub }, r.sub) : null)),
+          h('th', { scope: 'row', title: compact ? r.sub : null }, h('span', { class: 'row-name' }, r.name, r.sub ? h('span', { title: r.sub }, r.sub) : null)),
           total ? h('td', { class: 'num' }, fmt.int(r.total)) : null,
           r.cells)))))
     }
@@ -187,7 +187,8 @@
               pct1(sov), toneSub(tone, toneN)))
           }
         })
-        const favorCard = card('c-12', cardHead(t('elec.favor.title'), null, t('elec.favor.info')), PartyTable({ parties, first: t('elec.col.outlet'), rows: favorRows, caption: t('elec.favor.title') }))
+        // Μέσα: the table is compact (one line for the name, the owner in its tooltip) and shares its row with the card of the lean.
+        const favorCard = card('c-8 elec-pair', cardHead(t('elec.favor.title'), null, t('elec.favor.info')), PartyTable({ parties, first: t('elec.col.outlet'), rows: favorRows, caption: t('elec.favor.title'), compact: true }))
 
         // 2. Lean of the owner: the share of each party in the outlets of each lean, and the difference from the market.
         const leans = new Map()
@@ -199,7 +200,7 @@
             return h('td', { class: 'cell', style: partyStyle(keys[i]) }, pct1(c.sov),
               diff === null ? toneSub(c.tone, c.toneN) : Math.abs(diff) < 0.05 ? h('span', { class: 'sub zero' }, fmt.dec(0)) : h('span', { class: `sub ${cls(diff)}` }, fmt.signed(diff)))
           }) }))
-        const leanCard = card('c-12', cardHead(t('elec.lean.title'), null, t('elec.lean.info')), PartyTable({ parties, first: t('elec.col.lean'), rows: leanRows, caption: t('elec.lean.title') }))
+        const leanCard = card('c-8 elec-pair', cardHead(t('elec.lean.title'), null, t('elec.lean.info')), PartyTable({ parties, first: t('elec.col.lean'), rows: leanRows, caption: t('elec.lean.title') }))
 
         // 3. Government or opposition: the stance toward the government leader minus the weighted stance toward the opposition.
         const gapRows = d.outlets.map((o) => {
@@ -212,7 +213,7 @@
         }).sort((a, b) => (b.gap ?? -9) - (a.gap ?? -9))
         const gapMax = Math.max(0.2, ...gapRows.map((r) => Math.abs(r.gap ?? 0)))
         const leaning = gapRows.filter((r) => r.gap !== null && !r.thin)
-        const gapCard = card('c-6', cardHead(t('elec.gap.title'), null, `${leaning.length > 1 ? `${t('elec.gap.finding', { gov: leaning[0].name, a: signed(leaning[0].gap), opp: leaning[leaning.length - 1].name, b: signed(leaning[leaning.length - 1].gap) })}. ` : ''}${t('elec.gap.info')}`),
+        const gapCard = card('c-4 elec-pair', cardHead(t('elec.gap.title'), null, `${leaning.length > 1 ? `${t('elec.gap.finding', { gov: leaning[0].name, a: signed(leaning[0].gap), opp: leaning[leaning.length - 1].name, b: signed(leaning[leaning.length - 1].gap) })}. ` : ''}${t('elec.gap.info')}`),
           h('p', { class: 'lean-ends' }, h('span', {}, `← ${t('elec.gap.opp')}`), h('span', {}, `${t('elec.gap.gov')} →`)),
           UI.BarList(gapRows.map((r) => ({
             cls: r.thin ? 'is-thin' : null, label: r.name, text: signed(r.gap),
@@ -228,7 +229,7 @@
           return { key: k, top: shares[0], hhi: Math.round(shares.reduce((a, s) => a + s.share ** 2, 0) * 100) }
         })
         const tight = ownerRows.slice().sort((x, y) => y.top.share - x.top.share)[0]
-        const ownerCard = card('c-6', cardHead(t('elec.owner.title'), null, `${t('elec.owner.finding', { party: tight.key, share: fmt.pct(tight.top.share), owner: tight.top.owner })}. ${t('elec.owner.info')}`),
+        const ownerCard = card('c-4 elec-pair', cardHead(t('elec.owner.title'), null, `${t('elec.owner.finding', { party: tight.key, share: fmt.pct(tight.top.share), owner: tight.top.owner })}. ${t('elec.owner.info')}`),
           UI.BarList(ownerRows.map((r) => ({
             label: partyKey(r.key), text: `${t('elec.owner.row', { share: Politics.pctOf(r.top.share * 100), owner: r.top.owner })} · HHI ${fmt.int(r.hhi)}`,
             value: r.top.share, color: color(r.key), tip: `${r.key}: ${t('elec.owner.row', { share: fmt.pct(r.top.share), owner: r.top.owner })}, HHI ${r.hhi}`
