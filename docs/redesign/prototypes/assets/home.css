@@ -1,0 +1,80 @@
+/* Αρχική: the title card with the four numbers, the top story of a day, the calendar of days, the trends and the shortcuts to the analyses. */
+.home-hero { justify-content: center; gap: var(--space-3); padding: 20px 24px 22px; border-top: 3px solid var(--ink); }
+.home-hero .hero-title { font-size: 30px; line-height: 1.15; letter-spacing: -0.015em; color: var(--ink); }
+.home-hero .hero-lead { max-width: 56ch; font-size: var(--text-small); line-height: 1.5; }
+.home-stats .dstat { justify-content: center; }
+.home-stats .dstat-row { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+.home-stats .dstat-row > svg, .home-stats .dstat-row > .hbar { display: block; margin-top: 4px; }
+.home-stats .dstat-sub:empty { display: none; }
+.home-stats .dstat-value { font-size: 28px; }
+
+/* The top story of a day. */
+.home-day { gap: var(--space-3); justify-content: space-between; }
+.home-pill { border-color: var(--ink); color: var(--ink); font-weight: 600; }
+.home-day-date { margin: 0; font-size: var(--text-caption); color: var(--text-secondary); text-transform: capitalize; }
+.home-day-story { margin: 0; font: 600 22px/1.25 var(--font-heading); letter-spacing: -0.01em; color: var(--ink); }
+.home-day-meta { margin: 0; font-size: var(--text-small); color: var(--text-secondary); }
+.home-day-meta strong { font-weight: 600; color: var(--text-primary); }
+.home-compare { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); margin: 0; padding: var(--space-3) 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.home-fact { margin: 0; min-width: 0; }
+.home-fact dt { font-size: var(--text-caption); line-height: 1.3; color: var(--text-secondary); }
+.home-fact dd { margin: 2px 0 0; font-size: 18px; font-weight: 600; line-height: 1.2; color: var(--strong); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.home-block { display: grid; gap: 6px; }
+.home-label { margin: 0; font-size: var(--text-caption); font-weight: 600; color: var(--text-secondary); }
+.home-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.home-chip { gap: 6px; text-decoration: none; }
+.home-chip:hover { border-color: var(--ink); }
+.home-chip .dot { width: 8px; height: 8px; }
+.home-chip-n { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.home-articles, .home-others { margin: 0; padding: 0; list-style: none; display: grid; }
+.home-articles li, .home-others li { display: grid; gap: 2px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: var(--text-small); line-height: 1.35; }
+.home-articles li:first-child, .home-others li:first-child { padding-top: 0; }
+.home-articles li:last-child, .home-others li:last-child { border-bottom: 0; padding-bottom: 0; }
+.home-articles a { color: var(--text-primary); text-decoration-color: var(--rule); text-underline-offset: 3px; }
+.home-articles a:hover { color: var(--accent); text-decoration-color: currentColor; }
+.home-articles .muted-text { font-size: var(--text-caption); }
+.home-others li { grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: var(--space-3); }
+.home-others .muted-text { font-size: var(--text-caption); font-variant-numeric: tabular-nums; }
+.home-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); padding-top: var(--space-2); }
+.home-actions .button { display: inline-flex; align-items: center; gap: 4px; text-decoration: none; }
+.home-actions .button.is-primary { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+.home-actions .button.is-primary:hover { opacity: 0.88; }
+
+/* The calendar of days: a strip that scrolls sideways, one tile for each day. */
+.home-steps { display: inline-flex; gap: 2px; }
+.home-calendar { gap: var(--space-2); }
+.home-days { position: relative; flex: 1; display: flex; gap: 6px; margin: 0; padding: 0 0 var(--space-2); list-style: none; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: thin; }
+.home-days > li { flex: none; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 6px; scroll-snap-align: center; }
+.home-day-month { height: 16px; font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); white-space: nowrap; }
+.home-day-btn { display: grid; grid-template-rows: auto auto minmax(36px, 1fr) auto; justify-items: center; gap: 2px; width: 62px; min-height: 132px; padding: 8px 4px 6px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-raised); color: var(--text-primary); font: inherit; cursor: pointer; }
+.home-day-btn:hover { border-color: var(--ink); }
+.home-day-btn.is-weekend { background: var(--surface-page); }
+.home-day-btn[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--on-ink); }
+.home-day-dow { font-size: var(--text-caption); text-transform: capitalize; color: var(--text-secondary); }
+.home-day-num { font-size: 20px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.home-day-bar { position: relative; width: 100%; margin-top: 2px; }
+.home-day-bar i { position: absolute; bottom: 0; left: 50%; width: 14px; margin-left: -7px; border-radius: 3px 3px 0 0; background: var(--series-news); }
+.home-day-n { font-size: var(--text-caption); font-variant-numeric: tabular-nums; }
+.home-day-btn[aria-pressed="true"] .home-day-dow { color: var(--on-ink); opacity: 0.75; }
+.home-day-btn[aria-pressed="true"] .home-day-bar i { background: var(--on-ink); }
+
+/* The shortcuts to the analyses. */
+.home-links { margin: 0; padding: 0; list-style: none; }
+.home-links li { border-bottom: 1px solid var(--border); }
+.home-links li:last-child { border-bottom: 0; }
+.home-links a { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); padding: 10px 2px; color: var(--text-primary); text-decoration: none; }
+.home-links a:hover strong, .home-links a:focus-visible strong { color: var(--accent); }
+.home-links a:hover .icon { transform: translateX(2px); }
+.home-links .icon { color: var(--text-secondary); transition: transform var(--motion-base) var(--ease-out); }
+.home-link-main { display: grid; gap: 2px; min-width: 0; }
+.home-link-main strong { font-size: var(--text-small); font-weight: 600; }
+.home-link-main .muted-text { font-size: var(--text-caption); }
+
+@media (max-width: 1279px) { .home-grid > .c-5 { grid-column: span 12; } }
+@media (max-width: 719px) {
+  .home-hero { padding: 16px 16px 18px; }
+  .home-hero .hero-title { font-size: 24px; }
+  .home-compare { grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
+  .home-fact { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); }
+  .home-fact dd { font-size: 16px; }
+}
