@@ -121,7 +121,9 @@
 @media (max-width: 1279px) { .outlet-stats, .outlet-latest { grid-column: span 12; } .latest-scroll { min-height: 320px; } }
 /* The related outlets: the pie, and the list that is its text. */
 .rose-slice:hover { opacity: 0.85; }
-.rose-legend { margin: var(--space-2) 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.rose-body { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); }
+.rose-body > .fit { flex: 1 1 300px; max-width: 380px; min-width: 0; }
+.rose-legend { flex: 1 1 260px; min-width: 0; margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
 .rose-legend li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: var(--space-2); align-items: baseline; font-size: var(--text-small); }
 .rose-swatch { width: 10px; height: 10px; border-radius: 2px; align-self: center; }
 .rose-name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px var(--space-2); min-width: 0; }

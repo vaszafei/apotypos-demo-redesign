@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=25">
   <link rel="stylesheet" href="assets/dash.css?v=79">
-  <link rel="stylesheet" href="assets/mme.css?v=19">
+  <link rel="stylesheet" href="assets/mme.css?v=20">
 </head>
 <body>
   <div id="app"></div>
@@ -49,7 +49,7 @@
     const slug = params.get('slug') || '17661f5754'
     const outlet = media.data ? media.data.outlets.find((o) => o.slug === slug) : null
     const TOPICS = 10
-    const SIMILAR = 5
+    const SIMILAR = 12
     const STORIES = 8
     const MIN_SHARED = 10
 
@@ -202,9 +202,9 @@
           const p = pairOf.get(i)
           return { slug: o.slug, name: o.name, group: o.group, same: Boolean(group) && o.group === group, shared: p ? p.shared : 0, score: p && p.shared >= MIN_SHARED ? p.score : null }
         }).sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || b.shared - a.shared)
-        // A pie where a slice is as wide as the similarity and reaches as far as it: the 8 most similar outlets. The slice colors are the categorical slots in order.
+        // A pie where a slice is as wide as the similarity and reaches as far as it: the 12 most similar outlets. The slice color is the group of the outlet, as everywhere else.
         // The list under the pie is the text of the chart: the outlet, its group, the shared stories and the similarity. Outlets with fewer than 10 shared stories have no slice.
-        const ROSE = 8
+        const ROSE = 12
         const slices = related.filter((r) => r.score !== null).slice(0, ROSE)
         const unscored = related.filter((r) => r.score === null)
         function RoseChart (rows) {
@@ -218,14 +218,14 @@
             const pt = (r, a) => [cx + r * Math.cos(a), cy + r * Math.sin(a)]
             const svg = h('svg', { class: 'chart', width, height: size, viewBox: `0 0 ${width} ${size}`, 'aria-hidden': 'true' })
             let a0 = -Math.PI / 2
-            rows.forEach((r, i) => {
+            rows.forEach((r) => {
               const sweep = (r.score / total) * Math.PI * 2
               const a1 = a0 + sweep
               const rad = R * (r.score / top)
               const [x0, y0] = pt(rad, a0)
               const [x1, y1] = pt(rad, a1)
               const d = rows.length === 1 ? `M ${cx - rad} ${cy} a ${rad} ${rad} 0 1 0 ${rad * 2} 0 a ${rad} ${rad} 0 1 0 ${-rad * 2} 0 Z` : `M ${cx} ${cy} L ${x0} ${y0} A ${rad} ${rad} 0 ${sweep > Math.PI ? 1 : 0} 1 ${x1} ${y1} Z`
-              svg.append(h('path', { class: 'rose-slice', d, fill: Dash.SLOTS[i], stroke: 'var(--surface-raised)', 'stroke-width': 2, 'stroke-linejoin': 'round' },
+              svg.append(h('path', { class: 'rose-slice', d, fill: groupColor(r.group), stroke: 'var(--surface-raised)', 'stroke-width': 2, 'stroke-linejoin': 'round' },
                 h('title', {}, `${r.name}: ${fmt.pct(r.score)} · ${t('outlet2.related.row', { shared: fmt.int(r.shared) })}`)))
               // A narrow slice has no label of its own (it would sit on its neighbors): its value is in the list under the pie.
               if (sweep >= 0.4) {
@@ -239,14 +239,14 @@
             holder.replaceChildren(svg)
           })
         }
-        const roseLegend = h('ul', { class: 'rose-legend' }, slices.map((r, i) => h('li', {},
-          h('span', { class: 'rose-swatch', style: `background:${Dash.SLOTS[i]}`, 'aria-hidden': 'true' }),
+        const roseLegend = h('ul', { class: 'rose-legend' }, slices.map((r) => h('li', {},
+          h('span', { class: 'rose-swatch', style: `background:${groupColor(r.group)}`, title: r.group || t('story.nogroup'), 'aria-hidden': 'true' }),
           h('span', { class: 'rose-name' }, UI.EntityLink({ type: 'outlet', key: r.slug, label: r.name }), r.same ? h('span', { class: 'chip chip-sm' }, t('outlet2.related.same')) : null,
             h('span', { class: 'muted-text' }, t('outlet2.related.row', { shared: fmt.int(r.shared) }))),
           h('span', { class: 'row-value' }, fmt.pct(r.score)))))
         const relatedCard = card('c-12', cardHead(t('outlet2.related.title'), null, t('outlet2.related.info')),
           related.length
-            ? [slices.length ? [RoseChart(slices), roseLegend] : null,
+            ? [slices.length ? h('div', { class: 'rose-body' }, RoseChart(slices), roseLegend) : null,
               unscored.length ? h('p', { class: 'dcard-sub' }, `${t('outlet2.related.few')} `, unscored.map((r, i) => [i ? ', ' : '', UI.EntityLink({ type: 'outlet', key: r.slug, label: r.name })])) : null]
             : h('p', { class: 'dcard-empty' }, t('outlet2.related.empty')))
 
@@ -265,12 +265,12 @@
         // The tabs: each card has one tab. A tab is rows of one, two or three columns (spans of 12), and the last card of a column takes the height that is left.
         // The tabs with no cards are not shown (the people and the topics of the live page are for the outlets of ΜΜΕ & πρόσωπα only).
         // The outlets of ΜΜΕ & πρόσωπα have the live cards. The others have the two cards of the groups file, and those stay on the first tab.
-        // The outlets of ΜΜΕ & πρόσωπα have the live cards. The others have the two cards of the groups file, which fill the left column of the first tab.
+        // The outlets of ΜΜΕ & πρόσωπα have the live cards. The others have the two cards of the groups file only.
         const layouts = {
-          overview: [[[8, live ? [dailyCard, live.weekly] : [dailyCard, stanceCard, howCard]], [4, [relatedCard]]]],
-          topics: [[[12, [topicsCard]]], [[12, [live && live.frames]]], [[12, [live && live.stance]]]],
+          overview: [[[8, [relatedCard]], [4, [dailyCard, howCard]]]],
+          topics: [[[12, [live && live.weekly]]], [[12, [topicsCard]]], [[12, [live && live.frames]]], [[12, [live && live.stance]]]],
           stories: [[[12, [storiesCard]]], [[6, [live && live.pushSkip[0]]], [6, [live && live.pushSkip[1]]]]],
-          people: [[[6, [live && live.portrayal, live && howCard, live && stanceCard]], [6, [live && live.voices]]]]
+          people: [[[6, [live && live.portrayal, stanceCard]], [6, [live && live.voices]]]]
         }
         // A row keeps its columns with cards. One column alone, or two that are 8 and 4 wide, share the 12 columns.
         const tabRows = (key) => layouts[key].map((row) => row.map(([span, cards]) => [span, cards.filter(Boolean)]).filter(([, cards]) => cards.length))
