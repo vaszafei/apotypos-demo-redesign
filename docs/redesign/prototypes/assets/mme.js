@@ -304,14 +304,14 @@
     const people = S.set.people.map((p, k) => ({ p, k, n: S.personQuotes[k] })).filter((r) => r.n > 0).sort((a, b) => b.n - a.n)
     return card('c-12', cardHead(t('mme.persons.title'), null, t('mme.persons.info')),
       people.length
-        ? h('ul', { class: 'mme-persons' }, people.map((r) => {
+        ? h('ul', { class: 'mme-persons', style: `--n:${people.length}` }, people.map((r) => {
           const tops = S.set.issues.map((x, i) => ({ x, n: S.quotesByIssue[i][r.k] })).filter((q) => q.n > 0).sort((a, b) => b.n - a.n).slice(0, 2)
           const all = sum(S.set.issues.map((_, i) => S.quotesByIssue[i][r.k])) || 1
           return h('li', { class: 'mme-person' },
             h('p', { class: 'mme-person-name' }, r.p.name),
             h('p', { class: 'mme-person-n' }, t('mme.persons.quotes', { n: fmt.int(r.n) })),
             h('p', { class: 'muted-text' }, [r.p.role, r.p.party].filter(Boolean).join(' · ')),
-            h('p', { class: 'mme-person-topics' }, tops.map((q) => `${name(q.x)} ${pctRound(q.n / all)}`).join(' · ')))
+            h('p', { class: 'mme-person-topics' }, tops.map((q) => h('span', {}, `${name(q.x)} ${pctRound(q.n / all)}`))))
         }))
         : emptyText(t('media2.empty.list')))
   }

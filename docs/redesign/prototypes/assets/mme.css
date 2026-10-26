@@ -49,13 +49,15 @@
 .mme-gap { margin-top: var(--space-4); }
 @media (max-width: 1023px) { .mme-topic-grid { grid-template-columns: 1fr; } .mme-share { max-height: none; } }
 
-/* The person cards. */
-.mme-persons { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
-.mme-person { padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-raised); font-size: var(--text-small); }
+/* The person cards: all the persons in one row on wide screens, two or more columns below. */
+.mme-persons { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+@media (min-width: 1280px) { .mme-persons { grid-template-columns: repeat(var(--n, 6), minmax(0, 1fr)); } }
+.mme-person { padding: var(--space-2); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-raised); font-size: var(--text-caption); }
 .mme-person p { margin: 0; }
-.mme-person-name { font-weight: 700; color: var(--ink); }
-.mme-person-n { font-size: var(--text-title); font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
-.mme-person-topics { margin-top: var(--space-2) !important; color: var(--text-primary); }
+.mme-person-name { font-size: var(--text-small); font-weight: 700; color: var(--ink); }
+.mme-person-n { font-size: var(--text-small); font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.mme-person-topics { margin-top: var(--space-1) !important; color: var(--text-primary); }
+.mme-person-topics span { display: block; }
 
 /* The page of one outlet. */
 .mme-ostats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-3); }
