@@ -1,8 +1,5 @@
 // Messages of Αρχική (home.js and index.html). Load after messages.js.
 Object.assign(window.MESSAGES.el, {
-  'home.hero.kicker': 'Αρχική',
-  'home.hero.lead': 'Μια εικόνα των ελληνικών μέσων: τι γράφτηκε, ποια ιστορία ξεχώρισε κάθε ημέρα και ποια θέματα ανεβαίνουν.',
-  'home.hero.meta': '{n} μέσα · ενημέρωση {date}',
   'home.stat.k01.avg': 'Μέσος όρος {n} την ημέρα',
   'home.day.title': 'Κορυφαία ιστορία της ημέρας',
   'home.day.info': 'Η ιστορία με τα περισσότερα άρθρα την ημέρα που διαλέξατε, στο ημερολόγιο ή στο γράφημα. Οι ιστορίες γενικών θεμάτων, όπως «Άλλα διεθνή», δεν μετράνε. Οι τίτλοι είναι δείγμα των άρθρων της ημέρας και οι σύνδεσμοι ανοίγουν τον ιστότοπο του μέσου.',
@@ -46,9 +43,6 @@ Object.assign(window.MESSAGES.el, {
 })
 
 Object.assign(window.MESSAGES.en, {
-  'home.hero.kicker': 'Home',
-  'home.hero.lead': 'A picture of the Greek media: what was written, which story stood out each day and which topics are rising.',
-  'home.hero.meta': '{n} outlets · updated {date}',
   'home.stat.k01.avg': 'Average {n} a day',
   'home.day.title': 'Top story of the day',
   'home.day.info': 'The story with the most articles on the day you picked, in the calendar or in the chart. Stories of general topics, such as “Other world news”, do not count. The headlines are a sample of the articles of the day and the links open the website of the outlet.',

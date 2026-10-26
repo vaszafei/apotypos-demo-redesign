@@ -126,7 +126,7 @@
     }
     const step = (dir) => h('button', { type: 'button', class: 'icon-button', 'aria-label': t(dir < 0 ? 'home.days.prev' : 'home.days.next'),
       onClick: () => list.scrollBy({ left: dir * list.clientWidth * 0.8, behavior: 'smooth' }) }, Icon(dir < 0 ? 'chevron-left' : 'chevron-right', 'icon'))
-    const node = card('home-calendar', cardHead(t('home.days.title'), h('div', { class: 'home-steps' }, step(-1), step(1)), t('home.days.info')), list)
+    const node = card('c-12 home-calendar', cardHead(t('home.days.title'), h('div', { class: 'home-steps' }, step(-1), step(1)), t('home.days.info')), list)
     requestAnimationFrame(() => center(selected))
     return {
       node,
@@ -173,7 +173,7 @@
   // The shortcuts to the analyses: the name, one line about it and an arrow.
   const ANALYSES = [['speeches', '/speeches'], ['pi', '/narrative'], ['greekturkish', '/war'], ['coverage', '/coverage'], ['france', '/france-riots']]
   function AnalysesCard () {
-    return card('', cardHead(t('home.analyses.title'), null, t('home.analyses.info')),
+    return card('c-12 home-analyses', cardHead(t('home.analyses.title'), null, t('home.analyses.info')),
       h('ul', { class: 'home-links' }, ANALYSES.map(([key, route]) => h('li', {},
         h('a', { href: Shell.hrefOf(route) }, h('span', { class: 'home-link-main' }, h('strong', {}, t(`tab.world.${key}`)), h('span', { class: 'muted-text' }, t(`home.analyses.${key}`))), Icon('chevron-right', 'icon icon-sm'))))))
   }

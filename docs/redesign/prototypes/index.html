@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="assets/dash.css?v=80">
   <link rel="stylesheet" href="assets/mme.css?v=33">
   <link rel="stylesheet" href="assets/date-range.css?v=4">
-  <link rel="stylesheet" href="assets/home.css?v=3">
+  <link rel="stylesheet" href="assets/home.css?v=4">
 </head>
 <body>
   <div id="app"></div>
@@ -18,7 +18,7 @@
   <script src="assets/messages.js?v=30"></script>
   <script src="assets/messages-v2.js?v=46"></script>
   <script src="assets/messages-mme.js?v=15"></script>
-  <script src="assets/messages-home.js?v=1"></script>
+  <script src="assets/messages-home.js?v=2"></script>
   <script src="assets/components.js?v=10"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
@@ -95,14 +95,6 @@
           const news = issueCounts.filter((x) => !x.issue.soft).sort((a, b) => b.count - a.count)
           const newsTotal = news.reduce((s, x) => s + x.count, 0)
 
-          const hero = card('hero home-hero',
-            h('div', { class: 'hero-main' },
-              h('p', { class: 'hero-kicker' }, t('home.hero.kicker')),
-              h('h2', { class: 'hero-title' }, t('home.title')),
-              h('p', { class: 'dcard-sub hero-lead' }, t('home.hero.lead')),
-              h('div', { class: 'hero-chips' },
-                h('span', { class: 'hero-period' }, h('strong', {}, fmt.period(lastValid.from, lastValid.to)), ' · ', t('home.hero.meta', { n: fmt.int(outletsActive), date: fmt.date(data.updatedAt) })))))
-
           const wide = (stat) => { stat.classList.remove('c-4'); return stat }
           const stats = [
             wide(Stat({ kpi: 'K01', label: t('home.k01'), value: fmt.int(collected), empty: !collected,
@@ -122,8 +114,7 @@
 
           const strip = Home.DayStrip({ dates, totals, i0, i1, selected, onPick: (i) => pick(i, 'strip') })
 
-          const left = h('div', { class: 'c-7 card-col card-col-fill' }, hero, h('div', { class: 'stats-2x2 home-stats' }, ...stats), strip.node)
-
+          
           const days = dates.slice(i0, i1 + 1)
           const daily = totals.slice(i0, i1 + 1)
           const avg = collected / len
@@ -146,7 +137,7 @@
 
           const topicsCard = card('c-7', cardHead(t('home.topics.title'), null, t('home.topics.note')),
             UI.DataTable({
-              rankColumn: true, emptyText: t('home.topics.empty'), pageSize: 14, moreStep: 8,
+              rankColumn: true, emptyText: t('home.topics.empty'), pageSize: 20, moreStep: 10,
               rows: news.filter((x) => x.count > 0),
               columns: [
                 { label: t('home.col.issue'), render: (r) => name(r.issue) },
@@ -156,9 +147,12 @@
               ]
             }))
 
-          const side = h('div', { class: 'c-5 card-col card-col-fill' }, highlights(), Home.AnalysesCard())
+          const statRow = h('div', { class: 'c-12 stats-2x2 home-stats' }, ...stats)
+          const main = h('div', { class: 'c-7 card-col card-col-fill' }, dailyCard, topicsCard)
+          const aside = h('div', { class: 'c-5 card-col card-col-fill' }, day, Home.TrendsCard({ home: data, i0, i1 }))
+          const hl = highlights()
           content.replaceChildren(Dash.TopBar({ title: t('home.title'), actions: [picker], quiet: true }),
-            h('div', { class: 'dash-grid home-grid' }, left, day, dailyCard, Home.TrendsCard({ home: data, i0, i1 }), topicsCard, side), protoNote())
+            h('div', { class: 'dash-grid home-grid' }, strip.node, statRow, main, aside, hl, Home.AnalysesCard()), protoNote())
         }
         draw()
       }
@@ -172,8 +166,7 @@
       const i1 = set.dates.indexOf(lastValid.to)
       if (i0 < 0 || i1 < i0) return null
       const el = Mme.HighlightsCard(Mme.summary(set, i0, i1))
-      el.classList.remove('c-12')
-      el.querySelector('.dcard-head').after(h('p', { class: 'dcard-sub' }, t('mme.home.note')))
+            el.querySelector('.dcard-head').after(h('p', { class: 'dcard-sub' }, t('mme.home.note')))
       return el
     }
 

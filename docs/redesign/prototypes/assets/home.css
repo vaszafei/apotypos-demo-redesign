@@ -1,7 +1,7 @@
-/* Αρχική: the title card with the four numbers, the top story of a day, the calendar of days, the trends and the shortcuts to the analyses. */
-.home-hero { justify-content: center; gap: var(--space-3); padding: 20px 24px 22px; border-top: 3px solid var(--ink); }
-.home-hero .hero-title { font-size: 30px; line-height: 1.15; letter-spacing: -0.015em; color: var(--ink); }
-.home-hero .hero-lead { max-width: 56ch; font-size: var(--text-small); line-height: 1.5; }
+/* Αρχική: the calendar of days, the four numbers, the top story of a day, the calendar of days, the trends and the shortcuts to the analyses. */
+.home-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1099px) { .home-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 519px) { .home-stats { grid-template-columns: minmax(0, 1fr); } }
 .home-stats .dstat { justify-content: center; }
 .home-stats .dstat-row { grid-template-columns: minmax(0, 1fr); gap: 2px; }
 .home-stats .dstat-row > svg, .home-stats .dstat-row > .hbar { display: block; margin-top: 4px; }
@@ -58,11 +58,11 @@
 .home-day-btn[aria-pressed="true"] .home-day-dow { color: var(--on-ink); opacity: 0.75; }
 .home-day-btn[aria-pressed="true"] .home-day-bar i { background: var(--on-ink); }
 
-/* The shortcuts to the analyses. */
-.home-links { margin: 0; padding: 0; list-style: none; }
-.home-links li { border-bottom: 1px solid var(--border); }
-.home-links li:last-child { border-bottom: 0; }
-.home-links a { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); padding: 10px 2px; color: var(--text-primary); text-decoration: none; }
+/* The shortcuts to the analyses: one row of tiles that wraps. */
+.home-links { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-3); }
+.home-links li { border: 1px solid var(--border); border-radius: 10px; }
+.home-links li:hover { border-color: var(--ink); }
+.home-links a { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); height: 100%; padding: 12px 14px; color: var(--text-primary); text-decoration: none; }
 .home-links a:hover strong, .home-links a:focus-visible strong { color: var(--accent); }
 .home-links a:hover .icon { transform: translateX(2px); }
 .home-links .icon { color: var(--text-secondary); transition: transform var(--motion-base) var(--ease-out); }
@@ -72,8 +72,6 @@
 
 @media (max-width: 1279px) { .home-grid > .c-5 { grid-column: span 12; } }
 @media (max-width: 719px) {
-  .home-hero { padding: 16px 16px 18px; }
-  .home-hero .hero-title { font-size: 24px; }
   .home-compare { grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
   .home-fact { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); }
   .home-fact dd { font-size: 16px; }
