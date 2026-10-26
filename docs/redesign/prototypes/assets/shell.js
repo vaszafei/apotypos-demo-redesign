@@ -114,8 +114,8 @@
   }
   setFont(readFont())
 
-  // Prototype only: the colorways for the decision of the project lead (tokens.css). ?theme= or the last choice sets it.
-  const THEMES = ['paper', 'fog', 'sage', 'terra', 'violet']
+  // Prototype only: the themes for the decision of the project lead (tokens.css). ?theme= or the last choice sets it.
+  const THEMES = ['paper', 'fog', 'terra', 'night', 'midnight']
   function readTheme () {
     const asked = new URLSearchParams(location.search).get('theme')
     let saved = null

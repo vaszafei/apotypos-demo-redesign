@@ -5,21 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=8">
-  <link rel="stylesheet" href="assets/app.css?v=27">
-  <link rel="stylesheet" href="assets/dash.css?v=79">
+  <link rel="stylesheet" href="assets/tokens.css?v=10">
+  <link rel="stylesheet" href="assets/app.css?v=29">
+  <link rel="stylesheet" href="assets/dash.css?v=80">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
-  <script src="assets/messages.js?v=29"></script>
+  <script src="assets/messages.js?v=30"></script>
   <script src="assets/messages-v2.js?v=46"></script>
   <script src="assets/messages-spread.js?v=16"></script>
   <script src="assets/components.js?v=9"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
   <script src="assets/spread.js?v=6"></script>
-  <script src="assets/shell.js?v=46"></script>
+  <script src="assets/shell.js?v=47"></script>
   <script src="data/stories.js?v=1"></script>
   <script src="data/storyDetail.js?v=1"></script>
   <script src="data/originality.js?v=1"></script>
@@ -71,7 +71,7 @@
           lift: { value: (a, b) => mx.lift(a, b), low: 1, high: Math.max(...pairsOfMatrix.map(([a, b]) => mx.lift(a, b))), text: (v) => `×${fmt.dec(v)}` }
         }
         const state = { sel: mx.ids[0], mode: 'share' }
-        const shade = (v) => { const m = MODES[state.mode]; return `color-mix(in srgb, var(--series-news) ${Math.round(8 + 92 * Math.max(0, (v - m.low) / (m.high - m.low)))}%, #ffffff)` }
+        const shade = (v) => { const m = MODES[state.mode]; return `color-mix(in srgb, var(--series-news) ${Math.round(8 + 92 * Math.max(0, (v - m.low) / (m.high - m.low)))}%, var(--surface-raised))` }
         const matrixHolder = h('div', { class: 'mx-wrap' })
         const panelHolder = h('div', {})
         const pick = (a) => { state.sel = a; draw() }
@@ -88,7 +88,7 @@
                 const m = MODES[state.mode]
                 const v = m.value(a, b)
                 const dark = (v - m.low) / (m.high - m.low) > 0.55
-                const cell = h('span', { class: `mx-cell${a === state.sel ? ' is-sel' : ''}`, style: `background:${shade(v)};color:${dark ? '#ffffff' : '#1f1f1f'}` }, a === state.sel ? (state.mode === 'share' ? String(Math.round(v * 100)) : fmt.dec(v)) : null)
+                const cell = h('span', { class: `mx-cell${a === state.sel ? ' is-sel' : ''}`, style: `background:${shade(v)};color:${dark ? '#ffffff' : 'var(--text-primary)'}` }, a === state.sel ? (state.mode === 'share' ? String(Math.round(v * 100)) : fmt.dec(v)) : null)
                 cell.dataset.a = a
                 cell.dataset.b = b
                 return cell

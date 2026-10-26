@@ -96,7 +96,7 @@
         if (smooth) d = smoothPath(pts, gapAt)
         else pts.forEach((p, i) => { if (p) d += `${d && pts[i - 1] && !gapAt.has(i) ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}` })
         svg.append(h('path', { d, fill: 'none', stroke: s.color, 'stroke-width': s.width || 2, 'stroke-linejoin': 'round', 'stroke-dasharray': s.dash || null }))
-        pts.forEach((p) => { if (p && s.dots !== false) svg.append(h('circle', { cx: p[0], cy: p[1], r: 3, fill: s.color, stroke: '#ffffff', 'stroke-width': 1.5 })) })
+        pts.forEach((p) => { if (p && s.dots !== false) svg.append(h('circle', { cx: p[0], cy: p[1], r: 3, fill: s.color, stroke: 'var(--surface-raised)', 'stroke-width': 1.5 })) })
         const last = pts.map((p, i) => [p, i]).filter(([p]) => p).pop()
         if (last) ends.push({ y: last[0][1], label: s.label, color: s.color })
       })
@@ -138,7 +138,7 @@
     const k = Math.min(1, Math.abs(v) / 0.6)
     const base = v < 0 ? [194, 59, 59] : [42, 98, 196]
     const mix = base.map((c) => Math.round(255 - (255 - c) * k * 0.85))
-    return { background: `rgb(${mix.join(',')})`, color: k > 0.6 ? '#ffffff' : 'var(--text-primary)' }
+    return { background: `rgb(${mix.join(',')})`, color: k > 0.6 ? '#ffffff' : '#1f1f1f' }
   }
 
   // A signed number with a real minus sign. Numbers always use the Greek style (C12).
