@@ -134,8 +134,15 @@
     const rows = S.stories.filter((s) => (generic || !s.generic) && s.issue >= 0 && S.hard[s.issue]).slice(0, 25)
     const shares = rows.flatMap((s) => cols.map((o) => s.per[o.k] / o.n))
     const maxShare = Math.max(...shares, 0.0001)
+    const lowest = Math.min(...shares.filter((v) => v > 0), maxShare)
+    // The dot grows with the square root of the share. The key shows the smallest and the largest dot of the card.
+    const dotSize = (share) => 3 + 11 * Math.sqrt(share / maxShare)
+    const dotKey = h('p', { class: 'dcard-sub mme-dot-key' }, h('span', { class: 'mme-dot', style: { width: `${dotSize(lowest)}px`, height: `${dotSize(lowest)}px` } }), ` ${t('mme.stories.key.low', { share: fmt.pct(lowest) })} · `,
+      h('span', { class: 'mme-dot', style: { width: `${dotSize(maxShare)}px`, height: `${dotSize(maxShare)}px` } }), ` ${t('mme.stories.key.high', { share: fmt.pct(maxShare) })}`)
     const toggle = h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: generic, onChange: (e) => onGeneric(e.target.checked) }), t('mme.stories.generic'))
-    const table = h('table', { class: 'matrix matrix-turned mme-dots' },
+    // The header is as tall as the longest outlet name, so the names never overlap or clip.
+    const head = Math.ceil(Math.max(...cols.map((o) => o.name.length), 0) * 6.4) + 14
+    const table = h('table', { class: 'matrix matrix-turned mme-dots', style: { '--mme-head': `${head}px` } },
       h('caption', { class: 'visually-hidden' }, t('mme.stories.title')),
       turnedHead(t('mme.stories.col'), ['n'], cols),
       h('tbody', {}, rows.map((s) => h('tr', {},
@@ -144,10 +151,10 @@
         cols.map((o) => {
           const n = s.per[o.k]
           const title = n ? t('mme.stories.cell', { outlet: o.name, story: name(s), n: fmt.int(n), share: fmt.pct(n / o.n) }) : t('mme.stories.cell.none', { outlet: o.name, story: name(s) })
-          const size = n ? 4 + 14 * Math.sqrt(n / o.n / maxShare) : 0
+          const size = n ? dotSize(n / o.n) : 0
           return h('td', { title, 'aria-label': title }, n ? h('span', { class: 'mme-dot', style: { width: `${size}px`, height: `${size}px` } }) : h('span', { class: 'mme-dot-none' }))
         })))))
-    return card('c-12', cardHead(t('mme.stories.title'), toggle, t('mme.stories.info')), rows.length ? matrixWrap(t('mme.stories.title'), table) : emptyText(t('media2.empty.list')))
+    return card('c-12', cardHead(t('mme.stories.title'), toggle, t('mme.stories.info')), rows.length ? [matrixWrap(t('mme.stories.title'), table), dotKey] : emptyText(t('media2.empty.list')))
   }
 
   // The color of a share in the agenda: a tint of the news blue, darker for a larger share. 20% or more is the full color.

@@ -19,9 +19,12 @@
 .mme-key-row { margin-bottom: var(--space-2); font-size: var(--text-caption); }
 
 /* Matrices: the stories × outlets dots, the agenda and the people. */
-.dash .mme-dots td, .dash .mme-people td, .dash .mme-heat td { min-width: 26px; padding: 0; text-align: center; }
-.dash .mme-dots thead th:first-child { width: 300px; }
-.dash .mme-dots tbody th { white-space: normal; padding: 3px var(--space-2); }
+.dash .mme-dots td, .dash .mme-people td, .dash .mme-heat td { min-width: 22px; padding: 0; text-align: center; }
+.dash .mme-dots td { height: 20px; }
+.dash .mme-dots thead th:first-child { width: 240px; }
+.dash .mme-dots.matrix-turned thead th:not(:first-child) { height: var(--mme-head, 112px); }
+.mme-dot-key { display: flex; align-items: center; gap: 4px; margin-top: var(--space-2); }
+.dash .mme-dots tbody th { white-space: normal; padding: 3px var(--space-2); line-height: 1.15; }
 .mme-story-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mme-story-sub { display: block; font-size: var(--text-caption); font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dash .mme-num-col { width: 64px; padding: 0 var(--space-2); text-align: right; font-weight: 600; }

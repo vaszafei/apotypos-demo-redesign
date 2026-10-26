@@ -7,20 +7,20 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=22">
-  <link rel="stylesheet" href="assets/dash.css?v=72">
-  <link rel="stylesheet" href="assets/mme.css?v=7">
+  <link rel="stylesheet" href="assets/dash.css?v=75">
+  <link rel="stylesheet" href="assets/mme.css?v=10">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
-  <script src="assets/messages.js?v=25"></script>
-  <script src="assets/messages-v2.js?v=34"></script>
-  <script src="assets/messages-spread.js?v=14"></script>
-  <script src="assets/messages-mme.js?v=6"></script>
+  <script src="assets/messages.js?v=27"></script>
+  <script src="assets/messages-v2.js?v=37"></script>
+  <script src="assets/messages-spread.js?v=15"></script>
+  <script src="assets/messages-mme.js?v=8"></script>
   <script src="assets/components.js?v=9"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
-  <script src="assets/mme.js?v=6"></script>
+  <script src="assets/mme.js?v=7"></script>
   <script src="assets/spread.js?v=6"></script>
   <script src="assets/shell.js?v=42"></script>
   <script src="data/stories.js?v=1"></script>
@@ -28,23 +28,21 @@
   <script src="data/groups.js?v=1"></script>
   <script src="data/mme.js?v=1"></script>
   <script>
-    // Stories: one page for all stories (APO-180). The cards show how stories spread across the ownership groups, and the table lists every story.
-    // A click on a column of the first card or on a group of the third card filters the table and the chart of days. The filter shows as a chip in the table card.
+    // Stories: one page for all stories (APO-180). The chart of days shows when stories start, and the table lists every story.
     // Two tabs (#62): Επισκόπηση (/stories) and Ανά μέσο (?tab=outlets, /stories/outlets) with the stories × outlets matrix.
     const { t, fmt, h, load, params } = App
     const tab = params.get('tab') === 'outlets' ? 'outlets' : 'overview'
-    const { reset, NO_GROUP, Spark, card, cardHead } = Dash
+    const { reset, NO_GROUP, card, cardHead } = Dash
     const list = load('stories', ['dates', 'issues', 'stories'], (b) => b.stories)
     const detail = load('storyDetail', ['outlets', 'stories'], (b) => b.stories)
     const groupsData = load('groups', ['groups'], (b) => b.groups)
-    // «Οι ιστορίες του διαστήματος» of the live page ΜΜΕ & πρόσωπα (data/mme.js), over its whole window.
+    // «Ιστορίες ανά μέσο», the stories × outlets matrix of the live page ΜΜΕ & πρόσωπα (data/mme.js), over its whole window.
     const mme = load('mme', ['sets'], (b) => Object.keys(b.sets))
     const mmeView = { generic: false }
     const colorOfGroup = Dash.groupColors(groupsData.data ? groupsData.data.groups : [])
     const STEP = 25
-    // The first page of the table is shorter, so the charts that filter it stay on the same screen (#62).
+    // The first page of the table is shorter, so it stays on the same screen as the chart of days (#62).
     const FIRST = 12
-    const MAX_GROUPS = 8
     // The 4 ways a story starts, from the first day with an outlet that has a group. The first 3 are teal and gray, so they do not use the colors of the groups.
     const TYPES = [
       ['together', 'var(--series-news)'],
@@ -60,16 +58,6 @@
         dates, series, height: 190, label: t('stories.daily.aria'),
         reference: { value: totals.reduce((a, b) => a + b, 0) / (totals.length || 1), label: t('find.avg', { n: fmt.int(Math.round(totals.reduce((a, b) => a + b, 0) / (totals.length || 1))) }) },
         tooltipOf: (i) => { const parts = series.filter((x) => x.values[i]).map((x) => `${x.name} ${x.values[i]}`).join(' · '); return `${t('stories.daily.tip', { date: fmt.date(dates[i]), n: fmt.int(totals[i]) })}${parts ? `: ${parts}` : ''}` }
-      })
-    }
-
-    // One column for each number of groups, from 1 to 8. The columns with an echo are in the color of the news and the others are gray. A click on a column selects it.
-    function ReachChart ({ counts, selected, onPick, label }) {
-      return UI.BarChart({
-        labels: counts.map((_, i) => String(i + 1)), values: counts, height: 190, label, axisLabel: t('stories.reach.axis'),
-        colorOf: (i) => (i + 1 >= Spread.ECHO_MIN ? 'var(--series-news)' : 'var(--bar-muted)'),
-        picked: selected === null ? null : selected - 1, onPick: (i) => onPick(i + 1),
-        tooltipOf: (i) => t('stories.reach.tip', { n: i + 1, stories: fmt.int(counts[i]) })
       })
     }
 
@@ -97,25 +85,12 @@
           const articles = s.days.reduce((sum, v, i) => (i % 2 ? sum + v : sum), 0)
           return { ...s, articles, start: s.days[0], end: s.days[s.days.length - 2], p: profileOf.get(s.id) }
         })
-        const daily = (s) => { const v = new Array(last + 1).fill(0); for (let i = 0; i < s.days.length; i += 2) v[s.days[i]] = s.days[i + 1]; return v }
-        const state = { reach: null, solo: null }
-
-        // The share of the stories that a group wrote together with other groups, in which it started alone and the others followed.
-        const soloRows = groups.map((g, i) => {
-          const wrote = stories.filter((s) => s.p.groupsAll.length >= 2 && s.p.groupsAll.includes(i))
-          const started = wrote.filter((s) => s.p.type === 'follow' && s.p.firstGroups[0] === i)
-          return { i, g, wrote: wrote.length, started: started.length, share: wrote.length ? started.length / wrote.length : 0 }
-        }).sort((a, b) => b.share - a.share)
-        const soloMax = Math.max(...soloRows.map((r) => r.share), 0.0001)
-        const reachCounts = Array.from({ length: MAX_GROUPS }, (_, k) => stories.filter((s) => s.p.reach === k + 1).length)
 
         const grid = h('div', { class: 'dash-grid story-top' })
-        const chip = (text, onClear) => h('button', { type: 'button', class: 'chip chip-sm chip-filter', 'aria-label': `${t('stories.filter.clear')}: ${text}`, onClick: onClear }, text, h('span', { 'aria-hidden': 'true' }, ' ×'))
 
         function draw () {
           reset()
-          const rows = stories.filter((s) => (state.reach === null || s.p.reach === state.reach)
-            && (state.solo === null || (s.p.type === 'follow' && s.p.firstGroups[0] === state.solo))).sort((a, b) => b.articles - a.articles || b.start - a.start)
+          const rows = stories.slice().sort((a, b) => b.articles - a.articles || b.start - a.start)
 
           const series = TYPES.map(([key, color]) => {
             const values = new Array(last + 1).fill(0)
@@ -126,45 +101,23 @@
           const dailyCard = card('c-5', cardHead(t('stories.daily.title'), null, t('stories.daily.info')), DailyChart({ series, dates: d.dates }),
             UI.Legend(series.map((x) => ({ label: x.name, color: x.color }))))
 
-          const filters = [
-            state.reach !== null ? chip(t('stories.filter.reach', { n: state.reach }), () => { state.reach = null; draw() }) : null,
-            state.solo !== null ? chip(t('stories.filter.solo', { name: groups[state.solo] }), () => { state.solo = null; draw() }) : null
-          ].filter(Boolean)
           const day = (i) => fmt.date(d.dates[i], { day: 'numeric', month: 'short' })
           const table = UI.DataTable({
             rows, rankColumn: true, pageSize: FIRST, moreStep: STEP, emptyText: t('media.empty'),
             columns: [
-              // The echo sits under the name: 4 or more groups wrote the story on one day.
-              { label: t('media.col.story'), render: (s) => h('div', { class: 'name-cell' }, UI.EntityLink({ type: 'story', key: String(s.id), label: name(s) }),
-                s.p.reach >= Spread.ECHO_MIN ? h('span', { class: 'reason' }, h('span', { class: 'chip chip-echo chip-sm' }, t('stories.reason.echo', { n: s.p.reach }))) : null) },
+              { label: t('media.col.story'), render: (s) => UI.EntityLink({ type: 'story', key: String(s.id), label: name(s) }) },
               { label: t('media.col.issue'), phone: false, render: (s) => h('span', { class: 'topic-cell' }, name(d.issues[s.issue])) },
               { label: t('stories.col.groups'), phone: false, render: (s) => {
                 const text = t('echoes.reach.aria', { n: s.p.peakGroups.length, total: groups.length })
-                return h('span', { class: 'nowrap' }, h('span', { class: 'reach', role: 'img', 'aria-label': text, title: text },
-                  groups.map((_, i) => (s.p.peakGroups.includes(i) ? h('span', { class: 'dot', style: `--dot:${colorOf(i)}` }) : h('span', { class: 'dot dot-none' })))), h('span', { class: 'reach-n' }, s.p.peakGroups.length))
+                return h('span', { class: 'nowrap reach', role: 'img', 'aria-label': text, title: text },
+                  groups.map((_, i) => (s.p.peakGroups.includes(i) ? h('span', { class: 'dot', style: `--dot:${colorOf(i)}` }) : h('span', { class: 'dot dot-none' }))))
               } },
-              { label: t('stories.col.type'), phone: false, render: (s) => h('span', { class: 'nowrap' }, t(`stories.type.${s.p.type}`)) },
               { label: t('stories.col.period'), phone: false, render: (s) => h('span', { class: 'nowrap' }, s.start === s.end ? day(s.start) : `${day(s.start)} → ${day(s.end)}`) },
-              { label: t('media.col.articles'), num: true, render: (s) => fmt.int(s.articles) },
-              { label: t('media2.col.life'), phone: false, render: (s) => Spark(daily(s), 0, last, t('media2.spark.articles'), { w: 100, hgt: 20 }) }
+              { label: t('media.col.articles'), num: true, render: (s) => fmt.int(s.articles) }
             ]
           })
-          const tableCard = card('c-12', cardHead(t('topics2.stories.title'), filters.length ? h('span', { class: 'legend-inline' }, filters) : null, t('topics2.stories.note', { n: fmt.int(stories.length) })),
-            h('p', { class: 'dcard-sub' }, rows.length === stories.length ? t('stories.count', { n: fmt.int(rows.length) }) : t('stories.count.of', { n: fmt.int(rows.length), total: fmt.int(stories.length) })), table)
-          const pickReach = (n) => { state.reach = state.reach === n ? null : n; draw() }
-          const echo = reachCounts.slice(Spread.ECHO_MIN - 1).reduce((a, b) => a + b, 0)
-          const allReach = reachCounts.reduce((a, b) => a + b, 0)
-          const reachCard = card('c-3', cardHead(allReach ? t('stories.reach.finding', { share: fmt.pct(echo / allReach), n: Spread.ECHO_MIN }) : t('stories.reach.title'), null, `${t('stories.reach.title')}. ${t('stories.reach.info', { min: Spread.ECHO_MIN })}`),
-            ReachChart({ counts: reachCounts, selected: state.reach, onPick: pickReach, label: t('stories.reach.aria') }),
-            UI.Legend([{ label: t('stories.reach.echo', { n: Spread.ECHO_MIN }), color: 'var(--series-news)' }, { label: t('stories.reach.noecho'), color: 'var(--bar-muted)' }]))
-          const pickSolo = (i) => { state.solo = state.solo === i ? null : i; draw() }
-          const soloCard = card('c-4', cardHead(soloRows[0]?.started ? t('stories.solo.finding', { name: soloRows[0].g, share: fmt.pct(soloRows[0].share) }) : t('stories.solo.title'), null, `${t('stories.solo.title')}. ${t('stories.solo.info')}`),
-            UI.BarList(soloRows.map((r) => ({
-              label: [h('span', { class: 'dot', style: `--dot:${colorOf(r.i)}` }), r.g], value: r.share, color: colorOf(r.i),
-              text: t('stories.solo.row', { share: fmt.pct(r.share), n: fmt.int(r.started) }),
-              title: t('stories.solo.tip', { name: r.g, started: fmt.int(r.started), wrote: fmt.int(r.wrote) }),
-              onClick: () => pickSolo(r.i), pressed: state.solo === r.i
-            })), { max: soloMax }))
+          const tableCard = card('c-7', cardHead(t('topics2.stories.title'), null, t('topics2.stories.note', { n: fmt.int(stories.length) })),
+            h('p', { class: 'dcard-sub' }, t('stories.count', { n: fmt.int(rows.length) })), table)
           // The stories × outlets matrix of ΜΜΕ & πρόσωπα, on Ανά μέσο. Its toggle draws only this card again.
           const mmeCard = h('div', { class: 'c-12 card-col' })
           if (tab === 'outlets' && mme.kind === 'data') {
@@ -174,7 +127,7 @@
             paintMme()
           }
           if (tab === 'outlets') grid.replaceChildren(mmeCard)
-          else grid.replaceChildren(reachCard, dailyCard, soloCard, tableCard)
+          else grid.replaceChildren(tableCard, dailyCard)
         }
         draw()
 

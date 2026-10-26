@@ -341,7 +341,6 @@ Object.assign(window.MESSAGES.en, {
 // Second pass of the tabs: the title card of Ιστορίες, the rings, and the difference bars of Ομοιότητα and Πρωτοτυπία. These keys replace the older keys of the same name.
 Object.assign(window.MESSAGES.el, {
   'stories.col.period': 'Περίοδος',
-  'stories.reason.echo': 'Ηχώ · {n} όμιλοι',
   'echoes.first.total': 'ιστορίες',
   'echoes.first.tip': '{name}: πρώτος σε {n} ιστορίες, {share}',
   'echoes.first.aria': 'Σε πόσες ιστορίες με ηχώ έγραψε πρώτος κάθε όμιλος',
@@ -363,7 +362,6 @@ Object.assign(window.MESSAGES.el, {
 })
 Object.assign(window.MESSAGES.en, {
   'stories.col.period': 'Period',
-  'stories.reason.echo': 'Echo · {n} groups',
   'echoes.first.total': 'stories',
   'echoes.first.tip': '{name}: first in {n} stories, {share}',
   'echoes.first.aria': 'In how many echo stories each group wrote first',
@@ -424,15 +422,8 @@ Object.assign(window.MESSAGES.en, {
   'originality.key.avg': 'Average {pct}'
 })
 
-// The page Ιστορίες after the merge of the tab Ηχώ: the cards of reach, days and start, and the spread types.
+// The page Ιστορίες: the chart of days, the spread types and the table. The card of who starts alone is on Ομοιότητα και πρωτοτυπία.
 Object.assign(window.MESSAGES.el, {
-  'stories.reach.title': 'Πόσοι όμιλοι γράφουν την ίδια ημέρα',
-  'stories.reach.info': 'Για κάθε ιστορία, ο μεγαλύτερος αριθμός ομίλων που έγραψαν την ίδια ημέρα. Από {min} ομίλους και πάνω η ιστορία έχει ηχώ. Οι μεγάλες ιστορίες έχουν σχεδόν πάντα πολλούς ομίλους, γι’ αυτό η ηχώ δείχνει κυρίως μέγεθος. Μετράνε μόνο τα μέσα με όμιλο στα δεδομένα. Πατήστε μια στήλη για να δείτε τις ιστορίες της.',
-  'stories.reach.axis': 'όμιλοι την ίδια ημέρα',
-  'stories.reach.tip': '{n} όμιλοι την ίδια ημέρα: {stories} ιστορίες',
-  'stories.reach.aria': 'Ιστορίες ανά αριθμό ομίλων που έγραψαν την ίδια ημέρα',
-  'stories.reach.echo': 'Ηχώ ({n} όμιλοι ή περισσότεροι)',
-  'stories.reach.noecho': 'Χωρίς ηχώ',
   'stories.daily.title': 'Νέες ιστορίες ανά ημέρα',
   'stories.daily.info': 'Κάθε στήλη είναι μία ημέρα και δείχνει τις ιστορίες που ξεκίνησαν εκείνη την ημέρα. Ταυτόχρονη: την πρώτη ημέρα έγραψαν 2 ή περισσότεροι όμιλοι. Με ακολουθία: την πρώτη ημέρα έγραψε ένας όμιλος και οι άλλοι ακολούθησαν αργότερα. Ένας όμιλος: μόνο ένας όμιλος έγραψε την ιστορία. Χωρίς όμιλο: κανένα μέσο με όμιλο στα δεδομένα.',
   'stories.daily.tip': '{date} · {n} νέες ιστορίες',
@@ -441,27 +432,14 @@ Object.assign(window.MESSAGES.el, {
   'stories.type.follow': 'Με ακολουθία',
   'stories.type.single': 'Ένας όμιλος',
   'stories.type.none': 'Χωρίς όμιλο',
-  'stories.solo.title': 'Ποιος ξεκινά μόνος',
-  'stories.solo.info': 'Από τις ιστορίες που έγραψε ο όμιλος μαζί με άλλους ομίλους, το μερίδιο στο οποίο ο όμιλος έγραψε πρώτος και μόνος, ενώ οι άλλοι ακολούθησαν αργότερα. Είναι ποσοστό των δικών του ιστοριών, ώστε οι μεγάλοι όμιλοι να μη φαίνονται πάντα πρώτοι. Πατήστε μια γραμμή για να δείτε τις ιστορίες.',
+  'stories.solo.title': 'Ξεκινά μόνος: ποιος όμιλος γράφει πρώτος',
+  'stories.solo.info': 'Από τις ιστορίες που έγραψε ο όμιλος μαζί με άλλους ομίλους, το μερίδιο στο οποίο ο όμιλος έγραψε πρώτος και μόνος, ενώ οι άλλοι ακολούθησαν αργότερα. Είναι ποσοστό των δικών του ιστοριών, ώστε οι μεγάλοι όμιλοι να μη φαίνονται πάντα πρώτοι.',
   'stories.solo.row': '{share} · {n}',
   'stories.solo.tip': '{name}: ξεκίνησε μόνος {started} από {wrote} ιστορίες',
   'stories.col.groups': 'Όμιλοι την ίδια ημέρα',
-  'stories.col.type': 'Πώς ξεκίνησε',
-  'stories.filter.reach': '{n} όμιλοι',
-  'stories.filter.solo': 'Ξεκινά μόνος: {name}',
-  'stories.filter.clear': 'Αφαίρεση φίλτρου',
   'stories.count': '{n} ιστορίες',
-  'stories.count.of': '{n} από {total} ιστορίες',
-  'stories.reason.echo': 'Ηχώ · {n} όμιλοι'
 })
 Object.assign(window.MESSAGES.en, {
-  'stories.reach.title': 'How many groups write on the same day',
-  'stories.reach.info': 'For each story, the largest number of groups that wrote it on the same day. With {min} groups or more the story has an echo. Large stories almost always have many groups, so the echo mostly shows size. Only outlets with a group in the data count. Select a column to see its stories.',
-  'stories.reach.axis': 'groups on the same day',
-  'stories.reach.tip': '{n} groups on the same day: {stories} stories',
-  'stories.reach.aria': 'Stories by the number of groups that wrote on the same day',
-  'stories.reach.echo': 'Echo ({n} groups or more)',
-  'stories.reach.noecho': 'No echo',
   'stories.daily.title': 'New stories per day',
   'stories.daily.info': 'Each column is one day and shows the stories that started on that day. Together: 2 or more groups wrote on the first day. Followed: one group wrote on the first day and the others followed later. One group: only one group wrote the story. No group: no outlet with a group in the data.',
   'stories.daily.tip': '{date} · {n} new stories',
@@ -470,16 +448,10 @@ Object.assign(window.MESSAGES.en, {
   'stories.type.follow': 'Followed',
   'stories.type.single': 'One group',
   'stories.type.none': 'No group',
-  'stories.solo.title': 'Who starts alone',
-  'stories.solo.info': 'Of the stories that the group wrote together with other groups, the share in which the group wrote first and alone, and the others followed later. It is a share of its own stories, so large groups do not always look first. Select a row to see the stories.',
+  'stories.solo.title': 'Starts alone: which group writes first',
+  'stories.solo.info': 'Of the stories that the group wrote together with other groups, the share in which the group wrote first and alone, and the others followed later. It is a share of its own stories, so large groups do not always look first.',
   'stories.solo.row': '{share} · {n}',
   'stories.solo.tip': '{name}: started alone {started} of {wrote} stories',
   'stories.col.groups': 'Groups on the same day',
-  'stories.col.type': 'How it started',
-  'stories.filter.reach': '{n} groups',
-  'stories.filter.solo': 'Starts alone: {name}',
-  'stories.filter.clear': 'Remove filter',
   'stories.count': '{n} stories',
-  'stories.count.of': '{n} of {total} stories',
-  'stories.reason.echo': 'Echo · {n} groups'
 })
