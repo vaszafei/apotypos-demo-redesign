@@ -70,7 +70,42 @@
   font-display: swap;
 }
 
-:root {
+@font-face {
+  font-family: "Noto Sans";
+  src: url("fonts/NotoSans-greek-latin.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Source Sans 3";
+  src: url("fonts/SourceSans3-greek-latin.woff2") format("woff2");
+  font-weight: 200 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geologica";
+  src: url("fonts/Geologica-greek-latin.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Sofia Sans";
+  src: url("fonts/SofiaSans-greek-latin.woff2") format("woff2");
+  font-weight: 1 1000;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Literata";
+  src: url("fonts/Literata-greek-latin.woff2") format("woff2");
+  font-weight: 200 900;
+  font-display: swap;
+}
+
+:root, [data-theme="paper"] {
   color-scheme: light;
 
   /* Type scale. No text is below 12 px (C13). */
@@ -120,7 +155,7 @@
   --space-5: 24px;
   --space-6: 32px;
   --radius: 8px;
-  --sidebar-width: 224px;
+  --sidebar-width: 208px;
   --header-height: 56px;
 
   /* Motion (#56). Motion shows what changed. It moves only transform and opacity. Reduced motion keeps the fades and drops the movement. */
@@ -146,3 +181,40 @@
 /* DejaVu Sans is the font of the logo. Ubuntu is the open font with Greek that is the most similar to it. */
 :root[data-font="dejavu"] { --font-text: "DejaVu Sans", system-ui, sans-serif; --font-heading: "DejaVu Sans", system-ui, sans-serif; }
 :root[data-font="ubuntu"] { --font-text: "Ubuntu", system-ui, sans-serif; --font-heading: "Ubuntu", system-ui, sans-serif; }
+/* Fonts that match the logo (DejaVu Sans): an open humanist sans with Greek, in the same weight. "literata" is the editorial pair, a serif for the headings. */
+:root[data-font="noto"] { --font-text: "Noto Sans", system-ui, sans-serif; --font-heading: "Noto Sans", system-ui, sans-serif; }
+:root[data-font="sourcesans"] { --font-text: "Source Sans 3", system-ui, sans-serif; --font-heading: "Source Sans 3", system-ui, sans-serif; }
+:root[data-font="geologica"] { --font-text: "Geologica", system-ui, sans-serif; --font-heading: "Geologica", system-ui, sans-serif; }
+:root[data-font="sofia"] { --font-text: "Sofia Sans", system-ui, sans-serif; --font-heading: "Sofia Sans", system-ui, sans-serif; }
+:root[data-font="literata"] { --font-text: "Source Sans 3", system-ui, sans-serif; --font-heading: "Literata", Georgia, serif; }
+
+/* Colorways for the decision of the project lead. "paper" is the first block of :root. A theme sets the surfaces, the text, the accent and the bars.
+   The swatches in the sidebar read the same blocks, so each swatch shows the card color and the accent of its theme. Each text color keeps 4.5 to 1 on its surface. */
+:root[data-theme="fog"], [data-theme="fog"] {
+  --surface-page: #eff3f6; --surface-card: #e2e9ee; --surface-sidebar: #fbfdfe;
+  --ink: #0e1a24; --text-primary: #34414d; --text-secondary: #566574;
+  --accent: #0a6c8f; --focus: #0a6c8f; --series-1: #1f7fa8; --series-news: #1f7fa8;
+  --border: #cbd6de; --sidebar-hover-bg: #e8eef2; --bar-track: #dfe7ec; --rule: #a9b8c3; --bar-muted: #c3d0d9;
+  --sidebar-text: var(--text-primary); --sidebar-label: var(--text-secondary); --sidebar-active-text: var(--ink);
+}
+:root[data-theme="sage"], [data-theme="sage"] {
+  --surface-page: #f1f3ea; --surface-card: #e4e8da; --surface-sidebar: #fbfcf7;
+  --ink: #14201a; --text-primary: #38453d; --text-secondary: #5a665e;
+  --accent: #2d6a43; --focus: #2d6a43; --series-1: #3c8b5c; --series-news: #3c8b5c;
+  --border: #ced5c1; --sidebar-hover-bg: #e9ede0; --bar-track: #e1e5d6; --rule: #b2baa2; --bar-muted: #cad1bb;
+  --sidebar-text: var(--text-primary); --sidebar-label: var(--text-secondary); --sidebar-active-text: var(--ink);
+}
+:root[data-theme="terra"], [data-theme="terra"] {
+  --surface-page: #f8f1e9; --surface-card: #efe3d5; --surface-sidebar: #fffdfa;
+  --ink: #1d1410; --text-primary: #4a3b33; --text-secondary: #6e5c52;
+  --accent: #a93d1a; --focus: #a93d1a; --series-1: #cf5b30; --series-news: #cf5b30;
+  --border: #dfcfbd; --sidebar-hover-bg: #f3e8db; --bar-track: #ecdfd0; --rule: #c4b09b; --bar-muted: #d9c8b4;
+  --sidebar-text: var(--text-primary); --sidebar-label: var(--text-secondary); --sidebar-active-text: var(--ink);
+}
+:root[data-theme="violet"], [data-theme="violet"] {
+  --surface-page: #f4f2f8; --surface-card: #e8e4f0; --surface-sidebar: #fdfcff;
+  --ink: #17132a; --text-primary: #3e3a52; --text-secondary: #615c78;
+  --accent: #5538c6; --focus: #5538c6; --series-1: #6a4fd8; --series-news: #6a4fd8;
+  --border: #d6d0e4; --sidebar-hover-bg: #ece8f4; --bar-track: #e3deed; --rule: #b8b0cc; --bar-muted: #cdc6de;
+  --sidebar-text: var(--text-primary); --sidebar-label: var(--text-secondary); --sidebar-active-text: var(--ink);
+}

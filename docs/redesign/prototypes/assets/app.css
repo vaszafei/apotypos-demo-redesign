@@ -40,30 +40,38 @@ button, input, select { font: inherit; color: inherit; }
 
 .sidebar-logo {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 28px 20px 20px;
+  padding: 24px 20px 16px;
 }
 
 
-.sidebar .nav-main { padding: var(--space-1) var(--space-3) var(--space-4); }
+.sidebar .nav-main { padding: var(--space-1) var(--space-2) var(--space-4); }
 
 .nav-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 
 .nav-link {
-  display: block; padding: 10px var(--space-3); border-radius: 6px;
-  font-size: 15px; line-height: 1.4; color: var(--sidebar-text); text-decoration: none;
+  position: relative; display: block; padding: 8px var(--space-3) 8px 20px; border-radius: 6px;
+  font-size: var(--text-small); line-height: 1.4; color: var(--sidebar-text); text-decoration: none;
 }
 .nav-link:hover { background: var(--sidebar-hover-bg); color: var(--sidebar-active-text); }
-/* The current item has a black line, like the slash of the logo and the divider. */
-.nav-link[aria-current="page"] { box-shadow: inset 3px 0 0 var(--ink); border-radius: 0 6px 6px 0; color: var(--sidebar-active-text); font-weight: 600; }
+/* The current item has the slash of the logo: the same slope (3 over 4) and the weight of a stem. */
+.nav-link[aria-current="page"] { color: var(--sidebar-active-text); font-weight: 600; }
+.nav-link[aria-current="page"]::before { content: ""; position: absolute; left: 8px; top: 50%; width: 3px; height: 18px; background: var(--ink); transform: translateY(-50%) skewX(-36.87deg); }
 
-.nav-footer { margin-top: auto; padding: var(--space-3); border-top: 1px solid var(--border); }
-.nav-footer .nav-link { padding: 8px var(--space-3); font-size: var(--text-small); }
-.sidebar-tools { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-3) var(--space-3) 0; }
-.sidebar .lang-switch { border-color: var(--border); }
-.sidebar .lang-switch button { color: var(--sidebar-text); }
+.nav-footer { margin-top: auto; padding: var(--space-3) var(--space-2) var(--space-4); border-top: 1px solid var(--border); }
+.nav-footer .nav-link { padding: 6px var(--space-3) 6px 20px; font-size: 13px; }
+/* A short divider with the weight of the slash separates the links from the settings. */
+.sidebar-tools { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-3) var(--space-3) 0; }
+.sidebar-tools::before { content: ""; width: 28px; height: 2px; background: var(--ink); }
+.sidebar .lang-switch { align-self: flex-start; border-color: var(--border); }
+.sidebar .lang-switch button { min-width: 32px; min-height: 26px; font-size: var(--text-caption); color: var(--sidebar-text); }
 .sidebar .lang-switch button[aria-pressed="true"] { background: var(--ink); color: #ffffff; }
-.font-switch { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-3) var(--space-3) var(--space-1); font-size: var(--text-caption); color: var(--sidebar-text); }
-.font-switch select { min-height: 36px; padding: 0 var(--space-2); border: 1px solid var(--border); border-radius: 6px; background: #ffffff; color: var(--text-primary); font-size: var(--text-small); }
+.font-switch, .theme-switch { display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--text-caption); color: var(--sidebar-text); }
+.font-switch select { min-height: 32px; padding: 0 var(--space-2); border: 1px solid var(--border); border-radius: 6px; background: #ffffff; color: var(--text-primary); font-size: var(--text-small); }
+/* Each swatch reads the tokens of its own theme (tokens.css): the card color and the accent. */
+.theme-swatches { display: flex; gap: var(--space-2); padding: 3px; }
+.theme-swatch { width: 22px; height: 22px; padding: 0; border: 1px solid var(--border); border-radius: 50%; background: linear-gradient(135deg, var(--surface-card) 50%, var(--accent) 50%); cursor: pointer; }
+.theme-swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--surface-sidebar), 0 0 0 3.5px var(--ink); }
+@media (pointer: coarse) { .sidebar .lang-switch button { min-height: 36px; } .theme-swatch { width: 28px; height: 28px; } }
 
 /* Tab bar: the tabs of the sidebar item. It scrolls inside its own container on a phone. */
 .section-tabs { background: var(--surface-page); padding: var(--space-2) var(--space-6); overflow-x: auto; }
@@ -184,7 +192,7 @@ button, input, select { font: inherit; color: inherit; }
 .icon-button.menu-button, .icon-button.sidebar-close { display: none; }
 
 .logo-link { display: inline-flex; align-items: center; color: inherit; text-decoration: none; }
-.logo-img { display: block; width: 184px; max-width: 100%; height: auto; }
+.logo-img { display: block; width: 168px; max-width: 100%; height: auto; }
 .breadcrumbs { width: 100%; max-width: 1240px; padding: var(--space-5) var(--space-6) 0; }
 .breadcrumbs ol { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); list-style: none; margin: 0; padding: 0; font-size: var(--text-small); }
 .breadcrumbs li { display: flex; align-items: center; gap: var(--space-1); }

@@ -68,7 +68,7 @@
       ['pi', '/narrative', [['pi.overview', '/narrative'], ['gaza', '/gaza'], ['israel', '/israel'], ['language', '/gaza-language']]],
       ['greekturkish', '/war'], ['coverage', '/coverage'], ['france', '/france-riots']] }
   ]
-  const FOOTER = [['methodology', '/methodology'], ['about', '/about'], ['pages', null]]
+  const FOOTER = [['methodology', '/methodology'], ['about', '/about']]
 
   const hasText = (key) => key in window.MESSAGES.el
   const under = (route, base) => route === base || (base !== '/' && route.startsWith(base + '/'))
@@ -101,7 +101,7 @@
   const smallScreen = window.matchMedia('(max-width: 1023px)')
 
   // Prototype only: the font candidates for the decision of the project lead. ?font= or the last choice sets the font.
-  const FONTS = [['plex', 'IBM Plex Sans'], ['manrope', 'Manrope'], ['commissioner', 'Commissioner'], ['inter', 'Inter + Source Serif 4'], ['dejavu', 'DejaVu Sans (λογότυπο)'], ['ubuntu', 'Ubuntu']]
+  const FONTS = [['plex', 'IBM Plex Sans'], ['manrope', 'Manrope'], ['commissioner', 'Commissioner'], ['inter', 'Inter + Source Serif 4'], ['dejavu', 'DejaVu Sans (λογότυπο)'], ['ubuntu', 'Ubuntu'], ['noto', 'Noto Sans'], ['sourcesans', 'Source Sans 3'], ['geologica', 'Geologica'], ['sofia', 'Sofia Sans'], ['literata', 'Source Sans 3 + Literata']]
   function readFont () {
     const asked = new URLSearchParams(location.search).get('font')
     let saved = null
@@ -113,6 +113,20 @@
     try { localStorage.setItem('proto-font', key) } catch {}
   }
   setFont(readFont())
+
+  // Prototype only: the colorways for the decision of the project lead (tokens.css). ?theme= or the last choice sets it.
+  const THEMES = ['paper', 'fog', 'sage', 'terra', 'violet']
+  function readTheme () {
+    const asked = new URLSearchParams(location.search).get('theme')
+    let saved = null
+    try { saved = localStorage.getItem('proto-theme') } catch {}
+    return [asked, saved].find((k) => THEMES.includes(k)) || 'paper'
+  }
+  function setTheme (key) {
+    document.documentElement.dataset.theme = key
+    try { localStorage.setItem('proto-theme', key) } catch {}
+  }
+  setTheme(readTheme())
 
   // The unified header (v2) is the default. ?header=v1 shows the old header for comparison; ?header= or the last choice sets it.
   // v2: the top bar holds only the back button and the search. The page head under it holds the tabs, the page actions and the sub-tabs.
@@ -459,7 +473,7 @@
       const navLink = ({ key, href, current }) =>
         h('li', {}, h('a', { class: 'nav-link', href, 'aria-current': current ? 'page' : null }, t(`nav.${key}`)))
       const mainLinks = NAV.map((n) => navLink({ key: n.key, href: hrefOf(n.tabs[0][1]), current: n === item }))
-      const footerLinks = FOOTER.map(([key, r]) => navLink({ key, href: r ? hrefOf(r) : 'pages.html', current: key === id }))
+      const footerLinks = FOOTER.map(([key, r]) => navLink({ key, href: hrefOf(r), current: key === id }))
 
       const langSwitch = h('div', { class: 'lang-switch', role: 'group', 'aria-label': t('shell.lang') },
         [['el', 'ΕΛ'], ['en', 'EN']].map(([value, label]) => h('button', {
@@ -471,14 +485,21 @@
         h('select', { id: 'font-switch', onChange: (e) => setFont(e.target.value) },
           FONTS.map(([key, label]) => h('option', { value: key, selected: document.documentElement.dataset.font === key }, label))))
 
+      const themeSwitch = h('div', { class: 'theme-switch' }, h('span', { id: 'theme-label' }, t('shell.theme')),
+        h('div', { class: 'theme-swatches', role: 'group', 'aria-labelledby': 'theme-label' },
+          THEMES.map((key) => h('button', {
+            type: 'button', class: 'theme-swatch', 'data-theme': key, title: t(`theme.${key}`), 'aria-label': t(`theme.${key}`),
+            'aria-pressed': String(document.documentElement.dataset.theme === key),
+            onClick: () => { setTheme(key); document.querySelectorAll('.theme-swatch').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.theme === key))) }
+          }))))
+
       const closeButton = h('button', { type: 'button', class: 'icon-button sidebar-close', 'aria-label': t('shell.close'), onClick: () => setDrawer(false) }, Icon('x-mark'))
       const sidebar = h('nav', { class: 'sidebar', id: 'sidebar', 'aria-label': t('shell.nav') },
         h('div', { class: 'sidebar-logo' }, h('a', { class: 'logo-link', href: 'index.html' }, h('img', { class: 'logo-img', src: 'assets/logo.svg?v=6', alt: t('site.name'), width: 335, height: 141 })), closeButton),
         h('ul', { class: 'nav-list nav-main' }, mainLinks),
         h('div', { class: 'nav-footer' },
           h('ul', { class: 'nav-list', 'aria-label': t('section.footer') }, footerLinks),
-          h('div', { class: 'sidebar-tools' }, langSwitch),
-          fontSwitch))
+          h('div', { class: 'sidebar-tools' }, langSwitch, themeSwitch, fontSwitch)))
 
       const menuButton = h('button', { type: 'button', class: 'icon-button menu-button', 'aria-label': t('shell.menu'), 'aria-controls': 'sidebar', 'aria-expanded': 'false', onClick: () => setDrawer(true) }, Icon('bars-3'))
 
