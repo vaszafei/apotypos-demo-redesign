@@ -113,3 +113,36 @@
   .mme-rank .table-wrap { max-height: 560px; overflow-y: auto; }
   .mme-rank .data-table thead th { position: sticky; top: 0; z-index: 1; background: var(--surface-raised); }
 }
+/* The latest articles scroll inside their card; the card is as tall as the title card beside it. */
+.outlet-latest { display: flex; flex-direction: column; }
+.latest-scroll { position: relative; flex: 1; min-height: 160px; }
+.latest-scroll > ul { position: absolute; inset: 0; overflow-y: auto; padding-right: var(--space-2); }
+.latest-scroll .plain-list li:last-child { border-bottom: 0; }
+@media (max-width: 1279px) { .outlet-card, .outlet-latest { grid-column: span 12; } .latest-scroll { min-height: 320px; } }
+/* The related outlets: the pie, and the list that is its text. */
+.rose-slice:hover { opacity: 0.85; }
+.rose-body { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); }
+.rose-body > .fit { flex: 1 1 220px; max-width: 320px; min-width: 0; }
+.rose-legend { flex: 1 1 220px; min-width: 0; margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.rose-legend li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: var(--space-2); align-items: baseline; font-size: var(--text-small); }
+.rose-swatch { width: 10px; height: 10px; border-radius: 2px; align-self: center; }
+.rose-name { display: flex; flex-wrap: nowrap; align-items: baseline; gap: 2px var(--space-2); min-width: 0; }
+.rose-name > a { flex: none; white-space: nowrap; }
+.rose-name .muted-text { font-size: var(--text-caption); }
+.rose-legend .row-value { color: var(--text-secondary); font-size: var(--text-caption); font-variant-numeric: tabular-nums; }
+/* Μέσα › one outlet: the four numbers are a narrow column, so the number, its rank and its small chart are one under the other, centered in the card. */
+.outlet-stats .dstat { justify-content: center; }
+.outlet-stats .dstat-row { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+.outlet-stats .dstat-row > svg { display: block; margin-top: 2px; }
+.outlet-stats .dstat-sub:empty { display: none; }
+@media (max-width: 1279px) { .outlet-stats .dstat-row { grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-3); } }
+/* The name of the outlet and its group are text, not a number: smaller, and they wrap. */
+.outlet-stats .dstat-value.is-text { font-size: 17px; line-height: 1.25; overflow-wrap: anywhere; }
+.outlet-stats .dstat-value a { color: inherit; }
+.rose-group { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-caption); color: var(--text-secondary); }
+.rose-group a { display: inline; color: inherit; }
+/* The outlet card: the small cards inside it are flat, the group card takes both columns. */
+.outlet-card { display: flex; flex-direction: column; }
+.outlet-card .outlet-stats { grid-auto-rows: auto; align-content: start; }
+.outlet-card .dstat { box-shadow: none; border: 1px solid var(--border); background: var(--surface-page); }
+.outlet-card .dstat.is-wide { grid-column: 1 / -1; }

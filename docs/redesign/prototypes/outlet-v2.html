@@ -6,23 +6,23 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
-  <link rel="stylesheet" href="assets/app.css?v=22">
+  <link rel="stylesheet" href="assets/app.css?v=25">
   <link rel="stylesheet" href="assets/dash.css?v=79">
-  <link rel="stylesheet" href="assets/mme.css?v=15">
+  <link rel="stylesheet" href="assets/mme.css?v=27">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=28"></script>
-  <script src="assets/messages-v2.js?v=37"></script>
+  <script src="assets/messages-v2.js?v=43"></script>
   <script src="assets/messages-spread.js?v=16"></script>
   <script src="assets/messages-mme.js?v=10"></script>
   <script src="assets/components.js?v=9"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
   <script src="assets/spread.js?v=6"></script>
-  <script src="assets/entity-cards.js?v=5"></script>
-  <script src="assets/mme.js?v=9"></script>
+  <script src="assets/entity-cards.js?v=7"></script>
+  <script src="assets/mme.js?v=12"></script>
   <script src="assets/shell.js?v=44"></script>
   <script src="data/media.js"></script>
   <script src="data/home.js"></script>
@@ -32,12 +32,12 @@
   <script src="data/outlet.js"></script>
   <script src="data/mme.js?v=1"></script>
   <script>
-    // Media, page of one outlet: /outlet/<slug>. It has the structure of the Story page: a title card on the left, the cards in two columns, no tab bar, no breadcrumbs.
+    // Media, page of one outlet: /outlet/<slug>. The four numbers 2×2 and the latest articles on the Επισκόπηση tab, then the cards of the tab in two columns. Tabs: Επισκόπηση, Θέματα, Ιστορίες, Στάση και πρόσωπα.
     // The page is open at ?slug=<slug> (Rosa.gr when there is none). All 36 outlets of the snapshot work.
     // The 29 outlets of the live page ΜΜΕ & πρόσωπα also get its profile cards (data/mme.js, whole window): the numbers with ranks, the weekly agenda,
     // the stories it pushes or skips, the stance by topic, the frames, whom it quotes, how it presents the people and the newest headlines.
     const { t, fmt, h, load, params } = App
-    const { reset, NO_GROUP, Spark, card, cardHead } = Dash
+    const { reset, NO_GROUP, Spark, card, cardHead, Stat } = Dash
     const media = load('media', ['dates', 'outlets', 'outletDaily', 'issues'], (b) => b.outlets)
     const home = load('home', ['outlets'], (b) => b.outlets)
     const list = load('stories', ['issues', 'stories'], (b) => b.stories)
@@ -49,7 +49,7 @@
     const slug = params.get('slug') || '17661f5754'
     const outlet = media.data ? media.data.outlets.find((o) => o.slug === slug) : null
     const TOPICS = 10
-    const SIMILAR = 5
+    const SIMILAR = 12
     const STORIES = 8
     const MIN_SHARED = 10
 
@@ -119,7 +119,12 @@
         const record = group ? groupsData.data.groups.find((g) => g.name === group) : null
         const groupColor = (g) => (g && colorOfGroup.get(g)) || NO_GROUP
 
-        const dailyCard = Entity.DailyCard({ dates, daily: m.outletDaily[k], topicDays, issues: d.issues, info: t('outlet2.daily.info') })
+        const makeDaily = (height) => {
+          const el = Entity.DailyCard({ dates, daily: m.outletDaily[k], topicDays, issues: d.issues, info: t('outlet2.daily.info'), topics: false, height })
+          el.classList.replace('c-12', 'c-9')
+          return el
+        }
+        const dailyCard = makeDaily()
 
         // The topics of the stories of the outlet, against the topics of all outlets. The topic of the catch-all rows does not count.
         const mineTotal = sum(topicMine.filter((_, i) => !d.issues[i].catchAll))
@@ -183,28 +188,14 @@
         } : null
         const liveHeadlines = MS ? Mme.Headlines(mset, mk) : []
 
-        // The title card: the outlet, its period once, and one line of facts. The live numbers with their ranks join the facts when the outlet has them.
-        const facts = MS ? Mme.outletFacts(MS, mk) : null
-        const titleCard = Entity.TitleCard({
-          kind: t('hero.kind.outlet'),
-          title: outlet.name,
-          meta: `${dayLabel(start)} → ${fmt.date(dates[end])} · ${t('entity.fact.days', { n: end - start + 1 })}`,
-          facts: [
-            { label: t('entity.fact.group'), value: record ? UI.EntityLink({ type: 'group', key: record.slug, label: group }) : t('story.nogroup') },
-            outlet.owner ? { label: t('entity.fact.owner'), value: outlet.owner } : null,
-            { label: t('entity.fact.articles'), value: fmt.int(collectedTotal), spark: Spark(collected, start, end, t('outlet2.daily.title'), { w: 56, hgt: 16 }) },
-            { label: t('entity.fact.stories'), value: fmt.int(mine.length) },
-            facts && facts.news, facts && facts.clickbait
-          ]
-        })
-
         const headlines = sample.kind === 'data' && sample.data.slug === slug ? sample.data.headlines : []
-        const headlinesCard = liveHeadlines.length
-          ? card('c-12', cardHead(t('outlet2.headlines.title'), null, t('mme.o.headlines.info')), h('ul', { class: 'plain-list' }, liveHeadlines))
-          : card('c-12', cardHead(t('outlet2.headlines.title'), null, t('outlet2.headlines.info')),
-          headlines.length
-            ? h('ul', { class: 'plain-list' }, headlines.map((x) => h('li', {}, App.safeUrl(x.url) ? h('a', { href: App.safeUrl(x.url), rel: 'noopener', target: '_blank' }, x.title) : x.title)))
-            : h('p', { class: 'dcard-empty' }, t('outlet2.headlines.empty')))
+        // The newest articles, newest first, in a list that scrolls inside its card. It sits next to the title card, so the card is as tall as the title card.
+        const latestCard = card('c-6 outlet-latest', cardHead(t('outlet2.latest.title'), null, liveHeadlines.length ? t('mme.o.headlines.info') : t('outlet2.headlines.info')),
+          liveHeadlines.length
+            ? h('div', { class: 'latest-scroll' }, h('ul', { class: 'plain-list' }, liveHeadlines))
+            : headlines.length
+              ? h('div', { class: 'latest-scroll' }, h('ul', { class: 'plain-list' }, headlines.map((x) => h('li', {}, App.safeUrl(x.url) ? h('a', { href: App.safeUrl(x.url), rel: 'noopener', target: '_blank' }, x.title) : x.title))))
+              : h('p', { class: 'dcard-empty' }, t('outlet2.headlines.empty')))
 
         // One card for the related outlets: the other outlets of the group and the outlets that write the same stories. The dot is the group of the row outlet.
         // The similarity is the shared stories over the stories of either outlet. A pair needs 10 shared stories, so a peer of the group with fewer shows a dash.
@@ -216,22 +207,104 @@
           const p = pairOf.get(i)
           return { slug: o.slug, name: o.name, group: o.group, same: Boolean(group) && o.group === group, shared: p ? p.shared : 0, score: p && p.shared >= MIN_SHARED ? p.score : null }
         }).sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || b.shared - a.shared)
-        const topScore = Math.max(...related.map((r) => r.score || 0), 0.0001)
+        // A pie where a slice is as wide as the similarity and reaches as far as it: the 12 most similar outlets. The slice color is the group of the outlet, as everywhere else.
+        // The list under the pie is the text of the chart: the outlet, its group, the shared stories and the similarity. Outlets with fewer than 10 shared stories have no slice.
+        const ROSE = 12
+        const slices = related.filter((r) => r.score !== null).slice(0, ROSE)
+        const unscored = related.filter((r) => r.score === null)
+        function RoseChart (rows) {
+          return Dash.fit((holder, width) => {
+            const size = Math.min(width, 340)
+            const R = size / 2 - 30
+            const cx = width / 2
+            const cy = size / 2
+            const total = sum(rows.map((r) => r.score))
+            const top = Math.max(...rows.map((r) => r.score))
+            const pt = (r, a) => [cx + r * Math.cos(a), cy + r * Math.sin(a)]
+            const svg = h('svg', { class: 'chart', width, height: size, viewBox: `0 0 ${width} ${size}`, 'aria-hidden': 'true' })
+            let a0 = -Math.PI / 2
+            rows.forEach((r) => {
+              const sweep = (r.score / total) * Math.PI * 2
+              const a1 = a0 + sweep
+              const rad = R * (r.score / top)
+              const [x0, y0] = pt(rad, a0)
+              const [x1, y1] = pt(rad, a1)
+              const d = rows.length === 1 ? `M ${cx - rad} ${cy} a ${rad} ${rad} 0 1 0 ${rad * 2} 0 a ${rad} ${rad} 0 1 0 ${-rad * 2} 0 Z` : `M ${cx} ${cy} L ${x0} ${y0} A ${rad} ${rad} 0 ${sweep > Math.PI ? 1 : 0} 1 ${x1} ${y1} Z`
+              svg.append(h('path', { class: 'rose-slice', d, fill: groupColor(r.group), stroke: 'var(--surface-raised)', 'stroke-width': 2, 'stroke-linejoin': 'round' },
+                h('title', {}, `${r.name}: ${fmt.pct(r.score)} · ${t('outlet2.related.row', { shared: fmt.int(r.shared) })}`)))
+              // A narrow slice has no label of its own (it would sit on its neighbors): its value is in the list under the pie.
+              if (sweep >= 0.4) {
+                const mid = a0 + sweep / 2
+                const [lx, ly] = pt(rad + 10, mid)
+                const side = Math.cos(mid)
+                svg.append(h('text', { x: lx, y: ly + 4, 'text-anchor': side > 0.3 ? 'start' : side < -0.3 ? 'end' : 'middle' }, fmt.pct(r.score)))
+              }
+              a0 = a1
+            })
+            holder.replaceChildren(svg)
+          })
+        }
+        const slugOfGroup = new Map(groupsData.data.groups.map((g) => [g.name, g.slug]))
+        const roseLegend = h('ul', { class: 'rose-legend' }, slices.map((r) => h('li', { title: t('outlet2.related.row', { shared: fmt.int(r.shared) }) },
+          h('span', { class: 'rose-swatch', style: `background:${groupColor(r.group)}`, 'aria-hidden': 'true' }),
+          h('span', { class: 'rose-name' }, UI.EntityLink({ type: 'outlet', key: r.slug, label: r.name }),
+            h('span', { class: 'rose-group', title: r.group || t('story.nogroup') }, '/ ', r.group && slugOfGroup.has(r.group) ? UI.EntityLink({ type: 'group', key: slugOfGroup.get(r.group), label: r.group }) : r.group || t('story.nogroup'))),
+          h('span', { class: 'row-value' }, fmt.pct(r.score)))))
         const relatedCard = card('c-12', cardHead(t('outlet2.related.title'), null, t('outlet2.related.info')),
           related.length
-            ? UI.BarList(related.map((r) => ({
-              label: h('span', { class: 'related-name' }, h('span', { class: 'dot', style: `--dot:${groupColor(r.group)}` }), UI.EntityLink({ type: 'outlet', key: r.slug, label: r.name }), r.same ? h('span', { class: 'chip chip-sm' }, t('outlet2.related.same')) : null),
-              sub: t('outlet2.related.row', { shared: fmt.int(r.shared) }),
-              value: r.score || 0, text: r.score === null ? '—' : fmt.pct(r.score)
-            })), { max: topScore })
+            ? [slices.length ? h('div', { class: 'rose-body' }, RoseChart(slices), roseLegend) : null,
+              unscored.length ? h('p', { class: 'dcard-sub' }, `${t('outlet2.related.few')} `, unscored.map((r, i) => [i ? ', ' : '', UI.EntityLink({ type: 'outlet', key: r.slug, label: r.name })])) : null]
             : h('p', { class: 'dcard-empty' }, t('outlet2.related.empty')))
 
-        // The title card is the first card of the main column on the left. The main cards are under it, and the lists are on the right. On a narrow screen the columns join in one.
-        const at = (n, el) => { el.style.order = n; return el }
-        content.replaceChildren(h('div', { class: 'dash-grid story-grid entity-grid' },
-          h('div', { class: 'card-col c-8 story-col' }, at(0, titleCard), at(2, dailyCard), live && at(3, live.weekly), at(4, topicsCard), at(5, howCard),
-            live && at(6, live.frames), live && at(7, live.stance), at(8, storiesCard), live && at(9, live.portrayal)),
-          h('div', { class: 'card-col c-4 story-col' }, at(5, stanceCard), at(10, relatedCard), live && at(11, live.pushSkip[0]), live && at(12, live.pushSkip[1]), live && at(13, live.voices), at(14, headlinesCard))), protoNote())
+        // The outlet card (its group and the numbers inside it) is on the left of the daily chart. The live numbers with their ranks come from ΜΜΕ & πρόσωπα;
+        // an outlet that is not in it gets the numbers of the groups file, with no rank.
+        const facts = MS ? Mme.outletFacts(MS, mk) : null
+        const fileNews = mineFile && mineFile.analysed ? { label: t('outlet2.how.news'), value: fmt.pct(mineFile.news / mineFile.analysed), sub: '' } : null
+        const fileClick = mineFile && mineFile.cbKnown ? { label: t('outlet2.how.clickbait'), value: fmt.pct(mineFile.cbYes / mineFile.cbKnown), sub: '' } : null
+        const wide = (stat) => { stat.classList.remove('c-4'); return stat }
+        const factStat = (f) => (f ? wide(Stat({ label: f.label, value: f.value, sub: f.sub })) : null)
+        // One card with the outlet as its title (the period is in its info), and the group and the numbers in small cards inside it. The group card is as wide as the card.
+        const named = (stat) => { stat.querySelector('.dstat-value').classList.add('is-text'); return stat }
+        const groupStat = named(wide(Stat({ label: t('entity.fact.group'), value: record ? UI.EntityLink({ type: 'group', key: record.slug, label: group }) : t('story.nogroup'), sub: outlet.owner ? `${t('entity.fact.owner')}: ${outlet.owner}` : '' })))
+        groupStat.classList.add('is-wide')
+        const statGrid = card('c-3 outlet-card', cardHead(outlet.name, null, `${dayLabel(start)} → ${fmt.date(dates[end])} · ${t('entity.fact.days', { n: end - start + 1 })}`),
+          h('div', { class: 'stats-2x2 outlet-stats' },
+            groupStat,
+            wide(Stat({ label: t('entity.fact.articles'), value: fmt.int(collectedTotal), sub: '', viz: Spark(collected, start, end, t('outlet2.daily.title'), { w: 56, hgt: 16 }) })),
+            wide(Stat({ label: t('entity.fact.stories'), value: fmt.int(mine.length), sub: '' })),
+            factStat(facts ? facts.news : fileNews), factStat(facts ? facts.clickbait : fileClick)))
+
+        // The tabs: each card has one tab. A tab is rows of one, two or three columns (spans of 12), and the last card of a column takes the height that is left.
+        // The tabs with no cards are not shown (the people and the topics of the live page are for the outlets of ΜΜΕ & πρόσωπα only).
+        // The outlets of ΜΜΕ & πρόσωπα have the live cards. The others have the two cards of the groups file, and those stay on the first tab.
+        // The outlets of ΜΜΕ & πρόσωπα have the live cards. The others have the two cards of the groups file only.
+        const layouts = {
+          overview: [[[6, [relatedCard]], [6, [latestCard]]]],
+          topics: [[[12, [live && live.weekly]]], [[12, [topicsCard]]], [[12, [live && live.frames]]], [[12, [live && live.stance]]]],
+          stories: [[[12, [storiesCard]]], [[6, [live && live.pushSkip[0]]], [6, [live && live.pushSkip[1]]]]],
+          people: [[[6, [live && live.portrayal, howCard, stanceCard]], [6, [live && live.voices]]]]
+        }
+        // A row keeps its columns with cards. One column alone, or two that are 8 and 4 wide, share the 12 columns.
+        const tabRows = (key) => layouts[key].map((row) => row.map(([span, cards]) => [span, cards.filter(Boolean)]).filter(([, cards]) => cards.length))
+          .filter((row) => row.length).map((row) => (row.length === 1 ? [[12, row[0][1]]] : row))
+        const tabKeys = Object.keys(layouts).filter((key) => tabRows(key).length)
+        const tab = tabKeys.includes(params.get('tab')) ? params.get('tab') : 'overview'
+        const tabHref = (key) => { const q = new URLSearchParams(location.search); q.set('slug', slug); if (key === 'overview') q.delete('tab'); else q.set('tab', key); return `?${q}` }
+        const tabNav = h('nav', { class: 'section-tabs', 'aria-label': outlet.name }, h('ul', {},
+          tabKeys.map((key) => h('li', {}, h('a', { href: tabHref(key), 'aria-current': key === tab ? 'page' : null }, t(`outlet2.tab.${key}`))))))
+        const bar = Dash.TopBar({ title: outlet.name, tabs: Shell.headerV2 ? h('div', { class: 'page-tabs' }, tabNav) : tabNav, quiet: true })
+        const columns = h('div', { class: 'dash-grid story-grid entity-grid entity-rows' },
+          tabRows(tab).flat().map(([span, cards]) => h('div', { class: `card-col card-col-fill c-${span} story-col` }, ...cards)))
+        content.replaceChildren(bar, ...(tab === 'overview' ? [h('div', { class: 'dash-grid' }, statGrid, dailyCard)] : []), columns, protoNote())
+        // Side by side, the daily chart takes the height that the four numbers leave, so the cards of the row end level.
+        if (tab === 'overview') {
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            if (!window.matchMedia('(min-width: 1280px)').matches || !dailyCard.isConnected) return
+            const body = dailyCard.lastElementChild
+            const slack = dailyCard.getBoundingClientRect().bottom - parseFloat(getComputedStyle(dailyCard).paddingBottom) - body.getBoundingClientRect().bottom
+            if (slack > 4) dailyCard.replaceWith(makeDaily(220 + Math.floor(slack)))
+          }))
+        }
       }
     })
 

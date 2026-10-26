@@ -262,10 +262,16 @@ Object.assign(window.MESSAGES.en, {
 
 // Messages of the page of one outlet (outlet-v2.html).
 Object.assign(window.MESSAGES.el, {
+  'outlet2.tab.overview': 'Επισκόπηση',
+  'outlet2.tab.topics': 'Θέματα',
+  'outlet2.tab.stories': 'Ιστορίες',
+  'outlet2.tab.people': 'Στάση και πρόσωπα',
+  'outlet2.latest.title': 'Τελευταία άρθρα',
   'outlet2.related.title': 'Σχετικά μέσα',
-  'outlet2.related.info': 'Τα άλλα μέσα του ίδιου ομίλου και τα μέσα που γράφουν τις ίδιες ιστορίες. Η τελεία είναι ο όμιλος του μέσου. Η ομοιότητα είναι οι κοινές ιστορίες δύο μέσων, διαιρεμένες με τις ιστορίες που έγραψε τουλάχιστον ένα από τα δύο. Κάθε ζεύγος χρειάζεται 10 κοινές ιστορίες, αλλιώς δείχνει «—». Τα μεγάλα μέσα έχουν υψηλή ομοιότητα με όλα.',
+  'outlet2.related.info': 'Τα άλλα μέσα του ίδιου ομίλου και τα μέσα που γράφουν τις ίδιες ιστορίες. Κάθε φέτα είναι τόσο φαρδιά και φτάνει τόσο μακριά όσο η ομοιότητα, για τα 8 πιο όμοια μέσα. Η ομοιότητα είναι οι κοινές ιστορίες δύο μέσων, διαιρεμένες με τις ιστορίες που έγραψε τουλάχιστον ένα από τα δύο. Κάθε ζεύγος χρειάζεται 10 κοινές ιστορίες, αλλιώς δείχνει «—». Τα μεγάλα μέσα έχουν υψηλή ομοιότητα με όλα.',
   'outlet2.related.same': 'Ίδιος όμιλος',
   'outlet2.related.row': '{shared} κοινές ιστορίες',
+  'outlet2.related.few': 'Λιγότερες από 10 κοινές ιστορίες:',
   'outlet2.related.empty': 'Το μέσο δεν έχει όμιλο ούτε ζεύγος με 10 κοινές ιστορίες ή περισσότερες.',
   'outlet2.chip.stories': '{n} ιστορίες',
   'outlet2.chip.owner': 'Ιδιοκτήτης: {name}',
@@ -305,10 +311,16 @@ Object.assign(window.MESSAGES.el, {
   'outlet2.headlines.empty': 'Το δείγμα δεν έχει τίτλους για αυτό το μέσο.'
 })
 Object.assign(window.MESSAGES.en, {
+  'outlet2.tab.overview': 'Overview',
+  'outlet2.tab.topics': 'Topics',
+  'outlet2.tab.stories': 'Stories',
+  'outlet2.tab.people': 'Stance and people',
+  'outlet2.latest.title': 'Latest articles',
   'outlet2.related.title': 'Related outlets',
-  'outlet2.related.info': 'The other outlets of the same group and the outlets that write the same stories. The dot is the group of the outlet. Similarity is the shared stories of two outlets divided by the stories that at least one of them wrote. A pair needs 10 shared stories, or it shows "—". Large outlets have a high similarity with all outlets.',
+  'outlet2.related.info': 'The other outlets of the same group and the outlets that write the same stories. Each slice is as wide and reaches as far as the similarity, for the 8 most similar outlets. Similarity is the shared stories of two outlets divided by the stories that at least one of them wrote. A pair needs 10 shared stories, or it shows "—". Large outlets have a high similarity with all outlets.',
   'outlet2.related.same': 'Same group',
   'outlet2.related.row': '{shared} shared stories',
+  'outlet2.related.few': 'Fewer than 10 shared stories:',
   'outlet2.related.empty': 'The outlet has no group and no pair with 10 shared stories or more.',
   'outlet2.chip.stories': '{n} stories',
   'outlet2.chip.owner': 'Owner: {name}',
