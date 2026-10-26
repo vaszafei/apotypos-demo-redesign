@@ -8,21 +8,22 @@
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=25">
   <link rel="stylesheet" href="assets/dash.css?v=79">
-  <link rel="stylesheet" href="assets/mme.css?v=27">
+  <link rel="stylesheet" href="assets/mme.css?v=32">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=28"></script>
-  <script src="assets/messages-v2.js?v=43"></script>
+  <script src="assets/messages-v2.js?v=46"></script>
   <script src="assets/messages-spread.js?v=16"></script>
-  <script src="assets/messages-mme.js?v=10"></script>
+  <script src="assets/messages-mme.js?v=15"></script>
   <script src="assets/components.js?v=9"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
+  <script src="assets/politics.js?v=5"></script>
   <script src="assets/spread.js?v=6"></script>
   <script src="assets/entity-cards.js?v=7"></script>
-  <script src="assets/mme.js?v=12"></script>
+  <script src="assets/mme.js?v=19"></script>
   <script src="assets/shell.js?v=44"></script>
   <script src="data/media.js"></script>
   <script src="data/home.js"></script>
@@ -48,9 +49,8 @@
     const colorOfGroup = Dash.groupColors(groupsData.data ? groupsData.data.groups : [])
     const slug = params.get('slug') || '17661f5754'
     const outlet = media.data ? media.data.outlets.find((o) => o.slug === slug) : null
-    const TOPICS = 10
     const SIMILAR = 12
-    const STORIES = 8
+    const STORIES = 16
     const MIN_SHARED = 10
 
     const { DiffRow, scaleOf } = Entity
@@ -97,9 +97,11 @@
           let n = 0
           let first = last
           let storyStart = last
+          const covering = new Set()
           for (let i = 0; i < s.t.length; i += 3) {
             const [o, day, rows] = [s.t[i], s.t[i + 1], s.t[i + 2]]
             storyStart = Math.min(storyStart, day)
+            covering.add(o)
             if (story) topicAll[story.issue] += rows
             if (o !== kd) continue
             n += rows
@@ -111,7 +113,7 @@
               topicDays.get(story.issue)[day] += rows
             }
           }
-          if (n) mine.push({ story, n, days, first, storyStart })
+          if (n) mine.push({ story, n, days, first, storyStart, reach: covering.size })
         })
         mine.sort((a, b) => b.n - a.n)
 
@@ -126,22 +128,14 @@
         }
         const dailyCard = makeDaily()
 
-        // The topics of the stories of the outlet, against the topics of all outlets. The topic of the catch-all rows does not count.
+        // The share of each topic in the stories of the outlet, and in all outlets. The topic of the catch-all rows does not count.
         const mineTotal = sum(topicMine.filter((_, i) => !d.issues[i].catchAll))
         const allTotal = sum(topicAll.filter((_, i) => !d.issues[i].catchAll))
-        const topicRows = mineTotal
-          ? d.issues.map((issue, i) => ({ issue, i })).filter(({ issue, i }) => !issue.catchAll && topicMine[i])
+        const topicShares = mineTotal
+          ? d.issues.map((issue, i) => ({ issue, i })).filter(({ issue, i }) => !issue.catchAll && topicAll[i])
             .map(({ issue, i }) => ({ label: name(issue), value: topicMine[i] / mineTotal, usual: topicAll[i] / allTotal }))
-            .sort((a, b) => b.value - a.value).slice(0, TOPICS)
           : []
-        const topicScale = scaleOf(topicRows)
-        const topicList = (rows) => UI.BarList(rows.map((r) => DiffRow({ ...r, scale: topicScale })))
         const diffKey = Entity.diffKey()
-        const topicsCard = card('c-12', cardHead(t('outlet2.topics.title'), diffKey, t('outlet2.topics.info')),
-          topicRows.length
-            ? [h('div', { class: 'how-grid how-grid-2' }, h('div', { class: 'how-panel' }, topicList(topicRows.slice(0, 5))), h('div', { class: 'how-panel' }, topicList(topicRows.slice(5)))),
-              h('p', { class: 'dcard-sub' }, t('outlet2.topics.sub', { n: fmt.int(mineTotal) }))]
-            : h('p', { class: 'dcard-empty' }, t('outlet2.topics.empty')))
 
         // How the outlet writes: the news share, the clickbait share and the stance, each against all outlets. Stance and clickbait come from the groups file.
         const files = [...groupsData.data.groups.flatMap((g) => g.outlets), ...(groupsData.data.ungrouped || [])]
@@ -167,15 +161,17 @@
           foot: stanceN >= 30 ? t('outlet2.how.stance.n', { n: fmt.int(stanceN) }) : null
         })
 
-        // The stories with the most articles of the outlet, each with the days of the outlet. The first-day count says how often the outlet is first.
+        // The latest stories of the outlet: the stories it started to cover most recently (the bigger story first on a day), each with the day of its first article, the outlets that cover it and its own articles.
+        // The first-day count says how often the outlet is first.
         const firsts = mine.filter((r) => r.first === r.storyStart).length
-        const storiesCard = card('c-12', cardHead(t('outlet2.stories.title'), null, t('outlet2.stories.info')),
-          mine.length
-            ? [h('p', { class: 'dcard-sub' }, t('outlet2.stories.first', { n: fmt.int(firsts), total: fmt.int(mine.length) })),
-              h('ul', { class: 'rows-related' }, mine.filter((r) => r.story).slice(0, STORIES).map((r) => h('li', {},
-                h('span', { class: 'related-main' }, UI.EntityLink({ type: 'story', key: String(r.story.id), label: name(r.story) }), h('span', { class: 'muted-text' }, name(d.issues[r.story.issue]))),
-                Spark(r.days, 0, last, t('outlet2.stories.spark'), { w: 84, hgt: 20 }),
-                h('span', { class: 'row-value' }, fmt.int(r.n)))))]
+        const latest = mine.filter((r) => r.story).sort((a, b) => b.first - a.first || b.reach - a.reach || b.n - a.n).slice(0, STORIES)
+        const storiesCard = card('c-7', cardHead(t('outlet2.stories.title'), null, `${t('outlet2.stories.first', { n: fmt.int(firsts), total: fmt.int(mine.length) })}. ${t('outlet2.stories.info')}`),
+          latest.length
+            ? h('ul', { class: 'rows-related latest-stories' }, latest.map((r) => h('li', {},
+              h('span', { class: 'related-main' }, h('span', { class: 'story-line', title: `${name(r.story)} / ${name(d.issues[r.story.issue])}` }, UI.EntityLink({ type: 'story', key: String(r.story.id), label: name(r.story) }), h('span', { class: 'muted-text' }, ` / ${name(d.issues[r.story.issue])}`))),
+              h('span', { class: 'row-value' }, dayLabel(r.first)),
+              h('span', { class: 'row-value' }, t('outlet2.stories.reach', { n: fmt.int(r.reach) })),
+              h('span', { class: 'row-value' }, fmt.int(r.n)))))
             : h('p', { class: 'dcard-empty' }, t('outlet2.stories.empty')))
 
         // The profile cards of ΜΜΕ & πρόσωπα, for an outlet of its Greek set. The sums are for its whole window.
@@ -183,9 +179,10 @@
         const mk = mset ? mset.outlets.findIndex((o) => o.slug === slug) : -1
         const MS = mk >= 0 ? Mme.summary(mset, 0, mset.dates.length - 1) : null
         const live = MS ? {
-          weekly: Mme.WeeklyAgenda(mset, mk), pushSkip: Mme.PushSkip(MS, mk), stance: Mme.StanceByTopic(MS, mk),
-          frames: Mme.FramesCard(MS, mk), voices: Mme.VoicesCard(MS, mk), portrayal: Mme.PortrayalCard(MS, mk)
+          weekly: Mme.WeeklyAgenda(mset, mk), coverage: Mme.CoverageCard(MS, mk), stance: Mme.StanceByTopic(MS, mk, 20),
+          voices: Mme.VoicesCard(MS, mk), portrayal: Mme.PortrayalCard(MS, mk)
         } : null
+        const emphasisCard = Mme.EmphasisCard(MS, mk, topicShares, mineTotal)
         const liveHeadlines = MS ? Mme.Headlines(mset, mk) : []
 
         const headlines = sample.kind === 'data' && sample.data.slug === slug ? sample.data.headlines : []
@@ -280,9 +277,9 @@
         // The outlets of ΜΜΕ & πρόσωπα have the live cards. The others have the two cards of the groups file only.
         const layouts = {
           overview: [[[6, [relatedCard]], [6, [latestCard]]]],
-          topics: [[[12, [live && live.weekly]]], [[12, [topicsCard]]], [[12, [live && live.frames]]], [[12, [live && live.stance]]]],
-          stories: [[[12, [storiesCard]]], [[6, [live && live.pushSkip[0]]], [6, [live && live.pushSkip[1]]]]],
-          people: [[[6, [live && live.portrayal, howCard, stanceCard]], [6, [live && live.voices]]]]
+          topics: [[[12, [live && live.weekly]]], [[12, [emphasisCard]]]],
+          stories: [[[7, [storiesCard]], [5, [live && live.coverage]]]],
+          people: [[[6, [stanceCard, howCard, live && live.stance]], [6, [live && live.portrayal, live && live.voices]]]]
         }
         // A row keeps its columns with cards. One column alone, or two that are 8 and 4 wide, share the 12 columns.
         const tabRows = (key) => layouts[key].map((row) => row.map(([span, cards]) => [span, cards.filter(Boolean)]).filter(([, cards]) => cards.length))

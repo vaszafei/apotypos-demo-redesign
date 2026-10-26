@@ -146,3 +146,17 @@
 .outlet-card .outlet-stats { grid-auto-rows: auto; align-content: start; }
 .outlet-card .dstat { box-shadow: none; border: 1px solid var(--border); background: var(--surface-page); }
 .outlet-card .dstat.is-wide { grid-column: 1 / -1; }
+/* Latest stories of the outlet: the story and its topic on one line, then the day of the first article, the line of days and the articles. */
+.latest-stories li { grid-template-columns: minmax(0, 1fr) 44px 60px 28px; }
+.latest-stories .story-line { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.latest-stories .story-line a { display: inline; }
+.latest-stories .story-line .muted-text { font-size: var(--text-caption); }
+@media (max-width: 719px) { .latest-stories li { grid-template-columns: minmax(0, 1fr) 40px 28px; } .latest-stories li > :nth-child(3) { display: none; } }
+/* Who attacks whom: bars, with the pair as the label. */
+.mme-attacks .bar-label { font-size: var(--text-small); }
+/* Two bars on one center line: the outlet, and under it a thin gray bar for the others. */
+.pair-dbar { display: grid; gap: 3px; min-width: 96px; }
+.pair-dbar .dbar + .dbar { height: 4px; border-radius: 2px; }
+.pair-dbar .dbar + .dbar .dbar-mid { top: -1px; bottom: -1px; }
+.pair-dbar .dbar + .dbar .dbar-seg { border-radius: 2px; }
+.pair-dbar .dbar-mid { background: var(--text-secondary); opacity: 0.55; }
