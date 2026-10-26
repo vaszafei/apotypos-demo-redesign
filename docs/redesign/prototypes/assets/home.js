@@ -1,4 +1,4 @@
-// The cards of Αρχική: the top story of a day, the calendar of days, the topics that rise and fall and the shortcuts to the analyses.
+// The cards of Αρχική: the stories of a day, the calendar of a month, the topics that rise and fall and the shortcuts to the analyses.
 // Load after dash.js, mme.js and spread.js. index.html draws the page.
 (function () {
   const { t, fmt, h, Icon, safeUrl } = window.App
@@ -27,9 +27,13 @@
     return { byDay, mmeOf, headlines, set, dates: stories.dates, issues: stories.issues }
   }
 
-  // Everything the card says about one day: its top story, the outlets that ran it, a few headlines and the next stories.
-  function dayInfo (ix, d) {
-    const lead = ix.byDay[d]?.[0]
+  const STORIES = 6
+  const SLICES = 8
+
+  // Everything the card says about one story of a day: the story of that rank, the outlets that ran it, a few headlines, and the stories of the day.
+  function dayInfo (ix, d, rank = 0) {
+    const list = ix.byDay[d] || []
+    const lead = list[rank]
     if (!lead) return null
     const { s, n } = lead
     const date = ix.dates[d]
@@ -43,33 +47,57 @@
     const seen = new Set()
     const articles = (ix.headlines.get(date) || []).filter((x) => x.story === s.el && !seen.has(x.k) && seen.add(x.k)).slice(0, 3)
       .map((x) => ({ ...x, outlet: ix.set.outlets[x.k].name }))
-    // How the story ran: its articles on each day from two days before its first to two days after its last.
-    const first = Math.max(0, s.days[0] - 2)
-    const last = Math.min(ix.dates.length - 1, s.days[s.days.length - 2] + 2)
-    const values = ix.dates.slice(first, last + 1).map(() => 0)
-    for (let k = 0; k < s.days.length; k += 2) values[s.days[k] - first] = s.days[k + 1]
-    const timeline = { dates: ix.dates.slice(first, last + 1), values, at: d - first }
-    return { d, date, story: s, n, topic: ix.issues[s.issue], outlets, timeline, articles, others: ix.byDay[d].slice(1, 6), known: m !== undefined }
+    return { d, date, story: s, n, rank, topic: ix.issues[s.issue], outlets, articles, list: list.slice(0, STORIES) }
   }
 
-  const OUTLETS = 8
+  const point = (cx, cy, rad, a) => [cx + rad * Math.cos(a), cy - rad * Math.sin(a)]
 
-  // The top story of a day. The bars are the articles of each outlet on the day, in the color of its group (the group is under the name).
-  function DayCard (info, { isLast }) {
-    if (!info) return card('c-5 home-day', cardHead(t('home.day.title'), null, t('home.day.info')), emptyText(t('home.day.empty')))
+  // A half ring, thin: one slice for each of the largest outlets in the color of its group, and one gray slice for the others. The legend under it is the text of the chart.
+  function HalfRing (slices, { total, caption }) {
+    const w = 420
+    const outer = 200
+    const inner = 172
+    const cx = w / 2
+    const cy = outer + 6
+    const svg = h('svg', { class: 'home-ring', viewBox: `0 0 ${w} ${cy + 4}`, role: 'img', 'aria-label': slices.map((s) => `${s.name} ${fmt.int(s.n)}`).join(', ') })
+    let a = Math.PI
+    slices.forEach((s) => {
+      const b = a - (s.n / total) * Math.PI
+      const [x1, y1] = point(cx, cy, outer, a)
+      const [x2, y2] = point(cx, cy, outer, b)
+      const [x3, y3] = point(cx, cy, inner, b)
+      const [x4, y4] = point(cx, cy, inner, a)
+      const path = h('path', { class: 'home-ring-slice', fill: s.color, d: `M${x1} ${y1}A${outer} ${outer} 0 0 1 ${x2} ${y2}L${x3} ${y3}A${inner} ${inner} 0 0 0 ${x4} ${y4}Z` })
+      const tip = `${s.name}${s.group ? ` · ${s.group}` : ''}: ${fmt.int(s.n)}`
+      const show = (e) => UI.showTooltip(tip, e.clientX, e.clientY)
+      path.addEventListener('pointerenter', show)
+      path.addEventListener('pointermove', show)
+      path.addEventListener('pointerleave', () => UI.hideTooltip())
+      svg.append(path)
+      a = b
+    })
+    svg.append(h('text', { class: 'home-ring-total', x: cx, y: cy - 30, 'text-anchor': 'middle' }, fmt.int(total)),
+      h('text', { class: 'home-ring-cap', x: cx, y: cy - 8, 'text-anchor': 'middle' }, caption))
+    return svg
+  }
+
+  // The stories of a day: a story is picked to show it in the card, and its button opens its page. The card shows the story of the rank in info.
+  function DayCard (info, { isLast, onStory }) {
+    const head = cardHead(t('home.day.title'), isLast ? h('span', { class: 'pill home-pill' }, t('home.day.latest')) : null, t('home.day.info'))
+    if (!info) return card('c-5 home-day', head, emptyText(t('home.day.empty')))
     const { story, topic } = info
-    const shown = info.outlets.slice(0, OUTLETS)
-    const tl = info.timeline
-    const timeline = tl.dates.length > 1
-      ? h('div', { class: 'home-block' }, h('p', { class: 'home-label' }, t('home.day.timeline')),
-        UI.BarChart({ dates: tl.dates, values: tl.values, height: 130, label: t('home.day.timeline'), peak: false, picked: tl.at,
-          tooltipOf: (i) => `${fmt.date(tl.dates[i])}: ${t('home.day.meta', { n: fmt.int(tl.values[i]) })}` }))
-      : null
-    const outlets = shown.length
+    const total = sum(info.outlets.map((o) => o.n))
+    const top = info.outlets.slice(0, SLICES)
+    const rest = info.outlets.slice(SLICES)
+    const slices = top.map((o) => ({ name: o.name, group: o.group, n: o.n, color: groupColor(o.group), slug: o.slug }))
+    if (rest.length) slices.push({ name: t('home.day.rest', { n: rest.length }), group: null, n: sum(rest.map((o) => o.n)), color: 'var(--bar-muted)' })
+    const outlets = slices.length
       ? h('div', { class: 'home-block' }, h('p', { class: 'home-label' }, t('home.day.outlets')),
-        UI.BarList(shown.map((o) => ({ label: h('span', { class: 'home-outlet' }, h('a', { href: `outlet-v2.html?slug=${o.slug}` }, o.name), h('span', { class: 'muted-text' }, o.group || t('home.day.nogroup'))),
-          text: fmt.int(o.n), value: o.n, color: groupColor(o.group) })), { max: shown[0].n }),
-        info.outlets.length > OUTLETS ? h('p', { class: 'dcard-sub' }, t('home.day.outlets.more', { n: info.outlets.length - OUTLETS })) : null)
+        HalfRing(slices, { total, caption: t('home.day.ring', { n: info.outlets.length }) }),
+        h('ul', { class: 'home-legend' }, slices.map((s) => h('li', {},
+          h('span', { class: 'home-legend-swatch', style: `background:${s.color}`, 'aria-hidden': 'true' }),
+          h('span', { class: 'home-legend-name' }, s.slug ? h('a', { href: `outlet-v2.html?slug=${s.slug}` }, s.name) : s.name, s.slug ? h('span', { class: 'muted-text' }, s.group || t('home.day.nogroup')) : null),
+          h('span', { class: 'home-legend-n' }, fmt.int(s.n))))))
       : null
 
     const articles = info.articles.length
@@ -78,59 +106,60 @@
           safeUrl(a.url) ? h('a', { href: safeUrl(a.url), rel: 'noopener', target: '_blank' }, a.title) : h('span', {}, a.title),
           h('span', { class: 'muted-text' }, a.outlet)))))
       : null
-    const others = info.others.length
-      ? h('div', { class: 'home-block' }, h('p', { class: 'home-label' }, t('home.day.others')),
-        h('ul', { class: 'home-others' }, info.others.map((o) => h('li', {}, UI.EntityLink({ type: 'story', key: String(o.s.id), label: name(o.s) }), h('span', { class: 'muted-text' }, fmt.int(o.n))))))
-      : null
+    const stories = h('ul', { class: 'home-stories' }, info.list.map((o, r) => h('li', { class: r === info.rank ? 'is-current' : null },
+      h('button', { type: 'button', class: 'home-story-pick', 'aria-pressed': String(r === info.rank), onClick: () => onStory(r) },
+        h('span', { class: 'home-story-name' }, name(o.s)), h('span', { class: 'muted-text' }, fmt.int(o.n))),
+      h('a', { class: 'button home-story-go', href: `story-v2.html?id=${o.s.id}`, 'aria-label': `${t('home.day.open')}: ${name(o.s)}` }, t('home.day.open'), Icon('chevron-right', 'icon icon-sm')))))
 
-    const meta = info.outlets.length ? t('home.day.meta.outlets', { n: fmt.int(info.n), m: info.outlets.length }) : t('home.day.meta', { n: fmt.int(info.n) })
-    return card('c-5 home-day',
-      cardHead(t('home.day.title'), isLast ? h('span', { class: 'pill home-pill' }, t('home.day.latest')) : null, t('home.day.info')),
+    return card('c-5 home-day', head,
       h('p', { class: 'home-day-date' }, fmt.date(info.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })),
       h('h3', { class: 'home-day-story' }, name(story)),
-      h('p', { class: 'home-day-meta' }, topic ? [h('strong', {}, name(topic)), ' · '] : null, meta),
-      timeline,
+      h('p', { class: 'home-day-meta' }, topic ? [UI.EntityLink({ type: 'topic', key: String(story.issue), label: name(topic) }), ' · '] : null,
+        info.outlets.length ? t('home.day.meta.outlets', { n: fmt.int(info.n), m: info.outlets.length }) : t('home.day.meta', { n: fmt.int(info.n) })),
       outlets,
       articles,
-      others,
-      h('div', { class: 'home-actions' },
-        h('a', { class: 'button is-primary', href: `story-v2.html?id=${story.id}` }, t('home.day.story'), Icon('chevron-right', 'icon icon-sm')),
-        topic ? h('a', { class: 'button', href: `topic-v2.html?i=${story.issue}` }, t('home.day.topic'), Icon('chevron-right', 'icon icon-sm')) : null,
-        h('a', { class: 'button', href: 'stories-v2.html' }, t('home.day.stories'), Icon('chevron-right', 'icon icon-sm'))))
+      stories)
   }
 
-  // The calendar: one tile for each day of the period, with the number of articles and a bar of the same number. It scrolls sideways and a tile picks the day.
-  function DayStrip ({ dates, totals, i0, i1, selected, onPick }) {
-    const list = h('ul', { class: 'home-days' })
-    const buttons = new Map()
-    for (let i = i0; i <= i1; i++) {
-      const iso = dates[i]
-      const weekday = new Date(`${iso}T00:00:00Z`).getUTCDay()
-      const btn = h('button', { type: 'button', class: weekday === 0 || weekday === 6 ? 'home-day-btn is-weekend' : 'home-day-btn', 'aria-pressed': String(i === selected),
-        'aria-label': t('home.days.aria', { date: fmt.date(iso), n: fmt.int(totals[i]) }), onClick: () => onPick(i) },
-      h('span', { class: 'home-day-dow' }, fmt.date(iso, { weekday: 'short' })),
-      h('span', { class: 'home-day-num' }, String(Number(iso.slice(8)))),
-      h('span', { class: 'home-day-n' }, fmt.int(totals[i])),
-      h('span', { class: 'home-day-delta' }, i > 0 && totals[i - 1] > 0 ? `${fmt.signed(((totals[i] - totals[i - 1]) / totals[i - 1]) * 100)}%` : '–'))
-      buttons.set(i, btn)
-      list.append(h('li', {}, h('span', { class: 'home-day-month' }, i === i0 || iso.endsWith('-01') ? fmt.date(iso, { month: 'long' }) : ''), btn))
-    }
-    const center = (i) => {
-      const b = buttons.get(i)
-      if (b) list.scrollLeft = b.offsetLeft - (list.clientWidth - b.offsetWidth) / 2
-    }
-    const step = (dir) => h('button', { type: 'button', class: 'icon-button', 'aria-label': t(dir < 0 ? 'home.days.prev' : 'home.days.next'),
-      onClick: () => list.scrollBy({ left: dir * list.clientWidth * 0.8, behavior: 'smooth' }) }, Icon(dir < 0 ? 'chevron-left' : 'chevron-right', 'icon'))
-    const node = card('home-calendar', cardHead(t('home.days.title'), h('div', { class: 'home-steps' }, step(-1), step(1)), t('home.days.info')), list)
-    requestAnimationFrame(() => center(selected))
-    return {
-      node,
-      select (i) {
-        buttons.forEach((b, k) => b.setAttribute('aria-pressed', String(k === i)))
-        const b = buttons.get(i)
-        if (b && (b.offsetLeft < list.scrollLeft || b.offsetLeft + b.offsetWidth > list.scrollLeft + list.clientWidth)) center(i)
+  // The calendar of a month: a cell for each day, with the articles of all the outlets and the change against the day before. The arrows change the month and a cell picks the day.
+  function Calendar ({ dates, totals, selected, onPick }) {
+    const at = new Map(dates.map((d, i) => [d, i]))
+    const months = [...new Set(dates.map((d) => d.slice(0, 7)))]
+    let month = dates[selected].slice(0, 7)
+    let current = selected
+    const weekdays = [0, 1, 2, 3, 4, 5, 6].map((i) => fmt.date(new Date(Date.UTC(2026, 7, 3 + i)).toISOString().slice(0, 10), { weekday: 'short' }))
+    const grid = h('div', { class: 'home-month' })
+    const name = h('span', { class: 'home-month-name', 'aria-live': 'polite' })
+    const step = (dir) => h('button', { type: 'button', class: 'icon-button', 'aria-label': t(dir < 0 ? 'home.month.prev' : 'home.month.next'),
+      onClick: () => { month = months[months.indexOf(month) + dir]; paint() } }, Icon(dir < 0 ? 'chevron-left' : 'chevron-right', 'icon'))
+    const prev = step(-1)
+    const next = step(1)
+
+    function paint () {
+      const [y, m] = month.split('-').map(Number)
+      const count = new Date(Date.UTC(y, m, 0)).getUTCDate()
+      const lead = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7
+      const cells = weekdays.map((w) => h('span', { class: 'home-wd' }, w))
+      for (let k = 0; k < lead; k++) cells.push(h('span', { class: 'home-cell is-blank', 'aria-hidden': 'true' }))
+      for (let day = 1; day <= count; day++) {
+        const iso = `${month}-${String(day).padStart(2, '0')}`
+        const i = at.get(iso)
+        if (i === undefined) { cells.push(h('span', { class: 'home-cell is-off' }, h('span', { class: 'home-cell-num' }, String(day)))); continue }
+        const weekday = new Date(`${iso}T00:00:00Z`).getUTCDay()
+        cells.push(h('button', { type: 'button', class: weekday === 0 || weekday === 6 ? 'home-cell is-weekend' : 'home-cell', 'aria-pressed': String(i === current),
+          'aria-label': t('home.days.aria', { date: fmt.date(iso), n: fmt.int(totals[i]) }), onClick: () => { current = i; paint(); onPick(i) } },
+        h('span', { class: 'home-cell-num' }, String(day)),
+        h('span', { class: 'home-cell-n' }, fmt.int(totals[i])),
+        h('span', { class: 'home-cell-delta' }, i > 0 && totals[i - 1] > 0 ? `${fmt.signed(((totals[i] - totals[i - 1]) / totals[i - 1]) * 100)}%` : '–')))
       }
+      name.textContent = fmt.date(`${month}-01`, { month: 'long', year: 'numeric' })
+      prev.disabled = months.indexOf(month) === 0
+      next.disabled = months.indexOf(month) === months.length - 1
+      grid.replaceChildren(...cells)
     }
+    paint()
+    const node = card('home-calendar', cardHead(t('home.days.title'), h('div', { class: 'home-month-nav' }, prev, name, next), t('home.days.info')), grid)
+    return { node, select (i) { current = i; month = dates[i].slice(0, 7); paint() } }
   }
 
   // The topics whose share of the news changed the most: the last days of the period against the days before. The center line is the share before.
@@ -173,5 +202,5 @@
         h('a', { href: Shell.hrefOf(route) }, h('span', { class: 'home-link-main' }, h('strong', {}, t(`tab.world.${key}`)), h('span', { class: 'muted-text' }, t(`home.analyses.${key}`))), Icon('chevron-right', 'icon icon-sm'))))))
   }
 
-  window.Home = { index, dayInfo, DayCard, DayStrip, TrendsCard, AnalysesCard }
+  window.Home = { index, dayInfo, DayCard, Calendar, TrendsCard, AnalysesCard }
 })()
