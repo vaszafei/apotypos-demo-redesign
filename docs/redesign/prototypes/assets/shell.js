@@ -57,9 +57,9 @@
   // A detail route names the tab that lists it: the back button and the trail of the page go there.
   const NAV = [
     { key: 'home', tabs: [['home', '/']] },
-    { key: 'media', tabs: [['overview', '/media'], ['writing', '/media/writing'],
+    { key: 'media', tabs: [['overview', '/media'], ['ownership', '/groups'],
       ['topics', '/trends', [['topics.overview', '/trends'], ['topics.topic', '/trends/topic'], ['topics.agenda', '/trends/agenda'], ['shifts', '/overton']]],
-      ['ownership', '/groups'], ['similarity', '/similarity']], details: [['/outlet', '/media'], ['/group', '/groups'], ['/topic', '/trends']] },
+      ['writing', '/media/writing'], ['similarity', '/similarity']], details: [['/outlet', '/media'], ['/group', '/groups'], ['/topic', '/trends']] },
     { key: 'spread', tabs: [['overview', '/stories'], ['outlets', '/stories/outlets'], ['cases', '/cases'], ['campaigns', '/campaigns']], details: [['/story', '/stories']] },
     { key: 'people', tabs: [['overview', '/fingerprints'], ['spread', '/fingerprints/spread'], ['statements', '/track'],
       ['file', '/contradictions', [['file.overview', '/contradictions'], ['file.pairs', '/contradictions/pairs'], ['file.checks', '/contradictions/checks']]]] },
