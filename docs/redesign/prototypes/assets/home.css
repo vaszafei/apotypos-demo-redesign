@@ -10,19 +10,19 @@
 .home-block { display: grid; gap: 6px; }
 .home-label { margin: 0; font-size: var(--text-caption); font-weight: 600; color: var(--text-secondary); }
 
-/* The vertical bar of the outlets: a panel on the left and the bar on the right. The panel names the part under the mouse. */
-.home-stack-wrap { display: flex; align-items: stretch; justify-content: space-between; gap: var(--space-5); }
-.home-stack-panel { flex: 1; min-width: 0; display: grid; gap: 2px; align-content: center; }
-.home-stack-panel p { margin: 0; }
-.home-stack-total { font-size: 30px; font-weight: 600; line-height: 1.15; color: var(--strong); font-variant-numeric: tabular-nums; }
-.home-stack-name { font-size: 18px; font-weight: 600; line-height: 1.25; color: var(--ink); overflow-wrap: anywhere; }
-.home-stack-cap { font-size: var(--text-caption); color: var(--text-secondary); }
-.home-stack-hint { margin-top: var(--space-2) !important; max-width: 24ch; font-size: var(--text-caption); color: var(--text-secondary); }
-.home-stack { flex: none; display: flex; flex-direction: column; gap: 2px; width: 26px; height: 280px; }
-.home-stack-part { display: block; min-height: 5px; border-radius: 4px; outline: none; transition: opacity var(--motion-base) var(--ease-out); }
+/* The horizontal bar of the outlets, and under it a line that names the part under the mouse. */
+.home-stack-wrap { display: grid; gap: var(--space-3); }
+.home-stack { display: flex; gap: 2px; width: 100%; height: 28px; }
+.home-stack-part { display: block; min-width: 5px; border-radius: 4px; outline: none; transition: opacity var(--motion-base) var(--ease-out); }
 a.home-stack-part { cursor: pointer; }
 .home-stack.has-hover .home-stack-part:not(.is-on) { opacity: 0.35; }
 .home-stack-part:focus-visible { box-shadow: 0 0 0 2px var(--ink); }
+.home-stack-panel { display: grid; align-content: start; gap: 2px; min-height: 52px; }
+.home-stack-panel p { margin: 0; }
+.home-stack-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-2); }
+.home-stack-total { font-size: 26px; font-weight: 600; line-height: 1.15; color: var(--strong); font-variant-numeric: tabular-nums; }
+.home-stack-name { font-size: 18px; font-weight: 600; line-height: 1.3; color: var(--ink); }
+.home-stack-cap { font-size: var(--text-caption); color: var(--text-secondary); }
 
 /* Headlines of the story. */
 .home-articles { margin: 0; padding: 0; list-style: none; display: grid; }

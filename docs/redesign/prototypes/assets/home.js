@@ -50,14 +50,14 @@
     return { d, date, story: s, n, rank, topic: ix.issues[s.issue], outlets, articles, list: list.slice(0, STORIES) }
   }
 
-  // A thin vertical bar of the articles of the story: one part for each of the largest outlets, from the top, in the color of its group, and one gray part for the others.
-  // The panel beside it says the total, and names the outlet of the part under the mouse (or in focus). A part opens the page of its outlet.
+  // A thin horizontal bar of the articles of the story: one part for each of the largest outlets, from the left, in the color of its group, and one gray part for the others.
+  // The line under it says the total, and names the outlet of the part under the mouse (or in focus). A part opens the page of its outlet.
   function OutletStack (parts, { total, count }) {
     const panel = h('div', { class: 'home-stack-panel', 'aria-live': 'polite' })
-    const rest = () => panel.replaceChildren(h('p', { class: 'home-stack-total' }, fmt.int(total)), h('p', { class: 'home-stack-cap' }, t('home.day.ring', { n: count })), h('p', { class: 'home-stack-hint' }, t('home.day.hint')))
-    const show = (s) => panel.replaceChildren(h('p', { class: 'home-stack-name' }, s.name),
-      s.slug ? h('p', { class: 'home-stack-cap' }, s.group || t('home.day.nogroup')) : null,
-      h('p', { class: 'home-stack-total' }, fmt.int(s.n)), h('p', { class: 'home-stack-cap' }, t('home.day.slice', { share: fmt.pct(s.n / total) })))
+    const rest = () => panel.replaceChildren(h('p', { class: 'home-stack-line' }, h('strong', { class: 'home-stack-total' }, fmt.int(total)), h('span', { class: 'home-stack-cap' }, t('home.day.ring', { n: count }))),
+      h('p', { class: 'home-stack-cap' }, t('home.day.hint')))
+    const show = (s) => panel.replaceChildren(h('p', { class: 'home-stack-line' }, h('strong', { class: 'home-stack-name' }, s.name), s.slug ? h('span', { class: 'home-stack-cap' }, s.group || t('home.day.nogroup')) : null),
+      h('p', { class: 'home-stack-cap' }, t('home.day.slice', { n: fmt.int(s.n), share: fmt.pct(s.n / total) })))
     rest()
     const bar = h('div', { class: 'home-stack', role: 'group', 'aria-label': t('home.day.outlets') })
     parts.forEach((s) => {
@@ -71,7 +71,7 @@
       part.addEventListener('blur', off)
       bar.append(part)
     })
-    return h('div', { class: 'home-stack-wrap' }, panel, bar)
+    return h('div', { class: 'home-stack-wrap' }, bar, panel)
   }
 
   // The stories of a day: a story is picked to show it in the card, and its button opens its page. The card shows the story of the rank in info.
