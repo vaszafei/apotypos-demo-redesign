@@ -114,5 +114,13 @@
   .mme-rank .data-table thead th { position: sticky; top: 0; z-index: 1; background: var(--surface-raised); }
 }
 /* Μέσα › one outlet: the title card holds the name on its own row, and its chips have a gap between the label and the value. */
-.outlet-hero { justify-content: center; }
+.outlet-hero .mme-ostats { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: auto; padding-top: var(--space-3); border-top: 1px solid var(--border); }
+.outlet-hero .mme-ostat svg { display: block; margin-top: 4px; }
+@media (max-width: 719px) { .outlet-hero .mme-ostats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* The latest articles scroll inside their card; the card is as tall as the title card beside it. */
+.outlet-latest { display: flex; flex-direction: column; }
+.latest-scroll { position: relative; flex: 1; min-height: 160px; }
+.latest-scroll > ul { position: absolute; inset: 0; overflow-y: auto; padding-right: var(--space-2); }
+.latest-scroll .plain-list li:last-child { border-bottom: 0; }
+@media (max-width: 1279px) { .outlet-hero, .outlet-latest { grid-column: span 12; } .latest-scroll { min-height: 320px; } }
 .outlet-hero .hero-chips .chip { gap: 5px; }

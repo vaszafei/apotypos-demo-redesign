@@ -566,7 +566,11 @@ button, input, select { font: inherit; color: inherit; }
 :root[data-header="v2"] .page-tabs .sub-tabs a[aria-current="page"] { background: none; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; }
 
 /* v2: smaller controls in the head. 32 px buttons and fields, 36 px search, 18 px icons. */
-:root[data-header="v2"] .back-button { width: 36px; height: 36px; }
+:root[data-header="v2"] .back-button { width: 36px; height: 36px; border: 0; border-radius: var(--radius-sm, 8px); background: transparent; }
+:root[data-header="v2"] .back-button:hover { background: color-mix(in srgb, var(--ink) 7%, transparent); }
+/* The trail of a detail page: the parent, a slash, the page. The slash is the one of the active tab. */
+:root[data-header="v2"] .appbar-trail .icon { display: none; }
+:root[data-header="v2"] .appbar-trail li + li::before { content: "/"; color: var(--text-secondary); margin-right: 2px; }
 :root[data-header="v2"] .page-head .dr-trigger { min-height: 32px; padding: 0 10px 0 8px; gap: 6px; font-size: 13px; }
 :root[data-header="v2"] .page-head .dr-trigger .dr-icon { width: 16px; height: 16px; }
 :root[data-header="v2"] .page-head .set-select select, :root[data-header="v2"] .page-head-actions select { min-height: 32px; font-size: 13px; }

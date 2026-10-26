@@ -22,7 +22,7 @@
   // The card of the daily columns with a switch for the color of the columns: news (the analysed articles) or topics (the articles in stories).
   // daily[i] is [analysed, news] for day i. topicDays maps the index of an issue to its articles per day. The 8 largest topics have a color, the others are one gray part.
   const TOP_TOPICS = 8
-  function DailyCard ({ dates, daily, topicDays, issues, info }) {
+  function DailyCard ({ dates, daily, topicDays, issues, info, topics = true }) {
     const { card, cardHead, SLOTS, NO_GROUP } = window.Dash
     const name = (x) => x[window.App.locale] || x.el
     const ranked = [...topicDays].map(([issue, values]) => ({ issue, values, total: values.reduce((a, b) => a + b, 0) })).sort((a, b) => b.total - a.total)
@@ -40,7 +40,7 @@
     const draw = () => {
       const m = modes[mode]
       body.replaceChildren(DailyChart({ dates, series: m }), UI.Legend(m.map((x) => ({ label: x.name, color: x.color }))))
-      tools.replaceChildren(UI.SegmentedControl({ label: t('outlet2.daily.mode'), value: mode, onChange: (v) => { mode = v; draw() },
+      if (topics) tools.replaceChildren(UI.SegmentedControl({ label: t('outlet2.daily.mode'), value: mode, onChange: (v) => { mode = v; draw() },
         options: [{ value: 'news', label: t('outlet2.daily.mode.news') }, { value: 'topic', label: t('outlet2.daily.mode.topic') }] }))
     }
     draw()

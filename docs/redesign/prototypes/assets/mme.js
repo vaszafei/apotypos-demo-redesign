@@ -487,7 +487,7 @@
 
   // The newest headlines of the outlet: the title as a link, the day, the frame and the angle.
   function Headlines (set, k) {
-    return (set.headlines[k] || []).map(([date, title, url, angle, frame, story]) => h('li', { class: 'mme-headline' },
+    return (set.headlines[k] || []).slice().sort((a, b) => String(b[0]).localeCompare(String(a[0]))).map(([date, title, url, angle, frame, story]) => h('li', { class: 'mme-headline' },
       App.safeUrl(url) ? h('a', { href: App.safeUrl(url), rel: 'noopener', target: '_blank' }, title) : h('span', {}, title),
       h('span', { class: 'muted-text' }, [fmt.date(date, { day: 'numeric', month: 'short' }), frame >= 0 ? t(`frame.${set.frames[frame]}`) : null, story || null].filter(Boolean).join(' · ')),
       angle ? h('span', { class: 'mme-angle' }, angle) : null))
