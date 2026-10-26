@@ -86,13 +86,13 @@
           const busiest = monthly.indexOf(Math.max(...monthly))
           const active = monthly.filter((n) => n > 0)
           const monthAvg = active.reduce((a, b) => a + b, 0) / (active.length || 1)
-          const monthCard = card('c-8', cardHead(t('pf.months.finding', { month: monthLabel(months[busiest]), n: fmt.int(monthly[busiest]) }), null, `${t('pf.months.title')}. ${t('pf.months.info')}`),
+          const monthCard = card('c-8', cardHead(t('pf.months.title'), null, `${t('pf.months.finding', { month: monthLabel(months[busiest]), n: fmt.int(monthly[busiest]) })}. ${t('pf.months.info')}`),
             UI.BarChart({ labels: months.map(monthLabel), values: monthly, height: 220, label: t('pf.months.title'), reference: { value: monthAvg, label: t('find.avg', { n: fmt.int(Math.round(monthAvg)) }) },
               tooltipOf: (i) => `${monthLabel(months[i])} · ${fmt.int(counts.get(months[i]) || 0)}` }))
           const verdictColor = { accurate: 'var(--stance-supportive)', mostly_accurate: '#7fa7e0', inaccurate: 'var(--stance-critical)', unverifiable: 'var(--bar-muted)' }
           // The title gives the share of the checked figures that hold, fully or mostly.
           const holds = ((d.checks.verdicts.accurate || 0) + (d.checks.verdicts.mostly_accurate || 0)) / (d.checks.checked || 1)
-          const verdictCard = card('c-4', cardHead(d.checks.checked ? t('pf.verdict.finding', { share: fmt.pct(holds) }) : t('pf.verdict.title'), null, `${t('pf.verdict.title')}. ${t('pf.verdict.info')}`),
+          const verdictCard = card('c-4', cardHead(t('pf.verdict.title'), null, `${d.checks.checked ? `${t('pf.verdict.finding', { share: fmt.pct(holds) })}. ` : ''}${t('pf.verdict.info')}`),
             UI.BarList(VERDICTS.map((k) => ({ label: t(`pf.verdict.${k}`), value: d.checks.verdicts[k] || 0, text: `${fmt.int(d.checks.verdicts[k] || 0)} · ${fmt.pct((d.checks.verdicts[k] || 0) / (d.checks.checked || 1))}`, color: verdictColor[k] })), { max: d.checks.checked }))
 
           const themeRows = d.themes.slice().sort((a, b) => b.n - a.n)
