@@ -50,48 +50,28 @@
     return { d, date, story: s, n, rank, topic: ix.issues[s.issue], outlets, articles, list: list.slice(0, STORIES) }
   }
 
-  const point = (cx, cy, rad, a) => [cx + rad * Math.cos(a), cy - rad * Math.sin(a)]
-
-  // A vertical half ring, thin: the flat side is on the left and the arc bulges to the right, from the top to the bottom.
-  // One slice for each of the largest outlets in the color of its group, and one gray slice for the others. The panel beside it
-  // says the total, and names the outlet of the slice under the mouse (or in focus).
-  function OutletRing (slices, { total, count }) {
-    const outer = 150
-    const inner = 124
-    const cx = 4
-    const cy = outer + 4
-    const svg = h('svg', { class: 'home-ring', width: outer + 8, height: 2 * outer + 8, viewBox: `0 0 ${outer + 8} ${2 * outer + 8}`, role: 'group', 'aria-label': t('home.day.outlets') })
-    const panel = h('div', { class: 'home-ring-panel', 'aria-live': 'polite' })
-    const rest = () => panel.replaceChildren(h('p', { class: 'home-ring-total' }, fmt.int(total)), h('p', { class: 'home-ring-cap' }, t('home.day.ring', { n: count })), h('p', { class: 'home-ring-hint' }, t('home.day.hint')))
-    const show = (s) => panel.replaceChildren(h('p', { class: 'home-ring-name' }, s.name),
-      s.slug ? h('p', { class: 'home-ring-cap' }, s.group || t('home.day.nogroup')) : null,
-      h('p', { class: 'home-ring-total' }, fmt.int(s.n)), h('p', { class: 'home-ring-cap' }, t('home.day.slice', { share: fmt.pct(s.n / total) })))
+  // A thin vertical bar of the articles of the story: one part for each of the largest outlets, from the top, in the color of its group, and one gray part for the others.
+  // The panel beside it says the total, and names the outlet of the part under the mouse (or in focus). A part opens the page of its outlet.
+  function OutletStack (parts, { total, count }) {
+    const panel = h('div', { class: 'home-stack-panel', 'aria-live': 'polite' })
+    const rest = () => panel.replaceChildren(h('p', { class: 'home-stack-total' }, fmt.int(total)), h('p', { class: 'home-stack-cap' }, t('home.day.ring', { n: count })), h('p', { class: 'home-stack-hint' }, t('home.day.hint')))
+    const show = (s) => panel.replaceChildren(h('p', { class: 'home-stack-name' }, s.name),
+      s.slug ? h('p', { class: 'home-stack-cap' }, s.group || t('home.day.nogroup')) : null,
+      h('p', { class: 'home-stack-total' }, fmt.int(s.n)), h('p', { class: 'home-stack-cap' }, t('home.day.slice', { share: fmt.pct(s.n / total) })))
     rest()
-    let a = Math.PI / 2
-    slices.forEach((s) => {
-      const b = a - (s.n / total) * Math.PI
-      const [x1, y1] = point(cx, cy, outer, a)
-      const [x2, y2] = point(cx, cy, outer, b)
-      const [x3, y3] = point(cx, cy, inner, b)
-      const [x4, y4] = point(cx, cy, inner, a)
-      const path = h('path', { class: 'home-ring-slice', fill: s.color, d: `M${x1} ${y1}A${outer} ${outer} 0 0 1 ${x2} ${y2}L${x3} ${y3}A${inner} ${inner} 0 0 0 ${x4} ${y4}Z`,
-        tabindex: 0, role: s.slug ? 'link' : 'img', 'aria-label': `${s.name}: ${fmt.int(s.n)}` })
-      const on = () => { svg.classList.add('has-hover'); path.classList.add('is-on'); show(s) }
-      const off = () => { svg.classList.remove('has-hover'); path.classList.remove('is-on'); rest() }
-      path.addEventListener('pointerenter', on)
-      path.addEventListener('pointerleave', off)
-      path.addEventListener('focus', on)
-      path.addEventListener('blur', off)
-      if (s.slug) {
-        const go = () => { location.href = `outlet-v2.html?slug=${s.slug}` }
-        path.classList.add('is-link')
-        path.addEventListener('click', go)
-        path.addEventListener('keydown', (e) => { if (e.key === 'Enter') go() })
-      }
-      svg.append(path)
-      a = b
+    const bar = h('div', { class: 'home-stack', role: 'group', 'aria-label': t('home.day.outlets') })
+    parts.forEach((s) => {
+      const part = h(s.slug ? 'a' : 'span', { class: 'home-stack-part', style: `flex:${s.n} 1 0;background:${s.color}`, tabindex: s.slug ? null : 0,
+        href: s.slug ? `outlet-v2.html?slug=${s.slug}` : null, 'aria-label': `${s.name}: ${fmt.int(s.n)}` })
+      const on = () => { bar.classList.add('has-hover'); part.classList.add('is-on'); show(s) }
+      const off = () => { bar.classList.remove('has-hover'); part.classList.remove('is-on'); rest() }
+      part.addEventListener('pointerenter', on)
+      part.addEventListener('pointerleave', off)
+      part.addEventListener('focus', on)
+      part.addEventListener('blur', off)
+      bar.append(part)
     })
-    return h('div', { class: 'home-ring-wrap' }, panel, svg)
+    return h('div', { class: 'home-stack-wrap' }, panel, bar)
   }
 
   // The stories of a day: a story is picked to show it in the card, and its button opens its page. The card shows the story of the rank in info.
@@ -105,7 +85,7 @@
     const slices = top.map((o) => ({ name: o.name, group: o.group, n: o.n, color: groupColor(o.group), slug: o.slug }))
     if (rest.length) slices.push({ name: t('home.day.rest', { n: rest.length }), group: null, n: sum(rest.map((o) => o.n)), color: 'var(--bar-muted)' })
     const outlets = slices.length
-      ? h('div', { class: 'home-block' }, h('p', { class: 'home-label' }, t('home.day.outlets')), OutletRing(slices, { total, count: info.outlets.length }))
+      ? h('div', { class: 'home-block' }, h('p', { class: 'home-label' }, t('home.day.outlets')), OutletStack(slices, { total, count: info.outlets.length }))
       : null
 
     const articles = info.articles.length
