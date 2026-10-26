@@ -386,7 +386,7 @@
 .minimal .chip { border: 1px solid var(--border); border-radius: var(--pill); background: var(--surface-raised); }
 .minimal .chip-num { border-color: var(--ink); background: var(--surface-raised); font-variant-numeric: tabular-nums; }
 .minimal .chip-quiet { background: var(--surface-page); }
-.minimal /* The bar of the tabs has no line and stays under the global bar of the shell. The active tab is a black pill. */
+/* The bar of the tabs has no line and stays under the global bar of the shell. The active tab is a black pill. */
 .minimal .dash-bar:not(:has(.dash-actions, .dash-error)) { margin: 0; padding: 0; }
 .minimal .dash-bar { top: 64px; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); margin-bottom: var(--space-3); padding-top: var(--space-2); padding-bottom: var(--space-2); border-bottom: 0; }
 .minimal .dash-actions { margin-left: auto; padding: 0; border-top: 0; }
@@ -445,3 +445,15 @@
 .src-rows .row-value { color: var(--text-secondary); font-size: var(--text-caption); min-width: 44px; text-align: right; align-self: center; font-variant-numeric: tabular-nums; }
 .dcard-foot { display: inline-block; margin-top: var(--space-3); font-size: var(--text-small); }
 .tooltip { white-space: pre-line; }
+
+/* Τάσεις (#68): the legend of the lines is a row of toggles. Tight table of Όλα τα θέματα. */
+.legend-toggles { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-2); margin: 0 0 var(--space-2); padding: 0; list-style: none; }
+.legend-toggle { display: inline-flex; align-items: center; gap: var(--space-1); min-height: 32px; padding: 0 var(--space-2); border: 1px solid var(--border); border-radius: 6px; background: transparent; font: inherit; font-size: var(--text-caption); color: var(--text-secondary); cursor: pointer; }
+.legend-toggle[aria-pressed="true"] { border-color: var(--ink); background: var(--surface-page); color: var(--text-primary); }
+.legend-toggle[aria-pressed="false"] .swatch { opacity: 0.35; }
+.legend-toggle[aria-disabled="true"] { cursor: not-allowed; }
+.dash .chart .line-guide { stroke: var(--text-secondary); stroke-width: 1; stroke-dasharray: 3 3; pointer-events: none; }
+.dash .chart .line-end { font-size: 12px; font-weight: 600; }
+.card-tight .data-table th, .card-tight .data-table td { padding: 3px 4px; }
+.card-tight .data-table .rank { width: 20px; }
+.card-tight .data-table th.num { white-space: normal; }

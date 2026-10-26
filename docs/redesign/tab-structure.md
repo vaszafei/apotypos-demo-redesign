@@ -13,8 +13,8 @@ Each tab answers one question. Heights are the page height at 1440 × 900 px on 
 | | | Άρθρα χωρίς υπογραφή | Which outlets publish without a byline? | move to Μέσα › Πώς γράφουν |
 | | | Πώς γράφουν για την κυβέρνηση | How critical of the government is each outlet? | move to Μέσα › Πώς γράφουν |
 | | Θέματα (`/trends`, `topics-v2.html`), 4113 px, 6 cards | Όλα τα θέματα | Which topics get the most articles? | keep (Θέματα › Επισκόπηση) |
-| | | Τα μεγαλύτερα θέματα στον χρόνο | How do the largest topics move over time? | move to Θέματα › Στον χρόνο |
-| | | Θέματα σε άνοδο και πτώση | Which topics rise and which fall? | move to Θέματα › Στον χρόνο |
+| | | Τα μεγαλύτερα θέματα στον χρόνο | How do the largest topics move over time? | keep in Θέματα › Επισκόπηση (#68) |
+| | | Θέματα σε άνοδο και πτώση | Which topics rise and which fall? | keep in Θέματα › Επισκόπηση (#68) |
 | | | Θέματα (chips) | Which topic to open in «Ένα θέμα, όλα τα μέσα»? | move to Θέματα › Ένα θέμα |
 | | | Ένα θέμα, όλα τα μέσα | How does each outlet cover one topic? | move to Θέματα › Ένα θέμα |
 | | | Η ατζέντα κάθε μέσου | Which topics does each outlet write about? | move to Θέματα › Ατζέντα μέσων |
@@ -66,8 +66,7 @@ Each tab answers one question. Heights are the page height at 1440 × 900 px on 
 |---|---|---|---|
 | Μέσα | Επισκόπηση (`/media`) | Ποια μέσα γράφουν τα περισσότερα; | 4 stat cards, Όλα τα μέσα, Άρθρα ανά ημέρα |
 | | Πώς γράφουν (`/media/writing`, new) | Πώς γράφει κάθε μέσο: ειδήσεις, clickbait, υπογραφές, στάση; | Ειδήσεις και clickbait ανά μέσο, Άρθρα χωρίς υπογραφή, Πώς γράφουν για την κυβέρνηση |
-| | Θέματα › Επισκόπηση (`/trends`) | Ποια θέματα γράφονται περισσότερο; | Όλα τα θέματα |
-| | Θέματα › Στον χρόνο (`/trends/time`, new) | Ποια θέματα ανεβαίνουν και ποια πέφτουν; | Τα μεγαλύτερα θέματα στον χρόνο, Θέματα σε άνοδο και πτώση |
+| | Θέματα › Επισκόπηση (`/trends`; the old `/trends/time` and `?tab=time` open it, #68) | Ποια θέματα γράφονται περισσότερο, και ποια ανεβαίνουν ή πέφτουν; | Όλα τα θέματα, Τάσεις, Θέματα σε άνοδο και πτώση |
 | | Θέματα › Ένα θέμα (`/trends/topic`, new) | Πώς καλύπτει κάθε μέσο ένα θέμα; | Θέματα (chips), Ένα θέμα, όλα τα μέσα |
 | | Θέματα › Ατζέντα μέσων (`/trends/agenda`, new) | Για ποια θέματα γράφει κάθε μέσο; | Η ατζέντα κάθε μέσου |
 | | Θέματα › Μετατοπίσεις (`/overton`) | Ποια θέματα μετατοπίστηκαν, και πότε; | as today |
@@ -93,7 +92,7 @@ Each tab answers one question. Heights are the page height at 1440 × 900 px on 
 
 1. **Μέσα › Πώς γράφουν (new)**: clickbait, bylines and the stance to the government describe how an outlet writes, not how much, and they made Επισκόπηση 3.4 screens long.
 2. **Θέματα gets sub-tabs**: one tab held two pages, the topic table of the snapshot and the per-outlet cards of the live page (4.6 screens).
-3. **Θέματα › Στον χρόνο**: the time chart and the rising and falling topics both answer "what changes", the table answers "what is largest".
+3. **Θέματα › Στον χρόνο** (merged into Θέματα › Επισκόπηση in #68): the time chart and the rising and falling topics answer "what changes", the table answers "what is largest". They are short enough to share one tab, so there is no separate sub-tab.
 4. **Θέματα › Ένα θέμα**: the chips only pick the topic of «Ένα θέμα, όλα τα μέσα», so they stay together; `topics-v2.html?topic=N` opens this sub-tab.
 5. **Θέματα › Ατζέντα μέσων**: the outlet × topic agenda is its own question and is 1100 px tall on its own.
 6. **Μετατοπίσεις becomes a sub-tab of Θέματα**: it measures topics, and the move keeps Μέσα at 5 tabs with the new Πώς γράφουν.
@@ -112,16 +111,16 @@ Page height at 1440 × 900 px after the change, with the site footer (1800 px = 
 |---|---|---|---|
 | Μέσα › Επισκόπηση | 1407 px | Ιστορίες › Επισκόπηση | 1631 px |
 | Μέσα › Πώς γράφουν | 2226 px (see Limits) | Ιστορίες › Ανά μέσο | 1424 px |
-| Μέσα › Θέματα › Επισκόπηση | 1672 px | Ιστορίες › Υποθέσεις | 1774 px |
-| Μέσα › Θέματα › Στον χρόνο | 935 px | Ιστορίες › Μοτίβα διάδοσης | 900 px |
-| Μέσα › Θέματα › Ένα θέμα | 1289 px | Πρόσωπα › Επισκόπηση | 1148 px |
-| Μέσα › Θέματα › Ατζέντα μέσων | 1417 px | Πρόσωπα › Έμφαση και στάση | 1036 px |
-| Μέσα › Θέματα › Μετατοπίσεις | 1809 px (see Limits) | Πρόσωπα › Δηλώσεις | 900 px |
-| Μέσα › Ιδιοκτησία | 1168 px | Φάκελος › Επισκόπηση | 1695 px |
-| Μέσα › Ομοιότητα | 1661 px | Φάκελος › Αντιφάσεις | 1633 px |
-| Πολιτική › Προβολή | 1565 px | Φάκελος › Έλεγχος στοιχείων | 1560 px |
-| Πολιτική › Μέσα | 1472 px | Πολιτική › Θέματα | 1154 px |
-| Πολιτική › Ιδιοκτησία | 1110 px | Πολιτική › Συντάκτες | 1359 px |
+| Μέσα › Θέματα › Επισκόπηση | 1246 px | Ιστορίες › Υποθέσεις | 1774 px |
+| Μέσα › Θέματα › Ένα θέμα | 1289 px | Ιστορίες › Μοτίβα διάδοσης | 900 px |
+| Μέσα › Θέματα › Ατζέντα μέσων | 1417 px | Πρόσωπα › Επισκόπηση | 1148 px |
+| Μέσα › Θέματα › Μετατοπίσεις | 1809 px (see Limits) | Πρόσωπα › Έμφαση και στάση | 1036 px |
+| Μέσα › Ιδιοκτησία | 1168 px | Πρόσωπα › Δηλώσεις | 900 px |
+| Μέσα › Ομοιότητα | 1661 px | Φάκελος › Επισκόπηση | 1695 px |
+| Πολιτική › Προβολή | 1565 px | Φάκελος › Αντιφάσεις | 1633 px |
+| Πολιτική › Μέσα | 1472 px | Φάκελος › Έλεγχος στοιχείων | 1560 px |
+| Πολιτική › Ιδιοκτησία | 1110 px | Πολιτική › Θέματα | 1154 px |
+|  |  | Πολιτική › Συντάκτες | 1359 px |
 
 ## 6. Limits
 

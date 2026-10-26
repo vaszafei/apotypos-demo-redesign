@@ -7,13 +7,13 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=22">
-  <link rel="stylesheet" href="assets/dash.css?v=73">
+  <link rel="stylesheet" href="assets/dash.css?v=75">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
-  <script src="assets/messages.js?v=26"></script>
-  <script src="assets/messages-v2.js?v=36"></script>
+  <script src="assets/messages.js?v=27"></script>
+  <script src="assets/messages-v2.js?v=37"></script>
   <script src="assets/messages-spread.js?v=15"></script>
   <script src="assets/components.js?v=9"></script>
   <script src="assets/motion.js?v=1"></script>
@@ -183,7 +183,7 @@
           return { i, g, wrote: wrote.length, started: started.length, share: wrote.length ? started.length / wrote.length : 0 }
         }).sort((a, b) => b.share - a.share)
         const soloMax = Math.max(...soloRows.map((r) => r.share), 0.0001)
-                const soloCard = card('c-12', cardHead(t('stories.solo.title'), null, `${soloRows[0]?.started ? `${t('stories.solo.finding', { name: soloRows[0].g })} (${fmt.pct(soloRows[0].share)}). ` : ''}${t('stories.solo.info')}`),
+          const soloCard = card('c-12', cardHead(t('stories.solo.title'), null, `${soloRows[0]?.started ? `${t('stories.solo.finding', { name: soloRows[0].g })} (${fmt.pct(soloRows[0].share)}). ` : ''}${t('stories.solo.info')}`),
           UI.BarList(soloRows.map((r) => ({
             label: [h('span', { class: 'dot', style: `--dot:${colorOfGroup.get(r.g) || NO_GROUP}` }), r.g], value: r.share, color: colorOfGroup.get(r.g) || NO_GROUP,
             text: t('stories.solo.row', { share: fmt.pct(r.share), n: fmt.int(r.started) }),
