@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="assets/app.css?v=22">
   <link rel="stylesheet" href="assets/dash.css?v=76">
   <link rel="stylesheet" href="assets/politics.css?v=2">
-  <link rel="stylesheet" href="assets/elections.css?v=3">
+  <link rel="stylesheet" href="assets/elections.css?v=4">
 </head>
 <body>
   <div id="app"></div>
@@ -56,13 +56,13 @@
     }
 
     // A table with one column for each party. rows: [{ name, sub, cells: [node], cls, total }].
-    function PartyTable ({ parties, first, rows, total, caption }) {
-      return h('div', { class: 'table-wrap' }, h('table', { class: 'party-table' },
+    function PartyTable ({ parties, first, rows, total, caption, compact }) {
+      return h('div', { class: 'table-wrap' }, h('table', { class: `party-table${compact ? ' party-table-compact' : ''}` },
         h('caption', { class: 'visually-hidden' }, caption),
         h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, first), total ? h('th', { scope: 'col', class: 'num' }, total) : null,
           parties.map((p) => h('th', { scope: 'col', style: partyStyle(p.key), title: p.name }, p.key)))),
         h('tbody', {}, rows.map((r) => h('tr', { class: r.cls || null },
-          h('th', { scope: 'row' }, h('span', { class: 'row-name' }, r.name, r.sub ? h('span', { title: r.sub }, r.sub) : null)),
+          h('th', { scope: 'row', title: compact ? r.sub : null }, h('span', { class: 'row-name' }, r.name, r.sub ? h('span', { title: r.sub }, r.sub) : null)),
           total ? h('td', { class: 'num' }, fmt.int(r.total)) : null,
           r.cells)))))
     }
@@ -183,7 +183,8 @@
               pct1(sov), toneSub(tone, toneN)))
           }
         })
-        const favorCard = card('c-12', cardHead(t('elec.favor.title'), null, t('elec.favor.info')), PartyTable({ parties, first: t('elec.col.outlet'), rows: favorRows, caption: t('elec.favor.title') }))
+        // Μέσα: the table is compact (one line for the name, the owner in its tooltip) and shares its row with the card of the lean.
+        const favorCard = card('c-7 elec-pair', cardHead(t('elec.favor.title'), null, t('elec.favor.info')), PartyTable({ parties, first: t('elec.col.outlet'), rows: favorRows, caption: t('elec.favor.title'), compact: true }))
 
         // 2. Lean of the owner: the share of each party in the outlets of each lean, and the difference from the market.
         const leans = new Map()
@@ -208,7 +209,7 @@
         }).sort((a, b) => (b.gap ?? -9) - (a.gap ?? -9))
         const gapMax = Math.max(0.2, ...gapRows.map((r) => Math.abs(r.gap ?? 0)))
         const leaning = gapRows.filter((r) => r.gap !== null && !r.thin)
-        const gapCard = card('c-6', cardHead(leaning.length > 1 ? t('elec.gap.finding', { gov: leaning[0].name, a: signed(leaning[0].gap), opp: leaning[leaning.length - 1].name, b: signed(leaning[leaning.length - 1].gap) }) : t('elec.gap.title'), null, `${t('elec.gap.title')}. ${t('elec.gap.info')}`),
+        const gapCard = card('c-5 elec-pair', cardHead(leaning.length > 1 ? t('elec.gap.finding', { gov: leaning[0].name, a: signed(leaning[0].gap), opp: leaning[leaning.length - 1].name, b: signed(leaning[leaning.length - 1].gap) }) : t('elec.gap.title'), null, `${t('elec.gap.title')}. ${t('elec.gap.info')}`),
           h('p', { class: 'lean-ends' }, h('span', {}, `← ${t('elec.gap.opp')}`), h('span', {}, `${t('elec.gap.gov')} →`)),
           UI.BarList(gapRows.map((r) => ({
             cls: r.thin ? 'is-thin' : null, label: r.name, text: signed(r.gap),
