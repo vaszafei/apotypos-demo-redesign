@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="assets/app.css?v=29">
   <link rel="stylesheet" href="assets/dash.css?v=80">
   <link rel="stylesheet" href="assets/mme.css?v=33">
-  <link rel="stylesheet" href="assets/home.css?v=11">
+  <link rel="stylesheet" href="assets/home.css?v=12">
 </head>
 <body>
   <div id="app"></div>
@@ -17,13 +17,13 @@
   <script src="assets/messages.js?v=30"></script>
   <script src="assets/messages-v2.js?v=46"></script>
   <script src="assets/messages-mme.js?v=15"></script>
-  <script src="assets/messages-home.js?v=5"></script>
+  <script src="assets/messages-home.js?v=6"></script>
   <script src="assets/components.js?v=10"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
   <script src="assets/mme.js?v=19"></script>
   <script src="assets/spread.js?v=6"></script>
-  <script src="assets/home.js?v=5"></script>
+  <script src="assets/home.js?v=6"></script>
   <script src="assets/shell.js?v=47"></script>
   <script src="data/home.js"></script>
   <script src="data/stories.js?v=1"></script>
@@ -114,7 +114,7 @@
 
           const topicsCard = card('c-7', cardHead(t('home.topics.title'), null, t('home.topics.note')),
             UI.DataTable({
-              rankColumn: true, emptyText: t('home.topics.empty'), pageSize: 20, moreStep: 10,
+              rankColumn: true, emptyText: t('home.topics.empty'), pageSize: 16, moreStep: 10,
               rows: news.filter((x) => x.count > 0),
               columns: [
                 { label: t('home.col.issue'), render: (r) => name(r.issue) },

@@ -52,33 +52,46 @@
 
   const point = (cx, cy, rad, a) => [cx + rad * Math.cos(a), cy - rad * Math.sin(a)]
 
-  // A half ring, thin: one slice for each of the largest outlets in the color of its group, and one gray slice for the others. The legend under it is the text of the chart.
-  function HalfRing (slices, { total, caption }) {
-    const w = 420
-    const outer = 200
-    const inner = 172
-    const cx = w / 2
-    const cy = outer + 6
-    const svg = h('svg', { class: 'home-ring', viewBox: `0 0 ${w} ${cy + 4}`, role: 'img', 'aria-label': slices.map((s) => `${s.name} ${fmt.int(s.n)}`).join(', ') })
-    let a = Math.PI
+  // A vertical half ring, thin: the flat side is on the left and the arc bulges to the right, from the top to the bottom.
+  // One slice for each of the largest outlets in the color of its group, and one gray slice for the others. The panel beside it
+  // says the total, and names the outlet of the slice under the mouse (or in focus).
+  function OutletRing (slices, { total, count }) {
+    const outer = 150
+    const inner = 124
+    const cx = 4
+    const cy = outer + 4
+    const svg = h('svg', { class: 'home-ring', width: outer + 8, height: 2 * outer + 8, viewBox: `0 0 ${outer + 8} ${2 * outer + 8}`, role: 'group', 'aria-label': t('home.day.outlets') })
+    const panel = h('div', { class: 'home-ring-panel', 'aria-live': 'polite' })
+    const rest = () => panel.replaceChildren(h('p', { class: 'home-ring-total' }, fmt.int(total)), h('p', { class: 'home-ring-cap' }, t('home.day.ring', { n: count })), h('p', { class: 'home-ring-hint' }, t('home.day.hint')))
+    const show = (s) => panel.replaceChildren(h('p', { class: 'home-ring-name' }, s.name),
+      s.slug ? h('p', { class: 'home-ring-cap' }, s.group || t('home.day.nogroup')) : null,
+      h('p', { class: 'home-ring-total' }, fmt.int(s.n)), h('p', { class: 'home-ring-cap' }, t('home.day.slice', { share: fmt.pct(s.n / total) })))
+    rest()
+    let a = Math.PI / 2
     slices.forEach((s) => {
       const b = a - (s.n / total) * Math.PI
       const [x1, y1] = point(cx, cy, outer, a)
       const [x2, y2] = point(cx, cy, outer, b)
       const [x3, y3] = point(cx, cy, inner, b)
       const [x4, y4] = point(cx, cy, inner, a)
-      const path = h('path', { class: 'home-ring-slice', fill: s.color, d: `M${x1} ${y1}A${outer} ${outer} 0 0 1 ${x2} ${y2}L${x3} ${y3}A${inner} ${inner} 0 0 0 ${x4} ${y4}Z` })
-      const tip = `${s.name}${s.group ? ` · ${s.group}` : ''}: ${fmt.int(s.n)}`
-      const show = (e) => UI.showTooltip(tip, e.clientX, e.clientY)
-      path.addEventListener('pointerenter', show)
-      path.addEventListener('pointermove', show)
-      path.addEventListener('pointerleave', () => UI.hideTooltip())
+      const path = h('path', { class: 'home-ring-slice', fill: s.color, d: `M${x1} ${y1}A${outer} ${outer} 0 0 1 ${x2} ${y2}L${x3} ${y3}A${inner} ${inner} 0 0 0 ${x4} ${y4}Z`,
+        tabindex: 0, role: s.slug ? 'link' : 'img', 'aria-label': `${s.name}: ${fmt.int(s.n)}` })
+      const on = () => { svg.classList.add('has-hover'); path.classList.add('is-on'); show(s) }
+      const off = () => { svg.classList.remove('has-hover'); path.classList.remove('is-on'); rest() }
+      path.addEventListener('pointerenter', on)
+      path.addEventListener('pointerleave', off)
+      path.addEventListener('focus', on)
+      path.addEventListener('blur', off)
+      if (s.slug) {
+        const go = () => { location.href = `outlet-v2.html?slug=${s.slug}` }
+        path.classList.add('is-link')
+        path.addEventListener('click', go)
+        path.addEventListener('keydown', (e) => { if (e.key === 'Enter') go() })
+      }
       svg.append(path)
       a = b
     })
-    svg.append(h('text', { class: 'home-ring-total', x: cx, y: cy - 30, 'text-anchor': 'middle' }, fmt.int(total)),
-      h('text', { class: 'home-ring-cap', x: cx, y: cy - 8, 'text-anchor': 'middle' }, caption))
-    return svg
+    return h('div', { class: 'home-ring-wrap' }, panel, svg)
   }
 
   // The stories of a day: a story is picked to show it in the card, and its button opens its page. The card shows the story of the rank in info.
@@ -92,12 +105,7 @@
     const slices = top.map((o) => ({ name: o.name, group: o.group, n: o.n, color: groupColor(o.group), slug: o.slug }))
     if (rest.length) slices.push({ name: t('home.day.rest', { n: rest.length }), group: null, n: sum(rest.map((o) => o.n)), color: 'var(--bar-muted)' })
     const outlets = slices.length
-      ? h('div', { class: 'home-block' }, h('p', { class: 'home-label' }, t('home.day.outlets')),
-        HalfRing(slices, { total, caption: t('home.day.ring', { n: info.outlets.length }) }),
-        h('ul', { class: 'home-legend' }, slices.map((s) => h('li', {},
-          h('span', { class: 'home-legend-swatch', style: `background:${s.color}`, 'aria-hidden': 'true' }),
-          h('span', { class: 'home-legend-name' }, s.slug ? h('a', { href: `outlet-v2.html?slug=${s.slug}` }, s.name) : s.name, s.slug ? h('span', { class: 'muted-text' }, s.group || t('home.day.nogroup')) : null),
-          h('span', { class: 'home-legend-n' }, fmt.int(s.n))))))
+      ? h('div', { class: 'home-block' }, h('p', { class: 'home-label' }, t('home.day.outlets')), OutletRing(slices, { total, count: info.outlets.length }))
       : null
 
     const articles = info.articles.length

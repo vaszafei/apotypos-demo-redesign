@@ -10,20 +10,19 @@
 .home-block { display: grid; gap: 6px; }
 .home-label { margin: 0; font-size: var(--text-caption); font-weight: 600; color: var(--text-secondary); }
 
-/* The half ring of the outlets, and its legend. */
-.home-ring { display: block; width: 100%; max-width: 420px; height: auto; margin: 0 auto; overflow: visible; }
-.home-ring-slice { stroke: var(--surface-raised); stroke-width: 2; stroke-linejoin: round; }
-.home-ring-slice:hover { opacity: 0.85; }
-.home-ring-total { fill: var(--strong); font-size: 30px; font-weight: 600; }
-.home-ring-cap { fill: var(--text-secondary); font-size: 12px; }
-.home-legend { margin: var(--space-2) 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
-.home-legend li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: var(--space-2); align-items: baseline; font-size: var(--text-small); }
-.home-legend-swatch { width: 10px; height: 10px; border-radius: 2px; align-self: center; }
-.home-legend-name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-2); min-width: 0; }
-.home-legend-name .muted-text { font-size: var(--text-caption); }
-.home-legend-name a { color: var(--text-primary); text-decoration-color: var(--rule); text-underline-offset: 3px; }
-.home-legend-name a:hover { color: var(--accent); text-decoration-color: currentColor; }
-.home-legend-n { color: var(--text-secondary); font-size: var(--text-caption); font-variant-numeric: tabular-nums; }
+/* The vertical half ring of the outlets: a panel on the left and the arc on the right. The panel names the slice under the mouse. */
+.home-ring-wrap { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
+.home-ring-panel { flex: 1; min-width: 0; display: grid; gap: 2px; align-content: center; }
+.home-ring-panel p { margin: 0; }
+.home-ring-total { font-size: 30px; font-weight: 600; line-height: 1.15; color: var(--strong); font-variant-numeric: tabular-nums; }
+.home-ring-name { font-size: 18px; font-weight: 600; line-height: 1.25; color: var(--ink); overflow-wrap: anywhere; }
+.home-ring-cap { font-size: var(--text-caption); color: var(--text-secondary); }
+.home-ring-hint { margin-top: var(--space-2) !important; max-width: 24ch; font-size: var(--text-caption); color: var(--text-secondary); }
+.home-ring { flex: none; display: block; max-width: 100%; height: auto; overflow: visible; }
+.home-ring-slice { stroke: var(--surface-raised); stroke-width: 2; stroke-linejoin: round; outline: none; transition: opacity var(--motion-base) var(--ease-out); }
+.home-ring-slice.is-link { cursor: pointer; }
+.home-ring.has-hover .home-ring-slice:not(.is-on) { opacity: 0.35; }
+.home-ring-slice:focus-visible { stroke: var(--ink); }
 
 /* Headlines of the story. */
 .home-articles { margin: 0; padding: 0; list-style: none; display: grid; }
