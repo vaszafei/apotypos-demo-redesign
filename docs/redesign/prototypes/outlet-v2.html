@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=25">
   <link rel="stylesheet" href="assets/dash.css?v=79">
-  <link rel="stylesheet" href="assets/mme.css?v=20">
+  <link rel="stylesheet" href="assets/mme.css?v=21">
 </head>
 <body>
   <div id="app"></div>
@@ -21,7 +21,7 @@
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
   <script src="assets/spread.js?v=6"></script>
-  <script src="assets/entity-cards.js?v=6"></script>
+  <script src="assets/entity-cards.js?v=7"></script>
   <script src="assets/mme.js?v=12"></script>
   <script src="assets/shell.js?v=44"></script>
   <script src="data/media.js"></script>
@@ -119,7 +119,8 @@
         const record = group ? groupsData.data.groups.find((g) => g.name === group) : null
         const groupColor = (g) => (g && colorOfGroup.get(g)) || NO_GROUP
 
-        const dailyCard = Entity.DailyCard({ dates, daily: m.outletDaily[k], topicDays, issues: d.issues, info: t('outlet2.daily.info'), topics: false })
+        const makeDaily = (height) => Entity.DailyCard({ dates, daily: m.outletDaily[k], topicDays, issues: d.issues, info: t('outlet2.daily.info'), topics: false, height })
+        const dailyCard = makeDaily()
 
         // The topics of the stories of the outlet, against the topics of all outlets. The topic of the catch-all rows does not count.
         const mineTotal = sum(topicMine.filter((_, i) => !d.issues[i].catchAll))
@@ -239,10 +240,9 @@
             holder.replaceChildren(svg)
           })
         }
-        const roseLegend = h('ul', { class: 'rose-legend' }, slices.map((r) => h('li', {},
-          h('span', { class: 'rose-swatch', style: `background:${groupColor(r.group)}`, title: r.group || t('story.nogroup'), 'aria-hidden': 'true' }),
-          h('span', { class: 'rose-name' }, UI.EntityLink({ type: 'outlet', key: r.slug, label: r.name }), r.same ? h('span', { class: 'chip chip-sm' }, t('outlet2.related.same')) : null,
-            h('span', { class: 'muted-text' }, t('outlet2.related.row', { shared: fmt.int(r.shared) }))),
+        const roseLegend = h('ul', { class: 'rose-legend' }, slices.map((r) => h('li', { title: t('outlet2.related.row', { shared: fmt.int(r.shared) }) },
+          h('span', { class: 'rose-swatch', style: `background:${groupColor(r.group)}`, 'aria-hidden': 'true' }),
+          h('span', { class: 'rose-name' }, UI.EntityLink({ type: 'outlet', key: r.slug, label: r.name }), r.same ? h('span', { class: 'chip chip-sm' }, t('outlet2.related.same')) : null),
           h('span', { class: 'row-value' }, fmt.pct(r.score)))))
         const relatedCard = card('c-12', cardHead(t('outlet2.related.title'), null, t('outlet2.related.info')),
           related.length
@@ -267,10 +267,10 @@
         // The outlets of ΜΜΕ & πρόσωπα have the live cards. The others have the two cards of the groups file, and those stay on the first tab.
         // The outlets of ΜΜΕ & πρόσωπα have the live cards. The others have the two cards of the groups file only.
         const layouts = {
-          overview: [[[8, [relatedCard]], [4, [dailyCard, howCard]]]],
+          overview: [[[6, [relatedCard]], [6, [dailyCard]]]],
           topics: [[[12, [live && live.weekly]]], [[12, [topicsCard]]], [[12, [live && live.frames]]], [[12, [live && live.stance]]]],
           stories: [[[12, [storiesCard]]], [[6, [live && live.pushSkip[0]]], [6, [live && live.pushSkip[1]]]]],
-          people: [[[6, [live && live.portrayal, stanceCard]], [6, [live && live.voices]]]]
+          people: [[[6, [live && live.portrayal, howCard, stanceCard]], [6, [live && live.voices]]]]
         }
         // A row keeps its columns with cards. One column alone, or two that are 8 and 4 wide, share the 12 columns.
         const tabRows = (key) => layouts[key].map((row) => row.map(([span, cards]) => [span, cards.filter(Boolean)]).filter(([, cards]) => cards.length))
@@ -284,6 +284,15 @@
         const columns = h('div', { class: 'dash-grid story-grid entity-grid entity-rows' },
           tabRows(tab).flat().map(([span, cards]) => h('div', { class: `card-col card-col-fill c-${span} story-col` }, ...cards)))
         content.replaceChildren(bar, ...(tab === 'overview' ? [h('div', { class: 'dash-grid' }, statGrid, latestCard)] : []), columns, protoNote())
+        // Side by side, the daily chart takes the height that the related outlets leave under it, so the two cards end level.
+        if (tab === 'overview') {
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            if (!window.matchMedia('(min-width: 1280px)').matches || !dailyCard.isConnected) return
+            const body = dailyCard.lastElementChild
+            const slack = dailyCard.getBoundingClientRect().bottom - parseFloat(getComputedStyle(dailyCard).paddingBottom) - body.getBoundingClientRect().bottom
+            if (slack > 4) dailyCard.replaceWith(makeDaily(220 + Math.floor(slack)))
+          }))
+        }
       }
     })
 
