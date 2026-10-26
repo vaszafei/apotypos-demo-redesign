@@ -1,7 +1,7 @@
 // Messages of Αρχική (home.js and index.html). Load after messages.js.
 Object.assign(window.MESSAGES.el, {
   'home.day.title': 'Ιστορίες της ημέρας',
-  'home.day.info': 'Οι ιστορίες με τα περισσότερα άρθρα την ημέρα που διαλέξατε, στο ημερολόγιο ή στο γράφημα. Διαλέξτε μια ιστορία για να τη δείτε στην κάρτα· το κουμπί δίπλα της ανοίγει τη σελίδα της. Οι ιστορίες γενικών θεμάτων, όπως «Άλλα διεθνή», δεν μετράνε. Οι τίτλοι είναι δείγμα των άρθρων και οι σύνδεσμοι ανοίγουν τον ιστότοπο του μέσου.',
+  'home.day.info': 'Οι ιστορίες με τα περισσότερα άρθρα την ημέρα που διαλέξατε, στο ημερολόγιο ή στο γράφημα. Διαλέξτε μια ιστορία για να τη δείτε στην κάρτα· το κουμπί δίπλα της ανοίγει τη σελίδα της. Οι ιστορίες γενικών θεμάτων, όπως «Άλλα διεθνή», δεν μετράνε.',
   'home.day.latest': 'Τελευταία ημέρα',
   'home.day.meta': '{n} άρθρα',
   'home.day.meta.outlets': '{n} άρθρα σε {m} μέσα',
@@ -14,7 +14,6 @@ Object.assign(window.MESSAGES.el, {
   'home.day.slice': '{n} άρθρα · {share} των άρθρων της ιστορίας',
   'home.month.prev': 'Προηγούμενος μήνας',
   'home.month.next': 'Επόμενος μήνας',
-  'home.day.articles': 'Άρθρα της ιστορίας',
   'home.day.empty': 'Δεν υπάρχουν ιστορίες για αυτή την ημέρα.',
   'home.days.title': 'Ημερολόγιο άρθρων',
   'home.days.info': 'Ένα κελί για κάθε ημέρα του μήνα, με τα άρθρα όλων των μέσων και τη μεταβολή σε σχέση με την προηγούμενη ημέρα. Διαλέξτε μια ημέρα για να δείτε τις ιστορίες της.',
@@ -40,7 +39,7 @@ Object.assign(window.MESSAGES.el, {
 
 Object.assign(window.MESSAGES.en, {
   'home.day.title': 'Stories of the day',
-  'home.day.info': 'The stories with the most articles on the day you picked, in the calendar or in the chart. Pick a story to see it in the card; the button next to it opens its page. Stories of general topics, such as “Other world news”, do not count. The headlines are a sample of the articles and the links open the website of the outlet.',
+  'home.day.info': 'The stories with the most articles on the day you picked, in the calendar or in the chart. Pick a story to see it in the card; the button next to it opens its page. Stories of general topics, such as “Other world news”, do not count.',
   'home.day.latest': 'Latest day',
   'home.day.meta': '{n} articles',
   'home.day.meta.outlets': '{n} articles in {m} outlets',
@@ -53,7 +52,6 @@ Object.assign(window.MESSAGES.en, {
   'home.day.slice': '{n} articles · {share} of the articles of the story',
   'home.month.prev': 'Previous month',
   'home.month.next': 'Next month',
-  'home.day.articles': 'Articles of the story',
   'home.day.empty': 'There are no stories for this day.',
   'home.days.title': 'Calendar of articles',
   'home.days.info': 'One cell for each day of the month, with the articles of all the outlets and the change against the day before. Pick a day to see its stories.',

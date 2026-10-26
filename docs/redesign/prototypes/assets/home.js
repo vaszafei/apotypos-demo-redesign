@@ -1,14 +1,13 @@
 // The cards of Αρχική: the stories of a day, the calendar of a month, the topics that rise and fall and the shortcuts to the analyses.
 // Load after dash.js, mme.js and spread.js. index.html draws the page.
 (function () {
-  const { t, fmt, h, Icon, safeUrl } = window.App
+  const { t, fmt, h, Icon } = window.App
   const { card, cardHead, emptyText, groupColor } = Dash
 
   const name = (x) => x[App.locale] || x.el
   const sum = (arr) => arr.reduce((a, b) => a + b, 0)
 
-  // The lookups of a day: the stories of stories.js ranked by articles for each day, the story of the media set with the same name (it has the articles of each outlet),
-  // and the headlines of the set for each date. A generic story ("Άλλα διεθνή") is not a story, so it does not count.
+  // The lookups of a day: the stories of stories.js ranked by articles for each day, and the story of the media set with the same name (it has the articles of each outlet). A generic story ("Άλλα διεθνή") is not a story, so it does not count.
   function index ({ stories, set }) {
     const byDay = stories.dates.map(() => [])
     stories.stories.forEach((s) => {
@@ -17,20 +16,13 @@
     })
     byDay.forEach((list) => list.sort((a, b) => b.n - a.n))
     const mmeOf = new Map(set ? set.stories.map((s, i) => [s.el, i]) : [])
-    const headlines = new Map()
-    if (set) {
-      set.headlines.forEach((rows, k) => rows.forEach(([date, title, url, angle, , story]) => {
-        if (!headlines.has(date)) headlines.set(date, [])
-        headlines.get(date).push({ k, title, url, angle, story })
-      }))
-    }
-    return { byDay, mmeOf, headlines, set, dates: stories.dates, issues: stories.issues }
+    return { byDay, mmeOf, set, dates: stories.dates, issues: stories.issues }
   }
 
   const STORIES = 6
   const SLICES = 8
 
-  // Everything the card says about one story of a day: the story of that rank, the outlets that ran it, a few headlines, and the stories of the day.
+  // Everything the card says about one story of a day: the story of that rank, the outlets that ran it, and the stories of the day.
   function dayInfo (ix, d, rank = 0) {
     const list = ix.byDay[d] || []
     const lead = list[rank]
@@ -44,10 +36,7 @@
       for (let j = 0; j < rows.length; j += 3) if (rows[j + 1] === d) perOutlet.set(rows[j], rows[j + 2])
     }
     const outlets = [...perOutlet].map(([k, c]) => ({ ...ix.set.outlets[k], k, n: c })).sort((a, b) => b.n - a.n)
-    const seen = new Set()
-    const articles = (ix.headlines.get(date) || []).filter((x) => x.story === s.el && !seen.has(x.k) && seen.add(x.k)).slice(0, 3)
-      .map((x) => ({ ...x, outlet: ix.set.outlets[x.k].name }))
-    return { d, date, story: s, n, rank, topic: ix.issues[s.issue], outlets, articles, list: list.slice(0, STORIES) }
+    return { d, date, story: s, n, rank, topic: ix.issues[s.issue], outlets, list: list.slice(0, STORIES) }
   }
 
   // A thin horizontal bar of the articles of the story: one part for each of the largest outlets, from the left, in the color of its group, and one gray part for the others.
@@ -88,12 +77,6 @@
       ? h('div', { class: 'home-block' }, h('p', { class: 'home-label' }, t('home.day.outlets')), OutletStack(slices, { total, count: info.outlets.length }))
       : null
 
-    const articles = info.articles.length
-      ? h('div', { class: 'home-block' }, h('p', { class: 'home-label' }, t('home.day.articles')),
-        h('ul', { class: 'home-articles' }, info.articles.map((a) => h('li', {},
-          safeUrl(a.url) ? h('a', { href: safeUrl(a.url), rel: 'noopener', target: '_blank' }, a.title) : h('span', {}, a.title),
-          h('span', { class: 'muted-text' }, a.outlet)))))
-      : null
     const stories = h('ul', { class: 'home-stories' }, info.list.map((o, r) => h('li', { class: r === info.rank ? 'is-current' : null },
       h('button', { type: 'button', class: 'home-story-pick', 'aria-pressed': String(r === info.rank), onClick: () => onStory(r) },
         h('span', { class: 'home-story-name' }, name(o.s)), h('span', { class: 'muted-text' }, fmt.int(o.n))),
@@ -105,7 +88,6 @@
       h('p', { class: 'home-day-meta' }, topic ? [UI.EntityLink({ type: 'topic', key: String(story.issue), label: name(topic) }), ' · '] : null,
         info.outlets.length ? t('home.day.meta.outlets', { n: fmt.int(info.n), m: info.outlets.length }) : t('home.day.meta', { n: fmt.int(info.n) })),
       outlets,
-      articles,
       stories)
   }
 
