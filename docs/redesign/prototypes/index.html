@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="assets/app.css?v=29">
   <link rel="stylesheet" href="assets/dash.css?v=80">
   <link rel="stylesheet" href="assets/mme.css?v=33">
+  <link rel="stylesheet" href="assets/home.css?v=15">
 </head>
 <body>
   <div id="app"></div>
@@ -16,21 +17,30 @@
   <script src="assets/messages.js?v=30"></script>
   <script src="assets/messages-v2.js?v=46"></script>
   <script src="assets/messages-mme.js?v=15"></script>
-  <script src="assets/components.js?v=9"></script>
+  <script src="assets/messages-home.js?v=9"></script>
+  <script src="assets/components.js?v=10"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
   <script src="assets/mme.js?v=19"></script>
+  <script src="assets/spread.js?v=6"></script>
+  <script src="assets/home.js?v=9"></script>
   <script src="assets/shell.js?v=47"></script>
   <script src="data/home.js"></script>
+  <script src="data/stories.js?v=1"></script>
   <script src="data/mme.js?v=1"></script>
   <script>
-    // Home: Dashboard with a period that varies. The header shows the RangeControl and the update date.
+    // Home: the calendar of a month and the chart pick a day, the card shows the stories of that day (a story of the list is picked in the card),
+    // then the topics that rise and fall and the shortcuts to the analyses. The page covers the whole window of the data.
     const { t, fmt, h, load } = App
+    const { card, cardHead } = Dash
     const result = load('home', ['dates', 'outlets', 'issues', 'issueDaily'], (b) => b.dates)
+    const stories = load('stories', ['dates', 'issues', 'stories'], (b) => b.stories)
     // «Τι ξεχωρίζει στο διάστημα» comes from Μέσα › Επισκόπηση: the Greek outlets of data/mme.js, for the period of the page.
     const mme = load('mme', ['sets'], (b) => Object.keys(b.sets))
     const range = { from: '2026-08-01', to: '2026-09-30' }
     let lastValid = { ...range }
+    let selected = null
+    let rank = 0
 
     function sumRange (daily, i0, i1) {
       let s = 0
@@ -41,55 +51,70 @@
     Shell.start({
       id: 'home',
       route: '/',
+      dash: true,
       title: () => t('home.title'),
       breadcrumbs: () => [],
       render (content) {
-        const draw = () => {
-          const data = result.data
-          const dates = data?.dates ?? []
-          const presets = UI.periodPresets()
-          const controls = result.kind === 'data' || result.kind === 'empty'
-            ? UI.RangeControl({ dates, from: range.from, to: range.to, presets, onChange: (r) => { Object.assign(range, r); if (r.from <= r.to) lastValid = { ...r }; draw() } })
-            : null
-          const makeHeader = (meta) => UI.PageHeader({ title: t('home.title'), meta, controls, updatedAt: result.kind === 'data' ? data.updatedAt : null })
+        content.classList.add('dash', 'minimal')
+        const ix = stories.kind === 'data' && result.kind === 'data'
+          ? Home.index({ stories: stories.data, set: mme.kind === 'data' ? mme.data.sets.gr : null })
+          : null
 
+        const draw = () => {
+          Dash.reset()
+          const data = result.data
+          const bar = () => Dash.TopBar({ title: t('home.title'), quiet: true })
           if (result.kind === 'failed' || result.kind === 'notFound') {
-            content.replaceChildren(makeHeader(null), UI.ErrorState({ onRetry: () => location.reload() }), protoNote())
+            content.replaceChildren(bar(), UI.ErrorState({ onRetry: () => location.reload() }), protoNote())
             return
           }
-          const empty = result.kind === 'empty'
+          if (result.kind === 'empty') {
+            content.replaceChildren(bar(), h('div', { class: 'dash-grid' }, card('c-12', UI.EmptyState({ text: t('home.k01.empty') }))), protoNote())
+            return
+          }
+          const dates = data.dates
           const i0 = dates.indexOf(lastValid.from)
           const i1 = dates.indexOf(lastValid.to)
           const len = i1 - i0 + 1
-
-          const collected = empty ? 0 : data.outlets.reduce((s, o) => s + sumRange(o.daily, i0, i1), 0)
-          const previous = !empty && i0 - len >= 0 ? data.outlets.reduce((s, o) => s + sumRange(o.daily, i0 - len, i0 - 1), 0) : null
-          const outletsActive = empty ? 0 : data.outlets.filter((o) => sumRange(o.daily, i0, i1) > 0).length
-          const issueCounts = empty ? [] : data.issues.map((issue, k) => ({ issue, count: sumRange(data.issueDaily[k], i0, i1) }))
-          const analysed = issueCounts.reduce((s, x) => s + x.count, 0)
-          const news = issueCounts.filter((x) => !x.issue.soft).sort((a, b) => b.count - a.count)
-          const newsTotal = news.reduce((s, x) => s + x.count, 0)
-          const period = fmt.period(lastValid.from, lastValid.to)
+          if (selected === null || selected < i0 || selected > i1) selected = i1
           const name = (issue) => issue[App.locale] || issue.el
 
-          const tiles = UI.KpiStrip([
-            UI.KpiTile({ kpiId: 'K01', label: t('home.k01'), value: fmt.int(collected), hint: null, emptyText: t('home.k01.empty'), state: collected ? 'ready' : 'empty',
-              change: previous ? t('change.vsPrevious', { sign: '', value: fmt.signed(((collected - previous) / previous) * 100) + '%' }) : null }),
-            UI.KpiTile({ kpiId: 'K02', label: t('home.k02'), value: fmt.int(outletsActive), hint: t('home.k02.hint'), emptyText: t('home.k02.empty'), state: outletsActive ? 'ready' : 'empty' }),
-            UI.KpiTile({ kpiId: 'K03', label: t('home.k03'), value: analysed ? fmt.pct(newsTotal / analysed) : '', hint: t('home.k03.hint', { news: fmt.int(newsTotal), analysed: fmt.int(analysed) }), emptyText: t('home.k03.empty'), state: analysed ? 'ready' : 'empty' }),
-            UI.KpiTile({ kpiId: 'K04', label: t('home.k04'), value: newsTotal ? fmt.pct(news[0].count / newsTotal) : '', hint: newsTotal ? t('home.k04.hint', { issue: name(news[0].issue) }) : null, emptyText: t('home.k03.empty'), state: newsTotal ? 'ready' : 'empty' })
-          ])
+          // The articles of all the outlets for each day of the data.
+          const totals = dates.map((_, i) => data.outlets.reduce((s, o) => s + o.daily[i], 0))
+          const collected = sumRange(totals, i0, i1)
+          const issueCounts = data.issues.map((issue, k) => ({ issue, count: sumRange(data.issueDaily[k], i0, i1) }))
+          const news = issueCounts.filter((x) => !x.issue.soft).sort((a, b) => b.count - a.count)
+          const newsTotal = news.reduce((s, x) => s + x.count, 0)
+
+          // The stories of the day. A pick of a day in the calendar or the chart, or of a story in the list, draws this card again.
+          const dayCard = () => Home.DayCard(ix ? Home.dayInfo(ix, selected, rank) : null, { isLast: selected === dates.length - 1, onStory: (r) => { rank = r; redraw() } })
+          let day = dayCard()
+          const redraw = () => { const next = dayCard(); day.replaceWith(next); day = next }
+
+          const calendar = Home.Calendar({ dates, totals, selected, onPick: (i) => pick(i, 'calendar') })
 
           const days = dates.slice(i0, i1 + 1)
-          const daily = empty ? [] : days.map((d, j) => data.outlets.reduce((s, o) => s + o.daily[i0 + j], 0))
-          const dailyCard = UI.ChartCard({
-            title: t('home.daily.title'), note: t('home.daily.note'),
-            body: daily.length ? UI.BarChart({ dates: days, values: daily, label: t('home.daily.title'), tooltipOf: (i) => `${fmt.date(days[i])}: ${fmt.int(daily[i])}` }) : UI.EmptyState({ text: t('home.k01.empty') })
+          const daily = totals.slice(i0, i1 + 1)
+          const avg = collected / len
+          const chart = () => UI.BarChart({
+            dates: days, values: daily, label: t('home.daily.title'), height: 300, picked: selected - i0, onPick: (j) => pick(i0 + j, 'chart'),
+            reference: { value: avg, label: t('home.daily.avg', { n: fmt.int(Math.round(avg)) }) },
+            tooltipOf: (i) => `${fmt.date(days[i])}: ${fmt.int(daily[i])}`
           })
-          const topicsCard = UI.ChartCard({
-            title: t('home.topics.title'), note: t('home.topics.note'),
-            body: UI.DataTable({
-              rankColumn: true, emptyText: t('home.topics.empty'),
+          const chartBody = h('div', {}, chart())
+          const dailyCard = card('c-7', cardHead(t('home.daily.title'), null, t('home.daily.info')), chartBody)
+
+          function pick (i, from) {
+            selected = i
+            rank = 0
+            redraw()
+            if (from === 'chart') calendar.select(i)
+            else chartBody.replaceChildren(chart())
+          }
+
+          const topicsCard = card('c-7', cardHead(t('home.topics.title'), null, t('home.topics.note')),
+            UI.DataTable({
+              rankColumn: true, emptyText: t('home.topics.empty'), pageSize: 9, moreStep: 10,
               rows: news.filter((x) => x.count > 0),
               columns: [
                 { label: t('home.col.issue'), render: (r) => name(r.issue) },
@@ -97,9 +122,13 @@
                 { label: t('home.col.share'), num: true, render: (r) => fmt.pct(r.count / newsTotal) },
                 { label: '', phone: false, render: (r) => UI.HBar(r.count / newsTotal, news[0].count / newsTotal) }
               ]
-            })
-          })
-          content.replaceChildren(makeHeader([period, t('home.meta.outlets', { n: fmt.int(outletsActive) })]), highlights(), tiles, dailyCard, topicsCard, protoNote())
+            }))
+
+          const main = h('div', { class: 'c-7 card-col card-col-fill' }, calendar.node, dailyCard, topicsCard)
+          const aside = h('div', { class: 'c-5 card-col card-col-fill' }, day, Home.TrendsCard({ home: data, i0, i1 }))
+          const hl = highlights()
+          content.replaceChildren(bar(),
+            h('div', { class: 'dash-grid home-grid' }, main, aside, hl, Home.AnalysesCard()), protoNote())
         }
         draw()
       }
@@ -114,7 +143,7 @@
       if (i0 < 0 || i1 < i0) return null
       const el = Mme.HighlightsCard(Mme.summary(set, i0, i1))
       el.querySelector('.dcard-head').after(h('p', { class: 'dcard-sub' }, t('mme.home.note')))
-      return h('div', { class: 'dash home-dash' }, h('div', { class: 'dash-grid' }, el))
+      return el
     }
 
     function protoNote () { return h('p', { class: 'proto-note' }, t('proto.states')) }

@@ -1,0 +1,69 @@
+/* Αρχική: the calendar of a month, the stories of a day, the trends and the shortcuts to the analyses. */
+
+/* The stories of a day. */
+.home-day { gap: var(--space-3); }
+.home-pill { border-color: var(--ink); color: var(--ink); font-weight: 600; }
+.home-day-date { margin: 0; font-size: var(--text-caption); color: var(--text-secondary); text-transform: capitalize; }
+.home-day-story { margin: 0; font: 600 22px/1.25 var(--font-heading); letter-spacing: -0.01em; color: var(--ink); }
+.home-day-meta { margin: 0; font-size: var(--text-small); color: var(--text-secondary); }
+.home-day-meta .entity-link { font-weight: 600; color: var(--text-primary); }
+.home-block { display: grid; gap: 6px; }
+.home-label { margin: 0; font-size: var(--text-caption); font-weight: 600; color: var(--text-secondary); }
+
+/* The horizontal bar of the outlets, and under it a line that names the part under the mouse. */
+.home-stack-wrap { display: grid; gap: var(--space-3); }
+.home-stack { display: flex; gap: 2px; width: 100%; height: 28px; }
+.home-stack-part { display: block; min-width: 5px; border-radius: 4px; outline: none; transition: opacity var(--motion-base) var(--ease-out); }
+a.home-stack-part { cursor: pointer; }
+.home-stack.has-hover .home-stack-part:not(.is-on) { opacity: 0.35; }
+.home-stack-part:focus-visible { box-shadow: 0 0 0 2px var(--ink); }
+.home-stack-panel { display: grid; align-content: start; gap: 2px; min-height: 52px; }
+.home-stack-panel p { margin: 0; }
+.home-stack-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-2); }
+.home-stack-total { font-size: 26px; font-weight: 600; line-height: 1.15; color: var(--strong); font-variant-numeric: tabular-nums; }
+.home-stack-name { font-size: 18px; font-weight: 600; line-height: 1.3; color: var(--ink); }
+.home-stack-cap { font-size: var(--text-caption); color: var(--text-secondary); }
+
+/* The list of the stories of the day: a row picks the story, and its button opens its page. */
+.home-stories { margin: 0; padding: var(--space-2) 0 0; list-style: none; display: grid; gap: 4px; border-top: 1px solid var(--border); }
+.home-stories li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); border-radius: 8px; }
+.home-stories li.is-current { background: var(--surface-page); }
+.home-story-pick { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: var(--space-3); min-width: 0; padding: 8px; border: 0; border-radius: 8px; background: transparent; color: var(--text-primary); font: inherit; font-size: var(--text-small); line-height: 1.35; text-align: left; cursor: pointer; }
+.home-story-pick:hover .home-story-name { color: var(--accent); }
+.home-story-pick[aria-pressed="true"] .home-story-name { font-weight: 600; color: var(--ink); }
+.home-story-pick .muted-text { font-size: var(--text-caption); font-variant-numeric: tabular-nums; }
+.home-story-go { display: inline-flex; align-items: center; gap: 2px; margin-right: 6px; white-space: nowrap; text-decoration: none; }
+
+/* The calendar of a month: a strip of day tiles that scrolls sideways, with the month and its arrows in the head. */
+.home-month-nav { display: inline-flex; align-items: center; gap: 2px; }
+.home-month-name { min-width: 9em; text-align: center; font-size: var(--text-small); font-weight: 600; text-transform: capitalize; color: var(--text-primary); }
+.home-month-nav .icon-button:disabled { opacity: 0.3; cursor: default; }
+.home-days { position: relative; display: flex; gap: 6px; margin: 0; padding: 0 0 var(--space-2); list-style: none; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: thin; }
+.home-days > li { flex: none; scroll-snap-align: center; }
+.home-day-btn { display: grid; justify-items: center; align-content: start; gap: 2px; width: 62px; padding: 8px 4px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-raised); color: var(--text-primary); font: inherit; cursor: pointer; }
+.home-day-btn:hover { border-color: var(--ink); }
+.home-day-btn.is-weekend { background: var(--surface-page); }
+.home-day-btn[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--on-ink); }
+.home-day-dow { font-size: var(--text-caption); text-transform: capitalize; color: var(--text-secondary); }
+.home-day-num { font-size: 20px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.home-day-n { margin-top: 4px; font-size: var(--text-caption); font-weight: 600; font-variant-numeric: tabular-nums; }
+.home-day-delta { font-size: var(--text-caption); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.home-day-btn[aria-pressed="true"] .home-day-dow, .home-day-btn[aria-pressed="true"] .home-day-delta { color: var(--on-ink); opacity: 0.75; }
+
+/* The shortcuts to the analyses: one row of tiles that wraps. */
+.home-links { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-3); }
+.home-links li { border: 1px solid var(--border); border-radius: 10px; }
+.home-links li:hover { border-color: var(--ink); }
+.home-links a { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); height: 100%; padding: 12px 14px; color: var(--text-primary); text-decoration: none; }
+.home-links a:hover strong, .home-links a:focus-visible strong { color: var(--accent); }
+.home-links a:hover .icon { transform: translateX(2px); }
+.home-links .icon { color: var(--text-secondary); transition: transform var(--motion-base) var(--ease-out); }
+.home-link-main { display: grid; gap: 2px; min-width: 0; }
+.home-link-main strong { font-size: var(--text-small); font-weight: 600; }
+.home-link-main .muted-text { font-size: var(--text-caption); }
+
+@media (max-width: 1279px) { .home-grid > .c-5 { grid-column: span 12; } }
+@media (max-width: 519px) {
+  .home-month-name { min-width: 7em; }
+  .home-story-go { font-size: 0; gap: 0; padding: 0 8px; }
+}
