@@ -14,7 +14,7 @@
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=28"></script>
   <script src="assets/messages-v2.js?v=37"></script>
-  <script src="assets/messages-spread.js?v=15"></script>
+  <script src="assets/messages-spread.js?v=16"></script>
   <script src="assets/components.js?v=9"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
@@ -113,7 +113,7 @@
           const m = MODES[state.mode]
           const rows = mx.order.filter((b) => b !== a).map((b) => ({ b, v: m.value(a, b), cover: mx.cover(a, b), back: mx.cover(b, a) })).sort((x, y) => y.v - x.v).slice(0, PANEL_ROWS)
           const options = mx.order.map((i) => ({ value: String(i), label: outletName(i) })).sort((x, y) => x.label.localeCompare(y.label))
-          panelHolder.replaceChildren(card('c-12', cardHead(t('sim.sel.title', { name: outletName(a) }), null, t('sim.sel.info')),
+          panelHolder.replaceChildren(card('c-12', cardHead(t('sim.sel.title'), null, t('sim.sel.info')),
             h('div', { class: 'mx-select' }, select(t('sim.sel.pick'), a, options, (v) => pick(Number(v)))),
             h('p', { class: 'dcard-sub' }, t('sim.sel.stories', { n: fmt.int(mx.per[a]) })),
             UI.BarList(rows.map((r) => ({
@@ -139,7 +139,7 @@
           tip: (it) => t('sim.same.tip', { name: it.name, n: fmt.int(it.n), score: fmt.pct(it.score) })
         })
         // #60: the titles say what each card shows; the topic of the card goes to its info.
-        const sameCard = card('c-12', cardHead(sameRows.every((r) => r.n) ? t('sim.same.finding', { same: fmt.pct(sameRows[0].score), other: fmt.pct(sameRows[1].score) }) : t('sim.same.title'), null, `${t('sim.same.title')}. ${t('sim.same.info')}`),
+        const sameCard = card('c-12', cardHead(t('sim.same.title'), null, `${sameRows.every((r) => r.n) ? `${t('sim.same.finding', { same: fmt.pct(sameRows[0].score), other: fmt.pct(sameRows[1].score) })}. ` : ''}${t('sim.same.info')}`),
           h('div', { class: 'ring-stack' }, sameRing,
             h('ul', { class: 'ring-list' }, sameRows.map((r) => h('li', {},
               h('span', { class: 'dot', style: `--dot:${sameColors[r.key]}` }), h('span', {}, t(`sim.group.${r.key}`)),
@@ -192,7 +192,7 @@
         const maxLag = Math.max(...rows.map((r) => r.lagMin), 1)
         const fastest = by('lagMin')[0]
         const avgLag = rows.reduce((sum, r) => sum + r.lagMin, 0) / rows.length
-        const lagCard = card('c-4', cardHead(t('originality.lag.finding', { name: fastest.name, lag: lagText(fastest.lagMin) }), null, `${t('originality.lag.title')}. ${t('originality.lag.info')}`),
+        const lagCard = card('c-4', cardHead(t('originality.lag.title'), null, `${t('originality.lag.finding', { name: fastest.name, lag: lagText(fastest.lagMin) })}. ${t('originality.lag.info')}`),
           UI.BarList(by('lagMin').map((r) => ({ label: r.name, value: r.lagMin, text: lagText(r.lagMin) })), { max: maxLag, reference: { value: avgLag, label: t('originality.lag.avg', { lag: lagText(avgLag) }) } }))
 
         // The table of all pairs is the table view of the matrix. It stays closed until the reader opens it.

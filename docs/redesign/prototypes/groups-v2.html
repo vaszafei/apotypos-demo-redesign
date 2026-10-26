@@ -326,9 +326,9 @@
           treeGroups.forEach((g) => { g.value = g.outlets.reduce((s, o) => s + o.value, 0) })
           const bubbles = card('c-7', cardHead(t('g2.tree.title'), null, [t('g2.tree.sub', { period }), t('g2.record', { source: d.record.source, date: fmt.date(d.record.exportedAt) })].join(' ')),
             total ? OwnerBubbles({ groups: treeGroups, total }) : emptyText(t('groups.empty')))
-          // #60: the title says how much the 3 largest groups write; the topic of the card goes to its info.
+          // The finding (how much the 3 largest groups write) is the first sentence of the info of the card.
           const top3 = treeGroups.filter((g) => g.key !== null).sort((a, b) => b.value - a.value).slice(0, 3).reduce((a, g) => a + g.value, 0)
-          const shareCard = card('c-5', cardHead(total ? t('g2.share.finding', { share: fmt.pct(top3 / total) }) : t('media2.groups.title'), null, [t('media2.groups.title'), total ? t('media2.groups.known', { share: fmt.pct(grouped / total) }) : null].filter(Boolean).join('. ')),
+          const shareCard = card('c-5', cardHead(t('media2.groups.title'), null, total ? [t('g2.share.finding', { share: fmt.pct(top3 / total) }), t('media2.groups.known', { share: fmt.pct(grouped / total) })].join('. ') : null),
             total
               ? h('div', { class: 'donut-wrap sun-wrap' },
                   h('ul', { class: 'rows rows-groups rows-owners' }, treeGroups.map((g) => {
@@ -359,7 +359,7 @@
           }).filter((r) => r.n >= 30)
           const scale = Math.max(...stanceRows.map((r) => Math.max(r.crit + r.neu / 2, r.sup + r.neu / 2)), 0.01)
           const critical = stanceRows.slice().sort((a, b) => b.crit - a.crit)
-          const stanceCard = card('c-4', cardHead(critical.length > 1 ? t('g2.stance.finding', { most: critical[0].g.name, a: fmt.pct(critical[0].crit), least: critical[critical.length - 1].g.name, b: fmt.pct(critical[critical.length - 1].crit) }) : t('g2.stance.title'), null, `${t('g2.stance.title')}. ${t('g2.stance.sub')}`),
+          const stanceCard = card('c-4', cardHead(t('g2.stance.title'), null, `${critical.length > 1 ? `${t('g2.stance.finding', { most: critical[0].g.name, a: fmt.pct(critical[0].crit), least: critical[critical.length - 1].g.name, b: fmt.pct(critical[critical.length - 1].crit) })}. ` : ''}${t('g2.stance.sub')}`),
             stanceRows.length
               ? [UI.Legend(['critical', 'neutral', 'supportive'].map((nm, i) => ({ label: t(`stance.${nm}`), color: UI.STANCE_COLORS[i] }))),
                 UI.BarList(stanceRows.map((r) => ({

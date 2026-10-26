@@ -244,7 +244,7 @@
   const stanceKey = () => UI.Legend(STANCE_CODES.map((c, i) => ({ label: t(`stance.${c}`), color: STANCE_COLORS[i] })))
 
   // The stance to the government in each outlet: critical, neutral, supportive.
-  // The title says which outlets are the most and the least critical. The tick on each bar is the critical share of all the articles,
+  // The info says which outlets are the most and the least critical. The tick on each bar is the critical share of all the articles,
   // and the long list runs in two columns.
   function GovCard (S) {
     const rows = S.active.filter((o) => sum(o.stance) > 0).sort((a, b) => (sum(b.stance) >= 30) - (sum(a.stance) >= 30) || critShare(b.stance) - critShare(a.stance))
@@ -252,10 +252,10 @@
     const all = [0, 1, 2].map((j) => sum(rows.map((o) => o.stance[j])))
     const avg = critShare(all)
     const scored = rows.filter((o) => sum(o.stance) >= 30)
-    const title = scored.length > 1
+    const finding = scored.length > 1
       ? t('mme.gov.finding', { most: scored[0].name, a: pctRound(critShare(scored[0].stance)), least: scored[scored.length - 1].name, b: pctRound(critShare(scored[scored.length - 1].stance)) })
-      : topic
-    return card('', cardHead(title, null, `${topic}. ${t('mme.gov.info')}`),
+      : null
+    return card('', cardHead(topic, null, `${finding ? `${finding}. ` : ''}${t('mme.gov.info')}`),
       h('div', { class: 'mme-key-row' }, UI.Legend([...STANCE_CODES.map((c, i) => ({ label: t(`stance.${c}`), color: STANCE_COLORS[i] })), { label: t('mme.gov.avg', { v: pctRound(avg) }), tick: true }])),
       rows.length
         ? UI.BarList(rows.map((o) => ({ cls: sum(o.stance) < 30 ? 'is-faint' : null, label: outletLink(S, o), text: `${pctRound(critShare(o.stance))} · ${t('mme.n', { n: fmt.int(sum(o.stance)) })}`, bar: StanceBar(o.stance, o.name, avg) })), { columns: 2 })

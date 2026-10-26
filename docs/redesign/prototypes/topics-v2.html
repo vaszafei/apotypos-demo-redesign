@@ -19,7 +19,7 @@
   <script src="assets/components.js?v=9"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
-  <script src="assets/mme.js?v=8"></script>
+  <script src="assets/mme.js?v=9"></script>
   <script src="assets/shell.js?v=44"></script>
   <script src="data/home.js?v=3"></script>
   <script src="data/stories.js?v=1"></script>
@@ -206,7 +206,7 @@
         const sorted = movers.filter((r) => !r.issue.catchAll).sort((a, b) => b.change - a.change)
         const list = [...sorted.filter((r) => r.change > 0).slice(0, 5), ...sorted.filter((r) => r.change < 0).slice(-5)]
         const widest = Math.max(...list.map((r) => Math.abs(r.change)), 0)
-        // One column on one scale: the rising topics first, then the falling topics. The title names the largest change of each side.
+        // One column on one scale: the rising topics first, then the falling topics. The info names the largest change of each side.
         const moverRow = (r) => {
           const color = r.change > 0 ? 'var(--emph-more)' : 'var(--emph-less)'
           return { label: UI.EntityLink({ type: 'topic', key: String(d.issues.indexOf(r.issue)), label: name(r.issue) }), value: Math.abs(r.change), color,
@@ -215,11 +215,11 @@
         const up = list.filter((r) => r.change > 0)
         // In falling order: the largest fall is the last row.
         const down = list.filter((r) => r.change < 0)
-        const moveTitle = up.length && down.length
+        const moveFinding = up.length && down.length
           ? t('topics2.move.finding', { up: name(up[0].issue), a: `${fmt.signed(up[0].change * 100)}%`, down: name(down[down.length - 1].issue), b: `${fmt.signed(down[down.length - 1].change * 100)}%` })
-          : t('topics2.move.title')
+          : null
         const moversCard = card('',
-          cardHead(moveTitle, null, `${t('topics2.move.title')}. ${t('topics2.move.sub')}`),
+          cardHead(t('topics2.move.title'), null, `${moveFinding ? `${moveFinding}. ` : ''}${t('topics2.move.sub')}`),
           list.length
             ? UI.BarList(list.map(moverRow), { max: widest })
             : emptyText(t('media2.empty.list')))
