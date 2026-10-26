@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="assets/tokens.css?v=6">
   <link rel="stylesheet" href="assets/app.css?v=22">
   <link rel="stylesheet" href="assets/dash.css?v=76">
-  <link rel="stylesheet" href="assets/politics.css?v=2">
+  <link rel="stylesheet" href="assets/politics.css?v=3">
   <link rel="stylesheet" href="assets/elections.css?v=4">
 </head>
 <body>
@@ -16,11 +16,11 @@
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=27"></script>
   <script src="assets/messages-v2.js?v=37"></script>
-  <script src="assets/messages-politics.js?v=8"></script>
+  <script src="assets/messages-politics.js?v=9"></script>
   <script src="assets/components.js?v=9"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
-  <script src="assets/politics.js?v=2"></script>
+  <script src="assets/politics.js?v=3"></script>
   <script src="assets/shell.js?v=42"></script>
   <script src="data/elections.js?v=2"></script>
   <script>
@@ -154,21 +154,25 @@
         const legend = h('ul', { class: 'legend-inline legend-list legend-pick', 'aria-label': t('elec.parties') })
         const timeHead = h('div', {})
         const timeHolder = h('div', {})
-        const labels = weeks.map((w) => fmt.date(w, { day: 'numeric', month: 'short' }))
-        const tips = weeks.map((w) => fmt.date(w))
+        // The weeks that the API does not have are cut out of the axis: a gap is one mark with its text, not months of empty space.
+        const have = new Set(d.weeks)
+        const kept = weeks.map((w, j) => j).filter((j) => have.has(weeks[j]))
+        const labels = kept.map((j) => fmt.date(weeks[j], { day: 'numeric', month: 'short' }))
+        const tips = kept.map((j) => fmt.date(weeks[j]))
+        const gaps = kept.map((j, k) => ({ at: k, n: k ? j - kept[k - 1] - 1 : 0 })).filter((g) => g.n > 0).map((g) => ({ at: g.at, text: t('elec.gap.nodata', { n: fmt.int(g.n) }) }))
         const drawLines = () => {
           const reach = measure === 'reach'
           const modeSwitch = UI.SegmentedControl({ label: t('elec.time.measure'), value: measure, options: ['reach', 'tone'].map((m) => ({ value: m, label: t(`elec.time.${m}`) })), onChange: (m) => { measure = m; drawLines() } })
-          timeHead.replaceChildren(cardHead(reach ? reachTitle : t('elec.tone.title'), modeSwitch, reach ? `${t('elec.reach.title')}. ${t('elec.reach.info')}` : t('elec.tone.info')))
+          timeHead.replaceChildren(cardHead(reach ? t('elec.reach.title') : t('elec.tone.title'), modeSwitch, reach ? `${reachTitle}. ${t('elec.reach.info')}` : t('elec.tone.info')))
           legend.replaceChildren(...parties.map((p) => h('li', {}, h('button', { type: 'button', 'aria-pressed': String(shown.has(p.key)), title: p.name, onClick: () => { shown.has(p.key) ? shown.delete(p.key) : shown.add(p.key); drawLines() } },
             h('span', { class: 'swatch', style: { background: color(p.key) } }), p.key))))
           const pick = keys.map((k, i) => i).filter((i) => shown.has(keys[i]))
-          const series = pick.map((i) => ({ label: keys[i], color: color(keys[i]), values: smooth((reach ? mentions : tones)[i]), dots: false }))
+          const series = pick.map((i) => ({ label: keys[i], color: color(keys[i]), values: smooth((reach ? mentions : tones)[i]).filter((_, j) => have.has(weeks[j])), dots: false }))
           timeHolder.replaceChildren(!pick.length
             ? emptyText(t('topics2.empty'))
             : reach
-              ? LineChart({ labels, tips, series, yFormat: (v) => fmt.int(Math.round(v)), zero: true, height: 300, aria: t('elec.reach.aria') })
-              : LineChart({ labels, tips, series, yFormat: (v) => signed(v, 1), min: -1, max: 1, height: 300, aria: t('elec.tone.aria') }))
+              ? LineChart({ labels, tips, series, yFormat: (v) => fmt.int(Math.round(v)), zero: true, height: 300, aria: t('elec.reach.aria'), gaps })
+              : LineChart({ labels, tips, series, yFormat: (v) => signed(v, 1), min: -1, max: 1, height: 300, aria: t('elec.tone.aria'), gaps }))
         }
         drawLines()
         const bar = TopBar({ title, tabs, quiet: true })
@@ -184,7 +188,7 @@
           }
         })
         // Μέσα: the table is compact (one line for the name, the owner in its tooltip) and shares its row with the card of the lean.
-        const favorCard = card('c-7 elec-pair', cardHead(t('elec.favor.title'), null, t('elec.favor.info')), PartyTable({ parties, first: t('elec.col.outlet'), rows: favorRows, caption: t('elec.favor.title'), compact: true }))
+        const favorCard = card('c-8 elec-pair', cardHead(t('elec.favor.title'), null, t('elec.favor.info')), PartyTable({ parties, first: t('elec.col.outlet'), rows: favorRows, caption: t('elec.favor.title'), compact: true }))
 
         // 2. Lean of the owner: the share of each party in the outlets of each lean, and the difference from the market.
         const leans = new Map()
@@ -196,7 +200,7 @@
             return h('td', { class: 'cell', style: partyStyle(keys[i]) }, pct1(c.sov),
               diff === null ? toneSub(c.tone, c.toneN) : Math.abs(diff) < 0.05 ? h('span', { class: 'sub zero' }, fmt.dec(0)) : h('span', { class: `sub ${cls(diff)}` }, fmt.signed(diff)))
           }) }))
-        const leanCard = card('c-12', cardHead(t('elec.lean.title'), null, t('elec.lean.info')), PartyTable({ parties, first: t('elec.col.lean'), rows: leanRows, caption: t('elec.lean.title') }))
+        const leanCard = card('c-8 elec-pair', cardHead(t('elec.lean.title'), null, t('elec.lean.info')), PartyTable({ parties, first: t('elec.col.lean'), rows: leanRows, caption: t('elec.lean.title') }))
 
         // 3. Government or opposition: the stance toward the government leader minus the weighted stance toward the opposition.
         const gapRows = d.outlets.map((o) => {
@@ -209,7 +213,7 @@
         }).sort((a, b) => (b.gap ?? -9) - (a.gap ?? -9))
         const gapMax = Math.max(0.2, ...gapRows.map((r) => Math.abs(r.gap ?? 0)))
         const leaning = gapRows.filter((r) => r.gap !== null && !r.thin)
-        const gapCard = card('c-5 elec-pair', cardHead(leaning.length > 1 ? t('elec.gap.finding', { gov: leaning[0].name, a: signed(leaning[0].gap), opp: leaning[leaning.length - 1].name, b: signed(leaning[leaning.length - 1].gap) }) : t('elec.gap.title'), null, `${t('elec.gap.title')}. ${t('elec.gap.info')}`),
+        const gapCard = card('c-4 elec-pair', cardHead(t('elec.gap.title'), null, `${leaning.length > 1 ? `${t('elec.gap.finding', { gov: leaning[0].name, a: signed(leaning[0].gap), opp: leaning[leaning.length - 1].name, b: signed(leaning[leaning.length - 1].gap) })}. ` : ''}${t('elec.gap.info')}`),
           h('p', { class: 'lean-ends' }, h('span', {}, `← ${t('elec.gap.opp')}`), h('span', {}, `${t('elec.gap.gov')} →`)),
           UI.BarList(gapRows.map((r) => ({
             cls: r.thin ? 'is-thin' : null, label: r.name, text: signed(r.gap),
@@ -225,14 +229,14 @@
           return { key: k, top: shares[0], hhi: Math.round(shares.reduce((a, s) => a + s.share ** 2, 0) * 100) }
         })
         const tight = ownerRows.slice().sort((x, y) => y.top.share - x.top.share)[0]
-        const ownerCard = card('c-6', cardHead(t('elec.owner.finding', { party: tight.key, share: fmt.pct(tight.top.share), owner: tight.top.owner }), null, `${t('elec.owner.title')}. ${t('elec.owner.info')}`),
+        const ownerCard = card('c-4 elec-pair', cardHead(t('elec.owner.title'), null, `${t('elec.owner.finding', { party: tight.key, share: fmt.pct(tight.top.share), owner: tight.top.owner })}. ${t('elec.owner.info')}`),
           UI.BarList(ownerRows.map((r) => ({
             label: partyKey(r.key), text: `${t('elec.owner.row', { share: Politics.pctOf(r.top.share * 100), owner: r.top.owner })} · HHI ${fmt.int(r.hhi)}`,
             value: r.top.share, color: color(r.key), tip: `${r.key}: ${t('elec.owner.row', { share: fmt.pct(r.top.share), owner: r.top.owner })}, HHI ${r.hhi}`
           })), { max: 1 }))
 
-        const voteCard = card('c-6', cardHead(twinTitle(voteRows, 'elec.vote.finding'), null, `${t('elec.vote.title')}. ${t('elec.vote.info')}`), Twin(voteRows, [t('elec.vote.a'), t('elec.vote.b')], Math.max(...voteRows.flatMap((r) => [r.a, r.b]))))
-        const pollCard = card('c-6', cardHead(twinTitle(pollRows, 'elec.polls.finding'), null, t('elec.polls.title') + '. ' + t('elec.polls.info', { months: months.map((m) => fmt.date(`${m}-01`, { month: 'short', year: 'numeric' })).join(', ') })),
+        const voteCard = card('c-6', cardHead(t('elec.vote.title'), null, `${twinTitle(voteRows, 'elec.vote.finding')}. ${t('elec.vote.info')}`), Twin(voteRows, [t('elec.vote.a'), t('elec.vote.b')], Math.max(...voteRows.flatMap((r) => [r.a, r.b]))))
+        const pollCard = card('c-6', cardHead(t('elec.polls.title'), null, twinTitle(pollRows, 'elec.polls.finding') + '. ' + t('elec.polls.info', { months: months.map((m) => fmt.date(`${m}-01`, { month: 'short', year: 'numeric' })).join(', ') })),
           Twin(pollRows, [t('elec.polls.a'), t('elec.polls.b')], Math.max(...pollRows.flatMap((r) => [r.a, r.b]))))
 
         // 5. Topic agenda × party. The frame is the party with the largest share of its coverage in the topic.
