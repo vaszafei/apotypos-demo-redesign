@@ -364,20 +364,16 @@
   }
   const TOPIC_SLOTS = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#6250d6', '#008300']
 
-  // The share of each topic in the articles of the outlet, week by week: 100% columns, the 7 largest topics and the rest.
+  // The share of each topic in the news of the outlet, week by week: one line for each of the 7 largest topics of the outlet. A week with no news is a gap in the line.
   function WeeklyAgenda (set, k) {
     const weeks = weeksOf(set.dates).map((w) => ({ ...w, issues: set.oi[k].map((p, i) => (set.issues[i].soft ? 0 : sumPairs(p, w.i0, w.i1))) })).map((w) => ({ ...w, n: sum(w.issues) }))
     const totals = set.issues.map((_, i) => sum(weeks.map((w) => w.issues[i])))
     const top = totals.map((n, i) => ({ n, i })).filter((r) => r.n > 0).sort((a, b) => b.n - a.n).slice(0, TOPIC_SLOTS.length).map((r) => r.i)
-    const series = [...top.map((i, j) => ({ label: name(set.issues[i]), color: TOPIC_SLOTS[j], of: (w) => w.issues[i] })),
-      { label: t('mme.o.weekly.rest'), color: 'var(--bar-muted)', of: (w) => w.n - sum(top.map((i) => w.issues[i])) }]
-    const label = (w) => `${fmt.date(set.dates[w.i0], { day: 'numeric', month: 'short' })} – ${fmt.date(set.dates[w.i1], { day: 'numeric', month: 'short' })}`
-    const chart = UI.BarChart({
-      labels: weeks.map((w) => fmt.date(set.dates[w.i0], { day: 'numeric', month: 'short' })),
-      below: weeks.map((w) => `n=${fmt.int(w.n)}`),
-      series: series.map((s) => ({ name: s.label, color: s.color, values: weeks.map((w) => (w.n ? s.of(w) / w.n : 0)) })),
-      max: 1, valueFormat: pctRound, height: 230, label: t('mme.o.weekly.title'),
-      tooltipOf: (j) => `${label(weeks[j])} (n=${fmt.int(weeks[j].n)}): ${series.map((s) => `${s.label} ${pct(weeks[j].n ? s.of(weeks[j]) / weeks[j].n : 0)}`).join(' · ')}`
+    const day = (i) => fmt.date(set.dates[i], { day: 'numeric', month: 'short' })
+    const series = top.map((i, j) => ({ label: name(set.issues[i]), color: TOPIC_SLOTS[j], values: weeks.map((w) => (w.n ? w.issues[i] / w.n : null)) }))
+    const chart = Politics.LineChart({
+      labels: weeks.map((w) => day(w.i0)), tips: weeks.map((w) => `${day(w.i0)} – ${day(w.i1)} (n=${fmt.int(w.n)})`),
+      series, height: 260, zero: true, yFormat: pctRound, endLabels: false, aria: t('mme.o.weekly.title')
     })
     const legend = UI.Legend(series.map((s) => ({ label: s.label, color: s.color })))
     return card('c-12', cardHead(t('mme.o.weekly.title'), null, t('mme.o.weekly.info')), legend, chart)

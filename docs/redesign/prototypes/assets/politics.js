@@ -20,11 +20,11 @@
     return { short: day(from), long: `${day(from)} – ${day(to)}` }
   }
 
-  // Lines on one axis. Each series has a color and a label at its end. The hover line gives all values of one point.
+  // Lines on one axis. Each series has a color and a label at its end (endLabels: false leaves the labels to a legend above). The hover line gives all values of one point.
   // gaps: [{ at, text }]. A stretch of time with no data is not drawn to scale: the point `at` follows a gap of 1.5 steps, marked by a dashed line and its text, and no line crosses it.
-  function LineChart ({ labels, tips, series, height = 240, yFormat = fmt.dec, min, max, zero = false, aria, gaps = [] }) {
+  function LineChart ({ labels, tips, series, height = 240, yFormat = fmt.dec, min, max, zero = false, aria, gaps = [], endLabels = true }) {
     return fit((holder, width) => {
-      const pad = { top: 14, right: 96, bottom: 28, left: 40 }
+      const pad = { top: 14, right: endLabels ? 96 : 28, bottom: 28, left: 40 }
       const all = series.flatMap((s) => s.values).filter((v) => v !== null)
       let lo = min ?? Math.min(...all, zero ? 0 : Infinity)
       let hi = max ?? Math.max(...all, zero ? 0 : -Infinity)
@@ -71,7 +71,7 @@
       })
       // The end labels do not overlap: each label moves down to 13 px below the label above it.
       ends.sort((a, b) => a.y - b.y).forEach((e, i, arr) => { if (i && e.y - arr[i - 1].y < 13) e.y = arr[i - 1].y + 13 })
-      ends.forEach((e) => svg.append(h('text', { class: 'line-end', x: pad.left + plotW + 8, y: e.y + 4, fill: 'var(--text-primary)' }, e.label)))
+      if (endLabels) ends.forEach((e) => svg.append(h('text', { class: 'line-end', x: pad.left + plotW + 8, y: e.y + 4, fill: 'var(--text-primary)' }, e.label)))
       const guide = h('line', { class: 'range-line', x1: 0, x2: 0, y1: pad.top, y2: pad.top + plotH, visibility: 'hidden' })
       svg.append(guide)
       const hit = h('rect', { class: 'hit', x: pad.left, y: pad.top, width: plotW, height: plotH })
