@@ -8,35 +8,30 @@
   <link rel="stylesheet" href="assets/tokens.css?v=10">
   <link rel="stylesheet" href="assets/app.css?v=29">
   <link rel="stylesheet" href="assets/dash.css?v=80">
-  <link rel="stylesheet" href="assets/mme.css?v=33">
-  <link rel="stylesheet" href="assets/home.css?v=15">
+  <link rel="stylesheet" href="assets/home.css?v=27">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=30"></script>
   <script src="assets/messages-v2.js?v=46"></script>
-  <script src="assets/messages-mme.js?v=15"></script>
-  <script src="assets/messages-home.js?v=9"></script>
-  <script src="assets/components.js?v=10"></script>
+  <script src="assets/messages-home.js?v=18"></script>
+  <script src="assets/components.js?v=11"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
-  <script src="assets/mme.js?v=19"></script>
-  <script src="assets/spread.js?v=6"></script>
-  <script src="assets/home.js?v=9"></script>
+  <script src="assets/home.js?v=23"></script>
   <script src="assets/shell.js?v=47"></script>
   <script src="data/home.js"></script>
   <script src="data/stories.js?v=1"></script>
-  <script src="data/mme.js?v=1"></script>
+  <script src="data/storyDetail.js?v=1"></script>
   <script>
     // Home: the calendar of a month and the chart pick a day, the card shows the stories of that day (a story of the list is picked in the card),
-    // then the topics that rise and fall and the shortcuts to the analyses. The page covers the whole window of the data.
+    // then the topics of the picked day and the quick access. The page covers the whole window of the data.
     const { t, fmt, h, load } = App
     const { card, cardHead } = Dash
     const result = load('home', ['dates', 'outlets', 'issues', 'issueDaily'], (b) => b.dates)
     const stories = load('stories', ['dates', 'issues', 'stories'], (b) => b.stories)
-    // «Τι ξεχωρίζει στο διάστημα» comes from Μέσα › Επισκόπηση: the Greek outlets of data/mme.js, for the period of the page.
-    const mme = load('mme', ['sets'], (b) => Object.keys(b.sets))
+    const detail = load('storyDetail', ['dates', 'outlets', 'stories'], (b) => b.stories)
     const range = { from: '2026-08-01', to: '2026-09-30' }
     let lastValid = { ...range }
     let selected = null
@@ -57,7 +52,7 @@
       render (content) {
         content.classList.add('dash', 'minimal')
         const ix = stories.kind === 'data' && result.kind === 'data'
-          ? Home.index({ stories: stories.data, set: mme.kind === 'data' ? mme.data.sets.gr : null })
+          ? Home.index({ stories: stories.data, detail: detail.kind === 'data' ? detail.data : null })
           : null
 
         const draw = () => {
@@ -77,17 +72,13 @@
           const i1 = dates.indexOf(lastValid.to)
           const len = i1 - i0 + 1
           if (selected === null || selected < i0 || selected > i1) selected = i1
-          const name = (issue) => issue[App.locale] || issue.el
 
           // The articles of all the outlets for each day of the data.
           const totals = dates.map((_, i) => data.outlets.reduce((s, o) => s + o.daily[i], 0))
           const collected = sumRange(totals, i0, i1)
-          const issueCounts = data.issues.map((issue, k) => ({ issue, count: sumRange(data.issueDaily[k], i0, i1) }))
-          const news = issueCounts.filter((x) => !x.issue.soft).sort((a, b) => b.count - a.count)
-          const newsTotal = news.reduce((s, x) => s + x.count, 0)
 
           // The stories of the day. A pick of a day in the calendar or the chart, or of a story in the list, draws this card again.
-          const dayCard = () => Home.DayCard(ix ? Home.dayInfo(ix, selected, rank) : null, { isLast: selected === dates.length - 1, onStory: (r) => { rank = r; redraw() } })
+          const dayCard = () => Home.DayCard(ix ? Home.dayInfo(ix, selected, rank) : null, { date: dates[selected], onStory: (r) => { rank = r; redraw() } })
           let day = dayCard()
           const redraw = () => { const next = dayCard(); day.replaceWith(next); day = next }
 
@@ -97,54 +88,35 @@
           const daily = totals.slice(i0, i1 + 1)
           const avg = collected / len
           const chart = () => UI.BarChart({
-            dates: days, values: daily, label: t('home.daily.title'), height: 300, picked: selected - i0, onPick: (j) => pick(i0 + j, 'chart'),
+            dates: days, values: daily, label: t('home.daily.title'), height: 263, picked: selected - i0, onPick: (j) => pick(i0 + j, 'chart'),
             reference: { value: avg, label: t('home.daily.avg', { n: fmt.int(Math.round(avg)) }) },
             tooltipOf: (i) => `${fmt.date(days[i])}: ${fmt.int(daily[i])}`
           })
           const chartBody = h('div', {}, chart())
           const dailyCard = card('c-7', cardHead(t('home.daily.title'), null, t('home.daily.info')), chartBody)
 
+          const topicsCard = () => Home.TopicsCard({ home: data, day: selected })
+          let topics = topicsCard()
+
           function pick (i, from) {
             selected = i
             rank = 0
             redraw()
+            const next = topicsCard()
+            topics.replaceWith(next)
+            topics = next
             if (from === 'chart') calendar.select(i)
             else chartBody.replaceChildren(chart())
           }
 
-          const topicsCard = card('c-7', cardHead(t('home.topics.title'), null, t('home.topics.note')),
-            UI.DataTable({
-              rankColumn: true, emptyText: t('home.topics.empty'), pageSize: 9, moreStep: 10,
-              rows: news.filter((x) => x.count > 0),
-              columns: [
-                { label: t('home.col.issue'), render: (r) => name(r.issue) },
-                { label: t('home.col.articles'), num: true, render: (r) => fmt.int(r.count) },
-                { label: t('home.col.share'), num: true, render: (r) => fmt.pct(r.count / newsTotal) },
-                { label: '', phone: false, render: (r) => UI.HBar(r.count / newsTotal, news[0].count / newsTotal) }
-              ]
-            }))
-
-          const main = h('div', { class: 'c-7 card-col card-col-fill' }, calendar.node, dailyCard, topicsCard)
-          const aside = h('div', { class: 'c-5 card-col card-col-fill' }, day, Home.TrendsCard({ home: data, i0, i1 }))
-          const hl = highlights()
+          const main = h('div', { class: 'c-7 card-col' }, calendar.node, dailyCard, topics)
+          const aside = h('div', { class: 'c-5 card-col' }, day, Home.QuickCard())
           content.replaceChildren(bar(),
-            h('div', { class: 'dash-grid home-grid' }, main, aside, hl, Home.AnalysesCard()), protoNote())
+            h('div', { class: 'dash-grid home-grid' }, main, aside), protoNote())
         }
         draw()
       }
     })
-
-    // The highlights card of the media, for the days of the period that the set has. It is left out when the set does not cover the period.
-    function highlights () {
-      if (mme.kind !== 'data' || !mme.data.sets.gr) return null
-      const set = mme.data.sets.gr
-      const i0 = set.dates.indexOf(lastValid.from)
-      const i1 = set.dates.indexOf(lastValid.to)
-      if (i0 < 0 || i1 < i0) return null
-      const el = Mme.HighlightsCard(Mme.summary(set, i0, i1))
-      el.querySelector('.dcard-head').after(h('p', { class: 'dcard-sub' }, t('mme.home.note')))
-      return el
-    }
 
     function protoNote () { return h('p', { class: 'proto-note' }, t('proto.states')) }
   </script>

@@ -1,9 +1,8 @@
-/* Αρχική: the calendar of a month, the stories of a day, the trends and the shortcuts to the analyses. */
+/* Αρχική: the calendar of a month, the stories of a day, the topics of a day and the quick access. */
 
 /* The stories of a day. */
 .home-day { gap: var(--space-3); }
-.home-pill { border-color: var(--ink); color: var(--ink); font-weight: 600; }
-.home-day-date { margin: 0; font-size: var(--text-caption); color: var(--text-secondary); text-transform: capitalize; }
+.home-pill { border-color: var(--ink); color: var(--ink); font-weight: 600; text-transform: capitalize; }
 .home-day-story { margin: 0; font: 600 22px/1.25 var(--font-heading); letter-spacing: -0.01em; color: var(--ink); }
 .home-day-meta { margin: 0; font-size: var(--text-small); color: var(--text-secondary); }
 .home-day-meta .entity-link { font-weight: 600; color: var(--text-primary); }
@@ -25,7 +24,7 @@ a.home-stack-part { cursor: pointer; }
 .home-stack-cap { font-size: var(--text-caption); color: var(--text-secondary); }
 
 /* The list of the stories of the day: a row picks the story, and its button opens its page. */
-.home-stories { margin: 0; padding: var(--space-2) 0 0; list-style: none; display: grid; gap: 4px; border-top: 1px solid var(--border); }
+.home-stories { margin: 0; padding: var(--space-2) 0 0; list-style: none; display: grid; align-content: start; gap: 4px; border-top: 1px solid var(--border); max-height: 330px; overflow-y: auto; scrollbar-width: thin; }
 .home-stories li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); border-radius: 8px; }
 .home-stories li.is-current { background: var(--surface-page); }
 .home-story-pick { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: var(--space-3); min-width: 0; padding: 8px; border: 0; border-radius: 8px; background: transparent; color: var(--text-primary); font: inherit; font-size: var(--text-small); line-height: 1.35; text-align: left; cursor: pointer; }
@@ -43,15 +42,14 @@ a.home-stack-part { cursor: pointer; }
 .home-day-btn { display: grid; justify-items: center; align-content: start; gap: 2px; width: 62px; padding: 8px 4px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-raised); color: var(--text-primary); font: inherit; cursor: pointer; }
 .home-day-btn:hover { border-color: var(--ink); }
 .home-day-btn.is-weekend { background: var(--surface-page); }
-.home-day-btn[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--on-ink); }
+.home-day-btn[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface-raised)); }
 .home-day-dow { font-size: var(--text-caption); text-transform: capitalize; color: var(--text-secondary); }
 .home-day-num { font-size: 20px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .home-day-n { margin-top: 4px; font-size: var(--text-caption); font-weight: 600; font-variant-numeric: tabular-nums; }
 .home-day-delta { font-size: var(--text-caption); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-.home-day-btn[aria-pressed="true"] .home-day-dow, .home-day-btn[aria-pressed="true"] .home-day-delta { color: var(--on-ink); opacity: 0.75; }
 
-/* The shortcuts to the analyses: one row of tiles that wraps. */
-.home-links { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-3); }
+/* The quick access: four tiles in a 2×2 grid, the name and the line, the arrow on the right. */
+.home-links { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
 .home-links li { border: 1px solid var(--border); border-radius: 10px; }
 .home-links li:hover { border-color: var(--ink); }
 .home-links a { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); height: 100%; padding: 12px 14px; color: var(--text-primary); text-decoration: none; }
@@ -62,8 +60,20 @@ a.home-stack-part { cursor: pointer; }
 .home-link-main strong { font-size: var(--text-small); font-weight: 600; }
 .home-link-main .muted-text { font-size: var(--text-caption); }
 
-@media (max-width: 1279px) { .home-grid > .c-5 { grid-column: span 12; } }
+@media (max-width: 1279px) { .home-grid > .c-5, .home-grid > .c-7 { grid-column: span 12; } }
 @media (max-width: 519px) {
   .home-month-name { min-width: 7em; }
   .home-story-go { font-size: 0; gap: 0; padding: 0 8px; }
 }
+
+.home-share { display: inline-flex; align-items: baseline; justify-content: flex-end; gap: 6px; }
+.home-arrow { font-size: 10px; line-height: 1; cursor: help; }
+.home-arrow.is-up { color: var(--emph-more); }
+.home-arrow.is-down { color: var(--emph-less); }
+.home-quick .home-links { grid-auto-rows: 88px; }
+.home-quick .home-links a { padding: 12px 16px; }
+.home-quick .home-link-main { gap: 3px; }
+.home-quick .home-link-main strong { font-size: 16px; }
+.home-quick .home-link-main .muted-text { font-size: var(--text-small); }
+.home-topics-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 var(--space-6); align-items: start; }
+@media (max-width: 899px) { .home-topics-cols { grid-template-columns: minmax(0, 1fr); } }
