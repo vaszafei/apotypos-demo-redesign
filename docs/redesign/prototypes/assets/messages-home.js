@@ -1,9 +1,7 @@
 // Messages of Αρχική (home.js and index.html). Load after messages.js.
 Object.assign(window.MESSAGES.el, {
   'home.hero.eyebrow': 'Παρατηρητήριο ελληνικών ΜΜΕ',
-  'home.hero.lead': 'Κάθε μέρα συλλέγουμε τα άρθρα {n} ελληνικών μέσων και τα οργανώνουμε σε ιστορίες, θέματα και πρόσωπα. Αναζητήστε ό,τι σας ενδιαφέρει ή δείτε την επικαιρότητα παρακάτω.',
   'home.hero.try': 'Δημοφιλή σήμερα:',
-  'home.hero.updated': 'Ενημέρωση {date}',
   'home.hero.articles': 'άρθρα',
   'home.hero.outlets': 'μέσα',
   'home.hero.stories': 'ιστορίες',
@@ -42,9 +40,7 @@ Object.assign(window.MESSAGES.el, {
 
 Object.assign(window.MESSAGES.en, {
   'home.hero.eyebrow': 'Greek media observatory',
-  'home.hero.lead': 'Every day we collect the articles of {n} Greek outlets and organise them into stories, topics and people. Search for what interests you or see the news below.',
   'home.hero.try': 'Popular today:',
-  'home.hero.updated': 'Updated {date}',
   'home.hero.articles': 'articles',
   'home.hero.outlets': 'outlets',
   'home.hero.stories': 'stories',
