@@ -24,7 +24,7 @@ a.home-stack-part { cursor: pointer; }
 .home-stack-cap { font-size: var(--text-caption); color: var(--text-secondary); }
 
 /* The list of the stories of the day: a row picks the story, and its button opens its page. */
-.home-stories { margin: 0; padding: var(--space-2) 0 0; list-style: none; display: grid; gap: 4px; border-top: 1px solid var(--border); }
+.home-stories { margin: 0; padding: var(--space-2) 0 0; list-style: none; display: grid; align-content: start; gap: 4px; border-top: 1px solid var(--border); max-height: 330px; overflow-y: auto; scrollbar-width: thin; }
 .home-stories li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); border-radius: 8px; }
 .home-stories li.is-current { background: var(--surface-page); }
 .home-story-pick { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: var(--space-3); min-width: 0; padding: 8px; border: 0; border-radius: 8px; background: transparent; color: var(--text-primary); font: inherit; font-size: var(--text-small); line-height: 1.35; text-align: left; cursor: pointer; }

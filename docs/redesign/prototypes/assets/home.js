@@ -19,7 +19,6 @@
     return { byDay, rowsOf, detail, dates: stories.dates, issues: stories.issues }
   }
 
-  const STORIES = 8
 
   // Everything the card says about one story of a day: the story of that rank, the outlets that ran it, and the stories of the day.
   function dayInfo (ix, d, rank = 0) {
@@ -33,7 +32,7 @@
     const day = ix.detail ? ix.detail.dates.indexOf(date) : -1
     if (rows) for (let j = 0; j < rows.length; j += 3) if (rows[j + 1] === day) perOutlet.set(rows[j], rows[j + 2])
     const outlets = [...perOutlet].map(([k, c]) => ({ ...ix.detail.outlets[k], k, n: c })).sort((a, b) => b.n - a.n)
-    return { d, date, story: s, n, rank, topic: ix.issues[s.issue], outlets, list: list.slice(0, STORIES) }
+    return { d, date, story: s, n, rank, topic: ix.issues[s.issue], outlets, list }
   }
 
   // A thin horizontal bar of the articles of the story: one part for each outlet, the largest from the left, in the color of its group.
@@ -59,6 +58,9 @@
     return h('div', { class: 'home-stack-wrap' }, bar, panel)
   }
 
+  let listDay = -1
+  let listTop = 0
+
   // The stories of a day: a story is picked to show it in the card, and its button opens its page. The card shows the story of the rank in info, and the picked day at the top right.
   function DayCard (info, { date, onStory }) {
     const head = cardHead(t('home.day.title'), h('span', { class: 'pill home-pill' }, fmt.date(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })), t('home.day.info'))
@@ -74,6 +76,12 @@
       h('button', { type: 'button', class: 'home-story-pick', 'aria-pressed': String(r === info.rank), onClick: () => onStory(r) },
         h('span', { class: 'home-story-name' }, name(o.s)), h('span', { class: 'muted-text' }, fmt.int(o.n))),
       h('a', { class: 'button home-story-go', href: `story-v2.html?id=${o.s.id}`, 'aria-label': `${t('home.day.open')}: ${name(o.s)}` }, t('home.day.open'), Icon('chevron-right', 'icon icon-sm')))))
+    // The list has every story of the day and scrolls inside the card. A new day starts at the top; a pick on the same day keeps the place.
+    const sameDay = info.d === listDay
+    listDay = info.d
+    if (!sameDay) listTop = 0
+    stories.addEventListener('scroll', () => { listTop = stories.scrollTop })
+    requestAnimationFrame(() => { stories.scrollTop = listTop })
 
     return card('c-5 home-day', head,
       h('h3', { class: 'home-day-story' }, name(story)),

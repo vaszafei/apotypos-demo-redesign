@@ -1,7 +1,7 @@
 // Messages of Αρχική (home.js and index.html). Load after messages.js.
 Object.assign(window.MESSAGES.el, {
   'home.day.title': 'Ιστορίες της ημέρας',
-  'home.day.info': 'Οι ιστορίες με τα περισσότερα άρθρα την ημέρα που διαλέξατε, στο ημερολόγιο ή στο γράφημα. Διαλέξτε μια ιστορία για να τη δείτε στην κάρτα· το κουμπί δίπλα της ανοίγει τη σελίδα της. Οι ιστορίες γενικών θεμάτων, όπως «Άλλα διεθνή», δεν μετράνε.',
+  'home.day.info': 'Όλες οι ιστορίες της ημέρας που διαλέξατε, στο ημερολόγιο ή στο γράφημα, με πρώτες αυτές που έχουν τα περισσότερα άρθρα· η λίστα κυλάει. Διαλέξτε μια ιστορία για να τη δείτε στην κάρτα· το κουμπί δίπλα της ανοίγει τη σελίδα της. Οι ιστορίες γενικών θεμάτων, όπως «Άλλα διεθνή», δεν μετράνε.',
   'home.day.meta': '{n} άρθρα',
   'home.day.outlets': 'Άρθρα ανά μέσο',
   'home.day.nogroup': 'Χωρίς όμιλο',
@@ -29,7 +29,7 @@ Object.assign(window.MESSAGES.el, {
 
 Object.assign(window.MESSAGES.en, {
   'home.day.title': 'Stories of the day',
-  'home.day.info': 'The stories with the most articles on the day you picked, in the calendar or in the chart. Pick a story to see it in the card; the button next to it opens its page. Stories of general topics, such as “Other world news”, do not count.',
+  'home.day.info': 'Every story of the day you picked, in the calendar or in the chart, the ones with the most articles first; the list scrolls. Pick a story to see it in the card; the button next to it opens its page. Stories of general topics, such as “Other world news”, do not count.',
   'home.day.meta': '{n} articles',
   'home.day.outlets': 'Articles by outlet',
   'home.day.nogroup': 'No group',
