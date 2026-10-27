@@ -613,6 +613,7 @@
         }
         // The detail pages of Αναλύσεις (a speech, a person's file) are locked as well.
         if (item?.key === 'world' && !signedIn()) {
+          content.classList.add('is-gated')
           content.replaceChildren(window.Shell.PageHead({}), SignInGate())
           centerTabs()
           return
