@@ -42,12 +42,12 @@ a.home-stack-part { cursor: pointer; }
 .home-day-btn { display: grid; justify-items: center; align-content: start; gap: 2px; width: 62px; padding: 8px 4px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-raised); color: var(--text-primary); font: inherit; cursor: pointer; }
 .home-day-btn:hover { border-color: var(--ink); }
 .home-day-btn.is-weekend { background: var(--surface-page); }
-.home-day-btn[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--on-ink); }
+.home-day-btn[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface-raised)); }
+.home-day-btn[aria-pressed="true"] .home-day-num { color: var(--accent); }
 .home-day-dow { font-size: var(--text-caption); text-transform: capitalize; color: var(--text-secondary); }
 .home-day-num { font-size: 20px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .home-day-n { margin-top: 4px; font-size: var(--text-caption); font-weight: 600; font-variant-numeric: tabular-nums; }
 .home-day-delta { font-size: var(--text-caption); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-.home-day-btn[aria-pressed="true"] .home-day-dow, .home-day-btn[aria-pressed="true"] .home-day-delta { color: var(--on-ink); opacity: 0.75; }
 
 /* The quick access: four tiles in a 2×2 grid, the name and the line, the arrow on the right. */
 .home-links { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
@@ -71,7 +71,7 @@ a.home-stack-part { cursor: pointer; }
 .home-arrow { font-size: 10px; line-height: 1; cursor: help; }
 .home-arrow.is-up { color: var(--emph-more); }
 .home-arrow.is-down { color: var(--emph-less); }
-.home-quick { display: flex; flex-direction: column; }
+.home-quick { align-self: start; }
 .home-quick .home-links { grid-auto-rows: 88px; }
 .home-quick .home-links a { padding: 12px 16px; }
 .home-quick .home-link-main { gap: 3px; }

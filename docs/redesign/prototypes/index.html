@@ -8,18 +8,18 @@
   <link rel="stylesheet" href="assets/tokens.css?v=10">
   <link rel="stylesheet" href="assets/app.css?v=29">
   <link rel="stylesheet" href="assets/dash.css?v=80">
-  <link rel="stylesheet" href="assets/home.css?v=23">
+  <link rel="stylesheet" href="assets/home.css?v=24">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=30"></script>
   <script src="assets/messages-v2.js?v=46"></script>
-  <script src="assets/messages-home.js?v=15"></script>
+  <script src="assets/messages-home.js?v=16"></script>
   <script src="assets/components.js?v=11"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
-  <script src="assets/home.js?v=18"></script>
+  <script src="assets/home.js?v=19"></script>
   <script src="assets/shell.js?v=47"></script>
   <script src="data/home.js"></script>
   <script src="data/stories.js?v=1"></script>
@@ -88,7 +88,7 @@
           const daily = totals.slice(i0, i1 + 1)
           const avg = collected / len
           // Side by side, the chart takes the height that the stories of the day leave, so the two cards end level.
-          const BASE = 300
+          const BASE = 263
           let chartHeight = BASE
           const chart = () => UI.BarChart({
             dates: days, values: daily, label: t('home.daily.title'), height: chartHeight, picked: selected - i0, onPick: (j) => pick(i0 + j, 'chart'),

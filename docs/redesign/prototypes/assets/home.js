@@ -19,7 +19,7 @@
     return { byDay, rowsOf, detail, dates: stories.dates, issues: stories.issues }
   }
 
-  const STORIES = 8
+  const STORIES = 7
 
   // Everything the card says about one story of a day: the story of that rank, the outlets that ran it, and the stories of the day.
   function dayInfo (ix, d, rank = 0) {
@@ -97,6 +97,15 @@
     const prev = step(-1)
     const next = step(1)
 
+    // The change against the day before: an arrow up or down and the size of the change.
+    const delta = (i) => {
+      if (i === 0 || !(totals[i - 1] > 0)) return '–'
+      const v = ((totals[i] - totals[i - 1]) / totals[i - 1]) * 100
+      const size = `${fmt.dec(Math.abs(v))}%`
+      if (Number(fmt.dec(Math.abs(v))) === 0) return size
+      return [h('span', { class: `home-arrow ${v > 0 ? 'is-up' : 'is-down'}`, 'aria-hidden': 'true' }, v > 0 ? '▲' : '▼'), ' ', size]
+    }
+
     function paint () {
       const tiles = new Map()
       dates.forEach((iso, i) => {
@@ -107,7 +116,7 @@
         h('span', { class: 'home-day-dow' }, fmt.date(iso, { weekday: 'short' })),
         h('span', { class: 'home-day-num' }, String(Number(iso.slice(8)))),
         h('span', { class: 'home-day-n' }, fmt.int(totals[i])),
-        h('span', { class: 'home-day-delta' }, i > 0 && totals[i - 1] > 0 ? `${fmt.signed(((totals[i] - totals[i - 1]) / totals[i - 1]) * 100)}%` : '–'))))
+        h('span', { class: 'home-day-delta' }, delta(i)))))
       })
       label.textContent = fmt.date(`${month}-01`, { month: 'long', year: 'numeric' })
       prev.disabled = months.indexOf(month) === 0
@@ -157,12 +166,12 @@
     return card('c-7 home-topics', head, h('div', { class: 'home-topics-cols' }, table(rows.slice(0, half)), table(rows.slice(half))))
   }
 
-  // The quick access: four small buttons in a 2×2 grid, each with the name of the page, a short line and an arrow.
-  const QUICK = [['speeches', '/speeches', 'tab.world.speeches'], ['pi', '/narrative', 'tab.world.pi'], ['politics', '/elections', 'nav.politics'], ['file', '/contradictions', 'tab.people.file']]
+  // The quick access: four buttons in a 2×2 grid, each with the name of the page, a short line (not every page has one) and an arrow. The card ends where the buttons end.
+  const QUICK = [['speeches', '/speeches', 'tab.world.speeches', true], ['pi', '/narrative', 'tab.world.pi', true], ['politics', '/elections', 'nav.politics', false], ['file', '/contradictions', 'tab.people.file', true]]
   function QuickCard () {
     return card('c-5 home-quick', cardHead(t('home.quick.title'), null, t('home.quick.info')),
-      h('ul', { class: 'home-links' }, QUICK.map(([key, route, label]) => h('li', {},
-        h('a', { href: Shell.hrefOf(route) }, h('span', { class: 'home-link-main' }, h('strong', {}, t(label)), h('span', { class: 'muted-text' }, t(`home.quick.${key}`))), Icon('chevron-right', 'icon icon-sm'))))))
+      h('ul', { class: 'home-links' }, QUICK.map(([key, route, label, line]) => h('li', {},
+        h('a', { href: Shell.hrefOf(route) }, h('span', { class: 'home-link-main' }, h('strong', {}, t(label)), line ? h('span', { class: 'muted-text' }, t(`home.quick.${key}`)) : null), Icon('chevron-right', 'icon icon-sm'))))))
   }
 
   window.Home = { index, dayInfo, DayCard, Calendar, TopicsCard, QuickCard }
