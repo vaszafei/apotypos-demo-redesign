@@ -340,6 +340,8 @@
     const limits = {}
     let isOpen = false
     let motion = []
+    // The panel opens over its anchor: the button, or the search field of Αρχική.
+    let anchor = null
     const listId = 'global-search-list'
     const panelId = 'global-search-panel'
 
@@ -455,11 +457,11 @@
       status.textContent = count == null ? '' : count === 1 ? t('shell.search.count.one') : count ? t('shell.search.count', { n: fmtInt(count) }) : t('shell.search.none', { q: query })
     }
 
-    // The panel sits over the button: centered on it on a wide screen, the full width of the screen on a phone (CSS).
+    // The panel sits over its anchor: centered on it and at least as wide on a wide screen, the full width of the screen on a phone (CSS).
     function place () {
       if (smallScreen.matches) { panel.style.left = panel.style.top = panel.style.width = ''; return }
-      const b = button.getBoundingClientRect()
-      const width = Math.min(640, window.innerWidth - 32)
+      const b = anchor.getBoundingClientRect()
+      const width = Math.min(Math.max(640, b.width), window.innerWidth - 32)
       panel.style.width = `${width}px`
       panel.style.left = `${Math.max(16, Math.min(b.left + b.width / 2 - width / 2, window.innerWidth - 16 - width))}px`
       panel.style.top = `${Math.max(8, b.top - 4)}px`
@@ -468,7 +470,7 @@
     // With reduced motion the panel only fades.
     function morph (opening) {
       motion.forEach((a) => a.cancel())
-      const from = button.getBoundingClientRect()
+      const from = anchor.getBoundingClientRect()
       const to = panel.getBoundingClientRect()
       const small = { opacity: 0 }
       const big = { opacity: 1 }
@@ -480,17 +482,19 @@
       motion = [
         panel.animate(opening ? [small, big] : [big, small], timing),
         scrim.animate(opening ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }], timing),
-        button.animate(opening ? [{ opacity: 1 }, { opacity: 0 }] : [{ opacity: 0 }, { opacity: 1 }], { ...timing, duration: parseFloat(token('--motion-fast')) || 0 })
+        anchor.animate(opening ? [{ opacity: 1 }, { opacity: 0 }] : [{ opacity: 0 }, { opacity: 1 }], { ...timing, duration: parseFloat(token('--motion-fast')) || 0 })
       ]
       return motion[0].finished.catch(() => null)
     }
 
-    function open () {
+    // from: the field that opens the search (the button when none). query: the first letters, typed on that field.
+    function open (from, query = '') {
       if (isOpen) { input.focus(); return }
       isOpen = true
+      anchor = from instanceof Element ? from : button
       ensure()
       expanded = new Set()
-      input.value = ''
+      input.value = query
       panel.hidden = scrim.hidden = false
       box.classList.add('is-open')
       button.setAttribute('aria-expanded', 'true')
@@ -504,7 +508,7 @@
       isOpen = false
       button.setAttribute('aria-expanded', 'false')
       input.setAttribute('aria-expanded', 'false')
-      if (focus) button.focus({ preventScroll: true })
+      if (focus) anchor.focus({ preventScroll: true })
       morph(false).then(() => {
         if (isOpen) return
         panel.hidden = scrim.hidden = true
@@ -531,7 +535,7 @@
       location.href = el.getAttribute('href')
     }
 
-    button.addEventListener('click', open)
+    button.addEventListener('click', () => open())
     closeButton.addEventListener('click', () => close())
     scrim.addEventListener('click', () => close({ focus: false }))
     input.addEventListener('input', () => { expanded = new Set(); render() })
@@ -792,8 +796,33 @@
     const search = document.querySelector('.header-bar .global-search')
     if (!search) return
     e.preventDefault()
-    search.open()
+    search.open(hero && hero.inView && hero.field.isConnected ? hero.field : null)
   })
+
+  // Αρχική has its own large search field, under its title. While that field is on screen the search of the top bar steps aside,
+  // and the panel grows out of the field. Past the field, the search of the top bar comes back.
+  let hero = null
+  function heroSearch (field) {
+    const box = document.querySelector('.header-bar .global-search')
+    if (!box) return
+    const bar = box.closest('.header-bar')
+    hero?.observer.disconnect()
+    hero = { field, inView: true, observer: null }
+    bar.classList.add('has-hero-search', 'hero-in-view')
+    field.addEventListener('click', () => box.open(field))
+    // A letter typed on the field opens the search with that letter in it.
+    field.addEventListener('keydown', (e) => {
+      if (e.key.length !== 1 || e.key === ' ' || e.key === '/' || e.ctrlKey || e.metaKey || e.altKey) return
+      e.preventDefault()
+      box.open(field, e.key)
+    })
+    const current = hero
+    current.observer = new IntersectionObserver(([entry]) => {
+      current.inView = entry.isIntersecting
+      bar.classList.toggle('hero-in-view', entry.isIntersecting)
+    }, { rootMargin: '-64px 0px 0px 0px' })
+    current.observer.observe(field)
+  }
   // The page head (v2): the title and the page actions on one row, the tabs and sub-tabs under them, the filters of the tab last.
   // Page actions change the whole page: the period, the set of outlets, a view switch. Filters narrow the content of one tab.
   function PageHead ({ title, meta, actions = [], filters = [], tabs = current.tabs, error }) {
@@ -817,5 +846,5 @@
     })) }))
   }
 
-  window.Shell = { start, routeAnchor, hrefOf, itemOf, placeOf, tree, PageHead, headerV2 }
+  window.Shell = { start, routeAnchor, hrefOf, itemOf, placeOf, tree, PageHead, headerV2, heroSearch }
 })()

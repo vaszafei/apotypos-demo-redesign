@@ -191,13 +191,67 @@
     return card('c-7 home-topics', head, h('div', { class: 'home-topics-cols' }, table(rows.slice(0, half)), table(rows.slice(half))))
   }
 
-  // The quick access: four buttons in a 2×2 grid, each with the name of the page, a short line (not every page has one) and an arrow. The card ends where the buttons end.
+  // The quick access: four buttons, each with the name of the page, a short line (not every page has one) and an arrow. One row on a wide screen, 2×2 below.
   const QUICK = [['speeches', '/speeches', 'tab.world.speeches', true], ['pi', '/narrative', 'tab.world.pi', true], ['politics', '/elections', 'nav.politics', false], ['file', '/contradictions', 'tab.people.file', true]]
-  function QuickCard () {
-    return card('c-5 home-quick', cardHead(t('home.quick.title')),
-      h('ul', { class: 'home-links' }, QUICK.map(([key, route, label, line]) => h('li', {},
-        h('a', { href: Shell.hrefOf(route) }, h('span', { class: 'home-link-main' }, h('strong', {}, t(label)), line ? h('span', { class: 'muted-text' }, t(`home.quick.${key}`)) : null), Icon('chevron-right', 'icon icon-sm'))))))
+  function QuickLinks () {
+    return h('ul', { class: 'home-links' }, QUICK.map(([key, route, label, line]) => h('li', {},
+      h('a', { href: Shell.hrefOf(route) }, h('span', { class: 'home-link-main' }, h('strong', {}, t(label)), line ? h('span', { class: 'muted-text' }, t(`home.quick.${key}`)) : null), Icon('chevron-right', 'icon icon-sm')))))
   }
 
-  window.Home = { index, dayInfo, DayCard, Calendar, TopicsCard, QuickCard }
+  // The first screen of Αρχική: the period, the title, a line, the large search field, the stories in the news on the last day and four numbers of the period.
+  // A faint area of the articles per day runs behind the numbers. The field is a button: shell.js opens the global search over it (Shell.heroSearch).
+  function Hero ({ from, to, totals, trending, stats }) {
+    const field = h('button', { type: 'button', class: 'home-search', 'aria-haspopup': 'dialog', 'aria-keyshortcuts': '/', 'aria-label': t('home.hero.placeholder') },
+      Icon('magnifying-glass', 'icon home-search-icon'),
+      h('span', { class: 'home-search-text', 'aria-hidden': 'true' }, t('home.hero.placeholder')),
+      h('kbd', { class: 'global-search-key home-search-key', 'aria-hidden': 'true' }, '/'),
+      h('span', { class: 'home-search-go', 'aria-hidden': 'true' }, t('home.hero.go')))
+    const chips = trending.length ? h('div', { class: 'home-trending' }, h('span', { class: 'home-trending-label' }, t('home.hero.trending')),
+      h('ul', {}, trending.map((x) => h('li', {}, h('a', { class: 'home-chip', href: x.href, title: x.label }, h('span', { class: 'home-chip-text' }, x.label), h('span', { class: 'home-chip-n' }, fmt.int(x.n))))))) : null
+    const numbers = h('dl', { class: 'home-stats' }, stats.map(([label, value]) => h('div', { class: 'home-stat' }, h('dt', {}, label), h('dd', {}, value))))
+    const node = h('section', { class: 'home-hero', 'aria-labelledby': 'home-hero-title' },
+      Wave(totals),
+      h('div', { class: 'home-hero-inner' },
+        h('p', { class: 'home-kicker' }, t('home.hero.kicker'), h('span', { class: 'home-kicker-period' }, `${fmt.date(from)} – ${fmt.date(to)}`)),
+        h('h1', { class: 'home-hero-title', id: 'home-hero-title' }, t('home.title')),
+        h('p', { class: 'home-hero-lead' }, t('home.hero.lead')),
+        field,
+        chips),
+      numbers,
+      h('a', { class: 'home-scroll', href: '#home-trend' }, t('home.hero.more'), Icon('chevron-down', 'icon icon-sm')))
+    return { node, field }
+  }
+
+  // The articles per day as a soft area, the full width of the hero. Decoration only: the chart below has the numbers.
+  function Wave (values) {
+    const max = Math.max(...values) || 1
+    const n = values.length - 1 || 1
+    const points = values.map((v, i) => `${(i / n) * 100},${100 - (v / max) * 88}`)
+    const ns = 'http://www.w3.org/2000/svg'
+    const svg = document.createElementNS(ns, 'svg')
+    svg.setAttribute('class', 'home-wave')
+    svg.setAttribute('viewBox', '0 0 100 100')
+    svg.setAttribute('preserveAspectRatio', 'none')
+    svg.setAttribute('aria-hidden', 'true')
+    const area = document.createElementNS(ns, 'path')
+    area.setAttribute('class', 'home-wave-area')
+    area.setAttribute('d', `M0,100 L${points.join(' L')} L100,100 Z`)
+    const line = document.createElementNS(ns, 'path')
+    line.setAttribute('class', 'home-wave-line')
+    line.setAttribute('d', `M${points.join(' L')}`)
+    line.setAttribute('vector-effect', 'non-scaling-stroke')
+    svg.append(area, line)
+    return svg
+  }
+
+  // A section of Αρχική below the hero: a kicker with the slash of the logo, a title and a line, then its cards.
+  function Section ({ id, kicker, title, lead, aside }, ...children) {
+    return h('section', { class: 'home-section', id, 'aria-labelledby': `${id}-title` },
+      h('header', { class: 'home-section-head' },
+        h('div', { class: 'home-section-titles' }, h('p', { class: 'home-kicker' }, kicker), h('h2', { class: 'home-section-title', id: `${id}-title` }, title), lead ? h('p', { class: 'home-section-lead' }, lead) : null),
+        aside || null),
+      ...children)
+  }
+
+  window.Home = { index, dayInfo, DayCard, Calendar, TopicsCard, QuickLinks, Hero, Section }
 })()
