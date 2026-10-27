@@ -41,7 +41,8 @@
     '/israel': 'israel-v2.html',
     '/gaza-language': 'language-v2.html',
     '/un-israel-palestine': 'un-israel-v2.html',
-    '/methodology': 'methodology.html'
+    '/methodology': 'methodology.html',
+    '/login': 'login.html'
   }
 
   // The sidebar has 6 items (APO-161: Media and Ownership are one item). The sub-pages of an item are tabs inside the page (shell-spec.md, "Navigation").
@@ -100,11 +101,23 @@
 
   const smallScreen = window.matchMedia('(max-width: 1023px)')
 
-  // Prototype only: there is no account yet, so the visitor is never signed in. ?auth=in shows the pages of Αναλύσεις for review (?auth=out undoes it).
-  function signedIn () {
-    const asked = new URLSearchParams(location.search).get('auth')
-    try { if (asked) localStorage.setItem('proto-auth', asked); return (asked || localStorage.getItem('proto-auth')) === 'in' } catch { return asked === 'in' }
+  // Prototype only: the accounts are fixed, and the check runs in the browser, so it keeps nobody out of the files of the prototype.
+  const ACCOUNTS = { lolovios: 'typosapo', odpein: 'typosapo', npizza: 'typosapo' }
+  const USER_KEY = 'proto-user'
+  function currentUser () {
+    try { const user = localStorage.getItem(USER_KEY); return user && Object.hasOwn(ACCOUNTS, user) ? user : null } catch { return null }
   }
+  const signedIn = () => currentUser() !== null
+  function signIn (name, password) {
+    const user = name.trim().toLowerCase()
+    if (!Object.hasOwn(ACCOUNTS, user) || ACCOUNTS[user] !== password) return false
+    try { localStorage.setItem(USER_KEY, user) } catch { return false }
+    return true
+  }
+  function signOut () { try { localStorage.removeItem(USER_KEY) } catch {} }
+  // The login page sends the visitor back to the page they came from. Only a page of the prototype is accepted.
+  const safeNext = (next) => (/^[a-z0-9-]+\.html(\?[^\s#]*)?(#[^\s]*)?$/i.test(next || '') ? next : 'index.html')
+  const loginHref = () => (location.pathname.endsWith('/login.html') ? hrefOf('/login') : `${hrefOf('/login')}?next=${encodeURIComponent(hereHref())}`)
   // Αναλύσεις needs a log in. Its pages show the page head (the tabs) and a card: the lock, what is behind it, log in, sign up.
   function SignInGate () {
     return h('section', { class: 'gate', 'aria-labelledby': 'gate-title' },
@@ -112,7 +125,7 @@
         h('span', { class: 'gate-icon' }, Icon('lock-closed', 'icon')),
         h('h2', { class: 'gate-title', id: 'gate-title' }, t('gate.title')),
         h('p', { class: 'gate-text' }, t('gate.text')),
-        h('a', { class: 'button button-primary gate-login', href: hrefOf('/login') }, t('shell.login')),
+        h('a', { class: 'button button-primary gate-login', href: loginHref() }, t('shell.login')),
         h('p', { class: 'gate-register' }, t('gate.register'), ' ', h('a', { href: hrefOf('/register') }, t('shell.register')))))
   }
 
@@ -515,10 +528,18 @@
             }))))
       }
 
-      // Log in and sign up. There is no account page in the prototype yet: the links open their row in the table of pages.
-      const authLinks = (cls) => h('div', { class: cls },
-        h('a', { class: 'button auth-login', href: hrefOf('/login') }, t('shell.login')),
-        h('a', { class: 'button button-primary auth-register', href: hrefOf('/register') }, t('shell.register')))
+      // Log in and sign up. A visitor who is logged in sees the name of the account and "Αποσύνδεση". Sign up has no page in the prototype yet: it opens its row in the table of pages.
+      const authLinks = (cls) => {
+        const user = currentUser()
+        if (user) {
+          return h('div', { class: cls },
+            h('span', { class: 'auth-user' }, user),
+            h('button', { type: 'button', class: 'button auth-login', onClick: () => { signOut(); mount() } }, t('shell.logout')))
+        }
+        return h('div', { class: cls },
+          h('a', { class: 'button auth-login', href: loginHref() }, t('shell.login')),
+          h('a', { class: 'button button-primary auth-register', href: hrefOf('/register') }, t('shell.register')))
+      }
 
       const logoLink = (cls) => h('a', { class: `logo-link ${cls}`, href: 'index.html' }, h('img', { class: 'logo-img', src: 'assets/logo.svg?v=6', alt: t('site.name'), width: 335, height: 141 }))
 
@@ -576,9 +597,9 @@
       // The tabs of the section are a sidebar on a wide screen, under the navbar. A phone keeps them as tabs in the page head.
       // The sub-tabs of a tab stay in the page body. A detail page (an outlet) marks the tab that lists it.
       const activeRoute = exactTab ? route : parentRoute
-      const sectionNav = item && item.tabs.length > 1
+      const locked = item?.key === 'world' && !signedIn()
+      const sectionNav = item && item.tabs.length > 1 && !locked
         ? h('nav', { class: 'section-nav', 'aria-label': t(`nav.${item.key}`) }, h('div', { class: 'section-nav-inner' },
-          h('p', { class: 'section-nav-label' }, t(`nav.${item.key}`)),
           h('ul', { class: 'section-nav-list' }, item.tabs.map(([key, r, subs]) => {
             const inTab = r === activeRoute || (subs || []).some(([, s]) => s === activeRoute)
             return h('li', {}, h('a', { class: 'section-nav-link', href: hrefOf(r), 'aria-current': inTab ? (route === r || (subs || []).some(([, s]) => s === route) ? 'page' : 'true') : null }, t(`tab.${item.key}.${key}`)))
@@ -626,7 +647,7 @@
         // The detail pages of Αναλύσεις (a speech, a person's file) are locked as well.
         if (item?.key === 'world' && !signedIn()) {
           content.classList.add('is-gated')
-          content.replaceChildren(window.Shell.PageHead({}), SignInGate())
+          content.replaceChildren(window.Shell.PageHead({ tabs: null }), SignInGate())
           centerTabs()
           return
         }
@@ -683,5 +704,5 @@
     })) }))
   }
 
-  window.Shell = { start, routeAnchor, hrefOf, itemOf, placeOf, tree, PageHead, headerV2 }
+  window.Shell = { signIn, currentUser, safeNext, start, routeAnchor, hrefOf, itemOf, placeOf, tree, PageHead, headerV2 }
 })()

@@ -591,6 +591,15 @@ button, input, select { font: inherit; color: inherit; }
 .auth-login, .auth-register { min-height: 32px; padding: 0 var(--space-4); border-radius: var(--pill, 999px); font-size: 13px; font-weight: 600; justify-content: center; white-space: nowrap; }
 .auth-login { background: transparent; color: var(--ink); }
 
+/* The login form: the card of the lock, with two fields. */
+.login-form { display: flex; flex-direction: column; gap: var(--space-3); width: 100%; margin-top: var(--space-2); text-align: left; }
+.login-form label { display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
+.login-form input { min-height: 40px; padding: 0 var(--space-3); border: 1px solid var(--border); border-radius: 8px; background: var(--surface-page); color: var(--ink); font: var(--text-small) var(--font-text); letter-spacing: 0; text-transform: none; }
+.login-form input:focus-visible { border-color: var(--ink); outline: 2px solid var(--focus); outline-offset: 1px; }
+.login-form .button { justify-content: center; margin-top: var(--space-2); min-height: 40px; border-radius: var(--pill, 999px); }
+.login-error { margin: 0; padding: var(--space-2) var(--space-3); border: 1px solid var(--error-edge); border-radius: 8px; background: var(--error-bg); color: var(--error-text); font-size: var(--text-small); }
+.auth-user { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
+
 /* The lock of Αναλύσεις: the page head stays, and one wide panel takes the place of the page, with the card in the middle (like fundamenta.gr). */
 .content.is-gated { max-width: none; }
 .gate {
@@ -611,7 +620,8 @@ button, input, select { font: inherit; color: inherit; }
 .header-logo, .header-nav, .header-actions, .trail-bar { display: none; }
 .sidebar .auth-links { display: flex; gap: var(--space-2); padding: 0 var(--space-3) var(--space-4); }
 .sidebar .auth-links a { flex: 1; }
-.sidebar .auth-links a { min-height: 40px; font-size: var(--text-small); }
+.sidebar .auth-links a, .sidebar .auth-links button { min-height: 40px; font-size: var(--text-small); }
+.sidebar .auth-user { align-self: center; flex: none; }
 .page-footer { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); }
 .page-footer-text { margin-right: auto; }
 .page-footer-links { display: flex; gap: var(--space-4); }
@@ -652,6 +662,7 @@ button, input, select { font: inherit; color: inherit; }
   .header-actions .lang-switch button { min-width: 30px; min-height: 26px; font-size: var(--text-caption); color: var(--text-secondary); }
   .header-actions .lang-switch button[aria-pressed="true"] { color: var(--on-ink); }
   .header-actions .auth-links { display: flex; align-items: center; gap: var(--space-2); }
+  .header-actions .auth-user { margin-right: var(--space-1); }
   /* A detail page: the back button and the trail, in a row under the navbar. */
   .trail-bar { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-5) 0; }
   .trail-bar .back-button { margin-left: -10px; }
@@ -667,7 +678,6 @@ button, input, select { font: inherit; color: inherit; }
 @media (min-width: 1024px) {
   .section-nav { display: block; flex: none; width: 232px; border-right: 1px solid var(--border); background: var(--surface-sidebar); }
   .section-nav-inner { position: sticky; top: var(--navbar-height); max-height: calc(100vh - var(--navbar-height)); overflow-y: auto; padding: var(--space-5) var(--space-3); }
-  .section-nav-label { margin: 0 0 var(--space-2); padding: 0 var(--space-3); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
   .section-nav-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
   .section-nav-link { display: block; padding: 9px var(--space-3); border-radius: 6px; font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.08em; line-height: 1.4; text-transform: uppercase; color: var(--text-secondary); text-decoration: none; }
   .section-nav-link:hover { background: var(--sidebar-hover-bg); color: var(--sidebar-active-text); }
