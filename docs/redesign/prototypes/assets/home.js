@@ -19,7 +19,7 @@
     return { byDay, rowsOf, detail, dates: stories.dates, issues: stories.issues }
   }
 
-  const STORIES = 6
+  const STORIES = 8
 
   // Everything the card says about one story of a day: the story of that rank, the outlets that ran it, and the stories of the day.
   function dayInfo (ix, d, rank = 0) {
@@ -118,7 +118,7 @@
       requestAnimationFrame(() => { list.scrollLeft = tile ? tile.offsetLeft - (list.clientWidth - tile.offsetWidth) / 2 : 0 })
     }
     paint()
-    const node = card('c-7 home-calendar', cardHead(t('home.days.title'), h('div', { class: 'home-month-nav' }, prev, label, next), t('home.days.info')), list)
+    const node = card('home-calendar', cardHead(t('home.days.title'), h('div', { class: 'home-month-nav' }, prev, label, next), t('home.days.info')), list)
     return { node, select (i) { current = i; month = dates[i].slice(0, 7); paint() } }
   }
 
@@ -136,7 +136,7 @@
       return { ...r, n: on(r.k), now, was, diff: w && beforeTotal ? now - was : 0 }
     }).filter((r) => r.n > 0).sort((a, b) => b.n - a.n)
     const head = cardHead(t('home.topics.title'), null, t('home.topics.note', { n: w }))
-    if (!rows.length) return card('c-12 home-topics', head, emptyText(t('home.topics.empty')))
+    if (!rows.length) return card('c-7 home-topics', head, emptyText(t('home.topics.empty')))
     const points = (v) => fmt.dec(Math.abs(v * 100))
     const arrow = (r) => {
       if (Number(points(r.diff)) === 0) return null
@@ -154,7 +154,7 @@
       ]
     })
     const half = Math.ceil(rows.length / 2)
-    return card('c-12 home-topics', head, h('div', { class: 'home-topics-cols' }, table(rows.slice(0, half)), table(rows.slice(half))))
+    return card('c-7 home-topics', head, h('div', { class: 'home-topics-cols' }, table(rows.slice(0, half)), table(rows.slice(half))))
   }
 
   // The quick access: four small buttons in a 2×2 grid, each with the name of the page, a short line and an arrow.

@@ -8,18 +8,18 @@
   <link rel="stylesheet" href="assets/tokens.css?v=10">
   <link rel="stylesheet" href="assets/app.css?v=29">
   <link rel="stylesheet" href="assets/dash.css?v=80">
-  <link rel="stylesheet" href="assets/home.css?v=22">
+  <link rel="stylesheet" href="assets/home.css?v=23">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=30"></script>
   <script src="assets/messages-v2.js?v=46"></script>
-  <script src="assets/messages-home.js?v=14"></script>
+  <script src="assets/messages-home.js?v=15"></script>
   <script src="assets/components.js?v=11"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
-  <script src="assets/home.js?v=17"></script>
+  <script src="assets/home.js?v=18"></script>
   <script src="assets/shell.js?v=47"></script>
   <script src="data/home.js"></script>
   <script src="data/stories.js?v=1"></script>
@@ -121,8 +121,10 @@
             if (from === 'chart') calendar.select(i)
           }
 
+          const main = h('div', { class: 'c-7 card-col card-col-fill' }, calendar.node, dailyCard)
+          const aside = h('div', { class: 'c-5 card-col card-col-fill' }, day)
           content.replaceChildren(bar(),
-            h('div', { class: 'dash-grid home-grid' }, calendar.node, Home.QuickCard(), dailyCard, day, topics), protoNote())
+            h('div', { class: 'dash-grid home-grid' }, main, aside, topics, Home.QuickCard()), protoNote())
           fit()
         }
         draw()
