@@ -77,8 +77,8 @@
 
     return card('c-5 home-day', head,
       h('h3', { class: 'home-day-story' }, name(story)),
-      h('p', { class: 'home-day-meta' }, topic ? [UI.EntityLink({ type: 'topic', key: String(story.issue), label: name(topic) }), ' · '] : null,
-        info.outlets.length ? t('home.day.meta.outlets', { n: fmt.int(info.n), m: info.outlets.length }) : t('home.day.meta', { n: fmt.int(info.n) })),
+      h('p', { class: 'home-day-meta' }, topic ? UI.EntityLink({ type: 'topic', key: String(story.issue), label: name(topic) }) : null,
+        info.outlets.length ? null : [topic ? ' · ' : null, t('home.day.meta', { n: fmt.int(info.n) })]),
       outlets,
       stories)
   }
