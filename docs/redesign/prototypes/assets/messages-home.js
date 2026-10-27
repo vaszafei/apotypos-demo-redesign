@@ -1,5 +1,18 @@
 // Messages of Αρχική (home.js and index.html). Load after messages.js.
 Object.assign(window.MESSAGES.el, {
+  'home.hero.eyebrow': 'Παρατηρητήριο ελληνικών ΜΜΕ',
+  'home.hero.lead': 'Κάθε μέρα συλλέγουμε τα άρθρα {n} ελληνικών μέσων και τα οργανώνουμε σε ιστορίες, θέματα και πρόσωπα. Αναζητήστε ό,τι σας ενδιαφέρει ή δείτε την επικαιρότητα παρακάτω.',
+  'home.hero.try': 'Δημοφιλή σήμερα:',
+  'home.hero.updated': 'Ενημέρωση {date}',
+  'home.hero.articles': 'άρθρα',
+  'home.hero.outlets': 'μέσα',
+  'home.hero.stories': 'ιστορίες',
+  'home.hero.days': 'ημέρες',
+  'home.hero.period': 'Από {from} έως {to}',
+  'home.hero.more': 'Η επικαιρότητα',
+  'home.today.title': 'Η επικαιρότητα',
+  'home.today.lead': 'Διαλέξτε μια ημέρα στο ημερολόγιο ή στο γράφημα για να δείτε τις ιστορίες και τα θέματά της.',
+  'home.explore.title': 'Εξερευνήστε',
   'home.day.title': 'Ιστορίες της ημέρας',
   'home.day.info': 'Όλες οι ιστορίες της ημέρας που διαλέξατε, στο ημερολόγιο ή στο γράφημα, με πρώτες αυτές που έχουν τα περισσότερα άρθρα· η λίστα κυλάει. Διαλέξτε μια ιστορία για να τη δείτε στην κάρτα· το κουμπί δίπλα της ανοίγει τη σελίδα της. Οι ιστορίες γενικών θεμάτων, όπως «Άλλα διεθνή», δεν μετράνε.',
   'home.day.meta': '{n} άρθρα',
@@ -28,6 +41,19 @@ Object.assign(window.MESSAGES.el, {
 })
 
 Object.assign(window.MESSAGES.en, {
+  'home.hero.eyebrow': 'Greek media observatory',
+  'home.hero.lead': 'Every day we collect the articles of {n} Greek outlets and organise them into stories, topics and people. Search for what interests you or see the news below.',
+  'home.hero.try': 'Popular today:',
+  'home.hero.updated': 'Updated {date}',
+  'home.hero.articles': 'articles',
+  'home.hero.outlets': 'outlets',
+  'home.hero.stories': 'stories',
+  'home.hero.days': 'days',
+  'home.hero.period': 'From {from} to {to}',
+  'home.hero.more': 'The news',
+  'home.today.title': 'The news',
+  'home.today.lead': 'Pick a day in the calendar or in the chart to see its stories and topics.',
+  'home.explore.title': 'Explore',
   'home.day.title': 'Stories of the day',
   'home.day.info': 'Every story of the day you picked, in the calendar or in the chart, the ones with the most articles first; the list scrolls. Pick a story to see it in the card; the button next to it opens its page. Stories of general topics, such as “Other world news”, do not count.',
   'home.day.meta': '{n} articles',

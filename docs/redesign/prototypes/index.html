@@ -8,24 +8,25 @@
   <link rel="stylesheet" href="assets/tokens.css?v=10">
   <link rel="stylesheet" href="assets/app.css?v=35">
   <link rel="stylesheet" href="assets/dash.css?v=81">
-  <link rel="stylesheet" href="assets/home.css?v=30">
+  <link rel="stylesheet" href="assets/home.css?v=31">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=6"></script>
   <script src="assets/messages.js?v=32"></script>
   <script src="assets/messages-v2.js?v=46"></script>
-  <script src="assets/messages-home.js?v=19"></script>
+  <script src="assets/messages-home.js?v=20"></script>
   <script src="assets/components.js?v=13"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
-  <script src="assets/home.js?v=26"></script>
-  <script src="assets/shell.js?v=49"></script>
+  <script src="assets/home.js?v=27"></script>
+  <script src="assets/shell.js?v=50"></script>
   <script src="data/home.js"></script>
   <script src="data/stories.js?v=1"></script>
   <script src="data/storyDetail.js?v=1"></script>
   <script>
-    // Home: the calendar of a month and the chart pick a day, the card shows the stories of that day (a story of the list is picked in the card),
+    // Home: the hero (the title, the large search and the size of the data) fills the first screen; the search is not in the top bar here.
+    // Under it, the calendar of a month and the chart pick a day, the card shows the stories of that day (a story of the list is picked in the card),
     // then the topics of the picked day and the quick access. The page covers the whole window of the data.
     const { t, fmt, h, load } = App
     const { card, cardHead } = Dash
@@ -47,10 +48,11 @@
       id: 'home',
       route: '/',
       dash: true,
+      search: false,
       title: () => t('home.title'),
       breadcrumbs: () => [],
       render (content) {
-        content.classList.add('dash', 'minimal')
+        content.classList.add('dash', 'minimal', 'is-home')
         const ix = stories.kind === 'data' && result.kind === 'data'
           ? Home.index({ stories: stories.data, detail: detail.kind === 'data' ? detail.data : null })
           : null
@@ -113,7 +115,10 @@
 
           const main = h('div', { class: 'c-7 card-col' }, calendar.node, dailyCard, topics)
           const aside = h('div', { class: 'c-5 card-col' }, day, Home.QuickCard())
-          content.replaceChildren(bar(),
+          const storyCount = ix ? new Set(ix.byDay.slice(i0, i1 + 1).flat().map((o) => o.s.id)).size : null
+          content.replaceChildren(
+            Home.Hero({ home: data, totals, i0, i1, stories: storyCount }),
+            Home.SectionHead({ id: 'home-today', title: t('home.today.title'), lead: t('home.today.lead') }),
             h('div', { class: 'dash-grid home-grid' }, main, aside), protoNote())
         }
         draw()
