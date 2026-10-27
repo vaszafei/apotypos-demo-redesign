@@ -2,8 +2,7 @@
 
 /* The stories of a day. */
 .home-day { gap: var(--space-3); }
-.home-pill { border-color: var(--ink); color: var(--ink); font-weight: 600; }
-.home-day-date { margin: 0; font-size: var(--text-caption); color: var(--text-secondary); text-transform: capitalize; }
+.home-pill { border-color: var(--ink); color: var(--ink); font-weight: 600; text-transform: capitalize; }
 .home-day-story { margin: 0; font: 600 22px/1.25 var(--font-heading); letter-spacing: -0.01em; color: var(--ink); }
 .home-day-meta { margin: 0; font-size: var(--text-small); color: var(--text-secondary); }
 .home-day-meta .entity-link { font-weight: 600; color: var(--text-primary); }

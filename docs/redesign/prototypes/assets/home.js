@@ -7,16 +7,16 @@
   const name = (x) => x[App.locale] || x.el
   const sum = (arr) => arr.reduce((a, b) => a + b, 0)
 
-  // The lookups of a day: the stories of stories.js ranked by articles for each day, and the story of the media set with the same name (it has the articles of each outlet). A generic story ("Άλλα διεθνή") is not a story, so it does not count.
-  function index ({ stories, set }) {
+  // The lookups of a day: the stories of stories.js ranked by articles for each day, and the rows of storyDetail.js with the articles of each outlet (it has every story). A generic story ("Άλλα διεθνή") is not a story, so it does not count.
+  function index ({ stories, detail }) {
     const byDay = stories.dates.map(() => [])
     stories.stories.forEach((s) => {
       if (s.generic) return
       for (let j = 0; j < s.days.length; j += 2) byDay[s.days[j]].push({ s, n: s.days[j + 1] })
     })
     byDay.forEach((list) => list.sort((a, b) => b.n - a.n))
-    const mmeOf = new Map(set ? set.stories.map((s, i) => [s.el, i]) : [])
-    return { byDay, mmeOf, set, dates: stories.dates, issues: stories.issues }
+    const rowsOf = new Map(detail ? detail.stories.map((s) => [s.id, s.t]) : [])
+    return { byDay, rowsOf, detail, dates: stories.dates, issues: stories.issues }
   }
 
   const STORIES = 6
@@ -30,12 +30,10 @@
     const { s, n } = lead
     const date = ix.dates[d]
     const perOutlet = new Map()
-    const m = ix.mmeOf.get(s.el)
-    if (m !== undefined) {
-      const rows = ix.set.stories[m].t
-      for (let j = 0; j < rows.length; j += 3) if (rows[j + 1] === d) perOutlet.set(rows[j], rows[j + 2])
-    }
-    const outlets = [...perOutlet].map(([k, c]) => ({ ...ix.set.outlets[k], k, n: c })).sort((a, b) => b.n - a.n)
+    const rows = ix.rowsOf.get(s.id)
+    const day = ix.detail ? ix.detail.dates.indexOf(date) : -1
+    if (rows) for (let j = 0; j < rows.length; j += 3) if (rows[j + 1] === day) perOutlet.set(rows[j], rows[j + 2])
+    const outlets = [...perOutlet].map(([k, c]) => ({ ...ix.detail.outlets[k], k, n: c })).sort((a, b) => b.n - a.n)
     return { d, date, story: s, n, rank, topic: ix.issues[s.issue], outlets, list: list.slice(0, STORIES) }
   }
 
@@ -43,8 +41,7 @@
   // The line under it says the total, and names the outlet of the part under the mouse (or in focus). A part opens the page of its outlet.
   function OutletStack (parts, { total, count }) {
     const panel = h('div', { class: 'home-stack-panel', 'aria-live': 'polite' })
-    const rest = () => panel.replaceChildren(h('p', { class: 'home-stack-line' }, h('strong', { class: 'home-stack-total' }, fmt.int(total)), h('span', { class: 'home-stack-cap' }, t('home.day.ring', { n: count }))),
-      h('p', { class: 'home-stack-cap' }, t('home.day.hint')))
+    const rest = () => panel.replaceChildren(h('p', { class: 'home-stack-line' }, h('strong', { class: 'home-stack-total' }, fmt.int(total)), h('span', { class: 'home-stack-cap' }, t('home.day.ring', { n: count }))))
     const show = (s) => panel.replaceChildren(h('p', { class: 'home-stack-line' }, h('strong', { class: 'home-stack-name' }, s.name), s.slug ? h('span', { class: 'home-stack-cap' }, s.group || t('home.day.nogroup')) : null),
       h('p', { class: 'home-stack-cap' }, t('home.day.slice', { n: fmt.int(s.n), share: fmt.pct(s.n / total) })))
     rest()
@@ -63,9 +60,9 @@
     return h('div', { class: 'home-stack-wrap' }, bar, panel)
   }
 
-  // The stories of a day: a story is picked to show it in the card, and its button opens its page. The card shows the story of the rank in info.
-  function DayCard (info, { isLast, onStory }) {
-    const head = cardHead(t('home.day.title'), isLast ? h('span', { class: 'pill home-pill' }, t('home.day.latest')) : null, t('home.day.info'))
+  // The stories of a day: a story is picked to show it in the card, and its button opens its page. The card shows the story of the rank in info, and the picked day at the top right.
+  function DayCard (info, { date, onStory }) {
+    const head = cardHead(t('home.day.title'), h('span', { class: 'pill home-pill' }, fmt.date(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })), t('home.day.info'))
     if (!info) return card('c-5 home-day', head, emptyText(t('home.day.empty')))
     const { story, topic } = info
     const total = sum(info.outlets.map((o) => o.n))
@@ -83,7 +80,6 @@
       h('a', { class: 'button home-story-go', href: `story-v2.html?id=${o.s.id}`, 'aria-label': `${t('home.day.open')}: ${name(o.s)}` }, t('home.day.open'), Icon('chevron-right', 'icon icon-sm')))))
 
     return card('c-5 home-day', head,
-      h('p', { class: 'home-day-date' }, fmt.date(info.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })),
       h('h3', { class: 'home-day-story' }, name(story)),
       h('p', { class: 'home-day-meta' }, topic ? [UI.EntityLink({ type: 'topic', key: String(story.issue), label: name(topic) }), ' · '] : null,
         info.outlets.length ? t('home.day.meta.outlets', { n: fmt.int(info.n), m: info.outlets.length }) : t('home.day.meta', { n: fmt.int(info.n) })),

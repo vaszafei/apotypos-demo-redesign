@@ -2,7 +2,6 @@
 Object.assign(window.MESSAGES.el, {
   'home.day.title': 'Ιστορίες της ημέρας',
   'home.day.info': 'Οι ιστορίες με τα περισσότερα άρθρα την ημέρα που διαλέξατε, στο ημερολόγιο ή στο γράφημα. Διαλέξτε μια ιστορία για να τη δείτε στην κάρτα· το κουμπί δίπλα της ανοίγει τη σελίδα της. Οι ιστορίες γενικών θεμάτων, όπως «Άλλα διεθνή», δεν μετράνε.',
-  'home.day.latest': 'Τελευταία ημέρα',
   'home.day.meta': '{n} άρθρα',
   'home.day.meta.outlets': '{n} άρθρα σε {m} μέσα',
   'home.day.outlets': 'Άρθρα ανά μέσο',
@@ -10,7 +9,6 @@ Object.assign(window.MESSAGES.el, {
   'home.day.rest': 'Άλλα {n} μέσα',
   'home.day.ring': 'άρθρα σε {n} μέσα',
   'home.day.open': 'Στην ιστορία',
-  'home.day.hint': 'Περάστε το ποντίκι πάνω από ένα τμήμα της μπάρας για να δείτε το μέσο.',
   'home.day.slice': '{n} άρθρα · {share} των άρθρων της ιστορίας',
   'home.month.prev': 'Προηγούμενος μήνας',
   'home.month.next': 'Επόμενος μήνας',
@@ -40,7 +38,6 @@ Object.assign(window.MESSAGES.el, {
 Object.assign(window.MESSAGES.en, {
   'home.day.title': 'Stories of the day',
   'home.day.info': 'The stories with the most articles on the day you picked, in the calendar or in the chart. Pick a story to see it in the card; the button next to it opens its page. Stories of general topics, such as “Other world news”, do not count.',
-  'home.day.latest': 'Latest day',
   'home.day.meta': '{n} articles',
   'home.day.meta.outlets': '{n} articles in {m} outlets',
   'home.day.outlets': 'Articles by outlet',
@@ -48,7 +45,6 @@ Object.assign(window.MESSAGES.en, {
   'home.day.rest': 'Other {n} outlets',
   'home.day.ring': 'articles in {n} outlets',
   'home.day.open': 'To the story',
-  'home.day.hint': 'Move the mouse over a part of the bar to see the outlet.',
   'home.day.slice': '{n} articles · {share} of the articles of the story',
   'home.month.prev': 'Previous month',
   'home.month.next': 'Next month',
