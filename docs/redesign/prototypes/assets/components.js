@@ -363,6 +363,8 @@
     const holder = h('div', { class: 'chart-holder', style: minWidth ? `--chart-min:${minWidth}px` : null })
     // A pick shows at once. The page can draw the chart again with its own state.
     let sel = picked
+    // A pick changes the look of the columns in place (they fade), the chart is drawn again only when its width changes.
+    let apply = () => {}
     const draw = () => {
       // A fractional width rounds up in clientWidth, so the drawing would shrink below 12 px. Round down.
       const width = Math.floor(holder.getBoundingClientRect().width)
@@ -391,13 +393,13 @@
       // Categories: each label, or fewer labels when the longest one (about 7 px a letter at 12 px) does not fit its slot.
       const dateStep = Math.ceil(CHART_FRAME.labelEvery / slot)
       const every = dates ? (n > 20 ? Math.ceil(dateStep / 7) * 7 : dateStep) : Math.max(1, Math.ceil((Math.max(...labels.map((l) => String(l).length)) * 7 + 12) / slot))
-      const cols = []
+      const marks = []
       for (let i = 0; i < n; i++) {
         const x = pad.left + i * slot
         const bx = x + (slot - w) / 2
         if (flagged && flagged(i)) svg.append(h('rect', { class: 'bar-flag', x: x + 1, y: pad.top, width: Math.max(1, slot - 2), height: plotH }))
-        const dim = (muted && muted(i)) || (sel !== null && sel !== i)
-        const col = h('g', { class: dim ? 'bar-col is-muted' : 'bar-col' })
+        const dimOf = () => (muted && muted(i)) || (sel !== null && sel !== i)
+        const col = h('g', { class: dimOf() ? 'bar-col is-muted' : 'bar-col' })
         if (totals[i] > 0) {
           // The column has round top corners (a clip path) and a gap of 1 px between its parts.
           const yt = y(totals[i])
@@ -415,7 +417,6 @@
           })
         }
         svg.append(col)
-        cols.push(col)
         if (topLabels && topLabels[i]) svg.append(h('text', { class: 'bar-top', x: x + slot / 2, y: y(totals[i]) - 6, 'text-anchor': 'middle' }, topLabels[i]))
         // The value of the peak stays inside the plot when its column is at an edge.
         if (peakAt.has(i) && markers[i] === undefined) svg.append(h('text', { class: 'bar-top', x: Math.min(width - pad.right, Math.max(pad.left, x + slot / 2)), y: y(totals[i]) - 6, 'text-anchor': x + slot / 2 < pad.left + 16 ? 'start' : x + slot / 2 > width - pad.right - 16 ? 'end' : 'middle' }, valueFormat(totals[i])))
@@ -423,10 +424,9 @@
           const cy = y(totals[i]) - (topLabels && topLabels[i] ? 30 : 13)
           svg.append(h('circle', { class: 'bar-mark', cx: x + slot / 2, cy, r: 9 }), h('text', { class: 'bar-mark-text', x: x + slot / 2, y: cy + 4, 'text-anchor': 'middle' }, String(markers[i])))
         }
-        if (i % every === 0) {
-          const text = dates ? fmt.date(dates[i], { day: 'numeric', month: 'short' }) : labels[i]
-          svg.append(h('text', { class: sel === i ? 'is-picked' : null, x: x + slot / 2, y: pad.top + plotH + CHART_FRAME.labelGap, 'text-anchor': 'middle' }, text))
-        }
+        const tick = i % every === 0 ? h('text', { class: sel === i ? 'is-picked' : null, x: x + slot / 2, y: pad.top + plotH + CHART_FRAME.labelGap, 'text-anchor': 'middle' }, dates ? fmt.date(dates[i], { day: 'numeric', month: 'short' }) : labels[i]) : null
+        if (tick) svg.append(tick)
+        marks.push({ col, tick, dimOf })
       }
       if (reference && reference.value > 0) {
         const ry = y(reference.value)
@@ -446,9 +446,9 @@
           const hit = h('rect', { class: 'bar-hit', x: pad.left + i * slot, y: pad.top, width: slot, height: plotH + 20, tabindex: 0, role: 'button', 'aria-pressed': String(sel === i), 'aria-label': tipOf(i) })
           hit.addEventListener('pointermove', showAt)
           hit.addEventListener('pointerleave', leave)
-          const pick = (byKey) => { sel = i; draw(); if (byKey) holder.querySelectorAll('.bar-hit')[i]?.focus(); onPick(i) }
-          hit.addEventListener('click', () => pick(false))
-          hit.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(true) } })
+          const pick = () => { sel = i; apply(); onPick(i) }
+          hit.addEventListener('click', pick)
+          hit.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick() } })
           svg.append(hit)
         }
         svg.removeAttribute('aria-hidden')
@@ -480,6 +480,10 @@
         }
         svg.append(overlay)
       }
+      apply = () => {
+        marks.forEach((m, i) => { m.col.classList.toggle('is-muted', Boolean(m.dimOf())); m.tick?.classList.toggle('is-picked', sel === i) })
+        svg.querySelectorAll('.bar-hit[role="button"]').forEach((hit, i) => hit.setAttribute('aria-pressed', String(sel === i)))
+      }
       const nodes = [svg]
       if (below) nodes.push(h('div', { class: 'bar-below', style: { paddingLeft: `${pad.left}px`, paddingRight: `${pad.right}px`, gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` } }, below.map((b) => h('span', {}, b))))
       // The same values as a table for a screen reader and the keyboard. The tooltip needs a mouse.
@@ -492,7 +496,9 @@
     }
     requestAnimationFrame(draw)
     new ResizeObserver(() => draw()).observe(holder)
-    return minWidth ? h('div', { class: 'chart-scroll' }, holder) : holder
+    const root = minWidth ? h('div', { class: 'chart-scroll' }, holder) : holder
+    root.pick = (i) => { sel = i; apply() }
+    return root
   }
   // A smooth line through the points: a monotone cubic curve (it never swings above or below the points it joins). A gap or a missing value starts a new curve.
   function smoothPath (pts, gapAt) {

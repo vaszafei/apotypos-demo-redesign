@@ -334,6 +334,7 @@ button, input, select { font: inherit; color: inherit; }
 .chart-holder { width: 100%; }
 .chart-scroll { overflow-x: auto; }
 @media (max-width: 719px) { .chart-scroll > .chart-holder { min-width: var(--chart-min); } }
+.bar-chart .bar-col { transition: opacity var(--motion-base) var(--ease-out); }
 .bar-chart .bar-col.is-muted { opacity: 0.3; }
 .bar-chart .bar-hover { fill: color-mix(in srgb, var(--bar-fill) 8%, transparent); }
 .bar-chart .bar-band { fill: var(--accent); opacity: 0.12; }
