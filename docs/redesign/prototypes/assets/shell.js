@@ -573,11 +573,29 @@
         h('nav', { class: 'header-nav', 'aria-label': t('shell.nav') }, h('ul', { class: 'nav-list nav-main' }, mainLinks())),
         GlobalSearch(),
         h('div', { class: 'header-actions' }, langSwitch(), authLinks('auth-links')))
+      // The pages of the section (its tabs and sub-tabs) are a sidebar on a wide screen, under the navbar. A phone keeps them as tabs in the page head.
+      // A detail page (an outlet) marks the tab that lists it.
+      const activeRoute = exactTab ? route : parentRoute
+      const navLinkOf = (key, r, sub) => {
+        const current = r === route ? 'page' : r === activeRoute ? 'true' : null
+        return h('a', { class: sub ? 'section-nav-sub' : 'section-nav-link', href: hrefOf(r), 'aria-current': current }, t(`tab.${item.key}.${key}`))
+      }
+      const sectionNav = item && item.tabs.length > 1
+        ? h('nav', { class: 'section-nav', 'aria-label': t(`nav.${item.key}`) }, h('div', { class: 'section-nav-inner' },
+          h('p', { class: 'section-nav-label' }, t(`nav.${item.key}`)),
+          h('ul', { class: 'section-nav-list' }, item.tabs.map(([key, r, subs]) => {
+            const inTab = r === activeRoute || (subs || []).some(([, s]) => s === activeRoute)
+            return h('li', {},
+              subs ? h('a', { class: `section-nav-link section-nav-parent${inTab ? ' is-open' : ''}`, href: hrefOf(r) }, t(`tab.${item.key}.${key}`)) : navLinkOf(key, r, false),
+              subs ? h('ul', { class: 'section-nav-subs' }, subs.map(([k, s]) => h('li', {}, navLinkOf(k, s, true)))) : null)
+          }))))
+        : null
       const content = h('main', { class: 'content', id: 'content' })
       // v2: the tabs and the sub-tabs are one block of the page head. The page puts it under its title.
       const pageTabs = headerV2 && tabBar ? h('div', { class: 'page-tabs' }, tabBar, subBar) : null
       const shell = h('div', { class: 'shell' }, sidebar, h('div', { class: 'drawer-scrim', onClick: () => setDrawer(false) }),
-        h('div', { class: 'main-column' }, header, subBarTrail, headerV2 || dash ? null : tabBar, headerV2 ? null : subBar, headerV2 ? null : crumbBar, content, 
+        h('div', { class: 'main-column' }, header, headerV2 || dash ? null : tabBar, headerV2 ? null : subBar, headerV2 ? null : crumbBar,
+          h('div', { class: 'page-body' }, sectionNav, h('div', { class: 'page-main' }, subBarTrail, content)),
           h('footer', { class: 'page-footer' }, h('span', { class: 'page-footer-text' }, t('site.footer')),
             h('ul', { class: 'nav-list page-footer-links', 'aria-label': t('section.footer') }, footerLinks()),
             h('div', { class: 'page-footer-tools' }, themeSwitch(), fontSwitch()))))
