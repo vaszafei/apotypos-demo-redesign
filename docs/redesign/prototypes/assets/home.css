@@ -1,4 +1,4 @@
-/* Αρχική: the calendar of a month, the stories of a day, the trends and the shortcuts to the analyses. */
+/* Αρχική: the calendar of a month, the stories of a day, the topics of a day and the quick access. */
 
 /* The stories of a day. */
 .home-day { gap: var(--space-3); }
@@ -49,8 +49,8 @@ a.home-stack-part { cursor: pointer; }
 .home-day-delta { font-size: var(--text-caption); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .home-day-btn[aria-pressed="true"] .home-day-dow, .home-day-btn[aria-pressed="true"] .home-day-delta { color: var(--on-ink); opacity: 0.75; }
 
-/* The shortcuts to the analyses: one row of tiles that wraps. */
-.home-links { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-3); }
+/* The quick access: four tiles in a 2×2 grid, the name and the line, the arrow on the right. */
+.home-links { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
 .home-links li { border: 1px solid var(--border); border-radius: 10px; }
 .home-links li:hover { border-color: var(--ink); }
 .home-links a { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); height: 100%; padding: 12px 14px; color: var(--text-primary); text-decoration: none; }
@@ -71,5 +71,9 @@ a.home-stack-part { cursor: pointer; }
 .home-arrow { font-size: 10px; line-height: 1; cursor: help; }
 .home-arrow.is-up { color: var(--emph-more); }
 .home-arrow.is-down { color: var(--emph-less); }
-.home-analyses { display: flex; flex-direction: column; }
-.home-analyses .home-links { flex: 1; grid-template-columns: 1fr; grid-auto-rows: 1fr; }
+.home-quick { display: flex; flex-direction: column; }
+.home-quick .home-links { flex: 1; grid-auto-rows: 1fr; }
+.home-quick .home-links a { padding: 16px 18px; }
+.home-quick .home-link-main { gap: 6px; }
+.home-quick .home-link-main strong { font-size: 18px; }
+.home-quick .home-link-main .muted-text { font-size: var(--text-small); }

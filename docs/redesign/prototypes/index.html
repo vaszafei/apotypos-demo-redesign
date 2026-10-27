@@ -8,25 +8,25 @@
   <link rel="stylesheet" href="assets/tokens.css?v=10">
   <link rel="stylesheet" href="assets/app.css?v=29">
   <link rel="stylesheet" href="assets/dash.css?v=80">
-  <link rel="stylesheet" href="assets/home.css?v=18">
+  <link rel="stylesheet" href="assets/home.css?v=21">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=30"></script>
   <script src="assets/messages-v2.js?v=46"></script>
-  <script src="assets/messages-home.js?v=12"></script>
+  <script src="assets/messages-home.js?v=13"></script>
   <script src="assets/components.js?v=11"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
-  <script src="assets/home.js?v=15"></script>
+  <script src="assets/home.js?v=16"></script>
   <script src="assets/shell.js?v=47"></script>
   <script src="data/home.js"></script>
   <script src="data/stories.js?v=1"></script>
   <script src="data/storyDetail.js?v=1"></script>
   <script>
     // Home: the calendar of a month and the chart pick a day, the card shows the stories of that day (a story of the list is picked in the card),
-    // then the topics of the picked day and the shortcuts to the analyses. The page covers the whole window of the data.
+    // then the topics of the picked day and the quick access. The page covers the whole window of the data.
     const { t, fmt, h, load } = App
     const { card, cardHead } = Dash
     const result = load('home', ['dates', 'outlets', 'issues', 'issueDaily'], (b) => b.dates)
@@ -124,7 +124,7 @@
           const main = h('div', { class: 'c-7 card-col card-col-fill' }, calendar.node, dailyCard)
           const aside = h('div', { class: 'c-5 card-col card-col-fill' }, day)
           content.replaceChildren(bar(),
-            h('div', { class: 'dash-grid home-grid' }, main, aside, topics, Home.AnalysesCard()), protoNote())
+            h('div', { class: 'dash-grid home-grid' }, main, aside, topics, Home.QuickCard()), protoNote())
           fit()
         }
         draw()

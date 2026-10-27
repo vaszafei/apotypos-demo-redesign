@@ -1,4 +1,4 @@
-// The cards of Αρχική: the stories of a day, the calendar of a month, the topics of a day and the shortcuts to the analyses.
+// The cards of Αρχική: the stories of a day, the calendar of a month, the topics of a day and the quick access.
 // Load after dash.js. index.html draws the page.
 (function () {
   const { t, fmt, h, Icon } = window.App
@@ -136,7 +136,7 @@
       return { ...r, n: on(r.k), now, was, diff: w && beforeTotal ? now - was : 0 }
     }).filter((r) => r.n > 0).sort((a, b) => b.n - a.n)
     const head = cardHead(t('home.topics.title'), null, t('home.topics.note', { n: w }))
-    if (!rows.length) return card('c-5 home-topics', head, emptyText(t('home.topics.empty')))
+    if (!rows.length) return card('c-7 home-topics', head, emptyText(t('home.topics.empty')))
     const points = (v) => fmt.dec(Math.abs(v * 100))
     const arrow = (r) => {
       if (Number(points(r.diff)) === 0) return null
@@ -144,7 +144,7 @@
       const tip = t('home.topics.tip', { topic: name(r.x), now: fmt.pct(r.now), before: fmt.pct(r.was), diff: `${up ? '+' : '−'}${points(r.diff)}` })
       return h('span', { class: `home-arrow ${up ? 'is-up' : 'is-down'}`, title: tip, role: 'img', 'aria-label': tip }, up ? '▲' : '▼')
     }
-    return card('c-5 home-topics', head,
+    return card('c-7 home-topics', head,
       UI.DataTable({
         rankColumn: true, emptyText: t('home.topics.empty'), pageSize: 10, moreStep: 10,
         rows,
@@ -156,13 +156,13 @@
       }))
   }
 
-  // The shortcuts to the analyses: the name, one line about it and an arrow.
-  const ANALYSES = [['speeches', '/speeches'], ['pi', '/narrative'], ['greekturkish', '/war'], ['coverage', '/coverage'], ['france', '/france-riots']]
-  function AnalysesCard () {
-    return card('c-7 home-analyses', cardHead(t('home.analyses.title'), null, t('home.analyses.info')),
-      h('ul', { class: 'home-links' }, ANALYSES.map(([key, route]) => h('li', {},
-        h('a', { href: Shell.hrefOf(route) }, h('span', { class: 'home-link-main' }, h('strong', {}, t(`tab.world.${key}`)), h('span', { class: 'muted-text' }, t(`home.analyses.${key}`))), Icon('chevron-right', 'icon icon-sm'))))))
+  // The quick access: four buttons in a 2×2 grid, each with the name of the page, a line about it and an arrow.
+  const QUICK = [['speeches', '/speeches', 'tab.world.speeches'], ['pi', '/narrative', 'tab.world.pi'], ['politics', '/elections', 'nav.politics'], ['file', '/contradictions', 'tab.people.file']]
+  function QuickCard () {
+    return card('c-5 home-quick', cardHead(t('home.quick.title'), null, t('home.quick.info')),
+      h('ul', { class: 'home-links' }, QUICK.map(([key, route, label]) => h('li', {},
+        h('a', { href: Shell.hrefOf(route) }, h('span', { class: 'home-link-main' }, h('strong', {}, t(label)), h('span', { class: 'muted-text' }, t(`home.quick.${key}`))), Icon('chevron-right', 'icon icon-sm'))))))
   }
 
-  window.Home = { index, dayInfo, DayCard, Calendar, TopicsCard, AnalysesCard }
+  window.Home = { index, dayInfo, DayCard, Calendar, TopicsCard, QuickCard }
 })()
