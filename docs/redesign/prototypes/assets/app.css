@@ -182,20 +182,16 @@ button, input, select { font: inherit; color: inherit; }
 }
 
 /* Wide screens: the search floats where it was, in the center of the page (the screen minus the sidebar), and the bar behind it has no background and does not stay.
-   Closed, it is only the icon; on hover or focus it opens a few pixels to both sides to show the word and the "/" key. */
+   The button is the full pill, 30 px high, with the word and the "/" key. */
 @media (min-width: 1024px) {
   .header-bar { position: static; background: none; backdrop-filter: none; }
   .global-search { position: fixed; top: 14px; left: calc(var(--sidebar-width) + (100% - var(--sidebar-width)) / 2); transform: translateX(-50%); z-index: 40; margin: 0; }
   :root[data-header="v2"] .global-search { margin: 0; }
-  .search-button {
-    width: 40px; height: 40px; gap: 0; padding: 0 11px; justify-content: flex-start; overflow: hidden; border-radius: 12px; background: transparent;
-    transition: width var(--motion-base) var(--ease-out), background-color var(--motion-base) var(--ease-out), border-color var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out);
-  }
-  .search-button-icon { width: 18px; height: 18px; }
-  .search-button-label, .search-button .global-search-key { flex: none; opacity: 0; transition: opacity var(--motion-base) var(--ease-out); }
-  .search-button-label { flex: 1; padding: 0 0 0 var(--space-2); text-align: left; }
-  .search-button:hover, .search-button:focus-visible { width: 160px; border-color: var(--border); background: var(--surface-raised); color: var(--ink); box-shadow: 0 12px 28px -14px rgba(17, 17, 17, 0.3); }
-  .search-button:hover .search-button-label, .search-button:hover .global-search-key, .search-button:focus-visible .search-button-label, .search-button:focus-visible .global-search-key { opacity: 1; }
+  .search-button { height: 30px; padding: 0 5px 0 10px; border-color: var(--border); border-radius: 10px; background: var(--surface-raised); box-shadow: 0 8px 20px -14px rgba(17, 17, 17, 0.3); }
+  .search-button:hover, .search-button:focus-visible { border-color: var(--ink); color: var(--ink); background: var(--surface-raised); }
+  .search-button-icon { width: 16px; height: 16px; }
+  .search-button-label { padding-right: var(--space-4); }
+  .global-search-key { line-height: 16px; }
 }
 
 
