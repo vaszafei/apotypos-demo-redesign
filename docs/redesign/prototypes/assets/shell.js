@@ -329,7 +329,8 @@
   const token = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim()
   let searchOverlay = null
 
-  function GlobalSearch () {
+  // hero: the large search of Αρχική, in the page instead of the top bar. It opens the same panel, the width of the field.
+  function GlobalSearch ({ hero = false } = {}) {
     const pages = pageEntries()
     let entities = null
     let loading = null
@@ -345,11 +346,12 @@
 
     // Collapsed: the button. Its place in the bar stays the same when the search opens, so the page does not move.
     const button = h('button', {
-      type: 'button', class: 'search-button', 'aria-label': t('shell.search'), title: t('shell.search'),
+      type: 'button', class: hero ? 'search-button search-hero' : 'search-button', 'aria-label': t('shell.search'), title: t('shell.search'),
       'aria-haspopup': 'dialog', 'aria-expanded': 'false', 'aria-controls': panelId, 'aria-keyshortcuts': '/'
-    }, Icon('magnifying-glass', 'icon search-button-icon'), h('span', { class: 'search-button-label', 'aria-hidden': 'true' }, t('shell.search')),
-    h('kbd', { class: 'global-search-key', 'aria-hidden': 'true' }, '/'))
-    const box = h('div', { class: 'global-search' }, button)
+    }, Icon('magnifying-glass', 'icon search-button-icon'), h('span', { class: 'search-button-label', 'aria-hidden': 'true' }, t(hero ? 'shell.search.placeholder' : 'shell.search')),
+    h('kbd', { class: 'global-search-key', 'aria-hidden': 'true' }, '/'),
+    hero ? h('span', { class: 'search-hero-go', 'aria-hidden': 'true' }, t('shell.search')) : null)
+    const box = h('div', { class: hero ? 'global-search is-hero' : 'global-search' }, button)
 
     // Open: the field, the results and a short line of keys, over a light scrim.
     const input = h('input', {
@@ -359,7 +361,7 @@
     const closeButton = h('button', { type: 'button', class: 'search-close', 'aria-label': t('shell.search.close'), title: t('shell.search.close') }, Icon('x-mark', 'icon'))
     const list = h('div', { class: 'global-search-list', id: listId, role: 'listbox', 'aria-label': t('shell.search') })
     const status = h('div', { class: 'visually-hidden', role: 'status' })
-    const panel = h('div', { class: 'search-panel', id: panelId, role: 'dialog', 'aria-label': t('shell.search'), hidden: true },
+    const panel = h('div', { class: hero ? 'search-panel is-hero' : 'search-panel', id: panelId, role: 'dialog', 'aria-label': t('shell.search'), hidden: true },
       h('div', { class: 'search-field' }, Icon('magnifying-glass', 'icon global-search-icon'), input, closeButton),
       list, status, h('p', { class: 'search-keys', 'aria-hidden': 'true' }, t('shell.search.keys')))
     const scrim = h('div', { class: 'search-scrim', hidden: true })
@@ -456,10 +458,23 @@
     }
 
     // The panel sits over the button: centered on it on a wide screen, the full width of the screen on a phone (CSS).
+    // The hero field takes its own width. Scrolled out of view, it opens at the top of the window.
+    const inView = () => { const b = button.getBoundingClientRect(); return b.bottom > 0 && b.top < window.innerHeight }
     function place () {
+      panel.style.maxHeight = ''
       if (smallScreen.matches) { panel.style.left = panel.style.top = panel.style.width = ''; return }
+      if (hero && !inView()) {
+        const w = Math.min(640, window.innerWidth - 32)
+        Object.assign(panel.style, { width: `${w}px`, left: `${(window.innerWidth - w) / 2}px`, top: '12px' })
+        return
+      }
+      // The results need room under the hero field: a field low in the window comes up under the navbar first.
+      if (hero && window.innerHeight - button.getBoundingClientRect().top < 420) {
+        window.scrollBy({ top: button.getBoundingClientRect().top - (parseFloat(token('--navbar-height')) || 56) - 24, behavior: 'instant' })
+      }
       const b = button.getBoundingClientRect()
-      const width = Math.min(640, window.innerWidth - 32)
+      if (hero) panel.style.maxHeight = `${window.innerHeight - Math.max(8, b.top - 4) - 16}px`
+      const width = Math.min(hero ? Math.max(640, b.width + 8) : 640, window.innerWidth - 32)
       panel.style.width = `${width}px`
       panel.style.left = `${Math.max(16, Math.min(b.left + b.width / 2 - width / 2, window.innerWidth - 16 - width))}px`
       panel.style.top = `${Math.max(8, b.top - 4)}px`
@@ -472,7 +487,7 @@
       const to = panel.getBoundingClientRect()
       const small = { opacity: 0 }
       const big = { opacity: 1 }
-      if (!reduceMotion.matches) {
+      if (!reduceMotion.matches && (!hero || inView())) {
         small.transform = `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width}, ${from.height / to.height})`
         big.transform = 'none'
       }
@@ -485,12 +500,13 @@
       return motion[0].finished.catch(() => null)
     }
 
-    function open () {
+    // A query (a chip of the hero) opens the search with that text in the field.
+    function open (query = '') {
       if (isOpen) { input.focus(); return }
       isOpen = true
       ensure()
       expanded = new Set()
-      input.value = ''
+      input.value = query
       panel.hidden = scrim.hidden = false
       box.classList.add('is-open')
       button.setAttribute('aria-expanded', 'true')
@@ -531,7 +547,7 @@
       location.href = el.getAttribute('href')
     }
 
-    button.addEventListener('click', open)
+    button.addEventListener('click', () => open())
     closeButton.addEventListener('click', () => close())
     scrim.addEventListener('click', () => close({ focus: false }))
     input.addEventListener('input', () => { expanded = new Set(); render() })
@@ -566,7 +582,8 @@
     }, Icon('arrow-left', 'icon icon-sm'))
   }
 
-  function start ({ id, route, title, breadcrumbs, render, dash = false }) {
+  // search: false leaves the search out of the top bar. Αρχική has its own, in the page.
+  function start ({ id, route, title, breadcrumbs, render, dash = false, search = true }) {
     const root = document.getElementById('app')
     // The search lists the last pages of the visitor.
     const here = hereHref()
@@ -705,7 +722,7 @@
       header.append(
         logoLink('header-logo'),
         h('nav', { class: 'header-nav', 'aria-label': t('shell.nav') }, h('ul', { class: 'nav-list nav-main' }, mainLinks())),
-        GlobalSearch(),
+        ...(search ? [GlobalSearch()] : []),
         h('div', { class: 'header-actions' }, langSwitch(), authLinks('auth-links')))
       // The tabs of the section are a sidebar on a wide screen, under the navbar. A phone keeps them as tabs in the page head.
       // The sub-tabs of a tab stay in the page body. A detail page (an outlet) marks the tab that lists it.
@@ -786,10 +803,10 @@
     return h('div', { class: 'trail-bar' }, BackButton(parent), h('nav', { class: 'appbar-trail', 'aria-label': t('shell.breadcrumbs') }, h('ol', {}, trail.map((c, i, all) =>
       h('li', {}, i > 0 && Icon('chevron-right', 'icon icon-sm'), i === all.length - 1 ? h('span', { 'aria-current': 'page' }, c.label) : h('a', { href: c.href }, c.label))))))
   }
-  // The "/" key opens the search from anywhere on the page.
+  // The "/" key opens the search from anywhere on the page: the one of the top bar, or the one of the page (Αρχική).
   document.addEventListener('keydown', (e) => {
     if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey || e.target.closest('input, textarea, select, [contenteditable]')) return
-    const search = document.querySelector('.header-bar .global-search')
+    const search = document.querySelector('.header-bar .global-search') || document.querySelector('.global-search')
     if (!search) return
     e.preventDefault()
     search.open()
@@ -817,5 +834,5 @@
     })) }))
   }
 
-  window.Shell = { start, routeAnchor, hrefOf, itemOf, placeOf, tree, PageHead, headerV2 }
+  window.Shell = { start, routeAnchor, hrefOf, itemOf, placeOf, tree, PageHead, headerV2, Search: GlobalSearch }
 })()

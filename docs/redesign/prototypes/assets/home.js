@@ -1,4 +1,4 @@
-// The cards of Αρχική: the stories of a day, the calendar of a month, the topics of a day and the quick access.
+// The hero and the cards of Αρχική: the stories of a day, the calendar of a month, the topics of a day and the quick access.
 // Load after dash.js. index.html draws the page.
 (function () {
   const { t, fmt, h, Icon } = window.App
@@ -199,5 +199,72 @@
         h('a', { href: Shell.hrefOf(route) }, h('span', { class: 'home-link-main' }, h('strong', {}, t(label)), line ? h('span', { class: 'muted-text' }, t(`home.quick.${key}`)) : null), Icon('chevron-right', 'icon icon-sm'))))))
   }
 
-  window.Home = { index, dayInfo, DayCard, Calendar, TopicsCard, QuickCard }
+  // The hero of Αρχική: the masthead, the large search and the topics of the last day to search for,
+  // the size of the data in one strip, and behind it all a faint silhouette of the articles per day. A link under it scrolls to the news.
+  function Hero ({ home, totals, i0, i1, stories }) {
+    const search = Shell.Search({ hero: true })
+    const last = i1
+    // The chips: the news topics with the most articles on the last day. The catch-all topics ("Άλλα", "Άλλα διεθνή") are not something to search for.
+    const chips = home.issues.map((x, k) => ({ x, n: home.issueDaily[k][last] }))
+      .filter((r) => !r.x.soft && !r.x.catchAll && !/^Άλλα(\s|$)/.test(r.x.el) && r.n > 0)
+      .sort((a, b) => b.n - a.n).slice(0, 4)
+    // The label comes first for the list; CSS puts the number above it.
+    const stat = (value, label) => h('div', { class: 'home-hero-stat' }, h('dt', {}, label), h('dd', { class: 'kpi-value' }, value))
+    const collected = sum(totals.slice(i0, i1 + 1))
+    const period = t('home.hero.period', { from: fmt.date(home.dates[i0], { day: 'numeric', month: 'long' }), to: fmt.date(home.dates[i1], { day: 'numeric', month: 'long', year: 'numeric' }) })
+    return h('section', { class: 'home-hero', 'aria-labelledby': 'home-hero-title' },
+      Wave(totals.slice(i0, i1 + 1)),
+      h('div', { class: 'home-hero-inner' },
+        Masthead(),
+        h('div', { class: 'home-hero-search' }, search),
+        chips.length ? h('div', { class: 'home-hero-try' }, h('span', { class: 'home-hero-try-label' }, t('home.hero.try')),
+          chips.map((r) => h('button', { type: 'button', class: 'home-chip', onClick: () => search.open(name(r.x)) }, name(r.x)))) : null,
+        h('div', { class: 'kpi-tile home-hero-stats' },
+          h('dl', { 'aria-label': period },
+            stat(fmt.int(collected), t('home.hero.articles')),
+            stat(fmt.int(home.outlets.length), t('home.hero.outlets')),
+            stories != null ? stat(fmt.int(stories), t('home.hero.stories')) : null,
+            stat(fmt.int(i1 - i0 + 1), t('home.hero.days'))),
+          h('p', { class: 'home-hero-period' }, period))),
+      h('a', { class: 'home-hero-more', href: '#home-today' }, t('home.hero.more'), Icon('chevron-down', 'icon icon-sm')))
+  }
+
+  // The masthead of the hero: "ΑΠΟΤΥΠΟΣ / ΠΑΡΑΤΗΡΗΤΗΡΙΟ ΕΛΛΗΝΙΚΩΝ ΜΜΕ". On each visit the name rises in, the "/" draws from the top and the line after it follows (CSS).
+  function Masthead () {
+    const brand = t('site.name').toLocaleUpperCase('el')
+    const tail = t('home.hero.eyebrow').toLocaleUpperCase(App.locale)
+    return h('h1', { class: 'home-mast', id: 'home-hero-title', 'aria-label': `${t('site.name')} / ${t('home.hero.eyebrow')}` },
+      h('span', { class: 'mast-part mast-name', 'aria-hidden': 'true' }, brand),
+      h('span', { class: 'mast-slash', 'aria-hidden': 'true' }, '/'),
+      h('span', { class: 'mast-part mast-tail', 'aria-hidden': 'true' }, tail))
+  }
+
+  // The silhouette of the hero: the articles of each day as a smooth area along the bottom. It only decorates.
+  // The line is the mean of the week around each day, so the weekend dips read as a slow swell, not as teeth.
+  function Wave (daily) {
+    const W = 1200
+    const H = 160
+    const values = daily.map((_, i) => { const part = daily.slice(Math.max(0, i - 3), i + 4); return sum(part) / part.length })
+    const max = Math.max(...values, 1)
+    const step = W / Math.max(values.length - 1, 1)
+    const pts = values.map((v, i) => [i * step, H - (v / max) * (H - 12)])
+    let d = `M0 ${H} L${pts[0][0]} ${pts[0][1]}`
+    for (let i = 1; i < pts.length; i++) {
+      const [x0, y0] = pts[i - 1]
+      const [x1, y1] = pts[i]
+      const mx = (x0 + x1) / 2
+      d += ` C${mx} ${y0} ${mx} ${y1} ${x1} ${y1}`
+    }
+    const svg = h('svg', { class: 'home-hero-wave', viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'none', 'aria-hidden': 'true', focusable: 'false' })
+    svg.innerHTML = `<path class="home-hero-wave-fill" d="${d} L${W} ${H} Z"/><path class="home-hero-wave-line" d="${d.replace(/^M0 \d+ L/, 'M')}"/>`
+    return svg
+  }
+
+  // The head of a section of Αρχική: the title with the "/" of the site and a line under it.
+  function SectionHead ({ id, title, lead }) {
+    return h('header', { class: 'home-section-head', id },
+      h('h2', { class: 'home-section-title' }, title), lead ? h('p', { class: 'home-section-lead' }, lead) : null)
+  }
+
+  window.Home = { index, dayInfo, DayCard, Calendar, TopicsCard, QuickCard, Hero, SectionHead }
 })()
