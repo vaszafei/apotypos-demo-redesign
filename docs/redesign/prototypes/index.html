@@ -19,7 +19,7 @@
   <script src="assets/components.js?v=11"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
-  <script src="assets/home.js?v=20"></script>
+  <script src="assets/home.js?v=21"></script>
   <script src="assets/shell.js?v=47"></script>
   <script src="data/home.js"></script>
   <script src="data/stories.js?v=1"></script>
@@ -109,10 +109,10 @@
             else chartBody.replaceChildren(chart())
           }
 
-          const main = h('div', { class: 'c-7 card-col' }, calendar.node, dailyCard)
-          const aside = h('div', { class: 'c-5 card-col' }, day)
+          const main = h('div', { class: 'c-7 card-col' }, calendar.node, dailyCard, topics)
+          const aside = h('div', { class: 'c-5 card-col' }, day, Home.QuickCard())
           content.replaceChildren(bar(),
-            h('div', { class: 'dash-grid home-grid' }, main, aside, topics, Home.QuickCard()), protoNote())
+            h('div', { class: 'dash-grid home-grid' }, main, aside), protoNote())
         }
         draw()
       }
