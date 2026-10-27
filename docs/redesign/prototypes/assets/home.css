@@ -66,3 +66,7 @@ a.home-stack-part { cursor: pointer; }
   .home-month-name { min-width: 7em; }
   .home-story-go { font-size: 0; gap: 0; padding: 0 8px; }
 }
+
+.home-change { display: flex; align-items: center; gap: var(--space-2); min-width: 180px; }
+.home-change > :first-child { flex: 1; }
+.home-change-text { min-width: 44px; text-align: right; font-variant-numeric: tabular-nums; }

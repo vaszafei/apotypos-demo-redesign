@@ -446,9 +446,9 @@
           const hit = h('rect', { class: 'bar-hit', x: pad.left + i * slot, y: pad.top, width: slot, height: plotH + 20, tabindex: 0, role: 'button', 'aria-pressed': String(sel === i), 'aria-label': tipOf(i) })
           hit.addEventListener('pointermove', showAt)
           hit.addEventListener('pointerleave', leave)
-          const pick = () => { sel = i; draw(); holder.querySelectorAll('.bar-hit')[i]?.focus(); onPick(i) }
-          hit.addEventListener('click', pick)
-          hit.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick() } })
+          const pick = (byKey) => { sel = i; draw(); if (byKey) holder.querySelectorAll('.bar-hit')[i]?.focus(); onPick(i) }
+          hit.addEventListener('click', () => pick(false))
+          hit.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(true) } })
           svg.append(hit)
         }
         svg.removeAttribute('aria-hidden')
