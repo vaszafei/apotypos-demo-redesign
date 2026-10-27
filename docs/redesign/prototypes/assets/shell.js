@@ -100,6 +100,22 @@
 
   const smallScreen = window.matchMedia('(max-width: 1023px)')
 
+  // Prototype only: there is no account yet, so the visitor is never signed in. ?auth=in shows the pages of Αναλύσεις for review (?auth=out undoes it).
+  function signedIn () {
+    const asked = new URLSearchParams(location.search).get('auth')
+    try { if (asked) localStorage.setItem('proto-auth', asked); return (asked || localStorage.getItem('proto-auth')) === 'in' } catch { return asked === 'in' }
+  }
+  // Αναλύσεις needs a log in. Its pages show the page head (the tabs) and a card: the lock, what is behind it, log in, sign up.
+  function SignInGate () {
+    return h('section', { class: 'gate', 'aria-labelledby': 'gate-title' },
+      h('div', { class: 'gate-card' },
+        h('span', { class: 'gate-icon' }, Icon('lock-closed', 'icon')),
+        h('h2', { class: 'gate-title', id: 'gate-title' }, t('gate.title')),
+        h('p', { class: 'gate-text' }, t('gate.text')),
+        h('a', { class: 'button button-primary gate-login', href: hrefOf('/login') }, t('shell.login')),
+        h('p', { class: 'gate-register' }, t('gate.register'), ' ', h('a', { href: hrefOf('/register') }, t('shell.register')))))
+  }
+
   // Prototype only: the font candidates for the decision of the project lead. ?font= or the last choice sets the font.
   const FONTS = [['plex', 'IBM Plex Sans'], ['manrope', 'Manrope'], ['commissioner', 'Commissioner'], ['inter', 'Inter + Source Serif 4'], ['dejavu', 'DejaVu Sans (λογότυπο)'], ['ubuntu', 'Ubuntu'], ['noto', 'Noto Sans'], ['sourcesans', 'Source Sans 3'], ['geologica', 'Geologica'], ['sofia', 'Sofia Sans'], ['literata', 'Source Sans 3 + Literata']]
   function readFont () {
@@ -501,8 +517,8 @@
 
       // Log in and sign up. There is no account page in the prototype yet: the links open their row in the table of pages.
       const authLinks = (cls) => h('div', { class: cls },
-        h('a', { class: 'auth-login', href: hrefOf('/login') }, t('shell.login')),
-        h('a', { class: 'auth-register', href: hrefOf('/register') }, t('shell.register')))
+        h('a', { class: 'button auth-login', href: hrefOf('/login') }, t('shell.login')),
+        h('a', { class: 'button button-primary auth-register', href: hrefOf('/register') }, t('shell.register')))
 
       const logoLink = (cls) => h('a', { class: `logo-link ${cls}`, href: 'index.html' }, h('img', { class: 'logo-img', src: 'assets/logo.svg?v=6', alt: t('site.name'), width: 335, height: 141 }))
 
@@ -594,6 +610,12 @@
         if (item && exactTab && item.tabs.length > 1) {
           const ensureHead = () => { if (!content.querySelector('.page-head')) content.prepend(window.Shell.PageHead({})) }
           new MutationObserver(ensureHead).observe(content, { childList: true })
+        }
+        // The detail pages of Αναλύσεις (a speech, a person's file) are locked as well.
+        if (item?.key === 'world' && !signedIn()) {
+          content.replaceChildren(window.Shell.PageHead({}), SignInGate())
+          centerTabs()
+          return
         }
         render(content, { tabs: pageTabs })
         centerTabs()
