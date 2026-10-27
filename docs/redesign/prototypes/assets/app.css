@@ -25,9 +25,9 @@ button, input, select { font: inherit; color: inherit; }
   clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
 }
 
-/* Shell */
+/* Shell. A wide screen has a top navbar (the logo, the sections, the search, the language, log in and sign up). A tablet or a phone has a top bar and a drawer (.sidebar). */
 
-.shell { min-height: 100vh; background: linear-gradient(90deg, var(--surface-sidebar) var(--sidebar-width), transparent var(--sidebar-width)); }
+.shell { min-height: 100vh; }
 
 .sidebar {
   position: fixed; inset: 0 auto 0 0; z-index: 30;
@@ -79,7 +79,7 @@ button, input, select { font: inherit; color: inherit; }
 .section-tabs a:hover { color: var(--text-primary); }
 .section-tabs a[aria-current="page"] { color: var(--text-primary); font-weight: 600; border-bottom-color: var(--accent); }
 
-.main-column { margin-left: var(--sidebar-width); min-height: 100vh; display: flex; flex-direction: column; }
+.main-column { min-height: 100vh; display: flex; flex-direction: column; }
 
 .header-bar {
   position: sticky; top: 0; z-index: 20;
@@ -180,20 +180,6 @@ button, input, select { font: inherit; color: inherit; }
   /* Phone: the panel is the full width of the screen. */
   .search-panel { top: var(--space-2); left: var(--space-2); right: var(--space-2); width: auto; max-height: calc(100dvh - 16px); }
 }
-
-/* Wide screens: the search floats where it was, in the center of the page (the screen minus the sidebar), and the bar behind it has no background and does not stay.
-   The button is the full pill, 30 px high, with the word and the "/" key. */
-@media (min-width: 1024px) {
-  .header-bar { position: static; background: none; backdrop-filter: none; }
-  .global-search { position: fixed; top: 14px; left: calc(var(--sidebar-width) + (100% - var(--sidebar-width)) / 2); transform: translateX(-50%); z-index: 40; margin: 0; }
-  :root[data-header="v2"] .global-search { margin: 0; }
-  .search-button { height: 30px; padding: 0 5px 0 10px; border-color: var(--border); border-radius: 10px; background: var(--surface-raised); box-shadow: 0 8px 20px -14px rgba(17, 17, 17, 0.3); }
-  .search-button:hover, .search-button:focus-visible { border-color: var(--ink); color: var(--ink); background: var(--surface-raised); }
-  .search-button-icon { width: 16px; height: 16px; }
-  .search-button-label { padding-right: var(--space-4); }
-  .global-search-key { line-height: 16px; }
-}
-
 
 .icon-button {
   display: inline-flex; align-items: center; justify-content: center;
@@ -420,12 +406,11 @@ button, input, select { font: inherit; color: inherit; }
 /* Tablet and phone: the sidebar becomes a drawer. */
 
 @media (max-width: 1023px) {
+  .page-footer-links, .page-footer-tools { display: none; }
   .sidebar { transform: translateX(-100%); transition: transform var(--motion-base) var(--ease-out); width: min(300px, 85vw); }
   .shell.drawer-open .sidebar { transform: none; }
   .shell.drawer-open .drawer-scrim { display: block; position: fixed; inset: 0; z-index: 25; background: rgba(0, 0, 0, 0.4); animation: m-fade var(--motion-base) var(--ease-out); }
-  .shell { background: none; }
   .icon-button.sidebar-close { display: inline-flex; color: var(--ink); }
-  .main-column { margin-left: 0; }
   .icon-button.menu-button { display: inline-flex; }
   .header-bar, .header-bar.has-tabs { display: flex; flex-wrap: wrap; gap: var(--space-2); padding: var(--space-2); }
   .header-bar .section-tabs { order: 3; flex-basis: 100%; overflow-x: auto; padding: 2px 2px 12px; margin-bottom: -10px; }
@@ -599,6 +584,153 @@ button, input, select { font: inherit; color: inherit; }
 }
 :root[data-header="v2"] .appbar-trail .icon { display: none; }
 :root[data-header="v2"] .appbar-trail li + li::before { content: "/"; color: var(--text-secondary); margin-right: 2px; }
+
+/* The primary button is the ink fill. The log in and sign up buttons are small pills, like the filters and tabs of the page head. */
+.button-primary { background: var(--ink); border-color: var(--ink); color: var(--on-ink); font-weight: 600; }
+.button-primary:hover { background: color-mix(in srgb, var(--ink) 85%, var(--accent)); border-color: transparent; }
+.auth-login, .auth-register { min-height: 32px; padding: 0 var(--space-4); border-radius: var(--pill, 999px); font-size: 13px; font-weight: 600; justify-content: center; white-space: nowrap; }
+.auth-login { background: transparent; color: var(--ink); }
+
+/* The login form: the card of the lock, with two fields. */
+.login-form { display: flex; flex-direction: column; gap: var(--space-3); width: 100%; margin-top: var(--space-2); text-align: left; }
+.login-form label { display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
+.login-form input { min-height: 40px; padding: 0 var(--space-3); border: 1px solid var(--border); border-radius: 8px; background: var(--surface-page); color: var(--ink); font: var(--text-small) var(--font-text); letter-spacing: 0; text-transform: none; }
+.login-form input:focus-visible { border-color: var(--ink); outline: 2px solid var(--focus); outline-offset: 1px; }
+.login-form .button { justify-content: center; margin-top: var(--space-2); min-height: 40px; border-radius: var(--pill, 999px); }
+.login-error { margin: 0; padding: var(--space-2) var(--space-3); border: 1px solid var(--error-edge); border-radius: 8px; background: var(--error-bg); color: var(--error-text); font-size: var(--text-small); }
+.auth-user { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
+
+/* The drawer of log in and sign up: from the right, over a scrim. */
+.auth-scrim { position: fixed; inset: 0; z-index: 70; background: rgba(17, 17, 17, 0.4); opacity: 0; transition: opacity var(--motion-base) var(--ease-out); }
+.auth-scrim.is-open { opacity: 1; }
+.auth-drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 71; display: flex; flex-direction: column; align-items: stretch; gap: var(--space-3);
+  width: min(420px, 100vw); padding: var(--space-5); overflow-y: auto; background: var(--surface-raised); border-left: 1px solid var(--border);
+  box-shadow: -24px 0 48px -28px rgba(17, 17, 17, 0.45); transform: translateX(100%); transition: transform var(--motion-base) var(--ease-out);
+}
+.auth-drawer.is-open { transform: none; }
+.auth-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4); }
+.auth-close { color: var(--ink); margin-right: -8px; }
+.auth-switch { display: inline-flex; padding: 3px; border: 1px solid var(--border); border-radius: var(--pill, 999px); }
+.auth-switch button { min-height: 28px; padding: 0 var(--space-4); border: 0; border-radius: var(--pill, 999px); background: transparent; color: var(--text-secondary); font: 600 13px var(--font-text); cursor: pointer; }
+.auth-switch button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+.auth-drawer .gate-icon { align-self: flex-start; }
+.auth-title { margin: var(--space-2) 0 0; font: 600 var(--text-heading)/1.2 var(--font-heading); color: var(--ink); }
+.auth-text { margin: 0; font-size: var(--text-small); line-height: 1.5; color: var(--text-secondary); }
+.auth-body { margin-top: var(--space-2); }
+.auth-body .login-form { margin-top: 0; }
+.login-notice { margin: 0; padding: var(--space-2) var(--space-3); border: 1px solid var(--notice-edge); border-radius: 8px; background: var(--notice-bg); color: var(--ink); font-size: var(--text-small); }
+.link-button { padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .auth-drawer, .auth-scrim { transition: none; } }
+
+/* The menu of the user: the icon on a wide screen, with the profile and "Αποσύνδεση". */
+.user-menu { position: relative; }
+.user-button { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; border: 1px solid var(--border); border-radius: 50%; background: var(--surface-page); color: var(--ink); cursor: pointer; }
+.user-button:hover, .user-button[aria-expanded="true"] { border-color: var(--ink); }
+.user-button .icon { width: 22px; height: 22px; }
+.user-menu-list { position: absolute; top: calc(100% + 8px); right: 0; z-index: 50; display: flex; flex-direction: column; min-width: 200px; padding: var(--space-2); border: 1px solid var(--border); border-radius: 10px; background: var(--surface-raised); box-shadow: 0 16px 32px -16px rgba(17, 17, 17, 0.4); }
+.user-menu-list[hidden] { display: none; }
+.user-menu-name { margin: 0; padding: var(--space-2) var(--space-3) var(--space-3); border-bottom: 1px solid var(--border); margin-bottom: var(--space-2); font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
+.user-menu-item { display: block; width: 100%; padding: 8px var(--space-3); border: 0; border-radius: 6px; background: none; font: var(--text-small) var(--font-text); color: var(--ink); text-align: left; text-decoration: none; cursor: pointer; }
+.user-menu-item:hover, .user-menu-item:focus-visible { background: var(--sidebar-hover-bg); }
+
+/* The lock of Αναλύσεις: the page head stays, and one wide panel takes the place of the page, with the card in the middle (like fundamenta.gr). */
+.content.is-gated { max-width: none; }
+.gate {
+  display: flex; align-items: center; justify-content: center; min-height: clamp(420px, 62vh, 620px); padding: var(--space-6) var(--space-4);
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-raised);
+}
+.gate-card { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); width: 100%; max-width: 440px; padding: var(--space-6) var(--space-5); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-raised); box-shadow: 0 14px 32px -18px rgba(17, 17, 17, 0.4); text-align: center; }
+.gate-icon { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 50%; background: color-mix(in srgb, var(--accent) 12%, var(--surface-raised)); color: var(--accent); }
+.gate-icon .icon { width: 28px; height: 28px; }
+.gate-title { margin: var(--space-2) 0 0; font: 600 var(--text-title)/1.3 var(--font-heading); color: var(--ink); }
+.gate-text { margin: 0; max-width: 34ch; font-size: var(--text-small); line-height: 1.5; color: var(--text-secondary); }
+.gate-login { min-height: 40px; margin-top: var(--space-2); padding: 0 var(--space-5); border-radius: var(--pill, 999px); }
+.gate-register { margin: 0; font-size: var(--text-small); color: var(--text-secondary); }
+.gate-register a { color: var(--ink); font-weight: 600; }
+
+/* Top navbar (wide screens). Sticky, on the sidebar surface, with one line under it. The current section has the ink line of the old sidebar, under its label. */
+:root { --navbar-height: 64px; }
+.header-logo, .header-nav, .header-actions, .trail-bar { display: none; }
+.sidebar .auth-links { display: flex; gap: var(--space-2); padding: 0 var(--space-3) var(--space-4); }
+.sidebar .auth-links a { flex: 1; }
+.sidebar .auth-links a, .sidebar .auth-links button { min-height: 40px; font-size: var(--text-small); }
+.sidebar .auth-user { align-self: center; flex: none; }
+.page-footer { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); }
+.page-footer-text { margin-right: auto; }
+.page-footer-links { display: flex; gap: var(--space-4); }
+.page-footer-links .nav-link { padding: 4px 0; font-size: var(--text-small); color: var(--text-secondary); }
+.page-footer-links .nav-link:hover { background: none; color: var(--ink); text-decoration: underline; }
+.page-footer-links .nav-link[aria-current="page"] { box-shadow: none; border-radius: 0; color: var(--ink); }
+.page-footer-tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-5); width: 100%; padding-top: var(--space-3); border-top: 1px dashed var(--border); }
+.page-footer-tools .font-switch, .page-footer-tools .theme-switch { flex-direction: row; align-items: center; gap: var(--space-2); color: var(--text-secondary); }
+@media (min-width: 1024px) {
+  :root { --navbar-height: 56px; }
+  .sidebar { display: none; }
+  :root[data-header="v2"] .header-bar {
+    position: sticky; top: 0; z-index: 40; display: flex; align-items: center; gap: var(--space-4);
+    height: var(--navbar-height); min-height: var(--navbar-height); padding: 0 var(--space-5);
+    background: var(--surface-sidebar); border-bottom: 1px solid var(--border);
+  }
+  :root[data-header="v2"] .header-left { display: none; }
+  .header-logo { display: inline-flex; flex: none; }
+  .header-logo .logo-img { width: 96px; }
+  .header-nav { display: block; align-self: stretch; flex: 1; min-width: 0; margin-left: var(--space-3); }
+  .header-nav .nav-list { display: flex; gap: var(--space-1); height: 100%; }
+  .header-nav li { display: flex; }
+  .header-nav .nav-link {
+    position: relative; display: flex; align-items: center; padding: 0 var(--space-3); border-radius: 0;
+    font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); white-space: nowrap;
+  }
+  .header-nav .nav-link:hover { background: none; color: var(--ink); }
+  /* The current section starts with "/", like the current tab of a page. */
+  .header-nav .nav-link[aria-current="page"] { box-shadow: none; border-radius: 0; color: var(--ink); font-weight: 700; }
+  .header-nav .nav-link[aria-current="page"]::before { content: "/ "; white-space: pre; }
+  :root[data-header="v2"] .global-search { flex: none; margin: 0; }
+  .search-button { height: 32px; min-width: 232px; padding: 0 6px 0 12px; border-color: var(--border); border-radius: 8px; background: var(--surface-page); }
+  .search-button:hover, .search-button:focus-visible { border-color: var(--ink); color: var(--ink); background: var(--surface-page); }
+  .search-button-label { flex: 1; padding-right: 0; text-align: left; color: var(--text-secondary); }
+  .global-search-key { line-height: 16px; }
+  .header-actions { display: flex; flex: none; align-items: center; gap: var(--space-3); }
+  .header-actions .lang-switch { border-radius: var(--pill, 999px); }
+  .header-actions .lang-switch button { min-width: 30px; min-height: 26px; font-size: var(--text-caption); color: var(--text-secondary); }
+  .header-actions .lang-switch button[aria-pressed="true"] { color: var(--on-ink); }
+  .header-actions .auth-links { display: flex; align-items: center; gap: var(--space-2); }
+  /* A detail page: the back button and the trail, in a row under the navbar. */
+  .trail-bar { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-5) 0; }
+  .trail-bar .back-button { margin-left: -10px; }
+  .page-footer-tools { width: auto; padding: 0; border: 0; }
+  .page-footer { padding: var(--space-4) var(--space-5); }
+  .content { padding-left: var(--space-5); padding-right: var(--space-5); }
+  .dash-bar { top: var(--navbar-height); }
+}
+/* The pages of a section: a sidebar under the navbar (like fundamenta.gr). The label is the section, then its tabs. The sub-tabs of a tab are tabs in the page body. */
+.page-body { display: flex; flex: 1; min-width: 0; }
+.page-main { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.section-nav { display: none; }
+@media (min-width: 1024px) {
+  .section-nav { display: block; flex: none; width: 232px; border-right: 1px solid var(--border); background: var(--surface-sidebar); }
+  .section-nav-inner { position: sticky; top: var(--navbar-height); max-height: calc(100vh - var(--navbar-height)); overflow-y: auto; padding: var(--space-5) var(--space-3); }
+  .section-nav-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .section-nav-link { display: block; padding: 9px var(--space-3); border-radius: 6px; font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.08em; line-height: 1.4; text-transform: uppercase; color: var(--text-secondary); text-decoration: none; }
+  .section-nav-link:hover { background: var(--sidebar-hover-bg); color: var(--sidebar-active-text); }
+  /* The current tab starts with "/", like the tabs of the page head. */
+  .section-nav .section-nav-link[aria-current] { color: var(--ink); }
+  .section-nav .section-nav-link[aria-current]::before { content: "/ "; white-space: pre; }
+  /* The tabs are in the sidebar, so the page head keeps the sub-tabs, the actions and the filters. */
+  :root[data-header="v2"] .page-tabs .section-tabs { display: none; }
+  :root[data-header="v2"] .page-head:not(:has(.page-head-actions, .page-filters, .dash-error, .sub-tabs)) { display: block; margin: 0; }
+}
+/* A narrower desktop: the search is a button with the icon and the key. */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .search-button { min-width: 0; }
+  .search-button-label { display: none; }
+  .header-nav .nav-link { padding: 0 10px; }
+  .header-actions { gap: var(--space-2); }
+}
+@media (max-width: 1023px) {
+  :root { --navbar-height: 56px; }
+}
 :root[data-header="v2"] .page-head .dr-trigger { min-height: 32px; padding: 0 10px 0 8px; gap: 6px; font-size: 13px; }
 :root[data-header="v2"] .page-head .dr-trigger .dr-icon { width: 16px; height: 16px; }
 :root[data-header="v2"] .page-head .set-select select, :root[data-header="v2"] .page-head-actions select { min-height: 32px; font-size: 13px; }
@@ -630,14 +762,14 @@ button, input, select { font: inherit; color: inherit; }
 #app:empty {
   position: relative; min-height: 100vh; overflow: hidden;
   background:
-    linear-gradient(var(--ink), var(--ink)) calc(var(--sidebar-width) - 2px) 0 / 2px 100% no-repeat,
-    linear-gradient(var(--skeleton), var(--skeleton)) 20px 32px / 150px 40px no-repeat,
-    repeating-linear-gradient(180deg, var(--skeleton-2) 0 18px, transparent 0 43px) 24px 120px / 120px 240px no-repeat,
-    linear-gradient(var(--surface-sidebar), var(--surface-sidebar)) 0 0 / var(--sidebar-width) 100% no-repeat;
+    linear-gradient(var(--border), var(--border)) 0 55px / 100% 1px no-repeat,
+    linear-gradient(var(--skeleton), var(--skeleton)) 24px 16px / 96px 24px no-repeat,
+    repeating-linear-gradient(90deg, var(--skeleton-2) 0 64px, transparent 0 84px) 180px 20px / 460px 16px no-repeat,
+    linear-gradient(var(--surface-sidebar), var(--surface-sidebar)) 0 0 / 100% 55px no-repeat;
   animation: m-fade var(--motion-slow) 150ms both;
 }
 #app:empty::before {
-  content: ""; position: absolute; top: 72px; left: calc(var(--sidebar-width) + var(--space-6)); right: var(--space-6); max-width: 1176px; height: 860px;
+  content: ""; position: absolute; top: 96px; left: var(--space-6); right: var(--space-6); max-width: 1176px; height: 860px;
   background:
     linear-gradient(var(--skeleton), var(--skeleton)) 0 0 / min(380px, 60%) 28px no-repeat,
     linear-gradient(var(--skeleton-2), var(--skeleton-2)) 0 44px / min(260px, 40%) 14px no-repeat,

@@ -100,6 +100,116 @@
 
   const smallScreen = window.matchMedia('(max-width: 1023px)')
 
+  // Prototype only: the accounts are fixed, and the check runs in the browser, so it keeps nobody out of the files of the prototype.
+  const ACCOUNTS = { lolovios: 'typosapo', odpein: 'typosapo', npizza: 'typosapo' }
+  const USER_KEY = 'proto-user'
+  function currentUser () {
+    try { const user = localStorage.getItem(USER_KEY); return user && Object.hasOwn(ACCOUNTS, user) ? user : null } catch { return null }
+  }
+  const signedIn = () => currentUser() !== null
+  function signIn (name, password) {
+    const user = name.trim().toLowerCase()
+    if (!Object.hasOwn(ACCOUNTS, user) || ACCOUNTS[user] !== password) return false
+    try { localStorage.setItem(USER_KEY, user) } catch { return false }
+    return true
+  }
+  function signOut () { try { localStorage.removeItem(USER_KEY) } catch {} }
+
+  // The drawer of log in and sign up: it slides in from the right over a scrim. The page behind it is inert while it is open.
+  // After a log in the page draws again (remount), so the lock of Αναλύσεις opens without leaving the page.
+  let remount = () => {}
+  let authDrawer = null
+  function openAuth (view = 'login') {
+    if (authDrawer) authDrawer.close(false)
+    const app = document.getElementById('app')
+    const opener = document.activeElement
+    const title = h('h2', { class: 'auth-title', id: 'auth-title' })
+    const text = h('p', { class: 'auth-text' })
+    const body = h('div', { class: 'auth-body' })
+    const views = ['login', 'register']
+    const switchButtons = views.map((v) => h('button', { type: 'button', onClick: () => show(v, true) }, t(`shell.${v}`)))
+    const closeButton = h('button', { type: 'button', class: 'icon-button auth-close', 'aria-label': t('auth.close'), onClick: () => close() }, Icon('x-mark'))
+    const panel = h('aside', { class: 'auth-drawer', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'auth-title' },
+      h('div', { class: 'auth-head' }, h('div', { class: 'auth-switch', role: 'group', 'aria-label': t('auth.switch') }, switchButtons), closeButton),
+      h('span', { class: 'gate-icon' }, Icon('lock-closed', 'icon')), title, text, body)
+    const scrim = h('div', { class: 'auth-scrim', onClick: () => close() })
+
+    const field = (id, label, attrs) => {
+      const input = h('input', { id, ...attrs })
+      return [h('label', { for: id }, label, input), input]
+    }
+    function loginForm () {
+      const [userLabel, user] = field('auth-user', t('login.user'), { type: 'text', autocomplete: 'username', autocapitalize: 'none', spellcheck: 'false', required: true })
+      const [passwordLabel, password] = field('auth-password', t('login.password'), { type: 'password', autocomplete: 'current-password', required: true })
+      const error = h('p', { class: 'login-error', role: 'alert', hidden: true }, t('login.error'))
+      const form = h('form', { class: 'login-form', onSubmit: (e) => {
+        e.preventDefault()
+        if (signIn(user.value, password.value)) { close(false); remount(); return }
+        error.hidden = false
+        password.value = ''
+        password.focus()
+      } }, userLabel, passwordLabel, error, h('button', { type: 'submit', class: 'button button-primary' }, t('login.submit')))
+      return form
+    }
+    // Sign up has no accounts behind it in the prototype: the form shows that when it is sent.
+    function registerForm () {
+      const [nameLabel] = field('auth-name', t('register.name'), { type: 'text', autocomplete: 'name', required: true })
+      const [emailLabel] = field('auth-email', t('register.email'), { type: 'email', autocomplete: 'email', required: true })
+      const [passwordLabel] = field('auth-new-password', t('login.password'), { type: 'password', autocomplete: 'new-password', required: true })
+      const notice = h('p', { class: 'login-notice', role: 'status', hidden: true }, t('register.soon'))
+      return h('form', { class: 'login-form', onSubmit: (e) => { e.preventDefault(); notice.hidden = false } },
+        nameLabel, emailLabel, passwordLabel, notice, h('button', { type: 'submit', class: 'button button-primary' }, t('register.submit')))
+    }
+    function show (v, focus) {
+      switchButtons.forEach((b, i) => b.setAttribute('aria-pressed', String(views[i] === v)))
+      title.textContent = t(`${v}.title`)
+      text.textContent = t(`${v}.text`)
+      body.replaceChildren(v === 'login' ? loginForm() : registerForm())
+      if (focus) body.querySelector('input').focus()
+    }
+
+    function onKey (e) {
+      if (e.key === 'Escape') { e.preventDefault(); close(); return }
+      if (e.key !== 'Tab') return
+      const items = [...panel.querySelectorAll('button, input, a[href]')].filter((el) => !el.hidden && !el.disabled)
+      const first = items[0]
+      const last = items[items.length - 1]
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+    }
+    function close (restore = true) {
+      if (authDrawer?.panel !== panel) return
+      authDrawer = null
+      document.removeEventListener('keydown', onKey)
+      app.inert = false
+      panel.classList.remove('is-open')
+      scrim.classList.remove('is-open')
+      setTimeout(() => { panel.remove(); scrim.remove() }, reduceMotion.matches ? 0 : 220)
+      if (restore && opener?.isConnected) opener.focus({ preventScroll: true })
+    }
+
+    show(view, false)
+    document.body.append(scrim, panel)
+    app.inert = true
+    document.addEventListener('keydown', onKey)
+    authDrawer = { panel, close }
+    panel.getBoundingClientRect()
+    panel.classList.add('is-open')
+    scrim.classList.add('is-open')
+    body.querySelector('input').focus()
+  }
+
+  // Αναλύσεις needs a log in. Its pages show the page head and a card: the lock, what is behind it, log in, sign up.
+  function SignInGate () {
+    return h('section', { class: 'gate', 'aria-labelledby': 'gate-title' },
+      h('div', { class: 'gate-card' },
+        h('span', { class: 'gate-icon' }, Icon('lock-closed', 'icon')),
+        h('h2', { class: 'gate-title', id: 'gate-title' }, t('gate.title')),
+        h('p', { class: 'gate-text' }, t('gate.text')),
+        h('button', { type: 'button', class: 'button button-primary gate-login', onClick: () => openAuth('login') }, t('shell.login')),
+        h('p', { class: 'gate-register' }, t('gate.register'), ' ', h('button', { type: 'button', class: 'link-button', onClick: () => openAuth('register') }, t('shell.register')))))
+  }
+
   // Prototype only: the font candidates for the decision of the project lead. ?font= or the last choice sets the font.
   const FONTS = [['plex', 'IBM Plex Sans'], ['manrope', 'Manrope'], ['commissioner', 'Commissioner'], ['inter', 'Inter + Source Serif 4'], ['dejavu', 'DejaVu Sans (λογότυπο)'], ['ubuntu', 'Ubuntu'], ['noto', 'Noto Sans'], ['sourcesans', 'Source Sans 3'], ['geologica', 'Geologica'], ['sofia', 'Sofia Sans'], ['literata', 'Source Sans 3 + Literata']]
   function readFont () {
@@ -472,34 +582,89 @@
 
       const navLink = ({ key, href, current }) =>
         h('li', {}, h('a', { class: 'nav-link', href, 'aria-current': current ? 'page' : null }, t(`nav.${key}`)))
-      const mainLinks = NAV.map((n) => navLink({ key: n.key, href: hrefOf(n.tabs[0][1]), current: n === item }))
-      const footerLinks = FOOTER.map(([key, r]) => navLink({ key, href: hrefOf(r), current: key === id }))
+      // The links are made twice: the top navbar (wide screens) and the drawer (tablet and phone). CSS shows one of them.
+      const mainLinks = () => NAV.map((n) => navLink({ key: n.key, href: hrefOf(n.tabs[0][1]), current: n === item }))
+      const footerLinks = () => FOOTER.map(([key, r]) => navLink({ key, href: hrefOf(r), current: key === id }))
 
-      const langSwitch = h('div', { class: 'lang-switch', role: 'group', 'aria-label': t('shell.lang') },
+      const langSwitch = () => h('div', { class: 'lang-switch', role: 'group', 'aria-label': t('shell.lang') },
         [['el', 'ΕΛ'], ['en', 'EN']].map(([value, label]) => h('button', {
           type: 'button', lang: value, 'aria-pressed': String(window.App.locale === value),
           onClick: () => { window.App.setLocale(value); mount(); document.querySelector(`.lang-switch button[lang="${value}"]`).focus() }
         }, label)))
 
-      const fontSwitch = h('label', { class: 'font-switch' }, h('span', {}, t('shell.font')),
-        h('select', { id: 'font-switch', onChange: (e) => setFont(e.target.value) },
+      // Prototype only: the font and the theme. They are in the footer on a wide screen and in the drawer on a phone.
+      const fontSwitch = () => h('label', { class: 'font-switch' }, h('span', {}, t('shell.font')),
+        h('select', { onChange: (e) => { setFont(e.target.value); document.querySelectorAll('.font-switch select').forEach((s) => { s.value = e.target.value }) } },
           FONTS.map(([key, label]) => h('option', { value: key, selected: document.documentElement.dataset.font === key }, label))))
 
-      const themeSwitch = h('div', { class: 'theme-switch' }, h('span', { id: 'theme-label' }, t('shell.theme')),
-        h('div', { class: 'theme-swatches', role: 'group', 'aria-labelledby': 'theme-label' },
-          THEMES.map((key) => h('button', {
-            type: 'button', class: 'theme-swatch', 'data-theme': key, title: t(`theme.${key}`), 'aria-label': t(`theme.${key}`),
-            'aria-pressed': String(document.documentElement.dataset.theme === key),
-            onClick: () => { setTheme(key); document.querySelectorAll('.theme-swatch').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.theme === key))) }
-          }))))
+      let themeCount = 0
+      const themeSwitch = () => {
+        const labelId = `theme-label-${themeCount++}`
+        return h('div', { class: 'theme-switch' }, h('span', { id: labelId }, t('shell.theme')),
+          h('div', { class: 'theme-swatches', role: 'group', 'aria-labelledby': labelId },
+            THEMES.map((key) => h('button', {
+              type: 'button', class: 'theme-swatch', 'data-theme': key, title: t(`theme.${key}`), 'aria-label': t(`theme.${key}`),
+              'aria-pressed': String(document.documentElement.dataset.theme === key),
+              onClick: () => { setTheme(key); document.querySelectorAll('.theme-swatch').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.theme === key))) }
+            }))))
+      }
 
+      // Log in and sign up open the drawer from the right. A visitor who is logged in sees the user icon on a wide screen: a menu with the profile and "Αποσύνδεση".
+      // The drawer of the menu of a phone shows the name and "Αποσύνδεση".
+      let closeUserMenu = null
+      const userMenu = (user) => {
+        const button = h('button', { type: 'button', class: 'user-button', 'aria-label': `${t('shell.account')}: ${user}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false' }, Icon('user-circle', 'icon'))
+        const logout = h('button', { type: 'button', role: 'menuitem', class: 'user-menu-item', onClick: () => { setOpen(false); signOut(); mount() } }, t('shell.logout'))
+        const profile = h('a', { role: 'menuitem', class: 'user-menu-item', href: hrefOf('/profile') }, t('shell.profile'))
+        const menu = h('div', { class: 'user-menu-list', role: 'menu', 'aria-label': t('shell.account'), hidden: true }, h('p', { class: 'user-menu-name' }, user), profile, logout)
+        const away = (e) => { if (!menu.parentElement.contains(e.target)) setOpen(false) }
+        function setOpen (open, focusFirst) {
+          menu.hidden = !open
+          button.setAttribute('aria-expanded', String(open))
+          document.removeEventListener('pointerdown', away, true)
+          closeUserMenu = null
+          if (!open) return
+          document.addEventListener('pointerdown', away, true)
+          closeUserMenu = () => setOpen(false)
+          if (focusFirst) profile.focus()
+        }
+        button.addEventListener('click', () => setOpen(menu.hidden))
+        button.addEventListener('keydown', (e) => { if (e.key === 'ArrowDown') { e.preventDefault(); setOpen(true, true) } })
+        menu.addEventListener('keydown', (e) => {
+          const items = [profile, logout]
+          const i = items.indexOf(document.activeElement)
+          if (e.key === 'Escape') { e.preventDefault(); setOpen(false); button.focus() }
+          else if (e.key === 'ArrowDown') { e.preventDefault(); items[(i + 1) % items.length].focus() }
+          else if (e.key === 'ArrowUp') { e.preventDefault(); items[(i - 1 + items.length) % items.length].focus() }
+          else if (e.key === 'Tab') setOpen(false)
+        })
+        return h('div', { class: 'user-menu' }, button, menu)
+      }
+      const authLinks = (cls, inDrawer = false) => {
+        const user = currentUser()
+        const opener = (view) => () => { if (inDrawer) setDrawer(false, false); openAuth(view) }
+        if (user && !inDrawer) return h('div', { class: cls }, userMenu(user))
+        if (user) {
+          return h('div', { class: cls },
+            h('span', { class: 'auth-user' }, user),
+            h('button', { type: 'button', class: 'button auth-login', onClick: () => { signOut(); mount() } }, t('shell.logout')))
+        }
+        return h('div', { class: cls },
+          h('button', { type: 'button', class: 'button auth-login', onClick: opener('login') }, t('shell.login')),
+          h('button', { type: 'button', class: 'button button-primary auth-register', onClick: opener('register') }, t('shell.register')))
+      }
+
+      const logoLink = (cls) => h('a', { class: `logo-link ${cls}`, href: 'index.html' }, h('img', { class: 'logo-img', src: 'assets/logo.svg?v=6', alt: t('site.name'), width: 335, height: 141 }))
+
+      // The drawer: the navigation of a tablet or a phone.
       const closeButton = h('button', { type: 'button', class: 'icon-button sidebar-close', 'aria-label': t('shell.close'), onClick: () => setDrawer(false) }, Icon('x-mark'))
       const sidebar = h('nav', { class: 'sidebar', id: 'sidebar', 'aria-label': t('shell.nav') },
-        h('div', { class: 'sidebar-logo' }, h('a', { class: 'logo-link', href: 'index.html' }, h('img', { class: 'logo-img', src: 'assets/logo.svg?v=6', alt: t('site.name'), width: 335, height: 141 })), closeButton),
-        h('ul', { class: 'nav-list nav-main' }, mainLinks),
+        h('div', { class: 'sidebar-logo' }, logoLink(''), closeButton),
+        h('ul', { class: 'nav-list nav-main' }, mainLinks()),
+        authLinks('auth-links drawer-auth', true),
         h('div', { class: 'nav-footer' },
-          h('ul', { class: 'nav-list', 'aria-label': t('section.footer') }, footerLinks),
-          h('div', { class: 'sidebar-tools' }, langSwitch, themeSwitch, fontSwitch)))
+          h('ul', { class: 'nav-list', 'aria-label': t('section.footer') }, footerLinks()),
+          h('div', { class: 'sidebar-tools' }, langSwitch(), themeSwitch(), fontSwitch())))
 
       const menuButton = h('button', { type: 'button', class: 'icon-button menu-button', 'aria-label': t('shell.menu'), 'aria-controls': 'sidebar', 'aria-expanded': 'false', onClick: () => setDrawer(true) }, Icon('bars-3'))
 
@@ -516,7 +681,7 @@
       const parentRoute = detail && ((item.details || []).find(([r]) => under(route, r)) || [])[1]
       const parent = detail ? hrefOf(parentRoute || item.tabs[0][1]) : null
       const header = h('header', { class: 'header-bar' }, h('div', { class: 'header-left' }, menuButton, detail ? BackButton(parent) : null))
-      if (headerV2) mountV2({ item, header, detail, parent, title })
+      const subBarTrail = headerV2 ? mountV2({ item, header, detail, parent, title }) : null
 
       // Breadcrumbs show only on a page that is not a tab and not Home. A tab page has the tab bar.
       const crumbBar = !exactTab && id !== 'home' && crumbItems
@@ -536,12 +701,31 @@
       // A dash page has its tabs in the center of the top bar. The other pages have them under the top bar.
       // An item with many tabs (more than 6) puts them on a second row of the top bar, so they do not push the page wider.
       if (dash && tabBar && !headerV2) { header.classList.add('has-tabs'); if (item.tabs.length > 6) header.classList.add('many-tabs'); header.append(tabBar) }
-      header.append(GlobalSearch())
+      // A wide screen: the logo and the sections on the left, the search, the language and the account on the right.
+      header.append(
+        logoLink('header-logo'),
+        h('nav', { class: 'header-nav', 'aria-label': t('shell.nav') }, h('ul', { class: 'nav-list nav-main' }, mainLinks())),
+        GlobalSearch(),
+        h('div', { class: 'header-actions' }, langSwitch(), authLinks('auth-links')))
+      // The tabs of the section are a sidebar on a wide screen, under the navbar. A phone keeps them as tabs in the page head.
+      // The sub-tabs of a tab stay in the page body. A detail page (an outlet) marks the tab that lists it.
+      const activeRoute = exactTab ? route : parentRoute
+      const sectionNav = item && item.tabs.length > 1
+        ? h('nav', { class: 'section-nav', 'aria-label': t(`nav.${item.key}`) }, h('div', { class: 'section-nav-inner' },
+          h('ul', { class: 'section-nav-list' }, item.tabs.map(([key, r, subs]) => {
+            const inTab = r === activeRoute || (subs || []).some(([, s]) => s === activeRoute)
+            return h('li', {}, h('a', { class: 'section-nav-link', href: hrefOf(r), 'aria-current': inTab ? (route === r || (subs || []).some(([, s]) => s === route) ? 'page' : 'true') : null }, t(`tab.${item.key}.${key}`)))
+          }))))
+        : null
       const content = h('main', { class: 'content', id: 'content' })
       // v2: the tabs and the sub-tabs are one block of the page head. The page puts it under its title.
       const pageTabs = headerV2 && tabBar ? h('div', { class: 'page-tabs' }, tabBar, subBar) : null
       const shell = h('div', { class: 'shell' }, sidebar, h('div', { class: 'drawer-scrim', onClick: () => setDrawer(false) }),
-        h('div', { class: 'main-column' }, header, headerV2 || dash ? null : tabBar, headerV2 ? null : subBar, headerV2 ? null : crumbBar, content, h('footer', { class: 'page-footer' }, t('site.footer'))))
+        h('div', { class: 'main-column' }, header, headerV2 || dash ? null : tabBar, headerV2 ? null : subBar, headerV2 ? null : crumbBar,
+          h('div', { class: 'page-body' }, sectionNav, h('div', { class: 'page-main' }, subBarTrail, content)),
+          h('footer', { class: 'page-footer' }, h('span', { class: 'page-footer-text' }, t('site.footer')),
+            h('ul', { class: 'nav-list page-footer-links', 'aria-label': t('section.footer') }, footerLinks()),
+            h('div', { class: 'page-footer-tools' }, themeSwitch(), fontSwitch()))))
 
       // The open drawer keeps the focus: the rest of the page is inert until the drawer closes.
       const mainColumn = shell.querySelector('.main-column')
@@ -572,6 +756,13 @@
           const ensureHead = () => { if (!content.querySelector('.page-head')) content.prepend(window.Shell.PageHead({})) }
           new MutationObserver(ensureHead).observe(content, { childList: true })
         }
+        // The detail pages of Αναλύσεις (a speech, a person's file) are locked as well.
+        if (item?.key === 'world' && !signedIn()) {
+          content.classList.add('is-gated')
+          content.replaceChildren(window.Shell.PageHead({ tabs: null }), SignInGate())
+          centerTabs()
+          return
+        }
         render(content, { tabs: pageTabs })
         centerTabs()
         return
@@ -579,21 +770,21 @@
       render(content, { tabs: dash ? null : tabBar })
     }
 
+    remount = mount
     mount()
   }
 
-  // v2 (prototype). The top bar: the menu and the back button, the name of the section (phone) or the trail of a detail page (desktop), the search.
+  // v2 (prototype). The top bar on a phone: the menu and the back button, the name of the section, the search.
+  // A detail page also gets a row under the navbar on a wide screen: the back button and the trail (the section, then the page). It returns that row.
   let current = { section: '', tabs: null }
   function mountV2 ({ item, header, detail, parent, title }) {
     header.classList.add('appbar')
     const left = header.querySelector('.header-left')
     if (item) left.append(h('span', { class: 'appbar-title' }, t(`nav.${item.key}`)))
-    // A detail page shows where it is: the section, then the page. The section links to the parent page.
-    if (detail) {
-      const trail = [{ label: t(`nav.${item.key}`), href: parent }, { label: title() }]
-      left.append(h('nav', { class: 'appbar-trail', 'aria-label': t('shell.breadcrumbs') }, h('ol', {}, trail.map((c, i, all) =>
-        h('li', {}, i > 0 && Icon('chevron-right', 'icon icon-sm'), i === all.length - 1 ? h('span', { 'aria-current': 'page' }, c.label) : h('a', { href: c.href }, c.label))))))
-    }
+    if (!detail) return null
+    const trail = [{ label: t(`nav.${item.key}`), href: parent }, { label: title() }]
+    return h('div', { class: 'trail-bar' }, BackButton(parent), h('nav', { class: 'appbar-trail', 'aria-label': t('shell.breadcrumbs') }, h('ol', {}, trail.map((c, i, all) =>
+      h('li', {}, i > 0 && Icon('chevron-right', 'icon icon-sm'), i === all.length - 1 ? h('span', { 'aria-current': 'page' }, c.label) : h('a', { href: c.href }, c.label))))))
   }
   // The "/" key opens the search from anywhere on the page.
   document.addEventListener('keydown', (e) => {
