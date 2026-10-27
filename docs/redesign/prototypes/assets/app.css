@@ -181,6 +181,19 @@ button, input, select { font: inherit; color: inherit; }
   .search-panel { top: var(--space-2); left: var(--space-2); right: var(--space-2); width: auto; max-height: calc(100dvh - 16px); }
 }
 
+/* Wide screens: the search floats where it was, in the center of the page (the screen minus the sidebar), and the bar behind it has no background and does not stay.
+   The button is the full pill, 30 px high, with the word and the "/" key. */
+@media (min-width: 1024px) {
+  .header-bar { position: static; background: none; backdrop-filter: none; }
+  .global-search { position: fixed; top: 14px; left: calc(var(--sidebar-width) + (100% - var(--sidebar-width)) / 2); transform: translateX(-50%); z-index: 40; margin: 0; }
+  :root[data-header="v2"] .global-search { margin: 0; }
+  .search-button { height: 30px; padding: 0 5px 0 10px; border-color: var(--border); border-radius: 10px; background: var(--surface-raised); box-shadow: 0 8px 20px -14px rgba(17, 17, 17, 0.3); }
+  .search-button:hover, .search-button:focus-visible { border-color: var(--ink); color: var(--ink); background: var(--surface-raised); }
+  .search-button-icon { width: 16px; height: 16px; }
+  .search-button-label { padding-right: var(--space-4); }
+  .global-search-key { line-height: 16px; }
+}
+
 
 .icon-button {
   display: inline-flex; align-items: center; justify-content: center;
@@ -321,6 +334,7 @@ button, input, select { font: inherit; color: inherit; }
 .chart-holder { width: 100%; }
 .chart-scroll { overflow-x: auto; }
 @media (max-width: 719px) { .chart-scroll > .chart-holder { min-width: var(--chart-min); } }
+.bar-chart .bar-col { transition: opacity var(--motion-base) var(--ease-out); }
 .bar-chart .bar-col.is-muted { opacity: 0.3; }
 .bar-chart .bar-hover { fill: color-mix(in srgb, var(--bar-fill) 8%, transparent); }
 .bar-chart .bar-band { fill: var(--accent); opacity: 0.12; }

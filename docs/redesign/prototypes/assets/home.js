@@ -62,20 +62,18 @@
   let listTop = 0
 
   // The stories of a day: a story is picked to show it in the card, and its button opens its page. The card shows the story of the rank in info, and the picked day at the top right.
-  function DayCard (info, { date, onStory }) {
-    const head = cardHead(t('home.day.title'), h('span', { class: 'pill home-pill' }, fmt.date(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })), t('home.day.info'))
+  function DayCard (info, { date, onStory, swap }) {
+    const head = cardHead(t('home.day.title'), h('span', { class: 'home-date' }, fmt.date(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })), t('home.day.info'))
     if (!info) return card('c-5 home-day', head, emptyText(t('home.day.empty')))
     const { story, topic } = info
     const total = sum(info.outlets.map((o) => o.n))
     const slices = info.outlets.map((o) => ({ name: o.name, group: o.group, n: o.n, color: groupColor(o.group), slug: o.slug }))
-    const outlets = slices.length
-      ? h('div', { class: 'home-block' }, h('p', { class: 'home-label' }, t('home.day.outlets')), OutletStack(slices, { total, count: info.outlets.length }))
-      : null
+    const outlets = slices.length ? h('div', { class: 'home-block' }, OutletStack(slices, { total, count: info.outlets.length })) : null
 
     const stories = h('ul', { class: 'home-stories' }, info.list.map((o, r) => h('li', { class: r === info.rank ? 'is-current' : null },
       h('button', { type: 'button', class: 'home-story-pick', 'aria-pressed': String(r === info.rank), onClick: () => onStory(r) },
         h('span', { class: 'home-story-name' }, name(o.s)), h('span', { class: 'muted-text' }, fmt.int(o.n))),
-      h('a', { class: 'button home-story-go', href: `story-v2.html?id=${o.s.id}`, 'aria-label': `${t('home.day.open')}: ${name(o.s)}` }, t('home.day.open'), Icon('chevron-right', 'icon icon-sm')))))
+      h('a', { class: 'button button-sm home-story-go', href: `story-v2.html?id=${o.s.id}`, 'aria-label': `${t('home.day.open')}: ${name(o.s)}` }, t('home.day.open'), Icon('chevron-right', 'icon icon-sm')))))
     // The list has every story of the day and scrolls inside the card. A new day starts at the top; a pick on the same day keeps the place.
     const sameDay = info.d === listDay
     listDay = info.d
@@ -83,9 +81,10 @@
     stories.addEventListener('scroll', () => { listTop = stories.scrollTop })
     requestAnimationFrame(() => { stories.scrollTop = listTop })
 
-    return card('c-5 home-day', head,
+    // swap: 'day' draws the whole card in again, 'story' only the story, its topic and its outlets (the list keeps its place).
+    return card(`c-5 home-day${swap ? ` is-swap is-swap-${swap}` : ''}`, head,
       h('h3', { class: 'home-day-story' }, name(story)),
-      h('p', { class: 'home-day-meta' }, topic ? UI.EntityLink({ type: 'topic', key: String(story.issue), label: name(topic) }) : null,
+      h('p', { class: 'home-day-meta' }, topic ? [h('span', { class: 'home-topic-label' }, t('home.day.topic')), ' ', UI.EntityLink({ type: 'topic', key: String(story.issue), label: name(topic) })] : null,
         info.outlets.length ? null : [topic ? ' · ' : null, t('home.day.meta', { n: fmt.int(info.n) })]),
       outlets,
       stories)
@@ -114,7 +113,21 @@
       return [h('span', { class: `home-arrow ${v > 0 ? 'is-up' : 'is-down'}`, 'aria-hidden': 'true' }, v > 0 ? '▲' : '▼'), ' ', size]
     }
 
+    // The scroll position that puts a tile in the middle of the strip, from the boxes on screen.
+    const centered = (tile) => tile.getBoundingClientRect().left - list.getBoundingClientRect().left + list.scrollLeft - (list.clientWidth - tile.offsetWidth) / 2
+    let shown = null
+    const buttons = new Map()
+    const calm = window.matchMedia('(prefers-reduced-motion: reduce)')
     function paint () {
+      // The same month: only the picked tile changes, and the strip slides to it.
+      if (shown === month) {
+        buttons.forEach((btn, i) => btn.setAttribute('aria-pressed', String(i === current)))
+        const tile = buttons.get(current)
+        if (tile) list.scrollTo({ left: centered(tile), behavior: calm.matches ? 'auto' : 'smooth' })
+        return
+      }
+      shown = month
+      buttons.clear()
       const tiles = new Map()
       dates.forEach((iso, i) => {
         if (!iso.startsWith(month)) return
@@ -125,14 +138,18 @@
         h('span', { class: 'home-day-num' }, String(Number(iso.slice(8)))),
         h('span', { class: 'home-day-n' }, fmt.int(totals[i])),
         h('span', { class: 'home-day-delta' }, delta(i)))))
+        buttons.set(i, tiles.get(i).firstChild)
       })
       label.textContent = fmt.date(`${month}-01`, { month: 'long', year: 'numeric' })
       prev.disabled = months.indexOf(month) === 0
       next.disabled = months.indexOf(month) === months.length - 1
       list.replaceChildren(...tiles.values())
+      list.classList.remove('is-swap')
+      void list.offsetWidth
+      list.classList.add('is-swap')
       // The picked day is in the middle of the strip when it is in this month; any other month starts at its first day.
       const tile = tiles.get(current)?.firstChild
-      requestAnimationFrame(() => { list.scrollLeft = tile ? tile.offsetLeft - (list.clientWidth - tile.offsetWidth) / 2 : 0 })
+      requestAnimationFrame(() => { list.scrollLeft = tile ? centered(tile) : 0 })
     }
     paint()
     const node = card('home-calendar', cardHead(t('home.days.title'), h('div', { class: 'home-month-nav' }, prev, label, next), t('home.days.info')), list)

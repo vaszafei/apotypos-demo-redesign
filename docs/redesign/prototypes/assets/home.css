@@ -2,12 +2,12 @@
 
 /* The stories of a day. */
 .home-day { gap: var(--space-3); }
-.home-pill { border-color: var(--ink); color: var(--ink); font-weight: 600; text-transform: capitalize; }
+.home-date { font-size: var(--text-caption); font-weight: 600; text-transform: capitalize; white-space: nowrap; color: var(--ink); }
+.home-topic-label { color: var(--text-secondary); }
 .home-day-story { margin: 0; font: 600 22px/1.25 var(--font-heading); letter-spacing: -0.01em; color: var(--ink); }
 .home-day-meta { margin: 0; font-size: var(--text-small); color: var(--text-secondary); }
 .home-day-meta .entity-link { font-weight: 600; color: var(--text-primary); }
 .home-block { display: grid; gap: 6px; }
-.home-label { margin: 0; font-size: var(--text-caption); font-weight: 600; color: var(--text-secondary); }
 
 /* The horizontal bar of the outlets, and under it a line that names the part under the mouse. */
 .home-stack-wrap { display: grid; gap: var(--space-3); }
@@ -31,15 +31,16 @@ a.home-stack-part { cursor: pointer; }
 .home-story-pick:hover .home-story-name { color: var(--accent); }
 .home-story-pick[aria-pressed="true"] .home-story-name { font-weight: 600; color: var(--ink); }
 .home-story-pick .muted-text { font-size: var(--text-caption); font-variant-numeric: tabular-nums; }
-.home-story-go { display: inline-flex; align-items: center; gap: 2px; margin-right: 6px; white-space: nowrap; text-decoration: none; }
+.home-story-go { margin-right: 6px; white-space: nowrap; text-decoration: none; }
 
 /* The calendar of a month: a strip of day tiles that scrolls sideways, with the month and its arrows in the head. */
 .home-month-nav { display: inline-flex; align-items: center; gap: 2px; }
 .home-month-name { min-width: 9em; text-align: center; font-size: var(--text-small); font-weight: 600; text-transform: capitalize; color: var(--text-primary); }
+.home-month-nav .icon-button { min-width: 24px; min-height: 24px; padding: 0; }
 .home-month-nav .icon-button:disabled { opacity: 0.3; cursor: default; }
 .home-days { position: relative; display: flex; gap: 6px; margin: 0; padding: 0 0 var(--space-2); list-style: none; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: thin; }
 .home-days > li { flex: none; scroll-snap-align: center; }
-.home-day-btn { display: grid; justify-items: center; align-content: start; gap: 2px; width: 62px; padding: 8px 4px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-raised); color: var(--text-primary); font: inherit; cursor: pointer; }
+.home-day-btn { display: grid; justify-items: center; align-content: start; gap: 2px; width: 62px; padding: 8px 4px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-raised); color: var(--text-primary); font: inherit; cursor: pointer; transition: background-color var(--motion-base) var(--ease-out), border-color var(--motion-base) var(--ease-out); }
 .home-day-btn:hover { border-color: var(--ink); }
 .home-day-btn.is-weekend { background: var(--surface-page); }
 .home-day-btn[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface-raised)); }
@@ -77,3 +78,12 @@ a.home-stack-part { cursor: pointer; }
 .home-quick .home-link-main .muted-text { font-size: var(--text-small); }
 .home-topics-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 var(--space-6); align-items: start; }
 @media (max-width: 899px) { .home-topics-cols { grid-template-columns: minmax(0, 1fr); } }
+
+/* A new day or a new story comes in with a short fade and a small rise. The frame of the card and its title stay. */
+.home-days.is-swap { animation: m-rise var(--motion-base) var(--ease-out); }
+.dcard.is-swap:not(.is-swap-story) > :not(.dcard-head), .dcard.is-swap:not(.is-swap-story) .home-date { animation: m-rise var(--motion-base) var(--ease-out) both; }
+.dcard.is-swap-story > :is(.home-day-story, .home-day-meta, .home-block) { animation: m-rise var(--motion-base) var(--ease-out) both; }
+.dcard.is-swap-story li.is-current { animation: m-fade var(--motion-base) var(--ease-out) both; }
+.dcard.is-swap .home-day-meta { animation-delay: var(--motion-stagger); }
+.dcard.is-swap .home-block { animation-delay: calc(2 * var(--motion-stagger)); }
+.dcard.is-swap .home-stories { animation-delay: calc(3 * var(--motion-stagger)); }

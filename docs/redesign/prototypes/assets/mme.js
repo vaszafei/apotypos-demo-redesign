@@ -373,7 +373,7 @@
     const series = top.map((i, j) => ({ label: name(set.issues[i]), color: TOPIC_SLOTS[j], values: weeks.map((w) => (w.n ? w.issues[i] / w.n : null)) }))
     const chart = Politics.LineChart({
       labels: weeks.map((w) => day(w.i0)), tips: weeks.map((w) => `${day(w.i0)} – ${day(w.i1)} (n=${fmt.int(w.n)})`),
-      series, height: 260, zero: true, yFormat: pctRound, endLabels: false, smooth: true, aria: t('mme.o.weekly.title')
+      series, height: 260, zero: true, yFormat: pctRound, endLabels: false, aria: t('mme.o.weekly.title')
     })
     const legend = UI.Legend(series.map((s) => ({ label: s.label, color: s.color })))
     return card('c-12', cardHead(t('mme.o.weekly.title'), null, t('mme.o.weekly.info')), legend, chart)

@@ -6,8 +6,8 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=10">
-  <link rel="stylesheet" href="assets/app.css?v=29">
-  <link rel="stylesheet" href="assets/dash.css?v=80">
+  <link rel="stylesheet" href="assets/app.css?v=33">
+  <link rel="stylesheet" href="assets/dash.css?v=81">
   <link rel="stylesheet" href="assets/politics.css?v=4">
   <link rel="stylesheet" href="assets/elections.css?v=5">
 </head>
@@ -16,11 +16,11 @@
   <script src="assets/icons.js?v=4"></script>
   <script src="assets/messages.js?v=30"></script>
   <script src="assets/messages-v2.js?v=46"></script>
-  <script src="assets/messages-politics.js?v=9"></script>
-  <script src="assets/components.js?v=11"></script>
+  <script src="assets/messages-politics.js?v=10"></script>
+  <script src="assets/components.js?v=13"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
-  <script src="assets/politics.js?v=6"></script>
+  <script src="assets/politics.js?v=10"></script>
   <script src="assets/shell.js?v=47"></script>
   <script src="data/elections.js?v=2"></script>
   <script>
@@ -167,7 +167,7 @@
           legend.replaceChildren(...parties.map((p) => h('li', {}, h('button', { type: 'button', 'aria-pressed': String(shown.has(p.key)), title: p.name, onClick: () => { shown.has(p.key) ? shown.delete(p.key) : shown.add(p.key); drawLines() } },
             h('span', { class: 'swatch', style: { background: color(p.key) } }), p.key))))
           const pick = keys.map((k, i) => i).filter((i) => shown.has(keys[i]))
-          const series = pick.map((i) => ({ label: keys[i], color: color(keys[i]), values: smooth((reach ? mentions : tones)[i]).filter((_, j) => have.has(weeks[j])), dots: false }))
+          const series = pick.map((i) => ({ label: keys[i], color: color(keys[i]), values: smooth((reach ? mentions : tones)[i]).filter((_, j) => have.has(weeks[j])) }))
           timeHolder.replaceChildren(!pick.length
             ? emptyText(t('topics2.empty'))
             : reach

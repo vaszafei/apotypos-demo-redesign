@@ -2,6 +2,7 @@
 (function () {
   const { t, fmt, h } = window.App
   const { fit, niceStep } = window.Dash
+  const { CHART_FRAME, smoothPath } = window.UI
 
   const tip = (el, text) => {
     el.addEventListener('pointermove', (e) => UI.showTooltip(typeof text === 'function' ? text() : text, e.clientX, e.clientY))
@@ -20,41 +21,11 @@
     return { short: day(from), long: `${day(from)} – ${day(to)}` }
   }
 
-  // A smooth line through the points: a monotone cubic curve (it never swings above or below the points it joins). A gap or a missing value starts a new curve.
-  function smoothPath (pts, gapAt) {
-    const parts = []
-    let seg = []
-    pts.forEach((p, i) => {
-      if (!p) { if (seg.length) parts.push(seg); seg = []; return }
-      if (gapAt.has(i) && seg.length) { parts.push(seg); seg = [] }
-      seg.push(p)
-    })
-    if (seg.length) parts.push(seg)
-    const f = (v) => v.toFixed(1)
-    return parts.map((s) => {
-      const n = s.length
-      if (n === 1) return `M${f(s[0][0])} ${f(s[0][1])}`
-      const dx = s.slice(1).map((q, i) => q[0] - s[i][0])
-      const m = s.slice(1).map((q, i) => (q[1] - s[i][1]) / dx[i])
-      const tan = s.map((_, i) => (i === 0 ? m[0] : i === n - 1 ? m[n - 2] : m[i - 1] * m[i] <= 0 ? 0 : (m[i - 1] + m[i]) / 2))
-      m.forEach((slope, i) => {
-        if (slope === 0) { tan[i] = 0; tan[i + 1] = 0; return }
-        const a = tan[i] / slope
-        const b = tan[i + 1] / slope
-        const k = a * a + b * b
-        if (k > 9) { const tau = 3 / Math.sqrt(k); tan[i] = tau * a * slope; tan[i + 1] = tau * b * slope }
-      })
-      let d = `M${f(s[0][0])} ${f(s[0][1])}`
-      for (let i = 0; i < n - 1; i++) d += `C${f(s[i][0] + dx[i] / 3)} ${f(s[i][1] + (tan[i] * dx[i]) / 3)} ${f(s[i + 1][0] - dx[i] / 3)} ${f(s[i + 1][1] - (tan[i + 1] * dx[i]) / 3)} ${f(s[i + 1][0])} ${f(s[i + 1][1])}`
-      return d
-    }).join('')
-  }
-
-  // Lines on one axis. Each series has a color and a label at its end (endLabels: false leaves the labels to a legend above; smooth: true draws curves). The hover line gives all values of one point.
+  // Lines on one axis. Each series has a color and a label at its end (endLabels: false leaves the labels to a legend above). The lines are always smooth curves, and a point shows a dot only under the hover line. The hover line gives all values of one point.
   // gaps: [{ at, text }]. A stretch of time with no data is not drawn to scale: the point `at` follows a gap of 1.5 steps, marked by a dashed line and its text, and no line crosses it.
-  function LineChart ({ labels, tips, series, height = 240, yFormat = fmt.dec, min, max, zero = false, aria, gaps = [], endLabels = true, smooth = false }) {
+  function LineChart ({ labels, tips, series, height = 240, yFormat = fmt.dec, min, max, zero = false, aria, gaps = [], endLabels = true }) {
     return fit((holder, width) => {
-      const pad = { top: 14, right: endLabels ? 96 : 28, bottom: 28, left: 40 }
+      const pad = { top: CHART_FRAME.top, right: endLabels ? 96 : 20, bottom: CHART_FRAME.bottom, left: CHART_FRAME.left }
       const all = series.flatMap((s) => s.values).filter((v) => v !== null)
       let lo = min ?? Math.min(...all, zero ? 0 : Infinity)
       let hi = max ?? Math.max(...all, zero ? 0 : -Infinity)
@@ -75,15 +46,15 @@
         svg.append(h('line', { class: v === 0 && lo < 0 ? 'zero-line' : 'grid-line', x1: pad.left, x2: pad.left + plotW, y1: y(v), y2: y(v) }), h('text', { x: pad.left - 6, y: y(v) + 4, 'text-anchor': 'end' }, yFormat(v)))
       }
       // The labels of the x axis: every n-th point and the last one. A label that would touch the last one is left out.
-      const every = Math.max(1, Math.ceil(labels.length / Math.max(2, Math.floor(plotW / 64))))
+      const every = Math.max(1, Math.ceil(labels.length / Math.max(2, Math.floor(plotW / CHART_FRAME.labelEvery))))
       const ticks = labels.map((_, i) => i).filter((i) => i % every === 0 || i === labels.length - 1 || gapAt.has(i))
       const shown = []
       ticks.forEach((i) => {
         const prev = shown[shown.length - 1]
-        if (prev !== undefined && x(i) - x(prev) < 56) { if (i !== labels.length - 1) return; shown.pop() }
+        if (prev !== undefined && x(i) - x(prev) < CHART_FRAME.labelEvery) { if (i !== labels.length - 1) return; shown.pop() }
         shown.push(i)
       })
-      shown.forEach((i) => svg.append(h('text', { x: x(i), y: height - 8, 'text-anchor': 'middle' }, labels[i])))
+      shown.forEach((i) => svg.append(h('text', { x: x(i), y: pad.top + plotH + CHART_FRAME.labelGap, 'text-anchor': 'middle' }, labels[i])))
       gaps.forEach((g) => {
         const gx = (x(g.at - 1) + x(g.at)) / 2
         svg.append(h('line', { class: 'grid-line', x1: gx, x2: gx, y1: pad.top, y2: pad.top + plotH, 'stroke-dasharray': '4 4' }),
@@ -92,28 +63,30 @@
       const ends = []
       series.forEach((s) => {
         const pts = s.values.map((v, i) => (v === null ? null : [x(i), y(v)]))
-        let d = ''
-        if (smooth) d = smoothPath(pts, gapAt)
-        else pts.forEach((p, i) => { if (p) d += `${d && pts[i - 1] && !gapAt.has(i) ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}` })
-        svg.append(h('path', { d, fill: 'none', stroke: s.color, 'stroke-width': s.width || 2, 'stroke-linejoin': 'round', 'stroke-dasharray': s.dash || null }))
-        pts.forEach((p) => { if (p && s.dots !== false) svg.append(h('circle', { cx: p[0], cy: p[1], r: 3, fill: s.color, stroke: 'var(--surface-raised)', 'stroke-width': 1.5 })) })
+        svg.append(h('path', { d: smoothPath(pts, gapAt), fill: 'none', stroke: s.color, 'stroke-width': s.width || 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', 'stroke-dasharray': s.dash || null }))
         const last = pts.map((p, i) => [p, i]).filter(([p]) => p).pop()
         if (last) ends.push({ y: last[0][1], label: s.label, color: s.color })
       })
       // The end labels do not overlap: each label moves down to 13 px below the label above it.
       ends.sort((a, b) => a.y - b.y).forEach((e, i, arr) => { if (i && e.y - arr[i - 1].y < 13) e.y = arr[i - 1].y + 13 })
       if (endLabels) ends.forEach((e) => svg.append(h('text', { class: 'line-end', x: pad.left + plotW + 8, y: e.y + 4, fill: 'var(--text-primary)' }, e.label)))
-      const guide = h('line', { class: 'range-line', x1: 0, x2: 0, y1: pad.top, y2: pad.top + plotH, visibility: 'hidden' })
-      svg.append(guide)
+      const guide = h('line', { class: 'line-guide', x1: 0, x2: 0, y1: pad.top, y2: pad.top + plotH, visibility: 'hidden' })
+      const dots = series.map((s) => h('circle', { class: 'line-dot', r: 3.5, fill: s.color, visibility: 'hidden' }))
+      svg.append(guide, ...dots)
       const hit = h('rect', { class: 'hit', x: pad.left, y: pad.top, width: plotW, height: plotH })
       hit.addEventListener('pointermove', (e) => {
         const box = svg.getBoundingClientRect()
         const px = e.clientX - box.left
         const i = labels.reduce((best, _, k) => (Math.abs(x(k) - px) < Math.abs(x(best) - px) ? k : best), 0)
         guide.setAttribute('x1', x(i)); guide.setAttribute('x2', x(i)); guide.setAttribute('visibility', 'visible')
+        series.forEach((s, k) => {
+          const v = s.values[i]
+          dots[k].setAttribute('visibility', v === null ? 'hidden' : 'visible')
+          if (v !== null) { dots[k].setAttribute('cx', x(i)); dots[k].setAttribute('cy', y(v)) }
+        })
         UI.showTooltip([tips ? tips[i] : labels[i], ...series.map((s) => `${s.label}: ${s.values[i] === null ? '–' : yFormat(s.values[i])}`)].join(' · '), e.clientX, e.clientY)
       })
-      hit.addEventListener('pointerleave', () => { guide.setAttribute('visibility', 'hidden'); UI.hideTooltip() })
+      hit.addEventListener('pointerleave', () => { guide.setAttribute('visibility', 'hidden'); dots.forEach((d) => d.setAttribute('visibility', 'hidden')); UI.hideTooltip() })
       svg.append(hit)
       holder.replaceChildren(svg)
     })
