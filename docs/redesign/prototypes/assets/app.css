@@ -25,9 +25,9 @@ button, input, select { font: inherit; color: inherit; }
   clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
 }
 
-/* Shell */
+/* Shell. A wide screen has a top navbar (the logo, the sections, the search, the language, log in and sign up). A tablet or a phone has a top bar and a drawer (.sidebar). */
 
-.shell { min-height: 100vh; background: linear-gradient(90deg, var(--surface-sidebar) var(--sidebar-width), transparent var(--sidebar-width)); }
+.shell { min-height: 100vh; }
 
 .sidebar {
   position: fixed; inset: 0 auto 0 0; z-index: 30;
@@ -79,7 +79,7 @@ button, input, select { font: inherit; color: inherit; }
 .section-tabs a:hover { color: var(--text-primary); }
 .section-tabs a[aria-current="page"] { color: var(--text-primary); font-weight: 600; border-bottom-color: var(--accent); }
 
-.main-column { margin-left: var(--sidebar-width); min-height: 100vh; display: flex; flex-direction: column; }
+.main-column { min-height: 100vh; display: flex; flex-direction: column; }
 
 .header-bar {
   position: sticky; top: 0; z-index: 20;
@@ -180,20 +180,6 @@ button, input, select { font: inherit; color: inherit; }
   /* Phone: the panel is the full width of the screen. */
   .search-panel { top: var(--space-2); left: var(--space-2); right: var(--space-2); width: auto; max-height: calc(100dvh - 16px); }
 }
-
-/* Wide screens: the search floats where it was, in the center of the page (the screen minus the sidebar), and the bar behind it has no background and does not stay.
-   The button is the full pill, 30 px high, with the word and the "/" key. */
-@media (min-width: 1024px) {
-  .header-bar { position: static; background: none; backdrop-filter: none; }
-  .global-search { position: fixed; top: 14px; left: calc(var(--sidebar-width) + (100% - var(--sidebar-width)) / 2); transform: translateX(-50%); z-index: 40; margin: 0; }
-  :root[data-header="v2"] .global-search { margin: 0; }
-  .search-button { height: 30px; padding: 0 5px 0 10px; border-color: var(--border); border-radius: 10px; background: var(--surface-raised); box-shadow: 0 8px 20px -14px rgba(17, 17, 17, 0.3); }
-  .search-button:hover, .search-button:focus-visible { border-color: var(--ink); color: var(--ink); background: var(--surface-raised); }
-  .search-button-icon { width: 16px; height: 16px; }
-  .search-button-label { padding-right: var(--space-4); }
-  .global-search-key { line-height: 16px; }
-}
-
 
 .icon-button {
   display: inline-flex; align-items: center; justify-content: center;
@@ -420,12 +406,11 @@ button, input, select { font: inherit; color: inherit; }
 /* Tablet and phone: the sidebar becomes a drawer. */
 
 @media (max-width: 1023px) {
+  .page-footer-links, .page-footer-tools { display: none; }
   .sidebar { transform: translateX(-100%); transition: transform var(--motion-base) var(--ease-out); width: min(300px, 85vw); }
   .shell.drawer-open .sidebar { transform: none; }
   .shell.drawer-open .drawer-scrim { display: block; position: fixed; inset: 0; z-index: 25; background: rgba(0, 0, 0, 0.4); animation: m-fade var(--motion-base) var(--ease-out); }
-  .shell { background: none; }
   .icon-button.sidebar-close { display: inline-flex; color: var(--ink); }
-  .main-column { margin-left: 0; }
   .icon-button.menu-button { display: inline-flex; }
   .header-bar, .header-bar.has-tabs { display: flex; flex-wrap: wrap; gap: var(--space-2); padding: var(--space-2); }
   .header-bar .section-tabs { order: 3; flex-basis: 100%; overflow-x: auto; padding: 2px 2px 12px; margin-bottom: -10px; }
@@ -599,6 +584,77 @@ button, input, select { font: inherit; color: inherit; }
 }
 :root[data-header="v2"] .appbar-trail .icon { display: none; }
 :root[data-header="v2"] .appbar-trail li + li::before { content: "/"; color: var(--text-secondary); margin-right: 2px; }
+
+/* Top navbar (wide screens). Sticky, on the sidebar surface, with one line under it. The current section has the ink line of the old sidebar, under its label. */
+:root { --navbar-height: 64px; }
+.header-logo, .header-nav, .header-actions, .trail-bar { display: none; }
+.sidebar .auth-links { display: flex; gap: var(--space-2); padding: 0 var(--space-3) var(--space-4); }
+.sidebar .auth-links a { flex: 1; }
+.auth-login, .auth-register {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 36px; padding: 0 var(--space-4); border: 1px solid transparent; border-radius: 8px;
+  font-size: var(--text-small); font-weight: 600; text-decoration: none; white-space: nowrap;
+}
+.auth-login { color: var(--ink); }
+.auth-login:hover { background: color-mix(in srgb, var(--ink) 7%, transparent); }
+.auth-register { background: var(--ink); color: var(--on-ink); }
+.auth-register:hover { background: color-mix(in srgb, var(--ink) 82%, var(--accent)); }
+.sidebar .auth-login { border-color: var(--border); }
+.page-footer { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); }
+.page-footer-text { margin-right: auto; }
+.page-footer-links { display: flex; gap: var(--space-4); }
+.page-footer-links .nav-link { padding: 4px 0; font-size: var(--text-small); color: var(--text-secondary); }
+.page-footer-links .nav-link:hover { background: none; color: var(--ink); text-decoration: underline; }
+.page-footer-links .nav-link[aria-current="page"] { box-shadow: none; border-radius: 0; color: var(--ink); }
+.page-footer-tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-5); width: 100%; padding-top: var(--space-3); border-top: 1px dashed var(--border); }
+.page-footer-tools .font-switch, .page-footer-tools .theme-switch { flex-direction: row; align-items: center; gap: var(--space-2); color: var(--text-secondary); }
+@media (min-width: 1024px) {
+  :root { --navbar-height: 64px; }
+  .sidebar { display: none; }
+  :root[data-header="v2"] .header-bar {
+    position: sticky; top: 0; z-index: 40; display: flex; align-items: center; gap: var(--space-4);
+    height: var(--navbar-height); min-height: var(--navbar-height); padding: 0 var(--space-5);
+    background: var(--surface-sidebar); border-bottom: 1px solid var(--border);
+  }
+  :root[data-header="v2"] .header-left { display: none; }
+  .header-logo { display: inline-flex; flex: none; }
+  .header-logo .logo-img { width: 112px; }
+  .header-nav { display: block; align-self: stretch; flex: 1; min-width: 0; margin-left: var(--space-3); }
+  .header-nav .nav-list { display: flex; gap: var(--space-1); height: 100%; }
+  .header-nav li { display: flex; }
+  .header-nav .nav-link {
+    position: relative; display: flex; align-items: center; padding: 0 var(--space-3); border-radius: 0;
+    font-size: var(--text-small); font-weight: 500; color: var(--text-secondary); white-space: nowrap;
+  }
+  .header-nav .nav-link:hover { background: none; color: var(--ink); }
+  .header-nav .nav-link[aria-current="page"] { box-shadow: none; border-radius: 0; color: var(--ink); font-weight: 600; }
+  .header-nav .nav-link[aria-current="page"]::after { content: ""; position: absolute; left: var(--space-3); right: var(--space-3); bottom: -1px; height: 2px; background: var(--ink); }
+  :root[data-header="v2"] .global-search { flex: none; margin: 0; }
+  .search-button { height: 36px; min-width: 232px; padding: 0 6px 0 12px; border-color: var(--border); border-radius: 8px; background: var(--surface-page); }
+  .search-button:hover, .search-button:focus-visible { border-color: var(--ink); color: var(--ink); background: var(--surface-page); }
+  .search-button-label { flex: 1; padding-right: 0; text-align: left; color: var(--text-secondary); }
+  .global-search-key { line-height: 16px; }
+  .header-actions { display: flex; flex: none; align-items: center; gap: var(--space-3); }
+  .header-actions .lang-switch button { min-width: 32px; min-height: 28px; font-size: var(--text-caption); color: var(--text-secondary); }
+  .header-actions .lang-switch button[aria-pressed="true"] { color: var(--on-ink); }
+  .header-actions .auth-links { display: flex; align-items: center; gap: var(--space-2); }
+  /* A detail page: the back button and the trail, in a row under the navbar. */
+  .trail-bar { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-5) 0; }
+  .trail-bar .back-button { margin-left: -10px; }
+  .page-footer-tools { width: auto; padding: 0; border: 0; }
+  .page-footer { padding: var(--space-4) var(--space-5); }
+  .content { padding-left: var(--space-5); padding-right: var(--space-5); }
+  .dash-bar { top: var(--navbar-height); }
+}
+/* A narrower desktop: the search is a button with the icon and the key. */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .search-button { min-width: 0; }
+  .search-button-label { display: none; }
+  .header-nav .nav-link { padding: 0 10px; }
+  .header-actions { gap: var(--space-2); }
+}
+@media (max-width: 1023px) {
+  :root { --navbar-height: 56px; }
+}
 :root[data-header="v2"] .page-head .dr-trigger { min-height: 32px; padding: 0 10px 0 8px; gap: 6px; font-size: 13px; }
 :root[data-header="v2"] .page-head .dr-trigger .dr-icon { width: 16px; height: 16px; }
 :root[data-header="v2"] .page-head .set-select select, :root[data-header="v2"] .page-head-actions select { min-height: 32px; font-size: 13px; }
@@ -630,14 +686,14 @@ button, input, select { font: inherit; color: inherit; }
 #app:empty {
   position: relative; min-height: 100vh; overflow: hidden;
   background:
-    linear-gradient(var(--ink), var(--ink)) calc(var(--sidebar-width) - 2px) 0 / 2px 100% no-repeat,
-    linear-gradient(var(--skeleton), var(--skeleton)) 20px 32px / 150px 40px no-repeat,
-    repeating-linear-gradient(180deg, var(--skeleton-2) 0 18px, transparent 0 43px) 24px 120px / 120px 240px no-repeat,
-    linear-gradient(var(--surface-sidebar), var(--surface-sidebar)) 0 0 / var(--sidebar-width) 100% no-repeat;
+    linear-gradient(var(--border), var(--border)) 0 63px / 100% 1px no-repeat,
+    linear-gradient(var(--skeleton), var(--skeleton)) 24px 20px / 112px 24px no-repeat,
+    repeating-linear-gradient(90deg, var(--skeleton-2) 0 64px, transparent 0 84px) 180px 24px / 460px 16px no-repeat,
+    linear-gradient(var(--surface-sidebar), var(--surface-sidebar)) 0 0 / 100% 63px no-repeat;
   animation: m-fade var(--motion-slow) 150ms both;
 }
 #app:empty::before {
-  content: ""; position: absolute; top: 72px; left: calc(var(--sidebar-width) + var(--space-6)); right: var(--space-6); max-width: 1176px; height: 860px;
+  content: ""; position: absolute; top: 96px; left: var(--space-6); right: var(--space-6); max-width: 1176px; height: 860px;
   background:
     linear-gradient(var(--skeleton), var(--skeleton)) 0 0 / min(380px, 60%) 28px no-repeat,
     linear-gradient(var(--skeleton-2), var(--skeleton-2)) 0 44px / min(260px, 40%) 14px no-repeat,
