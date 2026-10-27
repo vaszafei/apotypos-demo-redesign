@@ -61,12 +61,15 @@ a.home-stack-part { cursor: pointer; }
 .home-link-main strong { font-size: var(--text-small); font-weight: 600; }
 .home-link-main .muted-text { font-size: var(--text-caption); }
 
-@media (max-width: 1279px) { .home-grid > .c-5 { grid-column: span 12; } }
+@media (max-width: 1279px) { .home-grid > .c-5, .home-grid > .c-7 { grid-column: span 12; } }
 @media (max-width: 519px) {
   .home-month-name { min-width: 7em; }
   .home-story-go { font-size: 0; gap: 0; padding: 0 8px; }
 }
 
-.home-change { display: flex; align-items: center; gap: var(--space-2); min-width: 180px; }
-.home-change > :first-child { flex: 1; }
-.home-change-text { min-width: 44px; text-align: right; font-variant-numeric: tabular-nums; }
+.home-share { display: inline-flex; align-items: baseline; justify-content: flex-end; gap: 6px; }
+.home-arrow { font-size: 10px; line-height: 1; cursor: help; }
+.home-arrow.is-up { color: var(--emph-more); }
+.home-arrow.is-down { color: var(--emph-less); }
+.home-analyses { display: flex; flex-direction: column; }
+.home-analyses .home-links { flex: 1; grid-template-columns: 1fr; grid-auto-rows: 1fr; }

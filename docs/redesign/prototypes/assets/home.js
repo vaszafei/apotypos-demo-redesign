@@ -1,5 +1,5 @@
 // The cards of Αρχική: the stories of a day, the calendar of a month, the topics of a day and the shortcuts to the analyses.
-// Load after dash.js, mme.js and spread.js. index.html draws the page.
+// Load after dash.js. index.html draws the page.
 (function () {
   const { t, fmt, h, Icon } = window.App
   const { card, cardHead, emptyText, groupColor } = Dash
@@ -122,8 +122,7 @@
     return { node, select (i) { current = i; month = dates[i].slice(0, 7); paint() } }
   }
 
-  // The topics of one day in the news: the articles and the share of the day, and the change of the share against the days before (the 7 before, fewer at the start of the data).
-  // The center line of the bar is the share before; it goes right (teal) when the topic is more in the news than before and left (orange) when it is less.
+  // The topics of one day in the news: the articles, the share of the day, and an arrow on the share when it is more (▲) or less (▼) than in the days before (the 7 before, fewer at the start of the data).
   function TopicsCard ({ home, day }) {
     const w = Math.min(7, day)
     const news = home.issues.map((x, k) => ({ x, k })).filter((r) => !r.x.soft)
@@ -134,35 +133,33 @@
     const rows = news.map((r) => {
       const now = dayTotal ? on(r.k) / dayTotal : 0
       const was = beforeTotal ? before(r.k) / beforeTotal : 0
-      return { ...r, n: on(r.k), now, was, diff: w && beforeTotal ? now - was : null }
+      return { ...r, n: on(r.k), now, was, diff: w && beforeTotal ? now - was : 0 }
     }).filter((r) => r.n > 0).sort((a, b) => b.n - a.n)
-    const date = fmt.date(home.dates[day], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-    const head = cardHead(t('home.topics.title'), h('span', { class: 'pill home-pill' }, date), t('home.topics.note', { n: w }))
-    if (!rows.length) return card('c-12 home-topics', head, emptyText(t('home.topics.empty')))
-    const scale = Math.max(0.01, ...rows.map((r) => Math.abs(r.diff || 0)))
+    const head = cardHead(t('home.topics.title'), null, t('home.topics.note', { n: w }))
+    if (!rows.length) return card('c-5 home-topics', head, emptyText(t('home.topics.empty')))
     const points = (v) => fmt.dec(Math.abs(v * 100))
-    const sign = (v) => (v >= 0 ? '+' : '−')
-    return card('c-12 home-topics', head,
+    const arrow = (r) => {
+      if (Number(points(r.diff)) === 0) return null
+      const up = r.diff > 0
+      const tip = t('home.topics.tip', { topic: name(r.x), now: fmt.pct(r.now), before: fmt.pct(r.was), diff: `${up ? '+' : '−'}${points(r.diff)}` })
+      return h('span', { class: `home-arrow ${up ? 'is-up' : 'is-down'}`, title: tip, role: 'img', 'aria-label': tip }, up ? '▲' : '▼')
+    }
+    return card('c-5 home-topics', head,
       UI.DataTable({
         rankColumn: true, emptyText: t('home.topics.empty'), pageSize: 10, moreStep: 10,
         rows,
         columns: [
           { label: t('home.col.issue'), render: (r) => UI.EntityLink({ type: 'topic', key: String(r.k), label: name(r.x) }) },
           { label: t('home.col.articles'), num: true, render: (r) => fmt.int(r.n) },
-          { label: t('home.col.share'), num: true, render: (r) => fmt.pct(r.now) },
-          { label: t('home.col.before'), num: true, phone: false, render: (r) => (r.diff === null ? '–' : fmt.pct(r.was)) },
-          { label: t('home.col.change'), phone: false, render: (r) => (r.diff === null ? '' : h('div', { class: 'home-change' },
-            Spread.DiffTrack(r.diff, scale, t('home.topics.tip', { topic: name(r.x), now: fmt.pct(r.now), before: fmt.pct(r.was), diff: `${sign(r.diff)}${points(r.diff)}` })),
-            h('span', { class: 'home-change-text' }, `${sign(r.diff)}${points(r.diff)}`))) }
+          { label: t('home.col.share'), num: true, render: (r) => h('span', { class: 'home-share' }, arrow(r), fmt.pct(r.now)) }
         ]
-      }),
-      w ? UI.Legend([{ label: t('home.trends.more'), color: 'var(--emph-more)' }, { label: t('home.trends.less'), color: 'var(--emph-less)' }]) : null)
+      }))
   }
 
   // The shortcuts to the analyses: the name, one line about it and an arrow.
   const ANALYSES = [['speeches', '/speeches'], ['pi', '/narrative'], ['greekturkish', '/war'], ['coverage', '/coverage'], ['france', '/france-riots']]
   function AnalysesCard () {
-    return card('c-12 home-analyses', cardHead(t('home.analyses.title'), null, t('home.analyses.info')),
+    return card('c-7 home-analyses', cardHead(t('home.analyses.title'), null, t('home.analyses.info')),
       h('ul', { class: 'home-links' }, ANALYSES.map(([key, route]) => h('li', {},
         h('a', { href: Shell.hrefOf(route) }, h('span', { class: 'home-link-main' }, h('strong', {}, t(`tab.world.${key}`)), h('span', { class: 'muted-text' }, t(`home.analyses.${key}`))), Icon('chevron-right', 'icon icon-sm'))))))
   }
