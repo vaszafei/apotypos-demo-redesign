@@ -636,11 +636,12 @@ button, input, select { font: inherit; color: inherit; }
   .header-nav li { display: flex; }
   .header-nav .nav-link {
     position: relative; display: flex; align-items: center; padding: 0 var(--space-3); border-radius: 0;
-    font-size: var(--text-small); font-weight: 500; color: var(--text-secondary); white-space: nowrap;
+    font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); white-space: nowrap;
   }
   .header-nav .nav-link:hover { background: none; color: var(--ink); }
-  .header-nav .nav-link[aria-current="page"] { box-shadow: none; border-radius: 0; color: var(--ink); font-weight: 600; }
-  .header-nav .nav-link[aria-current="page"]::after { content: ""; position: absolute; left: var(--space-3); right: var(--space-3); bottom: -1px; height: 2px; background: var(--ink); }
+  /* The current section starts with "/", like the current tab of a page. */
+  .header-nav .nav-link[aria-current="page"] { box-shadow: none; border-radius: 0; color: var(--ink); font-weight: 700; }
+  .header-nav .nav-link[aria-current="page"]::before { content: "/ "; white-space: pre; }
   :root[data-header="v2"] .global-search { flex: none; margin: 0; }
   .search-button { height: 32px; min-width: 232px; padding: 0 6px 0 12px; border-color: var(--border); border-radius: 8px; background: var(--surface-page); }
   .search-button:hover, .search-button:focus-visible { border-color: var(--ink); color: var(--ink); background: var(--surface-page); }
@@ -668,10 +669,11 @@ button, input, select { font: inherit; color: inherit; }
   .section-nav-inner { position: sticky; top: var(--navbar-height); max-height: calc(100vh - var(--navbar-height)); overflow-y: auto; padding: var(--space-5) var(--space-3); }
   .section-nav-label { margin: 0 0 var(--space-2); padding: 0 var(--space-3); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
   .section-nav-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
-  .section-nav-link { display: block; padding: 8px var(--space-3); border-radius: 6px; font-size: var(--text-small); line-height: 1.4; color: var(--sidebar-text); text-decoration: none; }
+  .section-nav-link { display: block; padding: 9px var(--space-3); border-radius: 6px; font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.08em; line-height: 1.4; text-transform: uppercase; color: var(--text-secondary); text-decoration: none; }
   .section-nav-link:hover { background: var(--sidebar-hover-bg); color: var(--sidebar-active-text); }
-  .section-nav [aria-current] { color: var(--sidebar-active-text); font-weight: 600; }
-  .section-nav .section-nav-link[aria-current] { box-shadow: inset 3px 0 0 var(--ink); border-radius: 0 6px 6px 0; background: var(--sidebar-hover-bg); }
+  /* The current tab starts with "/", like the tabs of the page head. */
+  .section-nav .section-nav-link[aria-current] { color: var(--ink); }
+  .section-nav .section-nav-link[aria-current]::before { content: "/ "; white-space: pre; }
   /* The tabs are in the sidebar, so the page head keeps the sub-tabs, the actions and the filters. */
   :root[data-header="v2"] .page-tabs .section-tabs { display: none; }
   :root[data-header="v2"] .page-head:not(:has(.page-head-actions, .page-filters, .dash-error, .sub-tabs)) { display: block; margin: 0; }
