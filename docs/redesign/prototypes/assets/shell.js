@@ -597,8 +597,7 @@
       // The tabs of the section are a sidebar on a wide screen, under the navbar. A phone keeps them as tabs in the page head.
       // The sub-tabs of a tab stay in the page body. A detail page (an outlet) marks the tab that lists it.
       const activeRoute = exactTab ? route : parentRoute
-      const locked = item?.key === 'world' && !signedIn()
-      const sectionNav = item && item.tabs.length > 1 && !locked
+      const sectionNav = item && item.tabs.length > 1
         ? h('nav', { class: 'section-nav', 'aria-label': t(`nav.${item.key}`) }, h('div', { class: 'section-nav-inner' },
           h('ul', { class: 'section-nav-list' }, item.tabs.map(([key, r, subs]) => {
             const inTab = r === activeRoute || (subs || []).some(([, s]) => s === activeRoute)
