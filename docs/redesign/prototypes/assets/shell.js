@@ -41,8 +41,7 @@
     '/israel': 'israel-v2.html',
     '/gaza-language': 'language-v2.html',
     '/un-israel-palestine': 'un-israel-v2.html',
-    '/methodology': 'methodology.html',
-    '/login': 'login.html'
+    '/methodology': 'methodology.html'
   }
 
   // The sidebar has 6 items (APO-161: Media and Ownership are one item). The sub-pages of an item are tabs inside the page (shell-spec.md, "Navigation").
@@ -115,18 +114,100 @@
     return true
   }
   function signOut () { try { localStorage.removeItem(USER_KEY) } catch {} }
-  // The login page sends the visitor back to the page they came from. Only a page of the prototype is accepted.
-  const safeNext = (next) => (/^[a-z0-9-]+\.html(\?[^\s#]*)?(#[^\s]*)?$/i.test(next || '') ? next : 'index.html')
-  const loginHref = () => (location.pathname.endsWith('/login.html') ? hrefOf('/login') : `${hrefOf('/login')}?next=${encodeURIComponent(hereHref())}`)
-  // Αναλύσεις needs a log in. Its pages show the page head (the tabs) and a card: the lock, what is behind it, log in, sign up.
+
+  // The drawer of log in and sign up: it slides in from the right over a scrim. The page behind it is inert while it is open.
+  // After a log in the page draws again (remount), so the lock of Αναλύσεις opens without leaving the page.
+  let remount = () => {}
+  let authDrawer = null
+  function openAuth (view = 'login') {
+    if (authDrawer) authDrawer.close(false)
+    const app = document.getElementById('app')
+    const opener = document.activeElement
+    const title = h('h2', { class: 'auth-title', id: 'auth-title' })
+    const text = h('p', { class: 'auth-text' })
+    const body = h('div', { class: 'auth-body' })
+    const views = ['login', 'register']
+    const switchButtons = views.map((v) => h('button', { type: 'button', onClick: () => show(v, true) }, t(`shell.${v}`)))
+    const closeButton = h('button', { type: 'button', class: 'icon-button auth-close', 'aria-label': t('auth.close'), onClick: () => close() }, Icon('x-mark'))
+    const panel = h('aside', { class: 'auth-drawer', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'auth-title' },
+      h('div', { class: 'auth-head' }, h('div', { class: 'auth-switch', role: 'group', 'aria-label': t('auth.switch') }, switchButtons), closeButton),
+      h('span', { class: 'gate-icon' }, Icon('lock-closed', 'icon')), title, text, body)
+    const scrim = h('div', { class: 'auth-scrim', onClick: () => close() })
+
+    const field = (id, label, attrs) => {
+      const input = h('input', { id, ...attrs })
+      return [h('label', { for: id }, label, input), input]
+    }
+    function loginForm () {
+      const [userLabel, user] = field('auth-user', t('login.user'), { type: 'text', autocomplete: 'username', autocapitalize: 'none', spellcheck: 'false', required: true })
+      const [passwordLabel, password] = field('auth-password', t('login.password'), { type: 'password', autocomplete: 'current-password', required: true })
+      const error = h('p', { class: 'login-error', role: 'alert', hidden: true }, t('login.error'))
+      const form = h('form', { class: 'login-form', onSubmit: (e) => {
+        e.preventDefault()
+        if (signIn(user.value, password.value)) { close(false); remount(); return }
+        error.hidden = false
+        password.value = ''
+        password.focus()
+      } }, userLabel, passwordLabel, error, h('button', { type: 'submit', class: 'button button-primary' }, t('login.submit')))
+      return form
+    }
+    // Sign up has no accounts behind it in the prototype: the form shows that when it is sent.
+    function registerForm () {
+      const [nameLabel] = field('auth-name', t('register.name'), { type: 'text', autocomplete: 'name', required: true })
+      const [emailLabel] = field('auth-email', t('register.email'), { type: 'email', autocomplete: 'email', required: true })
+      const [passwordLabel] = field('auth-new-password', t('login.password'), { type: 'password', autocomplete: 'new-password', required: true })
+      const notice = h('p', { class: 'login-notice', role: 'status', hidden: true }, t('register.soon'))
+      return h('form', { class: 'login-form', onSubmit: (e) => { e.preventDefault(); notice.hidden = false } },
+        nameLabel, emailLabel, passwordLabel, notice, h('button', { type: 'submit', class: 'button button-primary' }, t('register.submit')))
+    }
+    function show (v, focus) {
+      switchButtons.forEach((b, i) => b.setAttribute('aria-pressed', String(views[i] === v)))
+      title.textContent = t(`${v}.title`)
+      text.textContent = t(`${v}.text`)
+      body.replaceChildren(v === 'login' ? loginForm() : registerForm())
+      if (focus) body.querySelector('input').focus()
+    }
+
+    function onKey (e) {
+      if (e.key === 'Escape') { e.preventDefault(); close(); return }
+      if (e.key !== 'Tab') return
+      const items = [...panel.querySelectorAll('button, input, a[href]')].filter((el) => !el.hidden && !el.disabled)
+      const first = items[0]
+      const last = items[items.length - 1]
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+    }
+    function close (restore = true) {
+      if (authDrawer?.panel !== panel) return
+      authDrawer = null
+      document.removeEventListener('keydown', onKey)
+      app.inert = false
+      panel.classList.remove('is-open')
+      scrim.classList.remove('is-open')
+      setTimeout(() => { panel.remove(); scrim.remove() }, reduceMotion.matches ? 0 : 220)
+      if (restore && opener?.isConnected) opener.focus({ preventScroll: true })
+    }
+
+    show(view, false)
+    document.body.append(scrim, panel)
+    app.inert = true
+    document.addEventListener('keydown', onKey)
+    authDrawer = { panel, close }
+    panel.getBoundingClientRect()
+    panel.classList.add('is-open')
+    scrim.classList.add('is-open')
+    body.querySelector('input').focus()
+  }
+
+  // Αναλύσεις needs a log in. Its pages show the page head and a card: the lock, what is behind it, log in, sign up.
   function SignInGate () {
     return h('section', { class: 'gate', 'aria-labelledby': 'gate-title' },
       h('div', { class: 'gate-card' },
         h('span', { class: 'gate-icon' }, Icon('lock-closed', 'icon')),
         h('h2', { class: 'gate-title', id: 'gate-title' }, t('gate.title')),
         h('p', { class: 'gate-text' }, t('gate.text')),
-        h('a', { class: 'button button-primary gate-login', href: loginHref() }, t('shell.login')),
-        h('p', { class: 'gate-register' }, t('gate.register'), ' ', h('a', { href: hrefOf('/register') }, t('shell.register')))))
+        h('button', { type: 'button', class: 'button button-primary gate-login', onClick: () => openAuth('login') }, t('shell.login')),
+        h('p', { class: 'gate-register' }, t('gate.register'), ' ', h('button', { type: 'button', class: 'link-button', onClick: () => openAuth('register') }, t('shell.register')))))
   }
 
   // Prototype only: the font candidates for the decision of the project lead. ?font= or the last choice sets the font.
@@ -528,17 +609,49 @@
             }))))
       }
 
-      // Log in and sign up. A visitor who is logged in sees the name of the account and "Αποσύνδεση". Sign up has no page in the prototype yet: it opens its row in the table of pages.
-      const authLinks = (cls) => {
+      // Log in and sign up open the drawer from the right. A visitor who is logged in sees the user icon on a wide screen: a menu with the profile and "Αποσύνδεση".
+      // The drawer of the menu of a phone shows the name and "Αποσύνδεση".
+      let closeUserMenu = null
+      const userMenu = (user) => {
+        const button = h('button', { type: 'button', class: 'user-button', 'aria-label': `${t('shell.account')}: ${user}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false' }, Icon('user-circle', 'icon'))
+        const logout = h('button', { type: 'button', role: 'menuitem', class: 'user-menu-item', onClick: () => { setOpen(false); signOut(); mount() } }, t('shell.logout'))
+        const profile = h('a', { role: 'menuitem', class: 'user-menu-item', href: hrefOf('/profile') }, t('shell.profile'))
+        const menu = h('div', { class: 'user-menu-list', role: 'menu', 'aria-label': t('shell.account'), hidden: true }, h('p', { class: 'user-menu-name' }, user), profile, logout)
+        const away = (e) => { if (!menu.parentElement.contains(e.target)) setOpen(false) }
+        function setOpen (open, focusFirst) {
+          menu.hidden = !open
+          button.setAttribute('aria-expanded', String(open))
+          document.removeEventListener('pointerdown', away, true)
+          closeUserMenu = null
+          if (!open) return
+          document.addEventListener('pointerdown', away, true)
+          closeUserMenu = () => setOpen(false)
+          if (focusFirst) profile.focus()
+        }
+        button.addEventListener('click', () => setOpen(menu.hidden))
+        button.addEventListener('keydown', (e) => { if (e.key === 'ArrowDown') { e.preventDefault(); setOpen(true, true) } })
+        menu.addEventListener('keydown', (e) => {
+          const items = [profile, logout]
+          const i = items.indexOf(document.activeElement)
+          if (e.key === 'Escape') { e.preventDefault(); setOpen(false); button.focus() }
+          else if (e.key === 'ArrowDown') { e.preventDefault(); items[(i + 1) % items.length].focus() }
+          else if (e.key === 'ArrowUp') { e.preventDefault(); items[(i - 1 + items.length) % items.length].focus() }
+          else if (e.key === 'Tab') setOpen(false)
+        })
+        return h('div', { class: 'user-menu' }, button, menu)
+      }
+      const authLinks = (cls, inDrawer = false) => {
         const user = currentUser()
+        const opener = (view) => () => { if (inDrawer) setDrawer(false, false); openAuth(view) }
+        if (user && !inDrawer) return h('div', { class: cls }, userMenu(user))
         if (user) {
           return h('div', { class: cls },
             h('span', { class: 'auth-user' }, user),
             h('button', { type: 'button', class: 'button auth-login', onClick: () => { signOut(); mount() } }, t('shell.logout')))
         }
         return h('div', { class: cls },
-          h('a', { class: 'button auth-login', href: loginHref() }, t('shell.login')),
-          h('a', { class: 'button button-primary auth-register', href: hrefOf('/register') }, t('shell.register')))
+          h('button', { type: 'button', class: 'button auth-login', onClick: opener('login') }, t('shell.login')),
+          h('button', { type: 'button', class: 'button button-primary auth-register', onClick: opener('register') }, t('shell.register')))
       }
 
       const logoLink = (cls) => h('a', { class: `logo-link ${cls}`, href: 'index.html' }, h('img', { class: 'logo-img', src: 'assets/logo.svg?v=6', alt: t('site.name'), width: 335, height: 141 }))
@@ -548,7 +661,7 @@
       const sidebar = h('nav', { class: 'sidebar', id: 'sidebar', 'aria-label': t('shell.nav') },
         h('div', { class: 'sidebar-logo' }, logoLink(''), closeButton),
         h('ul', { class: 'nav-list nav-main' }, mainLinks()),
-        authLinks('auth-links drawer-auth'),
+        authLinks('auth-links drawer-auth', true),
         h('div', { class: 'nav-footer' },
           h('ul', { class: 'nav-list', 'aria-label': t('section.footer') }, footerLinks()),
           h('div', { class: 'sidebar-tools' }, langSwitch(), themeSwitch(), fontSwitch())))
@@ -657,6 +770,7 @@
       render(content, { tabs: dash ? null : tabBar })
     }
 
+    remount = mount
     mount()
   }
 
@@ -703,5 +817,5 @@
     })) }))
   }
 
-  window.Shell = { signIn, currentUser, safeNext, start, routeAnchor, hrefOf, itemOf, placeOf, tree, PageHead, headerV2 }
+  window.Shell = { start, routeAnchor, hrefOf, itemOf, placeOf, tree, PageHead, headerV2 }
 })()
