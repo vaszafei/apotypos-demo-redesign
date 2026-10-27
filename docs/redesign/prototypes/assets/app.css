@@ -181,11 +181,11 @@ button, input, select { font: inherit; color: inherit; }
   .search-panel { top: var(--space-2); left: var(--space-2); right: var(--space-2); width: auto; max-height: calc(100dvh - 16px); }
 }
 
-/* Wide screens: the search floats in the top right corner of the screen and the bar behind it has no background and does not stay. Closed, it is only the icon;
-   on hover or focus it opens a few pixels to the left to show the word and the "/" key. */
+/* Wide screens: the search floats where it was, in the center of the page (the screen minus the sidebar), and the bar behind it has no background and does not stay.
+   Closed, it is only the icon; on hover or focus it opens a few pixels to both sides to show the word and the "/" key. */
 @media (min-width: 1024px) {
   .header-bar { position: static; background: none; backdrop-filter: none; }
-  .global-search { position: fixed; top: 14px; right: 28px; z-index: 40; margin: 0; }
+  .global-search { position: fixed; top: 14px; left: calc(var(--sidebar-width) + (100% - var(--sidebar-width)) / 2); transform: translateX(-50%); z-index: 40; margin: 0; }
   :root[data-header="v2"] .global-search { margin: 0; }
   .search-button {
     width: 40px; height: 40px; gap: 0; padding: 0 11px; justify-content: flex-start; overflow: hidden; border-radius: 12px; background: transparent;
