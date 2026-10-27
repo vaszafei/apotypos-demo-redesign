@@ -19,7 +19,7 @@
     return { byDay, rowsOf, detail, dates: stories.dates, issues: stories.issues }
   }
 
-  const STORIES = 8
+  const STORIES = 6
 
   // Everything the card says about one story of a day: the story of that rank, the outlets that ran it, and the stories of the day.
   function dayInfo (ix, d, rank = 0) {
@@ -118,11 +118,11 @@
       requestAnimationFrame(() => { list.scrollLeft = tile ? tile.offsetLeft - (list.clientWidth - tile.offsetWidth) / 2 : 0 })
     }
     paint()
-    const node = card('home-calendar', cardHead(t('home.days.title'), h('div', { class: 'home-month-nav' }, prev, label, next), t('home.days.info')), list)
+    const node = card('c-7 home-calendar', cardHead(t('home.days.title'), h('div', { class: 'home-month-nav' }, prev, label, next), t('home.days.info')), list)
     return { node, select (i) { current = i; month = dates[i].slice(0, 7); paint() } }
   }
 
-  // The topics of one day in the news: the articles, the share of the day, and an arrow on the share when it is more (▲) or less (▼) than in the days before (the 7 before, fewer at the start of the data).
+  // The topics of one day in the news, all of them in two columns, the first half on the left: the articles, the share of the day, and an arrow on the share when it is more (▲) or less (▼) than in the days before (the 7 before, fewer at the start of the data).
   function TopicsCard ({ home, day }) {
     const w = Math.min(7, day)
     const news = home.issues.map((x, k) => ({ x, k })).filter((r) => !r.x.soft)
@@ -136,7 +136,7 @@
       return { ...r, n: on(r.k), now, was, diff: w && beforeTotal ? now - was : 0 }
     }).filter((r) => r.n > 0).sort((a, b) => b.n - a.n)
     const head = cardHead(t('home.topics.title'), null, t('home.topics.note', { n: w }))
-    if (!rows.length) return card('c-7 home-topics', head, emptyText(t('home.topics.empty')))
+    if (!rows.length) return card('c-12 home-topics', head, emptyText(t('home.topics.empty')))
     const points = (v) => fmt.dec(Math.abs(v * 100))
     const arrow = (r) => {
       if (Number(points(r.diff)) === 0) return null
@@ -144,19 +144,20 @@
       const tip = t('home.topics.tip', { topic: name(r.x), now: fmt.pct(r.now), before: fmt.pct(r.was), diff: `${up ? '+' : '−'}${points(r.diff)}` })
       return h('span', { class: `home-arrow ${up ? 'is-up' : 'is-down'}`, title: tip, role: 'img', 'aria-label': tip }, up ? '▲' : '▼')
     }
-    return card('c-7 home-topics', head,
-      UI.DataTable({
-        rankColumn: true, emptyText: t('home.topics.empty'), pageSize: 10, moreStep: 10,
-        rows,
-        columns: [
-          { label: t('home.col.issue'), render: (r) => UI.EntityLink({ type: 'topic', key: String(r.k), label: name(r.x) }) },
-          { label: t('home.col.articles'), num: true, render: (r) => fmt.int(r.n) },
-          { label: t('home.col.share'), num: true, render: (r) => h('span', { class: 'home-share' }, arrow(r), fmt.pct(r.now)) }
-        ]
-      }))
+    const table = (part) => UI.DataTable({
+      emptyText: t('home.topics.empty'), pageSize: part.length,
+      rows: part,
+      columns: [
+        { label: t('home.col.issue'), render: (r) => UI.EntityLink({ type: 'topic', key: String(r.k), label: name(r.x) }) },
+        { label: t('home.col.articles'), num: true, render: (r) => fmt.int(r.n) },
+        { label: t('home.col.share'), num: true, render: (r) => h('span', { class: 'home-share' }, arrow(r), fmt.pct(r.now)) }
+      ]
+    })
+    const half = Math.ceil(rows.length / 2)
+    return card('c-12 home-topics', head, h('div', { class: 'home-topics-cols' }, table(rows.slice(0, half)), table(rows.slice(half))))
   }
 
-  // The quick access: four buttons in a 2×2 grid, each with the name of the page, a line about it and an arrow.
+  // The quick access: four small buttons in a 2×2 grid, each with the name of the page, a short line and an arrow.
   const QUICK = [['speeches', '/speeches', 'tab.world.speeches'], ['pi', '/narrative', 'tab.world.pi'], ['politics', '/elections', 'nav.politics'], ['file', '/contradictions', 'tab.people.file']]
   function QuickCard () {
     return card('c-5 home-quick', cardHead(t('home.quick.title'), null, t('home.quick.info')),

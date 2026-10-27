@@ -72,8 +72,10 @@ a.home-stack-part { cursor: pointer; }
 .home-arrow.is-up { color: var(--emph-more); }
 .home-arrow.is-down { color: var(--emph-less); }
 .home-quick { display: flex; flex-direction: column; }
-.home-quick .home-links { flex: 1; grid-auto-rows: 1fr; }
-.home-quick .home-links a { padding: 16px 18px; }
-.home-quick .home-link-main { gap: 6px; }
-.home-quick .home-link-main strong { font-size: 18px; }
-.home-quick .home-link-main .muted-text { font-size: var(--text-small); }
+.home-quick .home-links { flex: 1; grid-auto-rows: 1fr; gap: var(--space-2); }
+.home-quick .home-links a { padding: 8px 12px; }
+.home-quick .home-link-main { gap: 1px; }
+.home-quick .home-link-main strong { font-size: var(--text-small); }
+.home-quick .home-link-main .muted-text { font-size: var(--text-caption); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.home-topics-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 var(--space-6); align-items: start; }
+@media (max-width: 899px) { .home-topics-cols { grid-template-columns: minmax(0, 1fr); } }
