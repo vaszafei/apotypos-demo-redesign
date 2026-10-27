@@ -43,7 +43,6 @@ a.home-stack-part { cursor: pointer; }
 .home-day-btn:hover { border-color: var(--ink); }
 .home-day-btn.is-weekend { background: var(--surface-page); }
 .home-day-btn[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface-raised)); }
-.home-day-btn[aria-pressed="true"] .home-day-num { color: var(--accent); }
 .home-day-dow { font-size: var(--text-caption); text-transform: capitalize; color: var(--text-secondary); }
 .home-day-num { font-size: 20px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .home-day-n { margin-top: 4px; font-size: var(--text-caption); font-weight: 600; font-variant-numeric: tabular-nums; }

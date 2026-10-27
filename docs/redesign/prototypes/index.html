@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="assets/tokens.css?v=10">
   <link rel="stylesheet" href="assets/app.css?v=29">
   <link rel="stylesheet" href="assets/dash.css?v=80">
-  <link rel="stylesheet" href="assets/home.css?v=24">
+  <link rel="stylesheet" href="assets/home.css?v=25">
 </head>
 <body>
   <div id="app"></div>
@@ -19,7 +19,7 @@
   <script src="assets/components.js?v=11"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
-  <script src="assets/home.js?v=19"></script>
+  <script src="assets/home.js?v=20"></script>
   <script src="assets/shell.js?v=47"></script>
   <script src="data/home.js"></script>
   <script src="data/stories.js?v=1"></script>
@@ -80,33 +80,20 @@
           // The stories of the day. A pick of a day in the calendar or the chart, or of a story in the list, draws this card again.
           const dayCard = () => Home.DayCard(ix ? Home.dayInfo(ix, selected, rank) : null, { date: dates[selected], onStory: (r) => { rank = r; redraw() } })
           let day = dayCard()
-          const redraw = () => { const next = dayCard(); day.replaceWith(next); day = next; fit() }
+          const redraw = () => { const next = dayCard(); day.replaceWith(next); day = next }
 
           const calendar = Home.Calendar({ dates, totals, selected, onPick: (i) => pick(i, 'calendar') })
 
           const days = dates.slice(i0, i1 + 1)
           const daily = totals.slice(i0, i1 + 1)
           const avg = collected / len
-          // Side by side, the chart takes the height that the stories of the day leave, so the two cards end level.
-          const BASE = 263
-          let chartHeight = BASE
           const chart = () => UI.BarChart({
-            dates: days, values: daily, label: t('home.daily.title'), height: chartHeight, picked: selected - i0, onPick: (j) => pick(i0 + j, 'chart'),
+            dates: days, values: daily, label: t('home.daily.title'), height: 263, picked: selected - i0, onPick: (j) => pick(i0 + j, 'chart'),
             reference: { value: avg, label: t('home.daily.avg', { n: fmt.int(Math.round(avg)) }) },
             tooltipOf: (i) => `${fmt.date(days[i])}: ${fmt.int(daily[i])}`
           })
           const chartBody = h('div', {}, chart())
           const dailyCard = card('c-7', cardHead(t('home.daily.title'), null, t('home.daily.info')), chartBody)
-
-          const fit = () => {
-            chartHeight = BASE
-            chartBody.replaceChildren(chart())
-            requestAnimationFrame(() => requestAnimationFrame(() => {
-              if (!window.matchMedia('(min-width: 1280px)').matches || !dailyCard.isConnected) return
-              const slack = dailyCard.getBoundingClientRect().bottom - parseFloat(getComputedStyle(dailyCard).paddingBottom) - chartBody.getBoundingClientRect().bottom
-              if (slack > 4) { chartHeight = BASE + Math.floor(slack); chartBody.replaceChildren(chart()) }
-            }))
-          }
 
           const topicsCard = () => Home.TopicsCard({ home: data, day: selected })
           let topics = topicsCard()
@@ -119,13 +106,13 @@
             topics.replaceWith(next)
             topics = next
             if (from === 'chart') calendar.select(i)
+            else chartBody.replaceChildren(chart())
           }
 
-          const main = h('div', { class: 'c-7 card-col card-col-fill' }, calendar.node, dailyCard)
-          const aside = h('div', { class: 'c-5 card-col card-col-fill' }, day)
+          const main = h('div', { class: 'c-7 card-col' }, calendar.node, dailyCard)
+          const aside = h('div', { class: 'c-5 card-col' }, day)
           content.replaceChildren(bar(),
             h('div', { class: 'dash-grid home-grid' }, main, aside, topics, Home.QuickCard()), protoNote())
-          fit()
         }
         draw()
       }

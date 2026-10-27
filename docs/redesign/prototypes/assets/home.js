@@ -19,7 +19,7 @@
     return { byDay, rowsOf, detail, dates: stories.dates, issues: stories.issues }
   }
 
-  const STORIES = 7
+  const STORIES = 8
 
   // Everything the card says about one story of a day: the story of that rank, the outlets that ran it, and the stories of the day.
   function dayInfo (ix, d, rank = 0) {
