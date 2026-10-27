@@ -113,6 +113,8 @@
       return [h('span', { class: `home-arrow ${v > 0 ? 'is-up' : 'is-down'}`, 'aria-hidden': 'true' }, v > 0 ? '▲' : '▼'), ' ', size]
     }
 
+    // The scroll position that puts a tile in the middle of the strip, from the boxes on screen.
+    const centered = (tile) => tile.getBoundingClientRect().left - list.getBoundingClientRect().left + list.scrollLeft - (list.clientWidth - tile.offsetWidth) / 2
     let shown = null
     const buttons = new Map()
     const calm = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -121,7 +123,7 @@
       if (shown === month) {
         buttons.forEach((btn, i) => btn.setAttribute('aria-pressed', String(i === current)))
         const tile = buttons.get(current)
-        if (tile) list.scrollTo({ left: tile.offsetLeft - (list.clientWidth - tile.offsetWidth) / 2, behavior: calm.matches ? 'auto' : 'smooth' })
+        if (tile) list.scrollTo({ left: centered(tile), behavior: calm.matches ? 'auto' : 'smooth' })
         return
       }
       shown = month
@@ -147,7 +149,7 @@
       list.classList.add('is-swap')
       // The picked day is in the middle of the strip when it is in this month; any other month starts at its first day.
       const tile = tiles.get(current)?.firstChild
-      requestAnimationFrame(() => { list.scrollLeft = tile ? tile.offsetLeft - (list.clientWidth - tile.offsetWidth) / 2 : 0 })
+      requestAnimationFrame(() => { list.scrollLeft = tile ? centered(tile) : 0 })
     }
     paint()
     const node = card('home-calendar', cardHead(t('home.days.title'), h('div', { class: 'home-month-nav' }, prev, label, next), t('home.days.info')), list)

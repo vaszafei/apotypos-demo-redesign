@@ -81,9 +81,9 @@ a.home-stack-part { cursor: pointer; }
 
 /* A new day or a new story comes in with a short fade and a small rise. The frame of the card and its title stay. */
 .home-days.is-swap { animation: m-rise var(--motion-base) var(--ease-out); }
-.is-swap:not(.is-swap-story) > :not(.dcard-head), .is-swap:not(.is-swap-story) .home-date { animation: m-rise var(--motion-base) var(--ease-out) both; }
-.is-swap-story > :is(.home-day-story, .home-day-meta, .home-block) { animation: m-rise var(--motion-base) var(--ease-out) both; }
-.is-swap-story li.is-current { animation: m-fade var(--motion-base) var(--ease-out) both; }
-.is-swap .home-day-meta { animation-delay: var(--motion-stagger); }
-.is-swap .home-block { animation-delay: calc(2 * var(--motion-stagger)); }
-.is-swap .home-stories { animation-delay: calc(3 * var(--motion-stagger)); }
+.dcard.is-swap:not(.is-swap-story) > :not(.dcard-head), .dcard.is-swap:not(.is-swap-story) .home-date { animation: m-rise var(--motion-base) var(--ease-out) both; }
+.dcard.is-swap-story > :is(.home-day-story, .home-day-meta, .home-block) { animation: m-rise var(--motion-base) var(--ease-out) both; }
+.dcard.is-swap-story li.is-current { animation: m-fade var(--motion-base) var(--ease-out) both; }
+.dcard.is-swap .home-day-meta { animation-delay: var(--motion-stagger); }
+.dcard.is-swap .home-block { animation-delay: calc(2 * var(--motion-stagger)); }
+.dcard.is-swap .home-stories { animation-delay: calc(3 * var(--motion-stagger)); }
