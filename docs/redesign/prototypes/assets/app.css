@@ -659,7 +659,7 @@ button, input, select { font: inherit; color: inherit; }
   .content { padding-left: var(--space-5); padding-right: var(--space-5); }
   .dash-bar { top: var(--navbar-height); }
 }
-/* The pages of a section: a sidebar under the navbar (like fundamenta.gr). The label is the section, then its tabs; the sub-tabs are indented under their tab. */
+/* The pages of a section: a sidebar under the navbar (like fundamenta.gr). The label is the section, then its tabs. The sub-tabs of a tab are tabs in the page body. */
 .page-body { display: flex; flex: 1; min-width: 0; }
 .page-main { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .section-nav { display: none; }
@@ -667,17 +667,14 @@ button, input, select { font: inherit; color: inherit; }
   .section-nav { display: block; flex: none; width: 232px; border-right: 1px solid var(--border); background: var(--surface-sidebar); }
   .section-nav-inner { position: sticky; top: var(--navbar-height); max-height: calc(100vh - var(--navbar-height)); overflow-y: auto; padding: var(--space-5) var(--space-3); }
   .section-nav-label { margin: 0 0 var(--space-2); padding: 0 var(--space-3); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
-  .section-nav-list, .section-nav-subs { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
-  .section-nav-link, .section-nav-sub { display: block; padding: 8px var(--space-3); border-radius: 6px; font-size: var(--text-small); line-height: 1.4; color: var(--sidebar-text); text-decoration: none; }
-  .section-nav-sub { padding: 6px var(--space-3) 6px var(--space-5); font-size: 13px; color: var(--text-secondary); }
-  .section-nav-link:hover, .section-nav-sub:hover { background: var(--sidebar-hover-bg); color: var(--sidebar-active-text); }
+  .section-nav-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .section-nav-link { display: block; padding: 8px var(--space-3); border-radius: 6px; font-size: var(--text-small); line-height: 1.4; color: var(--sidebar-text); text-decoration: none; }
+  .section-nav-link:hover { background: var(--sidebar-hover-bg); color: var(--sidebar-active-text); }
   .section-nav [aria-current] { color: var(--sidebar-active-text); font-weight: 600; }
-  .section-nav .section-nav-link[aria-current], .section-nav .section-nav-sub[aria-current] { box-shadow: inset 3px 0 0 var(--ink); border-radius: 0 6px 6px 0; background: var(--sidebar-hover-bg); }
-  .section-nav-subs { margin-top: 2px; }
-  .section-nav-parent.is-open { color: var(--sidebar-active-text); font-weight: 600; }
-  /* The tabs are in the sidebar, so the page head keeps only the actions and the filters. */
-  :root[data-header="v2"] .page-tabs { display: none; }
-  :root[data-header="v2"] .page-head:not(:has(.page-head-actions, .page-filters, .dash-error)) { display: block; margin: 0; }
+  .section-nav .section-nav-link[aria-current] { box-shadow: inset 3px 0 0 var(--ink); border-radius: 0 6px 6px 0; background: var(--sidebar-hover-bg); }
+  /* The tabs are in the sidebar, so the page head keeps the sub-tabs, the actions and the filters. */
+  :root[data-header="v2"] .page-tabs .section-tabs { display: none; }
+  :root[data-header="v2"] .page-head:not(:has(.page-head-actions, .page-filters, .dash-error, .sub-tabs)) { display: block; margin: 0; }
 }
 /* A narrower desktop: the search is a button with the icon and the key. */
 @media (min-width: 1024px) and (max-width: 1279px) {

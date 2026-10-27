@@ -573,21 +573,15 @@
         h('nav', { class: 'header-nav', 'aria-label': t('shell.nav') }, h('ul', { class: 'nav-list nav-main' }, mainLinks())),
         GlobalSearch(),
         h('div', { class: 'header-actions' }, langSwitch(), authLinks('auth-links')))
-      // The pages of the section (its tabs and sub-tabs) are a sidebar on a wide screen, under the navbar. A phone keeps them as tabs in the page head.
-      // A detail page (an outlet) marks the tab that lists it.
+      // The tabs of the section are a sidebar on a wide screen, under the navbar. A phone keeps them as tabs in the page head.
+      // The sub-tabs of a tab stay in the page body. A detail page (an outlet) marks the tab that lists it.
       const activeRoute = exactTab ? route : parentRoute
-      const navLinkOf = (key, r, sub) => {
-        const current = r === route ? 'page' : r === activeRoute ? 'true' : null
-        return h('a', { class: sub ? 'section-nav-sub' : 'section-nav-link', href: hrefOf(r), 'aria-current': current }, t(`tab.${item.key}.${key}`))
-      }
       const sectionNav = item && item.tabs.length > 1
         ? h('nav', { class: 'section-nav', 'aria-label': t(`nav.${item.key}`) }, h('div', { class: 'section-nav-inner' },
           h('p', { class: 'section-nav-label' }, t(`nav.${item.key}`)),
           h('ul', { class: 'section-nav-list' }, item.tabs.map(([key, r, subs]) => {
             const inTab = r === activeRoute || (subs || []).some(([, s]) => s === activeRoute)
-            return h('li', {},
-              subs ? h('a', { class: `section-nav-link section-nav-parent${inTab ? ' is-open' : ''}`, href: hrefOf(r) }, t(`tab.${item.key}.${key}`)) : navLinkOf(key, r, false),
-              subs ? h('ul', { class: 'section-nav-subs' }, subs.map(([k, s]) => h('li', {}, navLinkOf(k, s, true)))) : null)
+            return h('li', {}, h('a', { class: 'section-nav-link', href: hrefOf(r), 'aria-current': inTab ? (route === r || (subs || []).some(([, s]) => s === route) ? 'page' : 'true') : null }, t(`tab.${item.key}.${key}`)))
           }))))
         : null
       const content = h('main', { class: 'content', id: 'content' })
