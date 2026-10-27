@@ -20,7 +20,6 @@
   }
 
   const STORIES = 6
-  const SLICES = 8
 
   // Everything the card says about one story of a day: the story of that rank, the outlets that ran it, and the stories of the day.
   function dayInfo (ix, d, rank = 0) {
@@ -37,7 +36,7 @@
     return { d, date, story: s, n, rank, topic: ix.issues[s.issue], outlets, list: list.slice(0, STORIES) }
   }
 
-  // A thin horizontal bar of the articles of the story: one part for each of the largest outlets, from the left, in the color of its group, and one gray part for the others.
+  // A thin horizontal bar of the articles of the story: one part for each outlet, the largest from the left, in the color of its group.
   // The line under it says the total, and names the outlet of the part under the mouse (or in focus). A part opens the page of its outlet.
   function OutletStack (parts, { total, count }) {
     const panel = h('div', { class: 'home-stack-panel', 'aria-live': 'polite' })
@@ -66,10 +65,7 @@
     if (!info) return card('c-5 home-day', head, emptyText(t('home.day.empty')))
     const { story, topic } = info
     const total = sum(info.outlets.map((o) => o.n))
-    const top = info.outlets.slice(0, SLICES)
-    const rest = info.outlets.slice(SLICES)
-    const slices = top.map((o) => ({ name: o.name, group: o.group, n: o.n, color: groupColor(o.group), slug: o.slug }))
-    if (rest.length) slices.push({ name: t('home.day.rest', { n: rest.length }), group: null, n: sum(rest.map((o) => o.n)), color: 'var(--bar-muted)' })
+    const slices = info.outlets.map((o) => ({ name: o.name, group: o.group, n: o.n, color: groupColor(o.group), slug: o.slug }))
     const outlets = slices.length
       ? h('div', { class: 'home-block' }, h('p', { class: 'home-label' }, t('home.day.outlets')), OutletStack(slices, { total, count: info.outlets.length }))
       : null
