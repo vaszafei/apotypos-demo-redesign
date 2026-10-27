@@ -229,116 +229,14 @@
       h('a', { class: 'home-hero-more', href: '#home-today' }, t('home.hero.more'), Icon('chevron-down', 'icon icon-sm')))
   }
 
-  // The masthead of the hero, played once on each visit: it types "ΑΠΟΤΥΠΩΜΑ ΤΥΠΟΥ", a "/" cuts in and the letters change to the logo "ΑΠΟΤ/ΥΠΟΣ",
-  // then the "/" moves right, the name closes up and the line ends "ΑΠΟΤΥΠΟΣ / ΠΑΡΑΤΗΡΗΤΗΡΙΟ ΕΛΛΗΝΙΚΩΝ ΜΜΕ".
-  // Each letter is a span with a key: a letter that stays slides to its new place (FLIP), a new one types in, an old one fades out.
-  // An invisible copy of the last line keeps the height, so the page under it does not move. With reduced motion the last line shows at once.
-  const MAST_FROM = 'ΑΠΟΤΥΠΩΜΑ ΤΥΠΟΥ'
-  const MAST_GLYPHS = 'ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ'
+  // The masthead of the hero: "ΑΠΟΤΥΠΟΣ / ΠΑΡΑΤΗΡΗΤΗΡΙΟ ΕΛΛΗΝΙΚΩΝ ΜΜΕ". On each visit the name rises in, the "/" draws from the top and the line after it follows (CSS).
   function Masthead () {
+    const brand = t('site.name').toLocaleUpperCase('el')
     const tail = t('home.hero.eyebrow').toLocaleUpperCase(App.locale)
-    const keyed = (text, prefix) => [...text].map((c, i) => ({ k: `${prefix}${i}`, c }))
-    const name = [['a0', 'Α'], ['a1', 'Π'], ['a2', 'Ο'], ['a3', 'Τ'], ['a4', 'Υ'], ['a5', 'Π'], ['a6', 'Ο'], ['a7', 'Σ']].map(([k, c]) => ({ k, c }))
-    const slash = { k: 'sl', c: '/' }
-    const steps = [
-      keyed(MAST_FROM, 'a'),
-      [...name.slice(0, 4), slash, ...name.slice(4)],
-      [...name, { k: 's1', c: ' ' }, slash, { k: 's2', c: ' ' }, ...keyed(tail, 't')]
-    ]
-    const last = steps[steps.length - 1]
-    const line = h('span', { class: 'mast-line', 'aria-hidden': 'true' })
-    const sizer = h('span', { class: 'mast-line mast-sizer', 'aria-hidden': 'true' })
-    const caret = h('span', { class: 'mast-caret', 'aria-hidden': 'true' })
-    const spans = new Map()
-    const node = h('h1', { class: 'home-mast', id: 'home-hero-title' }, h('span', { class: 'visually-hidden' }, `${t('site.name')} / ${t('home.hero.eyebrow')}`), sizer, line)
-
-    const span = (x) => {
-      if (!spans.has(x.k)) spans.set(x.k, h('span', { class: x.c === '/' ? 'mast-ch mast-slash' : 'mast-ch' }, x.c))
-      return spans.get(x.k)
-    }
-    // The words do not break inside; the line breaks only at the spaces.
-    function words (tokens, make) {
-      const out = []
-      let word = []
-      const close = () => { if (word.length) { if (out.length) out.push(' '); out.push(h('span', { class: 'mast-word' }, word)) } word = [] }
-      tokens.forEach((x) => { if (x.c === ' ') close(); else word.push(make(x)) })
-      close()
-      return out
-    }
-    sizer.append(...words(last, (x) => h('span', { class: x.c === '/' ? 'mast-ch mast-slash' : 'mast-ch' }, x.c)))
-
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      line.append(...words(last, span))
-      return node
-    }
-
-    const ease = 'cubic-bezier(0.2, 0.7, 0.2, 1)'
-    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-    const caretTo = (el) => {
-      const box = line.getBoundingClientRect()
-      const r = el.getBoundingClientRect()
-      caret.style.transform = `translate(${r.right - box.left + 2}px, ${r.top - box.top}px)`
-    }
-    // A letter that changes runs through a few letters first.
-    function scramble (el, to, ms = 420) {
-      const end = performance.now() + ms
-      const tick = () => {
-        if (performance.now() >= end) { el.textContent = to; return }
-        el.textContent = MAST_GLYPHS[Math.floor(Math.random() * MAST_GLYPHS.length)]
-        setTimeout(tick, 60)
-      }
-      tick()
-    }
-
-    async function to (tokens, { type = 55 } = {}) {
-      const keys = new Set(tokens.map((x) => x.k))
-      const gone = [...spans].filter(([k]) => !keys.has(k))
-      if (gone.length) {
-        await Promise.all(gone.map(([, el], i) => el.animate([{ opacity: 1 }, { opacity: 0, transform: 'translateY(-0.18em)' }],
-          { duration: 220, delay: (gone.length - 1 - i) * 22, easing: 'ease-in', fill: 'forwards' }).finished))
-        gone.forEach(([k]) => spans.delete(k))
-      }
-      const before = new Map([...spans].map(([k, el]) => [k, el.getBoundingClientRect()]))
-      const fresh = tokens.filter((x) => x.c !== ' ' && !spans.has(x.k))
-      fresh.forEach((x) => { span(x).style.opacity = '0' })
-      line.replaceChildren(...words(tokens, span), caret)
-      before.forEach((r, k) => {
-        const el = spans.get(k)
-        const n = el.getBoundingClientRect()
-        const dx = r.left - n.left
-        const dy = r.top - n.top
-        if (dx || dy) el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], { duration: 620, easing: ease })
-      })
-      tokens.forEach((x) => { const el = spans.get(x.k); if (before.has(x.k) && el.textContent !== x.c) scramble(el, x.c) })
-      // The "/" cuts in from the top, like a stroke of the pen. The letters type in from the left.
-      for (const x of fresh) {
-        const el = spans.get(x.k)
-        el.style.opacity = ''
-        if (x.c === '/') {
-          el.animate([{ clipPath: 'inset(0 0 100% 0)', opacity: 1 }, { clipPath: 'inset(0 0 0 0)', opacity: 1 }], { duration: 380, easing: ease })
-          await sleep(160)
-          continue
-        }
-        el.animate([{ opacity: 0, transform: 'translateY(0.22em)' }, { opacity: 1, transform: 'none' }], { duration: 240, easing: ease })
-        caretTo(el)
-        await sleep(type)
-      }
-      const end = [...line.querySelectorAll('.mast-ch')].pop()
-      if (end) caretTo(end)
-    }
-
-    requestAnimationFrame(async () => {
-      line.append(caret)
-      await sleep(350)
-      await to(steps[0], { type: 70 })
-      await sleep(750)
-      await to(steps[1])
-      await sleep(1300)
-      await to(steps[2], { type: 32 })
-      await sleep(900)
-      caret.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, fill: 'forwards' }).finished.then(() => caret.remove())
-    })
-    return node
+    return h('h1', { class: 'home-mast', id: 'home-hero-title', 'aria-label': `${t('site.name')} / ${t('home.hero.eyebrow')}` },
+      h('span', { class: 'mast-part mast-name', 'aria-hidden': 'true' }, brand),
+      h('span', { class: 'mast-slash', 'aria-hidden': 'true' }, '/'),
+      h('span', { class: 'mast-part mast-tail', 'aria-hidden': 'true' }, tail))
   }
 
   // The silhouette of the hero: the articles of each day as a smooth area along the bottom. It only decorates.
