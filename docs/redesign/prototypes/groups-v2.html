@@ -14,7 +14,7 @@
   <script src="assets/icons.js?v=6"></script>
   <script src="assets/messages.js?v=32"></script>
   <script src="assets/messages-v2.js?v=47"></script>
-  <script src="assets/components.js?v=13"></script>
+  <script src="assets/components.js?v=14"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=17"></script>
   <script src="assets/vendor/d3-hierarchy.min.js"></script>
@@ -41,7 +41,7 @@
     function VolumeChart ({ dates, stacks, order }) {
       const totals = stacks.map((s) => s.reduce((a, b) => a + b.value, 0))
       return UI.BarChart({
-        dates, height: 300, label: t('g2.volume.title'),
+        dates, label: t('g2.volume.title'),
         // The dashed line is the average of the days with no gap of the crawler.
         reference: ((full) => ({ value: full.reduce((a, b) => a + b, 0) / (full.length || 1), label: t('find.avg', { n: fmt.int(Math.round(full.reduce((a, b) => a + b, 0) / (full.length || 1))) }) }))(totals.filter((v) => v >= GAP)),
         series: order.map((o, k) => ({ name: o.label, color: o.color, values: stacks.map((day) => day[k].value) })),

@@ -16,7 +16,7 @@
   <script src="assets/messages.js?v=32"></script>
   <script src="assets/messages-v2.js?v=47"></script>
   <script src="assets/messages-politics.js?v=10"></script>
-  <script src="assets/components.js?v=13"></script>
+  <script src="assets/components.js?v=14"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=17"></script>
   <script src="assets/politics.js?v=10"></script>
@@ -67,7 +67,6 @@
             dates: d.daily.map((x) => x.date),
             values: d.daily.map((x) => x.gaza),
             markers: marks,
-            height: 240,
             tooltipOf: (i) => { const x = d.daily[i]; return t('gz.daily.tip', { date: fmt.date(x.date, { weekday: 'short', day: 'numeric', month: 'short' }), n: fmt.int(x.gaza), per: fmt.dec(x.per1k) }) },
             label: t('gz.daily.title')
           }),

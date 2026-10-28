@@ -15,11 +15,11 @@
   <script src="assets/messages.js?v=32"></script>
   <script src="assets/messages-v2.js?v=47"></script>
   <script src="assets/messages-spread.js?v=16"></script>
-  <script src="assets/components.js?v=13"></script>
+  <script src="assets/components.js?v=14"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=17"></script>
   <script src="assets/spread.js?v=6"></script>
-  <script src="assets/entity-cards.js?v=7"></script>
+  <script src="assets/entity-cards.js?v=9"></script>
   <script src="assets/shell.js?v=50"></script>
   <script src="data/home.js"></script>
   <script src="data/stories.js?v=1"></script>
@@ -132,7 +132,7 @@
         })
 
         const dailyCard = card('c-8', cardHead(t('topic2.daily.title'), null, t('topic2.daily.info')),
-          Entity.DailyChart({ dates, series: [{ name: name(issue), color: 'var(--series-news)', values: daily }], height: 300 }))
+          Entity.DailyChart({ dates, series: [{ name: name(issue), color: 'var(--series-news)', values: daily }] }))
 
         // The outlets: the share of the articles of an outlet in this topic, against the share of the topic in all outlets. An outlet needs 200 articles in stories.
         const usual = rowsAll ? rowsTopic / rowsAll : 0

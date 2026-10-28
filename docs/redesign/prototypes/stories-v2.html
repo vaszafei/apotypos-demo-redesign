@@ -17,7 +17,7 @@
   <script src="assets/messages-v2.js?v=47"></script>
   <script src="assets/messages-spread.js?v=16"></script>
   <script src="assets/messages-mme.js?v=20"></script>
-  <script src="assets/components.js?v=13"></script>
+  <script src="assets/components.js?v=14"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=17"></script>
   <script src="assets/mme.js?v=20"></script>
@@ -55,7 +55,7 @@
     function DailyChart ({ series, dates }) {
       const totals = dates.map((_, i) => series.reduce((sum, x) => sum + x.values[i], 0))
       return UI.BarChart({
-        dates, series, height: 190, label: t('stories.daily.aria'),
+        dates, series, label: t('stories.daily.aria'),
         reference: { value: totals.reduce((a, b) => a + b, 0) / (totals.length || 1), label: t('find.avg', { n: fmt.int(Math.round(totals.reduce((a, b) => a + b, 0) / (totals.length || 1))) }) },
         tooltipOf: (i) => { const parts = series.filter((x) => x.values[i]).map((x) => `${x.name} ${x.values[i]}`).join(' · '); return `${t('stories.daily.tip', { date: fmt.date(dates[i]), n: fmt.int(totals[i]) })}${parts ? `: ${parts}` : ''}` }
       })

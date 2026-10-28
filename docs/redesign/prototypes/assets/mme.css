@@ -160,3 +160,10 @@
 .pair-dbar .dbar + .dbar .dbar-mid { top: -1px; bottom: -1px; }
 .pair-dbar .dbar + .dbar .dbar-seg { border-radius: 2px; }
 .pair-dbar .dbar-mid { background: var(--text-secondary); opacity: 0.55; }
+
+/* Μέσα › Επισκόπηση: the table of all the outlets and, on its right, the share of each group and of its outlets. On a narrow screen the sunburst goes under the table. */
+.rank-sun { display: grid; grid-template-columns: minmax(440px, 1fr) minmax(0, 520px); gap: var(--space-6); align-items: center; }
+.rank-sun > .sun-wrap { padding: var(--space-2) 0; }
+.rank-sun .sun-wrap .donut { width: 260px; height: 260px; }
+@media (max-width: 519px) { .rank-sun .sun-wrap .donut { width: 210px; height: 210px; } }
+@media (max-width: 1279px) { .rank-sun { grid-template-columns: minmax(0, 1fr); } }

@@ -11,10 +11,10 @@
   const scaleOf = (rows) => Math.max(0.05, ...rows.map((r) => Math.abs(r.value - r.usual)))
 
   // The daily columns of Ιδιοκτησία (UI.BarChart). series: [{ name, color, values }], from the bottom to the top.
-  function DailyChart ({ dates, series, height = 220 }) {
+  function DailyChart ({ dates, series }) {
     const totals = dates.map((_, i) => series.reduce((a, x) => a + (x.values[i] || 0), 0))
     return UI.BarChart({
-      dates, series, height, label: t('outlet2.daily.aria'),
+      dates, series, label: t('outlet2.daily.aria'),
       tooltipOf: (i) => { const list = series.filter((x) => x.values[i] > 0).reverse().map((x) => `${x.name} ${fmt.int(x.values[i])}`).join(' · '); return `${t('story.daily.tip', { date: fmt.date(dates[i]), n: fmt.int(totals[i]) })}${list ? `: ${list}` : ''}` }
     })
   }
@@ -22,7 +22,7 @@
   // The card of the daily columns with a switch for the color of the columns: news (the analysed articles) or topics (the articles in stories).
   // daily[i] is [analysed, news] for day i. topicDays maps the index of an issue to its articles per day. The 8 largest topics have a color, the others are one gray part.
   const TOP_TOPICS = 8
-  function DailyCard ({ dates, daily, topicDays, issues, info, topics = true, height }) {
+  function DailyCard ({ dates, daily, topicDays, issues, info, topics = true }) {
     const { card, cardHead, SLOTS, NO_GROUP } = window.Dash
     const name = (x) => x[window.App.locale] || x.el
     const ranked = [...topicDays].map(([issue, values]) => ({ issue, values, total: values.reduce((a, b) => a + b, 0) })).sort((a, b) => b.total - a.total)
@@ -39,7 +39,7 @@
     const tools = h('div', {})
     const draw = () => {
       const m = modes[mode]
-      body.replaceChildren(DailyChart({ dates, series: m, height }), UI.Legend(m.map((x) => ({ label: x.name, color: x.color }))))
+      body.replaceChildren(DailyChart({ dates, series: m }), UI.Legend(m.map((x) => ({ label: x.name, color: x.color }))))
       if (topics) tools.replaceChildren(UI.SegmentedControl({ label: t('outlet2.daily.mode'), value: mode, onChange: (v) => { mode = v; draw() },
         options: [{ value: 'news', label: t('outlet2.daily.mode.news') }, { value: 'topic', label: t('outlet2.daily.mode.topic') }] }))
     }
@@ -123,17 +123,22 @@
     return svg
   }
 
-  // The card of Άρθρα ανά όμιλο: the groups with their outlets under each name on the left, the sunburst on the right.
-  function GroupsCard ({ title, info, groups, total, cls = 'c-6' }) {
-    const { card, cardHead } = window.Dash
-    return card(cls, cardHead(title, null, info), h('div', { class: 'donut-wrap sun-wrap' },
+  // The groups with their outlets under each name on the left, the sunburst on the right. Μέσα › Επισκόπηση has it in the card of all the outlets.
+  function GroupsSun ({ groups, total }) {
+    return h('div', { class: 'donut-wrap sun-wrap' },
       h('ul', { class: 'rows rows-groups rows-owners' }, groups.map((g) => h('li', {},
         h('span', { class: g.key === null ? 'dot dot-none' : 'dot', style: `--dot:${g.color}`, 'aria-hidden': 'true' }),
         h('span', { class: 'row-name' }, g.link || g.label),
         h('span', { class: 'row-value' }, fmt.pct(g.value / total)),
         g.sub ? h('span', { class: 'row-sub' }, g.sub) : null))),
-      Sunburst({ groups, total })))
+      Sunburst({ groups, total }))
   }
 
-  window.Entity = { DiffRow, scaleOf, DailyChart, DailyCard, diffKey, TitleCard, StanceCard, GroupsCard, Sunburst }
+  // The card of Άρθρα ανά όμιλο.
+  function GroupsCard ({ title, info, groups, total, cls = 'c-6' }) {
+    const { card, cardHead } = window.Dash
+    return card(cls, cardHead(title, null, info), GroupsSun({ groups, total }))
+  }
+
+  window.Entity = { DiffRow, scaleOf, DailyChart, DailyCard, diffKey, TitleCard, StanceCard, GroupsCard, GroupsSun, Sunburst }
 })()

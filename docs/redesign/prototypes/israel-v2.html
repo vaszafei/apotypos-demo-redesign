@@ -16,7 +16,7 @@
   <script src="assets/messages.js?v=32"></script>
   <script src="assets/messages-v2.js?v=47"></script>
   <script src="assets/messages-politics.js?v=10"></script>
-  <script src="assets/components.js?v=13"></script>
+  <script src="assets/components.js?v=14"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=17"></script>
   <script src="assets/politics.js?v=10"></script>
@@ -90,7 +90,7 @@
             callout(pctOf(a.tone.neutral), t('isr.ach.neutral', { b: pctOf(a.gaza_tone.neutral) })),
             callout(pctOf(a.labels.ally_any), t('isr.ach.ally', { b: pctOf(a.gaza_labels.ally_any) }))),
           h('h3', { class: 'rows-caption' }, t('isr.ach.daily')),
-          UI.BarChart({ dates: days, values: days.map((x) => perDay.get(x) || 0), markers: marks, height: 180, label: t('isr.ach.daily'),
+          UI.BarChart({ dates: days, values: days.map((x) => perDay.get(x) || 0), markers: marks, label: t('isr.ach.daily'),
             tooltipOf: (i) => `${fmt.date(days[i], { weekday: 'short', day: 'numeric', month: 'short' })} · ${fmt.int(perDay.get(days[i]) || 0)}` }),
           h('ol', { class: 'marker-row' }, a.events.map(([date, text], i) => h('li', {}, h('span', { class: 'marker-num' }, String(i + 1)), h('span', { class: 'name' }, `${fmt.date(date, { day: 'numeric', month: 'short' })} · ${text}`)))),
           h('div', { class: 'ach-grid' },
