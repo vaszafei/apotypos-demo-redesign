@@ -173,22 +173,73 @@
     if (!rows.length) return card('c-7 home-topics', head, emptyText(t('home.topics.empty')))
     const points = (v) => fmt.dec(Math.abs(v * 100))
     const arrow = (r) => {
-      if (Number(points(r.diff)) === 0) return null
+      if (!r.x || Number(points(r.diff)) === 0) return null
       const up = r.diff > 0
       const tip = t('home.topics.tip', { topic: name(r.x), now: fmt.pct(r.now), before: fmt.pct(r.was), diff: `${up ? '+' : '−'}${points(r.diff)}` })
       return h('span', { class: `home-arrow ${up ? 'is-up' : 'is-down'}`, title: tip, role: 'img', 'aria-label': tip }, up ? '▲' : '▼')
     }
-    const table = (part) => UI.DataTable({
-      emptyText: t('home.topics.empty'), pageSize: part.length,
-      rows: part,
-      columns: [
-        { label: t('home.col.issue'), render: (r) => UI.EntityLink({ type: 'topic', key: String(r.k), label: name(r.x) }) },
-        { label: t('home.col.articles'), num: true, render: (r) => fmt.int(r.n) },
-        { label: t('home.col.share'), num: true, render: (r) => h('span', { class: 'home-share' }, arrow(r), fmt.pct(r.now)) }
-      ]
+    // A donut of the largest topics (the rest is one grey part), from the top, clockwise. The legend lists them with the share and the arrow; the rest opens under it.
+    const TOP = 7
+    const shown = rows.slice(0, TOP).map((r, i) => ({ ...r, color: Dash.SLOTS[i], label: name(r.x) }))
+    const rest = rows.slice(TOP)
+    const restN = sum(rest.map((r) => r.n))
+    const parts = restN ? [...shown, { n: restN, now: restN / dayTotal, color: Dash.NO_GROUP, label: t('home.topics.other', { n: rest.length }) }] : shown
+    const size = 200
+    const c = size / 2
+    const [r0, r1] = [64, 92]
+    const pad = 0.012
+    const arc = (a0, a1) => {
+      a0 += pad / 2
+      a1 = Math.max(a0 + 0.002, a1 - pad / 2)
+      const p = (a, r) => `${(c + r * Math.sin(a)).toFixed(2)} ${(c - r * Math.cos(a)).toFixed(2)}`
+      const large = a1 - a0 > Math.PI ? 1 : 0
+      return `M${p(a0, r1)}A${r1} ${r1} 0 ${large} 1 ${p(a1, r1)}L${p(a1, r0)}A${r0} ${r0} 0 ${large} 0 ${p(a0, r0)}Z`
+    }
+    const svg = h('svg', { class: 'chart donut home-donut', width: size, height: size, viewBox: `0 0 ${size} ${size}`, role: 'img', 'aria-label': parts.map((r) => `${r.label} ${fmt.pct(r.now)}`).join(', ') })
+    const centerNum = h('text', { class: 'donut-num', x: c, y: c + 2, 'text-anchor': 'middle' }, fmt.int(dayTotal))
+    const centerCap = h('text', { class: 'donut-cap', x: c, y: c + 20, 'text-anchor': 'middle' }, t('g2.donut.center'))
+    svg.append(centerNum, centerCap)
+    const slices = []
+    const items = []
+    const focus = (i) => {
+      const r = i == null ? null : parts[i]
+      slices.forEach((el, k) => el.classList.toggle('is-dim', i != null && k !== i))
+      items.forEach((el, k) => el?.classList.toggle('is-on', k === i))
+      centerNum.textContent = r ? fmt.pct(r.now) : fmt.int(dayTotal)
+      centerCap.textContent = r ? (r.label.length > 22 ? `${r.label.slice(0, 21)}…` : r.label) : t('g2.donut.center')
+    }
+    let a = 0
+    parts.forEach((r, i) => {
+      const span = dayTotal ? (r.n / dayTotal) * 2 * Math.PI : 0
+      const slice = h('path', { class: 'slice', d: arc(a, a + span), fill: r.color, tabindex: 0, 'aria-label': `${r.label}: ${fmt.int(r.n)} (${fmt.pct(r.now)})` })
+      slice.addEventListener('pointerenter', () => focus(i))
+      slice.addEventListener('pointerleave', () => focus(null))
+      slice.addEventListener('focus', () => focus(i))
+      slice.addEventListener('blur', () => focus(null))
+      slices.push(slice)
+      svg.insertBefore(slice, centerNum)
+      a += span
     })
-    const half = Math.ceil(rows.length / 2)
-    return card('c-7 home-topics', head, h('div', { class: 'home-topics-cols' }, table(rows.slice(0, half)), table(rows.slice(half))))
+    const legendRow = (r, i, label) => {
+      const li = h('li', { class: 'home-topic-row' },
+        h('span', { class: 'dot', style: `--dot:${r.color}`, 'aria-hidden': 'true' }),
+        h('span', { class: 'row-name' }, label),
+        h('span', { class: 'row-value home-share' }, arrow(r), fmt.pct(r.now)))
+      li.addEventListener('pointerenter', () => focus(i))
+      li.addEventListener('pointerleave', () => focus(null))
+      items[i] = li
+      return li
+    }
+    const legend = h('ul', { class: 'rows home-topic-legend' }, shown.map((r, i) => legendRow(r, i, UI.EntityLink({ type: 'topic', key: String(r.k), label: r.label }))))
+    if (restN) {
+      const o = parts[parts.length - 1]
+      legend.append(legendRow(o, parts.length - 1, o.label))
+    }
+    const more = restN ? h('details', { class: 'home-topic-more' }, h('summary', {}, t('home.topics.all', { n: rest.length })),
+      h('ul', { class: 'rows' }, rest.map((r) => h('li', { class: 'home-topic-row' },
+        h('span', { class: 'row-name' }, UI.EntityLink({ type: 'topic', key: String(r.k), label: name(r.x) })),
+        h('span', { class: 'row-value home-share' }, arrow(r), fmt.pct(r.now))))) ) : null
+    return card('c-7 home-topics', head, h('div', { class: 'donut-wrap home-topics-wrap' }, svg, h('div', { class: 'home-topic-side' }, legend, more)))
   }
 
   // The quick access: four buttons in a 2×2 grid, each with the name of the page, a short line (not every page has one) and an arrow. The card ends where the buttons end.

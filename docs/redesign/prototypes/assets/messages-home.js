@@ -35,6 +35,8 @@ Object.assign(window.MESSAGES.el, {
   'home.topics.title': 'Θέματα ημέρας',
   'home.daily.title': 'Άρθρα ανά ημέρα',
   'home.topics.note': 'Το μερίδιο κάθε θέματος στις ειδήσεις την ημέρα που διαλέξατε, στο ημερολόγιο ή στο γράφημα. Το βέλος δείχνει αν το μερίδιο είναι μεγαλύτερο (▲) ή μικρότερο (▼) από τις {n} προηγούμενες ημέρες. Δεν περιέχει αθλητικά, lifestyle, πολιτισμό, τεχνολογία και καιρό.',
+  'home.topics.other': 'Λοιπά θέματα ({n})',
+  'home.topics.all': 'Όλα τα θέματα ({n} ακόμη)',
   'home.topics.tip': '{topic}: {now} την ημέρα, {before} πριν ({diff} μονάδες)',
 })
 
@@ -74,5 +76,7 @@ Object.assign(window.MESSAGES.en, {
   'home.topics.title': 'Topics of the day',
   'home.daily.title': 'Articles per day',
   'home.topics.note': 'The share of each topic in the news on the day you picked, in the calendar or the chart. The arrow shows whether the share is larger (▲) or smaller (▼) than in the {n} days before. Sports, lifestyle, culture, technology and weather are not news.',
+  'home.topics.other': 'Other topics ({n})',
+  'home.topics.all': 'All topics ({n} more)',
   'home.topics.tip': '{topic}: {now} on the day, {before} before ({diff} points)',
 })
