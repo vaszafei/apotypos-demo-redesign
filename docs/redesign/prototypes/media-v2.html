@@ -7,7 +7,7 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=10">
   <link rel="stylesheet" href="assets/app.css?v=35">
-  <link rel="stylesheet" href="assets/dash.css?v=81">
+  <link rel="stylesheet" href="assets/dash.css?v=82">
   <link rel="stylesheet" href="assets/mme.css?v=33">
   <link rel="stylesheet" href="assets/date-range.css?v=4">
 </head>
@@ -15,12 +15,12 @@
   <div id="app"></div>
   <script src="assets/icons.js?v=6"></script>
   <script src="assets/messages.js?v=32"></script>
-  <script src="assets/messages-v2.js?v=46"></script>
+  <script src="assets/messages-v2.js?v=47"></script>
   <script src="assets/messages-spread.js?v=16"></script>
   <script src="assets/messages-mme.js?v=20"></script>
   <script src="assets/components.js?v=13"></script>
   <script src="assets/motion.js?v=1"></script>
-  <script src="assets/dash.js?v=16"></script>
+  <script src="assets/dash.js?v=17"></script>
   <script src="assets/date-range.js?v=1"></script>
   <script src="assets/mme.js?v=20"></script>
   <script src="assets/shell.js?v=50"></script>
@@ -32,7 +32,7 @@
     // The data is the one of the live page (data/mme.js, scripts/make-mme.py): 29 Greek outlets and 10 Israeli outlets, summed for the period.
     // The top bar has the tabs, the set of outlets and the period. Each card holds one measure and one picture of it.
     const { t, fmt, h, load, params } = App
-    const { fit, reset, pct0, NO_GROUP, Spark, card, cardHead, emptyText, Stat, TopBar } = Dash
+    const { fit, reset, pct0, NO_GROUP, Spark, card, cardHead, emptyText, Stat, TopBar, ShareBar } = Dash
     const result = load('mme', ['sets'], (b) => Object.keys(b.sets))
     const groupsData = load('groups', ['groups'], (b) => b.groups)
     // The share of articles with no byline comes from the API in its own period (Sep 2025 – Jan 2026), for 5 outlets.
@@ -243,9 +243,24 @@
           scatterCard.classList.add(bylineCard ? 'c-6' : 'c-12')
           bylineCard?.classList.add('c-6')
 
+          // Who writes the news: the share of each group in the articles of the period, in one bar. The finding counts the outlets
+          // that write half of the articles and the share of the 4 largest groups (CR4, in the bands of the Media Pluralism Monitor).
+          const byGroup = new Map()
+          S.active.forEach((o) => byGroup.set(o.group || null, (byGroup.get(o.group || null) || 0) + o.n))
+          const shareRows = [...groupList.filter((g) => byGroup.get(g.name)).map((g) => ({ label: g.name, value: byGroup.get(g.name), color: colorOfGroup.get(g.name) || NO_GROUP, href: `group-v2.html?g=${g.slug}` }))
+            .sort((a, b) => b.value - a.value), ...(byGroup.get(null) ? [{ label: t('media2.groups.none'), value: byGroup.get(null), color: NO_GROUP }] : [])]
+          const bySize = S.active.map((o) => o.n).sort((a, b) => b - a)
+          let half = 0
+          for (let acc = 0; half < bySize.length && acc < analysed / 2; half++) acc += bySize[half]
+          const cr4 = shareRows.filter((r) => r.href).slice(0, 4).reduce((a, r) => a + r.value, 0) / (analysed || 1)
+          const band = t(cr4 < 0.4 ? 'g3.band.low' : cr4 <= 0.7 ? 'g3.band.mid' : 'g3.band.high')
+          const shareCard = greek && analysed > 0 ? card('c-12', cardHead(t('media3.share.title'), h('a', { class: 'dcard-link', href: 'groups-v2.html' }, `${t('media3.share.more')} →`), t('media3.share.info')),
+            h('p', { class: 'share-finding' }, t('media3.share.finding', { n: fmt.int(half), cr4: fmt.pct(cr4), band })),
+            ShareBar(shareRows, { label: t('media3.share.title') })) : null
+
           const cards = tab === 'writing'
             ? [scatterCard, bylineCard, gov]
-            : [ranking, h('div', { class: 'c-6 card-col card-col-fill' }, h('div', { class: 'stats-2x2' }, statOutlets, statArticles, statStories, statPeople), volume)]
+            : [ranking, h('div', { class: 'c-6 card-col card-col-fill' }, h('div', { class: 'stats-2x2' }, statOutlets, statArticles, statStories, statPeople), volume), shareCard].filter(Boolean)
           content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...cards), Mme.MethodNote(S), protoNote())
           // Side by side, the right column is as tall as the table: the chart takes the height that the stat cards leave.
           if (tab !== 'writing' && analysed > 0) {
