@@ -106,9 +106,19 @@ def home(raw, meta):
     }
 
 
+# Outlets that volume.json has with no group, but that whoownsthemedia.gr (network.json, read 2026-10-28) places in a group:
+# ethnos.gr and ΕΘΝΟΣ under ΣΥΜΦΕΡΟΝΤΩΝ ΣΑΒΒΙΔΗ, CNN.GR under ΣΥΜΦΕΡΟΝΤΩΝ ΓΙΑΝΝΑΚΟΠΟΥΛΟΥ.
+RECORD_FIXES = {
+    "Ethnos": ("Συμφέροντα Σαββίδη", "Ιβάν Σαββίδης"),
+    "CNN Greece": ("DPG Digital Media", "Δημήτρης Γιαννακόπουλος"),
+}
+
+
 def group_of(volume):
-    """The group and the owner of each outlet, from volume.json. The name is the key."""
-    return {o["name"]: (o["group"], o["owner"]) for o in volume["outlets"]}
+    """The group and the owner of each outlet, from volume.json and RECORD_FIXES. The name is the key."""
+    owners = {o["name"]: (o["group"], o["owner"]) for o in volume["outlets"]}
+    owners.update({k: v for k, v in RECORD_FIXES.items() if k in owners and not owners[k][0]})
+    return owners
 
 
 def media(raw, meta):

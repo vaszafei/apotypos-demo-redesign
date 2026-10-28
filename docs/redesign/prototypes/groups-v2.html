@@ -7,36 +7,41 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=10">
   <link rel="stylesheet" href="assets/app.css?v=35">
-  <link rel="stylesheet" href="assets/dash.css?v=81">
+  <link rel="stylesheet" href="assets/dash.css?v=83">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=6"></script>
   <script src="assets/messages.js?v=32"></script>
-  <script src="assets/messages-v2.js?v=46"></script>
-  <script src="assets/components.js?v=13"></script>
+  <script src="assets/messages-v2.js?v=47"></script>
+  <script src="assets/components.js?v=14"></script>
   <script src="assets/motion.js?v=1"></script>
-  <script src="assets/dash.js?v=16"></script>
+  <script src="assets/dash.js?v=17"></script>
   <script src="assets/vendor/d3-hierarchy.min.js"></script>
   <script src="assets/shell.js?v=50"></script>
   <script src="data/groups.js?v=2"></script>
   <script src="data/media.js"></script>
+  <script src="data/ownerRecord.js?v=1"></script>
   <script>
     // Media, Ιδιοκτησία: dashboard of APO-161. The group, the owner and the articles come from the static files,
     // so the period is fixed (1 Aug to 30 Sep 2026): there is no period control. The period is in the note of the table.
     const { t, fmt, h, load } = App
-    const { fit, reset, NO_GROUP, card, cardHead, emptyText, TopBar, textOn, tint } = Dash
+    const { fit, reset, NO_GROUP, card, cardHead, emptyText, TopBar, textOn, tint, Stat } = Dash
     const result = load('groups', ['groups', 'ungrouped', 'totalCollected', 'window'], (b) => b.groups)
     // The daily articles of each outlet (the same period and the same groups as the groups file).
     const media = load('media', ['dates', 'outlets', 'outletDaily'], (b) => b.outlets)
+    // The record of whoownsthemedia.gr: the companies of each owner, by sector, and the media they own (scripts/make-owner-record.py).
+    const ownerRecord = load('ownerRecord', ['owners', 'sectors'], (b) => b.owners)
     // A day with fewer articles than this is a gap of the crawler, not a quiet day.
     const GAP = 50
+    // The share of the 4 largest groups (CR4), in the bands of the Media Pluralism Monitor: below 40% low, 40 to 70% medium, above 70% high.
+    const band = (v) => t(v < 0.4 ? 'g3.band.low' : v <= 0.7 ? 'g3.band.mid' : 'g3.band.high')
 
     // Stacked columns: one for each day, one segment for each group. A gap day has a dashed band.
     function VolumeChart ({ dates, stacks, order }) {
       const totals = stacks.map((s) => s.reduce((a, b) => a + b.value, 0))
       return UI.BarChart({
-        dates, height: 300, label: t('g2.volume.title'),
+        dates, label: t('g2.volume.title'),
         // The dashed line is the average of the days with no gap of the crawler.
         reference: ((full) => ({ value: full.reduce((a, b) => a + b, 0) / (full.length || 1), label: t('find.avg', { n: fmt.int(Math.round(full.reduce((a, b) => a + b, 0) / (full.length || 1))) }) }))(totals.filter((v) => v >= GAP)),
         series: order.map((o, k) => ({ name: o.label, color: o.color, values: stacks.map((day) => day[k].value) })),
@@ -260,37 +265,6 @@
       })
     }
 
-    // Sunburst: the inner ring is the groups, the outer ring their outlets. The rings are in the order of the legend, from the top, clockwise.
-    function Sunburst ({ groups, total }) {
-      const size = 176
-      const c = size / 2
-      const rings = [[44, 65], [67, 87]]
-      const pad = 0.008
-      const arc = (a0, a1, r0, r1) => {
-        a0 += pad / 2
-        a1 = Math.max(a0 + 0.002, a1 - pad / 2)
-        const p = (a, r) => `${(c + r * Math.sin(a)).toFixed(2)} ${(c - r * Math.cos(a)).toFixed(2)}`
-        const large = a1 - a0 > Math.PI ? 1 : 0
-        return `M${p(a0, r1)}A${r1} ${r1} 0 ${large} 1 ${p(a1, r1)}L${p(a1, r0)}A${r0} ${r0} 0 ${large} 0 ${p(a0, r0)}Z`
-      }
-      const svg = h('svg', { class: 'chart donut sunburst', width: size, height: size, viewBox: `0 0 ${size} ${size}`, role: 'img', 'aria-label': groups.map((g) => `${g.label} ${fmt.pct(g.value / total)}`).join(', ') })
-      let a = 0
-      groups.forEach((g) => {
-        const span = (g.value / total) * 2 * Math.PI
-        svg.append(tipOn(h('path', { class: 'slice', d: arc(a, a + span, ...rings[0]), fill: g.color }), t('g2.donut.tip', { group: g.label, n: fmt.int(g.value), share: fmt.pct(g.value / total) })))
-        let b = a
-        g.outlets.forEach((o) => {
-          const s = (o.value / total) * 2 * Math.PI
-          svg.append(tipOn(h('path', { class: 'slice', d: arc(b, b + s, ...rings[1]), fill: tint(g.color, g.key === null ? 0.45 : 0.4) }), t('g2.tree.tip', { outlet: o.name, group: g.label, n: fmt.int(o.value), share: fmt.pct(o.value / total) })))
-          b += s
-        })
-        a += span
-      })
-      svg.append(h('text', { class: 'donut-num', x: c, y: c + 3, 'text-anchor': 'middle' }, fmt.int(total)),
-        h('text', { x: c, y: c + 19, 'text-anchor': 'middle' }, t('g2.donut.center')))
-      return svg
-    }
-
     Shell.start({
       id: 'groups',
       route: '/groups',
@@ -326,19 +300,33 @@
           treeGroups.forEach((g) => { g.value = g.outlets.reduce((s, o) => s + o.value, 0) })
           const bubbles = card('c-7', cardHead(t('g2.tree.title'), null, [t('g2.tree.sub', { period }), t('g2.record', { source: d.record.source, date: fmt.date(d.record.exportedAt) })].join(' ')),
             total ? OwnerBubbles({ groups: treeGroups, total }) : emptyText(t('groups.empty')))
-          // The finding (how much the 3 largest groups write) is the first sentence of the info of the card.
-          const top3 = treeGroups.filter((g) => g.key !== null).sort((a, b) => b.value - a.value).slice(0, 3).reduce((a, g) => a + g.value, 0)
-          const shareCard = card('c-5', cardHead(t('media2.groups.title'), null, total ? [t('g2.share.finding', { share: fmt.pct(top3 / total) }), t('media2.groups.known', { share: fmt.pct(grouped / total) })].join('. ') : null),
+          // The share of each group, as ranked bars on one scale (a donut of 9 parts hides the close values). The outlets with no group are last.
+          // The finding (how much the 4 largest groups write) is the first sentence of the info of the card, with the bands of the MPM.
+          const known = treeGroups.filter((g) => g.key !== null).sort((a, b) => b.value - a.value)
+          const cr4 = known.slice(0, 4).reduce((a, g) => a + g.value, 0) / (total || 1)
+          const shareCard = card('c-5', cardHead(t('media2.groups.title'), null, total ? [t('g3.share.finding', { share: fmt.pct(cr4), band: band(cr4) }), t('media2.groups.known', { share: fmt.pct(grouped / total) }), t('g3.share.info')].join('. ') : null),
             total
-              ? h('div', { class: 'donut-wrap sun-wrap' },
-                  h('ul', { class: 'rows rows-groups rows-owners' }, treeGroups.map((g) => {
-                    return h('li', { title: g.key === null ? t('g2.bubble.none', { n: fmt.int(g.outlets.length) }) : `${g.owner} · ${t('g2.bubble.outlets', { n: fmt.int(g.outlets.length) })}` },
-                      h('span', { class: g.key === null ? 'dot dot-none' : 'dot', style: `--dot:${g.color}`, 'aria-hidden': 'true' }),
-                      h('span', { class: 'row-name', title: g.label }, g.key === null ? g.label : h('a', { class: 'quiet-link', href: hrefOf(groups.find((x) => x.name === g.key)) }, g.label)),
-                      h('span', { class: 'row-value' }, fmt.pct(g.value / total)))
-                  })),
-                  Sunburst({ groups: treeGroups, total }))
+              ? UI.BarList([...known, ...treeGroups.filter((g) => g.key === null)].map((g) => ({
+                  label: [h('span', { class: g.key === null ? 'dot dot-none' : 'dot', style: `--dot:${g.color}`, 'aria-hidden': 'true' }), g.key === null ? g.label : h('a', { class: 'quiet-link', href: hrefOf(groups.find((x) => x.name === g.key)) }, g.label)],
+                  sub: g.key === null ? t('g2.bubble.none', { n: fmt.int(g.outlets.length) }) : `${g.owner} · ${t('g2.bubble.outlets', { n: fmt.int(g.outlets.length) })}`,
+                  value: g.value, color: g.color, text: fmt.pct(g.value / total),
+                  tip: t('g2.donut.tip', { group: g.label, n: fmt.int(g.value), share: fmt.pct(g.value / total) })
+                })), { cls: 'bar-list-owners' })
               : emptyText(t('groups.empty')))
+
+          // The row of stat cards: the concentration, the share with a known owner, the owners of the record and their companies.
+          const rec = ownerRecord.kind === 'data' ? ownerRecord.data : null
+          const tracked = new Set(groups.map((g) => g.name))
+          const missing = rec ? rec.owners.filter((o) => !tracked.has(o.group)) : []
+          const companies = rec ? rec.owners.reduce((a, o) => a + o.companies, 0) : 0
+          const mediaCompanies = rec ? rec.owners.reduce((a, o) => a + o.sectors[0], 0) : 0
+          const tile = (el) => { el.classList.replace('c-4', 'c-3'); return el }
+          const stats = [
+            tile(Stat({ label: t('g3.kpi.cr4'), empty: !total, value: fmt.pct(cr4), sub: t('g3.kpi.cr4.sub', { band: band(cr4) }) })),
+            tile(Stat({ label: t('g3.kpi.known'), empty: !total, value: fmt.pct(grouped / (total || 1)), sub: t('g3.kpi.known.sub', { n: fmt.int(empty ? 0 : d.ungrouped.length) }) })),
+            tile(Stat({ label: t('g3.kpi.record'), empty: !rec, value: fmt.int(rec ? rec.owners.length : 0), sub: missing.length ? t('g3.kpi.record.sub', { n: fmt.int(missing.length), names: missing.map((o) => o.group).join(', ') }) : t('g3.kpi.record.all') })),
+            tile(Stat({ label: t('g3.kpi.companies'), empty: !rec, value: fmt.int(companies), sub: t('g3.kpi.companies.sub', { share: fmt.pct(mediaCompanies / (companies || 1)) }) }))
+          ]
 
           // Row 2, on the left: the articles of each day, stacked by group. The largest group is at the bottom, the outlets with no group are on top.
           const m = media.kind === 'data' ? media.data : null
@@ -369,7 +357,7 @@
                 })))]
               : emptyText(t('groups.empty')))
 
-          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, bubbles, shareCard, volume, stanceCard), protoNote())
+          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...stats, bubbles, shareCard, volume, stanceCard), protoNote())
         }
         draw()
       }

@@ -7,7 +7,7 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=10">
   <link rel="stylesheet" href="assets/app.css?v=35">
-  <link rel="stylesheet" href="assets/dash.css?v=81">
+  <link rel="stylesheet" href="assets/dash.css?v=83">
   <link rel="stylesheet" href="assets/politics.css?v=4">
   <link rel="stylesheet" href="assets/world.css?v=3">
 </head>
@@ -15,12 +15,12 @@
   <div id="app"></div>
   <script src="assets/icons.js?v=6"></script>
   <script src="assets/messages.js?v=32"></script>
-  <script src="assets/messages-v2.js?v=46"></script>
+  <script src="assets/messages-v2.js?v=47"></script>
   <script src="assets/messages-politics.js?v=10"></script>
   <script src="assets/messages-world.js?v=1"></script>
-  <script src="assets/components.js?v=13"></script>
+  <script src="assets/components.js?v=14"></script>
   <script src="assets/motion.js?v=1"></script>
-  <script src="assets/dash.js?v=16"></script>
+  <script src="assets/dash.js?v=17"></script>
   <script src="assets/politics.js?v=10"></script>
   <script src="assets/world.js?v=2"></script>
   <script src="assets/shell.js?v=50"></script>
@@ -205,7 +205,7 @@
               { name: t('cov.when.aktor'), color: 'var(--side-b)', values: days.map((x) => about.filter((a) => a.t.startsWith(x) && hasAktor(a)).length) }],
             topLabels: days.map((x) => { const v = d.daily[x] || 0; return v ? String(v) : '' }),
             tooltipOf: (i) => t('cov.when.tip', { day: fmt.date(days[i]), n: d.daily[days[i]] || 0, all: fmt.int(d.window.corpus_days[days[i]]) }),
-            height: 180, label: t('cov.when.title'), minWidth: 720
+            label: t('cov.when.title'), minWidth: 720
           }),
           h('p', { class: 'rows-caption' }, t('cov.when.first')),
           h('ol', { class: 'first-list' }, firsts.slice(0, 8).map((a) => h('li', {}, h('strong', {}, a.outlet), h('span', { class: 'muted-text' }, time(a.t))))),

@@ -7,18 +7,18 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=10">
   <link rel="stylesheet" href="assets/app.css?v=35">
-  <link rel="stylesheet" href="assets/dash.css?v=81">
+  <link rel="stylesheet" href="assets/dash.css?v=83">
   <link rel="stylesheet" href="assets/politics.css?v=4">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=6"></script>
   <script src="assets/messages.js?v=32"></script>
-  <script src="assets/messages-v2.js?v=46"></script>
+  <script src="assets/messages-v2.js?v=47"></script>
   <script src="assets/messages-politics.js?v=10"></script>
-  <script src="assets/components.js?v=13"></script>
+  <script src="assets/components.js?v=14"></script>
   <script src="assets/motion.js?v=1"></script>
-  <script src="assets/dash.js?v=16"></script>
+  <script src="assets/dash.js?v=17"></script>
   <script src="assets/politics.js?v=10"></script>
   <script src="assets/shell.js?v=50"></script>
   <script src="data/cases.js?v=1"></script>
@@ -67,7 +67,7 @@
         const peakMonth = monthly.indexOf(Math.max(...monthly))
         const monthAvg = monthly.reduce((a, b) => a + b, 0) / (monthly.length || 1)
         const timeCard = card('c-8', cardHead(t('case.time.finding', { month: month(`${months[peakMonth]}-01`), n: fmt.int(monthly[peakMonth]) }), null, `${t('case.time.title')}. ${t('case.time.info')}`),
-          UI.BarChart({ labels: months.map((m) => month(`${m}-01`)), values: monthly, height: 220, label: t('case.time.title'), reference: { value: monthAvg, label: t('find.avg', { n: fmt.int(Math.round(monthAvg)) }) },
+          UI.BarChart({ labels: months.map((m) => month(`${m}-01`)), values: monthly, label: t('case.time.title'), reference: { value: monthAvg, label: t('find.avg', { n: fmt.int(Math.round(monthAvg)) }) },
             tooltipOf: (i) => `${month(`${months[i]}-01`)} · ${fmt.int(counts.get(months[i]) || 0)}` }))
         // The bar of an outlet has the color of its group, as on the other pages.
         const lead = d.by_source.slice().sort((a, b) => b.count - a.count)[0]

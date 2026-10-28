@@ -607,3 +607,37 @@ Object.assign(window.MESSAGES.en, {
   'f2.lead': 'First: {outlet} on {person} ({v})',
   'st.table.finding': 'First: {name} ({share})'
 })
+
+// Μέσα › Ιδιοκτησία and Επισκόπηση: the concentration, the record of whoownsthemedia.gr and the sectors of the owners.
+Object.assign(window.MESSAGES.el, {
+  'g3.band.low': 'χαμηλή συγκέντρωση (κάτω από 40%)',
+  'g3.band.mid': 'μέτρια συγκέντρωση (40–70%)',
+  'g3.band.high': 'υψηλή συγκέντρωση (πάνω από 70%)',
+  'g3.kpi.cr4': 'Οι 4 μεγαλύτεροι όμιλοι',
+  'g3.kpi.cr4.sub': 'των άρθρων · {band}',
+  'g3.kpi.known': 'Γνωστός ιδιοκτήτης',
+  'g3.kpi.known.sub': 'των άρθρων · {n} μέσα χωρίς όμιλο στο αρχείο',
+  'g3.kpi.record': 'Ιδιοκτήτες στο αρχείο',
+  'g3.kpi.record.sub': '{n} χωρίς μέσο στο δείγμα: {names}',
+  'g3.kpi.record.all': 'όλοι έχουν μέσο στο δείγμα',
+  'g3.kpi.companies': 'Εταιρείες των ιδιοκτητών',
+  'g3.kpi.companies.sub': 'μόνο το {share} είναι ΜΜΕ',
+  'g3.share.finding': 'Οι 4 μεγαλύτεροι όμιλοι γράφουν το {share} των άρθρων, {band}',
+  'g3.share.info': 'Η συγκέντρωση μετριέται όπως στο Media Pluralism Monitor: το μερίδιο των 4 μεγαλύτερων ομίλων, κάτω από 40% χαμηλή, 40–70% μέτρια, πάνω από 70% υψηλή',
+})
+Object.assign(window.MESSAGES.en, {
+  'g3.band.low': 'low concentration (below 40%)',
+  'g3.band.mid': 'medium concentration (40–70%)',
+  'g3.band.high': 'high concentration (above 70%)',
+  'g3.kpi.cr4': 'The 4 largest groups',
+  'g3.kpi.cr4.sub': 'of the articles · {band}',
+  'g3.kpi.known': 'Known owner',
+  'g3.kpi.known.sub': 'of the articles · {n} outlets with no group in the record',
+  'g3.kpi.record': 'Owners in the record',
+  'g3.kpi.record.sub': '{n} with no outlet in the sample: {names}',
+  'g3.kpi.record.all': 'all have an outlet in the sample',
+  'g3.kpi.companies': 'Companies of the owners',
+  'g3.kpi.companies.sub': 'only {share} are media',
+  'g3.share.finding': 'The 4 largest groups write {share} of the articles, {band}',
+  'g3.share.info': 'Concentration is measured as in the Media Pluralism Monitor: the share of the 4 largest groups, below 40% low, 40–70% medium, above 70% high',
+})

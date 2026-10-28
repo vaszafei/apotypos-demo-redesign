@@ -473,3 +473,9 @@
 
 /* The last card of a column takes the height that is left, so a column is as tall as the card beside it. */
 .card-col-fill > :last-child { flex: 1; }
+
+/* The page is a column of 1320 px at the same place as on Αρχική: centered in the window, not in the space beside the sidebar.
+   --side is the width of the sidebar on its left. The margins move the column back by it, and they never go below 0. The hero of Αρχική alone runs the full width. */
+.content.dash.minimal > :not(.home-hero, .visually-hidden) { box-sizing: border-box; margin-left: max(0px, calc((100% - 1320px - var(--side, 0px)) / 2)); margin-right: max(0px, calc((100% - 1320px + var(--side, 0px)) / 2)); padding-inline: clamp(0px, calc(4vw - 16px), 48px); }
+@media (min-width: 1024px) { .page-body:has(> .section-nav) { --side: 232px; } }
+

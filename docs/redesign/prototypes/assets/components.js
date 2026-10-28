@@ -355,7 +355,10 @@
   // onSelect({ from, to }) (a drag over the days picks a period), minWidth (below 720 px the chart keeps this width and scrolls).
   // The highest column has its value above it (peak: false leaves it out, topLabels replace it). reference: { value, label }, a reference value
   // (an average, the previous period) as a dashed line across the columns, with its label on the right of the columns.
-  function BarChart ({ values, series, dates, labels, below, axisLabel, height = 220, label, tooltipOf, valueFormat = fmt.int, max, colorOf, topLabels, markers = {}, muted, flagged, picked = null, onPick, onSelect, minWidth, peak = true, reference }) {
+  // Every bar chart of the site has the same height, whatever page or card it is in.
+  const BAR_HEIGHT = 220
+  function BarChart ({ values, series, dates, labels, below, axisLabel, label, tooltipOf, valueFormat = fmt.int, max, colorOf, topLabels, markers = {}, muted, flagged, picked = null, onPick, onSelect, minWidth, peak = true, reference }) {
+    const height = BAR_HEIGHT
     const n = (dates || labels).length
     const parts = series || [{ name: label, values }]
     const totals = Array.from({ length: n }, (_, i) => parts.reduce((a, s) => a + (s.values[i] || 0), 0))

@@ -7,18 +7,18 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=10">
   <link rel="stylesheet" href="assets/app.css?v=35">
-  <link rel="stylesheet" href="assets/dash.css?v=81">
-  <link rel="stylesheet" href="assets/home.css?v=40">
+  <link rel="stylesheet" href="assets/dash.css?v=83">
+  <link rel="stylesheet" href="assets/home.css?v=41">
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=6"></script>
   <script src="assets/messages.js?v=32"></script>
-  <script src="assets/messages-v2.js?v=46"></script>
+  <script src="assets/messages-v2.js?v=47"></script>
   <script src="assets/messages-home.js?v=22"></script>
-  <script src="assets/components.js?v=13"></script>
+  <script src="assets/components.js?v=14"></script>
   <script src="assets/motion.js?v=1"></script>
-  <script src="assets/dash.js?v=16"></script>
+  <script src="assets/dash.js?v=17"></script>
   <script src="assets/home.js?v=32"></script>
   <script src="assets/shell.js?v=50"></script>
   <script src="data/home.js"></script>
@@ -90,7 +90,7 @@
           const daily = totals.slice(i0, i1 + 1)
           const avg = collected / len
           const chart = () => UI.BarChart({
-            dates: days, values: daily, label: t('home.daily.title'), height: 263, picked: selected - i0, onPick: (j) => pick(i0 + j, 'chart'),
+            dates: days, values: daily, label: t('home.daily.title'), picked: selected - i0, onPick: (j) => pick(i0 + j, 'chart'),
             reference: { value: avg, label: t('home.daily.avg', { n: fmt.int(Math.round(avg)) }) },
             tooltipOf: (i) => `${fmt.date(days[i])}: ${fmt.int(daily[i])}`
           })
