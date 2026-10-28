@@ -179,14 +179,14 @@
       return h('span', { class: `home-arrow ${up ? 'is-up' : 'is-down'}`, title: tip, role: 'img', 'aria-label': tip }, up ? '▲' : '▼')
     }
     // A donut of the largest topics (the rest is one grey part), from the top, clockwise. The legend lists them with the share and the arrow; the rest opens under it.
-    const TOP = 7
+    const TOP = 6
     const shown = rows.slice(0, TOP).map((r, i) => ({ ...r, color: Dash.SLOTS[i], label: name(r.x) }))
     const rest = rows.slice(TOP)
     const restN = sum(rest.map((r) => r.n))
     const parts = restN ? [...shown, { n: restN, now: restN / dayTotal, color: Dash.NO_GROUP, label: t('home.topics.other', { n: rest.length }) }] : shown
-    const size = 200
+    const size = 168
     const c = size / 2
-    const [r0, r1] = [64, 92]
+    const [r0, r1] = [54, 80]
     const pad = 0.012
     const arc = (a0, a1) => {
       a0 += pad / 2
@@ -206,7 +206,7 @@
       slices.forEach((el, k) => el.classList.toggle('is-dim', i != null && k !== i))
       items.forEach((el, k) => el?.classList.toggle('is-on', k === i))
       centerNum.textContent = r ? fmt.pct(r.now) : fmt.int(dayTotal)
-      centerCap.textContent = r ? (r.label.length > 22 ? `${r.label.slice(0, 21)}…` : r.label) : t('g2.donut.center')
+      centerCap.textContent = r ? (r.label.length > 16 ? `${r.label.slice(0, 15)}…` : r.label) : t('g2.donut.center')
     }
     let a = 0
     parts.forEach((r, i) => {
