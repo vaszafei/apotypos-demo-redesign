@@ -7,7 +7,7 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=10">
   <link rel="stylesheet" href="assets/app.css?v=35">
-  <link rel="stylesheet" href="assets/dash.css?v=82">
+  <link rel="stylesheet" href="assets/dash.css?v=83">
 </head>
 <body>
   <div id="app"></div>
@@ -26,7 +26,7 @@
     // Media, Ιδιοκτησία: dashboard of APO-161. The group, the owner and the articles come from the static files,
     // so the period is fixed (1 Aug to 30 Sep 2026): there is no period control. The period is in the note of the table.
     const { t, fmt, h, load } = App
-    const { fit, reset, pct0, NO_GROUP, card, cardHead, emptyText, TopBar, textOn, tint, Stat, ShareBar } = Dash
+    const { fit, reset, NO_GROUP, card, cardHead, emptyText, TopBar, textOn, tint, Stat } = Dash
     const result = load('groups', ['groups', 'ungrouped', 'totalCollected', 'window'], (b) => b.groups)
     // The daily articles of each outlet (the same period and the same groups as the groups file).
     const media = load('media', ['dates', 'outlets', 'outletDaily'], (b) => b.outlets)
@@ -36,30 +36,6 @@
     const GAP = 50
     // The share of the 4 largest groups (CR4), in the bands of the Media Pluralism Monitor: below 40% low, 40 to 70% medium, above 70% high.
     const band = (v) => t(v < 0.4 ? 'g3.band.low' : v <= 0.7 ? 'g3.band.mid' : 'g3.band.high')
-
-    // Owners by sector: one row for each owner of the record, one column for each sector. The shade is the share of the companies
-    // of the owner in the sector, so a small owner and a large one read the same. The cell of the media has a ring.
-    function SectorMap ({ owners, sectors, colorOf }) {
-      const k = (v) => `${Math.round(8 + 77 * v)}%`
-      const cells = []
-      // A long sector name has a short heading. The tooltip and the table keep the full name.
-      const short = { Χρηματοοικονομικά: 'Οικονομικά' }
-      const head = [h('span', { class: 'sector-head' }, t('g3.record.col.group')), ...sectors.map((s) => h('span', { class: 'sector-head', title: s }, short[s] || s)), h('span', { class: 'sector-head' }, t('g3.sector.total'))]
-      owners.forEach((o) => {
-        cells.push(h('span', { class: 'sector-name', title: o.owners.join(', ') }, h('span', { class: 'dot', style: `--dot:${colorOf(o.group)}`, 'aria-hidden': 'true' }), h('span', {}, o.label)))
-        o.sectors.forEach((n, i) => {
-          const v = n / o.companies
-          const text = t('g3.sector.tip', { owner: o.label, sector: sectors[i], n: fmt.int(n), share: fmt.pct(v) })
-          cells.push(tipOn(h('span', { class: ['sector-cell', !n && 'is-zero', v > 0.45 && 'is-dark', i === 0 && 'is-media'].filter(Boolean).join(' '), style: `--k:${k(v)}`, 'aria-hidden': 'true' }, v >= 0.1 ? pct0(v) : n ? '·' : ''), text))
-        })
-        cells.push(h('span', { class: 'sector-total' }, fmt.int(o.companies)))
-      })
-      const table = h('div', { class: 'visually-hidden' }, h('table', {}, h('caption', {}, t('g3.sector.title')),
-        h('thead', {}, h('tr', {}, h('th', {}, t('g3.record.col.group')), sectors.map((s) => h('th', {}, s)), h('th', {}, t('g3.sector.total')))),
-        h('tbody', {}, owners.map((o) => h('tr', {}, h('th', { scope: 'row' }, o.label), o.sectors.map((n) => h('td', {}, `${fmt.int(n)} (${fmt.pct(n / o.companies)})`)), h('td', {}, fmt.int(o.companies)))))))
-      return h('div', {}, h('div', { class: 'sector-scroll' }, h('div', { class: 'sector-map', style: `--cols:${sectors.length}` }, ...head, ...cells)),
-        h('p', { class: 'sector-scale' }, h('span', {}, '0%'), h('i', { 'aria-hidden': 'true' }), h('span', {}, '100%'), h('span', {}, `· ${t('g3.sector.scale')}`)), table)
-    }
 
     // Stacked columns: one for each day, one segment for each group. A gap day has a dashed band.
     function VolumeChart ({ dates, stacks, order }) {
@@ -352,39 +328,6 @@
             tile(Stat({ label: t('g3.kpi.companies'), empty: !rec, value: fmt.int(companies), sub: t('g3.kpi.companies.sub', { share: fmt.pct(mediaCompanies / (companies || 1)) }) }))
           ]
 
-          // What else the owners own: the sectors of their companies. The owners with the smallest share of media come first.
-          // The rows name the owner: the group name without «Συμφέροντα» or «Όμιλος». The tooltip of the name has the people.
-          const labelOf = (o) => o.group.replace(/^(Συμφέροντα|Όμιλος) /, '')
-          const recOwners = rec ? rec.owners.map((o) => ({ ...o, label: labelOf(o) })).sort((a, b) => a.sectors[0] / a.companies - b.sectors[0] / b.companies) : []
-          const fewMedia = recOwners.filter((o) => o.sectors[0] / o.companies < 0.25).length
-          const sectorCard = card('c-12', cardHead(t('g3.sector.title'), null, rec ? [t('g3.sector.finding', { n: fmt.int(fewMedia), total: fmt.int(recOwners.length) }), t('g3.sector.info', { source: rec.source, date: fmt.date(rec.readAt) })].join('. ') : null),
-            rec ? SectorMap({ owners: recOwners, sectors: rec.sectors, colorOf: (name) => (tracked.has(name) ? colorOf.get(name) : Dash.groupColor(name)) }) : emptyText(t('groups.empty')))
-
-          // The record and the sample: the owners of the record, their media and the outlets that Απότυπος reads. Then the groups and outlets that the record does not have.
-          const groupByName = new Map(groups.map((g) => [g.name, g]))
-          // The first 3 outlets by articles, then the count of the rest. The tooltip has all of them.
-          const outletsText = (list) => list.length
-            ? h('span', { title: list.map((o) => o.name).join(', ') }, list.slice(0, 3).map((o) => o.name).join(', ') + (list.length > 3 ? ` +${fmt.int(list.length - 3)}` : ''))
-            : h('span', { class: 'record-none' }, t('g3.record.none'))
-          const recordRows = [
-            ...(rec ? rec.owners.map((o) => ({ name: o.group, owners: o.owners.join(', '), brands: o.brands, outlets: groupByName.get(o.group)?.outlets || [], value: groupByName.get(o.group)?.collected || 0 })) : [])
-              .sort((a, b) => b.value - a.value || b.brands.length - a.brands.length),
-            ...groups.filter((g) => !rec || !rec.owners.some((o) => o.group === g.name)).map((g) => ({ name: g.name, owners: g.owner, brands: null, outlets: g.outlets, value: g.collected })),
-            ...(empty ? [] : [{ name: t('media2.groups.none'), owners: null, brands: null, outlets: d.ungrouped, value: ungroupedTotal, none: true }])
-          ]
-          const recordCard = card('c-12', cardHead(t('g3.record.title'), null, rec ? [t('g3.record.finding', { n: fmt.int(missing.length), m: fmt.int(empty ? 0 : d.ungrouped.length) }), t('g3.record.info', { source: rec.source })].join('. ') : null),
-            UI.DataTable({
-              pageSize: Infinity,
-              rows: recordRows,
-              emptyText: t('groups.empty'),
-              columns: [
-                { label: t('g3.record.col.group'), render: (r) => h('span', { class: 'record-group' }, h('span', { class: r.none ? 'dot dot-none' : 'dot', style: r.none ? null : `--dot:${Dash.groupColor(r.name)}`, 'aria-hidden': 'true' }),
-                  groupByName.has(r.name) ? h('a', { href: hrefOf(groupByName.get(r.name)), title: r.owners }, r.name) : h('span', { title: r.owners }, r.name)) },
-                { label: t('g3.record.col.brands'), num: true, phone: false, render: (r) => (r.brands ? h('span', { title: r.brands.join(', ') }, fmt.int(r.brands.length)) : h('span', { class: 'record-none' }, r.none ? '—' : t('g3.record.notin'))) },
-                { label: t('g3.record.col.tracked'), render: (r) => h('span', { class: 'record-brands' }, outletsText(r.outlets)) }
-              ]
-            }))
-
           // Row 2, on the left: the articles of each day, stacked by group. The largest group is at the bottom, the outlets with no group are on top.
           const m = media.kind === 'data' ? media.data : null
           const groupOf = new Map([...groups.flatMap((g) => g.outlets.map((o) => [o.slug, g.name])), ...(empty ? [] : d.ungrouped.map((o) => [o.slug, null]))])
@@ -414,7 +357,7 @@
                 })))]
               : emptyText(t('groups.empty')))
 
-          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...stats, bubbles, shareCard, sectorCard, recordCard, volume, stanceCard), protoNote())
+          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...stats, bubbles, shareCard, volume, stanceCard), protoNote())
         }
         draw()
       }

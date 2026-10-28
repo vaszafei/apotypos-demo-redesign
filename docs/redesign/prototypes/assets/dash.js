@@ -121,36 +121,5 @@
     return [head, bad.kind === 'empty' ? h('div', { class: 'dash-grid' }, card('c-12', UI.EmptyState({ text: t('topics2.empty') }))) : UI.ErrorState({ onRetry: () => location.reload() })]
   }
 
-  // One bar of 100%: a segment for each part, in the order given, with a 2 px gap. A segment names itself when its label fits,
-  // the rest are named by the legend under the bar and by the tooltip. rows: [{ label, value, color, href }].
-  function ShareBar (rows, { label } = {}) {
-    const total = rows.reduce((s, r) => s + r.value, 0) || 1
-    const tip = (r) => `${r.label}: ${fmt.pct(r.value / total)} · ${fmt.int(r.value)}`
-    const bar = h('div', { class: 'share-bar', role: 'img', 'aria-label': `${label ? `${label}: ` : ''}${rows.map((r) => `${r.label} ${fmt.pct(r.value / total)}`).join(', ')}` },
-      rows.filter((r) => r.value > 0).map((r) => {
-        const seg = h(r.href ? 'a' : 'span', { class: 'share-seg', href: r.href || null, style: `flex-grow:${r.value};background:${r.color};color:${textOn(r.color)}`, 'aria-hidden': 'true', tabindex: '-1' },
-          h('span', { class: 'share-seg-text' }, h('b', {}, fmt.pct(r.value / total)), ` ${r.label}`))
-        const show = (e) => UI.showTooltip(tip(r), e.clientX, e.clientY)
-        seg.addEventListener('pointerenter', show)
-        seg.addEventListener('pointermove', show)
-        seg.addEventListener('pointerleave', () => UI.hideTooltip())
-        return seg
-      }))
-    // A label shows only when it fits inside its segment: first the share and the name, then the share alone. It checks again on each resize.
-    const names = rows.filter((r) => r.value > 0).map((r) => ` ${r.label}`)
-    const labels = () => bar.querySelectorAll('.share-seg').forEach((seg, i) => {
-      const text = seg.firstChild
-      text.lastChild.textContent = names[i]
-      text.style.visibility = ''
-      if (!seg.clientWidth || text.scrollWidth <= seg.clientWidth - 12) return
-      text.lastChild.textContent = ''
-      if (text.scrollWidth > seg.clientWidth - 8) text.style.visibility = 'hidden'
-    })
-    const observer = new ResizeObserver(labels)
-    observer.observe(bar)
-    watchers.push(observer)
-    return h('div', { class: 'share-wrap' }, bar, UI.Legend(rows.map((r) => ({ label: `${r.label} ${fmt.pct(r.value / total)}`, color: r.color }))))
-  }
-
-  window.Dash = { stateContent, select, fit, reset, niceStep, pct0, SLOTS, NO_GROUP, groupColors, groupColor, newsStories, textOn, tint, Spark, Scale, card, cardHead, Info, emptyText, Stat, TopBar, ShareBar }
+  window.Dash = { stateContent, select, fit, reset, niceStep, pct0, SLOTS, NO_GROUP, groupColors, groupColor, newsStories, textOn, tint, Spark, Scale, card, cardHead, Info, emptyText, Stat, TopBar }
 })()

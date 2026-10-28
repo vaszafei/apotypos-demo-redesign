@@ -474,39 +474,8 @@
 /* The last card of a column takes the height that is left, so a column is as tall as the card beside it. */
 .card-col-fill > :last-child { flex: 1; }
 
-/* The page is a centered column, as on Αρχική: on a wide screen the cards keep a margin on both sides. The hero of Αρχική alone runs the full width. */
-.content.dash.minimal > :not(.home-hero, .visually-hidden) { box-sizing: border-box; width: 100%; max-width: 1320px; margin-inline: auto; padding-inline: clamp(0px, calc(4vw - 16px), 48px); }
+/* The page is a column of 1320 px at the same place as on Αρχική: centered in the window, not in the space beside the sidebar.
+   --side is the width of the sidebar on its left. The margins move the column back by it, and they never go below 0. The hero of Αρχική alone runs the full width. */
+.content.dash.minimal > :not(.home-hero, .visually-hidden) { box-sizing: border-box; margin-left: max(0px, calc((100% - 1320px - var(--side, 0px)) / 2)); margin-right: max(0px, calc((100% - 1320px + var(--side, 0px)) / 2)); padding-inline: clamp(0px, calc(4vw - 16px), 48px); }
+@media (min-width: 1024px) { .page-body:has(> .section-nav) { --side: 232px; } }
 
-/* One bar of 100% (Dash.ShareBar): a segment for each part, with a 2 px gap. A segment names itself when its label fits. */
-.share-wrap { display: grid; gap: var(--space-3); }
-.share-bar { display: flex; gap: 2px; height: 40px; border-radius: 6px; overflow: hidden; }
-.share-seg { display: flex; align-items: center; flex-basis: 0; min-width: 2px; padding: 0 8px; overflow: hidden; font-size: var(--text-caption); line-height: 1; white-space: nowrap; text-decoration: none; }
-.share-seg:hover { filter: brightness(0.94); }
-.share-seg-text { white-space: nowrap; }
-.share-seg-text b { font-weight: 600; }
-.share-finding { margin: 0; font-size: var(--text-small); color: var(--text-secondary); }
-.share-finding strong { color: var(--strong); font-weight: 600; }
-
-/* Ιδιοκτησία › Τι άλλο κατέχουν: owners by sector. The shade is the share of the companies of the owner (one hue, light to dark). */
-.sector-map { display: grid; grid-template-columns: minmax(130px, 1.6fr) repeat(var(--cols), minmax(48px, 1fr)) 56px; gap: 2px; min-width: 640px; font-size: var(--text-caption); }
-.sector-scroll { overflow-x: auto; scrollbar-width: thin; }
-.sector-map > * { min-width: 0; }
-.sector-head { align-self: end; padding: 0 2px 6px; overflow: hidden; color: var(--text-secondary); line-height: 1.2; text-align: center; white-space: nowrap; text-overflow: ellipsis; }
-.sector-head:first-child { text-align: left; }
-.sector-name { display: flex; align-items: center; gap: 6px; padding-right: var(--space-2); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--text-primary); font-size: var(--text-small); }
-.sector-name > span:last-child { overflow: hidden; text-overflow: ellipsis; }
-.sector-cell { display: grid; place-items: center; height: 38px; border-radius: 4px; background: color-mix(in srgb, var(--series-news) var(--k), var(--surface-raised)); color: var(--strong); font-variant-numeric: tabular-nums; }
-.sector-cell.is-zero { background: var(--bar-track); color: transparent; }
-.sector-cell.is-dark { color: var(--on-ink); }
-.sector-cell.is-media { outline: 1.5px solid var(--strong); outline-offset: -1.5px; }
-.sector-total { display: grid; place-items: center end; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-.sector-scale { display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-3); font-size: var(--text-caption); color: var(--text-secondary); }
-.sector-scale i { display: block; width: 120px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, color-mix(in srgb, var(--series-news) 8%, var(--surface-raised)), var(--series-news)); }
-
-/* Ιδιοκτησία › Το αρχείο και το δείγμα: an outlet of the record that the sample does not read. */
-.record-none { color: var(--text-secondary); }
-.record-brands { color: var(--text-secondary); font-size: var(--text-caption); }
-.record-group { display: flex; align-items: center; gap: 6px; min-width: 0; max-width: 200px; white-space: nowrap; }
-@media (max-width: 639px) { .record-group { max-width: 150px; } }
-.record-group .dot { flex: none; }
-.record-group > :last-child { overflow: hidden; text-overflow: ellipsis; }
