@@ -184,9 +184,9 @@
     const rest = rows.slice(TOP)
     const restN = sum(rest.map((r) => r.n))
     const parts = restN ? [...shown, { n: restN, now: restN / dayTotal, color: Dash.NO_GROUP, label: t('home.topics.other', { n: rest.length }) }] : shown
-    const size = 168
+    const size = 220
     const c = size / 2
-    const [r0, r1] = [54, 80]
+    const [r0, r1] = [72, 106]
     const pad = 0.012
     const arc = (a0, a1) => {
       a0 += pad / 2
@@ -206,7 +206,7 @@
       slices.forEach((el, k) => el.classList.toggle('is-dim', i != null && k !== i))
       items.forEach((el, k) => el?.classList.toggle('is-on', k === i))
       centerNum.textContent = r ? fmt.pct(r.now) : fmt.int(dayTotal)
-      centerCap.textContent = r ? (r.label.length > 16 ? `${r.label.slice(0, 15)}…` : r.label) : t('g2.donut.center')
+      centerCap.textContent = r ? (r.label.length > 24 ? `${r.label.slice(0, 23)}…` : r.label) : t('g2.donut.center')
     }
     let a = 0
     parts.forEach((r, i) => {

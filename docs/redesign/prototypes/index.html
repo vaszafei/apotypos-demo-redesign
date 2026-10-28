@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="assets/tokens.css?v=10">
   <link rel="stylesheet" href="assets/app.css?v=35">
   <link rel="stylesheet" href="assets/dash.css?v=81">
-  <link rel="stylesheet" href="assets/home.css?v=38">
+  <link rel="stylesheet" href="assets/home.css?v=39">
 </head>
 <body>
   <div id="app"></div>
@@ -19,7 +19,7 @@
   <script src="assets/components.js?v=13"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/dash.js?v=16"></script>
-  <script src="assets/home.js?v=31"></script>
+  <script src="assets/home.js?v=32"></script>
   <script src="assets/shell.js?v=50"></script>
   <script src="data/home.js"></script>
   <script src="data/stories.js?v=1"></script>
@@ -118,8 +118,7 @@
           const storyCount = ix ? new Set(ix.byDay.slice(i0, i1 + 1).flat().map((o) => o.s.id)).size : null
           content.replaceChildren(
             Home.Hero({ home: data, totals, i0, i1, stories: storyCount }),
-            Home.SectionHead({ id: 'home-today', title: t('home.today.title') }),
-            h('div', { class: 'dash-grid home-grid' }, main, aside), protoNote())
+            h('div', { class: 'dash-grid home-grid', id: 'home-today' }, main, aside), protoNote())
         }
         draw()
       }
