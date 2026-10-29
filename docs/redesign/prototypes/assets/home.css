@@ -193,3 +193,8 @@ a.home-stack-part { cursor: pointer; }
 }
 
 .home-grid { scroll-margin-top: calc(var(--navbar-height) + var(--space-4)); margin-top: var(--space-6); }
+
+/* The cards have the page background; the edge shows only under the mouse or with the keyboard focus inside. */
+.content.is-home .dcard { border-color: transparent; background: transparent; box-shadow: none; transition: border-color var(--motion-base) var(--ease-out); }
+.content.is-home .dcard:is(:hover, :focus-within) { border-color: var(--card-edge); }
+.content.is-home .dcard :is(.home-stories li.is-current, .home-topic-row.is-on) { background: color-mix(in srgb, var(--ink) 6%, transparent); }
