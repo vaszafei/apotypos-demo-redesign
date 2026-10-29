@@ -582,9 +582,70 @@
     }, Icon('arrow-left', 'icon icon-sm'))
   }
 
+  // Page transitions (app.css). A move to another section slides the page sideways, in the order of the navbar. A move to another sub-tab
+  // slides the content up or down, in the order of the sidebar (sideways on a phone, where the sub-tabs are a row). Back and forward move
+  // the same way. A link to a detail page, in a card or in the footer changes the page without a slide.
+  // The page that is left keeps where it was and which link was clicked. The new page reads it before its first frame.
+  const MOVE_KEY = 'm-move' // also read by page-move.js
+  const MOVE_LINKS = '.nav-main a, .section-nav a, .section-tabs a, .sub-tabs a'
+  // The place of a route in the order: its section and its page in the section. A detail page has none.
+  function stepOf (route) {
+    const item = route ? itemOf(route) : null
+    const page = item ? pagesOf(item).findIndex(([, r]) => r === route) : -1
+    return page < 0 ? null : { section: NAV.indexOf(item), page }
+  }
+  function directionOf (from, to) {
+    const a = stepOf(from)
+    const b = stepOf(to)
+    if (!a || !b || (a.section === b.section && a.page === b.page)) return null
+    if (a.section !== b.section) return b.section > a.section ? 'right' : 'left'
+    const column = window.matchMedia('(min-width: 1024px)').matches
+    if (b.page > a.page) return column ? 'down' : 'right'
+    return column ? 'up' : 'left'
+  }
+  function readMove () {
+    try { const move = JSON.parse(sessionStorage.getItem(MOVE_KEY)); return move && Date.now() - move.time < 5000 ? move : null } catch { return null }
+  }
+  function keepMove (move) {
+    try { sessionStorage.setItem(MOVE_KEY, JSON.stringify({ ...move, time: Date.now() })) } catch { /* storage is not available */ }
+  }
+  function watchMoves (route) {
+    let restored = false
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest?.(MOVE_LINKS)
+      if (link && e.button === 0 && !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) keepMove({ from: route, href: link.href, nav: true })
+    }, true)
+    // The top of the page as the visitor saw it: the new page shows the old picture there, not at its own top.
+    const pageTop = () => document.querySelector('.page-main')?.getBoundingClientRect().top ?? 0
+    window.addEventListener('pageswap', () => {
+      const move = readMove()
+      keepMove({ ...(move?.nav ? move : { from: route }), top: pageTop() })
+    })
+    window.addEventListener('pageshow', (e) => { restored = e.persisted })
+    window.addEventListener('pagereveal', (e) => {
+      const move = readMove()
+      try { sessionStorage.removeItem(MOVE_KEY) } catch { /* storage is not available */ }
+      if (!e.viewTransition) return
+      const traverse = window.navigation?.activation?.navigationType === 'traverse' || restored ||
+        performance.getEntriesByType('navigation')[0]?.type === 'back_forward'
+      const counted = move && (traverse || (move.nav && move.href === location.href))
+      const direction = counted ? directionOf(move.from, route) : null
+      if (!direction) {
+        e.viewTransition.ready.catch(() => { /* skipped on purpose */ })
+        e.viewTransition.skipTransition()
+        return
+      }
+      const html = document.documentElement
+      html.dataset.vt = direction
+      html.style.setProperty('--vt-old-y', `${(move.top ?? 0) - pageTop()}px`)
+      e.viewTransition.finished.finally(() => { delete html.dataset.vt; html.style.removeProperty('--vt-old-y') })
+    })
+  }
+
   // search: false leaves the search out of the top bar. Αρχική has its own, in the page.
   function start ({ id, route, title, breadcrumbs, render, dash = false, search = true }) {
     const root = document.getElementById('app')
+    watchMoves(route)
     // The search lists the last pages of the visitor.
     const here = hereHref()
     remember('pages', { h: here, n: title(), r: route }, (p) => p.h === here)
@@ -725,13 +786,18 @@
         ...(search ? [GlobalSearch()] : []),
         h('div', { class: 'header-actions' }, langSwitch(), authLinks('auth-links')))
       // The tabs of the section are a sidebar on a wide screen, under the navbar. A phone keeps them as tabs in the page head.
-      // The sub-tabs of a tab stay in the page body. A detail page (an outlet) marks the tab that lists it.
+      // The sub-tabs of the current tab are listed under it in the sidebar; a phone keeps them in the page body. A detail page (an outlet) marks the tab that lists it.
       const activeRoute = exactTab ? route : parentRoute
       const sectionNav = item && item.tabs.length > 1
         ? h('nav', { class: 'section-nav', 'aria-label': t(`nav.${item.key}`) }, h('div', { class: 'section-nav-inner' },
           h('ul', { class: 'section-nav-list' }, item.tabs.map(([key, r, subs]) => {
             const inTab = r === activeRoute || (subs || []).some(([, s]) => s === activeRoute)
-            return h('li', {}, h('a', { class: 'section-nav-link', href: hrefOf(r), 'aria-current': inTab ? (route === r || (subs || []).some(([, s]) => s === route) ? 'page' : 'true') : null }, t(`tab.${item.key}.${key}`)))
+            const nested = inTab && subs
+            const current = inTab ? (!nested && (route === r || (subs || []).some(([, s]) => s === route)) ? 'page' : 'true') : null
+            return h('li', {},
+              h('a', { class: `section-nav-link${nested ? ' is-parent' : ''}`, href: hrefOf(r), 'aria-current': current }, t(`tab.${item.key}.${key}`)),
+              nested ? h('ul', { class: 'section-nav-sub' }, subs.map(([subKey, s]) =>
+                h('li', {}, h('a', { class: 'section-nav-link', href: hrefOf(s), 'aria-current': s === route ? 'page' : null }, t(`tab.${item.key}.${subKey}`))))) : null)
           }))))
         : null
       const content = h('main', { class: 'content', id: 'content' })

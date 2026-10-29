@@ -132,6 +132,8 @@
   --logo-filter: none;
   --error-text: #a12a2a; --error-bg: #fbefef; --error-edge: #d9a3a3; --error-ink: #7a1f1f;
   --notice-bg: #fdf3df; --notice-edge: #b7791f; --target-bg: #fff6cc; --card-edge: #e4e0d6;
+  /* The tint of a selected row or a note inside a card. A card has the page background, so the tint darkens the page in every theme. */
+  --card-tint: color-mix(in srgb, var(--ink) 6%, transparent);
   --skeleton: #e8e5de; --skeleton-2: #efede7; --skeleton-3: #f1efe9;
   --text-primary: #404040;
   --text-secondary: #696972;
@@ -172,13 +174,16 @@
   --motion-chart: 640ms;
   --motion-stagger: 40ms;
   --motion-distance: 8px;
+  /* A move to another page: a short slide of the page, not a full push. */
+  --motion-page: 250ms;
+  --motion-page-distance: 48px;
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
   --ease-in-out: cubic-bezier(0.45, 0, 0.25, 1);
   --ease-spring: cubic-bezier(0.3, 1.3, 0.5, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :root { --motion-distance: 0px; --motion-stagger: 0ms; }
+  :root { --motion-distance: 0px; --motion-stagger: 0ms; --motion-page-distance: 0px; }
 }
 
 /* Font candidates for the decision of the project lead. "inter" is the font pair of APO-150. */

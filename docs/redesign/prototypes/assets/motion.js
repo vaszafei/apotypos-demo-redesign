@@ -119,7 +119,8 @@
     if (introDone) return
     introDone = true
     const content = document.getElementById('content')
-    if (content) enterPage(content)
+    // A move from another page slides the page in (shell.js), so the blocks do not rise as well.
+    if (content && !root.dataset.vt) enterPage(content)
     if (!still() && content) {
       const units = [...content.querySelectorAll(UNIT)]
       let k = 0
@@ -214,23 +215,27 @@
   }
 
   // 5. The "/" of the current tab: a click on a tab keeps where the "/" was, and the next page glides it to its own tab.
+  // The tabs are a row (a phone) or the sidebar (a wide screen). In the sidebar the "/" marks the sub-tab, so it can move down and sideways.
+  const TABS = '.section-tabs, .section-nav'
+  const marked = (nav) => nav.querySelector('a[aria-current="page"]') || nav.querySelector('a[aria-current]')
   document.addEventListener('click', (e) => {
-    const link = e.target.closest?.('.section-tabs a[href]')
-    if (!link || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || link.hasAttribute('aria-current')) return
-    const nav = link.closest('.section-tabs')
-    const current = nav.querySelector('a[aria-current]')
+    const link = e.target.closest?.('.section-tabs a[href], .section-nav a[href]')
+    if (!link || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || link.getAttribute('aria-current') === 'page') return
+    const nav = link.closest(TABS)
+    const current = marked(nav)
     if (!current) return
     try {
-      sessionStorage.setItem('m-tab', JSON.stringify({ label: nav.getAttribute('aria-label'), href: link.getAttribute('href'), left: offsetIn(nav, current), time: Date.now() }))
+      sessionStorage.setItem('m-tab', JSON.stringify({ label: nav.getAttribute('aria-label'), href: link.getAttribute('href'), left: offsetIn(nav, current), top: topIn(nav, current), time: Date.now() }))
     } catch { /* storage is not available */ }
   }, true)
   const offsetIn = (nav, el) => el.getBoundingClientRect().left - nav.getBoundingClientRect().left - nav.clientLeft + nav.scrollLeft
+  const topIn = (nav, el) => el.getBoundingClientRect().top - nav.getBoundingClientRect().top - nav.clientTop + nav.scrollTop
   function glideTab () {
     let saved = null
     try { saved = JSON.parse(sessionStorage.getItem('m-tab')); sessionStorage.removeItem('m-tab') } catch { return }
     if (!saved || still() || Date.now() - saved.time > 5000) return
-    const nav = [...document.querySelectorAll('.section-tabs')].find((n) => n.getAttribute('aria-label') === saved.label)
-    const current = nav?.querySelector('a[aria-current]')
+    const nav = [...document.querySelectorAll(TABS)].find((n) => n.getAttribute('aria-label') === saved.label && n.getClientRects().length)
+    const current = nav && marked(nav)
     if (!current || current.getAttribute('href') !== saved.href) return
     const mark = getComputedStyle(current, '::before').content
     if (!mark || mark === 'none' || mark === 'normal') return
@@ -242,17 +247,21 @@
       glide.className = 'tab-glide'
       glide.setAttribute('aria-hidden', 'true')
       glide.textContent = JSON.parse(mark)
+      const top = topIn(nav, current)
       Object.assign(glide.style, {
-        left: `${left}px`, top: `${current.getBoundingClientRect().top - nav.getBoundingClientRect().top - nav.clientTop + nav.scrollTop}px`,
-        paddingTop: cs.paddingTop, ...fontOf(cs), textTransform: cs.textTransform, color: cs.color
+        left: `${left}px`, top: `${top}px`,
+        paddingTop: cs.paddingTop, paddingLeft: cs.paddingLeft, ...fontOf(cs), textTransform: cs.textTransform, color: cs.color
       })
       nav.append(glide)
-      const move = glide.animate([{ transform: `translateX(${saved.left - left}px)` }, { transform: 'none' }], { duration: ms('--motion-slow') + 60, easing: token('--ease-in-out') })
+      const move = glide.animate([{ transform: `translate(${saved.left - left}px, ${(saved.top ?? top) - top}px)` }, { transform: 'none' }], { duration: ms('--motion-slow') + 60, easing: token('--ease-in-out') })
       const done = () => { glide.remove(); current.classList.remove('is-landing') }
       move.onfinish = done
       move.oncancel = done
     })
   }
+
+  // A move from another page (shell.js sets data-vt before the first frame): the glide starts at once, so the "/" never shows at its new place first.
+  new MutationObserver(() => { if (root.dataset.vt) glideTab() }).observe(root, { attributes: true, attributeFilter: ['data-vt'] })
 
   // 6. Sorted rows move to their new place (FLIP). A row of the outlet ranking is keyed by its outlet name.
   const FLIPPED = '.mme-rank tbody tr'
