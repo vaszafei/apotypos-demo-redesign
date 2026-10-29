@@ -176,13 +176,6 @@ a.home-stack-part { cursor: pointer; }
 /* Under the hero the page is a centered column: on a wide screen the news keeps a margin on both sides, the hero alone runs the full width. */
 .content.is-home > :not(.home-hero) { box-sizing: border-box; width: 100%; max-width: 1320px; margin-inline: auto; padding-inline: clamp(0px, calc(4vw - 16px), 48px); }
 
-/* The head of a section under the hero. */
-/* Its text lines up with the text inside the cards (their padding: 18 px, 14 px on a phone). */
-.home-section-head { display: grid; gap: var(--space-1); margin: var(--space-6) 0 var(--space-4); padding: 0 18px; scroll-margin-top: calc(var(--navbar-height) + var(--space-4)); }
-.home-section-title { margin: 0; font: 700 22px/1.2 var(--font-heading); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); }
-.home-section-title::before { content: "/ "; }
-.home-section-lead { margin: 0; font-size: var(--text-small); color: var(--text-secondary); }
-
 @media (max-width: 1023px) {
   .home-hero { margin: 0 calc(-1 * var(--space-4)); padding: 40px var(--space-4) 88px; min-height: 0; }
   .home-hero .is-hero .global-search-key { display: none; }
@@ -193,8 +186,6 @@ a.home-stack-part { cursor: pointer; }
   .search-hero-go { height: 38px; padding: 0 16px; font-size: 14px; }
   .home-hero-stats dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--space-4); width: 100%; }
   .home-hero-stat:nth-child(odd) { border-left: 0; }
-  .home-section-head { margin-top: var(--space-5); padding: 0 14px; }
-  .home-section-title { font-size: 18px; }
 }
 @media (max-width: 419px) {
   .search-hero-go { display: none; }

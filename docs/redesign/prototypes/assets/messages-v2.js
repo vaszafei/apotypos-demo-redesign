@@ -39,7 +39,6 @@ Object.assign(window.MESSAGES.el, {
   'media2.rank.people': 'Πρόσωπα με σελίδα',
   'media2.col.trend': 'Τάση',
   'media2.col.life': 'Πορεία της ιστορίας',
-  'media2.scale.aria': '{value}, μέσος όρος {avg}',
   'media2.empty.list': 'Δεν υπάρχουν δεδομένα για αυτή την περίοδο.'
 })
 
@@ -83,7 +82,6 @@ Object.assign(window.MESSAGES.en, {
   'media2.rank.people': 'People with a page',
   'media2.col.trend': 'Trend',
   'media2.col.life': 'Course of the story',
-  'media2.scale.aria': '{value}, average {avg}',
   'media2.empty.list': 'No data for this period.'
 })
 
