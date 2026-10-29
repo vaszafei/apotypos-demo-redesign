@@ -6,11 +6,15 @@
     "sync": "node scripts/sync-prototype.mjs",
     "dev": "pnpm sync && nuxt dev",
     "generate": "pnpm sync && nuxt generate",
-    "preview": "nuxt preview"
+    "preview": "nuxt preview",
+    "check:visual": "node ../docs/redesign/prototypes/scripts/visual-check.mjs"
   },
   "dependencies": {
     "nuxt": "^4.6.2",
     "vue": "^3.5.44",
     "vue-router": "^5.4.0"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.64.1"
   }
 }
