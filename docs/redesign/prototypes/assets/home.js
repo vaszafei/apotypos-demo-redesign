@@ -311,11 +311,5 @@
     return svg
   }
 
-  // The head of a section of Αρχική: the title with the "/" of the site and a line under it.
-  function SectionHead ({ id, title, lead }) {
-    return h('header', { class: 'home-section-head', id },
-      h('h2', { class: 'home-section-title' }, title), lead ? h('p', { class: 'home-section-lead' }, lead) : null)
-  }
-
-  window.Home = { index, dayInfo, DayCard, Calendar, TopicsCard, QuickCard, Hero, SectionHead }
+  window.Home = { index, dayInfo, DayCard, Calendar, TopicsCard, QuickCard, Hero }
 })()

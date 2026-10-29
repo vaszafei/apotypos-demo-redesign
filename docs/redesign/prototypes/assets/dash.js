@@ -23,12 +23,6 @@
   // One fixed color for each group: the categorical slots 1 to 8 of the dataviz palette, in the order of the groups file.
   const SLOTS = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6', '#e34948']
   const NO_GROUP = '#9a978f'
-  // The stories of the news topics, largest first. A story with the name of its topic is a catch-all and does not count (APO-168).
-  function newsStories (media) {
-    const soft = new Set(media.issues.filter((i) => i.soft).map((i) => i.el))
-    return media.stories.filter((s) => !soft.has(s.issue) && s.el !== s.issue)
-      .map((s) => ({ ...s, count: s.daily.reduce((a, b) => a + b, 0) })).filter((s) => s.count >= 3).sort((a, b) => b.count - a.count)
-  }
   // The fixed group to slot map (#2): a group has the same color on every page, whatever list the page has.
   // Slots 1 to 8 follow the order of the groups file. Antenna Group is only in the live data (/api/sources), so it has a 9th slot.
   const GROUP_SLOT = new Map([['Alter Ego Media', '#2a78d6'], ['DPG Digital Media', '#eb6834'], ['Συμφέροντα Μπάκου-Καϋμενάκη', '#1baf7a'], ['Politis Group', '#eda100'],
@@ -53,17 +47,6 @@
     return h('svg', { class: 'spark', width: w, height: hgt, viewBox: `0 0 ${w} ${hgt}`, role: 'img', 'aria-label': label },
       h('path', { class: 'spark-base', d: path(0, values.length - 1) }),
       h('path', { class: 'spark-range', d: path(i0, i1) }))
-  }
-
-  // Scale: a line from the lowest to the highest value, a tick for the average, a dot for this row.
-  function Scale (value, min, max, avg, valueText, avgText) {
-    const w = 96
-    const span = max - min || 1
-    const x = (v) => 4 + ((v - min) / span) * (w - 8)
-    return h('svg', { class: 'scale', width: w, height: 16, viewBox: `0 0 ${w} 16`, role: 'img', 'aria-label': t('media2.scale.aria', { value: valueText, avg: avgText }) },
-      h('line', { class: 'scale-line', x1: 4, x2: w - 4, y1: 8, y2: 8 }),
-      h('line', { class: 'scale-avg', x1: x(avg), x2: x(avg), y1: 2, y2: 14 }),
-      h('circle', { class: 'scale-dot', cx: x(value), cy: 8, r: 5 }))
   }
 
   const card = (cls, ...children) => h('section', { class: `dcard ${cls}` }, ...children)
@@ -121,5 +104,5 @@
     return [head, bad.kind === 'empty' ? h('div', { class: 'dash-grid' }, card('c-12', UI.EmptyState({ text: t('topics2.empty') }))) : UI.ErrorState({ onRetry: () => location.reload() })]
   }
 
-  window.Dash = { stateContent, select, fit, reset, niceStep, pct0, SLOTS, NO_GROUP, groupColors, groupColor, newsStories, textOn, tint, Spark, Scale, card, cardHead, Info, emptyText, Stat, TopBar }
+  window.Dash = { stateContent, select, fit, reset, niceStep, pct0, SLOTS, NO_GROUP, groupColors, groupColor, textOn, tint, Spark, card, cardHead, Info, emptyText, Stat, TopBar }
 })()

@@ -10,11 +10,6 @@
 .mme-chip.is-static:hover { border-color: var(--border); }
 .mme-chip-n { font-size: var(--text-caption); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 
-/* What stands out: a red rule on the left, as on the live page. */
-.mme-hl { border-left: 4px solid var(--stance-critical); }
-.mme-hl-list { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; font-size: var(--text-small); color: var(--text-primary); }
-.mme-hl-list li:first-child { font-weight: 600; color: var(--ink); }
-
 /* The stance key above the stance rows of the outlets. */
 .mme-key-row { margin-bottom: var(--space-2); font-size: var(--text-caption); }
 
@@ -60,11 +55,6 @@
 .mme-person-topics span { display: block; }
 
 /* The page of one outlet. */
-.mme-ostats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-3); }
-.mme-ostat p { margin: 0; }
-.mme-ostat .muted-text { font-size: var(--text-caption); }
-.mme-ostat-value { font-size: var(--text-heading); font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
-@media (max-width: 719px) { .mme-ostats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .mme-headline { display: grid; gap: 2px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: var(--text-small); }
 .mme-headline:last-child { border-bottom: 0; }
 .mme-headline .muted-text { font-size: var(--text-caption); }

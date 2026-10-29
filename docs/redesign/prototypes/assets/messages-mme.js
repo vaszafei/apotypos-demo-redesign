@@ -27,12 +27,6 @@ Object.assign(window.MESSAGES.el, {
   'mme.chips.title': 'Θέματα',
   'mme.chips.info': 'Το μερίδιο κάθε θέματος στις ειδήσεις όλων των μέσων στο διάστημα, χωρίς αθλητικά, lifestyle, πολιτισμό, τεχνολογία και καιρό. Ένα κλικ ανοίγει το θέμα στην κάρτα «Ένα θέμα, όλα τα μέσα».',
 
-  'mme.hl.title': 'Τι ξεχωρίζει στο διάστημα',
-  'mme.hl.info': 'Τρεις παρατηρήσεις που υπολογίζονται από τα νούμερα του διαστήματος: το θέμα που ένα μέσο προβάλλει πολύ περισσότερο από τα άλλα, η μεγάλη ιστορία που κάποιο μέσο δεν έγραψε, και η απόσταση στη στάση προς την κυβέρνηση.',
-  'mme.hl.topic': '{outlet}: το «{topic}» είναι το {share} της ειδησεογραφίας του, {ratio} φορές τον μέσο όρο των μέσων ({avg}).',
-  'mme.hl.story': 'Η ιστορία «{story}» έφτασε σε {reach} από {total} μέσα ({n} άρθρα), αλλά καμία δημοσίευση από: {missing}.',
-  'mme.hl.stance': 'Στάση απέναντι στην κυβέρνηση: το {a} είναι επικριτικό στο {pa} των σχετικών άρθρων του, το {b} στο {pb} (υποστηρικτικό στο {sb}).',
-
   'mme.rank.sort.n': 'Άρθρα',
   'mme.home.note': 'Από τα μέσα της Ελλάδας, για το διάστημα που διαλέξατε.',
   'mme.rank.note': 'Τα μέσα με τουλάχιστον 500 άρθρα στο διάστημα της ανάλυσης.',
@@ -89,8 +83,6 @@ Object.assign(window.MESSAGES.el, {
 
   'mme.method': 'Μεθοδολογία: όλα τα άρθρα των μέσων στο διάστημα {from} – {to} ({n} άρθρα). Ένα μοντέλο διαβάζει τίτλο και κείμενο κάθε άρθρου και εξάγει θέμα, ιστορία, πλαίσιο, στάση προς την κυβέρνηση, clickbait τίτλο, τις δηλώσεις των προσώπων και τον τόνο για αυτά. Πηγή: apotypos.org/media, {date}.',
 
-  'mme.o.title': 'Σε αριθμούς',
-  'mme.o.info': 'Από την ανάλυση ΜΜΕ & πρόσωπα (29 μέσα, 1 Αυγ – 30 Σεπ 2026). Η κατάταξη είναι ανάμεσα στα μέσα με τουλάχιστον 100 άρθρα στη μέτρηση.',
   'mme.o.posts': 'Δημοσιεύσεις',
   'mme.o.posts.sub': 'στην ανάλυση',
   'mme.o.news': 'Ειδήσεις',
@@ -186,12 +178,6 @@ Object.assign(window.MESSAGES.en, {
   'mme.chips.title': 'Topics',
   'mme.chips.info': 'The share of each topic in the news of all outlets in the period, without sports, lifestyle, culture, technology and weather. A click opens the topic in the card «One topic, all outlets».',
 
-  'mme.hl.title': 'What stands out in the period',
-  'mme.hl.info': 'Three observations computed from the numbers of the period: the topic an outlet covers far more than the others, the big story an outlet did not write, and the gap in stance to the government.',
-  'mme.hl.topic': '{outlet}: «{topic}» is {share} of its news, {ratio} times the average of the outlets ({avg}).',
-  'mme.hl.story': 'The story «{story}» reached {reach} of {total} outlets ({n} articles), but nothing from: {missing}.',
-  'mme.hl.stance': 'Stance to the government: {a} is critical in {pa} of its relevant articles, {b} in {pb} (supportive in {sb}).',
-
   'mme.rank.sort.n': 'Articles',
   'mme.home.note': 'From the Greek outlets, for the period you chose.',
   'mme.rank.note': 'The outlets with at least 500 articles in the window of the analysis.',
@@ -248,8 +234,6 @@ Object.assign(window.MESSAGES.en, {
 
   'mme.method': 'Methodology: all the articles of the outlets in the period {from} – {to} ({n} articles). A model reads the title and text of each article and extracts topic, story, frame, stance to the government, clickbait title, the statements of the people and the tone about them. Source: apotypos.org/media, {date}.',
 
-  'mme.o.title': 'In numbers',
-  'mme.o.info': 'From the analysis Media & people (29 outlets, 1 Aug – 30 Sep 2026). The rank is among the outlets with at least 100 articles in the measure.',
   'mme.o.posts': 'Articles',
   'mme.o.posts.sub': 'in the analysis',
   'mme.o.news': 'News',
