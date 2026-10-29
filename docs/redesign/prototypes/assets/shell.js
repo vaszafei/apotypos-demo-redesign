@@ -598,7 +598,7 @@
   const MOVE_LINKS = '.nav-main a, .section-nav a, .section-tabs a, .sub-tabs a'
   // The place of a route in the order: its section and its page in the section. A detail page has none.
   function stepOf (route) {
-    const item = itemOf(route)
+    const item = route ? itemOf(route) : null
     const page = item ? pagesOf(item).findIndex(([, r]) => r === route) : -1
     return page < 0 ? null : { section: NAV.indexOf(item), page }
   }
@@ -623,7 +623,12 @@
       const link = e.target.closest?.(MOVE_LINKS)
       if (link && e.button === 0 && !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) keepMove({ from: route, href: link.href, nav: true })
     }, true)
-    window.addEventListener('pageswap', () => { if (!readMove()?.nav) keepMove({ from: route }) })
+    // The top of the page as the visitor saw it: the new page shows the old picture there, not at its own top.
+    const pageTop = () => document.querySelector('.page-main')?.getBoundingClientRect().top ?? 0
+    window.addEventListener('pageswap', () => {
+      const move = readMove()
+      keepMove({ ...(move?.nav ? move : { from: route }), top: pageTop() })
+    })
     window.addEventListener('pageshow', (e) => { restored = e.persisted })
     window.addEventListener('pagereveal', (e) => {
       const move = readMove()
@@ -633,9 +638,15 @@
         performance.getEntriesByType('navigation')[0]?.type === 'back_forward'
       const counted = move && (traverse || (move.nav && move.href === location.href))
       const direction = counted ? directionOf(move.from, route) : null
-      if (!direction) { e.viewTransition.skipTransition(); return }
-      document.documentElement.dataset.vt = direction
-      e.viewTransition.finished.finally(() => { delete document.documentElement.dataset.vt })
+      if (!direction) {
+        e.viewTransition.ready.catch(() => { /* skipped on purpose */ })
+        e.viewTransition.skipTransition()
+        return
+      }
+      const html = document.documentElement
+      html.dataset.vt = direction
+      html.style.setProperty('--vt-old-y', `${(move.top ?? 0) - pageTop()}px`)
+      e.viewTransition.finished.finally(() => { delete html.dataset.vt; html.style.removeProperty('--vt-old-y') })
     })
   }
 
