@@ -13,7 +13,7 @@ Plan: `docs/plans/2026-10-29-1510-refactor-remove-dead-exports-plan.md`. Branch:
 ## Deviations from the plan
 
 - The plan said `Mme.StanceBar` was never called and should be deleted. That was wrong: `GovCard` in `mme.js` calls it (`bar: StanceBar(o.stance, o.name, avg)`). My earlier grep output was cut at 160 columns and hid the call. The function was restored from `HEAD` unchanged and only made private, which is what the handoff and the user's answer said.
-- The handoff's list was wrong in two places, found before planning: `Entity.scaleOf` is used (destructuring, which `export-usage.py` does not see), and `Dash.Scale` has no caller at all.
+- The handoff's list was wrong in two places, found before planning: `Entity.scaleOf` is used (3 pages destructure it), and `Dash.Scale` has no caller at all. A rerun of `export-usage.py` on `4ad57da` after the merge shows the script itself does not flag `scaleOf` (it handles destructuring), so the handoff list did not match the script's output. The script did call `Dash.Scale` "internal only", because its inside count includes the comment `// Scale: ...`.
 
 ## Verification
 
@@ -37,5 +37,5 @@ Looked at: `fingerprints-v2?tab=spread` and `media-v2` at 1440 night, `overton-v
 
 - `stanceKey` in `mme.js` was already unused on `main` (not an export). Out of scope.
 - `groups-v2.html` has its own copy of `Sunburst`.
-- `export-usage.py` misses destructured uses.
+- `export-usage.py` counts comments as uses inside the defining file, so a dead function with a leading comment that names it shows as "internal only".
 - The visual check takes screenshots with motion on, 500 ms after network idle, so about a quarter of the screenshots differ between two runs of the same code. A screenshot comparison needs `reducedMotion: 'reduce'` (as the DOM check above used) to be exact.
