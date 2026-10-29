@@ -813,9 +813,36 @@ details[open] > :not(summary) { animation: m-rise var(--motion-base) var(--ease-
 .seg-thumb { position: absolute; z-index: -1; pointer-events: none; transform-origin: 0 0; }
 .segmented button.is-landing { background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: var(--text-primary); }
 /* The "/" of the current tab glides from the tab of the last page (motion.js). */
-.section-tabs { position: relative; }
+.section-tabs, .section-nav { position: relative; }
 .tab-glide { position: absolute; pointer-events: none; white-space: pre; }
-.section-tabs a.is-landing::before { opacity: 0; }
+.section-tabs a.is-landing::before, .section-nav a.is-landing::before { opacity: 0; }
+
+/* A move to another page (shell.js sets data-vt): the navbar stays, the page slides in from the side of the link that was clicked.
+   A section move slides the sidebar with the page. A sub-tab move slides only the content, and the "/" of the sidebar glides to the new tab.
+   With reduced motion the distance is 0, so the move is a fade. A browser without these transitions changes the page at once. */
+@view-transition { navigation: auto; }
+.header-bar { view-transition-name: navbar; }
+.section-nav { view-transition-name: subnav; }
+.page-main { view-transition-name: page; }
+:root[data-vt="right"] { --vt-x: 1; }
+:root[data-vt="left"] { --vt-x: -1; }
+:root[data-vt="down"] { --vt-y: 1; }
+:root[data-vt="up"] { --vt-y: -1; }
+@keyframes vt-leave { to { opacity: 0; transform: translate(calc(var(--vt-x, 0) * -1 * var(--motion-page-distance)), calc(var(--vt-y, 0) * -1 * var(--motion-page-distance))); } }
+@keyframes vt-enter { from { opacity: 0; transform: translate(calc(var(--vt-x, 0) * var(--motion-page-distance)), calc(var(--vt-y, 0) * var(--motion-page-distance))); } }
+::view-transition-group(navbar) { z-index: 1; }
+/* The page and the sidebar do not glide between their old and new boxes (Αρχική has no sidebar), and their pictures keep their own size. */
+:root[data-vt]::view-transition-group(page), :root[data-vt]::view-transition-group(subnav) { animation: none; }
+:root[data-vt]::view-transition-old(page), :root[data-vt]::view-transition-new(page),
+:root[data-vt]::view-transition-old(subnav), :root[data-vt]::view-transition-new(subnav) { inline-size: auto; block-size: auto; }
+:root[data-vt]::view-transition-old(page), :root[data-vt="left"]::view-transition-old(subnav), :root[data-vt="right"]::view-transition-old(subnav) {
+  animation: vt-leave var(--motion-page) var(--ease-out) both;
+}
+:root[data-vt]::view-transition-new(page), :root[data-vt="left"]::view-transition-new(subnav), :root[data-vt="right"]::view-transition-new(subnav) {
+  animation: vt-enter var(--motion-page) var(--ease-out) both;
+}
+:root[data-vt="up"]::view-transition-old(subnav), :root[data-vt="down"]::view-transition-old(subnav) { animation: none; opacity: 0; }
+:root[data-vt="up"]::view-transition-new(subnav), :root[data-vt="down"]::view-transition-new(subnav) { animation: none; }
 
 /* The first view of a chart (motion.js): bars and lines grow, points pop, numbers count up.
    Before its view, a chart below the fold waits with its marks hidden. .m-intro covers the first frame, before motion.js sorts the cards. */

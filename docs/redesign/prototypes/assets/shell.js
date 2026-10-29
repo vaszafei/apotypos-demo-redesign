@@ -590,9 +590,59 @@
     }, Icon('arrow-left', 'icon icon-sm'))
   }
 
+  // Page transitions (app.css). A move to another section slides the page sideways, in the order of the navbar. A move to another sub-tab
+  // slides the content up or down, in the order of the sidebar (sideways on a phone, where the sub-tabs are a row). Back and forward move
+  // the same way. A link to a detail page, in a card or in the footer changes the page without a slide.
+  // The page that is left keeps where it was and which link was clicked. The new page reads it before its first frame.
+  const MOVE_KEY = 'm-move' // also read by page-move.js
+  const MOVE_LINKS = '.nav-main a, .section-nav a, .section-tabs a, .sub-tabs a'
+  // The place of a route in the order: its section and its page in the section. A detail page has none.
+  function stepOf (route) {
+    const item = itemOf(route)
+    const page = item ? pagesOf(item).findIndex(([, r]) => r === route) : -1
+    return page < 0 ? null : { section: NAV.indexOf(item), page }
+  }
+  function directionOf (from, to) {
+    const a = stepOf(from)
+    const b = stepOf(to)
+    if (!a || !b || (a.section === b.section && a.page === b.page)) return null
+    if (a.section !== b.section) return b.section > a.section ? 'right' : 'left'
+    const column = window.matchMedia('(min-width: 1024px)').matches
+    if (b.page > a.page) return column ? 'down' : 'right'
+    return column ? 'up' : 'left'
+  }
+  function readMove () {
+    try { const move = JSON.parse(sessionStorage.getItem(MOVE_KEY)); return move && Date.now() - move.time < 5000 ? move : null } catch { return null }
+  }
+  function keepMove (move) {
+    try { sessionStorage.setItem(MOVE_KEY, JSON.stringify({ ...move, time: Date.now() })) } catch { /* storage is not available */ }
+  }
+  function watchMoves (route) {
+    let restored = false
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest?.(MOVE_LINKS)
+      if (link && e.button === 0 && !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) keepMove({ from: route, href: link.href, nav: true })
+    }, true)
+    window.addEventListener('pageswap', () => { if (!readMove()?.nav) keepMove({ from: route }) })
+    window.addEventListener('pageshow', (e) => { restored = e.persisted })
+    window.addEventListener('pagereveal', (e) => {
+      const move = readMove()
+      try { sessionStorage.removeItem(MOVE_KEY) } catch { /* storage is not available */ }
+      if (!e.viewTransition) return
+      const traverse = window.navigation?.activation?.navigationType === 'traverse' || restored ||
+        performance.getEntriesByType('navigation')[0]?.type === 'back_forward'
+      const counted = move && (traverse || (move.nav && move.href === location.href))
+      const direction = counted ? directionOf(move.from, route) : null
+      if (!direction) { e.viewTransition.skipTransition(); return }
+      document.documentElement.dataset.vt = direction
+      e.viewTransition.finished.finally(() => { delete document.documentElement.dataset.vt })
+    })
+  }
+
   // search: false leaves the search out of the top bar. Αρχική has its own, in the page.
   function start ({ id, route, title, breadcrumbs, render, dash = false, search = true }) {
     const root = document.getElementById('app')
+    watchMoves(route)
     // The search lists the last pages of the visitor.
     const here = hereHref()
     remember('pages', { h: here, n: title(), r: route }, (p) => p.h === here)

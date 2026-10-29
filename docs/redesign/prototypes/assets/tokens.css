@@ -174,13 +174,16 @@
   --motion-chart: 640ms;
   --motion-stagger: 40ms;
   --motion-distance: 8px;
+  /* A move to another page: a short slide of the page, not a full push. */
+  --motion-page: 250ms;
+  --motion-page-distance: 48px;
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
   --ease-in-out: cubic-bezier(0.45, 0, 0.25, 1);
   --ease-spring: cubic-bezier(0.3, 1.3, 0.5, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :root { --motion-distance: 0px; --motion-stagger: 0ms; }
+  :root { --motion-distance: 0px; --motion-stagger: 0ms; --motion-page-distance: 0px; }
 }
 
 /* Font candidates for the decision of the project lead. "inter" is the font pair of APO-150. */
