@@ -26,7 +26,7 @@ a.home-stack-part { cursor: pointer; }
 /* The list of the stories of the day: a row picks the story, and its button opens its page. */
 .home-stories { margin: 0; padding: var(--space-2) 0 0; list-style: none; display: grid; align-content: start; gap: 4px; border-top: 1px solid var(--border); max-height: 330px; overflow-y: auto; scrollbar-width: thin; }
 .home-stories li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); border-radius: 8px; }
-.home-stories li.is-current { background: var(--surface-page); }
+.home-stories li.is-current { background: var(--card-tint); }
 .home-story-pick { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: var(--space-3); min-width: 0; padding: 8px; border: 0; border-radius: 8px; background: transparent; color: var(--text-primary); font: inherit; font-size: var(--text-small); line-height: 1.35; text-align: left; cursor: pointer; }
 .home-story-pick:hover .home-story-name { color: var(--accent); }
 .home-story-pick[aria-pressed="true"] .home-story-name { font-weight: 600; color: var(--ink); }
@@ -86,7 +86,7 @@ a.home-stack-part { cursor: pointer; }
 .home-topic-legend, .home-topic-more .rows { gap: 0; }
 .home-topic-row { padding: 4px 8px; border-radius: 6px; }
 .home-topic-legend .home-topic-row { grid-template-columns: 10px minmax(0, 1fr) auto; }
-.home-topic-row.is-on { background: var(--surface-page); }
+.home-topic-row.is-on { background: var(--card-tint); }
 .home-topic-more summary { cursor: pointer; font-size: var(--text-small); font-weight: 600; color: var(--text-primary); }
 .home-topic-more[open] summary { margin-bottom: var(--space-2); }
 .home-topic-more .home-topic-row { grid-template-columns: minmax(0, 1fr) auto; }
@@ -193,8 +193,3 @@ a.home-stack-part { cursor: pointer; }
 }
 
 .home-grid { scroll-margin-top: calc(var(--navbar-height) + var(--space-4)); margin-top: var(--space-6); }
-
-/* The cards have the page background; the edge shows only under the mouse or with the keyboard focus inside. */
-.content.is-home .dcard { border-color: transparent; background: transparent; box-shadow: none; transition: border-color var(--motion-base) var(--ease-out); }
-.content.is-home .dcard:is(:hover, :focus-within) { border-color: var(--card-edge); }
-.content.is-home .dcard :is(.home-stories li.is-current, .home-topic-row.is-on) { background: color-mix(in srgb, var(--ink) 6%, transparent); }

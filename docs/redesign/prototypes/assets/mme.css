@@ -101,7 +101,7 @@
 /* Wide screens: the table of all the outlets sits next to the volume chart, and the chart is tall to fill the card. The table scrolls inside its card, with the header in view, so the two columns are about as tall. */
 @media (min-width: 1100px) {
   .mme-rank .table-wrap { max-height: 560px; overflow-y: auto; }
-  .mme-rank .data-table thead th { position: sticky; top: 0; z-index: 1; background: var(--surface-raised); }
+  .mme-rank .data-table thead th { position: sticky; top: 0; z-index: 1; background: var(--surface-page); }
 }
 /* The latest articles scroll inside their card; the card is as tall as the title card beside it. */
 .outlet-latest { display: flex; flex-direction: column; }
@@ -134,7 +134,7 @@
 /* The outlet card: the small cards inside it are flat, the group card takes both columns. */
 .outlet-card { display: flex; flex-direction: column; }
 .outlet-card .outlet-stats { grid-auto-rows: auto; align-content: start; }
-.outlet-card .dstat { box-shadow: none; border: 1px solid var(--border); background: var(--surface-page); }
+.outlet-card .dstat { box-shadow: none; }
 .outlet-card .dstat.is-wide { grid-column: 1 / -1; }
 /* Latest stories of the outlet: the story and its topic on one line, then the day of the first article, the line of days and the articles. */
 .latest-stories li { grid-template-columns: minmax(0, 1fr) 44px 60px 28px; }

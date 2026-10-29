@@ -53,7 +53,7 @@
 
 /* Topics page: lines and legend list. */
 .dash .chart .line-series { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
-.dash .chart .line-dot { stroke: var(--surface-raised); stroke-width: 1.5; pointer-events: none; }
+.dash .chart .line-dot { stroke: var(--surface-page); stroke-width: 1.5; pointer-events: none; }
 .legend-list { margin: var(--space-2) 0 0; padding: 0; list-style: none; }
 .legend-list li { display: inline-flex; align-items: center; gap: var(--space-1); }
 
@@ -74,7 +74,7 @@
 .card-side .bar-list { align-content: space-between; }
 .card-col { min-width: 0; display: flex; flex-direction: column; gap: var(--space-3); }
 
-.dcard { position: relative; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding: var(--space-3) 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-raised); }
+.dcard { position: relative; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding: var(--space-3) 14px; border: 1px solid transparent; border-radius: var(--radius); transition: border-color var(--motion-base) var(--ease-out); }
 .dcard-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: 24px; }
 .dcard-tools { display: inline-flex; align-items: center; gap: var(--space-3); }
 .info { position: relative; display: inline-flex; }
@@ -108,11 +108,11 @@
 .dash .chart .marker-dot { fill: var(--strong); }
 .dash .chart .marker-text { fill: var(--on-ink); font-weight: 600; text-anchor: middle; }
 .dash .chart .overlay { fill: transparent; cursor: crosshair; touch-action: pan-y; }
-.dash .chart .pt { stroke: var(--surface-raised); stroke-width: 1.5; opacity: 0.92; }
+.dash .chart .pt { stroke: var(--surface-page); stroke-width: 1.5; opacity: 0.92; }
 .dash .chart .pt:hover { stroke: var(--strong); }
 .dash .chart .avg-line { stroke: var(--rule); stroke-width: 1; stroke-dasharray: 4 4; }
 .dash .chart .zero-line { stroke: var(--text-secondary); stroke-width: 1; }
-.dash .chart .pt-label { fill: var(--text-primary); font-size: 12px; paint-order: stroke; stroke: var(--surface-raised); stroke-width: 3px; stroke-linejoin: round; }
+.dash .chart .pt-label { fill: var(--text-primary); font-size: 12px; paint-order: stroke; stroke: var(--surface-page); stroke-width: 3px; stroke-linejoin: round; }
 .dash .chart .range-line { stroke: var(--rule); stroke-width: 2; stroke-linecap: round; }
 .dash .chart .range-band { fill: var(--bar-muted); }
 .dash .chart .range-band:hover { fill: #b9b4a8; }
@@ -135,7 +135,7 @@
 .dash .chart .bubble-group:hover, .dash .chart .bubble-group:focus-visible { stroke-width: 3; outline: none; }
 .dash .chart .bubble-layer .tile:hover { stroke: var(--strong); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
 .dash .chart .bubble-layer.is-dim { opacity: 0.25; }
-.dash .chart .bubble-name { font-size: 11px; font-weight: 600; fill: var(--text-primary); stroke: var(--surface-raised); stroke-width: 3px; paint-order: stroke; stroke-linejoin: round; pointer-events: none; }
+.dash .chart .bubble-name { font-size: 11px; font-weight: 600; fill: var(--text-primary); stroke: var(--surface-page); stroke-width: 3px; paint-order: stroke; stroke-linejoin: round; pointer-events: none; }
 .dash .chart .bubble-labels text { pointer-events: none; }
 .bubble-panel { min-height: 44px; border-top: 1px solid var(--rule); padding-top: var(--space-2); font-size: var(--text-small); }
 .bubble-hint { margin: 0; color: var(--text-secondary); font-size: var(--text-caption); }
@@ -257,7 +257,7 @@
 @media (max-width: 1100px) { .camp-item summary { grid-template-columns: 40px minmax(0, 1fr); row-gap: 2px; } .camp-meta { display: flex; flex-wrap: wrap; gap: 2px 12px; grid-column: 2; font-size: var(--text-caption); } .camp-detail { padding-left: 52px; } }
 
 /* Story page: the title card, the switch of the chart and the difference bars. */
-.hero { gap: var(--space-3); background: var(--surface-raised); }
+.hero { gap: var(--space-3); }
 .hero-topic { font-size: var(--text-caption); font-weight: 600; letter-spacing: 0.02em; }
 .hero-title { margin: 0; font: 600 22px/1.25 var(--font-heading); color: var(--strong); }
 .hero-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); margin: 0; padding: var(--space-3) 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
@@ -277,9 +277,9 @@
 @media (max-width: 1279px) { .story-col { display: contents; } }
 
 /* Story page, second pass: softer cards, the title card, the ring of outlets and the related stories. */
-.story-grid .dcard { border-radius: 14px; box-shadow: 0 1px 2px rgba(31, 31, 31, 0.04), 0 6px 18px rgba(31, 31, 31, 0.04); }
+.story-grid .dcard { border-radius: 14px; }
 .story-grid .dcard-title::before { content: ""; display: inline-block; width: 4px; height: 14px; margin-right: 8px; border-radius: 2px; background: var(--series-news); vertical-align: -2px; }
-.story-grid .hero { gap: var(--space-3); padding: var(--space-4); background: linear-gradient(180deg, color-mix(in srgb, var(--series-news) 9%, var(--surface-raised)) 0%, var(--surface-raised) 62%); }
+.story-grid .hero { gap: var(--space-3); padding: var(--space-4); }
 .story-grid .hero .dcard-title::before { display: none; }
 .hero-title { margin: 0; font: 600 22px/1.25 var(--font-heading); color: var(--strong); }
 .hero-chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -291,7 +291,7 @@
 .chart.life .life-line { fill: none; stroke: var(--series-news); stroke-width: 2; stroke-linejoin: round; }
 .chart.life .life-base { stroke: var(--rule); stroke-width: 1; }
 .chart.life .life-band { fill: var(--series-news); fill-opacity: 0.07; }
-.chart.life .life-dot { fill: var(--series-news); stroke: var(--surface-raised); stroke-width: 2; }
+.chart.life .life-dot { fill: var(--series-news); stroke: var(--surface-page); stroke-width: 2; }
 .chart.life .life-label { fill: var(--text-primary); font-size: 12px; font-weight: 600; }
 .chart .axis-month { fill: var(--text-secondary); font-size: 12px; font-weight: 600; }
 .outlets-wrap { display: grid; grid-template-columns: 172px minmax(0, 1fr); gap: var(--space-4); align-items: center; }
@@ -367,7 +367,7 @@
    the titles of the cards with the slash of the logo, flat chips and pill tabs. */
 .minimal .dash-grid { gap: var(--space-4); }
 .minimal .card-col { gap: var(--space-4); }
-.minimal .dcard { gap: 10px; padding: 16px 18px; border: 1px solid var(--card-edge); border-radius: 14px; background: var(--surface-raised); box-shadow: 0 1px 0 rgba(17, 17, 17, 0.03), 0 12px 28px -18px rgba(17, 17, 17, 0.3); }
+.minimal .dcard { gap: 10px; padding: 16px 18px; border-radius: 14px; }
 .minimal .dcard-title { font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); }
 .minimal .dcard-title::before { content: "/"; display: inline; width: auto; height: auto; margin-right: 6px; border-radius: 0; background: none; color: var(--ink); vertical-align: baseline; }
 @media (max-width: 719px) { .minimal .dcard { padding: 12px 14px; } }
@@ -376,7 +376,7 @@
 .minimal .data-table a:hover, .minimal .rows a:hover, .minimal .entity-link:hover { color: var(--accent); text-decoration-color: currentColor; }
 .minimal .chip { border: 1px solid var(--border); border-radius: var(--pill); background: var(--surface-raised); }
 .minimal .chip-num { border-color: var(--ink); background: var(--surface-raised); font-variant-numeric: tabular-nums; }
-.minimal .chip-quiet { background: var(--surface-page); }
+.minimal .chip-quiet { background: var(--card-tint); }
 /* The bar of the tabs has no line and stays under the global bar of the shell. The active tab is a black pill. */
 .minimal .dash-bar:not(:has(.dash-actions, .dash-error)) { margin: 0; padding: 0; }
 .minimal .dash-bar { top: 64px; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); margin-bottom: var(--space-3); padding-top: var(--space-2); padding-bottom: var(--space-2); border-bottom: 0; }
@@ -385,7 +385,8 @@
 
 /* Entity pages (outlet-v2, group-v2, story-v2): the title card is the first card of the main column. */
 .entity-grid { margin-top: var(--space-5); align-items: start; }
-.entity-grid .hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: var(--space-2) var(--space-6); padding: 20px 24px 22px; border-top: 3px solid var(--ink); background: var(--surface-raised); }
+.entity-grid .hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: var(--space-2) var(--space-6); padding: 20px 24px 22px; border-top: 3px solid var(--ink); }
+.entity-grid .hero:is(:hover, :focus-within) { border-top-color: var(--ink); }
 .entity-grid .hero > .hero-kicker, .entity-grid .hero > .hero-title { grid-column: 1 / -1; }
 .entity-grid .hero > .hero-period { text-align: right; }
 .entity-grid .hero-split { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); align-items: center; }
@@ -440,7 +441,7 @@
 /* Τάσεις (#68): the legend of the lines is a row of toggles. Tight table of Όλα τα θέματα. */
 .legend-toggles { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-2); margin: 0 0 var(--space-2); padding: 0; list-style: none; }
 .legend-toggle { display: inline-flex; align-items: center; gap: var(--space-1); min-height: 32px; padding: 0 var(--space-2); border: 1px solid var(--border); border-radius: 6px; background: transparent; font: inherit; font-size: var(--text-caption); color: var(--text-secondary); cursor: pointer; }
-.legend-toggle[aria-pressed="true"] { border-color: var(--ink); background: var(--surface-page); color: var(--text-primary); }
+.legend-toggle[aria-pressed="true"] { border-color: var(--ink); background: var(--card-tint); color: var(--text-primary); }
 .legend-toggle[aria-pressed="false"] .swatch { opacity: 0.35; }
 .legend-toggle[aria-disabled="true"] { cursor: not-allowed; }
 .dash .chart .line-guide { stroke: var(--text-secondary); stroke-width: 1; stroke-dasharray: 3 3; pointer-events: none; }
