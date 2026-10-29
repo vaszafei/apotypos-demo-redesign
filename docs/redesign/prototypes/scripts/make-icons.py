@@ -13,6 +13,11 @@ NAMES = [
     "magnifying-glass", "bars-3", "x-mark", "chevron-right",
     "exclamation-triangle", "inbox", "arrow-path", "arrow-top-right-on-square",
     "arrow-left", "calendar", "chevron-down", "chevron-left",
+    "arrow-down-tray", "link", "lock-closed", "user-circle", "information-circle",
+    # The sub-tabs of the section sidebar (shell.js TAB_ICONS).
+    "squares-2x2", "building-office-2", "hashtag", "pencil-square", "document-duplicate",
+    "newspaper", "folder-open", "share", "scale", "chat-bubble-left-right", "identification",
+    "eye", "pencil", "microphone", "globe-europe-africa", "map", "rectangle-stack", "fire",
 ]
 
 

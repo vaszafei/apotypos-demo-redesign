@@ -711,14 +711,19 @@ button, input, select { font: inherit; color: inherit; }
 .page-main { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .section-nav { display: none; }
 @media (min-width: 1024px) {
-  .section-nav { display: block; flex: none; width: 232px; border-right: 1px solid var(--border); background: var(--surface-sidebar); }
+  .section-nav { display: block; flex: none; width: 232px; border-right: 1px solid var(--border); background: var(--surface-page); }
   .section-nav-inner { position: sticky; top: var(--navbar-height); max-height: calc(100vh - var(--navbar-height)); overflow-y: auto; padding: var(--space-5) var(--space-3); }
   .section-nav-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
-  .section-nav-link { display: block; padding: 9px var(--space-3); border-radius: 6px; font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.08em; line-height: 1.4; text-transform: uppercase; color: var(--text-secondary); text-decoration: none; }
+  .section-nav-link { display: flex; align-items: flex-start; padding: 9px var(--space-3); border-radius: 6px; font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.08em; line-height: 1.4; text-transform: uppercase; color: var(--text-secondary); text-decoration: none; }
   .section-nav-link:hover { background: var(--sidebar-hover-bg); color: var(--sidebar-active-text); }
   /* The current tab starts with "/", like the tabs of the page head. */
   .section-nav .section-nav-link[aria-current] { color: var(--ink); }
   .section-nav .section-nav-link[aria-current]::before { content: "/ "; white-space: pre; }
+  .section-nav-icon { flex: none; width: 16px; height: 16px; margin-right: 10px; }
+  /* The sub-tabs of the current tab: under it, in line with its label, without icons. The tab keeps its dark color, and the "/" marks the sub-tab. */
+  .section-nav-sub { list-style: none; margin: 2px 0 4px; padding: 0 0 0 26px; display: grid; gap: 2px; }
+  .section-nav .section-nav-link.is-parent::before { content: none; }
+  :root[data-header="v2"] .page-tabs .sub-tabs { display: none; }
   /* The tabs are in the sidebar, so the page head keeps the sub-tabs, the actions and the filters. */
   :root[data-header="v2"] .page-tabs .section-tabs { display: none; }
   :root[data-header="v2"] .page-head:not(:has(.page-head-actions, .page-filters, .dash-error, .sub-tabs)) { display: block; margin: 0; }

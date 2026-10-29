@@ -69,6 +69,14 @@
       ['greekturkish', '/war'], ['coverage', '/coverage'], ['france', '/france-riots']] }
   ]
   const FOOTER = [['methodology', '/methodology'], ['about', '/about']]
+  // The icon of each sub-tab in the section sidebar. The same kind of page has the same icon in every section.
+  const TAB_ICONS = {
+    'media.overview': 'squares-2x2', 'media.ownership': 'building-office-2', 'media.topics': 'hashtag', 'media.writing': 'pencil-square', 'media.similarity': 'document-duplicate',
+    'spread.overview': 'squares-2x2', 'spread.outlets': 'newspaper', 'spread.cases': 'folder-open', 'spread.campaigns': 'share',
+    'people.overview': 'squares-2x2', 'people.spread': 'scale', 'people.statements': 'chat-bubble-left-right', 'people.file': 'identification',
+    'politics.reach': 'eye', 'politics.outlets': 'newspaper', 'politics.owners': 'building-office-2', 'politics.topics': 'hashtag', 'politics.bylines': 'pencil',
+    'world.speeches': 'microphone', 'world.pi': 'globe-europe-africa', 'world.greekturkish': 'map', 'world.coverage': 'rectangle-stack', 'world.france': 'fire'
+  }
 
   const hasText = (key) => key in window.MESSAGES.el
   const under = (route, base) => route === base || (base !== '/' && route.startsWith(base + '/'))
@@ -725,13 +733,19 @@
         ...(search ? [GlobalSearch()] : []),
         h('div', { class: 'header-actions' }, langSwitch(), authLinks('auth-links')))
       // The tabs of the section are a sidebar on a wide screen, under the navbar. A phone keeps them as tabs in the page head.
-      // The sub-tabs of a tab stay in the page body. A detail page (an outlet) marks the tab that lists it.
+      // The sub-tabs of the current tab are listed under it in the sidebar; a phone keeps them in the page body. A detail page (an outlet) marks the tab that lists it.
       const activeRoute = exactTab ? route : parentRoute
       const sectionNav = item && item.tabs.length > 1
         ? h('nav', { class: 'section-nav', 'aria-label': t(`nav.${item.key}`) }, h('div', { class: 'section-nav-inner' },
           h('ul', { class: 'section-nav-list' }, item.tabs.map(([key, r, subs]) => {
             const inTab = r === activeRoute || (subs || []).some(([, s]) => s === activeRoute)
-            return h('li', {}, h('a', { class: 'section-nav-link', href: hrefOf(r), 'aria-current': inTab ? (route === r || (subs || []).some(([, s]) => s === route) ? 'page' : 'true') : null }, t(`tab.${item.key}.${key}`)))
+            const nested = inTab && subs
+            const current = inTab ? (!nested && (route === r || (subs || []).some(([, s]) => s === route)) ? 'page' : 'true') : null
+            return h('li', {},
+              h('a', { class: `section-nav-link${nested ? ' is-parent' : ''}`, href: hrefOf(r), 'aria-current': current },
+                Icon(TAB_ICONS[`${item.key}.${key}`], 'section-nav-icon'), h('span', {}, t(`tab.${item.key}.${key}`))),
+              nested ? h('ul', { class: 'section-nav-sub' }, subs.map(([subKey, s]) =>
+                h('li', {}, h('a', { class: 'section-nav-link', href: hrefOf(s), 'aria-current': s === route ? 'page' : null }, t(`tab.${item.key}.${subKey}`))))) : null)
           }))))
         : null
       const content = h('main', { class: 'content', id: 'content' })
