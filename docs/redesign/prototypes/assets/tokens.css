@@ -145,7 +145,7 @@
   --border: #d6d2c8;
   --focus: #2f58f5;
 
-  /* Chart colors. The matrix scale is in fingerprints.html, because it computes the text color of each step. */
+  /* Chart colors. The matrix scale is in fingerprints-v2.html, because it computes the text color of each step. */
   --series-1: #2a78d6;
   --stance-critical: #c23b3b;
   --stance-neutral: #9a978f;

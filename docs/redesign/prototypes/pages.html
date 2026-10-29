@@ -12,7 +12,6 @@
   <div id="app"></div>
   <script src="assets/icons.js?v=6"></script>
   <script src="assets/messages.js?v=32"></script>
-  <script src="assets/messages-entities.js"></script>
   <script src="assets/components.js?v=13"></script>
   <script src="assets/motion.js?v=1"></script>
   <script src="assets/shell.js?v=50"></script>
@@ -54,7 +53,6 @@
           content.replaceChildren(
             UI.PageHeader({ title: t('pages.title'), hint: t('pages.hint') }),
             h('p', { 'data-testid': 'page-counts' }, t('pages.counts', counts)),
-            h('p', {}, h('a', { href: 'entities.html' }, t('entities.link'))),
             Tree(),
             UI.FilterBar(h('div', { class: 'field' }, t('pages.filter.type'), UI.SegmentedControl({
               label: t('pages.filter.type'), value: view.type, onChange: (v) => { view.type = v; draw() },

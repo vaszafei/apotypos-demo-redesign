@@ -16,12 +16,12 @@ KPI_PAGES = {
     "Originality": "/originality", "Markets": "/markets", "Overton": "/overton", "Cases": "/cases", "Speeches": "/speeches",
 }
 PROTOTYPES = {
-    "/": "index.html", "/gaza": "gaza.html", "/groups": "groups-v2.html", "/groups/skai": "group.html?g=skai", "/media": "media-v2.html", "/trends": "topics-v2.html", "/stories": "stories-v2.html", "/echoes": "stories-v2.html", "/stories/8feb49e8-73f0-4801-b61a-2887113257cc": "story-v2.html?id=4502", "/media/story/1": "story-v2.html?id=4502", "/similarity": "similarity-v2.html", "/originality": "similarity-v2.html#originality", "/campaigns": "campaigns-v2.html",
-    "/media/outlet/17661f5754": "outlet.html", "/fingerprints": "fingerprints-v2.html", "/methodology": "methodology.html",
+    "/": "index.html", "/gaza": "gaza-v2.html", "/groups": "groups-v2.html", "/groups/skai": "group-v2.html?g=skai", "/media": "media-v2.html", "/trends": "topics-v2.html", "/stories": "stories-v2.html", "/echoes": "stories-v2.html", "/stories/8feb49e8-73f0-4801-b61a-2887113257cc": "story-v2.html?id=4502", "/media/story/1": "story-v2.html?id=4502", "/similarity": "similarity-v2.html", "/originality": "similarity-v2.html#originality", "/campaigns": "campaigns-v2.html",
+    "/media/outlet/17661f5754": "outlet-v2.html", "/fingerprints": "fingerprints-v2.html", "/methodology": "methodology.html",
 }
 TYPE_PROTOTYPE = {
-    "Dashboard": "index.html", "Ranked list": "groups.html", "Detail": "outlet.html", "Matrix": "fingerprints.html",
-    "Explorer": "media.html", "Text": "methodology.html", "Removed": "404.html",
+    "Dashboard": "index.html", "Ranked list": "groups-v2.html", "Detail": "outlet-v2.html", "Matrix": "fingerprints-v2.html",
+    "Explorer": "media-v2.html", "Text": "methodology.html", "Removed": "404.html",
 }
 
 
