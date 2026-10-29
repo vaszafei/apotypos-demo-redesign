@@ -834,5 +834,5 @@
     })) }))
   }
 
-  window.Shell = { start, routeAnchor, hrefOf, itemOf, placeOf, tree, PageHead, headerV2, Search: GlobalSearch }
+  window.Shell = { start, routeAnchor, hrefOf, placeOf, tree, PageHead, headerV2, Search: GlobalSearch }
 })()

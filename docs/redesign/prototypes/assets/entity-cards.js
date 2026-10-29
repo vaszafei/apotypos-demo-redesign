@@ -135,5 +135,5 @@
       Sunburst({ groups, total })))
   }
 
-  window.Entity = { DiffRow, scaleOf, DailyChart, DailyCard, diffKey, TitleCard, StanceCard, GroupsCard, Sunburst }
+  window.Entity = { DiffRow, scaleOf, DailyChart, DailyCard, diffKey, TitleCard, StanceCard, GroupsCard }
 })()

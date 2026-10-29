@@ -75,7 +75,6 @@
 
   // A share of an issue in the news of an outlet.
   const shareOf = (o, i) => (o.news ? o.issues[i] / o.news : 0)
-  const topIssues = (S, o, n) => S.set.issues.map((x, i) => ({ x, i, v: shareOf(o, i) })).filter((r) => S.hard[r.i] && r.v > 0).sort((a, b) => b.v - a.v).slice(0, n)
   const critShare = (st) => (sum(st) ? st[0] / sum(st) : 0)
 
   // The link to the page of an outlet. Only the outlets of the Greek set have a page.
@@ -91,35 +90,6 @@
         ? h('ul', { class: 'mme-chips' }, rows.map((r) => h('li', {}, h('button', { type: 'button', class: 'mme-chip', 'aria-pressed': String(r.i === picked), onClick: () => onPick(r.i) },
           name(r.x), h('span', { class: 'mme-chip-n' }, pctRound(r.v))))))
         : emptyText(t('media2.empty.list')))
-  }
-
-  // Three observations of the period.
-  function HighlightsCard (S) {
-    const lines = []
-    // 1. The largest ratio of the share of a topic in an outlet to the average of the outlets. The topic needs 20 articles in the outlet.
-    let best = null
-    S.active.forEach((o) => S.set.issues.forEach((x, i) => {
-      if (!S.hard[i] || x.catchAll || o.issues[i] < 20 || !S.avgShare[i]) return
-      const ratio = shareOf(o, i) / S.avgShare[i]
-      if (!best || ratio > best.ratio) best = { o, x, i, ratio }
-    }))
-    if (best && best.ratio >= 2) {
-      lines.push(h('li', {}, t('mme.hl.topic', { outlet: best.o.name, topic: name(best.x), share: pctRound(shareOf(best.o, best.i)), ratio: fmt.dec(best.ratio), avg: pctRound(S.avgShare[best.i]) }), ' ', outletLink(S, best.o)))
-    }
-    // 2. The largest story that reached nearly every outlet but not all of them.
-    const big = S.active.filter((o) => o.n >= 300)
-    const missed = S.stories.filter((s) => !s.generic).map((s) => ({ s, missing: big.filter((o) => !s.per[o.k]) })).find((r) => r.missing.length > 0 && r.missing.length <= 3)
-    if (missed) {
-      lines.push(h('li', {}, t('mme.hl.story', { story: name(missed.s), reach: missed.s.reach, total: S.active.length, n: fmt.int(missed.s.n), missing: missed.missing.map((o) => o.name).join(', ') })))
-    }
-    // 3. The most critical and the least critical outlet, from 100 articles about the government.
-    const ranked = S.active.filter((o) => sum(o.stance) >= 100).sort((a, b) => critShare(b.stance) - critShare(a.stance))
-    if (ranked.length >= 2) {
-      const a = ranked[0]
-      const b = ranked[ranked.length - 1]
-      lines.push(h('li', {}, t('mme.hl.stance', { a: a.name, pa: pctRound(critShare(a.stance)), b: b.name, pb: pctRound(critShare(b.stance)), sb: pctRound(b.stance[2] / sum(b.stance)) })))
-    }
-    return card('c-12 mme-hl', cardHead(t('mme.hl.title'), null, t('mme.hl.info')), lines.length ? h('ul', { class: 'mme-hl-list' }, lines) : emptyText(t('media2.empty.list')))
   }
 
   // The columns of the outlets of a matrix: from the largest outlet to the smallest.
@@ -330,7 +300,7 @@
     return { rank: 1 + list.filter((o) => value(o) > mine).length, n: list.length }
   }
 
-  // The numbers of an outlet with its ranks: { label, value, sub }. The outlet page shows them in its title card, Μέσα shows them in a card.
+  // The numbers of an outlet with its ranks: { label, value, sub }. The outlet page shows them in its title card.
   function outletFacts (S, k) {
     const o = S.outlets[k]
     const st = sum(o.stance)
@@ -344,12 +314,6 @@
       supportive: { label: t('mme.o.supportive'), value: st ? pctRound(o.stance[2] / st) : '—', sub: t('mme.o.supportive.sub') },
       clickbait: { label: t('mme.o.clickbait'), value: o.cbKnown ? pctRound(o.cbYes / o.cbKnown) : '—', sub: o.cbKnown ? (cb ? t('mme.o.rank', { rank: cb.rank, n: cb.n }) : t('mme.n', { n: fmt.int(o.cbKnown) })) : t('mme.o.none') }
     }
-  }
-  function OutletStats (S, k) {
-    const f = outletFacts(S, k)
-    const item = ({ label, value, sub }) => h('div', { class: 'mme-ostat' }, h('p', { class: 'dstat-label' }, label), h('p', { class: 'mme-ostat-value' }, value), h('p', { class: 'muted-text' }, sub))
-    return card('c-12', cardHead(t('mme.o.title'), null, t('mme.o.info')),
-      h('div', { class: 'mme-ostats' }, [f.posts, f.news, f.critical, f.supportive, f.clickbait].map(item)))
   }
 
   // The weeks of a set, Monday to Sunday. The first and the last week can be short.
@@ -506,5 +470,5 @@
       angle ? h('span', { class: 'mme-angle' }, angle) : null))
   }
 
-  window.Mme = { presets, summary, sumPairs, ChipsCard, HighlightsCard, StoriesCard, AgendaCard, PeopleCard, GovCard, TopicCard, PersonsCard, MethodNote, OutletStats, outletFacts, WeeklyAgenda, CoverageCard, StanceByTopic, EmphasisCard, VoicesCard, PortrayalCard, Headlines, topIssues, shareOf, StanceBar, critShare, outletLink }
+  window.Mme = { presets, summary, ChipsCard, StoriesCard, AgendaCard, PeopleCard, GovCard, TopicCard, PersonsCard, MethodNote, outletFacts, WeeklyAgenda, CoverageCard, StanceByTopic, EmphasisCard, VoicesCard, PortrayalCard, Headlines, outletLink }
 })()

@@ -105,15 +105,6 @@
       UI.BarList([r.a, r.b].map((side, i) => ({ label: names[i], sub: side.sub, value: side.value, text: side.text, color: colors[i] })), { max: max ?? Math.max(r.a.value, r.b.value, 1) }))))
   }
 
-  // A cell color for a value from -1 to +1: red below zero and blue above zero, white at zero.
-  function divergeCell (v) {
-    if (v === null || v === undefined) return { background: 'transparent', color: 'var(--text-secondary)' }
-    const k = Math.min(1, Math.abs(v) / 0.6)
-    const base = v < 0 ? [194, 59, 59] : [42, 98, 196]
-    const mix = base.map((c) => Math.round(255 - (255 - c) * k * 0.85))
-    return { background: `rgb(${mix.join(',')})`, color: k > 0.6 ? '#ffffff' : '#1f1f1f' }
-  }
-
   // A signed number with a real minus sign. Numbers always use the Greek style (C12).
   const signed = (v, digits = 2) => (v === null || v === undefined ? '–' : `${v > 0 ? '+' : v < 0 ? '−' : ''}${new Intl.NumberFormat('el-GR', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(Math.abs(v))}`)
   // A share that the data gives in percent (0 to 100), with no decimals.
@@ -121,5 +112,5 @@
   // A name from English data: the Greek message if one exists, else the name of the data.
   const dataName = (prefix, name) => (window.App.locale === 'el' ? window.MESSAGES.el[`${prefix}.${name}`] ?? name : name)
 
-  window.Politics = { weekLabel, LineChart, ToneBar, PairRows, divergeCell, signed, pctOf, dataName, tip }
+  window.Politics = { weekLabel, LineChart, ToneBar, PairRows, signed, pctOf, dataName, tip }
 })()
