@@ -25,3 +25,21 @@ _Avoid_: entity page
 **Card**:
 A box on a page that holds one chart, table or set of figures.
 _Avoid_: panel, tile, widget
+
+## Access
+
+**Account**:
+A login that gives access to Αναλύσεις. A visitor without one sees the gate.
+_Avoid_: profile, user
+
+**Gate**:
+The lock card that takes the place of an Αναλύσεις page for a visitor who is not logged in. It leads to log in or sign up.
+_Avoid_: paywall, lock screen
+
+**Auth drawer**:
+The panel that slides in from the right where a visitor logs in or signs up. Sign up runs in three steps inside it.
+_Avoid_: auth modal, popup
+
+**Sign-up request**:
+What a visitor sends with the sign-up form: name, email, password, job, reason for use and how they found apotypos. It waits for approval and gives no access until then.
+_Avoid_: registration, new account

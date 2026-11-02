@@ -131,6 +131,7 @@
   --on-ink: #ffffff;
   --logo-filter: none;
   --error-text: #a12a2a; --error-bg: #fbefef; --error-edge: #d9a3a3; --error-ink: #7a1f1f;
+  --scrim: rgb(17 17 17 / 0.45);
   --notice-bg: #fdf3df; --notice-edge: #b7791f; --target-bg: #fff6cc; --card-edge: #e4e0d6;
   /* The tint of a selected row or a note inside a card. A card has the page background, so the tint darkens the page in every theme. */
   --card-tint: color-mix(in srgb, var(--ink) 6%, transparent);
@@ -219,7 +220,7 @@
 /* The dark themes. The ink is light, so the text on an ink fill is dark, and the logo is inverted. */
 :root[data-theme="night"], [data-theme="night"], :root[data-theme="midnight"], [data-theme="midnight"] {
   color-scheme: dark;
-  --strong: #eeece6; --on-ink: #101319; --logo-filter: invert(1);
+  --strong: #eeece6; --on-ink: #101319; --logo-filter: invert(1); --scrim: rgb(0 0 0 / 0.6);
   --stance-critical: #ef7b76; --stance-neutral: #8a9099; --stance-supportive: #7aa5f2;
   --status-ok: #4cc38a; --status-over: #e3a43c; --status-open: #9fb0c6; --status-no: #f07c7c;
   --emph-more: #3fc2bd; --emph-less: #f08a45; --side-b: #e0803a;
