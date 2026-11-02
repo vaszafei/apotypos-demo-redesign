@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=12">
-  <link rel="stylesheet" href="assets/app.css?v=41">
+  <link rel="stylesheet" href="assets/tokens.css?v=13">
+  <link rel="stylesheet" href="assets/app.css?v=42">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=34"></script>
+  <script src="assets/messages.js?v=35"></script>
   <script src="assets/components.js?v=13"></script>
   <script src="assets/motion.js?v=2"></script>
   <script src="assets/shell.js?v=57"></script>
@@ -55,6 +55,7 @@
             UI.PageHeader({ title: t('pages.title'), hint: t('pages.hint') }),
             h('p', { 'data-testid': 'page-counts' }, t('pages.counts', counts)),
             Tree(),
+            Tokens(),
             UI.FilterBar(h('div', { class: 'field' }, t('pages.filter.type'), UI.SegmentedControl({
               label: t('pages.filter.type'), value: view.type, onChange: (v) => { view.type = v; draw() },
               options: [{ value: 'all', label: t('pages.filter.all') }, ...types.map((x) => ({ value: x, label: t(`type.${x}`) }))]
@@ -74,6 +75,29 @@
         Shell.tree().map((item) => h('div', {},
           h('h3', {}, item.label),
           h('ul', {}, item.pages.map((p) => h('li', {}, h('a', { href: p.href }, p.label), p.question ? h('span', { class: 'muted-text' }, ` · ${p.question}`) : null))))))
+    }
+
+    // The color tokens (#2), layer by layer. Each swatch reads its token, so a theme switch shows that theme.
+    function Tokens () {
+      const range = (prefix, from, to) => Array.from({ length: to - from + 1 }, (_, i) => `${prefix}${from + i}`)
+      const LAYERS = [
+        ['neutral', ['--surface-page', '--surface-card', '--surface-raised', '--surface-sunken', '--ink', '--text-primary', '--text-secondary', '--border', '--rule', '--bar-track', '--bar-muted']],
+        ['accent', ['--accent', '--focus']],
+        ['cat', [...range('--cat-', 0, 9), '--cat-strong']],
+        ['seq', range('--seq-', 1, 7)],
+        ['div', ['--stance-critical', '--stance-critical-strong', '--stance-neutral', '--stance-supportive', '--div-mid', '--emph-less', '--emph-more', '--side-a', '--side-b']],
+        ['series', ['--series-1', '--series-other']],
+        ['status', ['--error-text', '--error-bg', '--notice-text', '--notice-bg', '--success-text', '--success-bg', '--target-bg', '--status-ok', '--status-over', '--status-open', '--status-no']],
+        ['party', ['--party-nd', '--party-syriza', '--party-pasok', '--party-kke', '--party-el', '--party-plefsi', '--party-near', '--party-fl', '--party-mera25', '--party-niki']]
+      ]
+      // A step of the sequential ramp shows its text color on it.
+      const swatch = (name) => h('li', { class: 'token-item' },
+        h('span', { class: 'token-chip', style: `background:var(${name});${name.startsWith('--seq-') ? `color:var(${name.replace('--seq-', '--seq-text-')})` : ''}` }, name.startsWith('--seq-') ? 'Aa' : null),
+        h('code', {}, name))
+      return h('section', { class: 'card page-tokens', 'aria-labelledby': 'page-tokens-title' },
+        h('h2', { id: 'page-tokens-title' }, t('pages.tokens.title')),
+        h('p', { class: 'muted-text' }, t('pages.tokens.hint')),
+        LAYERS.map(([key, names]) => h('div', {}, h('h3', {}, t(`pages.tokens.${key}`)), h('ul', { class: 'token-list' }, names.map(swatch)))))
     }
 
     // The rows render after the page loads, so the browser cannot scroll to the hash by itself.
