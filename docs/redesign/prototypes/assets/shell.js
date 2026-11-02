@@ -115,88 +115,221 @@
   }
   function signOut () { try { localStorage.removeItem(USER_KEY) } catch {} }
 
-  // The drawer of log in and sign up: it slides in from the right over a scrim. The page behind it is inert while it is open.
+  // The modal of log in and sign up: a centred card over a scrim, full screen on a phone. The page behind is inert while it is open.
   // After a log in the page draws again (remount), so the lock of Αναλύσεις opens without leaving the page.
+  // Prototype only: a sign-up request is checked and then dropped. There is no backend, so nothing is saved or sent.
+  const JOBS = ['journalist', 'researcher', 'student', 'comms', 'politics', 'public', 'business', 'other']
+  const REASONS = ['journalism', 'academic', 'monitoring', 'professional', 'personal', 'other']
+  const SOURCES = ['google', 'social', 'friend', 'media', 'event', 'other']
+  const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   let remount = () => {}
-  let authDrawer = null
+  let authModal = null
   function openAuth (view = 'login') {
-    if (authDrawer) authDrawer.close(false)
+    if (authModal) authModal.close(false)
     const app = document.getElementById('app')
     const opener = document.activeElement
-    const title = h('h2', { class: 'auth-title', id: 'auth-title' })
-    const text = h('p', { class: 'auth-text' })
-    const body = h('div', { class: 'auth-body' })
-    const views = ['login', 'register']
-    const switchButtons = views.map((v) => h('button', { type: 'button', onClick: () => show(v, true) }, t(`shell.${v}`)))
-    const closeButton = h('button', { type: 'button', class: 'icon-button auth-close', 'aria-label': t('auth.close'), onClick: () => close() }, Icon('x-mark'))
-    const panel = h('aside', { class: 'auth-drawer', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'auth-title' },
-      h('div', { class: 'auth-head' }, h('div', { class: 'auth-switch', role: 'group', 'aria-label': t('auth.switch') }, switchButtons), closeButton),
-      h('span', { class: 'gate-icon' }, Icon('lock-closed', 'icon')), title, text, body)
-    const scrim = h('div', { class: 'auth-scrim', onClick: () => close() })
+    let current = view
 
-    const field = (id, label, attrs) => {
-      const input = h('input', { id, ...attrs })
-      return [h('label', { for: id }, label, input), input]
+    const setError = (f, message) => {
+      f.error.textContent = message
+      f.error.hidden = !message
+      if (f.hint) f.hint.hidden = Boolean(message)
+      if (!f.input) return
+      if (message) f.input.setAttribute('aria-invalid', 'true')
+      else f.input.removeAttribute('aria-invalid')
     }
-    function loginForm () {
-      const [userLabel, user] = field('auth-user', t('login.user'), { type: 'text', autocomplete: 'username', autocapitalize: 'none', spellcheck: 'false', required: true })
-      const [passwordLabel, password] = field('auth-password', t('login.password'), { type: 'password', autocomplete: 'current-password', required: true })
-      const error = h('p', { class: 'login-error', role: 'alert', hidden: true }, t('login.error'))
-      const form = h('form', { class: 'login-form', onSubmit: (e) => {
-        e.preventDefault()
-        if (signIn(user.value, password.value)) { close(false); remount(); return }
-        error.hidden = false
-        password.value = ''
-        password.focus()
-      } }, userLabel, passwordLabel, error, h('button', { type: 'submit', class: 'button button-primary' }, t('login.submit')))
-      return form
+    const watch = (f, type = 'input') => { f.input.addEventListener(type, () => setError(f, '')) }
+    const errorLine = (id) => h('p', { class: 'field-error', id, role: 'alert', hidden: true })
+    const textField = (id, label, attrs, { optional = false, hint = null, trailing = null } = {}) => {
+      const error = errorLine(`${id}-error`)
+      const input = h('input', { id, class: 'input', 'aria-describedby': hint ? `${id}-hint ${id}-error` : `${id}-error`, ...attrs })
+      const hintLine = hint && h('p', { class: 'field-hint', id: `${id}-hint` }, hint)
+      const f = { input, error, hint: hintLine }
+      f.wrap = h('div', { class: 'auth-field' },
+        h('label', { for: id }, label, optional && h('span', { class: 'field-optional' }, t('register.optional'))),
+        trailing ? h('div', { class: 'field-control' }, input, trailing) : input,
+        hintLine, error)
+      watch(f)
+      return f
     }
-    // Sign up has no accounts behind it in the prototype: the form shows that when it is sent.
-    function registerForm () {
-      const [nameLabel] = field('auth-name', t('register.name'), { type: 'text', autocomplete: 'name', required: true })
-      const [emailLabel] = field('auth-email', t('register.email'), { type: 'email', autocomplete: 'email', required: true })
-      const [passwordLabel] = field('auth-new-password', t('login.password'), { type: 'password', autocomplete: 'new-password', required: true })
-      const notice = h('p', { class: 'login-notice', role: 'status', hidden: true }, t('register.soon'))
-      return h('form', { class: 'login-form', onSubmit: (e) => { e.preventDefault(); notice.hidden = false } },
-        nameLabel, emailLabel, passwordLabel, notice, h('button', { type: 'submit', class: 'button button-primary' }, t('register.submit')))
+    const selectField = (id, label, keys, prefix) => {
+      const error = errorLine(`${id}-error`)
+      const input = h('select', { id, class: 'input', required: true, 'aria-describedby': `${id}-error` },
+        h('option', { value: '' }, t('register.choose')), keys.map((k) => h('option', { value: k }, t(`${prefix}.${k}`))))
+      const f = { input, error }
+      f.wrap = h('div', { class: 'auth-field' }, h('label', { for: id }, label), h('div', { class: 'field-control select-control' }, input, Icon('chevron-down')), error)
+      watch(f, 'change')
+      return f
     }
+    const checkField = (id, content) => {
+      const error = errorLine(`${id}-error`)
+      const input = h('input', { id, type: 'checkbox', 'aria-describedby': `${id}-error` })
+      const f = { input, error }
+      f.wrap = h('div', { class: 'auth-field' }, h('label', { class: 'auth-check', for: id }, input, h('span', null, content)), error)
+      watch(f, 'change')
+      return f
+    }
+    const actions = (label) => h('div', { class: 'auth-actions' }, h('button', { type: 'submit', class: 'button button-primary auth-submit' }, label))
+
+    // Log in.
+    const loginUser = textField('auth-user', t('login.user'), { type: 'text', autocomplete: 'username', autocapitalize: 'none', spellcheck: 'false', required: true })
+    const loginPassword = textField('auth-password', t('login.password'), { type: 'password', autocomplete: 'current-password', required: true })
+    const loginError = h('p', { class: 'login-error', role: 'alert', hidden: true }, t('login.error'))
+    const loginForm = h('form', { class: 'auth-form', novalidate: true, onSubmit: (e) => {
+      e.preventDefault()
+      if (signIn(loginUser.input.value, loginPassword.input.value)) { close(false); remount(); return }
+      loginError.hidden = false
+      loginPassword.input.value = ''
+      loginPassword.input.focus()
+    } }, loginUser.wrap, loginPassword.wrap, loginError, actions(t('login.submit')))
+    loginForm.addEventListener('input', () => { loginError.hidden = true })
+
+    // Sign up: one form, two groups.
+    const name = textField('auth-name', t('register.name'), { type: 'text', autocomplete: 'name', required: true })
+    const email = textField('auth-email', t('register.email'), { type: 'email', autocomplete: 'email', required: true })
+    const eye = h('button', { type: 'button', class: 'icon-button field-eye', 'aria-label': t('register.showPassword') }, Icon('eye'))
+    const password = textField('auth-new-password', t('login.password'), { type: 'password', autocomplete: 'new-password', required: true }, { hint: t('register.passwordHint'), trailing: eye })
+    eye.addEventListener('click', () => {
+      const show = password.input.type === 'password'
+      password.input.type = show ? 'text' : 'password'
+      eye.replaceChildren(Icon(show ? 'eye-slash' : 'eye'))
+      eye.setAttribute('aria-label', t(show ? 'register.hidePassword' : 'register.showPassword'))
+    })
+    const job = selectField('auth-job', t('register.job'), JOBS, 'job')
+    const org = textField('auth-org', t('register.org'), { type: 'text', autocomplete: 'organization' }, { optional: true })
+    const reasons = new Set()
+    const reasonError = errorLine('auth-reason-error')
+    const chips = REASONS.map((k) => {
+      const chip = h('button', { type: 'button', class: 'reason-chip', 'aria-pressed': 'false', onClick: () => {
+        if (reasons.has(k)) reasons.delete(k)
+        else reasons.add(k)
+        chip.setAttribute('aria-pressed', String(reasons.has(k)))
+        setError({ error: reasonError }, '')
+      } }, t(`reason.${k}`))
+      return chip
+    })
+    const reasonField = h('div', { class: 'auth-field', role: 'group', 'aria-labelledby': 'auth-reason-label' },
+      h('span', { class: 'field-label', id: 'auth-reason-label' }, t('register.reason'), h('span', { class: 'field-optional' }, t('register.reasonHint'))),
+      h('div', { class: 'reason-chips' }, chips), reasonError)
+    const source = selectField('auth-source', t('register.source'), SOURCES, 'source')
+    const sourceOther = textField('auth-source-other', t('register.sourceOther'), { type: 'text', required: true })
+    sourceOther.wrap.hidden = true
+    source.input.addEventListener('change', () => { sourceOther.wrap.hidden = source.input.value !== 'other'; setError(sourceOther, '') })
+    const terms = checkField('auth-terms', [t('register.terms1'), h('span', { class: 'terms-text' }, t('register.terms2')), t('register.terms3'), h('span', { class: 'terms-text' }, t('register.terms4'))])
+    const updates = checkField('auth-updates', t('register.updates'))
+    const group = (title, ...children) => h('fieldset', { class: 'auth-group' }, h('legend', { class: 'auth-group-title' }, title), children)
+
+    function validate () {
+      const wrong = []
+      const check = (f, message, focus = f.input) => { setError(f, message); if (message) wrong.push(focus) }
+      const mail = email.input.value.trim()
+      check(name, name.input.value.trim() ? '' : t('err.name'))
+      check(email, !mail ? t('err.email') : EMAIL_PATTERN.test(mail) ? '' : t('err.emailInvalid'))
+      check(password, password.input.value.length >= 8 ? '' : t('err.password'))
+      check(job, job.input.value ? '' : t('err.job'))
+      check({ error: reasonError }, reasons.size ? '' : t('err.reason'), chips[0])
+      check(source, source.input.value ? '' : t('err.source'))
+      if (source.input.value === 'other') check(sourceOther, sourceOther.input.value.trim() ? '' : t('err.sourceOther'))
+      check(terms, terms.input.checked ? '' : t('err.terms'))
+      return wrong
+    }
+    const hasInput = () => [name, email, password, org, sourceOther].some((f) => f.input.value !== '') ||
+      Boolean(job.input.value || source.input.value || reasons.size || terms.input.checked || updates.input.checked)
+
+    const registerForm = h('form', { class: 'auth-form', novalidate: true, onSubmit: (e) => {
+      e.preventDefault()
+      const wrong = validate()
+      if (wrong.length) { wrong[0].focus(); return }
+      show('done', true)
+    } },
+    group(t('register.groupAccount'), h('div', { class: 'auth-row' }, name.wrap, email.wrap), password.wrap),
+    group(t('register.groupAbout'), h('div', { class: 'auth-row' }, job.wrap, org.wrap), reasonField, source.wrap, sourceOther.wrap),
+    h('div', { class: 'auth-checks' }, terms.wrap, updates.wrap),
+    actions(t('register.submit')))
+
+    const doneClose = h('button', { type: 'button', class: 'button button-primary auth-submit', onClick: () => close() }, t('auth.close'))
+    const doneView = h('div', { class: 'auth-done' }, h('span', { class: 'gate-icon' }, Icon('check-circle', 'icon')), doneClose)
+
+    // The shell of the modal.
+    const title = h('h2', { class: 'auth-title', id: 'auth-title' })
+    const text = h('p', { class: 'auth-text', id: 'auth-text' })
+    const footPrompt = h('span')
+    const footLink = h('button', { type: 'button', class: 'link-button', onClick: () => show(current === 'login' ? 'register' : 'login', true) })
+    const foot = h('p', { class: 'auth-foot' }, footPrompt, ' ', footLink)
+    const closeButton = h('button', { type: 'button', class: 'icon-button auth-close', 'aria-label': t('auth.close'), onClick: () => requestClose() }, Icon('x-mark'))
+    const head = h('div', { class: 'auth-head' },
+      h('img', { class: 'logo-img auth-logo', src: 'assets/logo.svg?v=6', alt: t('site.name'), width: 335, height: 141 }), closeButton)
+    const main = h('div', { class: 'auth-main' }, title, text, loginForm, registerForm, doneView, foot)
+    const stayButton = h('button', { type: 'button', class: 'button button-primary', onClick: () => showConfirm(false) }, t('confirm.stay'))
+    const leaveButton = h('button', { type: 'button', class: 'button', onClick: () => close() }, t('auth.close'))
+    const confirmLayer = h('div', { class: 'auth-confirm', role: 'alertdialog', 'aria-modal': 'true', 'aria-labelledby': 'auth-confirm-title', hidden: true },
+      h('h3', { class: 'auth-title', id: 'auth-confirm-title' }, t('confirm.title')), h('p', { class: 'auth-text' }, t('confirm.text')),
+      h('div', { class: 'auth-confirm-actions' }, stayButton, leaveButton))
+    const panel = h('div', { class: 'auth-modal', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'auth-title', 'aria-describedby': 'auth-text' }, head, main, confirmLayer)
+    let pressedOnOverlay = false
+    const overlay = h('div', { class: 'auth-overlay',
+      onMousedown: (e) => { pressedOnOverlay = e.target === overlay },
+      onClick: (e) => { if (pressedOnOverlay && e.target === overlay && current === 'login') close() } }, panel)
+    // The page behind does not scroll under the modal.
+    const holdPage = (e) => { if (!panel.contains(e.target)) e.preventDefault() }
+    overlay.addEventListener('wheel', holdPage, { passive: false })
+    overlay.addEventListener('touchmove', holdPage, { passive: false })
+
     function show (v, focus) {
-      switchButtons.forEach((b, i) => b.setAttribute('aria-pressed', String(views[i] === v)))
+      current = v
+      loginForm.hidden = v !== 'login'
+      registerForm.hidden = v !== 'register'
+      doneView.hidden = v !== 'done'
+      foot.hidden = v === 'done'
       title.textContent = t(`${v}.title`)
       text.textContent = t(`${v}.text`)
-      body.replaceChildren(v === 'login' ? loginForm() : registerForm())
-      if (focus) body.querySelector('input').focus()
+      if (v !== 'done') {
+        footPrompt.textContent = t(v === 'login' ? 'gate.register' : 'auth.haveAccount')
+        footLink.textContent = t(v === 'login' ? 'shell.register' : 'shell.login')
+        loginError.hidden = true
+      }
+      if (focus) (v === 'done' ? doneClose : panel.querySelector('form:not([hidden]) input'))?.focus()
     }
-
+    let beforeConfirm = null
+    function showConfirm (on) {
+      confirmLayer.hidden = !on
+      main.inert = on
+      head.inert = on
+      if (on) { beforeConfirm = document.activeElement; stayButton.focus() } else if (beforeConfirm?.isConnected) beforeConfirm.focus()
+    }
+    // Sign up closes only with the X or Esc, and asks first when something is typed. A click outside does not close it.
+    function requestClose () {
+      if (current === 'register' && hasInput()) showConfirm(true)
+      else close()
+    }
     function onKey (e) {
-      if (e.key === 'Escape') { e.preventDefault(); close(); return }
+      if (e.key === 'Escape') { e.preventDefault(); if (confirmLayer.hidden) requestClose(); else showConfirm(false); return }
       if (e.key !== 'Tab') return
-      const items = [...panel.querySelectorAll('button, input, a[href]')].filter((el) => !el.hidden && !el.disabled)
+      const items = [...panel.querySelectorAll('button, input, select, a[href]')].filter((el) => !el.disabled && !el.closest('[hidden], [inert]'))
       const first = items[0]
       const last = items[items.length - 1]
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+      if (!panel.contains(document.activeElement)) { e.preventDefault(); first.focus() }
+      else if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
     }
     function close (restore = true) {
-      if (authDrawer?.panel !== panel) return
-      authDrawer = null
+      if (authModal?.panel !== panel) return
+      authModal = null
       document.removeEventListener('keydown', onKey)
       app.inert = false
-      panel.classList.remove('is-open')
-      scrim.classList.remove('is-open')
-      setTimeout(() => { panel.remove(); scrim.remove() }, reduceMotion.matches ? 0 : 220)
+      overlay.classList.remove('is-open')
+      setTimeout(() => overlay.remove(), reduceMotion.matches ? 0 : 220)
       if (restore && opener?.isConnected) opener.focus({ preventScroll: true })
     }
 
     show(view, false)
-    document.body.append(scrim, panel)
+    document.body.append(overlay)
     app.inert = true
     document.addEventListener('keydown', onKey)
-    authDrawer = { panel, close }
+    authModal = { panel, close }
     panel.getBoundingClientRect()
-    panel.classList.add('is-open')
-    scrim.classList.add('is-open')
-    body.querySelector('input').focus()
+    overlay.classList.add('is-open')
+    panel.querySelector('form:not([hidden]) input').focus()
   }
 
   // Αναλύσεις needs a log in. Its pages show the page head and a card: the lock, what is behind it, log in, sign up.
