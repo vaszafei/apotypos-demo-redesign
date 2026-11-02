@@ -602,11 +602,10 @@ button, input, select { font: inherit; color: inherit; }
   box-shadow: -24px 0 48px -28px var(--scrim); transform: translateX(100%); transition: transform var(--motion-base) var(--ease-out);
 }
 .auth-overlay.is-open .auth-drawer { transform: none; }
-.auth-head { display: flex; flex: none; align-items: center; justify-content: space-between; padding: var(--space-5) var(--space-5) var(--space-3); }
-.auth-head .auth-logo { width: 112px; }
-.auth-close { margin-right: -8px; color: var(--ink); }
+.auth-head { display: flex; flex: none; justify-content: flex-end; padding: var(--space-3) var(--space-3) 0; }
+.auth-close { color: var(--ink); }
 .auth-main { display: flex; flex: 1; flex-direction: column; gap: var(--space-3); padding: 0 var(--space-5); overflow-y: auto; overscroll-behavior: contain; }
-.auth-title { margin: var(--space-2) 0 0; font: 600 var(--text-heading)/1.2 var(--font-heading); color: var(--ink); }
+.auth-title { margin: 0; font: 600 var(--text-title)/1.3 var(--font-heading); color: var(--ink); }
 .auth-text { margin: 0; font-size: var(--text-small); line-height: 1.5; color: var(--text-secondary); }
 .auth-form { display: flex; flex: 1; flex-direction: column; gap: var(--space-3); width: 100%; margin: 0; text-align: left; }
 .auth-form[hidden], .auth-drawer [hidden] { display: none; }
@@ -651,7 +650,6 @@ button, input, select { font: inherit; color: inherit; }
 .auth-done .auth-submit { flex: none; width: 100%; }
 .auth-confirm { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-3); padding: var(--space-5); text-align: center; background: var(--surface-raised); }
 .auth-confirm[hidden] { display: none; }
-.auth-confirm .auth-title { font-size: var(--text-title); }
 .auth-confirm-actions { display: flex; gap: var(--space-2); margin-top: var(--space-2); }
 .auth-confirm-actions .button { min-height: 40px; padding: 0 var(--space-5); border-radius: var(--pill, 999px); justify-content: center; }
 .auth-user { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }

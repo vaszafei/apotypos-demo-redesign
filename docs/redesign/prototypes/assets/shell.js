@@ -291,8 +291,7 @@
     const footLink = h('button', { type: 'button', class: 'link-button', onClick: () => show(current === 'login' ? 'register' : 'login', true) })
     const foot = h('p', { class: 'auth-foot' }, footPrompt, ' ', footLink)
     const closeButton = h('button', { type: 'button', class: 'icon-button auth-close', 'aria-label': t('auth.close'), onClick: () => requestClose() }, Icon('x-mark'))
-    const head = h('div', { class: 'auth-head' },
-      h('img', { class: 'logo-img auth-logo', src: 'assets/logo.svg?v=6', alt: t('site.name'), width: 335, height: 141 }), closeButton)
+    const head = h('div', { class: 'auth-head' }, closeButton)
     const main = h('div', { class: 'auth-main' }, title, text, loginForm, registerForm, doneView, foot)
     const stayButton = h('button', { type: 'button', class: 'button button-primary', onClick: () => showConfirm(false) }, t('confirm.stay'))
     const leaveButton = h('button', { type: 'button', class: 'button', onClick: () => close() }, t('auth.close'))
