@@ -2,7 +2,7 @@
 // Μέσα › Επισκόπηση (media-v2) and the page of one outlet (outlet-v2) use them. Each sum is for a period of days i0..i1.
 (function () {
   const { t, fmt, h } = window.App
-  const { card, cardHead, emptyText, tint, textOn } = Dash
+  const { card, cardHead, emptyText, textOn, color, seq } = Dash
 
   const name = (x) => x[App.locale] || x.el
   const sum = (arr) => arr.reduce((a, b) => a + b, 0)
@@ -127,8 +127,8 @@
     return card('c-12', cardHead(t('mme.stories.title'), toggle, t('mme.stories.info')), rows.length ? [matrixWrap(t('mme.stories.title'), table), dotKey] : emptyText(t('media2.empty.list')))
   }
 
-  // The color of a share in the agenda: a tint of the news blue, darker for a larger share. 20% or more is the full color.
-  const shareColor = (v) => { const bg = tint('#2a78d6', 1 - Math.min(1, v / 0.2) * 0.9); return { background: bg, color: textOn(bg) } }
+  // The color of a share in the agenda: a step of the sequential ramp, darker for a larger share. 20% or more is the darkest step.
+  const shareColor = (v) => seq(Math.min(1, v / 0.2))
 
   // Outlets × topics: the share of each topic in the news of each outlet.
   function AgendaCard (S) {
@@ -151,12 +151,13 @@
     return card('c-12', cardHead(t('mme.agenda.title'), key, t('mme.agenda.info')), rows.length && cols.length ? matrixWrap(t('mme.agenda.title'), table) : emptyText(t('media2.empty.list')))
   }
 
-  // A diverging color for a net balance from −1 to +1: red for critical, blue for sympathetic, a warm gray in the middle.
+  // A diverging color for a net balance from −1 to +1: red for critical, violet for sympathetic, a warm gray in the middle (tokens.css).
   function netColor (net) {
-    // Soft tones: a light warm gray in the middle, a muted brick for critical and a muted blue for supportive. The step eases in, so small values stay pale.
+    // The step eases in, so small values stay pale.
     const k = Math.min(1, Math.abs(net) / 0.5) ** 1.3 * 0.85
-    const end = net < 0 ? [0xc0, 0x5a, 0x4c] : [0x4a, 0x76, 0xb8]
-    const mid = [0xee, 0xeb, 0xe5]
+    const rgbOf = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16))
+    const end = rgbOf(color(net < 0 ? '--stance-critical' : '--stance-supportive'))
+    const mid = rgbOf(color('--div-mid'))
     const rgb = mid.map((v, i) => Math.round(v + (end[i] - v) * k))
     const hex = `#${rgb.map((v) => v.toString(16).padStart(2, '0')).join('')}`
     return { background: hex, color: textOn(hex) }
@@ -175,8 +176,7 @@
         const n = o.quotes[p.k]
         const rate = o.n ? (n / o.n) * 1000 : 0
         const title = t('mme.people.cell.voice', { outlet: o.name, person: p.name, n: fmt.int(n), rate: fmt.dec(rate) })
-        const bg = n ? tint('#4a76b8', 1 - Math.min(1, rate / maxRate) * 0.8) : 'transparent'
-        return h('td', { style: { background: bg, color: n ? textOn(bg) : 'var(--text-secondary)' }, title, 'aria-label': title }, n ? (rate < 10 ? fmt.dec(rate) : fmt.int(Math.round(rate))) : '')
+        return h('td', { style: n ? seq(rate / maxRate) : { color: 'var(--text-secondary)' }, title, 'aria-label': title }, n ? (rate < 10 ? fmt.dec(rate) : fmt.int(Math.round(rate))) : '')
       }
       const tone = o.tone[p.k]
       const n = sum(tone)
@@ -326,7 +326,7 @@
     })
     return weeks
   }
-  const TOPIC_SLOTS = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#6250d6', '#008300']
+  const TOPIC_SLOTS = [1, 2, 3, 4, 5, 7, 6].map((i) => `var(--cat-${i})`)
 
   // The share of each topic in the news of the outlet, week by week: one line for each of the 7 largest topics of the outlet. A week with no news is a gap in the line.
   function WeeklyAgenda (set, k) {
@@ -367,8 +367,8 @@
   }
 
   // Critical articles to the left and supportive to the right, for each topic. The tick is the critical share of all outlets in the topic.
-  // Two bars, one under the other, on one center line: the outlet (red to the left, blue to the right) and, thin and gray, all the other articles to compare with.
-  const ALL_GRAY = '#9a978f'
+  // Two bars, one under the other, on one center line: the outlet (red to the left, violet to the right) and, thin and gray, all the other articles to compare with.
+  const ALL_GRAY = 'var(--cat-0)'
   function PairBars (here, others, scale, label) {
     return h('div', { class: 'pair-dbar' },
       UI.DivergingBar({ left: here.left, right: here.right, scale, colors: [STANCE_COLORS[0], null, STANCE_COLORS[2]], label }),

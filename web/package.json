@@ -7,6 +7,7 @@
     "dev": "pnpm sync && nuxt dev",
     "generate": "pnpm sync && nuxt generate",
     "preview": "nuxt preview",
+    "check": "node ../docs/redesign/prototypes/scripts/check.mjs",
     "check:visual": "node ../docs/redesign/prototypes/scripts/visual-check.mjs"
   },
   "dependencies": {

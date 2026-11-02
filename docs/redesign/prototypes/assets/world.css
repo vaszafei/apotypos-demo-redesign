@@ -1,12 +1,4 @@
 /* The report pages of Αναλύσεις: Ο πόλεμος της αφήγησης, Μία είδηση πολλές εκδοχές, Γαλλία (#36, #37, #38). Load after politics.css. */
-:root {
-  /* Status colors of a verdict. Each text color has a contrast of 4.5 to 1 or more on its tint. */
-  --status-ok: #1d7a4f;
-  --status-over: #a15c00;
-  --status-open: #4b5d73;
-  --status-no: #b42f2f;
-}
-
 .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; flex: none; }
 .table-scroll { overflow-x: auto; }
 .section-lead { margin: var(--space-3) 0 0; font-size: var(--text-small); color: var(--text-secondary); }
@@ -162,7 +154,7 @@
 .report-tabs button[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
 .report-tabs .tab-n { font-size: 12px; opacity: 0.8; }
 .report-note { margin: 0; padding: 6px 10px; border-radius: 8px; background: var(--card-tint); font-size: var(--text-caption); color: var(--text-secondary); }
-.report-frame { display: block; width: 100%; height: 1600px; border: 1px solid var(--border); border-radius: var(--radius); background: #ffffff; }
+.report-frame { display: block; width: 100%; height: 1600px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--report-bg); }
 @media (max-width: 1023px) {
   .glance { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .glance li:nth-child(3n) { border-right: 0; }

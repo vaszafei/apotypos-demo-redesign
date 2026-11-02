@@ -5,22 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=12">
-  <link rel="stylesheet" href="assets/app.css?v=41">
-  <link rel="stylesheet" href="assets/dash.css?v=83">
-  <link rel="stylesheet" href="assets/politics.css?v=5">
+  <link rel="stylesheet" href="assets/tokens.css?v=13">
+  <link rel="stylesheet" href="assets/app.css?v=42">
+  <link rel="stylesheet" href="assets/dash.css?v=84">
+  <link rel="stylesheet" href="assets/politics.css?v=6">
   <link rel="stylesheet" href="assets/elections.css?v=6">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=34"></script>
+  <script src="assets/messages.js?v=35"></script>
   <script src="assets/messages-v2.js?v=47"></script>
   <script src="assets/messages-politics.js?v=10"></script>
   <script src="assets/components.js?v=13"></script>
   <script src="assets/motion.js?v=2"></script>
-  <script src="assets/dash.js?v=17"></script>
+  <script src="assets/dash.js?v=18"></script>
   <script src="assets/politics.js?v=11"></script>
   <script src="assets/shell.js?v=57"></script>
   <script src="data/elections.js?v=2"></script>
@@ -36,7 +36,7 @@
     const { LineChart, signed } = Politics
     const result = load('elections', ['parties', 'weeks', 'series', 'outlets'], (b) => b.outlets)
     // The colors of the live page: each party has one color on every card.
-    const PARTY_COLORS = { ΝΔ: '#1e6fd9', ΣΥΡΙΖΑ: '#e23b6d', ΠΑΣΟΚ: '#1aa64b', ΚΚΕ: '#d11d1d', ΕΛ: '#243b6b', ΠΛΕΥΣΗ: '#7c3aed', ΝΕΑΡ: '#c2790b', ΦΛ: '#be185d', ΜΕΡΑ25: '#0891b2', ΝΙΚΗ: '#4d7c0f' }
+    const PARTY_COLORS = { ΝΔ: 'var(--party-nd)', ΣΥΡΙΖΑ: 'var(--party-syriza)', ΠΑΣΟΚ: 'var(--party-pasok)', ΚΚΕ: 'var(--party-kke)', ΕΛ: 'var(--party-el)', ΠΛΕΥΣΗ: 'var(--party-plefsi)', ΝΕΑΡ: 'var(--party-near)', ΦΛ: 'var(--party-fl)', ΜΕΡΑ25: 'var(--party-mera25)', ΝΙΚΗ: 'var(--party-niki)' }
     const color = (key) => PARTY_COLORS[key] || 'var(--stance-neutral)'
     const MIN_TONE = 5
     const THIN_GAP = 30

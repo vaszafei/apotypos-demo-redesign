@@ -5,21 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=12">
-  <link rel="stylesheet" href="assets/app.css?v=41">
-  <link rel="stylesheet" href="assets/dash.css?v=83">
-  <link rel="stylesheet" href="assets/politics.css?v=5">
+  <link rel="stylesheet" href="assets/tokens.css?v=13">
+  <link rel="stylesheet" href="assets/app.css?v=42">
+  <link rel="stylesheet" href="assets/dash.css?v=84">
+  <link rel="stylesheet" href="assets/politics.css?v=6">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=34"></script>
+  <script src="assets/messages.js?v=35"></script>
   <script src="assets/messages-v2.js?v=47"></script>
   <script src="assets/messages-politics.js?v=10"></script>
   <script src="assets/components.js?v=13"></script>
   <script src="assets/motion.js?v=2"></script>
-  <script src="assets/dash.js?v=17"></script>
+  <script src="assets/dash.js?v=18"></script>
   <script src="assets/politics.js?v=11"></script>
   <script src="assets/shell.js?v=57"></script>
   <script src="data/speeches.js?v=1"></script>
@@ -99,13 +99,13 @@
 
           // The fingerprint of each speech. The 8 largest topics of all speeches have a fixed color, the domestic affairs are dark gray.
           const colorOf = new Map(d.agenda.filter((a) => a.topic !== DOMESTIC).slice(0, SLOTS.length).map((a, i) => [a.topic, SLOTS[i]]))
-          colorOf.set(DOMESTIC, '#5c5a55')
-          const segColor = (k) => colorOf.get(k) || '#d6d2c8'
-          const legend = UI.Legend([...[...colorOf.keys()].map((k) => ({ label: topic(k), color: colorOf.get(k) })), { label: t('un.other'), color: '#d6d2c8' }])
+          colorOf.set(DOMESTIC, 'var(--cat-strong)')
+          const segColor = (k) => colorOf.get(k) || 'var(--bar-muted)'
+          const legend = UI.Legend([...[...colorOf.keys()].map((k) => ({ label: topic(k), color: colorOf.get(k) })), { label: t('un.other'), color: 'var(--bar-muted)' }])
           const Print = (r) => {
             const rest = Math.max(0, 1 - r.shares.reduce((a, [, s]) => a + s, 0))
             const label = r.shares.map(([k, s]) => `${topic(k)} ${fmt.pct(s)}`).join(', ')
-            return UI.StackedBar([...r.shares.map(([k, s]) => ({ label: topic(k), value: s, color: segColor(k) })), { label: t('un.other'), value: rest > 0.01 ? rest : 0, color: '#ebe8e1' }], { legend: false, label })
+            return UI.StackedBar([...r.shares.map(([k, s]) => ({ label: topic(k), value: s, color: segColor(k) })), { label: t('un.other'), value: rest > 0.01 ? rest : 0, color: 'var(--bar-track)' }], { legend: false, label })
           }
           const sorted = rows.slice().sort((a, b) => b.seconds - a.seconds)
           const tableCard = card('c-12', cardHead(t('un.table.title'), null, t('un.table.info')), legend,
