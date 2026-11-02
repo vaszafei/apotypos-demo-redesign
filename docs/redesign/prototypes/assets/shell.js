@@ -217,35 +217,69 @@
     source.input.addEventListener('change', () => { sourceOther.wrap.hidden = source.input.value !== 'other'; setError(sourceOther, '') })
     const terms = checkField('auth-terms', [t('register.terms1'), h('span', { class: 'terms-text' }, t('register.terms2')), t('register.terms3'), h('span', { class: 'terms-text' }, t('register.terms4'))])
     const updates = checkField('auth-updates', t('register.updates'))
-    const group = (title, ...children) => h('fieldset', { class: 'auth-group' }, h('legend', { class: 'auth-group-title' }, title), children)
+    const STEPS = 3
+    let step = 1
 
-    function validate () {
+    // Each step checks only its own fields. The last step checks all three, so a field cleared on a step back cannot slip through.
+    function validate (n) {
       const wrong = []
       const check = (f, message, focus = f.input) => { setError(f, message); if (message) wrong.push(focus) }
-      const mail = email.input.value.trim()
-      check(name, name.input.value.trim() ? '' : t('err.name'))
-      check(email, !mail ? t('err.email') : EMAIL_PATTERN.test(mail) ? '' : t('err.emailInvalid'))
-      check(password, password.input.value.length >= 8 ? '' : t('err.password'))
-      check(job, job.input.value ? '' : t('err.job'))
-      check({ error: reasonError }, reasons.size ? '' : t('err.reason'), chips[0])
-      check(source, source.input.value ? '' : t('err.source'))
-      if (source.input.value === 'other') check(sourceOther, sourceOther.input.value.trim() ? '' : t('err.sourceOther'))
-      check(terms, terms.input.checked ? '' : t('err.terms'))
+      if (n === 1) {
+        const mail = email.input.value.trim()
+        check(name, name.input.value.trim() ? '' : t('err.name'))
+        check(email, !mail ? t('err.email') : EMAIL_PATTERN.test(mail) ? '' : t('err.emailInvalid'))
+        check(password, password.input.value.length >= 8 ? '' : t('err.password'))
+      } else if (n === 2) {
+        check(job, job.input.value ? '' : t('err.job'))
+        check({ error: reasonError }, reasons.size ? '' : t('err.reason'), chips[0])
+      } else {
+        check(source, source.input.value ? '' : t('err.source'))
+        if (source.input.value === 'other') check(sourceOther, sourceOther.input.value.trim() ? '' : t('err.sourceOther'))
+        check(terms, terms.input.checked ? '' : t('err.terms'))
+      }
       return wrong
     }
     const hasInput = () => [name, email, password, org, sourceOther].some((f) => f.input.value !== '') ||
       Boolean(job.input.value || source.input.value || reasons.size || terms.input.checked || updates.input.checked)
 
+    const stepPanels = [
+      h('div', { class: 'auth-step' }, h('div', { class: 'auth-row' }, name.wrap, email.wrap), password.wrap),
+      h('div', { class: 'auth-step', hidden: true }, h('div', { class: 'auth-row' }, job.wrap, org.wrap), reasonField),
+      h('div', { class: 'auth-step', hidden: true }, source.wrap, sourceOther.wrap, h('div', { class: 'auth-checks' }, terms.wrap, updates.wrap))]
+    const progressLabel = h('p', { class: 'auth-progress-label', 'aria-live': 'polite' })
+    const progressBars = stepPanels.map(() => h('span'))
+    const progress = h('div', { class: 'auth-progress' }, progressLabel, h('div', { class: 'auth-progress-bar', 'aria-hidden': 'true' }, progressBars))
+    const backButton = h('button', { type: 'button', class: 'button auth-back', onClick: () => goTo(step - 1) }, t('register.back'))
+    const nextButton = h('button', { type: 'submit', class: 'button button-primary auth-submit' })
     const registerForm = h('form', { class: 'auth-form', novalidate: true, onSubmit: (e) => {
       e.preventDefault()
-      const wrong = validate()
-      if (wrong.length) { wrong[0].focus(); return }
+      if (step < STEPS) {
+        const wrong = validate(step)
+        if (wrong.length) { wrong[0].focus(); return }
+        goTo(step + 1)
+        return
+      }
+      for (let n = 1; n <= STEPS; n++) {
+        const wrong = validate(n)
+        if (wrong.length) { if (n !== step) goTo(n); wrong[0].focus(); return }
+      }
       show('done', true)
-    } },
-    group(t('register.groupAccount'), h('div', { class: 'auth-row' }, name.wrap, email.wrap), password.wrap),
-    group(t('register.groupAbout'), h('div', { class: 'auth-row' }, job.wrap, org.wrap), reasonField, source.wrap, sourceOther.wrap),
-    h('div', { class: 'auth-checks' }, terms.wrap, updates.wrap),
-    actions(t('register.submit')))
+    } }, progress, ...stepPanels, h('div', { class: 'auth-actions' }, backButton, nextButton))
+    function renderStep () {
+      stepPanels.forEach((p, i) => { p.hidden = i + 1 !== step })
+      progressBars.forEach((b, i) => b.classList.toggle('is-done', i < step))
+      progressLabel.textContent = t('register.step', { n: step, total: STEPS })
+      backButton.hidden = step === 1
+      nextButton.textContent = t(step === STEPS ? 'register.submit' : 'register.next')
+    }
+    function goTo (n) {
+      step = n
+      renderStep()
+      renderHead()
+      main.scrollTop = 0
+      focusFirst()
+    }
+    renderStep()
 
     const doneClose = h('button', { type: 'button', class: 'button button-primary auth-submit', onClick: () => close() }, t('auth.close'))
     const doneView = h('div', { class: 'auth-done' }, h('span', { class: 'gate-icon' }, Icon('check-circle', 'icon')), doneClose)
@@ -275,20 +309,28 @@
     overlay.addEventListener('wheel', holdPage, { passive: false })
     overlay.addEventListener('touchmove', holdPage, { passive: false })
 
+    function renderHead () {
+      const key = current === 'register' && step > 1 ? `register.${step === 2 ? 'title2' : 'title3'}` : `${current}.title`
+      title.textContent = t(key)
+      text.textContent = t(current === 'register' && step > 1 ? `register.text${step}` : `${current}.text`)
+    }
+    function focusFirst () {
+      const items = [...panel.querySelectorAll('input, select, .reason-chip')].filter((el) => !el.closest('[hidden]') && el.type !== 'checkbox')
+      items[0]?.focus()
+    }
     function show (v, focus) {
       current = v
       loginForm.hidden = v !== 'login'
       registerForm.hidden = v !== 'register'
       doneView.hidden = v !== 'done'
       foot.hidden = v === 'done'
-      title.textContent = t(`${v}.title`)
-      text.textContent = t(`${v}.text`)
+      renderHead()
       if (v !== 'done') {
         footPrompt.textContent = t(v === 'login' ? 'gate.register' : 'auth.haveAccount')
         footLink.textContent = t(v === 'login' ? 'shell.register' : 'shell.login')
         loginError.hidden = true
       }
-      if (focus) (v === 'done' ? doneClose : panel.querySelector('form:not([hidden]) input'))?.focus()
+      if (focus) { if (v === 'done') doneClose.focus(); else focusFirst() }
     }
     let beforeConfirm = null
     function showConfirm (on) {
@@ -329,7 +371,7 @@
     authModal = { panel, close }
     panel.getBoundingClientRect()
     overlay.classList.add('is-open')
-    panel.querySelector('form:not([hidden]) input').focus()
+    focusFirst()
   }
 
   // Αναλύσεις needs a log in. Its pages show the page head and a card: the lock, what is behind it, log in, sign up.

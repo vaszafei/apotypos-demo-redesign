@@ -12,7 +12,7 @@ execution: code
 ## Goal Capsule
 
 - **Objective:** Log in and sign up open in a centred modal that looks professional, and sign up collects who the person is, why they want access and how they found apotypos, so new accounts can be vetted.
-- **Means:** Replace the drawer in `shell.js` and `app.css` with a modal built once with two views (log in, sign up) and a success screen. Sign up is one grouped form with per-field validation.
+- **Means:** Replace the drawer in `shell.js` and `app.css` with a modal built once with two views (log in, sign up) and a success screen. Sign up is a 3-step walkthrough (account, about you, how you found us) with per-step validation.
 - **Authority:** This plan, then `GLOSSARY.md` (Account, Gate, Auth modal, Sign-up request), then `docs/solutions/` (theme tokens only, shared-asset checklist).
 - **Stop conditions:** Stop and report if a page gains horizontal scroll or a console error, if focus can leave the modal, or if the modal is unreadable in any of the five themes.
 - **Execution profile:** Plain JS and CSS in `docs/redesign/prototypes/assets/`, no build step. Proof is browser runs: a Playwright script in the scratchpad plus the visual check.
@@ -24,14 +24,14 @@ execution: code
 
 ### Summary
 
-The side drawer is gone. Every entry point (navbar buttons, phone menu, both buttons of the gate card) opens a centred modal. Log in behaves as before. Sign up is one form with an account group and a "Για εσάς" group, and ends on an "awaiting approval" screen.
+The side drawer is gone. Every entry point (navbar buttons, phone menu, both buttons of the gate card) opens a centred modal. Log in behaves as before. Sign up is three short steps (account; about you; how you found us and the terms) with a progress bar, and ends on an "awaiting approval" screen.
 
 ### Requirements
 
 - R1. One modal replaces the drawer: centred card of 520 px, full-screen sheet below 640 px, dimmed and blurred scrim, short fade and scale-up (a fade only with reduced motion).
 - R2. Logo on top, a title and one line of text, a close button, and a bottom link that switches view ("Δεν έχετε λογαριασμό; Εγγραφή" / "Έχετε ήδη λογαριασμό; Σύνδεση"). The pill switch is removed.
 - R3. Log in keeps username, password, the 3 fixed accounts, the red error box and the page redraw. A click on the scrim closes it.
-- R4. Sign up fields: name, email, password with a show/hide button and the hint "Τουλάχιστον 8 χαρακτήρες"; job (required dropdown); organisation (optional); reason for use (multi-select chips, at least one); how you found us (required dropdown, "Άλλο" opens a required text field); terms checkbox (required, underlined text that is not a link); updates checkbox (optional, off).
+- R4. Sign up is three steps with "Βήμα n από 3", a progress bar, Πίσω and Συνέχεια; each step is checked before the next opens, and the last step checks all three. The modal keeps one height on every step. Step 1: name, email, password. Step 2: job, organisation, reasons. Step 3: how you found us, terms, updates. Fields: name, email, password with a show/hide button and the hint "Τουλάχιστον 8 χαρακτήρες"; job (required dropdown); organisation (optional); reason for use (multi-select chips, at least one); how you found us (required dropdown, "Άλλο" opens a required text field); terms checkbox (required, underlined text that is not a link); updates checkbox (optional, off).
 - R5. Validation on submit: a message under each wrong field, the first wrong field focused, native bubbles off. Messages clear when the field changes.
 - R6. A valid submit shows a success screen ("we'll email you when your account is approved") with one Κλείσιμο button. Nothing is stored.
 - R7. Sign up closes only with X or Esc. If the form has input, a confirmation ("Να κλείσει; Θα χαθούν τα στοιχεία") comes first. A click on the scrim does nothing there. Switching to log in and back keeps what was typed.
@@ -47,7 +47,7 @@ The side drawer is gone. Every entry point (navbar buttons, phone menu, both but
 ### Key Decisions
 
 - The modal replaces the drawer, with no flag. (session-settled: user-directed — chosen over keeping both behind `?auth=modal`: the user wanted a replacement.)
-- One form, not steps. (session-settled: user-directed — chosen over a 3-step walkthrough: "just a professional register".)
+- Three short steps, not one long form. (session-settled: user-directed — chosen over one long form: after seeing the one-form version the user said professional apps do not show all of that at once. This replaced an earlier one-form decision.)
 - Sign-up submit shows a success screen and stores nothing. (session-settled: user-approved — chosen over saving to the browser: no backend is in scope.)
 
 ---
@@ -56,7 +56,7 @@ The side drawer is gone. Every entry point (navbar buttons, phone menu, both but
 
 ### Key Technical Decisions
 
-- KTD1. Build both views once and toggle `hidden`, so switching keeps the typed values (R7). The success screen and the close confirmation are further blocks in the same panel.
+- KTD1. Build both views once and toggle `hidden`, so switching keeps the typed values (R7). The sign-up steps are panels of one form, so going back keeps the data too. The success screen and the close confirmation are further blocks in the same panel.
 - KTD2. One overlay element holds the scrim and centres the panel. A click on the overlay itself (not the panel) closes only when the view is log in. A `wheel` / `touchmove` listener on the overlay stops the page behind from scrolling (R8); the panel has `overscroll-behavior: contain`.
 - KTD3. The close confirmation is a layer inside the panel, not `window.confirm`. While it shows, the form block is `inert`, and the focus trap ignores inert elements.
 - KTD4. Dropdowns are native `<select>` elements with the chevron icon over them, so they stay accessible and work on phones. Reason chips are `button`s with `aria-pressed`, styled as the site's selected state (accent tint and accent border).

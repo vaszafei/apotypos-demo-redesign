@@ -4,7 +4,7 @@ User request (Greek-English mix, kept short): work on log in and sign up. Today 
 
 Decisions from the grill session (all confirmed by the user):
 - The modal replaces the drawer. No flag, no second version.
-- Sign up is ONE professional form, not steps. Two groups: "Λογαριασμός" and "Για εσάς".
+- Sign up was first built as ONE form, then the user rejected it ("professional apps do not show all that at once"). It is now three short steps: account; about you; how you found us and terms.
 - Fields: name, email, password (eye, 8 characters minimum), job (dropdown), organisation (optional), reason (multi-select chips), how you found us (dropdown, "Άλλο" opens a text field), terms checkbox (text only, not clickable), updates checkbox (optional).
 - No backend. Submit validates and shows an "awaiting approval" screen. Nothing is stored.
 - Log in stays as it is: username and password, 3 fixed accounts.

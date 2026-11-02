@@ -596,8 +596,14 @@ button, input, select { font: inherit; color: inherit; }
 /* The fields of the auth modal: label above, 44 px field, the error under it. */
 .auth-form { display: flex; flex-direction: column; gap: var(--space-4); width: 100%; margin: 0; text-align: left; }
 .auth-form[hidden], .auth-modal [hidden] { display: none; }
-.auth-group { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; margin: 0; padding: 0; border: 0; }
-.auth-group-title { margin: 0 0 var(--space-1); padding: 0; font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
+.auth-progress { display: flex; flex-direction: column; gap: var(--space-2); }
+.auth-progress-label { margin: 0; font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
+.auth-progress-bar { display: flex; gap: var(--space-1); }
+.auth-progress-bar span { flex: 1; height: 3px; border-radius: 2px; background: var(--border); transition: background var(--motion-base) var(--ease-out); }
+.auth-progress-bar span.is-done { background: var(--ink); }
+.auth-step { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; animation: auth-step-in var(--motion-base) var(--ease-out); }
+.auth-step[hidden] { display: none; }
+@keyframes auth-step-in { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: none; } }
 .auth-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
 .auth-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .auth-field label, .field-label { display: flex; align-items: baseline; gap: var(--space-2); font: 600 13px/1.3 var(--font-text); color: var(--ink); }
@@ -639,6 +645,10 @@ button, input, select { font: inherit; color: inherit; }
 .auth-text { margin: 0; font-size: var(--text-small); line-height: 1.5; color: var(--text-secondary); }
 .auth-main > .auth-form, .auth-done { margin-top: var(--space-3); }
 .auth-actions { position: sticky; bottom: 0; padding: var(--space-3) 0 0; background: var(--surface-raised); }
+.auth-actions { display: flex; gap: var(--space-2); }
+.auth-back { justify-content: center; min-height: 44px; padding: 0 var(--space-5); border-radius: var(--pill, 999px); }
+.auth-back[hidden] { display: none; }
+.auth-actions .auth-submit { flex: 1; width: auto; }
 .auth-submit { justify-content: center; width: 100%; min-height: 44px; border-radius: var(--pill, 999px); }
 .auth-foot { margin: 0; padding: var(--space-4) 0 var(--space-5); text-align: center; font-size: var(--text-small); color: var(--text-secondary); }
 .auth-done { display: flex; flex-direction: column; align-items: center; gap: var(--space-4); padding-bottom: var(--space-5); }
@@ -647,6 +657,7 @@ button, input, select { font: inherit; color: inherit; }
 .auth-confirm-actions { display: flex; gap: var(--space-2); margin-top: var(--space-2); }
 .auth-confirm-actions .button { min-height: 40px; padding: 0 var(--space-5); border-radius: var(--pill, 999px); justify-content: center; }
 .link-button { padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+@media (min-width: 640px) { .auth-step { min-height: 270px; } }
 @media (max-width: 639px) {
   .auth-overlay { align-items: stretch; padding: 0; }
   .auth-modal { width: 100%; max-height: none; border: 0; border-radius: 0; transform: translateY(16px); }
@@ -654,7 +665,7 @@ button, input, select { font: inherit; color: inherit; }
   .auth-main { padding: 0 var(--space-4); }
   .auth-row { grid-template-columns: minmax(0, 1fr); }
 }
-@media (prefers-reduced-motion: reduce) { .auth-modal { transform: none; transition: none; } }
+@media (prefers-reduced-motion: reduce) { .auth-modal { transform: none; transition: none; } .auth-step { animation: none; } }
 
 /* The menu of the user: the icon on a wide screen, with the profile and "Αποσύνδεση". */
 .user-menu { position: relative; }
