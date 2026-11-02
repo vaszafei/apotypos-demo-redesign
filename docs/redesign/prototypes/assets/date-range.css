@@ -6,7 +6,7 @@
 .dr-text { font-weight: 600; font-variant-numeric: tabular-nums; }
 .dr-days { font-size: var(--text-caption); color: var(--text-secondary); }
 .dr-chev { width: 14px; height: 14px; color: var(--text-secondary); }
-.dr-pop { position: absolute; z-index: 40; top: calc(100% + 6px); right: 0; display: grid; grid-template-columns: 180px auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-raised); box-shadow: 0 12px 32px rgba(17, 17, 17, 0.14); }
+.dr-pop { position: absolute; z-index: 40; top: calc(100% + 6px); right: 0; display: grid; grid-template-columns: 180px auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-raised); box-shadow: 0 12px 32px color-mix(in srgb, var(--shade) 14%, transparent); }
 .dr-pop[hidden] { display: none; }
 .dr-presets { display: grid; align-content: start; gap: 2px; margin: 0; padding: var(--space-3) var(--space-2); list-style: none; border-right: 1px solid var(--border); }
 .dr-preset { width: 100%; min-height: 32px; padding: 0 10px; border: 0; border-radius: 6px; background: none; color: var(--text-primary); font: inherit; font-size: var(--text-small); text-align: left; cursor: pointer; }

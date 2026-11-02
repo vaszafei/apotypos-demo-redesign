@@ -1,5 +1,5 @@
 // The color checks of the prototypes (#2). Usage: pnpm check (in web/) or node docs/redesign/prototypes/scripts/check.mjs
-// 1. No hex color outside assets/tokens.css.
+// 1. No hex, rgb() or hsl() color literal outside assets/tokens.css.
 // 2. Contrast in every theme: text 4.5 to 1, marks 3 to 1, each on its surfaces.
 // 3. The accent, the data series and "supportive" are far apart (CIEDE2000).
 // 4. The categorical slots stay apart under simulated protanopia, deuteranopia and tritanopia (Machado 2009, severity 1). A warning, not a failure.
@@ -18,11 +18,13 @@ const fail = (msg) => { failures++; console.log(`  FAIL ${msg}`) }
 
 // 1. Hex colors outside tokens.css. Vendor code, fonts, SVG files and the standalone reports are not ours to theme.
 const HEX = /#[0-9a-fA-F]{3,8}\b/g
+// A color function with a literal number. A computed one (rgb(${...}) from tokens) is not a literal.
+const FUNC = /\b(?:rgba?|hsla?)\(\s*[\d.]/g
 const files = [
   ...readdirSync(ROOT).filter((f) => f.endsWith('.html')),
   ...readdirSync(join(ROOT, 'assets')).filter((f) => /\.(css|js)$/.test(f) && f !== 'tokens.css').map((f) => join('assets', f))
 ]
-console.log(`1. Hex colors outside tokens.css (${files.length} files)`)
+console.log(`1. Color literals outside tokens.css (${files.length} files)`)
 let hexCount = 0
 for (const f of files) {
   readFileSync(join(ROOT, f), 'utf8').split('\n').forEach((line, i) => {
@@ -33,6 +35,10 @@ for (const f of files) {
       if (/href=["']?$/.test(before)) continue
       hexCount++
       fail(`${f}:${i + 1}: ${m[0]}`)
+    }
+    for (const m of line.matchAll(FUNC)) {
+      hexCount++
+      fail(`${f}:${i + 1}: ${line.slice(m.index, m.index + 24)}…`)
     }
   })
 }

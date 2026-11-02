@@ -849,6 +849,18 @@
         h('select', { onChange: (e) => { setFont(e.target.value); document.querySelectorAll('.font-switch select').forEach((s) => { s.value = e.target.value }) } },
           FONTS.map(([key, label]) => h('option', { value: key, selected: document.documentElement.dataset.font === key }, label))))
 
+      // Some chart colors are computed from the tokens when a page draws (Dash.color), so a new theme draws the page again, as a log in does.
+      // The scroll position and the focus on the swatch are kept.
+      const redrawForTheme = (key) => {
+        const y = window.scrollY
+        remount()
+        // The charts draw a frame later (Dash.fit), so the page is shorter at first. Restore the position again after they draw.
+        window.scrollTo(0, y)
+        requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo(0, y)))
+        // The switch is drawn twice (footer and the drawer of a phone); focus the one that shows.
+        const swatch = [...document.querySelectorAll(`.theme-swatch[data-theme="${key}"]`)].find((b) => b.offsetParent)
+        if (swatch) swatch.focus({ preventScroll: true })
+      }
       let themeCount = 0
       const themeSwitch = () => {
         const labelId = `theme-label-${themeCount++}`
@@ -857,7 +869,7 @@
             THEMES.map((key) => h('button', {
               type: 'button', class: 'theme-swatch', 'data-theme': key, title: t(`theme.${key}`), 'aria-label': t(`theme.${key}`),
               'aria-pressed': String(document.documentElement.dataset.theme === key),
-              onClick: () => { setTheme(key); document.querySelectorAll('.theme-swatch').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.theme === key))) }
+              onClick: () => { setTheme(key); redrawForTheme(key) }
             }))))
       }
 
