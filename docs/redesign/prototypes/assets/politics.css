@@ -34,7 +34,7 @@
 
 .region-pills { display: flex; flex-wrap: wrap; gap: 6px; }
 .region-pills button { padding: 4px 12px; border: 1px solid var(--border); border-radius: var(--pill); background: var(--surface-raised); font: inherit; font-size: var(--text-caption); cursor: pointer; }
-.region-pills button[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 2px 6px -3px rgba(17, 17, 17, 0.35); font-weight: 600; }
+.region-pills button[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 2px 6px -3px color-mix(in srgb, var(--shade) 35%, transparent); font-weight: 600; }
 
 .peak-list { margin: var(--space-2) 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3) var(--space-4); }
 .peak-list li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: var(--space-2); align-items: start; font-size: var(--text-caption); }

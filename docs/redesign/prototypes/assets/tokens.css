@@ -132,6 +132,9 @@
   --logo-filter: none;
   --error-text: #a12a2a; --error-bg: #fbefef; --error-edge: #d9a3a3; --error-ink: #7a1f1f;
   --scrim: rgb(17 17 17 / 0.45);
+  /* The near-black of shadows and hover washes. The same in every theme, as before: a shadow stays dark. */
+  --shade: rgb(17 17 17);
+  --shade-black: rgb(0 0 0);
   --notice-bg: #fdf3df; --notice-edge: #b7791f; --notice-text: #5c3d0e; --target-bg: #fff6cc; --card-edge: #e4e0d6;
   /* The tint of a selected row or a note inside a card. A card has the page background, so the tint darkens the page in every theme. */
   --card-tint: color-mix(in srgb, var(--ink) 6%, transparent);
