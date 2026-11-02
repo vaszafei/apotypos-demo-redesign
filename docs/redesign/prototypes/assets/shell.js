@@ -115,7 +115,7 @@
   }
   function signOut () { try { localStorage.removeItem(USER_KEY) } catch {} }
 
-  // The modal of log in and sign up: a centred card over a scrim, full screen on a phone. The page behind is inert while it is open.
+  // The drawer of log in and sign up: it slides in from the right over a scrim. The page behind is inert while it is open.
   // After a log in the page draws again (remount), so the lock of Αναλύσεις opens without leaving the page.
   // Prototype only: a sign-up request is checked and then dropped. There is no backend, so nothing is saved or sent.
   const JOBS = ['journalist', 'researcher', 'student', 'comms', 'politics', 'public', 'business', 'other']
@@ -243,8 +243,8 @@
       Boolean(job.input.value || source.input.value || reasons.size || terms.input.checked || updates.input.checked)
 
     const stepPanels = [
-      h('div', { class: 'auth-step' }, h('div', { class: 'auth-row' }, name.wrap, email.wrap), password.wrap),
-      h('div', { class: 'auth-step', hidden: true }, h('div', { class: 'auth-row' }, job.wrap, org.wrap), reasonField),
+      h('div', { class: 'auth-step' }, name.wrap, email.wrap, password.wrap),
+      h('div', { class: 'auth-step', hidden: true }, job.wrap, org.wrap, reasonField),
       h('div', { class: 'auth-step', hidden: true }, source.wrap, sourceOther.wrap, h('div', { class: 'auth-checks' }, terms.wrap, updates.wrap))]
     const progressLabel = h('p', { class: 'auth-progress-label', 'aria-live': 'polite' })
     const progressBars = stepPanels.map(() => h('span'))
@@ -299,7 +299,7 @@
     const confirmLayer = h('div', { class: 'auth-confirm', role: 'alertdialog', 'aria-modal': 'true', 'aria-labelledby': 'auth-confirm-title', hidden: true },
       h('h3', { class: 'auth-title', id: 'auth-confirm-title' }, t('confirm.title')), h('p', { class: 'auth-text' }, t('confirm.text')),
       h('div', { class: 'auth-confirm-actions' }, stayButton, leaveButton))
-    const panel = h('div', { class: 'auth-modal', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'auth-title', 'aria-describedby': 'auth-text' }, head, main, confirmLayer)
+    const panel = h('div', { class: 'auth-drawer', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'auth-title', 'aria-describedby': 'auth-text' }, head, main, confirmLayer)
     let pressedOnOverlay = false
     const overlay = h('div', { class: 'auth-overlay',
       onMousedown: (e) => { pressedOnOverlay = e.target === overlay },

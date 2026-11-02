@@ -2,6 +2,9 @@
 
 Branch `claude/auth-modal`. Plan: `docs/plans/2026-11-02-1000-feat-auth-modal-plan.md`.
 
+## Second change after review: back to the drawer
+The user asked to go back to the side drawer and asked why the type and sizes of the new UI differed from the app. Measured in the browser: the font family was already `IBM Plex Sans` everywhere (the `--font-text` token). The differences were in size, weight and case: 13 px literals (the app scale is 12 and 14 px), sentence-case 600-weight labels (the app and the old login form use 12 px uppercase 700 with 0.08em), 44 px fields with a 10 px radius (the app uses 40 px and 8 px), and a 20 px title (the old drawer used the 28 px heading token). Those values came from my own design proposal and were not taken from the existing styles. They are replaced by the app's own sizes. The drawer is 420 px, full height, from the right, over the `--scrim`; the 3 steps stay inside it. Assets bumped again (`shell.js` 56, `app.css` 40). Browser script: 68 of 68 after removing the obsolete "no drawer" check; visual check: 336 loads, no findings.
+
 ## Change after review
 The first version showed the whole sign-up in one form. The user rejected it (a professional app does not ask all of that at once). Sign up is now 3 steps: 1) name, email, password; 2) job, organisation, reasons; 3) how you found us, terms, updates. Progress bar and "Βήμα n από 3", Πίσω and Συνέχεια, each step validated, the last step re-checks all three, and the modal stays 635 px tall on every step at 1440 (measured: 635, 635, 635, 635 including the "Άλλο" field). Assets bumped again (`shell.js` 55, `app.css` 39, `messages.js` 34).
 

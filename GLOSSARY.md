@@ -36,9 +36,9 @@ _Avoid_: profile, user
 The lock card that takes the place of an Αναλύσεις page for a visitor who is not logged in. It leads to log in or sign up.
 _Avoid_: paywall, lock screen
 
-**Auth modal**:
-The centred window where a visitor logs in or signs up. It replaces the old side drawer.
-_Avoid_: auth drawer, popup
+**Auth drawer**:
+The panel that slides in from the right where a visitor logs in or signs up. Sign up runs in three steps inside it.
+_Avoid_: auth modal, popup
 
 **Sign-up request**:
 What a visitor sends with the sign-up form: name, email, password, job, reason for use and how they found apotypos. It waits for approval and gives no access until then.
