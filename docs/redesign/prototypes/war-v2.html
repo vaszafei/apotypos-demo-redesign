@@ -100,7 +100,7 @@
         const gradeKeys = ['calm', 'e1', 'e2', 'e3', 'war']
         const scaleCard = card('c-4', cardHead(t('war.scale.title'), null, t('war.scale.info')),
           UI.BarList(grades.map(([g, n], i) => ({
-            label: t(`war.scale.${g}`), value: n, color: ['#2a78d6', 'var(--bar-muted)', '#e8a37a', 'var(--stance-critical)', '#7d1f1f'][i],
+            label: t(`war.scale.${g}`), value: n, color: ['var(--series-1)', 'var(--bar-muted)', 'color-mix(in srgb, var(--stance-critical) 50%, var(--surface-raised))', 'var(--stance-critical)', 'var(--stance-critical-strong)'][i],
             text: `${fmt.pct(share(n, all.gt))} · ${fmt.pct(gradeMonth('aug', gradeKeys[i]))} → ${fmt.pct(gradeMonth('sep', gradeKeys[i]))}`
           }))))
 
@@ -143,7 +143,7 @@
                 const enough = gt >= MIN_CELL
                 const s = share(hot, gt)
                 const text = enough ? t('war.heat.cell', { outlet: o.name, week: labels[i].long, hot: fmt.int(hot), gt: fmt.int(gt), share: fmt.pct(s) }) : t('war.heat.few', { outlet: o.name, week: labels[i].long, gt: fmt.int(gt) })
-                return h('td', { class: 'hc', title: text, 'aria-label': text, style: enough ? `background:color-mix(in srgb, var(--stance-critical) ${Math.round(Math.min(1, s / 0.6) * 90 + 6)}%, #ffffff)` : 'background:var(--surface-page)' })
+                return h('td', { class: 'hc', title: text, 'aria-label': text, style: enough ? `background:color-mix(in srgb, var(--stance-critical) ${Math.round(Math.min(1, s / 0.6) * 90 + 6)}%, var(--surface-raised))` : 'background:var(--surface-page)' })
               }),
               h('td', { class: 'num' }, fmt.int(o.gt))))))))
 

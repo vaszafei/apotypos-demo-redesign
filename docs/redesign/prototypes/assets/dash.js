@@ -20,22 +20,42 @@
   const niceStep = (raw) => { const p = 10 ** Math.floor(Math.log10(raw || 1)); return [1, 2, 2.5, 5, 10].map((m) => m * p).find((s) => s >= raw) || p * 10 }
   const pct0 = (v) => `${Math.round(v * 100)}%`
 
-  // One fixed color for each group: the categorical slots 1 to 8 of the dataviz palette, in the order of the groups file.
-  const SLOTS = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6', '#e34948']
-  const NO_GROUP = '#9a978f'
+  // Colors come from tokens.css (#2). color(name) returns a token as #rrggbb, for the code that computes with a color (tint, textOn, a mix).
+  // A style that only shows a color can use var(--name) directly. The cache key has the theme, so a theme switch reads the new values.
+  const colorCache = new Map()
+  let probe = null
+  function toHex (value) {
+    const v = value.trim().toLowerCase()
+    if (/^#[0-9a-f]{6}$/.test(v)) return v
+    if (/^#[0-9a-f]{3}$/.test(v)) return `#${[...v.slice(1)].map((c) => c + c).join('')}`
+    probe = probe || document.createElement('canvas').getContext('2d')
+    probe.fillStyle = 'black'
+    probe.fillStyle = v
+    return probe.fillStyle
+  }
+  function color (name) {
+    const key = `${document.documentElement.dataset.theme || ''}|${name}`
+    if (!colorCache.has(key)) colorCache.set(key, toHex(getComputedStyle(document.documentElement).getPropertyValue(name)))
+    return colorCache.get(key)
+  }
+  // The categorical slots 1 to 8 (--cat-1 to --cat-8); --cat-0 is "no known group".
+  const slots = () => [1, 2, 3, 4, 5, 6, 7, 8].map((i) => color(`--cat-${i}`))
   // The fixed group to slot map (#2): a group has the same color on every page, whatever list the page has.
   // Slots 1 to 8 follow the order of the groups file. Antenna Group is only in the live data (/api/sources), so it has a 9th slot.
-  const GROUP_SLOT = new Map([['Alter Ego Media', '#2a78d6'], ['DPG Digital Media', '#eb6834'], ['Συμφέροντα Μπάκου-Καϋμενάκη', '#1baf7a'], ['Politis Group', '#eda100'],
-    ['Συμφέροντα Μελισσανίδη', '#e87ba4'], ['Όμιλος ΣΚΑΪ', '#008300'], ['Συμφέροντα Σαββίδη', '#6250d6'], ['Όμιλος Βαρδινογιάννη', '#e34948'], ['Antenna Group', '#4b5d73']])
-  const groupColor = (name) => (name ? GROUP_SLOT.get(name) || NO_GROUP : NO_GROUP)
-  function groupColors (groupList) { return new Map(groupList.map((g, i) => [g.name, GROUP_SLOT.get(g.name) || SLOTS[i % SLOTS.length]])) }
+  const GROUP_SLOT = new Map([['Alter Ego Media', 1], ['DPG Digital Media', 2], ['Συμφέροντα Μπάκου-Καϋμενάκη', 3], ['Politis Group', 4],
+    ['Συμφέροντα Μελισσανίδη', 5], ['Όμιλος ΣΚΑΪ', 6], ['Συμφέροντα Σαββίδη', 7], ['Όμιλος Βαρδινογιάννη', 8], ['Antenna Group', 9]])
+  const slotOf = (name) => (GROUP_SLOT.has(name) ? color(`--cat-${GROUP_SLOT.get(name)}`) : null)
+  const groupColor = (name) => (name && slotOf(name)) || color('--cat-0')
+  function groupColors (groupList) { const s = slots(); return new Map(groupList.map((g, i) => [g.name, slotOf(g.name) || s[i % s.length]])) }
+  // A step of the sequential ramp (--seq-1 to --seq-7) for a value from 0 to 1, with the text color of that step.
+  const seq = (v) => { const k = Math.min(7, Math.max(1, Math.ceil((Number.isFinite(v) ? v : 0) * 7))); return { background: `var(--seq-${k})`, color: `var(--seq-text-${k})` } }
 
   const luminance = (hex) => {
     const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4))
     return 0.2126 * r + 0.7152 * g + 0.0722 * b
   }
   // The text color with the better contrast on a hex background.
-  const textOn = (hex) => { const l = luminance(hex); return (l + 0.05) / (luminance('#1f1f1f') + 0.05) >= 1.05 / (l + 0.05) ? '#1f1f1f' : '#ffffff' }
+  const textOn = (hex) => { const l = luminance(hex); const dark = color('--text-on-light'); return (l + 0.05) / (luminance(dark) + 0.05) >= (luminance(color('--text-on-dark')) + 0.05) / (l + 0.05) ? dark : color('--text-on-dark') }
   const tint = (hex, k) => `#${[1, 3, 5].map((i) => Math.round(parseInt(hex.slice(i, i + 2), 16) * (1 - k) + 255 * k).toString(16).padStart(2, '0')).join('')}`
 
   // Sparkline: the whole window in gray and the selected period in the accent color.
@@ -104,5 +124,5 @@
     return [head, bad.kind === 'empty' ? h('div', { class: 'dash-grid' }, card('c-12', UI.EmptyState({ text: t('topics2.empty') }))) : UI.ErrorState({ onRetry: () => location.reload() })]
   }
 
-  window.Dash = { stateContent, select, fit, reset, niceStep, pct0, SLOTS, NO_GROUP, groupColors, groupColor, textOn, tint, Spark, card, cardHead, Info, emptyText, Stat, TopBar }
+  window.Dash = { stateContent, select, fit, reset, niceStep, pct0, get SLOTS () { return slots() }, get NO_GROUP () { return color('--cat-0') }, color, seq, groupColors, groupColor, textOn, tint, Spark, card, cardHead, Info, emptyText, Stat, TopBar }
 })()
