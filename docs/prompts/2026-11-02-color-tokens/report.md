@@ -81,3 +81,25 @@ Screenshots I looked at:
 
 - In the light themes, slots 2–5 are below 3 to 1 on the card (2.24–2.66). Three slot pairs are close for color vision deficiencies (ΔE 4.3–5.5). Both come from the existing palette, which the decision kept. A new palette would change every group color.
 - Slot 1 (Alter Ego, `#2a78d6`) is still a blue near the accent: ΔE 12.4.
+
+## Review and follow-up (after the merge of #100)
+
+An agent that did not write the code reviewed `origin/main..HEAD`. It loaded 29 pages in paper and night and found no page errors and no `NaN`/`undefined` colors. It confirmed two gaps:
+
+1. **Theme switch:** hex colors computed by JS (`Dash.color`, `groupColors`, `tint`) kept the old theme until a reload. Example: fingerprints cells stayed on the paper colors after a switch to night.
+   - Fix: the theme swatch now redraws the page with `remount()`.
+   - It keeps the scroll position, restoring it again two frames later because the charts draw one frame late.
+   - It keeps the focus on the visible swatch.
+   - Measured with Playwright on groups, fingerprints, war and index, scrolled to the bottom, then switched to night:
+     - scroll before and after: 201/201, 74/74, 2056/2056, 996/996;
+     - focus on the night swatch;
+     - 0 errors;
+     - fingerprints cells changed from `rgb(215, 202, 209)` to `rgb(222, 213, 220)`.
+2. **`check.mjs` saw only hex:** 17 `rgba()` literals (shadows and hover washes) were in `app.css`, `dash.css`, `date-range.css`, `home.css` and `politics.css`.
+   - They are now `color-mix(in srgb, var(--shade) N%, transparent)`. `--shade` (`rgb(17 17 17)`) and `--shade-black` (`rgb(0 0 0)`) are the same in every theme, so the result is identical.
+   - The check now also fails on `rgb()`/`hsl()` with a literal number. Tested with a temporary `rgba(1,2,3,.5)`, which was reported.
+
+Not fixed (design, same as before this work):
+- `--div-mid` has no dark value, so the fingerprints and net-balance scales are light cells on the dark card in night.
+
+`pnpm check:visual` (paper and night) after the follow-up: 336 loads (42 pages × 4 widths × 2 themes) in 178 s. No findings.
