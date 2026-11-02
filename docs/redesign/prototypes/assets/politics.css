@@ -1,5 +1,4 @@
 /* The pages of Πολιτική and Κόσμος. Load after dash.css. */
-:root { --side-a: #2a78d6; --side-b: #c4651f; }
 
 .chart .line-end { font-size: 12px; font-weight: 600; }
 /* Pairs: two bars for one measure, one for each side (UI.BarList). */
