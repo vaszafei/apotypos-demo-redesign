@@ -3,6 +3,7 @@
 // 2. Contrast in every theme: text 4.5 to 1, marks 3 to 1, each on its surfaces.
 // 3. The accent, the data series and "supportive" are far apart (CIEDE2000).
 // 4. The categorical slots stay apart under simulated protanopia, deuteranopia and tritanopia (Machado 2009, severity 1). A warning, not a failure.
+//    The exceptions that stay (#2): see the header printed under check 2.
 // 5. Chart text is 12px or more, and a grid line uses --rule (the chart rules of #2).
 // Exit code 1 if 1, 2, 3 or 5 fails.
 import { readFileSync, readdirSync } from 'node:fs'
@@ -131,6 +132,9 @@ const RULES = [
 const SLOTS = [1, 2, 3, 4, 5, 6, 7, 8].map((i) => `--cat-${i}`)
 
 console.log('2. Contrast  3. Distinct accent, series and supportive  4. Slots under color vision deficiencies')
+// The exceptions of #2 (decision: keep the group colors, because pages were approved with them). They are notes and warnings below, not failures.
+console.log('  Known exceptions in the light themes (paper, fog, terra): --cat-2 to --cat-5 are under 3 to 1 on the card;')
+console.log('  --cat-1/--cat-7 (deuteranopia), --cat-2/--cat-6 (protanopia) and --cat-2/--cat-8 (tritanopia) are under ΔE 8 apart.')
 for (const theme of THEMES) {
   const get = resolver(themeTokens(theme))
   console.log(`  [${theme}]`)
