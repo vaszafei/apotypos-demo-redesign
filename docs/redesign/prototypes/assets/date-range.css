@@ -1,7 +1,7 @@
 /* DateRangePicker (assets/date-range.js): the button with the period and its popover. */
 .dr { position: relative; display: inline-block; }
 .dr-trigger { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 36px; padding: 0 12px 0 10px; border: 1px solid var(--border); border-radius: var(--pill, 999px); background: var(--surface-raised); color: var(--ink); font: inherit; font-size: var(--text-small); cursor: pointer; }
-.dr-trigger:hover, .dr-trigger[aria-expanded="true"] { border-color: var(--ink); }
+.dr-trigger:hover, .dr-trigger[aria-expanded="true"] { border-color: var(--accent); }
 .dr-trigger .dr-icon { width: 18px; height: 18px; color: var(--text-secondary); }
 .dr-text { font-variant-numeric: tabular-nums; }
 .dr-chev { width: 14px; height: 14px; color: var(--text-secondary); }

@@ -31,10 +31,10 @@
 /* F. Filter chips (the sizes and the pressed state of .mme-chip) */
 .fchip-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .fchip { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--pill); background: var(--surface-raised); color: var(--ink); font: inherit; font-size: var(--text-small); cursor: pointer; }
-.fchip:hover { border-color: var(--ink); }
-.fchip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+.fchip:hover { border-color: var(--accent); }
+.fchip[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 12%, var(--surface-raised)); border-color: var(--accent); color: var(--ink); }
 .fchip-n { font-size: var(--text-caption); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-.fchip[aria-pressed="true"] .fchip-n { color: var(--on-ink); }
+.fchip[aria-pressed="true"] .fchip-n { color: var(--text-secondary); }
 .fchip-controls { display: contents; }
 
 /* C. Period control with a volume brush (the picker is .dr of date-range.css and opens to the left, so it sits on the right; the columns are UI.BarChart) */
