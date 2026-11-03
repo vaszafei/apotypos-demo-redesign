@@ -42,7 +42,7 @@ Part 1 (PR #100) put every color in `assets/tokens.css`. The structure side of #
 
 **Cards and stat cards**
 
-- R1. Every card on every page is built by `Dash.card` and styled by one definition in `assets/dash.css`. The older `ChartCard`, `KpiTile`, `KpiStrip`, `.card` and `.kpi-*` code is removed after a check that nothing uses it.
+- R1. Every card on every page is built by `Dash.card` and styled by one definition in `assets/dash.css`. The older `ChartCard`, `KpiTile`, `KpiStrip`, `.card` and the unused `.kpi-*` rules are removed after a check that nothing uses it.
 - R2. A card has a head (title, subtitle, info, tools), a body, an optional footer link, and empty, error and loading states.
 - R3. Pages keep their look. The 8px card, and the 14px `.minimal` and `.story-grid` cards, become named variants of the one card (see Key Decisions).
 - R4. A stat card shows value, label, sub line, an optional delta against the previous period, and an optional sparkline. The `.mme-kpi` and `.outlet-stats` shapes become named variants.
@@ -70,7 +70,7 @@ Part 1 (PR #100) put every color in `assets/tokens.css`. The structure side of #
 
 ### Success Criteria
 
-- Searching `assets/` finds no `ChartCard`, `KpiTile`, `KpiStrip`, `.kpi-tile` or `.card {` rule.
+- Searching `assets/` finds no `ChartCard`, `KpiTile`, `KpiStrip` or `.card {` rule. `.kpi-tile`, `.kpi-label` and `.kpi-value` stay: the home hero stats, the methodology contents heading and the count-up in `assets/motion.js` still use them.
 - The layout comparison in the Verification Contract reports 0 differing boxes.
 - `pnpm check` exits 0 and now also fails on a chart label under 12px.
 - On `pages.html`, each card state, stat card form, chart type and part can be seen in `paper` and `night`.
@@ -174,7 +174,7 @@ flowchart TB
   4. Bump `?v=`.
 - **Execution note:** characterize first. Record the `pages.html` section boxes before the change and compare after.
 - **Test scenarios:**
-  - `grep -rn "ChartCard\|KpiTile\|KpiStrip\|kpi-tile" .` finds nothing in `assets/` or the pages.
+  - `grep -rn "ChartCard\|KpiTile\|KpiStrip" .` finds nothing in `assets/` or the pages.
   - `pages.html` page tree and token sections render with 0 console errors, and their boxes differ from the baseline only by the card-style change (padding 24px becomes 12px 14px, the R9 exception).
   - The hover border still shows on a `.dcard`.
 - **Verification:** `pnpm check:visual` has no findings; layout comparison unchanged for every page except `pages.html`.
@@ -311,7 +311,7 @@ Serve with `python3 -m http.server 8765` from `docs/redesign/prototypes`. Stop i
 
 - Every R in the Product Contract is met, or Open Question 1 has a recorded answer for R6.
 - No dead code from abandoned attempts is left in the diff.
-- `rg "ChartCard|KpiTile|KpiStrip|kpi-tile" docs/redesign/prototypes` finds nothing.
+- `rg "ChartCard|KpiTile|KpiStrip" docs/redesign/prototypes` finds nothing.
 - `pnpm check` exits 0 on `main` after the last merge.
 - Issue #2 is closed and its checklist matches `report.md`.
 - A lesson is in `docs/solutions/`.

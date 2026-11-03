@@ -11,7 +11,7 @@
   const ms = (name) => parseFloat(token(name)) || 0
 
   // A card that plays its first view on its own. A card that holds other cards leaves it to them.
-  const UNIT = '.card, .dcard, .kpi-tile'
+  const UNIT = '.dcard, .kpi-tile'
   // The page head keeps still: its controls are what the visitor just used.
   const HEAD = '.page-head, .page-header, .dash-bar'
   const COUNTED = '.kpi-value, .dstat-value'

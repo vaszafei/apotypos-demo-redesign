@@ -6,7 +6,7 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=15">
-  <link rel="stylesheet" href="assets/app.css?v=43">
+  <link rel="stylesheet" href="assets/app.css?v=44">
   <link rel="stylesheet" href="assets/dash.css?v=86">
   <script src="assets/page-move.js?v=1"></script>
 </head>
@@ -15,8 +15,8 @@
   <script src="assets/icons.js?v=9"></script>
   <script src="assets/messages.js?v=36"></script>
   <script src="assets/messages-v2.js?v=47"></script>
-  <script src="assets/components.js?v=13"></script>
-  <script src="assets/motion.js?v=2"></script>
+  <script src="assets/components.js?v=14"></script>
+  <script src="assets/motion.js?v=3"></script>
   <script src="assets/dash.js?v=20"></script>
   <script src="assets/shell.js?v=58"></script>
   <script src="data/pages.js"></script>
@@ -57,14 +57,12 @@
           content.replaceChildren(
             UI.PageHeader({ title: t('pages.title'), hint: t('pages.hint') }),
             h('p', { 'data-testid': 'page-counts' }, t('pages.counts', counts)),
-            Tree(),
-            Tokens(),
-            Cards(),
+            h('div', { class: 'dash' }, h('div', { class: 'dash-grid' }, Tree(), Tokens(), Cards())),
             UI.FilterBar(h('div', { class: 'field' }, t('pages.filter.type'), UI.SegmentedControl({
               label: t('pages.filter.type'), value: view.type, onChange: (v) => { view.type = v; draw() },
               options: [{ value: 'all', label: t('pages.filter.all') }, ...types.map((x) => ({ value: x, label: t(`type.${x}`) }))]
             }))),
-            h('section', { class: 'card' }, table))
+            h('div', { class: 'dash' }, h('div', { class: 'dash-grid' }, Dash.card('c-12', table))))
           markTarget()
         }
         draw()
@@ -73,7 +71,7 @@
 
     // The tree of the sidebar (#62): each section with its tabs and sub-tabs, the question of each and its link. It is made from the same NAV as the sidebar.
     function Tree () {
-      return h('section', { class: 'card page-tree', 'aria-labelledby': 'page-tree-title' },
+      return Dash.card('c-12 page-tree',
         h('h2', { id: 'page-tree-title' }, t('pages.tree.title')),
         h('p', { class: 'muted-text' }, t('pages.tree.hint')),
         Shell.tree().map((item) => h('div', {},
@@ -99,7 +97,7 @@
           h('p', { class: 'dcard-sub' }, t('pages.cards.sub')), h('p', {}, t('pages.cards.body')),
           Dash.cardFoot(h('a', { class: 'dcard-link', href: '#' }, t('pages.cards.link'), ' →'))),
         state('loading'), state('empty'), state('error')))
-      return h('section', { class: 'card page-cards', 'aria-labelledby': 'page-cards-title' },
+      return Dash.card('c-12 page-cards',
         h('h2', { id: 'page-cards-title' }, t('pages.cards.heading')),
         h('p', { class: 'muted-text' }, t('pages.cards.hint')), row(''), row('minimal'))
     }
@@ -121,7 +119,7 @@
       const swatch = (name) => h('li', { class: 'token-item' },
         h('span', { class: 'token-chip', style: `background:var(${name});${name.startsWith('--seq-') ? `color:var(${name.replace('--seq-', '--seq-text-')})` : ''}` }, name.startsWith('--seq-') ? 'Aa' : null),
         h('code', {}, name))
-      return h('section', { class: 'card page-tokens', 'aria-labelledby': 'page-tokens-title' },
+      return Dash.card('c-12 page-tokens',
         h('h2', { id: 'page-tokens-title' }, t('pages.tokens.title')),
         h('p', { class: 'muted-text' }, t('pages.tokens.hint')),
         LAYERS.map(([key, names]) => h('div', {}, h('h3', {}, t(`pages.tokens.${key}`)), h('ul', { class: 'token-list' }, names.map(swatch)))))
