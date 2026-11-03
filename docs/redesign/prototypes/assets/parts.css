@@ -1,0 +1,37 @@
+/* Shared parts from the live-site audit (#2), assets/parts.js. Only pages.html loads this file.
+   Each class has the prefix of its part, because plain names (.callout, .chip, .heat, .quote-list) exist in other files. */
+
+/* A. Summary callout */
+.sum-list { display: grid; gap: var(--space-2); margin: 0; padding-left: 20px; list-style: decimal; }
+.sum-list li::marker { font-size: var(--text-small); color: var(--text-secondary); }
+.sum-list .dcard-link { display: inline-block; margin-top: 2px; }
+.sum-text { margin: 0; font-size: var(--text-small); color: var(--text-primary); }
+
+/* B. Method and limits */
+.method-summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-3); cursor: pointer; }
+.method-summary .dcard-title { display: inline; }
+.method-summary::-webkit-details-marker { display: none; }
+.method-chev { align-self: center; color: var(--text-secondary); }
+.method-details[open] .method-chev { transform: rotate(180deg); }
+.method-body { display: grid; gap: var(--space-3); margin-top: var(--space-3); }
+.method-heading { margin: 0 0 var(--space-1); font-size: var(--text-caption); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-secondary); }
+.method-text { margin: 0; font-size: var(--text-small); }
+.method-limits { display: grid; gap: var(--space-1); margin: 0; padding-left: 18px; font-size: var(--text-small); }
+
+/* E. Headlines and quotes (the sizes of .mme-headline and .quote-text) */
+.hlq-list, .hlq-quotes { margin: 0; padding: 0; list-style: none; }
+.hlq-list li, .hlq-quotes li { display: grid; gap: 2px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: var(--text-small); }
+.hlq-list li:last-child, .hlq-quotes li:last-child { border-bottom: 0; }
+.hlq-tags { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); font-size: var(--text-caption); }
+.hlq-angle { color: var(--text-primary); }
+.hlq-stance { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--text-secondary); }
+.hlq-quote { margin: 0; font-style: italic; color: var(--text-secondary); }
+.hlq-quotes p.muted-text { margin: 0; }
+
+/* F. Filter chips (the sizes and the pressed state of .mme-chip) */
+.fchip-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.fchip { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--pill); background: var(--surface-raised); color: var(--ink); font: inherit; font-size: var(--text-small); cursor: pointer; }
+.fchip:hover { border-color: var(--ink); }
+.fchip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+.fchip-n { font-size: var(--text-caption); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.fchip[aria-pressed="true"] .fchip-n { color: var(--on-ink); }

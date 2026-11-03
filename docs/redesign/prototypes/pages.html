@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="assets/app.css?v=45">
   <link rel="stylesheet" href="assets/dash.css?v=88">
   <link rel="stylesheet" href="assets/politics.css?v=8">
+  <link rel="stylesheet" href="assets/parts.css?v=1">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
@@ -16,9 +17,11 @@
   <script src="assets/icons.js?v=9"></script>
   <script src="assets/messages.js?v=38"></script>
   <script src="assets/messages-v2.js?v=47"></script>
+  <script src="assets/messages-parts.js?v=1"></script>
   <script src="assets/components.js?v=15"></script>
   <script src="assets/motion.js?v=3"></script>
   <script src="assets/dash.js?v=21"></script>
+  <script src="assets/parts.js?v=1"></script>
   <script src="assets/politics.js?v=11"></script>
   <script src="assets/shell.js?v=58"></script>
   <script src="data/pages.js"></script>
@@ -59,7 +62,7 @@
           content.replaceChildren(
             UI.PageHeader({ title: t('pages.title'), hint: t('pages.hint') }),
             h('p', { 'data-testid': 'page-counts' }, t('pages.counts', counts)),
-            h('div', { class: 'dash' }, h('div', { class: 'dash-grid' }, Tree(), Tokens(), Cards(), Stats(), Charts())),
+            h('div', { class: 'dash' }, h('div', { class: 'dash-grid' }, Tree(), Tokens(), Cards(), Stats(), Charts(), PartsSection())),
             UI.FilterBar(h('div', { class: 'field' }, t('pages.filter.type'), UI.SegmentedControl({
               label: t('pages.filter.type'), value: view.type, onChange: (v) => { view.type = v; draw() },
               options: [{ value: 'all', label: t('pages.filter.all') }, ...types.map((x) => ({ value: x, label: t(`type.${x}`) }))]
@@ -149,6 +152,38 @@
           item('owner', owner))),
         h('h3', {}, t('pages.charts.own')),
         h('ul', {}, OWN.map(([key, href]) => h('li', {}, h('a', { href }, t(`pages.charts.own.${key}`)), h('span', { class: 'muted-text' }, ` · ${href}`)))))
+    }
+
+    // The parts (#2): the patterns of the live-site audit, with sample data. Only this page shows them.
+    function PartsSection () {
+      const k = (key) => t(`pages.parts.${key}`)
+      const summary = Parts.Summary({ title: k('sum.title'), info: k('sum.info'),
+        items: [{ text: k('sum.1'), href: 'topics-v2.html', link: k('sum.link') }, { text: k('sum.2') }, { text: k('sum.3') }] })
+      const summaryEmpty = Parts.Summary({ title: k('sum.empty'), items: [] })
+      const quotes = Parts.Quotes({ title: k('hlq.title'), info: k('hlq.info'),
+        headlines: [
+          { title: k('hlq.h1'), url: 'https://example.org/1', outlet: `${k('hlq.outlet')} 1`, date: '2026-09-28', angle: k('hlq.angle1'), frame: k('hlq.frame1'), stance: 'supportive' },
+          { title: k('hlq.h2'), url: 'https://example.org/2', outlet: `${k('hlq.outlet')} 2`, date: '2026-09-27', angle: k('hlq.angle2'), frame: k('hlq.frame2'), stance: 'critical' },
+          { title: k('hlq.h3'), outlet: `${k('hlq.outlet')} 3`, date: '2026-09-25', frame: k('hlq.frame3'), stance: 'neutral' }],
+        quotes: [{ text: k('hlq.q1'), source: `${k('hlq.source')} 1`, url: 'https://example.org/3', date: '2026-09-28' }, { text: k('hlq.q2'), source: `${k('hlq.source')} 2`, date: '2026-09-27' }] })
+      // The filters keep their own state and draw their card again on a change.
+      const filters = { topic: 'all', set: 'gr' }
+      const TOPICS = [['all', 120], ['economy', 42], ['health', 31], ['foreign', 27], ['education', 20]]
+      const filterCard = () => {
+        const el = Dash.card('c-6 fchip-card', Dash.cardHead(k('filters.title'), null, k('filters.info')),
+          Parts.Chips({ label: k('filters.topics'), value: filters.topic, onChange: (key) => { filters.topic = key; el.replaceWith(filterCard()) },
+            items: TOPICS.map(([key, n]) => ({ key, n, label: k(`filters.${key}`) })) }),
+          Parts.DataSwitch({ value: filters.set, onChange: (v) => { filters.set = v; el.replaceWith(filterCard()) } }),
+          h('p', { class: 'dcard-sub', 'aria-live': 'polite' }, t('pages.parts.filters.picked', { topic: k(`filters.${filters.topic}`), set: t(`parts.set.${filters.set}`) })))
+        return el
+      }
+      const method = Parts.Method({ lead: k('method.lead'),
+        sections: [{ heading: k('method.data'), text: k('method.data.text') }, { heading: k('method.measure'), text: k('method.measure.text') }],
+        limits: [k('method.limit1'), k('method.limit2')] })
+      return Dash.card('c-12 page-parts',
+        h('h2', { id: 'page-parts-title' }, k('heading')),
+        h('p', { class: 'muted-text' }, k('hint')),
+        h('div', { class: 'dash' }, h('div', { class: 'dash-grid' }, summary, summaryEmpty, quotes, filterCard(), method)))
     }
 
     // The color tokens (#2), layer by layer. Each swatch reads its token, so a theme switch shows that theme.
