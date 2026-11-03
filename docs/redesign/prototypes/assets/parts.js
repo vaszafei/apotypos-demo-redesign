@@ -66,12 +66,15 @@
   const DataSwitch = ({ value, onChange }) => h('div', { class: 'fchip-switch' }, UI.SegmentedControl({ label: t('parts.set.label'), value, onChange,
     options: [{ value: 'gr', label: t('parts.set.gr') }, { value: 'il', label: t('parts.set.il') }] }))
 
-  // C. Period control with a volume brush: the preset chips, the period picker (date-range.js) and the daily columns.
-  // A drag over the columns, a chip or the picker sets the same period. onChange gets { from, to } once for each change.
-  // presets: [{ key, label, from, to }], values: the articles of each day of dates.
+  // C. Period control with a volume brush: the period picker (date-range.js), which holds the presets, and the daily columns.
+  // A drag over the columns or the picker sets the same period. onChange gets { from, to } once for each change.
+  // presets: [{ key, label, from, to }], values: the articles of each day of dates. from, to and every preset bound must be days of dates.
+  // A redraw gives the focus back to the control that had it and keeps the summary line as one node, so a screen reader announces it.
   function Period ({ cls = 'c-12', title, info, dates, values, from, to, presets, onChange }) {
     let view = { from, to }
-    const body = h('div', { class: 'brush' })
+    const sum = h('p', { class: 'dcard-sub', 'aria-live': 'polite' })
+    const body = h('div', { class: 'brush' }, sum)
+    let shown = []
     const set = (r) => {
       const next = r.from <= r.to ? { from: r.from, to: r.to } : { from: r.to, to: r.from }
       if (next.from === view.from && next.to === view.to) return
@@ -84,15 +87,18 @@
       const i1 = dates.indexOf(view.to)
       let total = 0
       for (let i = i0; i <= i1; i++) total += values[i]
-      const preset = presets.find((p) => p.from === view.from && p.to === view.to)
-      body.replaceChildren(
-        h('div', { class: 'brush-controls' },
-          Chips({ label: t('dr.presets'), value: preset ? preset.key : null, items: presets.map((p) => ({ key: p.key, label: p.label })),
-            onChange: (key) => set(presets.find((p) => p.key === key)) }),
-          UI.DateRangePicker({ dates, from: view.from, to: view.to, presets, onChange: set })),
+      // A choice in the picker's popover gives the focus to the picker's button.
+      const buttons = () => [...body.querySelectorAll('button')].filter((b) => !b.closest('.dr-pop'))
+      const inPop = body.contains(document.activeElement) && document.activeElement.closest('.dr-pop')
+      const focused = buttons().indexOf(inPop ? body.querySelector('.dr-trigger') : document.activeElement)
+      shown.forEach((node) => node.remove())
+      shown = [
+        h('div', { class: 'brush-controls' }, UI.DateRangePicker({ dates, from: view.from, to: view.to, presets, onChange: set })),
         UI.BarChart({ dates, values, height: 140, label: title, onSelect: set, muted: (i) => i < i0 || i > i1,
-          tooltipOf: (i) => t('parts.brush.day', { date: fmt.date(dates[i]), n: fmt.int(values[i]) }) }),
-        h('p', { class: 'dcard-sub', 'aria-live': 'polite' }, t('parts.brush.sum', { n: fmt.int(total), days: i1 - i0 + 1 })))
+          tooltipOf: (i) => t('parts.brush.day', { date: fmt.date(dates[i]), n: fmt.int(values[i]) }) })]
+      body.prepend(...shown)
+      if (focused >= 0) buttons()[focused]?.focus()
+      sum.textContent = t('parts.brush.sum', { n: fmt.int(total), days: i1 - i0 + 1 })
     }
     draw()
     return card(`${cls} brush-card`, cardHead(title, null, info), body)
@@ -114,10 +120,11 @@
 
   // The report frame: a standalone document inside the shell, under a bar with the back arrow, the title and a link that opens the document alone.
   // An iframe fires no error on a missing file, so a HEAD request comes first; a failure shows the error state with a retry.
-  // The frame takes the height of its document, so the page has one scroll bar.
+  // The frame takes the height of its document, so the page has one scroll bar. It measures the box of the document, not its
+  // scrollHeight, which never drops below the frame's own height, so the frame can shrink again after the window gets wider.
   function Frame ({ cls = 'c-12', src, title, back }) {
     const body = h('div', { class: 'frame-body' })
-    const fit = (frame) => { try { const doc = frame.contentDocument; if (doc && doc.body) frame.style.height = `${doc.documentElement.scrollHeight}px` } catch { /* another origin */ } }
+    const fit = (frame) => { try { const doc = frame.contentDocument; if (doc && doc.body) frame.style.height = `${Math.ceil(doc.documentElement.getBoundingClientRect().height)}px` } catch { /* another origin */ } }
     const load = () => {
       body.replaceChildren(cardState('loading'))
       fetch(src, { method: 'HEAD' }).then((r) => {

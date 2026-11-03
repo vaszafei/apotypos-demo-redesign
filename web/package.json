@@ -8,7 +8,8 @@
     "generate": "pnpm sync && nuxt generate",
     "preview": "nuxt preview",
     "check": "node ../docs/redesign/prototypes/scripts/check.mjs",
-    "check:visual": "node ../docs/redesign/prototypes/scripts/visual-check.mjs"
+    "check:visual": "node ../docs/redesign/prototypes/scripts/visual-check.mjs",
+    "check:parts": "node ../docs/redesign/prototypes/scripts/parts-check.mjs"
   },
   "dependencies": {
     "nuxt": "^4.6.2",
