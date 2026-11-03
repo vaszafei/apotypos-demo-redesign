@@ -100,7 +100,7 @@ Non-goals (considered, not built):
 - KTD3. **Variants are two custom properties, `--card-radius` and `--card-pad`.** `.dcard` sets them; `.minimal` and `.story-grid` override them in one block. The radii go in `assets/tokens.css` next to `--radius`. Governs R3.
 - KTD4. **Delete the legacy card only after proving it is unused.** Follow `docs/solutions/workflow/verify-dead-exports-before-deleting.md`: search every html, js and css file, including selector lists such as `:is(.card, .dcard, .kpi-tile)` in `assets/app.css`. Governs R1.
 - KTD5. **Enforce chart rules in `scripts/check.mjs` where they are mechanical.** A font-size under 12px on a chart text selector fails, and a literal stroke color is already caught by the hex rule. Rules that need eyes (direct labels instead of a legend) are checked on the reference page. Governs R5.
-- KTD6. **New parts live in `assets/parts.js`, `assets/parts.css` and `assets/messages-parts.js`, loaded by `pages.html` only.** Class names are prefixed because plain names already exist: `.callout` (politics.css), `.chip` (dash.css, world.css), `.heat` and `.heat-cell` (politics.css, world.css). Use `sum-`, `method-`, `quote-`, `fchip-`, `hmx-`, `brush-`, `frame-`. Governs R7. Follows `docs/solutions/workflow/check-class-names-against-shared-css.md`.
+- KTD6. **New parts live in `assets/parts.js`, `assets/parts.css` and `assets/messages-parts.js`, loaded by `pages.html` only.** Class names are prefixed because plain names already exist: `.callout` (politics.css), `.chip` (dash.css, world.css), `.heat` and `.heat-cell` (politics.css, world.css). Use `sum-`, `method-`, `hlq-`, `fchip-`, `hmx-`, `brush-`, `frame-`. `quote-` was the first choice, but `.quote-list`, `.quote-meta` and `.quote-text` exist in `assets/politics.css`, which `pages.html` loads (plan check, PR 4). Governs R7. Follows `docs/solutions/workflow/check-class-names-against-shared-css.md`.
 - KTD7. **"No page changes" is proved by card boxes, not DOM.** Class names change on purpose in U2–U4, so the settled-DOM comparison in `docs/solutions/workflow/prove-no-visual-change-with-settled-dom.md` would report noise. Compare the bounding box of every `.dcard` and `.dstat` instead, with `reducedMotion: 'reduce'`. Governs R9.
 - KTD8. **One PR per phase, `Closes #2` only on the last.** Each PR adds its section to `pages.html` so the deploy preview shows what shipped. Governs R8, R11.
 
@@ -235,11 +235,11 @@ flowchart TB
 - **Approach:**
   1. **A, summary callout** (`sum-`): a heading and a short list of generated findings with links («Η περίοδος σε 3 σημεία», «Τι ξεχωρίζει στο διάστημα», «Στα γρήγορα»).
   2. **B, method and limits** (`method-`): «Μέθοδος και όρια» block for the end of a page; collapsible text, not an info pop-up.
-  3. **E, headline and quote list** (`quote-`): headline with angle, frame and stance; verbatim quote with source and link; expandable «Δείτε παραδείγματα».
-  4. **F, filter chips and dataset switch** (`fchip-`): one chip row with counts, and the Ελλάδα / Ισραήλ switch built on the existing `.segmented`.
+  3. **E, headline and quote list** (`hlq-`): headline with angle, frame and stance; verbatim quote with source and link; expandable «Δείτε παραδείγματα».
+  4. **F, filter chips and dataset switch** (`fchip-`): one chip row with counts, and the Ελλάδα / Ισραήλ switch built on the existing `.segmented`. The chip copies the sizes and the selected state of `.mme-chip` (`assets/mme.css`, ink fill), because `pages.html` does not load `mme.css`; the accent-tint rule in `layout-requests-are-literal.md` is for tiles, and every existing chip and toggle (`.mme-chip`, `.segmented`, `.report-tabs`) uses the ink fill.
   5. Each part is a function that returns a node, builds inside `Dash.card`, reads only tokens, and has Greek and English strings in `messages-parts.js` (both languages, no unused keys).
   6. Search the shared CSS for each class name before use (KTD6).
-- **Patterns to follow:** `Dash.card`, `h()` from `assets/components.js`; selected state is a tinted accent fill with an accent border, number stays dark (`layout-requests-are-literal.md`).
+- **Patterns to follow:** `Dash.card`, `h()` from `assets/components.js`; `Mme.Headlines` (`assets/mme.js`) for the headline row; `.mme-chip` for the chip.
 - **Test scenarios:**
   - Each part renders in `paper` and `night` with 0 console errors.
   - A: with 0 findings the part renders the empty line, not an empty list.
@@ -255,9 +255,10 @@ flowchart TB
 - **Dependencies:** U7.
 - **Files:** `assets/parts.js`, `assets/parts.css`, `assets/messages-parts.js`, `assets/date-range.js` (read only unless the brush needs a hook), `pages.html`.
 - **Approach:**
-  1. **C** (`brush-`): chips, from/to selects and a daily histogram that sets the range by dragging. Reuse `assets/date-range.js` for the range model so the page-level control and the brush stay in step. This is the single range brush named in R5.
-  2. **D** (`hmx-`): a table with row and column entities, one sequential scale from `Dash.seq(v)`, text color from the same step, and masked cells under a minimum n.
-  3. Show both on `pages.html` with generated sample data.
+  1. **C** (`brush-`): preset chips, the period picker and a daily histogram that sets the range by dragging (session-settled: user-directed — chosen over picker and brush only: the issue names chips, a from/to control and a histogram). `assets/date-range.js` is a picker (`UI.DateRangePicker`), not a range model, so the part holds `{ from, to }` and draws the picker again on each change, as `media-v2.html` does; `date-range.js` is read only. The histogram is `UI.BarChart` with `onSelect` and `muted`, the brush `media-v2.html` already uses, so R5's "one brush" holds without new drag code. `pages.html` gains `date-range.css` and `date-range.js` at their current `?v=`.
+  2. **D** (`hmx-`): built on `UI.MatrixChart` (it already scrolls inside `.matrix-wrap` and uses `UI.withTip`). One sequential scale from `Dash.seq(v)`; a cell under the minimum n uses the existing `.cell-empty` look, shows «—» and has no tooltip value. The 4.5 to 1 of every `--seq-text-k` on `--seq-k` is already a rule of `scripts/check.mjs`.
+  3. `scripts/check.mjs`: add `.hmx` and `.brush` to the chart-text selectors of rule 5.
+  4. Show both on `pages.html` with generated sample data.
 - **Test scenarios:**
   - C: dragging across days 3 to 9 sets from/to to those dates and fires one change event; dragging backwards is normalized.
   - C: the chips and the selects update the brush selection.
@@ -271,11 +272,12 @@ flowchart TB
 - **Requirements:** R7, R8.
 - **Dependencies:** U7.
 - **Files:** `assets/parts.js`, `assets/parts.css`, `assets/messages-parts.js`, `pages.html`. Reads `reports/france-riots/` and `france-v2.html` for the existing way a report is loaded.
-- **Approach:** A frame with a title bar (back arrow, title, "open alone" link) and the document below, inside the shell's normal page width. It takes a document URL and a title. It is shown on `pages.html` with the existing `reports/france-riots/` file as the sample. Issue #38 decides where it is used.
+- **Approach:** A frame with a title bar (back arrow, title, "open alone" link) and the document below, inside the shell's normal page width. It takes a document URL, a title and a back URL. The back arrow is an `a.back-button` with the `arrow-left` icon (the shell's `BackButton` is not exported). The iframe takes the height of its document, as in `france-v2.html`. A failed document is found with a `HEAD` request before the iframe loads (an iframe fires no error on a 404). It is shown on `pages.html` with the existing `reports/france-riots/` file as the sample. Issue #38 decides where it is used.
 - **Test scenarios:**
   - The frame loads the sample document with 0 console errors and no horizontal scroll at 390 px.
   - The "open alone" link opens the same URL in a new tab with `rel="noopener"`.
-  - A document that fails to load shows the card error state from U2.
+  - A document that fails to load shows the card error state from U2 (tested in the scratchpad script with a missing URL, not shown on `pages.html`, so the visual check stays free of a planted 404).
+  - Known: every file in `reports/france-riots/` requests `/cdn-cgi/rum` (the Cloudflare beacon, 404 locally). The visual check will report it on `pages.html` as it does on `france-v2.html`.
 - **Verification:** `pnpm check:visual --only pages` has no findings.
 
 ### U10. Close-out (PR 4, last commits)
