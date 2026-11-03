@@ -6,16 +6,16 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=15">
-  <link rel="stylesheet" href="assets/app.css?v=44">
-  <link rel="stylesheet" href="assets/dash.css?v=87">
+  <link rel="stylesheet" href="assets/app.css?v=45">
+  <link rel="stylesheet" href="assets/dash.css?v=88">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=37"></script>
+  <script src="assets/messages.js?v=38"></script>
   <script src="assets/messages-v2.js?v=47"></script>
-  <script src="assets/components.js?v=14"></script>
+  <script src="assets/components.js?v=15"></script>
   <script src="assets/motion.js?v=3"></script>
   <script src="assets/dash.js?v=21"></script>
   <script src="assets/vendor/d3-hierarchy.min.js"></script>
@@ -194,7 +194,7 @@
             // The name of a group sits on the top edge of its circle, when the circle is large enough on screen.
             if (!zoomed) {
               const [x, y] = toScreen(gn.x, gn.y - gn.r)
-              if (gn.r * s >= 34) labels.append(h('text', { class: 'bubble-name', x, y: y + 14, 'text-anchor': 'middle' }, g.label.length > gn.r * s / 3.4 ? `${g.label.slice(0, Math.max(3, Math.floor(gn.r * s / 3.4) - 1))}…` : g.label))
+              if (gn.r * s >= 34) labels.append(h('text', { class: 'bubble-name', x, y: y + 14, 'text-anchor': 'middle' }, g.label.length > gn.r * s / 3.7 ? `${g.label.slice(0, Math.max(3, Math.floor(gn.r * s / 3.7) - 1))}…` : g.label))
             }
           })
         }
