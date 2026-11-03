@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="assets/app.css?v=45">
   <link rel="stylesheet" href="assets/dash.css?v=88">
   <link rel="stylesheet" href="assets/politics.css?v=8">
+  <link rel="stylesheet" href="assets/date-range.css?v=8">
+  <link rel="stylesheet" href="assets/parts.css?v=3">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
@@ -16,9 +18,13 @@
   <script src="assets/icons.js?v=9"></script>
   <script src="assets/messages.js?v=38"></script>
   <script src="assets/messages-v2.js?v=47"></script>
+  <script src="assets/messages-mme.js?v=21"></script>
+  <script src="assets/messages-parts.js?v=2"></script>
   <script src="assets/components.js?v=15"></script>
   <script src="assets/motion.js?v=3"></script>
   <script src="assets/dash.js?v=21"></script>
+  <script src="assets/date-range.js?v=2"></script>
+  <script src="assets/parts.js?v=2"></script>
   <script src="assets/politics.js?v=11"></script>
   <script src="assets/shell.js?v=58"></script>
   <script src="data/pages.js"></script>
@@ -34,6 +40,12 @@
       title: () => t('pages.title'),
       breadcrumbs: () => [{ label: t('pages.title') }],
       render (content) {
+        // The sections above the table are built once: a filter change draws only the filter bar and the table, so the parts keep their state and the frame does not reload.
+        content.replaceChildren(
+          UI.PageHeader({ title: t('pages.title'), hint: t('pages.hint') }),
+          h('p', { 'data-testid': 'page-counts' }, t('pages.counts', counts)),
+          h('div', { class: 'dash' }, h('div', { class: 'dash-grid' }, Tree(), Tokens(), Cards(), Stats(), Charts(), PartsSection())))
+        let shown = []
         const draw = () => {
           const visible = rows.filter((r) => view.type === 'all' || r.type === view.type)
           const table = UI.DataTable({
@@ -56,15 +68,14 @@
                 : h('a', { href: r.typePrototype }, t('pages.prototype.type')) }
             ]
           })
-          content.replaceChildren(
-            UI.PageHeader({ title: t('pages.title'), hint: t('pages.hint') }),
-            h('p', { 'data-testid': 'page-counts' }, t('pages.counts', counts)),
-            h('div', { class: 'dash' }, h('div', { class: 'dash-grid' }, Tree(), Tokens(), Cards(), Stats(), Charts())),
+          shown.forEach((node) => node.remove())
+          shown = [
             UI.FilterBar(h('div', { class: 'field' }, t('pages.filter.type'), UI.SegmentedControl({
               label: t('pages.filter.type'), value: view.type, onChange: (v) => { view.type = v; draw() },
               options: [{ value: 'all', label: t('pages.filter.all') }, ...types.map((x) => ({ value: x, label: t(`type.${x}`) }))]
             }))),
-            h('div', { class: 'dash' }, h('div', { class: 'dash-grid' }, Dash.card('c-12', table))))
+            h('div', { class: 'dash' }, h('div', { class: 'dash-grid' }, Dash.card('c-12', table)))]
+          content.append(...shown)
           markTarget()
         }
         draw()
@@ -149,6 +160,57 @@
           item('owner', owner))),
         h('h3', {}, t('pages.charts.own')),
         h('ul', {}, OWN.map(([key, href]) => h('li', {}, h('a', { href }, t(`pages.charts.own.${key}`)), h('span', { class: 'muted-text' }, ` · ${href}`)))))
+    }
+
+    // The parts (#2): the patterns of the live-site audit, with sample data. Only this page shows them.
+    function PartsSection () {
+      const k = (key) => t(`pages.parts.${key}`)
+      const summary = Parts.Summary({ title: k('sum.title'), info: k('sum.info'),
+        items: [{ text: k('sum.1'), href: 'topics-v2.html', link: k('sum.link') }, { text: k('sum.2') }, { text: k('sum.3') }] })
+      const summaryEmpty = Parts.Summary({ title: k('sum.empty'), items: [] })
+      const quotes = Parts.Quotes({ title: k('hlq.title'), info: k('hlq.info'),
+        headlines: [
+          { title: k('hlq.h1'), url: 'https://example.org/1', outlet: `${k('hlq.outlet')} 1`, date: '2026-09-28', angle: k('hlq.angle1'), frame: k('hlq.frame1'), stance: 'supportive' },
+          { title: k('hlq.h2'), url: 'https://example.org/2', outlet: `${k('hlq.outlet')} 2`, date: '2026-09-27', angle: k('hlq.angle2'), frame: k('hlq.frame2'), stance: 'critical' },
+          { title: k('hlq.h3'), outlet: `${k('hlq.outlet')} 3`, date: '2026-09-25', frame: k('hlq.frame3'), stance: 'neutral' }],
+        quotes: [{ text: k('hlq.q1'), source: `${k('hlq.source')} 1`, url: 'https://example.org/3', date: '2026-09-28' }, { text: k('hlq.q2'), source: `${k('hlq.source')} 2`, date: '2026-09-27' }] })
+      // The filters keep their own state and draw their controls again on a change. The pressed button gets the focus back,
+      // and the summary line stays the same node, so a screen reader announces the new text.
+      const filters = { topic: 'all', set: 'gr' }
+      const TOPICS = [['all', 120], ['economy', 42], ['health', 31], ['foreign', 27], ['education', 20]]
+      const filterCard = () => {
+        const controls = h('div', { class: 'fchip-controls' })
+        const picked = h('p', { class: 'dcard-sub', 'aria-live': 'polite' })
+        const draw = () => {
+          const focused = [...controls.querySelectorAll('button')].indexOf(document.activeElement)
+          controls.replaceChildren(
+            Parts.Chips({ label: k('filters.topics'), value: filters.topic, onChange: (key) => { filters.topic = key; draw() },
+              items: TOPICS.map(([key, n]) => ({ key, n, label: k(`filters.${key}`) })) }),
+            Parts.DataSwitch({ value: filters.set, onChange: (v) => { filters.set = v; draw() } }))
+          if (focused >= 0) controls.querySelectorAll('button')[focused]?.focus()
+          picked.textContent = t('pages.parts.filters.picked', { topic: k(`filters.${filters.topic}`), set: t(`parts.set.${filters.set}`) })
+        }
+        draw()
+        return Dash.card('c-6 fchip-card', Dash.cardHead(k('filters.title'), null, k('filters.info')), controls, picked)
+      }
+      // C: 61 days of sample volumes. D: 12 outlets × 8 topics, with a few cells under the minimum of 20 articles.
+      const presets = UI.periodPresets()
+      const dates = Array.from({ length: 61 }, (_, i) => new Date(Date.UTC(2026, 7, 1 + i)).toISOString().slice(0, 10))
+      const period = Parts.Period({ title: k('brush.title'), info: k('brush.info'), dates, presets, from: presets[3].from, to: presets[3].to,
+        values: dates.map((_, i) => Math.round(80 + 35 * Math.sin(i / 4) + ((i * 37) % 23))), onChange: () => {} })
+      const heatmap = Parts.Heatmap({ title: k('hmx.title'), info: k('hmx.info'), rowHeader: k('hmx.row'), minN: 20,
+        rows: Array.from({ length: 12 }, (_, i) => ({ label: `${k('hmx.row')} ${i + 1}` })),
+        columns: k('hmx.topics').split(',').map((label) => ({ label })),
+        cell: (r, c) => ({ v: (((r + 1) * (c + 3)) % 11) / 30, n: (r * 17 + c * 29) % 90 }) })
+      // The report frame, with a standalone report of reports/france-riots/ (#38 decides where it is used).
+      const frame = Parts.Frame({ src: 'reports/france-riots/compare.html', title: k('frame.title'), back: 'france-v2.html' })
+      const method = Parts.Method({ lead: k('method.lead'),
+        sections: [{ heading: k('method.data'), text: k('method.data.text') }, { heading: k('method.measure'), text: k('method.measure.text') }],
+        limits: [k('method.limit1'), k('method.limit2')] })
+      return Dash.card('c-12 page-parts',
+        h('h2', { id: 'page-parts-title' }, k('heading')),
+        h('p', { class: 'muted-text' }, k('hint')),
+        h('div', { class: 'dash' }, h('div', { class: 'dash-grid' }, summary, summaryEmpty, quotes, filterCard(), period, heatmap, method, frame)))
     }
 
     // The color tokens (#2), layer by layer. Each swatch reads its token, so a theme switch shows that theme.

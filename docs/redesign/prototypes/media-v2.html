@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="assets/app.css?v=45">
   <link rel="stylesheet" href="assets/dash.css?v=88">
   <link rel="stylesheet" href="assets/mme.css?v=36">
-  <link rel="stylesheet" href="assets/date-range.css?v=5">
+  <link rel="stylesheet" href="assets/date-range.css?v=8">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
@@ -22,7 +22,7 @@
   <script src="assets/components.js?v=15"></script>
   <script src="assets/motion.js?v=3"></script>
   <script src="assets/dash.js?v=21"></script>
-  <script src="assets/date-range.js?v=1"></script>
+  <script src="assets/date-range.js?v=2"></script>
   <script src="assets/mme.js?v=22"></script>
   <script src="assets/shell.js?v=58"></script>
   <script src="data/mme.js?v=20"></script>
@@ -48,8 +48,31 @@
     const view = { set: params.get('ds') === 'il' ? 'il' : 'gr', from: null, to: null }
     let lastValid = null
     let draw = () => {}
-    const setSelect = h('select', { 'aria-label': t('mme.set'), onChange: (e) => { view.set = e.target.value; view.from = null; lastValid = null; draw() } },
-      ['gr', 'il'].map((k) => h('option', { value: k }, t(`mme.set.${k}`))))
+    // The set of outlets (Ελλάδα, Ισραήλ): a button like the one of the period picker, with a menu in the look of its popover.
+    const setMenu = (() => {
+      const text = h('span', { class: 'dr-text' })
+      const button = h('button', { type: 'button', class: 'dr-trigger', 'aria-haspopup': 'true', 'aria-expanded': 'false' },
+        h('span', { class: 'visually-hidden' }, `${t('mme.set')}: `), text, App.Icon('chevron-down', 'icon icon-sm dr-chev'))
+      const list = h('ul', { class: 'set-pop', hidden: true })
+      const root = h('div', { class: 'set-select' }, button, list)
+      const close = () => { list.hidden = true; button.setAttribute('aria-expanded', 'false') }
+      const paint = () => {
+        text.textContent = t(`mme.set.${view.set}`)
+        list.replaceChildren(...['gr', 'il'].map((k) => h('li', {}, h('button', { type: 'button', class: 'dr-preset', 'aria-pressed': String(view.set === k),
+          onClick: () => { close(); button.focus(); if (view.set === k) return; view.set = k; view.from = null; lastValid = null; draw() } }, t(`mme.set.${k}`)))))
+      }
+      button.addEventListener('click', () => {
+        if (!list.hidden) { close(); return }
+        paint()
+        list.hidden = false
+        button.setAttribute('aria-expanded', 'true')
+        list.querySelector('[aria-pressed="true"]')?.focus()
+      })
+      root.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !list.hidden) { e.stopPropagation(); close(); button.focus() } })
+      document.addEventListener('pointerdown', (e) => { if (!root.contains(e.target)) close() })
+      paint()
+      return { root, paint }
+    })()
     // The drop-down list joins the global search in the top bar of the shell, on its right.
     function placeSetSelect () {
       if (Shell.headerV2) return
@@ -58,7 +81,7 @@
       // The search comes first and the list of countries is on its right.
       const tools = h('div', { class: 'header-tools' })
       search.replaceWith(tools)
-      tools.append(search, h('label', { class: 'set-select' }, h('span', { class: 'visually-hidden' }, t('mme.set')), setSelect))
+      tools.append(search, setMenu.root)
     }
 
     const sumRange = (arr, i0, i1, pick = (x) => x) => { let s = 0; for (let i = i0; i <= i1; i++) s += pick(arr[i]); return s }
@@ -154,9 +177,9 @@
           const greek = set.country === 'GR'
 
           // The set of outlets (Ελλάδα, Ισραήλ) is a drop-down list next to the global search. The period is one date picker in the top bar.
-          setSelect.value = view.set
+          setMenu.paint()
           const picker = UI.DateRangePicker({ dates, from: view.from, to: view.to, presets: Mme.presets(set), onChange: select })
-          const setAction = Shell.headerV2 ? h('label', { class: 'set-select' }, h('span', { class: 'visually-hidden' }, t('mme.set')), setSelect) : null
+          const setAction = Shell.headerV2 ? setMenu.root : null
           // Header v2: the two controls have their own row under the tabs, on the right (a wrapper is a filter of the tab, not a page action).
           const bar = TopBar({ title: `${t('nav.media')} · ${t(`tab.media.${tab}`)}`, tabs, actions: [setAction ? h('div', { class: 'mme-filters' }, setAction, picker) : picker], quiet: true })
 

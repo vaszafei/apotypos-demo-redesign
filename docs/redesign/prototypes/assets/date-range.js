@@ -26,7 +26,7 @@
     if (iso(view) < iso(monthStart(first))) view = monthStart(first)
 
     const trigger = h('button', { type: 'button', class: 'dr-trigger', 'aria-haspopup': 'dialog', 'aria-expanded': 'false' },
-      Icon('calendar', 'icon dr-icon'), h('span', { class: 'dr-text' }, label(from, to)), h('span', { class: 'dr-days' }, t('dr.days', { n: dayCount(from, to) })), Icon('chevron-down', 'icon icon-sm dr-chev'))
+      Icon('calendar', 'icon dr-icon'), h('span', { class: 'dr-text' }, label(from, to)), Icon('chevron-down', 'icon icon-sm dr-chev'))
     const pop = h('div', { class: 'dr-pop', role: 'dialog', 'aria-label': t('dr.title'), hidden: true })
     const root = h('div', { class: 'dr' }, trigger, pop)
 

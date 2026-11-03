@@ -176,7 +176,7 @@ for (const theme of THEMES) {
 
 // 5. Chart rules in the stylesheets. A selector that styles chart text must not set a font-size under 12px, and a grid line must stroke with --rule.
 console.log('5. Chart text and grid lines')
-const CHART_TEXT = /\bsvg\b|\.chart\b|\.heat\b|\.bubble-name\b|\.donut-cap\b/
+const CHART_TEXT = /\bsvg\b|\.chart\b|\.heat\b|\.hmx\b|\.brush\b|\.bubble-name\b|\.donut-cap\b/
 let chartCount = 0
 for (const f of readdirSync(join(ROOT, 'assets')).filter((n) => n.endsWith('.css') && n !== 'tokens.css')) {
   const text = readFileSync(join(ROOT, 'assets', f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
