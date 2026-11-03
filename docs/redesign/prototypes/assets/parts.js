@@ -112,5 +112,29 @@
     return card(`${cls} hmx`, cardHead(title, null, info), matrix, h('p', { class: 'dcard-sub' }, t('parts.hmx.masked', { n: fmt.int(minN) })))
   }
 
-  window.Parts = { Summary, Method, Quotes, Chips, DataSwitch, Period, Heatmap }
+  // The report frame: a standalone document inside the shell, under a bar with the back arrow, the title and a link that opens the document alone.
+  // An iframe fires no error on a missing file, so a HEAD request comes first; a failure shows the error state with a retry.
+  // The frame takes the height of its document, so the page has one scroll bar.
+  function Frame ({ cls = 'c-12', src, title, back }) {
+    const body = h('div', { class: 'frame-body' })
+    const fit = (frame) => { try { const doc = frame.contentDocument; if (doc && doc.body) frame.style.height = `${doc.documentElement.scrollHeight}px` } catch { /* another origin */ } }
+    const load = () => {
+      body.replaceChildren(cardState('loading'))
+      fetch(src, { method: 'HEAD' }).then((r) => {
+        if (!r.ok) throw new Error(String(r.status))
+        const frame = h('iframe', { class: 'frame-doc', src, title })
+        frame.addEventListener('load', () => { fit(frame); try { new ResizeObserver(() => fit(frame)).observe(frame.contentDocument.body) } catch { /* another origin */ } })
+        body.replaceChildren(frame)
+      }).catch(() => body.replaceChildren(cardState('error', null, load)))
+    }
+    load()
+    return card(`${cls} frame`,
+      h('div', { class: 'frame-bar' },
+        h('a', { class: 'back-button', href: back, 'aria-label': t('shell.back'), title: t('shell.back') }, Icon('arrow-left', 'icon icon-sm')),
+        h('h2', { class: 'dcard-title frame-title' }, title),
+        h('a', { class: 'dcard-link', href: src, target: '_blank', rel: 'noopener' }, t('parts.frame.open'), ' ↗')),
+      body)
+  }
+
+  window.Parts = { Summary, Method, Quotes, Chips, DataSwitch, Period, Heatmap, Frame }
 })()

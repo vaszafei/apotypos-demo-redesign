@@ -15,6 +15,7 @@ Object.assign(window.MESSAGES.el, {
   'parts.brush.day': '{date}: {n} άρθρα',
   'parts.brush.sum': '{n} άρθρα σε {days} ημέρες. Σύρετε πάνω στις στήλες για άλλη περίοδο.',
   'parts.hmx.tip': '{row} · {col}: {v} (από {n} άρθρα)',
+  'parts.frame.open': 'Άνοιγμα σε νέα καρτέλα',
   'parts.hmx.masked': 'Τα κελιά με λιγότερα από {n} άρθρα δεν δείχνουν τιμή (—).',
 
   'pages.parts.heading': 'Μέρη',
@@ -55,6 +56,7 @@ Object.assign(window.MESSAGES.el, {
   'pages.parts.hmx.info': 'Το μερίδιο κάθε θέματος στα άρθρα κάθε μέσου. Πιο σκούρο σημαίνει μεγαλύτερο μερίδιο.',
   'pages.parts.hmx.row': 'Μέσο',
   'pages.parts.hmx.topics': 'Οικονομία,Υγεία,Εξωτερική,Παιδεία,Έγκλημα,Περιβάλλον,Πολιτισμός,Αθλητισμός',
+  'pages.parts.frame.title': 'Γαλλία: Facebook και Τύπος',
   'pages.parts.method.lead': 'Πώς μετράμε και τι δεν δείχνουν οι αριθμοί.',
   'pages.parts.method.data': 'Δεδομένα',
   'pages.parts.method.data.text': 'Τα άρθρα 40 μέσων, όπως δημοσιεύτηκαν στις σελίδες τους, από 1 Αυγούστου έως 30 Σεπτεμβρίου 2026.',
@@ -78,6 +80,7 @@ Object.assign(window.MESSAGES.en, {
   'parts.brush.day': '{date}: {n} articles',
   'parts.brush.sum': '{n} articles in {days} days. Drag over the columns for another period.',
   'parts.hmx.tip': '{row} · {col}: {v} (of {n} articles)',
+  'parts.frame.open': 'Open in a new tab',
   'parts.hmx.masked': 'Cells with fewer than {n} articles show no value (—).',
 
   'pages.parts.heading': 'Parts',
@@ -118,6 +121,7 @@ Object.assign(window.MESSAGES.en, {
   'pages.parts.hmx.info': 'The share of each topic in the articles of each outlet. Darker means a larger share.',
   'pages.parts.hmx.row': 'Outlet',
   'pages.parts.hmx.topics': 'Economy,Health,Foreign affairs,Education,Crime,Environment,Culture,Sports',
+  'pages.parts.frame.title': 'France: Facebook and the press',
   'pages.parts.method.lead': 'How we measure and what the numbers do not show.',
   'pages.parts.method.data': 'Data',
   'pages.parts.method.data.text': 'The articles of 40 outlets, as published on their sites, from 1 August to 30 September 2026.',

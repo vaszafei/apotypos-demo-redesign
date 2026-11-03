@@ -189,13 +189,15 @@
         rows: Array.from({ length: 12 }, (_, i) => ({ label: `${k('hmx.row')} ${i + 1}` })),
         columns: k('hmx.topics').split(',').map((label) => ({ label })),
         cell: (r, c) => ({ v: (((r + 1) * (c + 3)) % 11) / 30, n: (r * 17 + c * 29) % 90 }) })
+      // The report frame, with a standalone report of reports/france-riots/ (#38 decides where it is used).
+      const frame = Parts.Frame({ src: 'reports/france-riots/compare.html', title: k('frame.title'), back: 'france-v2.html' })
       const method = Parts.Method({ lead: k('method.lead'),
         sections: [{ heading: k('method.data'), text: k('method.data.text') }, { heading: k('method.measure'), text: k('method.measure.text') }],
         limits: [k('method.limit1'), k('method.limit2')] })
       return Dash.card('c-12 page-parts',
         h('h2', { id: 'page-parts-title' }, k('heading')),
         h('p', { class: 'muted-text' }, k('hint')),
-        h('div', { class: 'dash' }, h('div', { class: 'dash-grid' }, summary, summaryEmpty, quotes, filterCard(), period, heatmap, method)))
+        h('div', { class: 'dash' }, h('div', { class: 'dash-grid' }, summary, summaryEmpty, quotes, filterCard(), period, heatmap, method, frame)))
     }
 
     // The color tokens (#2), layer by layer. Each swatch reads its token, so a theme switch shows that theme.
