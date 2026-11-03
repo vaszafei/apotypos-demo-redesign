@@ -128,32 +128,6 @@
     return h('div', { class: 'filter-bar' }, controls)
   }
 
-  function KpiStrip (tiles) {
-    return h('section', { class: 'kpi-strip', style: { '--kpi-count': String(tiles.length) }, 'aria-label': 'KPI' }, tiles)
-  }
-
-  // KpiTile: kpiId is an approved KPI or "kept". emptyText is required.
-  function KpiTile ({ kpiId, label, value, hint, emptyText, change, state = 'ready', extra }) {
-    if (!emptyText) throw new Error(`KpiTile ${kpiId} has no emptyText`)
-    const body = state === 'loading'
-      ? h('div', { class: 'skeleton', style: { height: '40px' } })
-      : state === 'empty'
-        ? h('p', { class: 'kpi-empty' }, emptyText)
-        : state === 'error'
-          ? h('p', { class: 'kpi-empty' }, t('state.failed'))
-          : [value !== '' && h('p', { class: 'kpi-value' }, value), change && h('span', { class: 'kpi-change' }, change), extra]
-    return h('article', { class: 'kpi-tile', 'data-kpi': kpiId, 'data-state': state },
-      h('h2', { class: 'kpi-label' }, label), body, state !== 'empty' && state !== 'error' && hint && h('p', { class: 'kpi-hint' }, hint))
-  }
-
-  function ChartCard ({ title, note, body, footnote, id }) {
-    return h('section', { class: 'card', id },
-      h('h2', { class: 'card-title' }, title),
-      note && h('p', { class: 'card-note' }, note),
-      body,
-      footnote && h('p', { class: 'card-footnote' }, footnote))
-  }
-
   function EmptyState ({ text, action }) {
     return h('div', { class: 'empty-state', 'data-state': 'empty' }, Icon('inbox'), h('p', { style: { margin: 0 } }, text), action)
   }
@@ -592,5 +566,5 @@
     }, color && h('span', { class: 'swatch', style: { background: color } }), label, count !== undefined && h('span', { class: 'entity-count' }, count), !page && h('span', { class: 'visually-hidden' }, ` (${t('entity.link.missing.short')})`))
   }
 
-  window.UI = { EntityLink, ENTITY_ROUTES, PageHeader, SegmentedControl, RangeControl, periodPresets, FilterBar, KpiStrip, KpiTile, ChartCard, EmptyState, ErrorState, ErrorPage, DataNotice, FactList, HBar, Legend, BarGroup, BarList, DivergingBar, STANCE_COLORS, DataTable, BarChart, CHART_FRAME, smoothPath, StackedBar, MiniStance, OwnershipMap, MatrixChart, showTooltip, hideTooltip }
+  window.UI = { EntityLink, ENTITY_ROUTES, PageHeader, SegmentedControl, RangeControl, periodPresets, FilterBar, EmptyState, ErrorState, ErrorPage, DataNotice, FactList, HBar, Legend, BarGroup, BarList, DivergingBar, STANCE_COLORS, DataTable, BarChart, CHART_FRAME, smoothPath, StackedBar, MiniStance, OwnershipMap, MatrixChart, showTooltip, hideTooltip }
 })()

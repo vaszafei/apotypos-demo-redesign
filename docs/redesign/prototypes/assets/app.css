@@ -242,24 +242,15 @@ button, input, select { font: inherit; color: inherit; }
 
 /* Cards and KPI tiles */
 
-.kpi-strip { display: grid; grid-template-columns: repeat(var(--kpi-count, 4), minmax(0, 1fr)); gap: var(--space-3); margin-bottom: var(--space-5); }
 
 .kpi-tile { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-4) var(--space-5); border: 1px solid transparent; border-radius: var(--radius); transition: border-color var(--motion-base) var(--ease-out); }
 .kpi-label { margin: 0; font-size: var(--text-small); font-weight: 500; color: var(--text-secondary); }
 .kpi-value { margin: 0; font-size: var(--text-figure); font-weight: 600; line-height: 1.1; color: var(--strong); }
-.kpi-change { font-size: var(--text-small); color: var(--text-secondary); }
-.kpi-hint { margin: 0; font-size: var(--text-caption); color: var(--text-secondary); }
-.kpi-empty { margin: 0; font-size: var(--text-small); color: var(--text-secondary); }
-.kpi-tile[data-state="placeholder-period"] .kpi-hint { font-style: italic; }
 
 .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
 
-.card { min-width: 0; margin-bottom: var(--space-4); padding: var(--space-5); border: 1px solid transparent; border-radius: var(--radius); transition: border-color var(--motion-base) var(--ease-out); }
 /* A card has the page background. Its edge shows only under the mouse or with the keyboard focus inside. A card that holds cards leaves the edge to them. */
-:is(.card, .kpi-tile, .dcard):is(:hover, :focus-within):not(:has(.card, .kpi-tile, .dcard)) { border-color: var(--card-edge); }
-.card-title { margin: 0; font: 600 18px/1.3 var(--font-heading); color: var(--strong); }
-.card-note { margin: var(--space-1) 0 var(--space-4); font-size: var(--text-small); color: var(--text-secondary); }
-.card-footnote { margin: var(--space-3) 0 0; font-size: var(--text-caption); color: var(--text-secondary); }
+:is(.kpi-tile, .dcard):is(:hover, :focus-within):not(:has(.kpi-tile, .dcard)) { border-color: var(--card-edge); }
 
 /* Charts */
 
@@ -419,7 +410,6 @@ button, input, select { font: inherit; color: inherit; }
   .breadcrumbs { padding: var(--space-4) var(--space-4) 0; }
   .content { padding: var(--space-5) var(--space-4); }
   .section-tabs { padding: 0 var(--space-4); }
-  .kpi-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .grid-2 { grid-template-columns: minmax(0, 1fr); }
   .page-footer { padding: var(--space-4); }
 }
@@ -430,7 +420,6 @@ button, input, select { font: inherit; color: inherit; }
   .breadcrumbs li:nth-last-child(2), .breadcrumbs li:only-child { display: flex; }
   .breadcrumbs li:nth-last-child(2) .icon { display: none; }
   .kpi-value { font-size: 32px; }
-  .card { padding: var(--space-4); }
   .toc ol { columns: 1; }
   .hide-phone { display: none; }
 }
@@ -878,7 +867,7 @@ details[open] > :not(summary) { animation: m-rise var(--motion-base) var(--ease-
 
 /* The first view of a chart (motion.js): bars and lines grow, points pop, numbers count up.
    Before its view, a chart below the fold waits with its marks hidden. .m-intro covers the first frame, before motion.js sorts the cards. */
-:is(.card, .dcard, .kpi-tile) :is(svg.chart .bar-col, svg.chart .line-series, svg.spark path) { transform-box: fill-box; }
+:is(.dcard, .kpi-tile) :is(svg.chart .bar-col, svg.chart .line-series, svg.spark path) { transform-box: fill-box; }
 svg.chart .bar-col { transform-origin: 50% 100%; }
 :is(svg.chart .line-series, svg.spark path) { transform-origin: 0 50%; }
 :is(svg.chart .pt, svg.chart .line-dot) { transform-box: fill-box; transform-origin: 50% 50%; }
@@ -888,11 +877,11 @@ svg.chart .bar-col { transform-origin: 50% 100%; }
 .dbar-seg.is-left { transform-origin: 100% 50%; }
 .dbar-seg.is-right { transform-origin: 0 50%; }
 
-.m-intro :is(.card, .dcard, .kpi-tile):not(.m-play, .m-done) :is(svg.chart, svg.spark),
+.m-intro :is(.dcard, .kpi-tile):not(.m-play, .m-done) :is(svg.chart, svg.spark),
 .m-wait :is(svg.chart, svg.spark) { opacity: 0; }
-.m-intro :is(.card, .dcard, .kpi-tile):not(.m-play, .m-done) :is(.hbar-fill, .stacked, .dbar-seg),
+.m-intro :is(.dcard, .kpi-tile):not(.m-play, .m-done) :is(.hbar-fill, .stacked, .dbar-seg),
 .m-wait :is(.hbar-fill, .stacked, .dbar-seg) { transform: scaleX(0); }
-.m-intro :is(.card, .dcard, .kpi-tile):not(.m-play, .m-done) :is(.kpi-value, .dstat-value),
+.m-intro :is(.dcard, .kpi-tile):not(.m-play, .m-done) :is(.kpi-value, .dstat-value),
 .m-wait :is(.kpi-value, .dstat-value), .is-counting { -webkit-text-fill-color: transparent; }
 .m-intro .mme-rank:not(.m-play, .m-done) tbody tr, .m-wait.mme-rank tbody tr { opacity: 0; }
 

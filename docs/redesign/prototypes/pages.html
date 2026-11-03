@@ -5,16 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=14">
-  <link rel="stylesheet" href="assets/app.css?v=43">
+  <link rel="stylesheet" href="assets/tokens.css?v=15">
+  <link rel="stylesheet" href="assets/app.css?v=44">
+  <link rel="stylesheet" href="assets/dash.css?v=87">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=35"></script>
-  <script src="assets/components.js?v=13"></script>
-  <script src="assets/motion.js?v=2"></script>
+  <script src="assets/messages.js?v=37"></script>
+  <script src="assets/messages-v2.js?v=47"></script>
+  <script src="assets/components.js?v=14"></script>
+  <script src="assets/motion.js?v=3"></script>
+  <script src="assets/dash.js?v=21"></script>
   <script src="assets/shell.js?v=58"></script>
   <script src="data/pages.js"></script>
   <script>
@@ -54,13 +57,12 @@
           content.replaceChildren(
             UI.PageHeader({ title: t('pages.title'), hint: t('pages.hint') }),
             h('p', { 'data-testid': 'page-counts' }, t('pages.counts', counts)),
-            Tree(),
-            Tokens(),
+            h('div', { class: 'dash' }, h('div', { class: 'dash-grid' }, Tree(), Tokens(), Cards(), Stats())),
             UI.FilterBar(h('div', { class: 'field' }, t('pages.filter.type'), UI.SegmentedControl({
               label: t('pages.filter.type'), value: view.type, onChange: (v) => { view.type = v; draw() },
               options: [{ value: 'all', label: t('pages.filter.all') }, ...types.map((x) => ({ value: x, label: t(`type.${x}`) }))]
             }))),
-            h('section', { class: 'card' }, table))
+            h('div', { class: 'dash' }, h('div', { class: 'dash-grid' }, Dash.card('c-12', table))))
           markTarget()
         }
         draw()
@@ -69,12 +71,52 @@
 
     // The tree of the sidebar (#62): each section with its tabs and sub-tabs, the question of each and its link. It is made from the same NAV as the sidebar.
     function Tree () {
-      return h('section', { class: 'card page-tree', 'aria-labelledby': 'page-tree-title' },
+      return Dash.card('c-12 page-tree',
         h('h2', { id: 'page-tree-title' }, t('pages.tree.title')),
         h('p', { class: 'muted-text' }, t('pages.tree.hint')),
         Shell.tree().map((item) => h('div', {},
           h('h3', {}, item.label),
           h('ul', {}, item.pages.map((p) => h('li', {}, h('a', { href: p.href }, p.label), p.question ? h('span', { class: 'muted-text' }, ` · ${p.question}`) : null))))))
+    }
+
+    // The card (#2): head, body, the link under it and the three states, in the two looks that pages use today.
+    function Cards () {
+      const swap = (card, kind) => {
+        const body = card.querySelector('[data-state]')
+        const next = kind === 'error' ? Dash.cardState('error', null, () => { swap(card, 'loading'); setTimeout(() => swap(card, 'error'), 1200) }) : Dash.cardState(kind, t(`pages.cards.${kind}`))
+        body.replaceWith(next)
+      }
+      const state = (kind) => {
+        const card = Dash.card('c-4', Dash.cardHead(t(`pages.cards.state.${kind}`)), Dash.cardState(kind, t(`pages.cards.${kind}`)))
+        if (kind === 'error') swap(card, 'error')
+        return card
+      }
+      const row = (cls) => h('div', { class: `dash ${cls}` }, h('h3', {}, t(`pages.cards.look.${cls || 'plain'}`)), h('div', { class: 'dash-grid' },
+        Dash.card('c-4', Dash.cardHead(t('pages.cards.title.plain')), h('p', { class: 'dcard-sub' }, t('pages.cards.body'))),
+        Dash.card('c-4', Dash.cardHead(t('pages.cards.title.full'), h('span', { class: 'dcard-sub' }, t('pages.cards.tools')), t('pages.cards.info')),
+          h('p', { class: 'dcard-sub' }, t('pages.cards.sub')), h('p', {}, t('pages.cards.body')),
+          Dash.cardFoot(h('a', { class: 'dcard-link', href: '#' }, t('pages.cards.link'), ' →'))),
+        state('loading'), state('empty'), state('error')))
+      return Dash.card('c-12 page-cards',
+        h('h2', { id: 'page-cards-title' }, t('pages.cards.heading')),
+        h('p', { class: 'muted-text' }, t('pages.cards.hint')), row(''), row('minimal'))
+    }
+
+    // The stat card (#2): the number, the short line, the change against the previous period and a small picture. The compact variant is the one of Μέσα › Επισκόπηση.
+    function Stats () {
+      const spark = () => Dash.Spark([4, 6, 5, 9, 7, 12, 10], 0, 6, t('pages.stats.spark'), { w: 80, hgt: 22 })
+      const forms = (variant) => [
+        Dash.Stat({ variant, label: t('pages.stats.plain'), value: '1.248', sub: t('pages.stats.sub') }),
+        Dash.Stat({ variant, label: t('pages.stats.up'), value: '1.248', delta: 0.12, sub: t('pages.stats.delta') }),
+        Dash.Stat({ variant, label: t('pages.stats.down'), value: '1.102', delta: -0.08, sub: t('pages.stats.delta') }),
+        Dash.Stat({ variant, label: t('pages.stats.viz'), value: '1.248', sub: t('pages.stats.sub'), viz: spark() }),
+        Dash.Stat({ variant, label: t('pages.stats.bar'), value: '62%', sub: t('pages.stats.sub'), viz: UI.HBar(0.62, 1, { label: '62%' }) }),
+        Dash.Stat({ variant, label: t('pages.stats.empty'), empty: true })]
+      return Dash.card('c-12 page-stats',
+        h('h2', { id: 'page-stats-title' }, t('pages.stats.heading')),
+        h('p', { class: 'muted-text' }, t('pages.stats.hint')),
+        h('div', { class: 'dash' }, h('h3', {}, t('pages.stats.look.plain')), h('div', { class: 'dash-grid' }, forms())),
+        h('div', { class: 'dash' }, h('h3', {}, t('pages.stats.look.compact')), h('div', { class: 'dash-grid' }, h('div', { class: 'c-6' }, h('div', { class: 'stats-2x2' }, forms('compact'))))))
     }
 
     // The color tokens (#2), layer by layer. Each swatch reads its token, so a theme switch shows that theme.
@@ -94,7 +136,7 @@
       const swatch = (name) => h('li', { class: 'token-item' },
         h('span', { class: 'token-chip', style: `background:var(${name});${name.startsWith('--seq-') ? `color:var(${name.replace('--seq-', '--seq-text-')})` : ''}` }, name.startsWith('--seq-') ? 'Aa' : null),
         h('code', {}, name))
-      return h('section', { class: 'card page-tokens', 'aria-labelledby': 'page-tokens-title' },
+      return Dash.card('c-12 page-tokens',
         h('h2', { id: 'page-tokens-title' }, t('pages.tokens.title')),
         h('p', { class: 'muted-text' }, t('pages.tokens.hint')),
         LAYERS.map(([key, names]) => h('div', {}, h('h3', {}, t(`pages.tokens.${key}`)), h('ul', { class: 'token-list' }, names.map(swatch)))))

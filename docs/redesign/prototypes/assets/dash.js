@@ -83,13 +83,24 @@
   const cardHead = (title, aside, info) => h('div', { class: 'dcard-head' }, h('h2', { class: 'dcard-title' }, title),
     aside || info ? h('div', { class: 'dcard-tools' }, aside, info ? Info(info) : null) : null)
   const emptyText = (text) => h('p', { class: 'dcard-empty' }, text)
+  // The body of a card that has no data yet: loading, empty or error. The error state has a retry button when onRetry is given.
+  const cardState = (kind, text, onRetry) => kind === 'loading'
+    ? h('div', { class: 'dcard-skeleton', 'data-state': 'loading', role: 'status', 'aria-label': text || t('state.loading') },
+      h('span', { class: 'skeleton' }), h('span', { class: 'skeleton' }), h('span', { class: 'skeleton' }))
+    : kind === 'error' ? UI.ErrorState({ text: text || undefined, onRetry })
+      : h('p', { class: 'dcard-empty', 'data-state': 'empty' }, text)
+  // The link under the body of a card, for example «Όλα τα θέματα →». Pass an a.dcard-link or a button.dcard-link.
+  const cardFoot = (link) => h('div', { class: 'dcard-foot' }, link)
 
   // Stat card: small. A label, a number, one short line and a small picture of the same measure.
-  function Stat ({ label, value, sub, viz, kpi, empty }) {
-    const el = card('c-4 dstat', h('h2', { class: 'dstat-label' }, label),
+  // delta: the change against the previous period as a fraction (0.12 is ▲ +12%), shown before the short line.
+  // variant 'compact': the number and the short line share a row. It takes no column class, the page places it.
+  function Stat ({ label, value, sub, viz, kpi, empty, delta, variant }) {
+    const el = card(`${variant === 'compact' ? 'dstat-compact' : 'c-4'} dstat`, h('h2', { class: 'dstat-label' }, label),
       empty
         ? emptyText(t('media2.stat.empty'))
-        : h('div', { class: 'dstat-row' }, h('p', { class: 'dstat-value' }, value), h('p', { class: 'dstat-sub' }, sub), viz))
+        : h('div', { class: 'dstat-row' }, h('p', { class: 'dstat-value' }, value),
+          h('p', { class: 'dstat-sub' }, delta == null ? sub : [h('span', { class: 'delta' }, `${delta >= 0 ? '▲' : '▼'} ${fmt.signed(delta * 100)}%`), ' ', sub]), viz))
     if (kpi) el.dataset.kpi = kpi
     return el
   }
@@ -124,5 +135,5 @@
     return [head, bad.kind === 'empty' ? h('div', { class: 'dash-grid' }, card('c-12', UI.EmptyState({ text: t('topics2.empty') }))) : UI.ErrorState({ onRetry: () => location.reload() })]
   }
 
-  window.Dash = { stateContent, select, fit, reset, niceStep, pct0, get SLOTS () { return slots() }, get NO_GROUP () { return color('--cat-0') }, color, seq, groupColors, groupColor, textOn, tint, Spark, card, cardHead, Info, emptyText, Stat, TopBar }
+  window.Dash = { stateContent, select, fit, reset, niceStep, pct0, get SLOTS () { return slots() }, get NO_GROUP () { return color('--cat-0') }, color, seq, groupColors, groupColor, textOn, tint, Spark, card, cardHead, Info, emptyText, cardState, cardFoot, Stat, TopBar }
 })()
