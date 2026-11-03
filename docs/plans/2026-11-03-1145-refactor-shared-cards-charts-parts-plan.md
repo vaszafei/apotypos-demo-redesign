@@ -181,18 +181,18 @@ flowchart TB
 
 ### U4. Stat card: delta and variants
 
-- **Goal:** `Stat` shows a delta against the previous period, and the two special shapes are variants.
+- **Goal:** `Stat` shows a delta against the previous period, and the compact shape is a named variant.
 - **Requirements:** R4, R9.
 - **Dependencies:** U2.
-- **Files:** `assets/dash.js` (`Stat`), `assets/dash.css`, `assets/mme.css` (move `.mme-kpi` and `.outlet-stats .dstat` rules into named variants), `pages.html`, callers in `assets/mme.js` and the pages that use `viz:`.
+- **Files:** `assets/dash.js` (`Stat`), `assets/dash.css`, `assets/mme.css` (the `.mme-kpi` rules move to `.dstat-compact` in `assets/dash.css`; `.outlet-stats` stays a container layout of the outlet card), `pages.html`, callers in `assets/mme.js` and the pages that use `viz:`.
 - **Approach:**
-  1. Add a `delta` option: ▲ in the emphasis-more color, ▼ in the emphasis-less color, never +/−.
-  2. Add `variant: 'row' | 'wide'` for the two overrides and pass it from their callers.
+  1. Add a `delta` option as a fraction (0.12 is ▲ +12%). It renders the same `.delta` span that `media-v2.html` built by hand, so no page changes. Colors for ▲ and ▼ are not added: the live card shows the delta uncolored, and changing that was not asked.
+  2. Add `variant: 'compact'` for the Μέσα › Επισκόπηση shape and use it in `media-v2.html` instead of the `c3` helper.
   3. Keep `viz` (5 callers) as the sparkline slot and document it on the reference page.
   4. Add the stat card forms to `pages.html`: value only, with sub, with delta up and down, with sparkline, text value, empty.
 - **Patterns to follow:** `docs/solutions/conventions/layout-requests-are-literal.md` (arrows, not +/−); `docs/solutions/conventions/match-existing-type-and-controls.md` (existing sizes).
 - **Test scenarios:**
-  - `delta: { value: 12, dir: 'up' }` renders ▲ and `12`; `dir: 'down'` renders ▼ in the other color; no delta renders nothing.
+  - `delta: 0.12` renders ▲ +12%; `delta: -0.08` renders ▼ −8%; `delta: null` renders only the short line.
   - A stat card with `empty: true` still shows the empty line and no delta.
   - Outlet page stat boxes and the media page `mme-kpi` boxes match the baseline.
 - **Verification:** layout comparison reports 0 differences; `pnpm check` exits 0.

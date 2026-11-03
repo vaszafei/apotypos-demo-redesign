@@ -7,21 +7,21 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=15">
   <link rel="stylesheet" href="assets/app.css?v=44">
-  <link rel="stylesheet" href="assets/dash.css?v=86">
-  <link rel="stylesheet" href="assets/mme.css?v=35">
+  <link rel="stylesheet" href="assets/dash.css?v=87">
+  <link rel="stylesheet" href="assets/mme.css?v=36">
   <link rel="stylesheet" href="assets/date-range.css?v=5">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=36"></script>
+  <script src="assets/messages.js?v=37"></script>
   <script src="assets/messages-v2.js?v=47"></script>
   <script src="assets/messages-spread.js?v=16"></script>
   <script src="assets/messages-mme.js?v=21"></script>
   <script src="assets/components.js?v=14"></script>
   <script src="assets/motion.js?v=3"></script>
-  <script src="assets/dash.js?v=20"></script>
+  <script src="assets/dash.js?v=21"></script>
   <script src="assets/date-range.js?v=1"></script>
   <script src="assets/mme.js?v=22"></script>
   <script src="assets/shell.js?v=58"></script>
@@ -170,31 +170,30 @@
           set.sd.forEach((pairs) => { for (let j = 0; j < pairs.length; j += 2) storiesPerDay[pairs[j]]++ })
 
           // The 4 small stat cards, two by two at the top of the right column. Each has a number and a small picture of the same measure.
-          const c3 = (el) => { el.classList.remove('c-4'); el.classList.add('mme-kpi'); return el }
           const groupCount = new Set(S.active.map((o) => o.group).filter(Boolean)).size
-          const statOutlets = c3(Stat({
-            kpi: 'K05', label: t('mme.stat.outlets'), empty: !S.active.length, value: fmt.int(S.active.length),
+          const statOutlets = Stat({
+            variant: 'compact', kpi: 'K05', label: t('mme.stat.outlets'), empty: !S.active.length, value: fmt.int(S.active.length),
             sub: greek ? t('mme.stat.outlets.sub', { groups: fmt.int(groupCount) }) : t('mme.stat.outlets.sub.il'),
             viz: UI.HBar(newsCount / (analysed || 1), 1, { label: fmt.pct(newsCount / (analysed || 1)) })
-          }))
+          })
           const hasPrev = days >= 14
           const last7 = sumRange(totals, i1 - 6, i1)
           const prev7 = hasPrev ? sumRange(totals, i1 - 13, i1 - 7) : 0
           const change = hasPrev && prev7 > 0 ? (last7 - prev7) / prev7 : null
-          const statArticles = c3(Stat({
-            kpi: 'K06', label: t('media2.stat.articles'), empty: analysed <= 0, value: fmt.int(analysed),
-            sub: change !== null ? [h('span', { class: 'delta' }, `${change >= 0 ? '▲' : '▼'} ${fmt.signed(change * 100)}%`), ' ', t('media2.stat.articles.delta')] : t('media2.stat.articles.avg', { n: fmt.int(Math.round(analysed / days)) }),
+          const statArticles = Stat({
+            variant: 'compact', kpi: 'K06', label: t('media2.stat.articles'), empty: analysed <= 0, value: fmt.int(analysed),
+            delta: change, sub: change !== null ? t('media2.stat.articles.delta') : t('media2.stat.articles.avg', { n: fmt.int(Math.round(analysed / days)) }),
             viz: Spark(totals, i0, i1, t('media2.spark.articles'), { w: 80, hgt: 22 })
-          }))
-          const statStories = c3(Stat({
-            kpi: 'K07', label: t('media2.stat.stories'), empty: S.storyCount <= 0, value: fmt.int(S.storyCount),
+          })
+          const statStories = Stat({
+            variant: 'compact', kpi: 'K07', label: t('media2.stat.stories'), empty: S.storyCount <= 0, value: fmt.int(S.storyCount),
             sub: t('media.k07.hint'), viz: Spark(storiesPerDay, i0, i1, t('media2.spark.stories'), { w: 80, hgt: 22 })
-          }))
+          })
           const quoteTotal = S.personQuotes.reduce((a, b) => a + b, 0)
-          const statPeople = c3(Stat({
-            label: t('mme.stat.people'), empty: !quoteTotal, value: fmt.int(S.personQuotes.filter((n) => n > 0).length),
+          const statPeople = Stat({
+            variant: 'compact', label: t('mme.stat.people'), empty: !quoteTotal, value: fmt.int(S.personQuotes.filter((n) => n > 0).length),
             sub: t('mme.stat.people.sub', { n: fmt.int(quoteTotal) })
-          }))
+          })
 
           // The lead chart: articles per day, news and other. A drag selects a period.
           let peakDay = i0

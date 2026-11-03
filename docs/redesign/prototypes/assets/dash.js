@@ -93,11 +93,14 @@
   const cardFoot = (link) => h('div', { class: 'dcard-foot' }, link)
 
   // Stat card: small. A label, a number, one short line and a small picture of the same measure.
-  function Stat ({ label, value, sub, viz, kpi, empty }) {
-    const el = card('c-4 dstat', h('h2', { class: 'dstat-label' }, label),
+  // delta: the change against the previous period as a fraction (0.12 is ▲ +12%), shown before the short line.
+  // variant 'compact': the number and the short line share a row. It takes no column class, the page places it.
+  function Stat ({ label, value, sub, viz, kpi, empty, delta, variant }) {
+    const el = card(`${variant === 'compact' ? 'dstat-compact' : 'c-4'} dstat`, h('h2', { class: 'dstat-label' }, label),
       empty
         ? emptyText(t('media2.stat.empty'))
-        : h('div', { class: 'dstat-row' }, h('p', { class: 'dstat-value' }, value), h('p', { class: 'dstat-sub' }, sub), viz))
+        : h('div', { class: 'dstat-row' }, h('p', { class: 'dstat-value' }, value),
+          h('p', { class: 'dstat-sub' }, delta == null ? sub : [h('span', { class: 'delta' }, `${delta >= 0 ? '▲' : '▼'} ${fmt.signed(delta * 100)}%`), ' ', sub]), viz))
     if (kpi) el.dataset.kpi = kpi
     return el
   }

@@ -7,17 +7,17 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=15">
   <link rel="stylesheet" href="assets/app.css?v=44">
-  <link rel="stylesheet" href="assets/dash.css?v=86">
+  <link rel="stylesheet" href="assets/dash.css?v=87">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=36"></script>
+  <script src="assets/messages.js?v=37"></script>
   <script src="assets/messages-v2.js?v=47"></script>
   <script src="assets/components.js?v=14"></script>
   <script src="assets/motion.js?v=3"></script>
-  <script src="assets/dash.js?v=20"></script>
+  <script src="assets/dash.js?v=21"></script>
   <script src="assets/shell.js?v=58"></script>
   <script src="data/pages.js"></script>
   <script>
@@ -57,7 +57,7 @@
           content.replaceChildren(
             UI.PageHeader({ title: t('pages.title'), hint: t('pages.hint') }),
             h('p', { 'data-testid': 'page-counts' }, t('pages.counts', counts)),
-            h('div', { class: 'dash' }, h('div', { class: 'dash-grid' }, Tree(), Tokens(), Cards())),
+            h('div', { class: 'dash' }, h('div', { class: 'dash-grid' }, Tree(), Tokens(), Cards(), Stats())),
             UI.FilterBar(h('div', { class: 'field' }, t('pages.filter.type'), UI.SegmentedControl({
               label: t('pages.filter.type'), value: view.type, onChange: (v) => { view.type = v; draw() },
               options: [{ value: 'all', label: t('pages.filter.all') }, ...types.map((x) => ({ value: x, label: t(`type.${x}`) }))]
@@ -100,6 +100,23 @@
       return Dash.card('c-12 page-cards',
         h('h2', { id: 'page-cards-title' }, t('pages.cards.heading')),
         h('p', { class: 'muted-text' }, t('pages.cards.hint')), row(''), row('minimal'))
+    }
+
+    // The stat card (#2): the number, the short line, the change against the previous period and a small picture. The compact variant is the one of Μέσα › Επισκόπηση.
+    function Stats () {
+      const spark = () => Dash.Spark([4, 6, 5, 9, 7, 12, 10], 0, 6, t('pages.stats.spark'), { w: 80, hgt: 22 })
+      const forms = (variant) => [
+        Dash.Stat({ variant, label: t('pages.stats.plain'), value: '1.248', sub: t('pages.stats.sub') }),
+        Dash.Stat({ variant, label: t('pages.stats.up'), value: '1.248', delta: 0.12, sub: t('pages.stats.delta') }),
+        Dash.Stat({ variant, label: t('pages.stats.down'), value: '1.102', delta: -0.08, sub: t('pages.stats.delta') }),
+        Dash.Stat({ variant, label: t('pages.stats.viz'), value: '1.248', sub: t('pages.stats.sub'), viz: spark() }),
+        Dash.Stat({ variant, label: t('pages.stats.bar'), value: '62%', sub: t('pages.stats.sub'), viz: UI.HBar(0.62, 1, { label: '62%' }) }),
+        Dash.Stat({ variant, label: t('pages.stats.empty'), empty: true })]
+      return Dash.card('c-12 page-stats',
+        h('h2', { id: 'page-stats-title' }, t('pages.stats.heading')),
+        h('p', { class: 'muted-text' }, t('pages.stats.hint')),
+        h('div', { class: 'dash' }, h('h3', {}, t('pages.stats.look.plain')), h('div', { class: 'dash-grid' }, forms())),
+        h('div', { class: 'dash' }, h('h3', {}, t('pages.stats.look.compact')), h('div', { class: 'dash-grid' }, h('div', { class: 'c-6' }, h('div', { class: 'stats-2x2' }, forms('compact'))))))
     }
 
     // The color tokens (#2), layer by layer. Each swatch reads its token, so a theme switch shows that theme.
