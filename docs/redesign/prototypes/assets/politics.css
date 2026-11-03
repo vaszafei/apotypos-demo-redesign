@@ -20,7 +20,7 @@
 .pick-swatch { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: var(--dot); vertical-align: middle; }
 
 /* Heat cells of a week grid. */
-.heat td.hc { min-width: 28px; height: 22px; border: 2px solid var(--surface-page); border-radius: 5px; padding: 0; font-size: 11px; text-align: center; }
+.heat td.hc { min-width: 28px; height: 22px; border: 2px solid var(--surface-page); border-radius: 5px; padding: 0; font-size: 12px; text-align: center; }
 .heat th { white-space: nowrap; }
 
 /* Quotes and headline lists. */

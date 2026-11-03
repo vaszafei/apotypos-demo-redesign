@@ -520,7 +520,7 @@
           h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, rowHeader), columns.map((c) => h('th', { scope: 'col', title: c.title }, c.label)))),
           h('tbody', {}, rows.map((r, ri) => h('tr', {}, h('th', { scope: 'row' }, r.label), columns.map((_, ci) => {
             const c = cell(ri, ci)
-            return h('td', { class: c.className, style: { background: c.background, color: c.color }, title: c.title, 'aria-label': c.title }, c.text)
+            return withTip(h('td', { class: c.className, style: { background: c.background, color: c.color } }, c.text), c.title)
           })))))),
       legend)
   }
@@ -566,5 +566,5 @@
     }, color && h('span', { class: 'swatch', style: { background: color } }), label, count !== undefined && h('span', { class: 'entity-count' }, count), !page && h('span', { class: 'visually-hidden' }, ` (${t('entity.link.missing.short')})`))
   }
 
-  window.UI = { EntityLink, ENTITY_ROUTES, PageHeader, SegmentedControl, RangeControl, periodPresets, FilterBar, EmptyState, ErrorState, ErrorPage, DataNotice, FactList, HBar, Legend, BarGroup, BarList, DivergingBar, STANCE_COLORS, DataTable, BarChart, CHART_FRAME, smoothPath, StackedBar, MiniStance, OwnershipMap, MatrixChart, showTooltip, hideTooltip }
+  window.UI = { EntityLink, ENTITY_ROUTES, PageHeader, SegmentedControl, RangeControl, periodPresets, FilterBar, EmptyState, ErrorState, ErrorPage, DataNotice, FactList, HBar, Legend, BarGroup, BarList, DivergingBar, STANCE_COLORS, DataTable, BarChart, CHART_FRAME, smoothPath, StackedBar, MiniStance, OwnershipMap, MatrixChart, withTip, showTooltip, hideTooltip }
 })()

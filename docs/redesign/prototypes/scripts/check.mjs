@@ -1,9 +1,11 @@
-// The color checks of the prototypes (#2). Usage: pnpm check (in web/) or node docs/redesign/prototypes/scripts/check.mjs
+// The color and chart checks of the prototypes (#2). Usage: pnpm check (in web/) or node docs/redesign/prototypes/scripts/check.mjs
 // 1. No hex, rgb() or hsl() color literal outside assets/tokens.css.
 // 2. Contrast in every theme: text 4.5 to 1, marks 3 to 1, each on its surfaces.
 // 3. The accent, the data series and "supportive" are far apart (CIEDE2000).
 // 4. The categorical slots stay apart under simulated protanopia, deuteranopia and tritanopia (Machado 2009, severity 1). A warning, not a failure.
-// Exit code 1 if 1, 2 or 3 fails.
+//    The exceptions that stay (#2): see the header printed under check 2.
+// 5. Chart text is 12px or more, and a grid line uses --rule (the chart rules of #2).
+// Exit code 1 if 1, 2, 3 or 5 fails.
 import { readFileSync, readdirSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -130,6 +132,9 @@ const RULES = [
 const SLOTS = [1, 2, 3, 4, 5, 6, 7, 8].map((i) => `--cat-${i}`)
 
 console.log('2. Contrast  3. Distinct accent, series and supportive  4. Slots under color vision deficiencies')
+// The exceptions of #2 (decision: keep the group colors, because pages were approved with them). They are notes and warnings below, not failures.
+console.log('  Known exceptions in the light themes (paper, fog, terra): --cat-2 to --cat-5 are under 3 to 1 on the card;')
+console.log('  --cat-1/--cat-7 (deuteranopia), --cat-2/--cat-6 (protanopia) and --cat-2/--cat-8 (tritanopia) are under ΔE 8 apart.')
 for (const theme of THEMES) {
   const get = resolver(themeTokens(theme))
   console.log(`  [${theme}]`)
@@ -169,5 +174,25 @@ for (const theme of THEMES) {
   if (close.length) console.log(`  warn: slot pairs closer than ΔE ${MIN_CVD} for color vision deficiencies: ${close.join(', ')}`)
 }
 
-console.log(failures ? `\n${failures} failure(s)` : '\nAll color checks pass.')
+// 5. Chart rules in the stylesheets. A selector that styles chart text must not set a font-size under 12px, and a grid line must stroke with --rule.
+console.log('5. Chart text and grid lines')
+const CHART_TEXT = /\bsvg\b|\.chart\b|\.heat\b|\.bubble-name\b|\.donut-cap\b/
+let chartCount = 0
+for (const f of readdirSync(join(ROOT, 'assets')).filter((n) => n.endsWith('.css') && n !== 'tokens.css')) {
+  const text = readFileSync(join(ROOT, 'assets', f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
+  for (const m of text.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const sels = m[1].trim().split(',').map((x) => x.trim().replace(/\s+/g, ' '))
+    const size = m[2].match(/(?:^|[;\s])font-size\s*:\s*([\d.]+)px/)
+    if (size && Number(size[1]) < 12) {
+      for (const sel of sels.filter((x) => CHART_TEXT.test(x))) { chartCount++; fail(`assets/${f}: ${sel} has font-size ${size[1]}px, below 12px`) }
+    }
+    const stroke = m[2].match(/(?:^|[;\s])stroke\s*:\s*([^;]+)/)
+    if (stroke && stroke[1].trim() !== 'var(--rule)') {
+      for (const sel of sels.filter((x) => /\.grid-line\b/.test(x))) { chartCount++; fail(`assets/${f}: ${sel} strokes with ${stroke[1].trim()}, not var(--rule)`) }
+    }
+  }
+}
+if (!chartCount) console.log('  ok: none')
+
+console.log(failures ? `\n${failures} failure(s)` : '\nAll checks pass.')
 process.exit(failures ? 1 : 0)

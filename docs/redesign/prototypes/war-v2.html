@@ -6,18 +6,18 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=15">
-  <link rel="stylesheet" href="assets/app.css?v=44">
-  <link rel="stylesheet" href="assets/dash.css?v=87">
-  <link rel="stylesheet" href="assets/politics.css?v=7">
+  <link rel="stylesheet" href="assets/app.css?v=45">
+  <link rel="stylesheet" href="assets/dash.css?v=88">
+  <link rel="stylesheet" href="assets/politics.css?v=8">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=37"></script>
+  <script src="assets/messages.js?v=38"></script>
   <script src="assets/messages-v2.js?v=47"></script>
   <script src="assets/messages-politics.js?v=10"></script>
-  <script src="assets/components.js?v=14"></script>
+  <script src="assets/components.js?v=15"></script>
   <script src="assets/motion.js?v=3"></script>
   <script src="assets/dash.js?v=21"></script>
   <script src="assets/politics.js?v=11"></script>
@@ -143,7 +143,7 @@
                 const enough = gt >= MIN_CELL
                 const s = share(hot, gt)
                 const text = enough ? t('war.heat.cell', { outlet: o.name, week: labels[i].long, hot: fmt.int(hot), gt: fmt.int(gt), share: fmt.pct(s) }) : t('war.heat.few', { outlet: o.name, week: labels[i].long, gt: fmt.int(gt) })
-                return h('td', { class: 'hc', title: text, 'aria-label': text, style: enough ? `background:color-mix(in srgb, var(--stance-critical) ${Math.round(Math.min(1, s / 0.6) * 90 + 6)}%, var(--surface-raised))` : 'background:var(--surface-page)' })
+                return UI.withTip(h('td', { class: 'hc', style: enough ? `background:color-mix(in srgb, var(--stance-critical) ${Math.round(Math.min(1, s / 0.6) * 90 + 6)}%, var(--surface-raised))` : 'background:var(--surface-page)' }), text)
               }),
               h('td', { class: 'num' }, fmt.int(o.gt))))))))
 

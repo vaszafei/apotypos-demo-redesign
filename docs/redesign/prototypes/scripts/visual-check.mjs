@@ -50,7 +50,8 @@ for (const theme of themes) {
     const dir = join(out, `${width}-${theme}`)
     mkdirSync(dir, { recursive: true })
     const context = await browser.newContext({ viewport: { width, height: heightOf(width) } })
-    await context.addInitScript((key) => { try { localStorage.setItem('proto-theme', key) } catch {} }, theme)
+    // Signed in, so the pages of the section Κόσμος show their charts and not the sign-in gate.
+    await context.addInitScript((key) => { try { localStorage.setItem('proto-theme', key); localStorage.setItem('proto-user', 'lolovios') } catch {} }, theme)
     const queue = [...pages]
     const worker = async () => {
       for (let url = queue.shift(); url; url = queue.shift()) {

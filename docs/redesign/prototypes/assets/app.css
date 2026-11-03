@@ -256,7 +256,7 @@ button, input, select { font: inherit; color: inherit; }
 
 .chart { width: 100%; height: auto; display: block; overflow: visible; }
 .chart text { font-family: var(--font-text); font-size: 12px; fill: var(--text-secondary); }
-.chart .grid-line { stroke: var(--border); stroke-width: 1; }
+.chart .grid-line { stroke: var(--rule); stroke-width: 1; }
 
 .tooltip {
   position: fixed; z-index: 50; pointer-events: none;

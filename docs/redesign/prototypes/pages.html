@@ -6,23 +6,25 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=15">
-  <link rel="stylesheet" href="assets/app.css?v=44">
-  <link rel="stylesheet" href="assets/dash.css?v=87">
+  <link rel="stylesheet" href="assets/app.css?v=45">
+  <link rel="stylesheet" href="assets/dash.css?v=88">
+  <link rel="stylesheet" href="assets/politics.css?v=8">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=37"></script>
+  <script src="assets/messages.js?v=38"></script>
   <script src="assets/messages-v2.js?v=47"></script>
-  <script src="assets/components.js?v=14"></script>
+  <script src="assets/components.js?v=15"></script>
   <script src="assets/motion.js?v=3"></script>
   <script src="assets/dash.js?v=21"></script>
+  <script src="assets/politics.js?v=11"></script>
   <script src="assets/shell.js?v=58"></script>
   <script src="data/pages.js"></script>
   <script>
     // The table of all 58 routes. scripts/make-pages-table.py makes data/pages.js from the route map.
-    const { t, h } = App
+    const { t, h, fmt } = App
     const { rows, counts } = window.FIXTURES.pages
     const view = { type: 'all' }
     const types = ['Dashboard', 'Ranked list', 'Detail', 'Matrix', 'Explorer', 'Text', 'Removed']
@@ -57,7 +59,7 @@
           content.replaceChildren(
             UI.PageHeader({ title: t('pages.title'), hint: t('pages.hint') }),
             h('p', { 'data-testid': 'page-counts' }, t('pages.counts', counts)),
-            h('div', { class: 'dash' }, h('div', { class: 'dash-grid' }, Tree(), Tokens(), Cards(), Stats())),
+            h('div', { class: 'dash' }, h('div', { class: 'dash-grid' }, Tree(), Tokens(), Cards(), Stats(), Charts())),
             UI.FilterBar(h('div', { class: 'field' }, t('pages.filter.type'), UI.SegmentedControl({
               label: t('pages.filter.type'), value: view.type, onChange: (v) => { view.type = v; draw() },
               options: [{ value: 'all', label: t('pages.filter.all') }, ...types.map((x) => ({ value: x, label: t(`type.${x}`) }))]
@@ -117,6 +119,36 @@
         h('p', { class: 'muted-text' }, t('pages.stats.hint')),
         h('div', { class: 'dash' }, h('h3', {}, t('pages.stats.look.plain')), h('div', { class: 'dash-grid' }, forms())),
         h('div', { class: 'dash' }, h('h3', {}, t('pages.stats.look.compact')), h('div', { class: 'dash-grid' }, h('div', { class: 'c-6' }, h('div', { class: 'stats-2x2' }, forms('compact'))))))
+    }
+
+    // The charts (#2): one of each type that has shared code, with sample data. The types that live in one page are listed with their page.
+    function Charts () {
+      const days = t('pages.charts.days').split(',')
+      const [c1, c2, c3] = Dash.SLOTS
+      const item = (key, ...body) => Dash.card('c-6', Dash.cardHead(t(`pages.charts.${key}`)), ...body)
+      const owner = UI.OwnershipMap({ max: 1, caption: t('pages.charts.owner'), groups: [{ title: t('pages.charts.owner.title'), shareText: t('pages.charts.owner.share'),
+        outlets: [0.7, 0.4].map((v, i) => ({ name: `${t('pages.charts.owner.outlet')} ${i + 1}`, value: v, valueText: fmt.pct(v) })) }] })
+      const matrix = UI.MatrixChart({ caption: t('pages.charts.matrix.caption'), rowHeader: t('pages.charts.matrix.row'),
+        rows: [1, 2, 3].map((i) => ({ label: `${t('pages.charts.matrix.row')} ${i}` })), columns: [1, 2, 3].map((i) => ({ label: `${t('pages.charts.matrix.col')} ${i}` })),
+        cell: (r, c) => { const v = ((r + 1) * (c + 2)) % 5 / 5; return { ...Dash.seq(v), text: fmt.pct(v), title: `${t('pages.charts.matrix.row')} ${r + 1}, ${t('pages.charts.matrix.col')} ${c + 1}: ${fmt.pct(v)}` } } })
+      const OWN = [['scatter', 'media-v2.html'], ['timeline', 'cases-v2.html'], ['bubbles', 'groups-v2.html'], ['sunburst', 'groups-v2.html']]
+      return Dash.card('c-12 page-charts',
+        h('h2', { id: 'page-charts-title' }, t('pages.charts.heading')),
+        h('p', { class: 'muted-text' }, t('pages.charts.hint')),
+        h('div', { class: 'dash' }, h('div', { class: 'dash-grid' },
+          item('bar', UI.BarChart({ labels: days, values: [12, 18, 9, 22, 15, 7, 11], height: 180, label: t('pages.charts.aria.bar') })),
+          item('stacked', UI.BarChart({ labels: days, height: 180, label: t('pages.charts.aria.bar'),
+            series: [{ name: t('pages.charts.series.a'), color: c1, values: [8, 10, 5, 12, 9, 4, 6] }, { name: t('pages.charts.series.b'), color: c2, values: [4, 8, 4, 10, 6, 3, 5] }] })),
+          item('line', Politics.LineChart({ labels: days, height: 180, zero: true, yFormat: fmt.int, aria: t('pages.charts.aria.line'),
+            series: [{ label: t('pages.charts.series.a'), color: c1, values: [3, 5, 4, 8, 6, 9, 7] }, { label: t('pages.charts.series.b'), color: c2, values: [6, 4, 5, 3, 4, 2, 3] }] })),
+          item('spark', Dash.Spark([4, 6, 5, 9, 7, 12, 10], 0, 6, t('pages.stats.spark'))),
+          item('hbar', UI.HBar(0.62, 1, { text: '62%', label: '62%' })),
+          item('parts', UI.StackedBar([{ label: t('pages.charts.part.a'), value: 35, color: UI.STANCE_COLORS[0] }, { label: t('pages.charts.part.b'), value: 45, color: UI.STANCE_COLORS[1] }, { label: t('pages.charts.part.c'), value: 20, color: UI.STANCE_COLORS[2] }])),
+          item('diverging', UI.DivergingBar({ left: 0.35, middle: 0.2, right: 0.45, scale: 0.6, label: t('pages.charts.diverging') })),
+          item('matrix', matrix),
+          item('owner', owner))),
+        h('h3', {}, t('pages.charts.own')),
+        h('ul', {}, OWN.map(([key, href]) => h('li', {}, h('a', { href }, t(`pages.charts.own.${key}`)), h('span', { class: 'muted-text' }, ` · ${href}`)))))
     }
 
     // The color tokens (#2), layer by layer. Each swatch reads its token, so a theme switch shows that theme.

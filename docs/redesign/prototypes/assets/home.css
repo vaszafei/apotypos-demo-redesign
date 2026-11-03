@@ -81,7 +81,7 @@ a.home-stack-part { cursor: pointer; }
 .home-donut .slice { cursor: default; outline: none; transition: opacity var(--motion-base) var(--ease-out); }
 .home-donut .slice.is-dim { opacity: 0.3; }
 .home-donut .slice:focus-visible { stroke: var(--ink); stroke-width: 2; }
-.dash .chart .donut-cap { fill: var(--text-secondary); font-size: 11px; }
+.dash .chart .donut-cap { fill: var(--text-secondary); font-size: 12px; }
 .home-topic-side { display: grid; gap: var(--space-2); min-width: 0; }
 .home-topic-legend, .home-topic-more .rows { gap: 0; }
 .home-topic-row { padding: 4px 8px; border-radius: 6px; }
