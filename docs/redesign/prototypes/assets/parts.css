@@ -35,3 +35,7 @@
 .fchip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
 .fchip-n { font-size: var(--text-caption); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .fchip[aria-pressed="true"] .fchip-n { color: var(--on-ink); }
+
+/* C. Period control with a volume brush (the picker is .dr of date-range.css, the columns are UI.BarChart) */
+.brush { display: grid; gap: var(--space-3); }
+.brush-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-3); }

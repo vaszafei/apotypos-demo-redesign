@@ -66,5 +66,51 @@
   const DataSwitch = ({ value, onChange }) => h('div', { class: 'fchip-switch' }, UI.SegmentedControl({ label: t('parts.set.label'), value, onChange,
     options: [{ value: 'gr', label: t('parts.set.gr') }, { value: 'il', label: t('parts.set.il') }] }))
 
-  window.Parts = { Summary, Method, Quotes, Chips, DataSwitch }
+  // C. Period control with a volume brush: the preset chips, the period picker (date-range.js) and the daily columns.
+  // A drag over the columns, a chip or the picker sets the same period. onChange gets { from, to } once for each change.
+  // presets: [{ key, label, from, to }], values: the articles of each day of dates.
+  function Period ({ cls = 'c-12', title, info, dates, values, from, to, presets, onChange }) {
+    let view = { from, to }
+    const body = h('div', { class: 'brush' })
+    const set = (r) => {
+      const next = r.from <= r.to ? { from: r.from, to: r.to } : { from: r.to, to: r.from }
+      if (next.from === view.from && next.to === view.to) return
+      view = next
+      draw()
+      onChange({ ...view })
+    }
+    const draw = () => {
+      const i0 = dates.indexOf(view.from)
+      const i1 = dates.indexOf(view.to)
+      let total = 0
+      for (let i = i0; i <= i1; i++) total += values[i]
+      const preset = presets.find((p) => p.from === view.from && p.to === view.to)
+      body.replaceChildren(
+        h('div', { class: 'brush-controls' },
+          Chips({ label: t('dr.presets'), value: preset ? preset.key : null, items: presets.map((p) => ({ key: p.key, label: p.label })),
+            onChange: (key) => set(presets.find((p) => p.key === key)) }),
+          UI.DateRangePicker({ dates, from: view.from, to: view.to, presets, onChange: set })),
+        UI.BarChart({ dates, values, height: 140, label: title, onSelect: set, muted: (i) => i < i0 || i > i1,
+          tooltipOf: (i) => t('parts.brush.day', { date: fmt.date(dates[i]), n: fmt.int(values[i]) }) }),
+        h('p', { class: 'dcard-sub', 'aria-live': 'polite' }, t('parts.brush.sum', { n: fmt.int(total), days: i1 - i0 + 1 })))
+    }
+    draw()
+    return card(`${cls} brush-card`, cardHead(title, null, info), body)
+  }
+
+  // D. Entity × entity heatmap: a table of rows by columns on one sequential scale (Dash.seq), built on UI.MatrixChart.
+  // cell(r, c) gives { v, n }: the value and the count it comes from. A cell under minN shows «—» and no value.
+  function Heatmap ({ cls = 'c-12', title, info, caption, rowHeader, rows, columns, cell, minN, format = fmt.pct }) {
+    const values = rows.flatMap((_, r) => columns.map((_, c) => cell(r, c)))
+    const max = Math.max(...values.filter((x) => x.n >= minN).map((x) => x.v), 0) || 1
+    const matrix = UI.MatrixChart({ caption: caption || title, rowHeader, rows, columns,
+      cell: (r, c) => {
+        const x = cell(r, c)
+        if (x.n < minN) return { className: 'cell-empty hmx-masked', text: '—' }
+        return { ...Dash.seq(x.v / max), text: format(x.v), title: t('parts.hmx.tip', { row: rows[r].label, col: columns[c].label, v: format(x.v), n: fmt.int(x.n) }) }
+      } })
+    return card(`${cls} hmx`, cardHead(title, null, info), matrix, h('p', { class: 'dcard-sub' }, t('parts.hmx.masked', { n: fmt.int(minN) })))
+  }
+
+  window.Parts = { Summary, Method, Quotes, Chips, DataSwitch, Period, Heatmap }
 })()

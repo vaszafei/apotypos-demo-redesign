@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="assets/app.css?v=45">
   <link rel="stylesheet" href="assets/dash.css?v=88">
   <link rel="stylesheet" href="assets/politics.css?v=8">
+  <link rel="stylesheet" href="assets/date-range.css?v=5">
   <link rel="stylesheet" href="assets/parts.css?v=1">
   <script src="assets/page-move.js?v=1"></script>
 </head>
@@ -17,10 +18,12 @@
   <script src="assets/icons.js?v=9"></script>
   <script src="assets/messages.js?v=38"></script>
   <script src="assets/messages-v2.js?v=47"></script>
+  <script src="assets/messages-mme.js?v=21"></script>
   <script src="assets/messages-parts.js?v=1"></script>
   <script src="assets/components.js?v=15"></script>
   <script src="assets/motion.js?v=3"></script>
   <script src="assets/dash.js?v=21"></script>
+  <script src="assets/date-range.js?v=1"></script>
   <script src="assets/parts.js?v=1"></script>
   <script src="assets/politics.js?v=11"></script>
   <script src="assets/shell.js?v=58"></script>
@@ -177,13 +180,22 @@
           h('p', { class: 'dcard-sub', 'aria-live': 'polite' }, t('pages.parts.filters.picked', { topic: k(`filters.${filters.topic}`), set: t(`parts.set.${filters.set}`) })))
         return el
       }
+      // C: 61 days of sample volumes. D: 12 outlets × 8 topics, with a few cells under the minimum of 20 articles.
+      const presets = UI.periodPresets()
+      const dates = Array.from({ length: 61 }, (_, i) => new Date(Date.UTC(2026, 7, 1 + i)).toISOString().slice(0, 10))
+      const period = Parts.Period({ title: k('brush.title'), info: k('brush.info'), dates, presets, from: presets[3].from, to: presets[3].to,
+        values: dates.map((_, i) => Math.round(80 + 35 * Math.sin(i / 4) + ((i * 37) % 23))), onChange: () => {} })
+      const heatmap = Parts.Heatmap({ title: k('hmx.title'), info: k('hmx.info'), rowHeader: k('hmx.row'), minN: 20,
+        rows: Array.from({ length: 12 }, (_, i) => ({ label: `${k('hmx.row')} ${i + 1}` })),
+        columns: k('hmx.topics').split(',').map((label) => ({ label })),
+        cell: (r, c) => ({ v: (((r + 1) * (c + 3)) % 11) / 30, n: (r * 17 + c * 29) % 90 }) })
       const method = Parts.Method({ lead: k('method.lead'),
         sections: [{ heading: k('method.data'), text: k('method.data.text') }, { heading: k('method.measure'), text: k('method.measure.text') }],
         limits: [k('method.limit1'), k('method.limit2')] })
       return Dash.card('c-12 page-parts',
         h('h2', { id: 'page-parts-title' }, k('heading')),
         h('p', { class: 'muted-text' }, k('hint')),
-        h('div', { class: 'dash' }, h('div', { class: 'dash-grid' }, summary, summaryEmpty, quotes, filterCard(), method)))
+        h('div', { class: 'dash' }, h('div', { class: 'dash-grid' }, summary, summaryEmpty, quotes, filterCard(), period, heatmap, method)))
     }
 
     // The color tokens (#2), layer by layer. Each swatch reads its token, so a theme switch shows that theme.
