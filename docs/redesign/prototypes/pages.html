@@ -5,16 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=14">
+  <link rel="stylesheet" href="assets/tokens.css?v=15">
   <link rel="stylesheet" href="assets/app.css?v=43">
+  <link rel="stylesheet" href="assets/dash.css?v=86">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=35"></script>
+  <script src="assets/messages.js?v=36"></script>
+  <script src="assets/messages-v2.js?v=47"></script>
   <script src="assets/components.js?v=13"></script>
   <script src="assets/motion.js?v=2"></script>
+  <script src="assets/dash.js?v=20"></script>
   <script src="assets/shell.js?v=58"></script>
   <script src="data/pages.js"></script>
   <script>
@@ -56,6 +59,7 @@
             h('p', { 'data-testid': 'page-counts' }, t('pages.counts', counts)),
             Tree(),
             Tokens(),
+            Cards(),
             UI.FilterBar(h('div', { class: 'field' }, t('pages.filter.type'), UI.SegmentedControl({
               label: t('pages.filter.type'), value: view.type, onChange: (v) => { view.type = v; draw() },
               options: [{ value: 'all', label: t('pages.filter.all') }, ...types.map((x) => ({ value: x, label: t(`type.${x}`) }))]
@@ -75,6 +79,29 @@
         Shell.tree().map((item) => h('div', {},
           h('h3', {}, item.label),
           h('ul', {}, item.pages.map((p) => h('li', {}, h('a', { href: p.href }, p.label), p.question ? h('span', { class: 'muted-text' }, ` · ${p.question}`) : null))))))
+    }
+
+    // The card (#2): head, body, the link under it and the three states, in the two looks that pages use today.
+    function Cards () {
+      const swap = (card, kind) => {
+        const body = card.querySelector('[data-state]')
+        const next = kind === 'error' ? Dash.cardState('error', null, () => { swap(card, 'loading'); setTimeout(() => swap(card, 'error'), 1200) }) : Dash.cardState(kind, t(`pages.cards.${kind}`))
+        body.replaceWith(next)
+      }
+      const state = (kind) => {
+        const card = Dash.card('c-4', Dash.cardHead(t(`pages.cards.state.${kind}`)), Dash.cardState(kind, t(`pages.cards.${kind}`)))
+        if (kind === 'error') swap(card, 'error')
+        return card
+      }
+      const row = (cls) => h('div', { class: `dash ${cls}` }, h('h3', {}, t(`pages.cards.look.${cls || 'plain'}`)), h('div', { class: 'dash-grid' },
+        Dash.card('c-4', Dash.cardHead(t('pages.cards.title.plain')), h('p', { class: 'dcard-sub' }, t('pages.cards.body'))),
+        Dash.card('c-4', Dash.cardHead(t('pages.cards.title.full'), h('span', { class: 'dcard-sub' }, t('pages.cards.tools')), t('pages.cards.info')),
+          h('p', { class: 'dcard-sub' }, t('pages.cards.sub')), h('p', {}, t('pages.cards.body')),
+          Dash.cardFoot(h('a', { class: 'dcard-link', href: '#' }, t('pages.cards.link'), ' →'))),
+        state('loading'), state('empty'), state('error')))
+      return h('section', { class: 'card page-cards', 'aria-labelledby': 'page-cards-title' },
+        h('h2', { id: 'page-cards-title' }, t('pages.cards.heading')),
+        h('p', { class: 'muted-text' }, t('pages.cards.hint')), row(''), row('minimal'))
     }
 
     // The color tokens (#2), layer by layer. Each swatch reads its token, so a theme switch shows that theme.

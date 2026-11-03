@@ -1,7 +1,7 @@
 /* Αρχική: the calendar of a month, the stories of a day, the topics of a day and the quick access. */
 
 /* The stories of a day. */
-.home-day { gap: var(--space-3); }
+.home-day { --card-gap: var(--space-3); }
 .home-date { font-size: var(--text-caption); font-weight: 600; text-transform: capitalize; white-space: nowrap; color: var(--ink); }
 .home-topic-label { color: var(--text-secondary); }
 .home-day-story { margin: 0; font: 600 22px/1.25 var(--font-heading); letter-spacing: -0.01em; color: var(--ink); }
