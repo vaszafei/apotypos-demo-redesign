@@ -9,22 +9,23 @@
 .dr-pop { position: absolute; z-index: 40; top: calc(100% + 6px); right: 0; display: grid; grid-template-columns: 180px auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-raised); box-shadow: 0 12px 32px color-mix(in srgb, var(--shade) 14%, transparent); }
 .dr-pop[hidden] { display: none; }
 .dr-presets { display: grid; align-content: start; gap: 2px; margin: 0; padding: var(--space-3) var(--space-2); list-style: none; border-right: 1px solid var(--border); }
-.dr-preset { width: 100%; min-height: 32px; padding: 0 10px; border: 0; border-radius: 6px; background: none; color: var(--text-primary); font: inherit; font-size: var(--text-small); text-align: left; cursor: pointer; }
+.dr-preset { width: 100%; min-height: 28px; padding: 0 10px; border: 0; border-radius: 6px; background: none; color: var(--text-primary); font: inherit; font-size: var(--text-caption); text-align: left; cursor: pointer; }
 .dr-preset:hover { background: var(--surface-card); }
-.dr-preset[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+/* The selected preset and the two ends of the range: a tint of the accent with an accent border, never black. */
+.dr-preset[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 12%, var(--surface-raised)); box-shadow: inset 0 0 0 1px var(--accent); color: var(--ink); }
 .dr-main { position: relative; padding: var(--space-3) var(--space-4) var(--space-3); }
 .dr-nav { position: absolute; top: var(--space-2); left: var(--space-2); right: var(--space-2); display: flex; justify-content: space-between; pointer-events: none; }
-.dr-step { width: 32px; height: 32px; pointer-events: auto; }
+.dr-step { width: 28px; height: 28px; pointer-events: auto; }
 .dr-step:disabled { opacity: 0.3; cursor: default; }
 .dr-months { display: flex; gap: var(--space-5); }
-.dr-month-title { margin: 4px 0 var(--space-2); text-align: center; font-size: var(--text-small); font-weight: 600; color: var(--ink); text-transform: capitalize; }
-.dr-grid { display: grid; grid-template-columns: repeat(7, 36px); row-gap: 2px; }
-.dr-cell { display: flex; align-items: center; justify-content: center; height: 34px; font-size: var(--text-small); font-variant-numeric: tabular-nums; }
-.dr-wd { height: 24px; font-size: var(--text-caption); color: var(--text-secondary); }
-.dr-day { border: 0; background: none; color: var(--ink); font: inherit; font-size: var(--text-small); cursor: pointer; }
+.dr-month-title { margin: 4px 0 var(--space-2); text-align: center; font-size: var(--text-caption); font-weight: 600; color: var(--ink); text-transform: capitalize; }
+.dr-grid { display: grid; grid-template-columns: repeat(7, 30px); row-gap: 2px; }
+.dr-cell { display: flex; align-items: center; justify-content: center; height: 28px; font-size: var(--text-caption); font-variant-numeric: tabular-nums; }
+.dr-wd { height: 20px; font-size: var(--text-caption); color: var(--text-secondary); }
+.dr-day { border: 0; background: none; color: var(--ink); font: inherit; font-size: var(--text-caption); cursor: pointer; }
 .dr-day:hover:not(:disabled) { box-shadow: inset 0 0 0 1px var(--ink); border-radius: 6px; }
-.dr-day.in-range { background: color-mix(in srgb, var(--accent) 12%, var(--surface-raised)); }
-.dr-day.is-start, .dr-day.is-end { background: var(--ink); color: var(--on-ink); border-radius: 6px; }
+.dr-day.in-range { background: color-mix(in srgb, var(--accent) 6%, var(--surface-raised)); }
+.dr-day.is-start, .dr-day.is-end { background: color-mix(in srgb, var(--accent) 12%, var(--surface-raised)); box-shadow: inset 0 0 0 1px var(--accent); color: var(--ink); font-weight: 600; border-radius: 6px; }
 .dr-day.in-range.is-start:not(.is-end) { border-radius: 6px 0 0 6px; }
 .dr-day.in-range.is-end:not(.is-start) { border-radius: 0 6px 6px 0; }
 .dr-day.is-off { color: var(--border); cursor: default; }
@@ -37,15 +38,20 @@
   .dr-presets { display: flex; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--border); }
   .dr-preset { width: auto; }
   .dr-months { flex-direction: column; align-items: center; }
-  .dr-grid { grid-template-columns: repeat(7, minmax(36px, 1fr)); }
+  .dr-grid { grid-template-columns: repeat(7, minmax(30px, 1fr)); }
 }
 
 /* The set of outlets as a drop-down list next to the global search. */
 .header-tools { display: flex; align-items: center; gap: var(--space-2); justify-self: end; width: 100%; max-width: 560px; min-width: 0; }
 .header-tools .global-search { margin: 0; min-width: 0; }
 .header-tools .global-search-input { width: 100%; min-width: 0; }
-.set-select { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-small); color: var(--text-secondary); }
-.set-select select { min-height: 40px; padding: 0 30px 0 12px; border: 1px solid var(--border); border-radius: var(--pill, 999px); background-color: var(--surface-raised); color: var(--ink); font: inherit; font-size: var(--text-small); }
+.set-select { position: relative; display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-small); color: var(--text-secondary); }
+.set-select select { min-height: 40px; padding: 0 30px 0 12px; border: 1px solid var(--border); border-radius: var(--pill, 999px); background-color: var(--surface-raised); color: var(--ink); font: inherit; font-size: var(--text-small); appearance: none; cursor: pointer; }
+/* The browser's arrow is replaced by a thin chevron like the one of .dr-trigger. The filter row of header v2 (app.css) sets the padding of
+   every select, so the room for the chevron is set again at its weight. */
+:root[data-header="v2"] .page-filters .set-select select, .set-select select { padding-right: 30px; }
+.set-select::after { content: ""; position: absolute; right: 13px; top: 50%; width: 5px; height: 5px; margin-top: -4px; border-right: 1.5px solid var(--text-secondary); border-bottom: 1.5px solid var(--text-secondary); transform: rotate(45deg); pointer-events: none; }
+.set-select select:hover { border-color: var(--ink); }
 @media (max-width: 1023px) { .header-tools { max-width: none; flex: 1; } }
 /* With the drop-down list, the bar of five tabs has no room for the search below 1600 px: the tabs go to a second line, as on a page with many tabs. */
 @media (min-width: 1024px) and (max-width: 1599px) {
