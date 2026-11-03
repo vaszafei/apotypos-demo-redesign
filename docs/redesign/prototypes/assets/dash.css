@@ -74,7 +74,7 @@
 .info { position: relative; display: inline-flex; }
 .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--text-secondary); cursor: pointer; }
 .info-btn:hover, .info-btn:focus-visible { color: var(--accent); border-color: var(--accent); }
-.info-pop { display: none; position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; width: 300px; max-width: 80vw; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-raised); color: var(--text-primary); box-shadow: 0 12px 28px -12px rgba(17, 17, 17, 0.28); font-size: var(--text-caption); font-weight: 400; line-height: 1.45; text-align: left; }
+.info-pop { display: none; position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; width: 300px; max-width: 80vw; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-raised); color: var(--text-primary); box-shadow: 0 12px 28px -12px color-mix(in srgb, var(--shade) 28%, transparent); font-size: var(--text-caption); font-weight: 400; line-height: 1.45; text-align: left; }
 .info:hover .info-pop, .info:focus-within .info-pop, .info.is-open .info-pop { display: block; animation: m-drop var(--motion-base) var(--ease-out); }
 .dcard-title { margin: 0; font-size: var(--text-small); font-weight: 600; color: var(--text-primary); }
 .dcard-sub { margin: 0; font-size: var(--text-caption); color: var(--text-secondary); }

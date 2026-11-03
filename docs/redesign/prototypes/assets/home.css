@@ -136,10 +136,10 @@ a.home-stack-part { cursor: pointer; }
 .home-hero .global-search.is-hero .search-button {
   display: flex; align-items: center; gap: var(--space-3); width: 100%; min-width: 0; height: 52px; padding: 0 6px 0 20px;
   border: 1px solid var(--border); border-radius: var(--pill, 999px); background: var(--surface-raised); color: var(--text-secondary);
-  font: 16px var(--font-text); box-shadow: 0 1px 0 rgba(17, 17, 17, 0.03), 0 18px 40px -22px rgba(17, 17, 17, 0.35);
+  font: 16px var(--font-text); box-shadow: 0 1px 0 color-mix(in srgb, var(--shade) 3%, transparent), 0 18px 40px -22px color-mix(in srgb, var(--shade) 35%, transparent);
   transition: border-color var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out);
 }
-.home-hero .global-search.is-hero .search-button:hover, .home-hero .global-search.is-hero .search-button:focus-visible { border-color: var(--ink); box-shadow: 0 1px 0 rgba(17, 17, 17, 0.03), 0 22px 48px -20px rgba(17, 17, 17, 0.42); }
+.home-hero .global-search.is-hero .search-button:hover, .home-hero .global-search.is-hero .search-button:focus-visible { border-color: var(--ink); box-shadow: 0 1px 0 color-mix(in srgb, var(--shade) 3%, transparent), 0 22px 48px -20px color-mix(in srgb, var(--shade) 42%, transparent); }
 .home-hero .is-hero .search-button-icon { width: 20px; height: 20px; color: var(--ink); }
 .home-hero .is-hero .search-button-label { display: block; flex: 1; min-width: 0; padding: 0; overflow: hidden; text-align: left; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); }
 .home-hero .is-hero .global-search-key { display: inline-block; flex: none; }

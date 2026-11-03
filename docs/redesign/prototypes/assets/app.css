@@ -102,7 +102,7 @@ button, input, select { font: inherit; color: inherit; }
 .section-tabs ul { gap: var(--space-1); }
 .section-tabs a { padding: 7px 14px; margin-bottom: 0; border: 1px solid transparent; border-radius: var(--pill); color: var(--text-secondary); }
 .section-tabs a:hover { border-color: var(--border); color: var(--ink); }
-.section-tabs a[aria-current="page"], .section-tabs a[aria-current="true"] { border-color: var(--ink); background: transparent; color: var(--ink); font-weight: 600; box-shadow: 0 1px 0 rgba(17, 17, 17, 0.03), 0 8px 18px -10px rgba(17, 17, 17, 0.35); }
+.section-tabs a[aria-current="page"], .section-tabs a[aria-current="true"] { border-color: var(--ink); background: transparent; color: var(--ink); font-weight: 600; box-shadow: 0 1px 0 color-mix(in srgb, var(--shade) 3%, transparent), 0 8px 18px -10px color-mix(in srgb, var(--shade) 35%, transparent); }
 
 /* Sub-tabs: the pages of a tab with sub-tabs (Αναλύσεις › Παλαιστίνη–Ισραήλ). A second row of underlined tabs under the pills. */
 .sub-tabs { padding: 0 var(--space-5) var(--space-3); overflow-x: auto; }
@@ -128,19 +128,19 @@ button, input, select { font: inherit; color: inherit; }
    Open, the button grows into a panel over the page, with a light scrim behind it. shell.js moves it with transform and opacity only. */
 .search-button {
   display: inline-flex; align-items: center; gap: var(--space-2); min-width: 0; height: 36px; padding: 0 6px 0 12px;
-  border: 1px solid transparent; border-radius: 10px; background: rgba(17, 17, 17, 0.05); color: var(--text-secondary);
+  border: 1px solid transparent; border-radius: 10px; background: color-mix(in srgb, var(--shade) 5%, transparent); color: var(--text-secondary);
   font: 13px var(--font-text); cursor: pointer;
 }
-.search-button:hover { background: rgba(17, 17, 17, 0.08); color: var(--ink); }
+.search-button:hover { background: color-mix(in srgb, var(--shade) 8%, transparent); color: var(--ink); }
 .search-button-icon { width: 18px; height: 18px; flex: none; }
 .search-button-label { padding-right: var(--space-5); white-space: nowrap; color: var(--text-primary); }
 .global-search-key { min-width: 20px; padding: 0 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface-page); font: 600 12px/18px var(--font-text); color: var(--text-secondary); text-align: center; }
 .global-search.is-open .search-button { opacity: 0; }
 
-.search-scrim { position: fixed; inset: 0; z-index: 60; background: rgba(17, 17, 17, 0.16); }
+.search-scrim { position: fixed; inset: 0; z-index: 60; background: color-mix(in srgb, var(--shade) 16%, transparent); }
 .search-panel {
   position: fixed; z-index: 61; top: 12px; left: calc(50% - 320px); width: 640px; max-height: calc(100vh - 24px); display: flex; flex-direction: column;
-  border: 1px solid var(--border); border-radius: 16px; background: var(--surface-raised); box-shadow: 0 24px 60px -24px rgba(17, 17, 17, 0.45);
+  border: 1px solid var(--border); border-radius: 16px; background: var(--surface-raised); box-shadow: 0 24px 60px -24px color-mix(in srgb, var(--shade) 45%, transparent);
   transform-origin: 0 0; overflow: hidden;
 }
 .search-scrim[hidden], .search-panel[hidden] { display: none; }
@@ -411,7 +411,7 @@ button, input, select { font: inherit; color: inherit; }
   .page-footer-links, .page-footer-tools { display: none; }
   .sidebar { transform: translateX(-100%); transition: transform var(--motion-base) var(--ease-out); width: min(300px, 85vw); }
   .shell.drawer-open .sidebar { transform: none; }
-  .shell.drawer-open .drawer-scrim { display: block; position: fixed; inset: 0; z-index: 25; background: rgba(0, 0, 0, 0.4); animation: m-fade var(--motion-base) var(--ease-out); }
+  .shell.drawer-open .drawer-scrim { display: block; position: fixed; inset: 0; z-index: 25; background: color-mix(in srgb, var(--shade-black) 40%, transparent); animation: m-fade var(--motion-base) var(--ease-out); }
   .icon-button.sidebar-close { display: inline-flex; color: var(--ink); }
   .icon-button.menu-button { display: inline-flex; }
   .header-bar, .header-bar.has-tabs { display: flex; flex-wrap: wrap; gap: var(--space-2); padding: var(--space-2); }
@@ -661,7 +661,7 @@ button, input, select { font: inherit; color: inherit; }
 .user-button { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; border: 1px solid var(--border); border-radius: 50%; background: var(--surface-page); color: var(--ink); cursor: pointer; }
 .user-button:hover, .user-button[aria-expanded="true"] { border-color: var(--ink); }
 .user-button .icon { width: 22px; height: 22px; }
-.user-menu-list { position: absolute; top: calc(100% + 8px); right: 0; z-index: 50; display: flex; flex-direction: column; min-width: 200px; padding: var(--space-2); border: 1px solid var(--border); border-radius: 10px; background: var(--surface-raised); box-shadow: 0 16px 32px -16px rgba(17, 17, 17, 0.4); }
+.user-menu-list { position: absolute; top: calc(100% + 8px); right: 0; z-index: 50; display: flex; flex-direction: column; min-width: 200px; padding: var(--space-2); border: 1px solid var(--border); border-radius: 10px; background: var(--surface-raised); box-shadow: 0 16px 32px -16px color-mix(in srgb, var(--shade) 40%, transparent); }
 .user-menu-list[hidden] { display: none; }
 .user-menu-name { margin: 0; padding: var(--space-2) var(--space-3) var(--space-3); border-bottom: 1px solid var(--border); margin-bottom: var(--space-2); font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
 .user-menu-item { display: block; width: 100%; padding: 8px var(--space-3); border: 0; border-radius: 6px; background: none; font: var(--text-small) var(--font-text); color: var(--ink); text-align: left; text-decoration: none; cursor: pointer; }
@@ -673,7 +673,7 @@ button, input, select { font: inherit; color: inherit; }
   display: flex; align-items: center; justify-content: center; min-height: clamp(420px, 62vh, 620px); padding: var(--space-6) var(--space-4);
   border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-raised);
 }
-.gate-card { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); width: 100%; max-width: 440px; padding: var(--space-6) var(--space-5); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-raised); box-shadow: 0 14px 32px -18px rgba(17, 17, 17, 0.4); text-align: center; }
+.gate-card { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); width: 100%; max-width: 440px; padding: var(--space-6) var(--space-5); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-raised); box-shadow: 0 14px 32px -18px color-mix(in srgb, var(--shade) 40%, transparent); text-align: center; }
 .gate-icon { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 50%; background: color-mix(in srgb, var(--accent) 12%, var(--surface-raised)); color: var(--accent); }
 .gate-icon .icon { width: 28px; height: 28px; }
 .gate-title { margin: var(--space-2) 0 0; font: 600 var(--text-title)/1.3 var(--font-heading); color: var(--ink); }
@@ -832,7 +832,7 @@ button, input, select { font: inherit; color: inherit; }
   transition: transform var(--motion-fast) var(--ease-out);
 }
 :is(.button, .segmented button, .icon-button, .back-button, .search-button, .info-btn, .lang-switch button, .mme-chip, .dr-trigger, .dr-preset, .report-tabs button):active:not(:disabled) { transform: scale(0.96); }
-.data-table tbody tr:not(:target, .is-target):hover td { background: rgba(17, 17, 17, 0.035); }
+.data-table tbody tr:not(:target, .is-target):hover td { background: color-mix(in srgb, var(--shade) 3.5%, transparent); }
 
 /* Pop-ups fade in: the chart tooltip, an open accordion. The search panel grows from its button (shell.js). */
 .tooltip:not([hidden]) { animation: m-fade var(--motion-fast) var(--ease-out); }
