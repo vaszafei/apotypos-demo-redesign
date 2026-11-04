@@ -20,7 +20,7 @@
   <script src="assets/motion.js?v=3"></script>
   <script src="assets/dash.js?v=21"></script>
   <script src="assets/spread.js?v=6"></script>
-  <script src="assets/entity-cards.js?v=9"></script>
+  <script src="assets/entity-cards.js?v=10"></script>
   <script src="assets/shell.js?v=59"></script>
   <script src="data/media.js?v=2"></script>
   <script src="data/stories.js?v=2"></script>
@@ -68,12 +68,12 @@
 
         // The articles of the group per day: analysed and news, added over its outlets. The news of a day is null when no outlet of the group has a news count that day.
         const daily = dates.map((_, day) => {
-          let analysed = 0
+          let analysed = null
           let news = null
           m.outlets.forEach((o, k) => {
             if (!members.has(o.slug)) return
             const [a, n] = m.outletDaily[k][day]
-            analysed += a ?? 0
+            if (a !== null) analysed = (analysed ?? 0) + a
             if (n !== null) news = (news ?? 0) + n
           })
           return [analysed, news]

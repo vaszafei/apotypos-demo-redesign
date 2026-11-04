@@ -39,6 +39,38 @@ m.storyDays.forEach((pairs, k) => {
 })
 F.home.outlets.forEach((o, k) => { if (o.daily.length !== n) fail(`home.outlets[${k}].daily has ${o.daily.length} values for ${n} days`) })
 F.home.issueDaily.forEach((row, k) => { if (row.length !== n) fail(`home.issueDaily[${k}] has ${row.length} values for ${n} days`) })
+// The days from the database: a value the database cannot give is null, never 0. Outlet volume is a number only inside dbCovered.
+if (m.volumeFrom) {
+  const from = m.dates.indexOf(m.volumeFrom)
+  const covered = m.dbCovered ? [m.dates.indexOf(m.dbCovered[0]), m.dates.indexOf(m.dbCovered[1])] : [n, -1]
+  const isNull = (v) => v === null
+  m.outletDaily.forEach((row, k) => {
+    for (let i = from; i < n; i++) {
+      const [vol, ...rest] = row[i]
+      if (!rest.every(isNull)) fail(`media.outletDaily[${k}][${i}] has a value for news, clickbait or stance, which the database cannot give`)
+      if (!(i >= covered[0] && i <= covered[1]) && vol !== null) fail(`media.outletDaily[${k}][${i}] has volume outside dbCovered`)
+      if (i >= covered[0] && i <= covered[1] && vol !== null && typeof vol !== 'number') fail(`media.outletDaily[${k}][${i}] volume is not a number`)
+    }
+  })
+  m.issueDaily.forEach((row, k) => { if (!row.slice(from).every(isNull)) fail(`media.issueDaily[${k}] has a number on a day of the database`) })
+  m.stories.forEach((s, k) => { if (!s.daily.slice(from).every(isNull)) fail(`media.stories[${k}].daily has a number on a day of the database`) })
+  F.home.issueDaily.forEach((row, k) => { if (!row.slice(from).every(isNull)) fail(`home.issueDaily[${k}] has a number on a day of the database`) })
+  for (const key of ['stories', 'storyDetail', 'home']) if (F[key].volumeFrom !== m.volumeFrom) fail(`${key}.volumeFrom differs from media.volumeFrom`)
+  for (const key of ['stories', 'storyDetail']) {
+    if (F[key].dbStoryFrom === undefined) fail(`${key}.dbStoryFrom is missing`)
+    if (key === 'storyDetail') {
+      for (const s of F.storyDetail.stories) {
+        if (s.id < F.storyDetail.dbStoryFrom) continue
+        if (!(s.f === null && s.s === null && s.c === null && s.k === null)) fail(`storyDetail story ${s.id} has labels, which the database cannot give`)
+        for (let i = 1; i < s.t.length; i += 3) if (s.t[i] >= n) { fail(`storyDetail story ${s.id} has day index ${s.t[i]} for ${n} days`); break }
+      }
+    }
+  }
+  const ids = new Set(F.stories.stories.map((s) => s.id))
+  for (const s of F.storyDetail.stories) if (!ids.has(s.id)) fail(`storyDetail story ${s.id} is not in stories`)
+  for (const s of F.stories.stories) for (let i = 0; i < s.days.length; i += 2) if (s.days[i] >= n) { fail(`stories story ${s.id} has day index ${s.days[i]} for ${n} days`); break }
+  if (m.storyDays.length !== F.stories.stories.length) fail(`media.storyDays has ${m.storyDays.length} rows for ${F.stories.stories.length} stories`)
+}
 if (m.volumeFrom && !m.dates.includes(m.volumeFrom)) fail(`media.volumeFrom ${m.volumeFrom} is not one of the dates`)
 if (m.dbCovered && (!m.dates.includes(m.dbCovered[0]) || !m.dates.includes(m.dbCovered[1]))) fail(`media.dbCovered ${m.dbCovered} is outside the dates`)
 

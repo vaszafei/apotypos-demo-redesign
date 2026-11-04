@@ -20,9 +20,9 @@
   <script src="assets/motion.js?v=3"></script>
   <script src="assets/dash.js?v=21"></script>
   <script src="assets/spread.js?v=6"></script>
-  <script src="assets/entity-cards.js?v=9"></script>
+  <script src="assets/entity-cards.js?v=10"></script>
   <script src="assets/shell.js?v=59"></script>
-  <script src="data/home.js"></script>
+  <script src="data/home.js?v=4"></script>
   <script src="data/stories.js?v=2"></script>
   <script src="data/storyDetail.js?v=2"></script>
   <script src="data/groups.js?v=1"></script>
@@ -79,14 +79,16 @@
         const issue = issues[index]
         const dates = hd.dates
         const last = dates.length - 1
+        // The topics have no count after the coded days (null): the windows, the sparkline and the match of lines end on the last day that has one.
+        const lastData = hd.issueDaily.reduce((m, row) => Math.max(m, row.findLastIndex((v) => v !== null)), 0)
         const daily = hd.issueDaily[index]
         const total = sum(daily)
         const allTotals = hd.issueDaily.map(sum)
         const rank = allTotals.filter((v) => v > total).length + 1
         const share = total / sum(allTotals)
         // The change of the last 14 days against the 14 before, as in the table of topics. A topic with fewer than 200 articles in the 14 before has none.
-        const now = sumRange(daily, last - 13, last)
-        const before = sumRange(daily, last - 27, last - 14)
+        const now = sumRange(daily, lastData - 13, lastData)
+        const before = sumRange(daily, lastData - 27, lastData - 14)
         const change = before >= MIN_ROWS ? (now - before) / before : null
         const dayLabel = (i) => fmt.date(dates[i], { day: 'numeric', month: 'short' })
         let peak = 0
@@ -123,9 +125,9 @@
         const titleCard = Entity.TitleCard({
           kind: t('hero.kind.topic'),
           title: name(issue),
-          meta: `${dayLabel(0)} → ${fmt.date(dates[last])} · ${t('entity.fact.days', { n: last + 1 })}`,
+          meta: `${dayLabel(0)} → ${fmt.date(dates[lastData])} · ${t('entity.fact.days', { n: lastData + 1 })}`,
           facts: [
-            { label: t('entity.fact.articles'), value: fmt.int(total), sub: t('entity.fact.peak', { date: dayLabel(peak), n: fmt.int(daily[peak]) }), spark: Spark(daily, 0, last, t('topic2.daily.title'), { w: 56, hgt: 16 }) },
+            { label: t('entity.fact.articles'), value: fmt.int(total), sub: t('entity.fact.peak', { date: dayLabel(peak), n: fmt.int(daily[peak]) }), spark: Spark(daily, 0, lastData, t('topic2.daily.title'), { w: 56, hgt: 16 }) },
             { label: t('entity.fact.stories'), value: fmt.int(mine.length), spark: Spark(storiesPerDay, 0, last, t('entity.fact.stories'), { w: 56, hgt: 16 }) },
             { label: t('entity.fact.share'), value: fmt.pct(share), sub: t('entity.fact.rank', { n: rank, total: issues.length }) },
             change !== null && !issue.catchAll ? { label: t('entity.fact.change'), value: `${change > 0 ? '▲' : '▼'} ${fmt.signed(change * 100)}%`, sub: t('entity.fact.change.sub') } : null
@@ -194,7 +196,7 @@
             : h('p', { class: 'dcard-empty' }, t('topic2.stories.empty')))
 
         // The topics with a daily line like this one. The catch-all topic is not a match.
-        const similar = issues.map((x, k) => ({ x, k, r: k === index || x.catchAll ? -1 : correlation(daily, hd.issueDaily[k]) })).filter((r) => r.r >= MIN_LINK).sort((a, b) => b.r - a.r).slice(0, SIMILAR)
+        const similar = issues.map((x, k) => ({ x, k, r: k === index || x.catchAll ? -1 : correlation(daily.slice(0, lastData + 1), hd.issueDaily[k].slice(0, lastData + 1)) })).filter((r) => r.r >= MIN_LINK).sort((a, b) => b.r - a.r).slice(0, SIMILAR)
         const similarCard = card('', cardHead(t('topic2.similar.title'), null, t('topic2.similar.info')),
           similar.length ? UI.BarList(similar.map((r) => ({ label: UI.EntityLink({ type: 'topic', key: String(r.k), label: name(r.x) }), value: r.r, text: twoDecimals.format(r.r) })), { max: 1 }) : h('p', { class: 'dcard-empty' }, t('topic2.similar.empty')))
 

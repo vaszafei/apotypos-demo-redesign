@@ -22,7 +22,7 @@
   <script src="assets/dash.js?v=21"></script>
   <script src="assets/home.js?v=34"></script>
   <script src="assets/shell.js?v=59"></script>
-  <script src="data/home.js"></script>
+  <script src="data/home.js?v=4"></script>
   <script src="data/stories.js?v=2"></script>
   <script src="data/storyDetail.js?v=2"></script>
   <script>
@@ -74,7 +74,6 @@
           if (!lastValid) lastValid = { from: dates[0], to: dates[dates.length - 1] }
           const i0 = dates.indexOf(lastValid.from)
           const i1 = dates.indexOf(lastValid.to)
-          const len = i1 - i0 + 1
           if (selected === null || selected < i0 || selected > i1) selected = i1
 
           // The articles of all the outlets for each day of the data.
