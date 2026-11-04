@@ -1,6 +1,6 @@
 /* The pages of Πολιτική and Κόσμος. Load after dash.css. */
 
-.chart .line-end { font-size: 12px; font-weight: 600; }
+.chart .line-end { font-size: max(12px, var(--text-min)); font-weight: 600; }
 /* Pairs: two bars for one measure, one for each side (UI.BarList). */
 .pairs { display: grid; gap: var(--space-4); }
 .pair { display: grid; gap: 4px; }
@@ -20,7 +20,7 @@
 .pick-swatch { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: var(--dot); vertical-align: middle; }
 
 /* Heat cells of a week grid. */
-.heat td.hc { min-width: 28px; height: 22px; border: 2px solid var(--surface-page); border-radius: 5px; padding: 0; font-size: 12px; text-align: center; }
+.heat td.hc { min-width: 28px; height: 22px; border: 2px solid var(--surface-page); border-radius: 5px; padding: 0; font-size: max(12px, var(--text-min)); text-align: center; }
 .heat th { white-space: nowrap; }
 
 /* Quotes and headline lists. */
@@ -29,7 +29,7 @@
 .quote-list li:last-child { border-bottom: 0; }
 .quote-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: var(--text-caption); color: var(--text-secondary); }
 .quote-text { font-style: italic; color: var(--text-secondary); }
-.pill { display: inline-block; padding: 1px 8px; border: 1px solid var(--border); border-radius: var(--pill); font-size: 11px; color: var(--text-primary); background: var(--card-tint); white-space: nowrap; }
+.pill { display: inline-block; padding: 1px 8px; border: 1px solid var(--border); border-radius: var(--pill); font-size: max(11px, var(--text-min)); color: var(--text-primary); background: var(--card-tint); white-space: nowrap; }
 .pill-hot { border-color: color-mix(in srgb, var(--stance-critical) 40%, var(--surface-raised)); color: var(--stance-critical); background: color-mix(in srgb, var(--stance-critical) 7%, var(--surface-raised)); }
 
 .region-pills { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -54,7 +54,7 @@
 .evidence summary:hover { color: var(--accent); }
 .leader-cell { display: grid; gap: 1px; min-width: 180px; }
 .tone-hostile, .tone-critical { border-color: color-mix(in srgb, var(--stance-critical) 45%, var(--surface-raised)); color: var(--stance-critical); }
-.tone-conciliatory, .tone-supportive { border-color: color-mix(in srgb, var(--stance-supportive) 45%, var(--surface-raised)); color: var(--stance-supportive); }
+.tone-conciliatory, .tone-supportive, .tone-favourable { border-color: color-mix(in srgb, var(--stance-supportive) 45%, var(--surface-raised)); color: var(--stance-supportive); }
 .minimal .dash-actions .region-pills { justify-content: flex-end; }
 
 /* The person file. */
@@ -83,4 +83,19 @@
 .case-form .search-input { width: 220px; min-height: 36px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--pill); background: var(--surface-raised); }
 .case-form .button { border-radius: var(--pill); }
 .case-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chart .line-gap-text { font-size: 12px; fill: var(--text-secondary); }
+.chart .line-gap-text { font-size: max(12px, var(--text-min)); fill: var(--text-secondary); }
+
+/* The page of one speech. */
+.speech-strip { display: flex; gap: 2px; height: 40px; }
+.speech-strip a { display: block; min-width: 2px; border-radius: 2px; transition: opacity var(--motion-fast) var(--ease-out); }
+.speech-strip a:hover, .speech-strip a:focus-visible { opacity: 0.7; }
+.speech-time { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.speech-quotes { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); font-size: var(--text-small); }
+.speech-quotes li { display: grid; gap: var(--space-1); }
+.speech-quote { margin: 0; color: var(--ink); }
+.speech-tools { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.speech-tools input, .speech-tools select { min-height: 36px; padding: 0 var(--space-3); border: 1px solid var(--border); border-radius: var(--pill, 999px); background: var(--surface-page); font-size: var(--text-small); }
+.speech-tools input { flex: 1 1 220px; min-width: 0; }
+.speech-text { display: grid; gap: var(--space-3); max-height: 520px; overflow-y: auto; font-size: var(--text-small); }
+.speech-text p { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: var(--space-3); margin: 0; }
+.speech-scroll { max-height: 440px; overflow-y: auto; }

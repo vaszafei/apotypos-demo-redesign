@@ -2,26 +2,28 @@
 <html lang="el">
 <head>
   <meta charset="utf-8">
+  <base href="/">
+  <script src="assets/routes.js?v=4"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=15">
-  <link rel="stylesheet" href="assets/app.css?v=45">
-  <link rel="stylesheet" href="assets/dash.css?v=88">
-  <link rel="stylesheet" href="assets/politics.css?v=8">
-  <script src="assets/page-move.js?v=1"></script>
+  <link rel="stylesheet" href="assets/tokens.css?v=37">
+  <link rel="stylesheet" href="assets/app.css?v=69">
+  <link rel="stylesheet" href="assets/dash.css?v=94">
+  <link rel="stylesheet" href="assets/politics.css?v=12">
+  <script src="assets/page-move.js?v=4"></script>
 </head>
 <body>
   <div id="app"></div>
-  <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=39"></script>
-  <script src="assets/messages-v2.js?v=48"></script>
-  <script src="assets/messages-politics.js?v=10"></script>
-  <script src="assets/components.js?v=17"></script>
-  <script src="assets/motion.js?v=3"></script>
-  <script src="assets/dash.js?v=21"></script>
+  <script src="assets/icons.js?v=12"></script>
+  <script src="assets/messages.js?v=43"></script>
+  <script src="assets/messages-v2.js?v=51"></script>
+  <script src="assets/messages-politics.js?v=17"></script>
+  <script src="assets/components.js?v=19"></script>
+  <script src="assets/motion.js?v=6"></script>
+  <script src="assets/dash.js?v=25"></script>
   <script src="assets/politics.js?v=11"></script>
-  <script src="assets/shell.js?v=59"></script>
+  <script src="assets/shell.js?v=74"></script>
   <script src="data/speeches.js?v=1"></script>
   <script>
     // Πολιτική, ΟΗΕ: the 192 speeches of the 81st General Assembly (K47 and 3 kept tiles). Words and countries move to the hints.
@@ -92,7 +94,7 @@
           const greeceCard = card('', cardHead(t('un.greece.title'), null, t('un.greece.info')),
             greek.length
               ? h('ul', { class: 'target-list' }, greek.map((r) => h('li', {},
-                h('span', {}, h('strong', {}, r.speaker), ' ', h('span', { class: 'muted-text' }, `${r.role}, ${r.country} · ${t('un.greece.refs', { n: fmt.int(r.greece.n) })}`)),
+                h('span', {}, h('a', { class: 'quiet-link', href: `speech-v2.html?id=${r.vid}` }, h('strong', {}, r.speaker)), ' ', h('span', { class: 'muted-text' }, `${r.role}, ${r.country} · ${t('un.greece.refs', { n: fmt.int(r.greece.n) })}`)),
                 h('span', { class: 'chips' }, TONES.filter((k) => r.greece.tones[k]).map((k) => h('span', { class: `target-chip tone-${k}` }, t(`un.tone.${k}`), h('strong', {}, fmt.int(r.greece.tones[k])))),
                   r.greece.refers_to.map((x) => h('span', { class: 'pill' }, x))))))
               : h('p', { class: 'dcard-empty' }, t('un.greece.none')))
@@ -112,7 +114,7 @@
             UI.DataTable({
               rows: sorted, rankColumn: true, pageSize: 25, moreStep: 25,
               columns: [
-                { label: t('un.col.leader'), render: (r) => h('span', { class: 'leader-cell' }, h('a', { class: 'quiet-link', href: r.url, target: '_blank', rel: 'noopener' }, r.speaker), h('span', { class: 'row-sub' }, `${r.role} · ${r.country}`)) },
+                { label: t('un.col.leader'), render: (r) => h('span', { class: 'leader-cell' }, h('a', { class: 'quiet-link', href: `speech-v2.html?id=${r.vid}` }, r.speaker), h('span', { class: 'row-sub' }, `${r.role} · ${r.country}`)) },
                 { label: t('un.col.minutes'), num: true, render: (r) => fmt.int(Math.round(r.seconds / 60)) },
                 { label: t('un.col.wpm'), num: true, phone: false, render: (r) => fmt.int(Math.round(r.words / (r.seconds / 60))) },
                 { label: t('un.col.print'), phone: false, render: Print },
@@ -123,7 +125,43 @@
               ]
             }))
 
-          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, agendaCard, h('div', { class: 'c-5 card-col' }, h('div', { class: 'stats-2x2' }, ...stats), targetCard, greeceCard), tableCard), h('p', { class: 'proto-note' }, t('un.note')))
+          // The regions: always all of them, so a filter on one region does not empty the comparison. The minutes and the 3 topics with the most time, without the domestic affairs.
+          const allSeconds = d.rows.reduce((a, r) => a + r.seconds, 0)
+          const regionRows = REGIONS.map((name) => {
+            const inRegion = d.rows.filter((r) => r.region === name)
+            const seconds = inRegion.reduce((a, r) => a + r.seconds, 0)
+            const byTopic = {}
+            inRegion.forEach((r) => r.shares.forEach(([k, s]) => { if (k !== DOMESTIC) byTopic[k] = (byTopic[k] || 0) + s * r.seconds }))
+            const top = Object.entries(byTopic).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => `${topic(k)} ${fmt.pct(v / seconds)}`).join(' · ')
+            return { name, leaders: inRegion.length, seconds, top }
+          }).sort((a, b) => b.seconds - a.seconds)
+          const regionCard = card('c-7', cardHead(t('un.regions.title'), null, t('un.regions.info')),
+            UI.BarList(regionRows.map((r) => ({ label: `${t(`un.region.${r.name}`)} · ${t('un.regions.leaders', { n: fmt.int(r.leaders) })}`, sub: r.top, value: r.seconds, text: t('un.regions.value', { m: fmt.int(Math.round(r.seconds / 60)), share: fmt.pct(r.seconds / allSeconds) }) }))))
+
+          const person = (r) => `${r.speaker} · ${r.country}`
+          const promiseRows = rows.slice().sort((a, b) => b.counts.promises - a.counts.promises).slice(0, 8)
+          const promiseCard = card('c-5', cardHead(t('un.promises.title'), null, t('un.promises.info')),
+            UI.BarList(promiseRows.map((r) => ({ label: person(r), value: r.counts.promises, text: fmt.int(r.counts.promises) }))))
+
+          // Pace and length: the 3 at each end.
+          const wpm = (r) => r.words / (r.seconds / 60)
+          const minutes = (r) => r.seconds / 60
+          const paceList = (title, list, value, text) => h('div', { class: 'how-panel' }, h('h3', { class: 'rows-caption' }, title),
+            UI.BarList(list.map((r) => ({ label: person(r), value: value(r), text: text(r) }))))
+          const byWpm = rows.slice().sort((a, b) => wpm(b) - wpm(a))
+          const byLength = rows.slice().sort((a, b) => b.seconds - a.seconds)
+          const wpmText = (r) => t('un.pace.wpm', { n: fmt.int(Math.round(wpm(r))) })
+          const lengthText = (r) => t('un.pace.min', { n: fmt.int(Math.round(minutes(r))) })
+          const count = rows.length || 1
+          const paceCard = card('c-12', cardHead(t('un.pace.title'), null, t('un.pace.info')),
+            h('p', { class: 'dcard-sub' }, t('un.pace.mean', { w: fmt.int(Math.round(rows.reduce((a, r) => a + wpm(r), 0) / count)), m: fmt.int(Math.round(rows.reduce((a, r) => a + minutes(r), 0) / count)) })),
+            h('div', { class: 'pace-grid' },
+              paceList(t('un.pace.fast'), byWpm.slice(0, 3), wpm, wpmText),
+              paceList(t('un.pace.slow'), byWpm.slice(-3).reverse(), wpm, wpmText),
+              paceList(t('un.pace.long'), byLength.slice(0, 3), minutes, lengthText),
+              paceList(t('un.pace.short'), byLength.slice(-3).reverse(), minutes, lengthText)))
+
+          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, agendaCard, h('div', { class: 'c-5 card-col' }, h('div', { class: 'stats-2x2' }, ...stats), targetCard, greeceCard), regionCard, promiseCard, paceCard, tableCard), h('p', { class: 'proto-note' }, t('un.note')))
         }
         paint()
       }

@@ -108,7 +108,8 @@ for (const [theme, width] of [['paper', 1440], ['night', 1440], ['paper', 390], 
   await page.waitForTimeout(300)
   const geo = async () => page.evaluate(() => {
     const svg = document.querySelector('#brush-test svg.bar-chart'); const r = svg.getBoundingClientRect(); const f = UI.CHART_FRAME
-    return { left: r.left + f.left, slot: (r.width - f.left - f.right) / 61, y: r.top + r.height / 2 }
+    const z = parseFloat(getComputedStyle(document.documentElement).zoom) || 1 // the test mouse moves in screen pixels
+    return { left: (r.left + f.left) * z, slot: (r.width - f.left - f.right) / 61 * z, y: (r.top + r.height / 2) * z }
   })
   const drag = async (a, b) => {
     const g = await geo()
@@ -178,7 +179,7 @@ for (const [theme, width] of [['paper', 1440], ['night', 1440], ['paper', 390], 
   const g1 = await geom()
   ok(f.src === 'reports/france-riots/compare.html' && Math.abs(g1.h - g1.doc) <= 2, 'Frame: the sample report loads and the frame takes its height', JSON.stringify({ ...f, ...g1 }))
   ok(f.href === f.src && f.target === '_blank' && f.rel === 'noopener', 'Frame: «open alone» opens the same URL in a new tab with rel=noopener', JSON.stringify(f))
-  ok(f.back === 'france-v2.html' && Boolean(f.backLabel), 'Frame: the back arrow has its link and its label', JSON.stringify(f))
+  ok(f.back === '/analysis/france' && Boolean(f.backLabel), 'Frame: the back arrow has its link and its label', JSON.stringify(f))
   await page.setViewportSize({ width: 700, height: 900 })
   await page.waitForTimeout(800)
   const g2 = await geom()
@@ -205,8 +206,8 @@ for (const [theme, width] of [['paper', 1440], ['night', 1440], ['paper', 390], 
   const { context, page, problems, heads } = await open('paper', 1440)
   await page.locator('.fchip-card .fchip', { hasText: 'Υγεία' }).click()
   await page.evaluate(() => { window.frameNode = document.querySelector('.frame iframe.frame-doc') })
-  const barAt = () => page.evaluate(() => Math.round([...document.querySelectorAll('.filter-bar')].at(-1).getBoundingClientRect().top + window.scrollY))
-  await page.evaluate(() => { const b = [...document.querySelectorAll('.filter-bar')].at(-1); window.scrollTo(0, window.scrollY + b.getBoundingClientRect().top) })
+  const barAt = () => page.evaluate(() => Math.round([...document.querySelectorAll('.filter-bar')].at(-1).getBoundingClientRect().top * (parseFloat(getComputedStyle(document.documentElement).zoom) || 1) + window.scrollY))
+  await page.evaluate(() => { const b = [...document.querySelectorAll('.filter-bar')].at(-1); window.scrollTo(0, window.scrollY + b.getBoundingClientRect().top * (parseFloat(getComputedStyle(document.documentElement).zoom) || 1)) })
   await page.waitForTimeout(200)
   const before = { at: await barAt(), heads: heads.length }
   await page.locator('.filter-bar').last().locator('.segmented button').nth(1).click()

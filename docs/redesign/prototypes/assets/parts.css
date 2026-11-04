@@ -44,4 +44,4 @@
 /* The report frame (the back arrow is .back-button of app.css) */
 .frame-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); }
 .frame-title { flex: 1 1 12em; min-width: 0; }
-.frame-doc { display: block; width: 100%; height: 800px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--report-bg); }
+.frame-doc { display: block; width: 100%; height: 800px; border: 0; background: var(--report-bg); }

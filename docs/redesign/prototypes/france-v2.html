@@ -2,30 +2,32 @@
 <html lang="el">
 <head>
   <meta charset="utf-8">
+  <base href="/">
+  <script src="assets/routes.js?v=4"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=15">
-  <link rel="stylesheet" href="assets/app.css?v=45">
-  <link rel="stylesheet" href="assets/dash.css?v=88">
-  <link rel="stylesheet" href="assets/politics.css?v=8">
-  <link rel="stylesheet" href="assets/world.css?v=5">
-  <script src="assets/page-move.js?v=1"></script>
+  <link rel="stylesheet" href="assets/tokens.css?v=37">
+  <link rel="stylesheet" href="assets/app.css?v=69">
+  <link rel="stylesheet" href="assets/dash.css?v=94">
+  <link rel="stylesheet" href="assets/politics.css?v=12">
+  <link rel="stylesheet" href="assets/world.css?v=7">
+  <script src="assets/page-move.js?v=4"></script>
 </head>
 <body>
   <div id="app"></div>
-  <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=39"></script>
-  <script src="assets/messages-v2.js?v=48"></script>
-  <script src="assets/messages-politics.js?v=10"></script>
-  <script src="assets/messages-world.js?v=1"></script>
-  <script src="assets/components.js?v=17"></script>
-  <script src="assets/motion.js?v=3"></script>
-  <script src="assets/dash.js?v=21"></script>
+  <script src="assets/icons.js?v=12"></script>
+  <script src="assets/messages.js?v=43"></script>
+  <script src="assets/messages-v2.js?v=51"></script>
+  <script src="assets/messages-politics.js?v=17"></script>
+  <script src="assets/messages-world.js?v=4"></script>
+  <script src="assets/components.js?v=19"></script>
+  <script src="assets/motion.js?v=6"></script>
+  <script src="assets/dash.js?v=25"></script>
   <script src="assets/politics.js?v=11"></script>
   <script src="assets/world.js?v=2"></script>
-  <script src="assets/shell.js?v=59"></script>
-  <script src="data/franceRiots.js?v=1"></script>
+  <script src="assets/shell.js?v=74"></script>
+  <script src="data/franceRiots.js?v=4"></script>
   <script>
     // Αναλύσεις, Γαλλία: ταραχές (#38). A report page: an intro, the figures at a glance, the report tabs and the framed report.
     // The reports are the live English files, in reports/france-riots/. Rebuilding their 44 cards as shell cards is a later step.
@@ -51,9 +53,9 @@
 
         const stats = [
           Stat({ label: t('fr.stat.press'), value: fmt.int(d.press.articles), sub: t('fr.stat.press.sub', { n: d.press.outlets, from: fmt.date(d.window[0], { day: 'numeric' }), to: fmt.date(d.window[1], { day: 'numeric', month: 'long' }) }) }),
+          Stat({ label: t('fr.stat.french'), value: fmt.int(d.frenchPress.articles), sub: t('fr.stat.french.sub', { n: d.frenchPress.outlets }) }),
           Stat({ label: t('fr.stat.facebook'), value: fmt.int(d.facebook.posts), sub: t('fr.stat.facebook.sub', { n: fmt.int(d.facebook.inTopic) }) }),
-          Stat({ label: t('fr.stat.israel'), value: fmt.int(d.israel.articles), sub: t('fr.stat.israel.sub') }),
-          Stat({ label: t('fr.stat.reports'), value: fmt.int(d.reports.length), sub: t('fr.stat.reports.sub', { n: d.reports.reduce((a, r) => a + r.cards, 0) }) })
+          Stat({ label: t('fr.stat.israel'), value: fmt.int(d.israel.articles), sub: t('fr.stat.israel.sub', { n: d.israel.outlets }) })
         ]
         stats.forEach((x) => x.classList.replace('c-4', 'c-3'))
 
@@ -72,8 +74,11 @@
         const open = h('a', { class: 'dcard-link', target: '_blank', rel: 'noopener' }, t('fr.open'), ' ↗')
         const lead = h('p', { class: 'dcard-sub' })
         const tabsEl = h('div', { class: 'report-tabs', role: 'tablist', 'aria-label': t('fr.reports') })
+        // The report of the seven stories is in Greek, the others in English.
+        const note = h('p', { class: 'report-note' }, t('fr.english'))
         const show = (key) => {
           active = key
+          note.hidden = key === 'seven'
           const r = d.reports.find((x) => x.key === key)
           frame.src = BASE + r.file
           frame.title = t(`fr.tab.${key}`)
@@ -87,10 +92,10 @@
         }
         show(active)
         const reportCard = card('c-12 report-card', cardHead(t('fr.reports'), open, t('fr.reports.info')), tabsEl, lead,
-          h('p', { class: 'report-note' }, t('fr.english')), frame)
+          note, frame)
 
         content.replaceChildren(bar,
-          h('div', { class: 'dash-grid' }, card('c-6 hero dossier-hero', h('div', { class: 'hero-main' }, h('p', { class: 'hero-kicker' }, t('fr.kicker')), h('h2', { class: 'hero-title' }, t('fr.title')), h('p', { class: 'dcard-sub hero-lead' }, t('fr.intro', { press: fmt.int(d.press.articles), outlets: d.press.outlets, posts: fmt.int(d.facebook.posts), topic: fmt.int(d.facebook.inTopic) })))),
+          h('div', { class: 'dash-grid' }, card('c-6 hero dossier-hero', h('div', { class: 'hero-main' }, h('p', { class: 'hero-kicker' }, t('fr.kicker')), h('h2', { class: 'hero-title' }, t('fr.title')), h('p', { class: 'dcard-sub hero-lead' }, t('fr.intro', { french: fmt.int(d.frenchPress.articles), frenchOutlets: d.frenchPress.outlets, israel: fmt.int(d.israel.articles), israelOutlets: d.israel.outlets, press: fmt.int(d.press.articles), outlets: d.press.outlets, posts: fmt.int(d.facebook.posts), topic: fmt.int(d.facebook.inTopic) })))),
             h('div', { class: 'c-6 dossier-stats' }, ...stats), glance, reportCard),
           h('p', { class: 'proto-note' }, t('fr.note')))
       }

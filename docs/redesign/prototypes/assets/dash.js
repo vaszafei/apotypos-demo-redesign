@@ -56,7 +56,13 @@
   }
   // The text color with the better contrast on a hex background.
   const textOn = (hex) => { const l = luminance(hex); const dark = color('--text-on-light'); return (l + 0.05) / (luminance(dark) + 0.05) >= (luminance(color('--text-on-dark')) + 0.05) / (l + 0.05) ? dark : color('--text-on-dark') }
-  const tint = (hex, k) => `#${[1, 3, 5].map((i) => Math.round(parseInt(hex.slice(i, i + 2), 16) * (1 - k) + 255 * k).toString(16).padStart(2, '0')).join('')}`
+  // A lighter shade of a color: towards white on a light page. A dark theme fades towards its card instead, so a tint never glares on a dark page.
+  const tint = (hex, k) => {
+    const channel = (c, i) => parseInt(c.slice(i, i + 2), 16)
+    const dark = getComputedStyle(document.documentElement).colorScheme === 'dark'
+    const base = dark ? color('--surface-raised') : null
+    return `#${[1, 3, 5].map((i) => Math.round(channel(hex, i) * (1 - k) + (base ? channel(base, i) : 255) * k).toString(16).padStart(2, '0')).join('')}`
+  }
 
   // Sparkline: the whole window in gray and the selected period in the accent color.
   function Spark (values, i0, i1, label, { w = 96, hgt = 28 } = {}) {
@@ -95,13 +101,17 @@
   // Stat card: small. A label, a number, one short line and a small picture of the same measure.
   // delta: the change against the previous period as a fraction (0.12 is ▲ +12%), shown before the short line.
   // variant 'compact': the number and the short line share a row. It takes no column class, the page places it.
-  function Stat ({ label, value, sub, viz, kpi, empty, delta, variant }) {
+  // The tinted box of an icon, at the top right of a stat card.
+  const StatIcon = (icon, tone = 'var(--series-1)') => h('span', { class: 'stat-icon', style: `--tone:${tone}`, 'aria-hidden': 'true' }, App.Icon(icon, 'icon'))
+
+  function Stat ({ label, value, sub, viz, kpi, empty, delta, variant, icon, tone }) {
     const el = card(`${variant === 'compact' ? 'dstat-compact' : 'c-4'} dstat`, h('h2', { class: 'dstat-label' }, label),
       empty
         ? emptyText(t('media2.stat.empty'))
         : h('div', { class: 'dstat-row' }, h('p', { class: 'dstat-value' }, value),
-          h('p', { class: 'dstat-sub' }, delta == null ? sub : [h('span', { class: 'delta' }, `${delta >= 0 ? '▲' : '▼'} ${fmt.signed(delta * 100)}%`), ' ', sub]), viz))
+          h('p', { class: 'dstat-sub' }, delta == null ? sub : [h('span', { class: `delta ${delta >= 0 ? 'is-up' : 'is-down'}` }, `${delta >= 0 ? '▲' : '▼'} ${fmt.signed(delta * 100)}%`), ' ', sub]), viz))
     if (kpi) el.dataset.kpi = kpi
+    if (icon) el.append(StatIcon(icon, tone))
     return el
   }
 
@@ -135,5 +145,5 @@
     return [head, bad.kind === 'empty' ? h('div', { class: 'dash-grid' }, card('c-12', UI.EmptyState({ text: t('topics2.empty') }))) : UI.ErrorState({ onRetry: () => location.reload() })]
   }
 
-  window.Dash = { stateContent, select, fit, reset, niceStep, pct0, get SLOTS () { return slots() }, get NO_GROUP () { return color('--cat-0') }, color, seq, groupColors, groupColor, textOn, tint, Spark, card, cardHead, Info, emptyText, cardState, cardFoot, Stat, TopBar }
+  window.Dash = { StatIcon, stateContent, select, fit, reset, niceStep, pct0, get SLOTS () { return slots() }, get NO_GROUP () { return color('--cat-0') }, color, seq, groupColors, groupColor, textOn, tint, Spark, card, cardHead, Info, emptyText, cardState, cardFoot, Stat, TopBar }
 })()

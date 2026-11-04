@@ -37,6 +37,7 @@
     '/narrative': 'narrative-v2.html',
     '/coverage': 'coverage-v2.html',
     '/france-riots': 'france-v2.html',
+    '/seven-stories': 'seven-stories-v2.html',
     '/gaza': 'gaza-v2.html',
     '/israel': 'israel-v2.html',
     '/gaza-language': 'language-v2.html',
@@ -66,10 +67,27 @@
     { key: 'politics', tabs: [['reach', '/elections'], ['outlets', '/elections/outlets'], ['owners', '/elections/owners'], ['topics', '/elections/topics'], ['bylines', '/elections/bylines']] },
     { key: 'world', tabs: [['speeches', '/speeches', [['speeches.all', '/speeches'], ['speeches.pi', '/un-israel-palestine']]],
       ['pi', '/narrative', [['pi.overview', '/narrative'], ['gaza', '/gaza'], ['israel', '/israel'], ['language', '/gaza-language']]],
-      ['greekturkish', '/war'], ['coverage', '/coverage'], ['france', '/france-riots']] }
+      ['greekturkish', '/war'], ['coverage', '/coverage'], ['france', '/france-riots', [['france.overview', '/france-riots'], ['france.seven', '/seven-stories']]]], details: [['/speech', '/speeches']] }
   ]
-  const FOOTER = [['methodology', '/methodology'], ['about', '/about']]
+  // The icon of each tab in the sidebar. A sub-tab has none: its indent marks it. The carbon theme shows them (app.css).
+  const TAB_ICONS = {
+    'media.overview': 'chart-bar', 'media.ownership': 'building-office-2', 'media.topics': 'tag', 'media.writing': 'pencil-square', 'media.similarity': 'square-2-stack',
+    'spread.overview': 'newspaper', 'spread.outlets': 'queue-list', 'spread.cases': 'folder', 'spread.campaigns': 'megaphone',
+    'people.overview': 'users', 'people.spread': 'share', 'people.statements': 'chat-bubble-left-right', 'people.file': 'document-text',
+    'politics.reach': 'chart-pie', 'politics.outlets': 'newspaper', 'politics.owners': 'building-office-2', 'politics.topics': 'tag', 'politics.bylines': 'pencil-square',
+    'world.speeches': 'microphone', 'world.pi': 'globe-europe-africa', 'world.greekturkish': 'flag', 'world.coverage': 'eye', 'world.france': 'map-pin'
+  }
+  const FOOTER = [['methodology', '/methodology']]
 
+  // The tabs that the navigation does not show: only the data of the live pages /topics, /media, /elections and /seven-stories, and the story of France, are on view.
+  // A hidden page still opens at its address. Take a route out of this list to show its tab again.
+  const HIDDEN = new Set(['/groups', '/similarity', '/overton', '/stories', '/cases', '/campaigns', '/fingerprints/spread', '/track', '/contradictions', '/contradictions/pairs', '/contradictions/checks',
+    '/speeches', '/un-israel-palestine', '/narrative', '/gaza', '/israel', '/gaza-language', '/war', '/coverage', '/seven-stories'])
+  // The tabs of an item on view. A tab left with one sub-tab has no sub-tabs.
+  const shownTabs = (item) => item.tabs.filter(([, r]) => !HIDDEN.has(r)).map(([key, r, subs]) => {
+    const left = (subs || []).filter(([, s]) => !HIDDEN.has(s))
+    return [key, r, left.length > 1 ? left : undefined]
+  })
   const hasText = (key) => key in window.MESSAGES.el
   const under = (route, base) => route === base || (base !== '/' && route.startsWith(base + '/'))
   // The pages of an item: each tab, or the sub-tabs of a tab with sub-tabs. Each page is [key, route, parent tab].
@@ -399,12 +417,12 @@
   setFont(readFont())
 
   // Prototype only: the themes for the decision of the project lead (tokens.css). ?theme= or the last choice sets it.
-  const THEMES = ['paper', 'fog', 'terra', 'night', 'midnight']
+  const THEMES = ['paper', 'fog', 'terra', 'night', 'midnight', 'charcoal', 'sage', 'moss', 'carbon', 'ember', 'graphite', 'dusk']
   function readTheme () {
     const asked = new URLSearchParams(location.search).get('theme')
     let saved = null
     try { saved = localStorage.getItem('proto-theme') } catch {}
-    return [asked, saved].find((k) => THEMES.includes(k)) || 'paper'
+    return [asked, saved].find((k) => THEMES.includes(k)) || 'ember'
   }
   function setTheme (key) {
     document.documentElement.dataset.theme = key
@@ -447,7 +465,7 @@
   const LIMITS = { pages: 5, outlets: 5, groups: 3, topics: 4, stories: 6, cases: 3, campaigns: 3, people: 5, statements: 3, parties: 3, bylines: 3, speeches: 4 }
   // A page or tab: its own name, and where it lives (the section, and the tab of a sub-tab).
   function pageEntries () {
-    const named = NAV.flatMap((item) => pagesOf(item).map((page) => {
+    const named = NAV.flatMap((item) => pagesOf(item).filter(([, r]) => !HIDDEN.has(r)).map((page) => {
       const path = pageLabel(item, page).split(' › ')
       return { kind: 'pages', n: path.pop(), where: path.join(' › '), h: hrefOf(page[1]) }
     }))
@@ -497,7 +515,7 @@
     recent[kind] = [value, ...recent[kind].filter((x) => !same(x))].slice(0, 6)
     try { localStorage.setItem(RECENT_KEY, JSON.stringify(recent)) } catch {}
   }
-  const hereHref = () => location.pathname.split('/').pop() + location.search
+  const hereHref = () => (window.ROUTES?.fileHref ? window.ROUTES.fileHref() : location.pathname.split('/').pop() + location.search)
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
   const token = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim()
@@ -644,13 +662,13 @@
       }
       // The results need room under the hero field: a field low in the window comes up under the navbar first.
       if (hero && window.innerHeight - button.getBoundingClientRect().top < 420) {
-        window.scrollBy({ top: button.getBoundingClientRect().top - (parseFloat(token('--navbar-height')) || 56) - 24, behavior: 'instant' })
+        window.scrollBy({ top: (button.getBoundingClientRect().top - (parseFloat(token('--navbar-height')) || 56) - 24) * (parseFloat(getComputedStyle(document.documentElement).zoom) || 1), behavior: 'instant' })
       }
       const b = button.getBoundingClientRect()
       if (hero) panel.style.maxHeight = `${window.innerHeight - Math.max(8, b.top - 4) - 16}px`
       const width = Math.min(hero ? Math.max(640, b.width + 8) : 640, window.innerWidth - 32)
       panel.style.width = `${width}px`
-      panel.style.left = `${Math.max(16, Math.min(b.left + b.width / 2 - width / 2, window.innerWidth - 16 - width))}px`
+      panel.style.left = `${Math.max(16, Math.min(hero ? b.left + b.width / 2 - width / 2 : b.left - 4, window.innerWidth - 16 - width))}px`
       panel.style.top = `${Math.max(8, b.top - 4)}px`
     }
     // The button grows into the panel and the panel shrinks back into the button: transform and opacity only.
@@ -761,7 +779,7 @@
   // the same way. A link to a detail page, in a card or in the footer changes the page without a slide.
   // The page that is left keeps where it was and which link was clicked. The new page reads it before its first frame.
   const MOVE_KEY = 'm-move' // also read by page-move.js
-  const MOVE_LINKS = '.nav-main a, .section-nav a, .section-tabs a, .sub-tabs a'
+  const MOVE_LINKS = '.nav-main a, .rail a, .section-nav a, .section-tabs a, .sub-tabs a'
   // The place of a route in the order: its section and its page in the section. A detail page has none.
   function stepOf (route) {
     const item = route ? itemOf(route) : null
@@ -835,7 +853,7 @@
       const navLink = ({ key, href, current }) =>
         h('li', {}, h('a', { class: 'nav-link', href, 'aria-current': current ? 'page' : null }, t(`nav.${key}`)))
       // The links are made twice: the top navbar (wide screens) and the drawer (tablet and phone). CSS shows one of them.
-      const mainLinks = () => NAV.map((n) => navLink({ key: n.key, href: hrefOf(n.tabs[0][1]), current: n === item }))
+      const mainLinks = () => NAV.map((n) => navLink({ key: n.key, href: hrefOf(shownTabs(n)[0][1]), current: n === item }))
       const footerLinks = () => FOOTER.map(([key, r]) => navLink({ key, href: hrefOf(r), current: key === id }))
 
       const langSwitch = () => h('div', { class: 'lang-switch', role: 'group', 'aria-label': t('shell.lang') },
@@ -953,13 +971,14 @@
         : null
 
       // The tabs show on the page of a tab. A detail page below a tab has none.
-      const tabBar = exactTab && item.tabs.length > 1
-        ? h('nav', { class: 'section-tabs', 'aria-label': t(`nav.${item.key}`) }, h('ul', {}, item.tabs.map(([key, r]) =>
+      const tabBar = exactTab && shownTabs(item).length > 1
+        ? h('nav', { class: 'section-tabs', 'aria-label': t(`nav.${item.key}`) }, h('ul', {}, shownTabs(item).map(([key, r]) =>
           h('li', {}, h('a', { href: hrefOf(r), 'aria-current': exactTab[1] === r ? (r === route ? 'page' : 'true') : null }, t(`tab.${item.key}.${key}`))))))
         : null
       // The sub-tabs of the tab: a second row of underlined tabs under the top bar.
-      const subBar = exactTab && exactTab[2]
-        ? h('nav', { class: 'sub-tabs', 'aria-label': t(`tab.${item.key}.${exactTab[0]}`) }, h('ul', {}, exactTab[2].map(([key, r]) =>
+      const shownSubs = exactTab && shownTabs(item).find(([k]) => k === exactTab[0])?.[2]
+      const subBar = shownSubs
+        ? h('nav', { class: 'sub-tabs', 'aria-label': t(`tab.${item.key}.${exactTab[0]}`) }, h('ul', {}, shownSubs.map(([key, r]) =>
           h('li', {}, h('a', { href: hrefOf(r), 'aria-current': r === route ? 'page' : null }, t(`tab.${item.key}.${key}`))))))
         : null
       // A dash page has its tabs in the center of the top bar. The other pages have them under the top bar.
@@ -975,21 +994,38 @@
       // The sub-tabs of the current tab are listed under it in the sidebar; a phone keeps them in the page body. A detail page (an outlet) marks the tab that lists it.
       const activeRoute = exactTab ? route : parentRoute
       const sectionNav = item && item.tabs.length > 1
-        ? h('nav', { class: 'section-nav', 'aria-label': t(`nav.${item.key}`) }, h('div', { class: 'section-nav-inner' },
-          h('ul', { class: 'section-nav-list' }, item.tabs.map(([key, r, subs]) => {
+        ? h('nav', { class: 'section-nav', 'aria-label': t(`nav.${item.key}`) }, h('div', { class: 'section-nav-inner', 'data-label': t(`nav.${item.key}`) },
+          h('ul', { class: 'section-nav-list' }, shownTabs(item).map(([key, r, subs]) => {
             const inTab = r === activeRoute || (subs || []).some(([, s]) => s === activeRoute)
             const nested = inTab && subs
             const current = inTab ? (!nested && (route === r || (subs || []).some(([, s]) => s === route)) ? 'page' : 'true') : null
             return h('li', {},
-              h('a', { class: `section-nav-link${nested ? ' is-parent' : ''}`, href: hrefOf(r), 'aria-current': current }, t(`tab.${item.key}.${key}`)),
+              h('a', { class: `section-nav-link${nested ? ' is-parent' : ''}`, href: hrefOf(r), 'aria-current': current }, Icon(TAB_ICONS[`${item.key}.${key}`], 'icon icon-sm section-nav-icon'), h('span', {}, t(`tab.${item.key}.${key}`))),
               nested ? h('ul', { class: 'section-nav-sub' }, subs.map(([subKey, s]) =>
                 h('li', {}, h('a', { class: 'section-nav-link', href: hrefOf(s), 'aria-current': s === route ? 'page' : null }, t(`tab.${item.key}.${subKey}`))))) : null)
           }))))
         : null
+      // The rail of a wide screen: the logo and every section with its tabs, on the full height of the window. The sub-tabs open under the current tab.
+      const rail = h('nav', { class: 'rail', 'aria-label': t('shell.nav') },
+        h('div', { class: 'rail-logo' }, logoLink('')),
+        h('div', { class: 'rail-groups' }, NAV.map((n) => {
+          const single = n.tabs.length < 2
+          return h('div', { class: 'rail-group' }, single ? null : h('p', { class: 'rail-label' }, t(`nav.${n.key}`)),
+            h('ul', { class: 'rail-list' }, shownTabs(n).map(([key, r, subs]) => {
+              const mine = n === item
+              const inTab = mine && (r === activeRoute || (subs || []).some(([, s]) => s === activeRoute))
+              const nested = inTab && subs
+              const current = single ? (mine ? 'page' : null) : inTab ? (!nested && (route === r || (subs || []).some(([, s]) => s === route)) ? 'page' : 'true') : null
+              return h('li', {},
+                h('a', { class: `rail-link${nested ? ' is-parent' : ''}`, href: hrefOf(r), 'aria-current': current }, Icon(single ? 'home' : TAB_ICONS[`${n.key}.${key}`], 'icon icon-sm'), h('span', {}, single ? t(`nav.${n.key}`) : t(`tab.${n.key}.${key}`))),
+                nested ? h('ul', { class: 'rail-sub' }, subs.map(([subKey, s]) =>
+                  h('li', {}, h('a', { class: 'rail-link', href: hrefOf(s), 'aria-current': s === route ? 'page' : null }, h('span', {}, t(`tab.${n.key}.${subKey}`)))))) : null)
+            })))
+        })))
       const content = h('main', { class: 'content', id: 'content' })
       // v2: the tabs and the sub-tabs are one block of the page head. The page puts it under its title.
       const pageTabs = headerV2 && tabBar ? h('div', { class: 'page-tabs' }, tabBar, subBar) : null
-      const shell = h('div', { class: 'shell' }, sidebar, h('div', { class: 'drawer-scrim', onClick: () => setDrawer(false) }),
+      const shell = h('div', { class: 'shell' }, rail, sidebar, h('div', { class: 'drawer-scrim', onClick: () => setDrawer(false) }),
         h('div', { class: 'main-column' }, header, headerV2 || dash ? null : tabBar, headerV2 ? null : subBar, headerV2 ? null : crumbBar,
           h('div', { class: 'page-body' }, sectionNav, h('div', { class: 'page-main' }, subBarTrail, content)),
           h('footer', { class: 'page-footer' }, h('span', { class: 'page-footer-text' }, t('site.footer')),
@@ -1012,6 +1048,10 @@
       document.onkeydown = (e) => { if (e.key === 'Escape' && shell.classList.contains('drawer-open')) setDrawer(false) }
 
       root.replaceChildren(shell)
+      // The rail keeps its scroll from page to page.
+      const railGroups = rail.querySelector('.rail-groups')
+      try { railGroups.scrollTop = Number(sessionStorage.getItem('rail-top')) || 0 } catch { /* storage is not available */ }
+      railGroups.addEventListener('scroll', () => { try { sessionStorage.setItem('rail-top', railGroups.scrollTop) } catch { /* storage is not available */ } }, { passive: true })
       // A tab bar that scrolls sideways (phones) shows the current tab. v2 puts the bars in the page head, so it runs again after the page renders.
       const centerTabs = () => [tabBar, subBar].forEach((bar) => {
         const nav = bar && bar.querySelector('[aria-current]')
@@ -1019,14 +1059,23 @@
       })
       centerTabs()
       if (headerV2) {
-        current = { section: item ? t(`nav.${item.key}`) : title(), tabs: pageTabs }
+        // A tab page has the name of its page as its title, and its question under it (the carbon theme shows them on a wide screen, app.css).
+        const pageOf = exactTab && item.tabs.length > 1 ? pagesOf(item).find(([, r]) => r === route) : null
+        const tabText = pageOf && `tab.${item.key}.${pageOf[0]}`
+        const questionText = pageOf && `question.${item.key}.${pageOf[0]}`
+        current = {
+          section: item ? t(`nav.${item.key}`) : title(),
+          tabs: pageTabs,
+          pageTitle: tabText && hasText(tabText) ? t(tabText) : null,
+          question: questionText && hasText(questionText) ? t(questionText) : null
+        }
         // A tab page that draws no page head of its own gets the plain one: the tabs and the page tools. A section with one tab needs none.
         if (item && exactTab && item.tabs.length > 1) {
           const ensureHead = () => { if (!content.querySelector('.page-head')) content.prepend(window.Shell.PageHead({})) }
           new MutationObserver(ensureHead).observe(content, { childList: true })
         }
-        // The detail pages of Αναλύσεις (a speech, a person's file) are locked as well.
-        if (item?.key === 'world' && !signedIn()) {
+        // The detail pages of Αναλύσεις (a speech, a person's file) are locked as well. The story of France is open to all.
+        if (item?.key === 'world' && route !== '/france-riots' && !signedIn()) {
           content.classList.add('is-gated')
           content.replaceChildren(window.Shell.PageHead({ tabs: null }), SignInGate())
           centerTabs()
@@ -1070,9 +1119,10 @@
     filters = filters.filter(Boolean)
     // A page with no tabs, actions or filters (a section with one tab) has no visible head: only the h1 for screen readers.
     if (!tabs && !actions.length && !filters.length && !error) return h('header', { class: 'page-head is-empty' }, h('h1', { class: 'visually-hidden' }, title || current.section))
-    return h('header', { class: 'page-head' },
+    return h('header', { class: `page-head${current.pageTitle ? ' has-page-title' : ''}` },
       h('div', { class: 'page-head-row' },
-        h('div', { class: 'page-head-titles' }, h('h1', { class: 'page-head-title' }, title || current.section), meta ? h('p', { class: 'page-head-meta' }, meta) : null),
+        h('div', { class: 'page-head-titles' }, h('h1', { class: 'page-head-title' }, title || current.pageTitle || current.section),
+          meta ? h('p', { class: 'page-head-meta' }, meta) : current.question ? h('p', { class: 'page-head-question' }, current.question) : null),
         actions.length ? h('div', { class: 'page-head-actions' }, actions) : null),
       tabs,
       filters.length ? h('div', { class: 'page-filters' }, filters) : null,
@@ -1086,5 +1136,5 @@
     })) }))
   }
 
-  window.Shell = { start, routeAnchor, hrefOf, placeOf, tree, PageHead, headerV2, Search: GlobalSearch }
+  window.Shell = { isHidden: (route) => HIDDEN.has(route), start, routeAnchor, hrefOf, placeOf, tree, PageHead, headerV2, Search: GlobalSearch }
 })()

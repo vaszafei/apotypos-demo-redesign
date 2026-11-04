@@ -1,4 +1,4 @@
-// The hero and the cards of Αρχική: the stories of a day, the calendar of a month, the topics of a day and the quick access.
+// The hero and the cards of Αρχική: the stories of a day, the topics of a day and the quick access.
 // Load after dash.js. index.html draws the page.
 (function () {
   const { t, fmt, h, Icon } = window.App
@@ -90,72 +90,6 @@
       stories)
   }
 
-  // The calendar of a month: a strip of tiles, one for each day, that scrolls sideways. A tile has the day, the articles of all the outlets and the change against the day before.
-  // The arrows and the name of the month are at the top right of the card, and a tile picks the day.
-  function Calendar ({ dates, totals, selected, onPick }) {
-    const at = new Map(dates.map((d, i) => [d, i]))
-    const months = [...new Set(dates.map((d) => d.slice(0, 7)))]
-    let month = dates[selected].slice(0, 7)
-    let current = selected
-    const list = h('ul', { class: 'home-days' })
-    const label = h('span', { class: 'home-month-name', 'aria-live': 'polite' })
-    const step = (dir) => h('button', { type: 'button', class: 'icon-button', 'aria-label': t(dir < 0 ? 'home.month.prev' : 'home.month.next'),
-      onClick: () => { month = months[months.indexOf(month) + dir]; paint() } }, Icon(dir < 0 ? 'chevron-left' : 'chevron-right', 'icon'))
-    const prev = step(-1)
-    const next = step(1)
-
-    // The change against the day before: an arrow up or down and the size of the change.
-    const delta = (i) => {
-      if (i === 0 || totals[i] === null || !(totals[i - 1] > 0)) return '–'
-      const v = ((totals[i] - totals[i - 1]) / totals[i - 1]) * 100
-      const size = `${fmt.dec(Math.abs(v))}%`
-      if (Number(fmt.dec(Math.abs(v))) === 0) return size
-      return [h('span', { class: `home-arrow ${v > 0 ? 'is-up' : 'is-down'}`, 'aria-hidden': 'true' }, v > 0 ? '▲' : '▼'), ' ', size]
-    }
-
-    // The scroll position that puts a tile in the middle of the strip, from the boxes on screen.
-    const centered = (tile) => tile.getBoundingClientRect().left - list.getBoundingClientRect().left + list.scrollLeft - (list.clientWidth - tile.offsetWidth) / 2
-    let shown = null
-    const buttons = new Map()
-    const calm = window.matchMedia('(prefers-reduced-motion: reduce)')
-    function paint () {
-      // The same month: only the picked tile changes, and the strip slides to it.
-      if (shown === month) {
-        buttons.forEach((btn, i) => btn.setAttribute('aria-pressed', String(i === current)))
-        const tile = buttons.get(current)
-        if (tile) list.scrollTo({ left: centered(tile), behavior: calm.matches ? 'auto' : 'smooth' })
-        return
-      }
-      shown = month
-      buttons.clear()
-      const tiles = new Map()
-      dates.forEach((iso, i) => {
-        if (!iso.startsWith(month)) return
-        const weekday = new Date(`${iso}T00:00:00Z`).getUTCDay()
-        tiles.set(i, h('li', {}, h('button', { type: 'button', class: weekday === 0 || weekday === 6 ? 'home-day-btn is-weekend' : 'home-day-btn', 'aria-pressed': String(i === current),
-          'aria-label': t('home.days.aria', { date: fmt.date(iso), n: fmt.int(totals[i]) }), onClick: () => { current = i; paint(); onPick(i) } },
-        h('span', { class: 'home-day-dow' }, fmt.date(iso, { weekday: 'short' })),
-        h('span', { class: 'home-day-num' }, String(Number(iso.slice(8)))),
-        h('span', { class: 'home-day-n' }, fmt.int(totals[i])),
-        h('span', { class: 'home-day-delta' }, delta(i)))))
-        buttons.set(i, tiles.get(i).firstChild)
-      })
-      label.textContent = fmt.date(`${month}-01`, { month: 'long', year: 'numeric' })
-      prev.disabled = months.indexOf(month) === 0
-      next.disabled = months.indexOf(month) === months.length - 1
-      list.replaceChildren(...tiles.values())
-      list.classList.remove('is-swap')
-      void list.offsetWidth
-      list.classList.add('is-swap')
-      // The picked day is in the middle of the strip when it is in this month; any other month starts at its first day.
-      const tile = tiles.get(current)?.firstChild
-      requestAnimationFrame(() => { list.scrollLeft = tile ? centered(tile) : 0 })
-    }
-    paint()
-    const node = card('home-calendar', cardHead(t('home.days.title'), h('div', { class: 'home-month-nav' }, prev, label, next), t('home.days.info')), list)
-    return { node, select (i) { current = i; month = dates[i].slice(0, 7); paint() } }
-  }
-
   // The topics of one day in the news, all of them in two columns, the first half on the left: the articles, the share of the day, and an arrow on the share when it is more (▲) or less (▼) than in the days before (the 7 before, fewer at the start of the data).
   function TopicsCard ({ home, day }) {
     const w = Math.min(7, day)
@@ -245,10 +179,10 @@
   }
 
   // The quick access: four buttons in a 2×2 grid, each with the name of the page, a short line (not every page has one) and an arrow. The card ends where the buttons end.
-  const QUICK = [['speeches', '/speeches', 'tab.world.speeches', true], ['pi', '/narrative', 'tab.world.pi', true], ['politics', '/elections', 'nav.politics', false], ['file', '/contradictions', 'tab.people.file', true]]
+  const QUICK = [['topics', '/trends', 'tab.media.topics', false], ['media', '/media', 'nav.media', false], ['politics', '/elections', 'nav.politics', false], ['france', '/france-riots', 'tab.world.france', false]]
   function QuickCard () {
     return card('c-5 home-quick', cardHead(t('home.quick.title')),
-      h('ul', { class: 'home-links' }, QUICK.map(([key, route, label, line]) => h('li', {},
+      h('ul', { class: 'home-links' }, QUICK.filter(([, route]) => !Shell.isHidden(route)).map(([key, route, label, line]) => h('li', {},
         h('a', { href: Shell.hrefOf(route) }, h('span', { class: 'home-link-main' }, h('strong', {}, t(label)), line ? h('span', { class: 'muted-text' }, t(`home.quick.${key}`)) : null), Icon('chevron-right', 'icon icon-sm'))))))
   }
 
@@ -261,57 +195,101 @@
     const chips = home.issues.map((x, k) => ({ x, n: home.issueDaily[k][last] }))
       .filter((r) => !r.x.soft && !r.x.catchAll && !/^Άλλα(\s|$)/.test(r.x.el) && r.n > 0)
       .sort((a, b) => b.n - a.n).slice(0, 4)
-    // The label comes first for the list; CSS puts the number above it.
-    const stat = (value, label) => h('div', { class: 'home-hero-stat' }, h('dt', {}, label), h('dd', { class: 'kpi-value' }, value))
     const collected = sum(totals.slice(i0, i1 + 1))
     const period = t('home.hero.period', { from: fmt.date(home.dates[i0], { day: 'numeric', month: 'long' }), to: fmt.date(home.dates[i1], { day: 'numeric', month: 'long', year: 'numeric' }) })
+    // What the field shows now, in words. It only decorates: the same numbers are on the page below.
+    const caption = h('p', { class: 'home-hero-caption', 'aria-hidden': 'true' })
+    const field = window.HeroField({
+      shapes: heroShapes({ home, totals, i0, i1 }),
+      still: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+      onShape: (shape) => { caption.textContent = shape.caption; caption.classList.toggle('is-empty', !shape.caption) }
+    })
     return h('section', { class: 'home-hero', 'aria-labelledby': 'home-hero-title' },
-      Wave(totals.slice(i0, i1 + 1)),
+      field, caption,
       h('div', { class: 'home-hero-inner' },
         Masthead(),
         h('div', { class: 'home-hero-search' }, search),
         chips.length ? h('div', { class: 'home-hero-try' }, h('span', { class: 'home-hero-try-label' }, t('home.hero.try')),
           chips.map((r) => h('button', { type: 'button', class: 'home-chip', onClick: () => search.open(name(r.x)) }, name(r.x)))) : null,
-        h('div', { class: 'kpi-tile home-hero-stats' },
-          h('dl', { 'aria-label': period },
-            stat(fmt.int(collected), t('home.hero.articles')),
-            stat(fmt.int(home.outlets.length), t('home.hero.outlets')),
-            stories != null ? stat(fmt.int(stories), t('home.hero.stories')) : null,
-            stat(fmt.int(i1 - i0 + 1), t('home.hero.days'))),
-          h('p', { class: 'home-hero-period' }, period))),
+        // The same stat cards as the tabs of the site.
+        h('div', { class: 'home-hero-stats' },
+          Dash.Stat({ variant: 'compact', label: t('home.hero.articles'), value: fmt.int(collected), icon: 'document-text', tone: 'var(--cat-1)' }),
+          Dash.Stat({ variant: 'compact', label: t('home.hero.outlets'), value: fmt.int(home.outlets.length), icon: 'newspaper', tone: 'var(--cat-3)' }),
+          stories != null ? Dash.Stat({ variant: 'compact', label: t('home.hero.stories'), value: fmt.int(stories), icon: 'chart-bar', tone: 'var(--cat-4)' }) : null,
+          Dash.Stat({ variant: 'compact', label: t('home.hero.days'), value: fmt.int(i1 - i0 + 1), icon: 'chart-pie', tone: 'var(--cat-5)' })),
+        h('p', { class: 'home-hero-period' }, period)),
       h('a', { class: 'home-hero-more', href: '#home-today' }, t('home.hero.more'), Icon('chevron-down', 'icon icon-sm')))
   }
 
-  // The masthead of the hero: "ΑΠΟΤΥΠΟΣ / ΠΑΡΑΤΗΡΗΤΗΡΙΟ ΕΛΛΗΝΙΚΩΝ ΜΜΕ". On each visit the name rises in, the "/" draws from the top and the line after it follows (CSS).
+  // The masthead of the hero: the name as a small line, and the promise of the site as the headline. On each visit the name rises in, the "/" draws from the top (CSS).
   function Masthead () {
-    const brand = t('site.name').toLocaleUpperCase('el')
-    const tail = t('home.hero.eyebrow').toLocaleUpperCase(App.locale)
-    return h('h1', { class: 'home-mast', id: 'home-hero-title', 'aria-label': `${t('site.name')} / ${t('home.hero.eyebrow')}` },
-      h('span', { class: 'mast-part mast-name', 'aria-hidden': 'true' }, brand),
-      h('span', { class: 'mast-slash', 'aria-hidden': 'true' }, '/'),
-      h('span', { class: 'mast-part mast-tail', 'aria-hidden': 'true' }, tail))
+    const brand = t('site.name')
+    const tail = t('home.hero.eyebrow')
+    return h('div', { class: 'home-mast-block' },
+      h('p', { class: 'home-mast', 'aria-label': `${t('site.name')} / ${t('home.hero.eyebrow')}` },
+        h('span', { class: 'mast-part mast-name', 'aria-hidden': 'true' }, brand),
+        h('span', { class: 'mast-slash', 'aria-hidden': 'true' }, '/'),
+        h('span', { class: 'mast-part mast-tail', 'aria-hidden': 'true' }, tail)),
+      h('h1', { class: 'home-headline', id: 'home-hero-title' }, t('home.hero.headline')))
   }
 
-  // The silhouette of the hero: the articles of each day as a smooth area along the bottom. It only decorates.
-  // The line is the mean of the week around each day, so the weekend dips read as a slow swell, not as teeth.
-  function Wave (daily) {
-    const W = 1200
-    const H = 160
-    const values = daily.map((_, i) => { const part = daily.slice(Math.max(0, i - 3), i + 4); return sum(part) / part.length })
-    const max = Math.max(...values, 1)
-    const step = W / Math.max(values.length - 1, 1)
-    const pts = values.map((v, i) => [i * step, H - (v / max) * (H - 12)])
-    let d = `M0 ${H} L${pts[0][0]} ${pts[0][1]}`
-    for (let i = 1; i < pts.length; i++) {
-      const [x0, y0] = pts[i - 1]
-      const [x1, y1] = pts[i]
-      const mx = (x0 + x1) / 2
-      d += ` C${mx} ${y0} ${mx} ${y1} ${x1} ${y1}`
+  // The pictures of the moving field: the "/" of the logo, then the data itself: the articles of each day, the agenda and the outlets.
+  function heroShapes ({ home, totals, i0, i1 }) {
+    const { color, SLOTS } = Dash
+    const slash = {
+      caption: '',
+      draw (c, W, H) {
+        const top = -H * 0.02; const bottom = H * 1.02; const lean = H * 0.42; const band = H * 0.14; const x = W / 2
+        c.fillStyle = color('--accent')
+        c.beginPath()
+        c.moveTo(x + lean - band, top); c.lineTo(x + lean + band, top); c.lineTo(x - lean + band, bottom); c.lineTo(x - lean - band, bottom)
+        c.fill()
+      }
     }
-    const svg = h('svg', { class: 'home-hero-wave', viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'none', 'aria-hidden': 'true', focusable: 'false' })
-    svg.innerHTML = `<path class="home-hero-wave-fill" d="${d} L${W} ${H} Z"/><path class="home-hero-wave-line" d="${d.replace(/^M0 \d+ L/, 'M')}"/>`
-    return svg
+    const daily = totals.slice(i0, i1 + 1)
+    const days = {
+      caption: t('home.hero.shape.days', { n: fmt.int(daily.length) }),
+      draw (c, W, H) {
+        const max = Math.max(...daily, 1)
+        const slot = (W * 0.94) / daily.length
+        c.fillStyle = color('--series-1')
+        daily.forEach((v, i) => { const y = (v / max) * H * 0.82; c.fillRect(W * 0.03 + i * slot, H - y, slot * 0.72, y) })
+      }
+    }
+    const issues = home.issues.map((x, k) => ({ x, n: sum(home.issueDaily[k].slice(i0, i1 + 1)) })).filter((r) => !r.x.soft && r.n > 0).sort((a, b) => b.n - a.n)
+    const issueTotal = sum(issues.map((r) => r.n)) || 1
+    const agenda = {
+      caption: t('home.hero.shape.agenda', { n: fmt.int(issues.length) }),
+      draw (c, W, H) {
+        const R = H * 0.66
+        let a = -Math.PI / 2
+        issues.forEach((r, i) => {
+          const end = a + (r.n / issueTotal) * Math.PI * 2
+          c.fillStyle = i < SLOTS.length ? SLOTS[i] : color('--bar-muted')
+          c.beginPath(); c.arc(W / 2, H / 2, R, a, end); c.arc(W / 2, H / 2, R * 0.74, end, a, true); c.fill()
+          a = end
+        })
+      }
+    }
+    const outlets = home.outlets.map((o) => ({ n: sum(o.daily.slice(i0, i1 + 1)) })).sort((a, b) => b.n - a.n)
+    const bubbles = {
+      caption: t('home.hero.shape.outlets', { n: fmt.int(outlets.length) }),
+      draw (c, W, H) {
+        const max = outlets[0]?.n || 1
+        const big = H * 0.13
+        outlets.forEach((o, i) => {
+          const turn = i * 2.39996
+          const far = big * 0.92 * Math.sqrt(i)
+          // The largest outlets have the colors of the charts, the others stay quiet.
+          c.fillStyle = i < SLOTS.length ? SLOTS[i] : color('--bar-muted')
+          c.beginPath()
+          c.arc(W / 2 + far * Math.cos(turn) * 1.9, H / 2 + far * Math.sin(turn) * 0.82, big * Math.sqrt(o.n / max), 0, Math.PI * 2)
+          c.fill()
+        })
+      }
+    }
+    return [slash, days, agenda, bubbles]
   }
 
-  window.Home = { index, dayInfo, DayCard, Calendar, TopicsCard, QuickCard, Hero }
+  window.Home = { index, dayInfo, DayCard, TopicsCard, QuickCard, Hero }
 })()

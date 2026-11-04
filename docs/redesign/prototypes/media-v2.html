@@ -2,31 +2,36 @@
 <html lang="el">
 <head>
   <meta charset="utf-8">
+  <base href="/">
+  <script src="assets/routes.js?v=4"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=15">
-  <link rel="stylesheet" href="assets/app.css?v=45">
-  <link rel="stylesheet" href="assets/dash.css?v=88">
-  <link rel="stylesheet" href="assets/mme.css?v=36">
-  <link rel="stylesheet" href="assets/date-range.css?v=8">
-  <script src="assets/page-move.js?v=1"></script>
+  <link rel="stylesheet" href="assets/tokens.css?v=37">
+  <link rel="stylesheet" href="assets/app.css?v=69">
+  <link rel="stylesheet" href="assets/dash.css?v=94">
+  <link rel="stylesheet" href="assets/activity.css?v=12">
+  <link rel="stylesheet" href="assets/mme.css?v=37">
+  <link rel="stylesheet" href="assets/date-range.css?v=9">
+  <script src="assets/page-move.js?v=4"></script>
 </head>
 <body>
   <div id="app"></div>
-  <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=39"></script>
-  <script src="assets/messages-v2.js?v=48"></script>
-  <script src="assets/messages-spread.js?v=17"></script>
-  <script src="assets/messages-mme.js?v=21"></script>
-  <script src="assets/components.js?v=17"></script>
-  <script src="assets/motion.js?v=3"></script>
-  <script src="assets/dash.js?v=21"></script>
+  <script src="assets/icons.js?v=12"></script>
+  <script src="assets/messages.js?v=43"></script>
+  <script src="assets/messages-v2.js?v=51"></script>
+  <script src="assets/messages-spread.js?v=18"></script>
+  <script src="assets/messages-mme.js?v=24"></script>
+  <script src="assets/components.js?v=19"></script>
+  <script src="assets/motion.js?v=6"></script>
+  <script src="assets/dash.js?v=25"></script>
   <script src="assets/date-range.js?v=2"></script>
-  <script src="assets/mme.js?v=23"></script>
-  <script src="assets/shell.js?v=59"></script>
-  <script src="data/mme.js?v=20"></script>
-  <script src="data/groups.js?v=2"></script>
+  <script src="assets/mme.js?v=26"></script>
+  <script src="assets/shell.js?v=74"></script>
+  <script src="data/mme.js?v=31"></script>
+  <script src="data/home.js?v=31"></script>
+  <script src="assets/activity.js?v=8"></script>
+  <script src="data/groups.js?v=31"></script>
   <script src="data/originality.js?v=1"></script>
   <script>
     // Μέσα › Επισκόπηση and Μέσα › Πώς γράφουν: the dashboard of APO-161 with everything of the live page ΜΜΕ & πρόσωπα (apotypos.org/media).
@@ -197,7 +202,7 @@
           const statOutlets = Stat({
             variant: 'compact', kpi: 'K05', label: t('mme.stat.outlets'), empty: !S.active.length, value: fmt.int(S.active.length),
             sub: greek ? t('mme.stat.outlets.sub', { groups: fmt.int(groupCount) }) : t('mme.stat.outlets.sub.il'),
-            viz: UI.HBar(newsCount / (analysed || 1), 1, { label: fmt.pct(newsCount / (analysed || 1)) })
+            icon: 'newspaper', tone: 'var(--cat-1)'
           })
           const hasPrev = days >= 14
           const last7 = sumRange(totals, i1 - 6, i1)
@@ -206,25 +211,25 @@
           const statArticles = Stat({
             variant: 'compact', kpi: 'K06', label: t('media2.stat.articles'), empty: analysed <= 0, value: fmt.int(analysed),
             delta: change, sub: change !== null ? t('media2.stat.articles.delta') : t('media2.stat.articles.avg', { n: fmt.int(Math.round(analysed / days)) }),
-            viz: Spark(totals, i0, i1, t('media2.spark.articles'), { w: 80, hgt: 22 })
+            icon: 'document-text', tone: 'var(--cat-3)'
           })
           const statStories = Stat({
             variant: 'compact', kpi: 'K07', label: t('media2.stat.stories'), empty: S.storyCount <= 0, value: fmt.int(S.storyCount),
-            sub: t('media.k07.hint'), viz: Spark(storiesPerDay, i0, i1, t('media2.spark.stories'), { w: 80, hgt: 22 })
+            sub: t('media.k07.hint'), icon: 'chart-bar', tone: 'var(--cat-4)'
           })
           const quoteTotal = S.personQuotes.reduce((a, b) => a + b, 0)
           const statPeople = Stat({
             variant: 'compact', label: t('mme.stat.people'), empty: !quoteTotal, value: fmt.int(S.personQuotes.filter((n) => n > 0).length),
-            sub: t('mme.stat.people.sub', { n: fmt.int(quoteTotal) })
+            sub: t('mme.stat.people.sub', { n: fmt.int(quoteTotal) }), icon: 'users', tone: 'var(--cat-5)'
           })
 
           // The lead chart: articles per day, news and other. A drag selects a period.
           let peakDay = i0
           for (let i = i0; i <= i1; i++) if (totals[i] > totals[peakDay]) peakDay = i
-          const volume = card('mme-side',
+          const volume = card('c-6 mme-side',
             cardHead(t('media2.chart.title'), UI.Legend([{ label: t('media2.chart.news'), color: 'var(--series-news)' }, { label: t('media2.chart.other'), color: 'var(--series-other)' }]),
               analysed > 0 ? `${t('media2.chart.peak', { date: fmt.date(dates[peakDay]), n: fmt.int(totals[peakDay]) })} · ${t('media2.chart.hint')}` : null),
-            analysed > 0 ? VolumeChart({ dates, news, other, i0, i1, onSelect: select, height: window.matchMedia('(min-width: 1280px)').matches ? 340 : 170 }) : emptyText(t('media2.chart.empty')))
+            analysed > 0 ? VolumeChart({ dates, news, other, i0, i1, onSelect: select, height: window.matchMedia('(min-width: 1280px)').matches ? 400 : 240 }) : emptyText(t('media2.chart.empty')))
 
           // The scatter: news share and clickbait share of each outlet.
           const cbOutlets = S.active.filter((o) => o.cbKnown >= 100)
@@ -252,7 +257,7 @@
             greek && { label: t('media.col.group'), phone: false, render: groupCell },
             { label: t('mme.rank.sort.n'), num: true, sortable: true, sortKey: 'n', sortValue: (o) => o.n, render: (o) => fmt.int(o.n) }
           ].filter(Boolean)
-          const ranking = card('c-6 mme-rank', cardHead(t('mme.rank.all'), null, `${t('mme.rank.note')}`),
+          const ranking = card('c-8 mme-rank', cardHead(t('mme.rank.all'), null, `${t('mme.rank.note')}`),
             UI.DataTable({ columns, rows: S.active, rankColumn: true, pageSize: Infinity, sort: { key: 'n', dir: 'desc' }, emptyText: t('media.empty') }))
           ranking.id = 'ranking'
           ranking.setAttribute('aria-live', 'polite')
@@ -267,8 +272,14 @@
           bylineCard?.classList.add('c-6')
 
           const cards = tab === 'writing'
-            ? [scatterCard, bylineCard, gov]
-            : [ranking, h('div', { class: 'c-6 card-col card-col-fill' }, h('div', { class: 'stats-2x2' }, statOutlets, statArticles, statStories, statPeople), volume)]
+            ? [scatterCard, bylineCard, gov, Activity.KindCard('c-6'), Activity.StanceCard('c-6')]
+            : [...[statOutlets, statArticles, statStories, statPeople].map((x) => { x.classList.add('c-3'); return x }), volume, ranking, Activity.TopOutlets('c-4'), Activity.OutletBars('c-12')]
+          // The first card of Επισκόπηση: the subjects of the period. The topic pages read the Greek set, so only that set has links.
+          if (tab !== 'writing') {
+            const subjects = set.issues.map((x, k) => ({ x, k })).filter((r) => S.hard[r.k] && S.issueN[r.k] > 0).sort((a, b) => S.issueN[b.k] - S.issueN[a.k])
+              .map((r) => ({ label: r.x[App.locale] || r.x.el, n: S.issueN[r.k], href: greek ? `topics-v2.html?tab=topic&topic=${r.k}` : null }))
+            cards.splice(5, 0, Activity.Agenda('c-6 agenda-narrow', subjects, greek ? 'topics-v2.html' : null))
+          }
           content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...cards), Mme.MethodNote(S), protoNote())
           // Side by side, the right column is as tall as the table: the chart takes the height that the stat cards leave.
           if (tab !== 'writing' && analysed > 0) {
@@ -276,7 +287,7 @@
               if (!window.matchMedia('(min-width: 1280px)').matches || !volume.isConnected) return
               const chartEl = volume.lastElementChild
               const slack = volume.getBoundingClientRect().bottom - parseFloat(getComputedStyle(volume).paddingBottom) - chartEl.getBoundingClientRect().bottom
-              if (slack > 4) chartEl.replaceWith(VolumeChart({ dates, news, other, i0, i1, onSelect: select, height: 340 + Math.floor(slack) }))
+              if (slack > 4) chartEl.replaceWith(VolumeChart({ dates, news, other, i0, i1, onSelect: select, height: 400 + Math.floor(slack) }))
             }))
           }
         }

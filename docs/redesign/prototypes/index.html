@@ -2,32 +2,35 @@
 <html lang="el">
 <head>
   <meta charset="utf-8">
+  <base href="/">
+  <script src="assets/routes.js?v=4"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=15">
-  <link rel="stylesheet" href="assets/app.css?v=45">
-  <link rel="stylesheet" href="assets/dash.css?v=88">
-  <link rel="stylesheet" href="assets/home.css?v=46">
-  <script src="assets/page-move.js?v=1"></script>
+  <link rel="stylesheet" href="assets/tokens.css?v=37">
+  <link rel="stylesheet" href="assets/app.css?v=69">
+  <link rel="stylesheet" href="assets/dash.css?v=94">
+  <link rel="stylesheet" href="assets/home.css?v=57">
+  <script src="assets/page-move.js?v=4"></script>
 </head>
 <body>
   <div id="app"></div>
-  <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=39"></script>
-  <script src="assets/messages-v2.js?v=48"></script>
-  <script src="assets/messages-home.js?v=23"></script>
-  <script src="assets/components.js?v=17"></script>
-  <script src="assets/motion.js?v=3"></script>
-  <script src="assets/dash.js?v=21"></script>
-  <script src="assets/home.js?v=34"></script>
-  <script src="assets/shell.js?v=59"></script>
-  <script src="data/home.js?v=4"></script>
-  <script src="data/stories.js?v=2"></script>
-  <script src="data/storyDetail.js?v=2"></script>
+  <script src="assets/icons.js?v=12"></script>
+  <script src="assets/messages.js?v=43"></script>
+  <script src="assets/messages-v2.js?v=51"></script>
+  <script src="assets/messages-home.js?v=26"></script>
+  <script src="assets/components.js?v=19"></script>
+  <script src="assets/motion.js?v=6"></script>
+  <script src="assets/dash.js?v=25"></script>
+  <script src="assets/hero-field.js?v=1"></script>
+  <script src="assets/home.js?v=42"></script>
+  <script src="assets/shell.js?v=74"></script>
+  <script src="data/home.js?v=32"></script>
+  <script src="data/stories.js?v=32"></script>
+  <script src="data/storyDetail.js?v=32"></script>
   <script>
     // Home: the hero (the title, the large search and the size of the data) fills the first screen; the search is not in the top bar here.
-    // Under it, the calendar of a month and the chart pick a day, the card shows the stories of that day (a story of the list is picked in the card),
+    // Under it, the chart picks a day, the card shows the stories of that day (a story of the list is picked in the card),
     // then the topics of the picked day and the quick access. The page covers the whole window of the data.
     const { t, fmt, h, load } = App
     const { card, cardHead } = Dash
@@ -74,30 +77,35 @@
           if (!lastValid) lastValid = { from: dates[0], to: dates[dates.length - 1] }
           const i0 = dates.indexOf(lastValid.from)
           const i1 = dates.indexOf(lastValid.to)
-          if (selected === null || selected < i0 || selected > i1) selected = i1
+          // The page opens on the last day that has topics, because the topics card leads it.
+          const hasTopics = (i) => data.issueDaily.some((row) => row[i] !== null)
+          if (selected === null || selected < i0 || selected > i1) { selected = i1; while (selected > i0 && !hasTopics(selected)) selected-- }
 
           // The articles of all the outlets for each day of the data.
           const totals = dates.map((_, i) => (data.outlets.every((o) => o.daily[i] === null) ? null : data.outlets.reduce((s, o) => s + o.daily[i], 0)))
           const collected = sumRange(totals, i0, i1)
 
-          // The stories of the day. A pick of a day in the calendar or the chart, or of a story in the list, draws this card again.
+          // The stories of the day. A pick of a day in the chart, or of a story in the list, draws this card again.
           const dayCard = (swap) => Home.DayCard(ix ? Home.dayInfo(ix, selected, rank) : null, { date: dates[selected], swap, onStory: (r) => { rank = r; redraw('story') } })
           let day = dayCard()
           const redraw = (swap) => { const next = dayCard(swap); day.replaceWith(next); day = next }
 
-          const calendar = Home.Calendar({ dates, totals, selected, onPick: (i) => pick(i, 'calendar') })
-
           const days = dates.slice(i0, i1 + 1)
           const daily = totals.slice(i0, i1 + 1)
-          const avg = collected / (daily.filter((v) => v !== null).length || 1)
+          // The average of each day and the 6 days before it. The first 6 days of the data have no full week.
+          // A day with no data has no average, and neither has a week with such a day.
+          const trend = daily.map((_, j) => { const week = totals.slice(Math.max(0, i0 + j - 6), i0 + j + 1); return week.length === 7 && week.every((v) => v !== null) ? sumRange(totals, i0 + j - 6, i0 + j) / 7 : null })
+          const isWeekend = (iso) => [0, 6].includes(new Date(`${iso}T00:00:00Z`).getUTCDay())
+          const WEEKDAY = 'color-mix(in srgb, var(--series-1) 55%, var(--surface-raised))'
           const chart = () => UI.BarChart({
-            dates: days, values: daily, label: t('home.daily.title'), height: 263, picked: selected - i0, onPick: (j) => pick(i0 + j, 'chart'),
-            reference: { value: avg, label: t('home.daily.avg', { n: fmt.int(Math.round(avg)) }) },
-            tooltipOf: (i) => `${fmt.date(days[i])}: ${fmt.int(daily[i])}`
+            dates: days, values: daily, trend, label: t('home.daily.title'), height: 300, picked: selected - i0, onPick: (j) => pick(i0 + j, 'chart'),
+            colorOf: (j) => (isWeekend(days[j]) ? 'var(--rule)' : WEEKDAY),
+            tooltipOf: (j) => `${fmt.date(days[j])}: ${fmt.int(daily[j])}${trend[j] === null ? '' : ` · ${t('home.daily.trend')}: ${fmt.int(Math.round(trend[j]))}`}`
           })
           const chartEl = chart()
           const chartBody = h('div', {}, chartEl)
-          const dailyCard = card('c-7', cardHead(t('home.daily.title'), null, t('home.daily.info')), chartBody)
+          const dailyKey = UI.Legend([{ label: t('home.daily.weekday'), color: WEEKDAY }, { label: t('home.daily.weekend'), color: 'var(--rule)' }, { label: t('home.daily.trend'), color: 'var(--side-b)' }])
+          const dailyCard = card('c-7 home-daily', cardHead(t('home.daily.title'), dailyKey, t('home.daily.info')), chartBody)
 
           const topicsCard = () => Home.TopicsCard({ home: data, day: selected })
           let topics = topicsCard()
@@ -110,11 +118,10 @@
             next.classList.add('is-swap')
             topics.replaceWith(next)
             topics = next
-            if (from === 'chart') calendar.select(i)
-            else chartEl.pick(selected - i0)
+            if (from !== 'chart') chartEl.pick(selected - i0)
           }
 
-          const main = h('div', { class: 'c-7 card-col' }, calendar.node, dailyCard, topics)
+          const main = h('div', { class: 'c-7 card-col' }, topics, dailyCard)
           const aside = h('div', { class: 'c-5 card-col' }, day, Home.QuickCard())
           const storyCount = ix ? new Set(ix.byDay.slice(i0, i1 + 1).flat().map((o) => o.s.id)).size : null
           content.replaceChildren(

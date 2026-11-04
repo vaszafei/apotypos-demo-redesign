@@ -59,12 +59,11 @@ people.forEach((p) => kinds.people.push(entry(p)))
 // Δηλώσεις: the speakers of the tracked statements, with their other names.
 F.statements.rows.forEach((x) => kinds.statements.push(entry({ n: x.speaker, a: x.names.filter((n) => n !== x.speaker), h: 'statements-v2.html', r: '/track' })))
 
-// Πολιτική: the parties and the bylines of the elections page.
+// Πολιτική: the parties of the elections page. The live page has no bylines any more.
 F.elections.parties.forEach((p) => kinds.parties.push(entry({ n: p.name, a: p.key !== p.name ? [p.key] : null, h: 'elections-v2.html', r: '/elections' })))
-F.elections.journalists.forEach((j) => kinds.bylines.push(entry({ n: j.name, d: j.outlets, h: 'elections-v2.html?tab=bylines', r: '/elections/bylines' })))
 
 // Αναλύσεις: the speakers of the UN General Assembly, found also by their country.
-F.speeches.rows.forEach((x) => kinds.speeches.push(entry({ n: x.speaker, d: x.country, a: [x.country], h: 'speeches-v2.html', r: '/speeches' })))
+F.speeches.rows.forEach((x) => kinds.speeches.push(entry({ n: x.speaker, d: x.country, a: [x.country], h: `speech-v2.html?id=${x.vid}`, r: '/speeches' })))
 
 const out = path.join(dir, 'data', 'search.js')
 fs.writeFileSync(out, `window.FIXTURES=window.FIXTURES||{};window.FIXTURES["search"]=${JSON.stringify({ storyRows, kinds })};\n`)

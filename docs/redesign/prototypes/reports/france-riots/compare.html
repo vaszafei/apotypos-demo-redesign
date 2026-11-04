@@ -2,6 +2,9 @@
 <html lang="el" data-theme="light">
 <head>
 <meta charset="utf-8">
+<script src="../../assets/report-theme.js?v=3"></script>
+<link rel="stylesheet" href="../../assets/tokens.css?v=37">
+<link rel="stylesheet" href="../../assets/report-theme.css?v=2">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>html,body{margin:0}</style>
 </head>
@@ -111,10 +114,10 @@ a { color: var(--accent) }
 :root { --c-fb: #E85D3F; --c-press: #404040 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --c-fb: #F07A5F; --c-press: #CFCCC4 } }
 :root[data-theme="dark"] { --c-fb: #F07A5F; --c-press: #CFCCC4 }
-.cmp { display: grid; grid-template-columns: minmax(170px, 290px) minmax(0, 1fr) 104px; gap: 12px; align-items: center; padding: 6px }
+.cmp { display: grid; grid-template-columns: minmax(170px, 290px) minmax(0, 1fr) 132px; gap: 12px; align-items: center; padding: 6px }
 .cmp .pair .track { height: 11px }
 .cmp .tag { font-family: var(--mono); font-size: 10.5px; color: var(--muted); border: 1px solid var(--line-strong); border-radius: 999px; padding: 0 6px; margin-left: 6px; white-space: nowrap }
-@media (max-width: 560px) { .cmp { grid-template-columns: minmax(0, 1fr) 92px } .cmp .pair { grid-column: 1 / -1; grid-row: 2 } }
+@media (max-width: 560px) { .cmp { grid-template-columns: minmax(0, 1fr) 120px } .cmp .pair { grid-column: 1 / -1; grid-row: 2 } }
 .gap { display: grid; grid-template-columns: minmax(170px, 290px) minmax(0, 1fr) 64px; gap: 12px; align-items: center; padding: 5px 6px }
 .gap .axis { position: relative; height: 14px; background: linear-gradient(var(--line-strong), var(--line-strong)) center / 1px 100% no-repeat }
 .gap .seg { position: absolute; top: 0; height: 14px; border-radius: 3px }
@@ -137,14 +140,14 @@ a { color: var(--accent) }
 
   <div class="note">
     <strong>Read this before the numbers</strong>
-    <span>The units differ. A Facebook post was coded from the preview text shown before "See more", and a press article from its headline. The Facebook sample comes from Facebook search results ranked for one account, and the press corpus from what 28 outlets published on 1–19 October. One AI model (Claude) coded both, with no second coder. Read the gaps as direction and size, not exact decimals. The mapping between the two codings is in the table at the end.</span>
+    <span>The units differ. A Facebook post was coded from the preview text shown before "See more", and a press article from its headline. The Facebook sample comes from Facebook search results ranked for one account, and the press corpus from what 28 outlets published on 1–19 October. One AI model (Claude) coded both, with no second coder. Read the gaps as direction and size, not exact decimals. The mapping between the two codings is in the table at the end. The headline numbers use the 664 posts from <b>neutral searches</b> only (searches that do not name a group or a side). The codebooks are not symmetric: <b id="fbonly-share"></b> of Facebook posts are in narratives that the press codebook does not have ("Facebook only").</span>
   </div>
 
   <section class="panel">
     <div class="panel-head">
       <div class="eyebrow">Narrative shares</div>
       <h2 id="main-title"></h2>
-      <p class="muted small">Share of each source's items in each narrative. Each item has one narrative, so each column adds up to 100%.</p>
+      <p class="muted small">Narratives are coded from the press headline and from the first 230 characters of each Facebook post. <b>Frames are coded from the headline</b> for the press. Share of each source's items in each narrative. Each item has one narrative, so each column adds up to 100%. The number in brackets is the Facebook share in neutral searches only.</p>
     </div>
     <div class="legend"><span><i style="background:var(--c-fb)"></i>Facebook posts (<span id="nfb"></span>)</span><span><i style="background:var(--c-press)"></i>Greek press articles (<span id="npr"></span>)</span></div>
     <div id="main"></div>
@@ -155,7 +158,7 @@ a { color: var(--accent) }
       <div class="panel-head">
         <div class="eyebrow">Where they part ways</div>
         <h2 id="gap-title"></h2>
-        <p class="muted small">Percentage-point gap, Facebook minus press. Right means more common on Facebook, left more common in the press.</p>
+        <p class="muted small">All 933 Facebook posts. Percentage-point gap, Facebook minus press. Right means more common on Facebook, left more common in the press.</p>
       </div>
       <div id="gaps"></div>
     </section>
@@ -163,7 +166,7 @@ a { color: var(--accent) }
       <div class="panel-head">
         <div class="eyebrow">The big picture</div>
         <h2 id="fam-title"></h2>
-        <p class="muted small">Narratives grouped into four families.</p>
+        <p class="muted small">Narratives grouped into four families. Press frames are coded from the headline.</p>
       </div>
       <div id="fams"></div>
       <div class="legend" id="fam-legend"></div>
@@ -187,31 +190,37 @@ a { color: var(--accent) }
       <li>Facebook posts and press articles are different units: a post is often one line of opinion, an article is a report with a headline. Facebook preview text and press headlines are both short, which is why they were used, but they are not the same thing.</li>
       <li>"Violence and looting condemned" joins Facebook posts of grief and condemnation with press headlines that lead on protester violence. The two are close but not identical.</li>
       <li>Some narratives exist in one dataset only. No press headline was coded "viral spectacle", "media cover-up" or "Jewish safety", and no Facebook post was coded "police violence". Sensational wording in the press is measured separately on the press dashboard (19% of headlines).</li>
-      <li>The Facebook sample has 933 posts in scope from 37 searches. Some searches name a group, for example "France riots Islam". These searches increase the share of that group. The Facebook tab shows the shares for neutral searches only.</li>
+      <li>The Facebook sample has 933 posts in scope from 37 searches. Some searches name a group, for example "France riots Islam". These searches increase the share of that group. So the headline numbers on this tab use the 664 posts from neutral searches. The charts show both.</li>
+      <li>The two codebooks are not symmetric. Facebook has six narratives that the press codebook does not have (viral spectacle, other, pushback, Jewish safety, media cover-up, Israel blamed). They hold <span id="fbonly-li"></span> of the posts. Only one narrative, police violence, is press only.</li>
+      <li>Two kinds of measure are on these tabs. Headline frames give one code to each headline. Text mentions count words in the title and the body. This tab uses headline frames (press) and preview-text clusters (Facebook) only.</li>
     </ul>
   </section>
 </div>
 
 <script>
-const D = {"n_fb": 933, "n_press": 976, "cats": [{"k": "report", "label": "Factual reporting", "fb": 250, "press": 477, "fbOnly": false, "pressOnly": false, "fbFrom": ["Factual news report"], "pressFrom": ["Event report (clashes, arrests, damage)", "Government response and measures", "International reactions", "Markets and debt"]}, {"k": "migration", "label": "Migration / Islam blamed", "fb": 134, "press": 44, "fbOnly": false, "pressOnly": false, "fbFrom": ["Migration / Islam blamed"], "pressFrom": ["Migration / Islam blamed"]}, {"k": "violence", "label": "Violence and looting condemned", "fb": 51, "press": 101, "fbOnly": false, "pressOnly": false, "fbFrom": ["Grief & condemnation of violence"], "pressFrom": ["Protester violence and looting"]}, {"k": "gov", "label": "Macron / government failure", "fb": 77, "press": 68, "fbOnly": false, "pressOnly": false, "fbFrom": ["Macron / government failure"], "pressFrom": ["Political fallout: Macron, Le Pen, Mélenchon"]}, {"k": "grievance", "label": "Causes: cost of living, schools", "fb": 32, "press": 76, "fbOnly": false, "pressOnly": false, "fbFrom": ["Cost of living & public services"], "pressFrom": ["Causes: schools, cost of living, a generation"]}, {"k": "spill", "label": "\"Could happen here\" / spreading", "fb": 39, "press": 90, "fbOnly": false, "pressOnly": false, "fbFrom": ["\"It could happen here\" (Greece, Europe, US)"], "pressFrom": ["Greek angle: \"could happen here\"", "Spreading across Europe"]}, {"k": "left", "label": "Far left blamed", "fb": 45, "press": 21, "fbOnly": false, "pressOnly": false, "fbFrom": ["Far left / LFI blamed"], "pressFrom": ["Far left blamed"]}, {"k": "solidarity", "label": "Solidarity with the protesters", "fb": 18, "press": 22, "fbOnly": false, "pressOnly": false, "fbFrom": ["Solidarity with the uprising"], "pressFrom": ["Solidarity with the students"]}, {"k": "antisem", "label": "Jewish safety / antisemitism", "fb": 47, "press": 0, "fbOnly": true, "pressOnly": false, "fbFrom": ["Jewish safety / antisemitism"], "pressFrom": []}, {"k": "israel", "label": "Israel / Jews blamed", "fb": 4, "press": 0, "fbOnly": true, "pressOnly": false, "fbFrom": ["Israel / Jews blamed"], "pressFrom": []}, {"k": "police", "label": "Police violence", "fb": 0, "press": 77, "fbOnly": false, "pressOnly": true, "fbFrom": [], "pressFrom": ["Police violence and repression"]}, {"k": "spectacle", "label": "Viral spectacle", "fb": 108, "press": 0, "fbOnly": true, "pressOnly": false, "fbFrom": ["Viral spectacle"], "pressFrom": []}, {"k": "media", "label": "Media cover-up", "fb": 17, "press": 0, "fbOnly": true, "pressOnly": false, "fbFrom": ["Media cover-up"], "pressFrom": []}, {"k": "counter", "label": "Pushback on alarmism", "fb": 27, "press": 0, "fbOnly": true, "pressOnly": false, "fbFrom": ["Pushback on alarmism"], "pressFrom": []}, {"k": "other", "label": "Other / unclear", "fb": 84, "press": 0, "fbOnly": true, "pressOnly": false, "fbFrom": ["Other / unclear"], "pressFrom": []}], "migr": {"fb_n": 134, "fb_attributed": 14, "press_n": 44, "press_attributed": 40}};
+const D = {"n_fb": 933, "n_press": 976, "cats": [{"k": "report", "label": "Factual reporting", "fb": 250, "press": 477, "fbOnly": false, "pressOnly": false, "fbFrom": ["Factual news report"], "pressFrom": ["Event report (clashes, arrests, damage)", "Government response and measures", "International reactions", "Markets and debt"]}, {"k": "migration", "label": "Migration / Islam blamed", "fb": 134, "press": 44, "fbOnly": false, "pressOnly": false, "fbFrom": ["Migration / Islam blamed"], "pressFrom": ["Migration / Islam blamed"]}, {"k": "violence", "label": "Violence and looting condemned", "fb": 51, "press": 101, "fbOnly": false, "pressOnly": false, "fbFrom": ["Grief & condemnation of violence"], "pressFrom": ["Protester violence and looting"]}, {"k": "gov", "label": "Macron / government failure", "fb": 77, "press": 68, "fbOnly": false, "pressOnly": false, "fbFrom": ["Macron / government failure"], "pressFrom": ["Political fallout: Macron, Le Pen, Mélenchon"]}, {"k": "grievance", "label": "Causes: cost of living, schools", "fb": 32, "press": 76, "fbOnly": false, "pressOnly": false, "fbFrom": ["Cost of living & public services"], "pressFrom": ["Causes: schools, cost of living, a generation"]}, {"k": "spill", "label": "\"Could happen here\" / spreading", "fb": 39, "press": 90, "fbOnly": false, "pressOnly": false, "fbFrom": ["\"It could happen here\" (Greece, Europe, US)"], "pressFrom": ["Greek angle: \"could happen here\"", "Spreading across Europe"]}, {"k": "left", "label": "Far left blamed", "fb": 45, "press": 21, "fbOnly": false, "pressOnly": false, "fbFrom": ["Far left / LFI blamed"], "pressFrom": ["Far left blamed"]}, {"k": "solidarity", "label": "Solidarity with the protesters", "fb": 18, "press": 22, "fbOnly": false, "pressOnly": false, "fbFrom": ["Solidarity with the uprising"], "pressFrom": ["Solidarity with the students"]}, {"k": "antisem", "label": "Jewish safety / antisemitism", "fb": 47, "press": 0, "fbOnly": true, "pressOnly": false, "fbFrom": ["Jewish safety / antisemitism"], "pressFrom": []}, {"k": "israel", "label": "Israel / Jews blamed", "fb": 4, "press": 0, "fbOnly": true, "pressOnly": false, "fbFrom": ["Israel / Jews blamed"], "pressFrom": []}, {"k": "police", "label": "Police violence", "fb": 0, "press": 77, "fbOnly": false, "pressOnly": true, "fbFrom": [], "pressFrom": ["Police violence and repression"]}, {"k": "spectacle", "label": "Viral spectacle", "fb": 108, "press": 0, "fbOnly": true, "pressOnly": false, "fbFrom": ["Viral spectacle"], "pressFrom": []}, {"k": "media", "label": "Media cover-up", "fb": 17, "press": 0, "fbOnly": true, "pressOnly": false, "fbFrom": ["Media cover-up"], "pressFrom": []}, {"k": "counter", "label": "Pushback on alarmism", "fb": 27, "press": 0, "fbOnly": true, "pressOnly": false, "fbFrom": ["Pushback on alarmism"], "pressFrom": []}, {"k": "other", "label": "Other / unclear", "fb": 84, "press": 0, "fbOnly": true, "pressOnly": false, "fbFrom": ["Other / unclear"], "pressFrom": []}], "migr": {"fb_n": 134, "fb_attributed": 14, "press_n": 44, "press_attributed": 41}, "neutral": {"n": 664, "counts": {"report": 230, "grievance": 22, "migration": 64, "left": 28, "gov": 62, "media": 12, "solidarity": 15, "violence": 47, "spill": 29, "counter": 7, "spectacle": 83, "antisem": 9, "israel": 1, "other": 55}}, "fbOnlyShare": {"n": 287, "of": 933}};
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const nF = D.n_fb, nP = D.n_press;
 const cats = D.cats.map(c => ({ ...c, a: c.fb / nF, b: c.press / nP }));
 const pc = v => Math.round(v * 100) + '%';
 const by = k => cats.find(c => c.k === k);
+// neutral searches: Facebook posts from searches that do not name a group or a side
+const NN = D.neutral.n, nsh = k => (D.neutral.counts[k] || 0) / NN;
+cats.forEach(c => { c.n = nsh(c.k); });
 document.getElementById('nfb').textContent = nF;
+document.getElementById('fbonly-share').textContent = document.getElementById('fbonly-li').textContent = `${pc(D.fbOnlyShare.n / D.fbOnlyShare.of)} (${D.fbOnlyShare.n} of ${D.fbOnlyShare.of})`;
 document.getElementById('npr').textContent = nP;
 
 const rep = by('report'), mig = by('migration');
-const ratio = mig.a / mig.b;
-document.getElementById('main-title').textContent = `Both lead with factual reporting, but Facebook blames migration ${ratio >= 3 ? 'more than three times' : ratio >= 2 ? 'more than twice' : 'more'} as often as the press`;
+const ratio = mig.n / mig.b;
+document.getElementById('main-title').textContent = `Both lead with factual reporting. In neutral searches, Facebook blames migration ${ratio >= 2.5 ? 'about three times' : ratio >= 1.5 ? 'about twice' : 'a little more'} as often as the press (${pc(mig.n)} against ${pc(mig.b)})`;
 
 /* KPIs */
 const fbOnly = cats.filter(c => c.fbOnly).sort((x, y) => y.a - x.a)[0];
 const prOnly = cats.filter(c => c.pressOnly).sort((x, y) => y.b - x.b)[0];
 document.getElementById('kpis').innerHTML = [
-  [`${pc(rep.a)} / ${pc(rep.b)}`, 'factual reporting, Facebook / press'],
-  [`${pc(mig.a)} / ${pc(mig.b)}`, 'migration blamed, Facebook / press'],
+  [`${pc(rep.n)} / ${pc(rep.b)}`, `factual reporting, Facebook neutral searches / press (all searches: ${pc(rep.a)})`],
+  [`${pc(mig.n)} / ${pc(mig.b)}`, `migration blamed, Facebook neutral searches / press (all searches: ${pc(mig.a)})`],
   [`${D.migr.fb_n - D.migr.fb_attributed} of ${D.migr.fb_n}`, 'Facebook migration posts in the poster\'s own voice'],
   [`${D.migr.press_attributed} of ${D.migr.press_n}`, 'press migration headlines quoting someone'],
   [pc(fbOnly.a), `${fbOnly.label.toLowerCase()}: Facebook only`],
@@ -224,7 +233,7 @@ const mx = Math.max(...cats.flatMap(c => [c.a, c.b]));
 document.getElementById('main').innerHTML = sorted.map(c => `<div class="cmp">
   <span class="bar-label">${esc(c.label)}${c.fbOnly ? '<span class="tag">Facebook only</span>' : c.pressOnly ? '<span class="tag">press only</span>' : ''}</span>
   <span class="pair"><span class="track"><span class="fill" style="display:block;width:${c.a / mx * 100}%;background:var(--c-fb)"></span></span><span class="track"><span class="fill" style="display:block;width:${c.b / mx * 100}%;background:var(--c-press)"></span></span></span>
-  <span class="bar-val num">${pc(c.a)} | ${pc(c.b)}</span></div>`).join('');
+  <span class="bar-val num">${pc(c.a)} (${pc(c.n)}) | ${pc(c.b)}</span></div>`).join('');
 
 /* gaps */
 const gaps = [...cats].map(c => ({ ...c, g: (c.a - c.b) * 100 })).sort((x, y) => y.g - x.g);
@@ -245,16 +254,18 @@ const FAM = {
   react: { name: 'Reaction', color: 'var(--f-react)', keys: ['violence', 'spill', 'spectacle', 'antisem', 'other'] },
 };
 const fam = side => Object.fromEntries(Object.entries(FAM).map(([k, f]) => [k, f.keys.reduce((s, x) => s + by(x)[side], 0)]));
-const fa = fam('a'), fp = fam('b');
+const fa = fam('a'), fp = fam('b'), fn = fam('n');
 const stack = (label, v) => `<div class="stack"><span class="bar-label">${label}</span><span class="bar">${Object.entries(FAM).map(([k, f]) => v[k] ? `<span style="width:${v[k] * 100}%;background:${f.color}" title="${f.name}: ${pc(v[k])}">${v[k] >= 0.07 ? pc(v[k]) : ''}</span>` : '').join('')}</span></div>`;
-document.getElementById('fams').innerHTML = stack('Facebook', fa) + stack('Press', fp);
+document.getElementById('fams').innerHTML = stack('Facebook, all', fa) + stack('Facebook, neutral', fn) + stack('Press', fp);
 document.getElementById('fam-legend').innerHTML = Object.values(FAM).map(f => `<span><i style="background:${f.color}"></i>${f.name}</span>`).join('');
-document.getElementById('fam-title').textContent = `Facebook spends ${pc(fa.blame)} of posts on blame, the press ${pc(fp.blame)} of headlines`;
+document.getElementById('fam-title').textContent = `In neutral searches, Facebook spends ${pc(fn.blame)} of posts on blame, the press ${pc(fp.blame)} of headlines`;
 
 /* migration voice */
-const vb = (label, own, quoted) => `<div class="stack"><span class="bar-label">${label}</span><span class="bar"><span style="width:${own * 100}%;background:var(--f-blame)">${own >= 0.15 ? pc(own) + ' own' : ''}</span><span style="width:${quoted * 100}%;background:var(--f-report)">${quoted >= 0.15 ? pc(quoted) + ' quoted' : ''}</span></span></div>`;
+// a group under 50 items shows counts, not percentages
+const vb = (label, own, quoted, n) => { const t = v => n < 50 ? String(Math.round(v * n)) : pc(v);
+  return `<div class="stack"><span class="bar-label">${label}</span><span class="bar"><span style="width:${own * 100}%;background:var(--f-blame)">${own >= 0.15 ? t(own) + ' own' : ''}</span><span style="width:${quoted * 100}%;background:var(--f-report)">${quoted >= 0.15 ? t(quoted) + ' quoted' : ''}</span></span></div>`; };
 const m = D.migr;
-document.getElementById('voice').innerHTML = vb('Facebook', (m.fb_n - m.fb_attributed) / m.fb_n, m.fb_attributed / m.fb_n) + vb('Press', (m.press_n - m.press_attributed) / m.press_n, m.press_attributed / m.press_n);
+document.getElementById('voice').innerHTML = vb('Facebook', (m.fb_n - m.fb_attributed) / m.fb_n, m.fb_attributed / m.fb_n, m.fb_n) + vb('Press', (m.press_n - m.press_attributed) / m.press_n, m.press_attributed / m.press_n, m.press_n);
 document.getElementById('voice-note').textContent = `Facebook: ${m.fb_n} migration posts, ${m.fb_attributed} quote a named speaker or are not clear (hand check). Press: ${m.press_n} migration headlines, ${m.press_attributed} name a speaker, mostly Trump.`;
 
 /* mapping table */
@@ -271,6 +282,5 @@ document.getElementById('map').innerHTML = `<thead><tr><th>Shared narrative</th>
   send()
 })()
 </script>
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"12f0b357057b46bb83fe6869a4d0128b","r":1,"spa":2}' crossorigin="anonymous"></script>
 </body>
 </html>

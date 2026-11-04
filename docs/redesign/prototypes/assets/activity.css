@@ -1,0 +1,41 @@
+/* The parts of the activity console (assets/activity.js): figures, top lists and dashed charts. */
+.act-period { min-height: 36px; padding: 0 var(--space-3); border: 1px solid var(--border); border-radius: 8px; background: var(--surface-raised); color: var(--ink); font-size: max(13px, var(--text-min)); }
+.act-card { min-width: 0; padding: var(--space-4); border: 1px solid var(--border); border-radius: 10px; background: var(--surface-raised); display: grid; gap: var(--space-3); align-content: start; }
+.act-kpi { grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--space-2); align-items: start; }
+.act-kpi-label { margin: 0; font-size: max(13px, var(--text-min)); color: var(--text-primary); }
+.act-kpi-value { margin: 2px 0 0; font-size: 24px; line-height: 30px; font-weight: 600; letter-spacing: -0.6px; color: var(--ink); }
+.act-kpi svg { grid-column: 2; grid-row: 1 / 3; display: block; width: 84px; height: 46px; }
+.act-kpi-foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px var(--space-2); margin-top: var(--space-2); font-size: max(13px, var(--text-min)); color: var(--text-secondary); }
+.act-delta.up { color: var(--act-up); }
+.act-delta.down { color: var(--act-down); }
+.act-card-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); }
+.act-card-head h2 { margin: 0; font-size: 16px; line-height: 24px; font-weight: 500; color: var(--ink); }
+.act-card-head a { flex: none; font-size: max(13px, var(--text-min)); color: var(--ink); text-underline-offset: 3px; }
+.act-top { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); font-size: 14px; }
+.act-top li { display: grid; grid-template-columns: 20px 12px minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); color: var(--ink); }
+.act-top .rank { color: var(--text-secondary); }
+.act-top .swatch { width: 8px; height: 8px; border-radius: 50%; }
+.act-top small { display: block; font-size: max(12px, var(--text-min)); color: var(--text-secondary); }
+.act-top .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.act-top .num span { color: var(--text-secondary); }
+.act-legend { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin: 0; padding: var(--space-3) 0 0; border-top: 1px solid var(--border); list-style: none; font-size: max(13px, var(--text-min)); color: var(--ink); }
+.act-legend li { display: inline-flex; align-items: center; gap: 6px; }
+.act-legend i { width: 10px; height: 10px; border-radius: 50%; }
+.act-chart text { fill: var(--text-secondary); font-size: max(12px, var(--text-min)); font-family: var(--font-text); }
+.act-chart .grid { stroke: var(--act-grid); stroke-dasharray: 3 3; }
+.act-chart .base { stroke: var(--act-grid); }
+.act-chart .hit { fill: transparent; }
+.act-chart .hit:hover { fill: color-mix(in srgb, var(--ink) 6%, transparent); }
+.act-grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); }
+.act-kpi-value.is-text { font-size: var(--text-body); line-height: 22px; font-weight: 600; letter-spacing: 0; }
+/* The filter stays on screen under the top bar. */
+.act-controls { position: sticky; top: var(--navbar-height); z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); padding: var(--space-2) 0; background: var(--surface-page); }
+.act-check { display: inline-flex; align-items: center; gap: var(--space-2); font-size: max(13px, var(--text-min)); color: var(--text-primary); }
+@media (max-width: 1100px) { .act-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.dash-grid > .act-card { min-width: 0; }
+@media (max-width: 719px) { .act-grid-4 { grid-template-columns: minmax(0, 1fr); } }
+/* Space between the filter, the figures and the cards of a tab. */
+.act-grid-4 { margin-bottom: var(--space-4); }
+.act-controls { margin-bottom: var(--space-3); }
+/* Ένα θέμα: the figures end where their content ends. */
+.topic-grid .dash-grid { align-items: start; gap: var(--space-4); }

@@ -178,7 +178,7 @@
       }
       const net = netOf(tone)
       const title = t('mme.people.cell.tone', { outlet: o.name, person: p.name, n: fmt.int(n), net: signed(net) })
-      return h('td', { style: netColor(net), title, 'aria-label': title }, fmt.int(n))
+      return h('td', { style: netColor(net), title, 'aria-label': title }, n >= 1000 ? `${(n / 1000).toLocaleString(document.documentElement.lang || 'el', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}K` : fmt.int(n))
     }
     const totalCell = (p) => (mode === 'voice'
       ? h('td', { class: 'mme-num-col' }, fmt.int(S.personQuotes[p.k]))
@@ -234,9 +234,13 @@
     const x = S.set.issues[i]
     const shares = S.active.filter((o) => o.news > 0).map((o) => ({ o, v: shareOf(o, i), n: o.issues[i] })).sort((a, b) => b.v - a.v)
     const max = Math.max(...shares.map((r) => r.v), S.avgShare[i], 0.0001)
-    // The key of the tick (the average of the outlets) is on the line of the caption.
-    const sharePanel = h('div', { class: 'mme-panel' }, h('h3', { class: 'rows-caption' }, t('mme.topic.share'), ' · ', h('span', { class: 'swatch-tick', 'aria-hidden': 'true' }), ` ${t('find.avg', { n: pct(S.avgShare[i]) })}`),
-      UI.BarList(shares.map((r) => ({ label: outletLink(S, r.o), text: pct(r.v), value: r.v, tip: `${r.o.name}: ${pct(r.v)}, ${t('mme.avg')} ${pct(S.avgShare[i])}` })), { max, cls: 'mme-share', reference: { value: S.avgShare[i] } }))
+    // One outlet carries the point (the outlet of the title) and one row is the baseline, the average of the outlets. It stands in its place in the order.
+    const leadRow = shares.find((r) => r.o.news >= 100) || shares[0]
+    const shareRows = shares.map((r) => ({ label: outletLink(S, r.o), text: pct(r.v), value: r.v, color: r === leadRow ? 'var(--strong)' : 'var(--bar-rank)', tip: `${r.o.name}: ${pct(r.v)}, ${t('mme.avg')} ${pct(S.avgShare[i])}` }))
+    const at = shares.filter((r) => r.v >= S.avgShare[i]).length
+    shareRows.splice(at, 0, { label: t('mme.rank.all'), text: pct(S.avgShare[i]), value: S.avgShare[i], color: 'var(--emph-more)', cls: 'is-ref', tip: `${t('mme.avg')} ${pct(S.avgShare[i])}` })
+    const sharePanel = h('div', { class: 'mme-panel' }, h('h3', { class: 'rows-caption' }, t('mme.topic.share')),
+      UI.BarList(shareRows, { max, cls: 'mme-share' }))
     const stories = S.stories.filter((s) => s.issue === i && !s.generic).slice(0, 10)
     const storyPanel = h('div', { class: 'mme-panel' }, h('h3', { class: 'rows-caption' }, t('mme.topic.stories')),
       stories.length

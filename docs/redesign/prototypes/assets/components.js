@@ -1,6 +1,6 @@
 // Shared components of the prototypes. Names and props follow knowledge_base/redesign/shared-components.md.
 (function () {
-  const params = new URLSearchParams(location.search)
+  const params = window.ROUTES?.search ? window.ROUTES.search() : new URLSearchParams(location.search)
 
   // Language: Greek is the default. ?lang=en or the switch changes it.
   function readStoredLocale () {
@@ -59,6 +59,7 @@
       else if (name === 'class') el.setAttribute('class', value)
       else if (name === 'style' && typeof value === 'object') Object.assign(el.style, value)
       else if (name === 'html') el.innerHTML = value
+      else if (name === 'href' && tag === 'a' && window.ROUTES?.href) el.setAttribute('href', window.ROUTES.href(value))
       else el.setAttribute(name, value === true ? '' : value)
     }
     append(el, children)
@@ -162,7 +163,7 @@
   }
 
   // Bars (#54). Every bar of every page comes from the components below, with one spec:
-  // - A horizontal bar is 8 px high with round ends (4 px) on a track of --bar-track. The fill is --bar-fill,
+  // - A horizontal bar is 8 px high with round ends (4 px) on a track of --bar-track; a list of 10 rows or fewer may use the class bars-thick (16 px). The fill is --bar-fill,
   //   or the color of the data (a group, a party, a stance, a side). A reference value (an average) is a tick of 2 px.
   // - The parts of a stacked bar have a gap of 2 px. A diverging bar grows to both sides of a center line of 2 px.
   // - A column is 70% of its slot and 32 px wide at most, with round top corners (4 px). The parts of a stacked column have a gap of 1 px.
@@ -336,7 +337,8 @@
   // onSelect({ from, to }) (a drag over the days picks a period), minWidth (below 720 px the chart keeps this width and scrolls).
   // The highest column has its value above it (peak: false leaves it out, topLabels replace it). reference: { value, label }, a reference value
   // (an average, the previous period) as a dashed line across the columns, with its label on the right of the columns.
-  function BarChart ({ values, series, dates, labels, below, axisLabel, height = 220, label, tooltipOf, valueFormat = fmt.int, max, colorOf, topLabels, markers = {}, muted, flagged, picked = null, onPick, onSelect, minWidth, peak = true, reference }) {
+  // trend: one value or null for each column (a moving average), as a line over the columns.
+  function BarChart ({ trend, values, series, dates, labels, below, axisLabel, height = 220, label, tooltipOf, valueFormat = fmt.int, max, colorOf, topLabels, markers = {}, muted, flagged, picked = null, onPick, onSelect, minWidth, peak = true, reference }) {
     const n = (dates || labels).length
     const parts = series || [{ name: label, values }]
     const totals = Array.from({ length: n }, (_, i) => parts.reduce((a, s) => a + (s.values[i] || 0), 0))
@@ -413,6 +415,10 @@
         const ry = y(reference.value)
         svg.append(h('line', { class: 'bar-ref', x1: pad.left, x2: width - pad.right, y1: ry, y2: ry }),
           h('text', { class: 'bar-ref-text', x: width - pad.right + 6, y: ry + 4, 'text-anchor': 'start' }, reference.label))
+      }
+      if (trend) {
+        const pts = trend.map((v, i) => (v === null ? null : [pad.left + i * slot + slot / 2, y(v)])).filter(Boolean)
+        svg.append(h('path', { class: 'bar-trend', d: smoothPath(pts, new Set()) }))
       }
       if (axisLabel) svg.append(h('text', { class: 'axis-title', x: pad.left + plotW / 2, y: height - 4, 'text-anchor': 'middle' }, axisLabel))
       const indexAt = (e) => Math.min(n - 1, Math.max(0, Math.floor((e.clientX - svg.getBoundingClientRect().left - pad.left) / slot)))

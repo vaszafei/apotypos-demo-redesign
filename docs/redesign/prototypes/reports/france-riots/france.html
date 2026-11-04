@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="el" data-theme="light">
+<head>
+<meta charset="utf-8">
+<script src="../../assets/report-theme.js?v=3"></script>
+<link rel="stylesheet" href="../../assets/tokens.css?v=37">
+<link rel="stylesheet" href="../../assets/report-theme.css?v=2">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>html,body{margin:0}</style>
+</head>
+<body>
+<title>France Riots in French Media</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap">
+<style>
+
+/* Layout: one reading column of analysis panels; summary strip first, method note above results, evidence last (Apotypos convention). */
+:root {
+  --bg: #F6F4EF; --surface: #FFFEFB; --surface-2: #EDEAE3; --line: #DDD9D0; --line-strong: #C9C4B9;
+  --ink: #171717; --ink-soft: #404040; --muted: #686A70; --subtle: #99978F;
+  --accent: #315CFF; --accent-soft: #EEF1FF;
+  --f-report: #6B7280; --f-blame: #E85D3F; --f-explain: #16846B; --f-react: #D59524;
+  --f-report-soft: #EEEFF1; --f-blame-soft: #FFF0EB; --f-explain-soft: #E8F7F2; --f-react-soft: #FFF5DD;
+  --sans: "Geist", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --serif: "Source Serif 4", ui-serif, Georgia, serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #131311; --surface: #1B1A18; --surface-2: #24231F; --line: #2F2D29; --line-strong: #44413B;
+  --ink: #EDEBE6; --ink-soft: #CFCCC4; --muted: #9C9A93; --subtle: #77756E;
+  --accent: #7C95FF; --accent-soft: #1E2440;
+  --f-report: #9CA3AF; --f-blame: #F07A5F; --f-explain: #3FB896; --f-react: #E2AD4A;
+  --f-report-soft: #23252A; --f-blame-soft: #3A211B; --f-explain-soft: #15302A; --f-react-soft: #352A15;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #131311; --surface: #1B1A18; --surface-2: #24231F; --line: #2F2D29; --line-strong: #44413B;
+  --ink: #EDEBE6; --ink-soft: #CFCCC4; --muted: #9C9A93; --subtle: #77756E;
+  --accent: #7C95FF; --accent-soft: #1E2440;
+  --f-report: #9CA3AF; --f-blame: #F07A5F; --f-explain: #3FB896; --f-react: #E2AD4A;
+  --f-report-soft: #23252A; --f-blame-soft: #3A211B; --f-explain-soft: #15302A; --f-react-soft: #352A15;
+  color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 32px 64px }
+.wrap { max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px }
+h1, h2 { font-family: var(--serif); font-weight: 600; text-wrap: balance; margin: 0; letter-spacing: -0.01em }
+h1 { font-size: clamp(28px, 4.4vw, 40px); line-height: 1.12 }
+h2 { font-size: 21px; line-height: 1.25 }
+p { margin: 0 }
+.eyebrow { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted) }
+.lede { color: var(--ink-soft); max-width: 68ch; font-size: 16px }
+.muted { color: var(--muted) }
+.small { font-size: 13px }
+.num { font-variant-numeric: tabular-nums }
+header { display: flex; flex-direction: column; gap: 10px; padding-bottom: 4px }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0 }
+.panel-head { display: flex; flex-direction: column; gap: 4px }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px }
+@media (max-width: 820px) { .grid2 { grid-template-columns: minmax(0, 1fr) } }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden }
+.kpi { padding: 14px 16px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); margin: 0 -1px -1px 0; display: flex; flex-direction: column; gap: 2px }
+.kpi b { font-family: var(--serif); font-size: 30px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums }
+.kpi span { font-size: 12.5px; color: var(--muted) }
+.note { border-left: 3px solid var(--line-strong); padding: 10px 14px; background: var(--surface-2); border-radius: 0 8px 8px 0; font-size: 13.5px; color: var(--ink-soft); display: flex; flex-direction: column; gap: 6px }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--ink-soft) }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px }
+/* cluster bars */
+.bars { display: flex; flex-direction: column; gap: 2px }
+.bar-row { display: grid; grid-template-columns: minmax(150px, 290px) minmax(0, 1fr) 76px; gap: 12px; align-items: center; padding: 5px 6px; border-radius: 6px; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; width: 100% }
+.bar-row:hover { background: var(--surface-2) }
+.bar-row[aria-pressed="true"] { background: var(--accent-soft) }
+.bar-row:focus-visible, .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px }
+.bar-label { font-size: 13.5px; line-height: 1.3 }
+.track { height: 14px; background: var(--surface-2); border-radius: 3px; overflow: hidden }
+.fill { height: 100%; border-radius: 3px }
+.bar-val { font-family: var(--mono); font-size: 12.5px; text-align: right; color: var(--ink-soft) }
+@media (max-width: 560px) { .bar-row { grid-template-columns: minmax(0, 1fr) 64px; row-gap: 4px } .bar-row .track { grid-column: 1 / -1; grid-row: 2 } }
+/* heatmap */
+.scroll { overflow-x: auto }
+table { border-collapse: collapse; width: 100%; font-size: 13px }
+th { font-weight: 500; color: var(--muted); text-align: left; padding: 6px 8px; font-size: 12px; white-space: nowrap }
+td { padding: 4px; }
+.heat td.cell { text-align: center; font-family: var(--mono); font-size: 12px; border-radius: 4px; min-width: 64px; padding: 7px 4px }
+.heat td.name { padding: 6px 8px; white-space: nowrap; font-size: 13px }
+.echo td, .echo th { border-bottom: 1px solid var(--line); padding: 9px 8px; vertical-align: top }
+.echo td.j { font-family: var(--mono); white-space: nowrap }
+.svgchart { width: 100%; height: auto; display: block }
+.svgchart text { fill: var(--muted); font-family: var(--mono); font-size: 11px }
+/* evidence */
+.chips { display: flex; flex-wrap: wrap; gap: 6px }
+.chip { font: inherit; font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink-soft); cursor: pointer }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink) }
+.posts { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px }
+.post { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; background: var(--bg) }
+.post .who { font-weight: 600; font-size: 13.5px }
+.post .txt { font-size: 13.5px; color: var(--ink-soft); overflow-wrap: anywhere }
+.post .meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; color: var(--muted) }
+.pill { font-family: var(--mono); font-size: 11px; padding: 1px 7px; border-radius: 999px }
+a { color: var(--accent) }
+.filters { display: flex; flex-direction: column; gap: 8px }
+.filter-row { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 10px; align-items: start }
+.filter-label { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding-top: 6px }
+@media (max-width: 560px) { .filter-row { grid-template-columns: minmax(0, 1fr); gap: 4px } }
+.sig { font-family: var(--mono); font-size: 11px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--ink-soft) }
+.sig.strong { border-color: var(--f-blame); color: var(--f-blame) }
+.score { font-family: var(--mono); font-size: 11.5px; font-weight: 500; padding: 1px 8px; border-radius: 999px; background: var(--surface-2); color: var(--ink-soft) }
+.score.hi { background: var(--f-blame-soft); color: var(--f-blame) }
+.pair { display: flex; flex-direction: column; gap: 3px }
+.pair .track { height: 9px }
+.limits { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; color: var(--ink-soft); font-size: 14px; max-width: 80ch }
+@media (prefers-reduced-motion: no-preference) { .fill { transition: width .5s ease } }
+
+.pair .track + .track { margin-top: 3px }
+.heat th { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--muted); padding: 6px 4px; text-align: center }
+.echo th { text-align: left }
+.stack { display: flex; height: 100%; width: 100%; border-radius: 3px; overflow: hidden }
+.stack span { display: block; height: 100% }
+.days { display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 3px; align-items: end; height: 170px }
+.days .d { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; height: 100%; min-width: 0 }
+.days .col { width: 100%; display: flex; flex-direction: column-reverse; border-radius: 3px 3px 0 0; overflow: hidden }
+.days .n { font-family: var(--mono); font-size: 10px; color: var(--muted) }
+.days .l { font-family: var(--mono); font-size: 10px; color: var(--subtle) }
+select { font: inherit; font-size: 13px; padding: 4px 8px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--surface); color: var(--ink) }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Apotypos · French press · France, 1–20 Oct 2026</div>
+    <h1>How the French press framed its own riots</h1>
+    <p class="lede">This page shows how 11 French outlets reported the school protests and the riots of 17 October 2026, from 1 to 20 October. It uses the same method as the Greek press tab: each headline has one frame, and word measures count the words that outlets use. It also shows who owns each outlet.</p>
+  </header>
+
+  <section class="kpis" id="kpis" aria-label="Summary"></section>
+
+  <div class="note">
+    <strong>How the corpus was made</strong>
+    <span id="method"></span>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div class="eyebrow">Headline frames</div>
+      <h2 id="fr-title"></h2>
+      <p class="muted small"><b>Frames are coded from the headline.</b> One frame for each headline. The colour shows the family: grey for reporting, red for "against the protesters", green for "with the protesters", yellow for political fallout.</p>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="bars" id="bars"></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div class="eyebrow">Stance by owner</div>
+      <h2 id="own-title"></h2>
+      <p class="muted small"><b>Frames are coded from the headline.</b> Share of each owner group's headlines framed against the protesters (protester violence, far left, migration or Islam) and with them (police violence, causes, solidarity). The rest is reporting, politics and other news. Owner groups with fewer than 50 articles show counts, not percentages.</p>
+    </div>
+    <div class="bars" id="owners"></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div class="eyebrow">Every outlet at a glance</div>
+      <h2>Frame families and words, by outlet</h2>
+      <p class="muted small">Frame columns: <b>Frames are coded from the headline.</b> Word columns are text mentions: words are counted in the headline and the first 1,200 characters of the text. Cells give the percent of each outlet's articles, or a count for outlets with fewer than 50 articles.</p>
+    </div>
+    <div class="scroll"><table class="heat" id="heat"></table></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div class="eyebrow">Two phases</div>
+      <h2 id="day-title"></h2>
+      <p class="muted small">Articles for each day, coloured by frame family. <b>Frames are coded from the headline.</b></p>
+    </div>
+    <div class="days" id="days"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel">
+      <div class="panel-head">
+        <div class="eyebrow">Migration, Islam and Jewish shops</div>
+        <h2 id="m-title"></h2>
+        <p class="muted small"><b>Frames are coded from the headline.</b> Every headline coded "migration / Islam blamed" or "Jewish shops / antisemitism". The Narrative tab gives the voice of each one and the timeline across countries.</p>
+      </div>
+      <div><select id="pick" aria-label="Frame"><option value="M">Migration / Islam blamed</option><option value="A">Jewish shops / antisemitism</option></select></div>
+      <div class="scroll"><table class="echo" id="heads"></table></div>
+    </section>
+    <section class="panel">
+      <div class="panel-head">
+        <div class="eyebrow">Copy-paste echoes</div>
+        <h2 id="echo-title"></h2>
+        <p class="muted small">5-word shingles, overlap of 50% or more, on the first 3,000 characters of the text. Groups with the most outlets.</p>
+      </div>
+      <div class="scroll"><table class="echo" id="echo"></table></div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><div class="eyebrow">Limitations</div><h2>What this corpus can and cannot show</h2></div>
+    <ul class="limits">
+      <li>Libération refused all 297 requests, and Le Parisien most of them. So the left-leaning daily Libération is absent, and Le Parisien has only 15 articles.</li>
+      <li>CNews pages give only 60–90 words of text, so the word measures under-count CNews. Its headlines are complete.</li>
+      <li>Europe 1 publishes many short radio clips, one for each guest. So its count is high, and its frames show the guests that it invites.</li>
+      <li>One coder (a language model) gave each headline one frame. A second person did not check the codes. A headline is not the whole article.</li>
+      <li>The text that the crawler keeps can include sidebars added later. The word measures use the lead only for this reason.</li>
+      <li>Owners are as of 2025. "Bolloré" means the outlets controlled by the Bolloré family through Vivendi, Canal+ and Lagardère: Europe 1, the JDD and CNews.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+const D = {"n": 1986, "excluded": 66, "outlets": 11, "labels": {"N": "Event report (clashes, arrests, damage)", "G": "Government response and measures", "J": "Justice and trials", "E": "Costs, economy and markets", "I": "International reactions", "U": "Spreading abroad", "V": "Protester violence and looting", "L": "Far left / LFI blamed", "M": "Migration / Islam blamed", "P": "Police violence and repression", "C": "Causes and students' voices", "S": "Solidarity with the students", "O": "Political fallout and polls", "A": "Jewish shops / antisemitism", "X": "Other: explainers, soft news"}, "fam": {"report": ["N", "G", "J", "E", "I", "U"], "against": ["V", "L", "M"], "with": ["P", "C", "S"], "politics": ["O"], "other": ["A", "X"]}, "words": {"rough": "Rough labels", "police": "Police violence", "protest": "Protester violence", "sens": "Sensational wording"}, "all": {"n": 1986, "counts": {"N": 151, "G": 427, "V": 398, "X": 142, "O": 134, "L": 118, "P": 165, "M": 44, "J": 108, "S": 86, "E": 80, "C": 94, "I": 23, "A": 3, "U": 13}, "fam": {"report": 802, "against": 560, "with": 345, "politics": 134, "other": 145}, "words": {"rough": 353, "police": 269, "protest": 878, "sens": 324}}, "byOutlet": [{"outlet": "Le Figaro", "owner": "Dassault", "n": 495, "counts": {"O": 49, "L": 26, "G": 108, "N": 55, "V": 102, "X": 38, "J": 27, "E": 20, "P": 21, "S": 12, "C": 13, "I": 6, "M": 11, "U": 6, "A": 1}, "fam": {"report": 222, "against": 139, "with": 46, "politics": 49, "other": 39}, "words": {"rough": 92, "police": 58, "protest": 222, "sens": 91}, "copied": 14}, {"outlet": "BFMTV", "owner": "Rodolphe Saadé (CMA CGM)", "n": 387, "counts": {"N": 36, "G": 112, "V": 46, "X": 42, "O": 27, "L": 6, "P": 39, "S": 12, "C": 10, "E": 23, "J": 25, "I": 6, "M": 1, "U": 2}, "fam": {"report": 204, "against": 53, "with": 61, "politics": 27, "other": 42}, "words": {"rough": 49, "police": 62, "protest": 171, "sens": 35}, "copied": 15}, {"outlet": "Europe 1", "owner": "Bolloré", "n": 330, "counts": {"L": 50, "G": 49, "X": 17, "V": 148, "M": 12, "J": 7, "C": 18, "N": 7, "S": 1, "E": 11, "I": 1, "P": 1, "O": 7, "U": 1}, "fam": {"report": 76, "against": 210, "with": 20, "politics": 7, "other": 17}, "words": {"rough": 76, "police": 7, "protest": 149, "sens": 88}, "copied": 2}, {"outlet": "franceinfo", "owner": "Public service", "n": 301, "counts": {"N": 24, "C": 28, "G": 72, "L": 4, "S": 24, "V": 29, "P": 50, "O": 17, "E": 9, "J": 25, "X": 12, "I": 2, "U": 2, "M": 3}, "fam": {"report": 134, "against": 36, "with": 102, "politics": 17, "other": 12}, "words": {"rough": 35, "police": 60, "protest": 104, "sens": 22}, "copied": 0}, {"outlet": "Le JDD", "owner": "Bolloré", "n": 139, "counts": {"N": 9, "V": 42, "L": 20, "X": 8, "E": 4, "O": 14, "G": 13, "S": 4, "M": 13, "A": 1, "C": 6, "I": 4, "P": 1}, "fam": {"report": 30, "against": 75, "with": 11, "politics": 14, "other": 9}, "words": {"rough": 30, "police": 8, "protest": 56, "sens": 35}, "copied": 0}, {"outlet": "Le Monde", "owner": "Le Monde group", "n": 118, "counts": {"N": 10, "P": 20, "G": 34, "L": 3, "O": 12, "C": 11, "J": 2, "S": 6, "X": 4, "V": 11, "E": 3, "I": 1, "M": 1}, "fam": {"report": 50, "against": 15, "with": 37, "politics": 12, "other": 4}, "words": {"rough": 12, "police": 29, "protest": 53, "sens": 23}, "copied": 4}, {"outlet": "L'Humanité", "owner": "Independent (left)", "n": 88, "counts": {"S": 27, "L": 1, "P": 31, "N": 7, "G": 11, "C": 6, "I": 1, "J": 2, "X": 1, "E": 1}, "fam": {"report": 22, "against": 1, "with": 64, "politics": 0, "other": 1}, "words": {"rough": 14, "police": 42, "protest": 27, "sens": 11}, "copied": 1}, {"outlet": "20 Minutes", "owner": "Other", "n": 63, "counts": {"G": 16, "J": 11, "X": 12, "E": 7, "V": 3, "N": 2, "O": 6, "U": 1, "L": 3, "C": 1, "I": 1}, "fam": {"report": 38, "against": 6, "with": 1, "politics": 6, "other": 12}, "words": {"rough": 20, "police": 1, "protest": 47, "sens": 8}, "copied": 1}, {"outlet": "CNews", "owner": "Bolloré", "n": 32, "counts": {"V": 12, "G": 4, "J": 6, "L": 3, "M": 1, "E": 1, "U": 1, "X": 4}, "fam": {"report": 12, "against": 16, "with": 0, "politics": 0, "other": 4}, "words": {"rough": 12, "police": 1, "protest": 23, "sens": 6}, "copied": 0}, {"outlet": "Valeurs actuelles", "owner": "Iskandar Safa", "n": 18, "counts": {"G": 6, "V": 4, "L": 2, "X": 2, "I": 1, "O": 1, "E": 1, "M": 1}, "fam": {"report": 8, "against": 7, "with": 0, "politics": 1, "other": 2}, "words": {"rough": 8, "police": 0, "protest": 16, "sens": 4}, "copied": 0}, {"outlet": "Le Parisien", "owner": "LVMH", "n": 15, "counts": {"V": 1, "J": 3, "O": 1, "P": 2, "G": 2, "X": 2, "N": 1, "A": 1, "C": 1, "M": 1}, "fam": {"report": 6, "against": 2, "with": 3, "politics": 1, "other": 3}, "words": {"rough": 5, "police": 1, "protest": 10, "sens": 1}, "copied": 1}], "byOwner": [{"owner": "Bolloré", "n": 501, "counts": {"L": 73, "G": 66, "X": 29, "V": 202, "M": 26, "J": 13, "N": 16, "C": 24, "S": 5, "E": 16, "O": 21, "A": 1, "I": 5, "P": 2, "U": 2}, "fam": {"report": 118, "against": 301, "with": 31, "politics": 21, "other": 30}, "words": {"rough": 118, "police": 16, "protest": 228, "sens": 129}}, {"owner": "Dassault", "n": 495, "counts": {"O": 49, "L": 26, "G": 108, "N": 55, "V": 102, "X": 38, "J": 27, "E": 20, "P": 21, "S": 12, "C": 13, "I": 6, "M": 11, "U": 6, "A": 1}, "fam": {"report": 222, "against": 139, "with": 46, "politics": 49, "other": 39}, "words": {"rough": 92, "police": 58, "protest": 222, "sens": 91}}, {"owner": "Rodolphe Saadé (CMA CGM)", "n": 387, "counts": {"N": 36, "G": 112, "V": 46, "X": 42, "O": 27, "L": 6, "P": 39, "S": 12, "C": 10, "E": 23, "J": 25, "I": 6, "M": 1, "U": 2}, "fam": {"report": 204, "against": 53, "with": 61, "politics": 27, "other": 42}, "words": {"rough": 49, "police": 62, "protest": 171, "sens": 35}}, {"owner": "Public service", "n": 301, "counts": {"N": 24, "C": 28, "G": 72, "L": 4, "S": 24, "V": 29, "P": 50, "O": 17, "E": 9, "J": 25, "X": 12, "I": 2, "U": 2, "M": 3}, "fam": {"report": 134, "against": 36, "with": 102, "politics": 17, "other": 12}, "words": {"rough": 35, "police": 60, "protest": 104, "sens": 22}}, {"owner": "Le Monde group", "n": 118, "counts": {"N": 10, "P": 20, "G": 34, "L": 3, "O": 12, "C": 11, "J": 2, "S": 6, "X": 4, "V": 11, "E": 3, "I": 1, "M": 1}, "fam": {"report": 50, "against": 15, "with": 37, "politics": 12, "other": 4}, "words": {"rough": 12, "police": 29, "protest": 53, "sens": 23}}, {"owner": "Independent (left)", "n": 88, "counts": {"S": 27, "L": 1, "P": 31, "N": 7, "G": 11, "C": 6, "I": 1, "J": 2, "X": 1, "E": 1}, "fam": {"report": 22, "against": 1, "with": 64, "politics": 0, "other": 1}, "words": {"rough": 14, "police": 42, "protest": 27, "sens": 11}}, {"owner": "Other", "n": 63, "counts": {"G": 16, "J": 11, "X": 12, "E": 7, "V": 3, "N": 2, "O": 6, "U": 1, "L": 3, "C": 1, "I": 1}, "fam": {"report": 38, "against": 6, "with": 1, "politics": 6, "other": 12}, "words": {"rough": 20, "police": 1, "protest": 47, "sens": 8}}, {"owner": "Iskandar Safa", "n": 18, "counts": {"G": 6, "V": 4, "L": 2, "X": 2, "I": 1, "O": 1, "E": 1, "M": 1}, "fam": {"report": 8, "against": 7, "with": 0, "politics": 1, "other": 2}, "words": {"rough": 8, "police": 0, "protest": 16, "sens": 4}}, {"owner": "LVMH", "n": 15, "counts": {"V": 1, "J": 3, "O": 1, "P": 2, "G": 2, "X": 2, "N": 1, "A": 1, "C": 1, "M": 1}, "fam": {"report": 6, "against": 2, "with": 3, "politics": 1, "other": 3}, "words": {"rough": 5, "police": 1, "protest": 10, "sens": 1}}], "byDay": [{"day": "2026-10-01", "report": 41, "against": 45, "with": 10, "politics": 5, "other": 7}, {"day": "2026-10-02", "report": 38, "against": 35, "with": 25, "politics": 4, "other": 4}, {"day": "2026-10-03", "report": 20, "against": 11, "with": 6, "politics": 5, "other": 4}, {"day": "2026-10-04", "report": 23, "against": 20, "with": 11, "politics": 4, "other": 7}, {"day": "2026-10-05", "report": 34, "against": 34, "with": 30, "politics": 4, "other": 8}, {"day": "2026-10-06", "report": 41, "against": 34, "with": 41, "politics": 5, "other": 10}, {"day": "2026-10-07", "report": 34, "against": 24, "with": 40, "politics": 5, "other": 7}, {"day": "2026-10-08", "report": 21, "against": 22, "with": 23, "politics": 6, "other": 3}, {"day": "2026-10-09", "report": 15, "against": 13, "with": 16, "politics": 1, "other": 4}, {"day": "2026-10-10", "report": 2, "against": 8, "with": 9, "politics": 2, "other": 1}, {"day": "2026-10-11", "report": 1, "against": 16, "with": 7, "politics": 4, "other": 2}, {"day": "2026-10-12", "report": 9, "against": 15, "with": 8, "politics": 1, "other": 5}, {"day": "2026-10-13", "report": 15, "against": 14, "with": 20, "politics": 1, "other": 7}, {"day": "2026-10-14", "report": 17, "against": 10, "with": 15, "politics": 1, "other": 2}, {"day": "2026-10-15", "report": 28, "against": 9, "with": 13, "politics": 2, "other": 7}, {"day": "2026-10-16", "report": 27, "against": 16, "with": 13, "politics": 3, "other": 3}, {"day": "2026-10-17", "report": 30, "against": 36, "with": 11, "politics": 5, "other": 5}, {"day": "2026-10-18", "report": 66, "against": 59, "with": 7, "politics": 24, "other": 5}, {"day": "2026-10-19", "report": 198, "against": 96, "with": 19, "politics": 31, "other": 24}, {"day": "2026-10-20", "report": 142, "against": 43, "with": 21, "politics": 21, "other": 30}], "echo": [{"outlets": ["BFMTV", "Le Figaro", "Le Monde"], "n": 3, "day": "2026-10-13", "title": "Lycéen éborgné à Tours: un policier à l'origine d'un tir de LBD mis en examen pour violences aggravées"}, {"outlets": ["BFMTV", "Le Figaro", "Le Monde"], "n": 3, "day": "2026-10-14", "title": "\"On leur demande de se taire\": Omar Sy juge la réponse à la colère des lycéens \"lamentable\""}, {"outlets": ["BFMTV", "Le Figaro", "Le Monde"], "n": 3, "day": "2026-10-18", "title": "Manifestations du 17 octobre: une adolescente de 17 ans a perdu l'usage d'un oeil samedi à Mulhouse, l'IGPN saisie"}, {"outlets": ["BFMTV", "Europe 1", "Le Figaro"], "n": 3, "day": "2026-10-19", "title": "Un couvre-feu pour les mineurs instauré en Guadeloupe après des violences urbaines en marge de la manifestation du 17 octobre"}, {"outlets": ["BFMTV", "Le Figaro"], "n": 2, "day": "2026-10-02", "title": "Colère des lycéens: Gérald Darmanin veut faire \"payer les réparations\" aux parents en cas de dégâts provoqués par leurs enfants"}, {"outlets": ["BFMTV", "Le Figaro"], "n": 2, "day": "2026-10-03", "title": "Colère des lycéens: plus de 800 interpellations en Île-de-France, dont \"85 % de mineurs\""}, {"outlets": ["BFMTV", "Le Figaro"], "n": 2, "day": "2026-10-04", "title": "La famille de l'adolescent éborgné à Tours en marge des manifestations lycéennes a porté plainte"}, {"outlets": ["BFMTV", "Le Figaro"], "n": 2, "day": "2026-10-07", "title": "Mobilisation lycéenne: un élève blessé à la tête à Marseille, une enquête pour \"violences volontaires\" ouverte"}, {"outlets": ["Le Figaro", "Le Monde"], "n": 2, "day": "2026-10-10", "title": "Le lycéen amputé d'une main à Lens dément avoir ramassé la grenade, selon son avocate"}, {"outlets": ["BFMTV", "Le Figaro"], "n": 2, "day": "2026-10-15", "title": "La préfecture de police interdit le trajet d'une manifestation à Paris le 17 octobre mais propose \"un itinéraire alternatif\""}, {"outlets": ["BFMTV", "Le Figaro"], "n": 2, "day": "2026-10-16", "title": "Colère lycéenne: le parquet de Bobigny ouvre une enquête pour violences sur des policiers au lycée Paul-Éluard de Saint-Denis"}, {"outlets": ["BFMTV", "L'Humanité"], "n": 2, "day": "2026-10-18", "title": "17 octobre: Yaël Braun-Pivet va proposer une commission d'enquête parlementaire sur les violences et la stratégie de maintien de l'ordre"}], "copyShare": 38, "echoGroups": 17, "heads": [{"outlet": "Europe 1", "day": "2026-10-01", "title": "Blocage des lycées : «Il faut mettre les mots sur 40 ans d'échec de l'immigration», estime Pascal Praud", "url": "https://www.europe1.fr/emissions/lheure-des-pros/blocage-des-lycees-il-faut-mettre-les-mots-sur-40-ans-dechec-de-limmigration-estime-pascal-praud-1115636", "code": "M"}, {"outlet": "Le JDD", "day": "2026-10-04", "title": "Violences urbaines en France : Donald Trump Jr. met en cause «l'immigration sans entrave»", "url": "https://www.lejdd.fr/International/violences-urbaines-en-france-donald-trump-jr-met-en-cause-limmigration-sans-entrave-185220", "code": "M"}, {"outlet": "Le JDD", "day": "2026-10-04", "title": "Mobilisations lycéennes : la justice saisie après des propos antisémites à Carpentras", "url": "https://www.lejdd.fr/Societe/mobilisations-lyceennes-la-justice-saisie-apres-des-propos-antisemites-a-carpentras-185205", "code": "A"}, {"outlet": "Europe 1", "day": "2026-10-05", "title": "«Free Palestine» entre deux plaintes sur les heures de cours : Quel est le rapport avec les blocus ?", "url": "https://www.europe1.fr/emissions/yen-aura-pour-tout-le-monde/free-palestine-entre-deux-plaintes-sur-les-heures-de-cours-quel-est-le-rapport-avec-les-blocus-1124690", "code": "M"}, {"outlet": "Le Figaro", "day": "2026-10-06", "title": "Mobilisation des lycéens : Donald Trump juge «l’islam» et «l’immigration» responsables du mouvement en France", "url": "https://www.lefigaro.fr/international/mobilisation-des-lyceens-donald-trump-juge-l-islam-et-l-immigration-responsables-du-mouvement-en-france-20261006", "code": "M"}, {"outlet": "Le Figaro", "day": "2026-10-06", "title": "Blocus des lycées : près d’Orléans, des lycéens chantent à la gloire de Mohamed Merah et Salah Abdeslam, le parquet ouvre une enquête", "url": "https://www.lefigaro.fr/faits-divers/blocus-des-lycees-pres-d-orleans-des-lyceens-chantent-a-la-gloire-de-mohamed-merah-et-salah-abdeslam-le-parquet-ouvre-une-enquete-20261006", "code": "M"}, {"outlet": "Le JDD", "day": "2026-10-06", "title": "Islam, immigration : Trump livre son analyse sur les mobilisations lycéennes en France", "url": "https://www.lejdd.fr/International/il-ne-sagit-pas-des-ecoles-donald-trump-livre-son-analyse-sur-les-mobilisations-lyceennes-en-france-185391", "code": "M"}, {"outlet": "Le JDD", "day": "2026-10-06", "title": "Loiret : des lycéens scandent un morceau de rap à la gloire de Mohamed Merah et Salah Abdeslam", "url": "https://www.lejdd.fr/Societe/loiret-des-lyceens-scandent-un-morceau-de-rap-a-la-gloire-de-mohamed-merah-et-salah-abdeslam-185352", "code": "M"}, {"outlet": "franceinfo", "day": "2026-10-06", "title": "Donald Trump juge \"l'islam\" et \"l'immigration\" responsables du mouvement lycéen en France", "url": "https://www.franceinfo.fr/monde/usa/presidentielle/donald-trump/hors-de-controle-donald-trump-juge-l-islam-et-l-immigration-responsables-du-mouvement-lyceen-en-france_8225686.html", "code": "M"}, {"outlet": "Europe 1", "day": "2026-10-08", "title": "Blocus des lycées : «Qu'est-ce que fout un drapeau de la Palestine ici ?», dénonce un jeune", "url": "https://www.europe1.fr/emissions/yen-aura-pour-tout-le-monde/blocus-des-lycees-quest-ce-que-fout-un-drapeau-de-la-palestine-ici-denonce-un-jeune-1131950", "code": "M"}, {"outlet": "Europe 1", "day": "2026-10-08", "title": "Chant à la gloire de Mohamed Merah : jusqu'où ira la folie de ces lycéens ?", "url": "https://www.europe1.fr/emissions/europe-1-soir/chant-a-la-gloire-de-mohamed-merah-jusquou-ira-la-folie-de-ces-lyceens-1132268", "code": "M"}, {"outlet": "Le Figaro", "day": "2026-10-08", "title": "«Bataclan, je l’ai shooté à l’œil» : le rappeur BORO700, dont l’une des chansons a été scandée lors d’un blocus lycéen, sera jugé pour apologie du terrorisme", "url": "https://www.lefigaro.fr/faits-divers/bataclan-je-l-ai-shoote-a-l-oeil-le-rappeur-boro700-dont-l-une-des-chansons-a-ete-scandee-lors-d-un-blocus-lyceen-sera-juge-pour-apologie-du-terrorisme-20261008", "code": "M"}, {"outlet": "Le JDD", "day": "2026-10-11", "title": "Violences lycéennes : Ted Cruz recommande une vidéo de Thaïs d’Escufon", "url": "https://www.lejdd.fr/International/tout-le-monde-devrait-regarder-ca-ted-cruz-recommande-une-video-de-thais-descufon-sur-les-emeutes-lyceennes-185778", "code": "M"}, {"outlet": "Le JDD", "day": "2026-10-15", "title": "Blocage des lycées : des jeunes filmés avec des maillots floqués aux noms de Ben Laden, Hitler et Merah", "url": "https://www.lejdd.fr/Societe/blocage-des-lycees-des-jeunes-filmes-avec-des-maillots-floques-aux-noms-de-ben-laden-hitler-et-merah-186114", "code": "M"}, {"outlet": "Le JDD", "day": "2026-10-15", "title": "Blocage des lycées : Marion Maréchal fait le lien entre violences et immigration", "url": "https://www.lejdd.fr/politique/blocage-des-lycees-marion-marechal-fait-le-lien-entre-violences-et-immigration-186075", "code": "M"}, {"outlet": "BFMTV", "day": "2026-10-18", "title": "Manifestations du 17 octobre: le vice-président américain JD Vance accuse l'immigration dans les violences en France", "url": "https://www.bfmtv.com/societe/manifestations/manifestations-du-17-octobre-le-vice-president-americain-jd-vance-accuse-l-immigration-dans-les-violences-en-france_AD-202610180055.html", "code": "M"}, {"outlet": "Le Figaro", "day": "2026-10-18", "title": "Manifestations du 17 octobre : pour JD Vance, l'immigration est responsable des violences", "url": "https://video.lefigaro.fr/figaro/flash-actu/manifestations-du-17-octobre-pour-jd-vance-l-immigration-est-responsable-des-violences-20261018", "code": "M"}, {"outlet": "Le Figaro", "day": "2026-10-18", "title": "Manifestations en France : JD Vance tient l'immigration responsable des violences", "url": "https://www.lefigaro.fr/flash-actu/manifestations-en-france-jd-vance-tient-l-immigration-responsable-des-violences-20261018", "code": "M"}, {"outlet": "Le JDD", "day": "2026-10-18", "title": "Émeutes du 17 octobre : Peter Magyar défend «la politique migratoire la plus stricte»", "url": "https://www.lejdd.fr/International/emeutes-du-17-octobre-peter-magyar-prone-la-politique-migratoire-la-plus-stricte-186378", "code": "M"}, {"outlet": "Le JDD", "day": "2026-10-18", "title": "Émeutes du 17 octobre : Trump blâme l'immigration en France", "url": "https://www.lejdd.fr/International/la-france-brule-donald-trump-met-en-cause-limmigration-apres-les-emeutes-du-17-octobre-186369", "code": "M"}, {"outlet": "Le JDD", "day": "2026-10-18", "title": "Émeutes du 17 octobre : Marion Maréchal dénonce «une insurrection racaillo-gauchiste»", "url": "https://www.lejdd.fr/politique/emeutes-du-17-octobre-marion-marechal-denonce-une-insurrection-racaillo-gauchiste-186363", "code": "M"}, {"outlet": "Le JDD", "day": "2026-10-18", "title": "17 octobre : une statue de Jeanne d’Arc «voilée d'un gilet jaune» et affublée d'un drapeau palestinien", "url": "https://www.lejdd.fr/Societe/17-octobre-une-statue-de-jeanne-darc-voilee-dun-gilet-jaune-et-affublee-dun-drapeau-palestinien-186351", "code": "M"}, {"outlet": "Le JDD", "day": "2026-10-18", "title": "Émeutes du 17 octobre : JD Vance blâme «les progressistes occidentaux qui ont importé le tiers-monde en France»", "url": "https://www.lejdd.fr/International/emeutes-du-17-octobre-jd-vance-blame-les-progressistes-occidentaux-qui-ont-importe-le-tiers-monde-en-france-186348", "code": "M"}, {"outlet": "franceinfo", "day": "2026-10-18", "title": "Donald Trump affirme que \"la France brûle\" après les manifestations du 17 octobre et dénonce un pays \"brisé\" par l'immigration", "url": "https://www.franceinfo.fr/economie/greve/les-progressistes-occidentaux-ont-importe-le-tiers-monde-le-vice-president-americain-jd-vance-pointe-le-role-de-l-immigration-dans-les-violences-lors-des-manifestations-du-17-octobre_8242465.html", "code": "M"}, {"outlet": "CNews", "day": "2026-10-19", "title": "Violences urbaines : «La nouvelle France a fait la convergence entre le wokistan et l'islamistan», note Philippe de Villiers", "url": "https://www.cnews.fr/videos/france/2026-10-19/violences-urbaines-la-nouvelle-france-fait-la-convergence-entre-le", "code": "M"}, {"outlet": "Europe 1", "day": "2026-10-19", "title": "«Ce ne sont pas des manifestations, ce sont des pillages barbaresques», dénonce Sabrina Medjebeur", "url": "https://www.europe1.fr/emissions/lheure-des-pros/ce-ne-sont-pas-des-manifestations-ce-sont-des-pillages-barbaresques-denonce-sabrina-medjebeur-1162926", "code": "M"}, {"outlet": "Europe 1", "day": "2026-10-19", "title": "Émeutes du 17 octobre : « On fait une erreur d’analyse sur les protagonistes de ces manifestations », estime Florence Bergeaud-Blackler anthropologue française", "url": "https://www.europe1.fr/emissions/christine-kelly-et-vous/emeutes-du-17-octobre-on-fait-une-erreur-danalyse-sur-les-protagonistes-de-ces-manifestations-estime-florence-bergeaud-blackler-anthropologue-francaise-1163334", "code": "M"}, {"outlet": "Europe 1", "day": "2026-10-19", "title": "Émeutes du 17 octobre : « On ne prend pas en compte les symboles culturels », déplore Florence Bergeaud-Blackler", "url": "https://www.europe1.fr/emissions/christine-kelly-et-vous/emeutes-du-17-octobre-on-ne-prend-pas-en-compte-les-symboles-culturels-deplore-florence-bergeaud-blackler-1163337", "code": "M"}, {"outlet": "Europe 1", "day": "2026-10-19", "title": "Émeutes : « Ceux qui sont responsables, c’est toute cette classe politique qui, depuis 30 ans, a avalisé ce modèle de société », dénonce Ivan Rioufol", "url": "https://www.europe1.fr/emissions/europe-1-info/emeutes-ceux-qui-sont-responsables-cest-toute-cette-classe-politique-qui-depuis-30-ans-a-avalise-ce-modele-de-societe-denonce-ivan-rioufol-1163532", "code": "M"}, {"outlet": "Europe 1", "day": "2026-10-19", "title": "Émeutes : « C’est une rupture civilisationnelle », affirme Ivan Rioufol, qui dénonce un affrontement entre deux France", "url": "https://www.europe1.fr/emissions/europe-1-info/emeutes-cest-une-rupture-civilisationnelle-affirme-ivan-rioufol-qui-denonce-un-affrontement-entre-deux-france-1163538", "code": "M"}, {"outlet": "Europe 1", "day": "2026-10-19", "title": "Émeutes du 17 octobre : « Une alliance mortifère entre le gauchisme et l’islamisme », dénonce Yvan Rioufol", "url": "https://www.europe1.fr/emissions/europe-1-info/emeutes-du-17-octobre-une-alliance-mortifere-entre-le-gauchisme-et-lislamisme-denonce-yvan-rioufol-1163541", "code": "M"}, {"outlet": "Europe 1", "day": "2026-10-19", "title": "Émeutes du 17 octobre : «Il faut arrêter l'immigration», martèle Jordan Bardella", "url": "https://www.europe1.fr/politique/emeutes-du-17-octobre-il-faut-arreter-limmigration-martele-jordan-bardella-1162443", "code": "M"}, {"outlet": "Le Figaro", "day": "2026-10-19", "title": "Après les violences urbaines en France, les dirigeants européens s’écharpent sur l’immigration", "url": "https://www.lefigaro.fr/international/apres-les-violences-urbaines-en-france-les-dirigeants-europeens-s-echarpent-sur-l-immigration-20261019", "code": "M"}, {"outlet": "Le Figaro", "day": "2026-10-19", "title": "Florence Bergeaud-Blackler : « Pour certains émeutiers, piller des « mécréants » ou des « colons » s’inscrit dans leur système de normes »", "url": "https://www.lefigaro.fr/vox/societe/florence-bergeaud-blackler-pour-certains-emeutiers-piller-des-mecreants-ou-des-colons-s-inscrit-dans-leur-systeme-de-normes-20261019", "code": "M"}, {"outlet": "Le Figaro", "day": "2026-10-19", "title": "« Pillages impunis, attaque de CNews, rôle de l’immigration : cette guerre “si vile” qui vient »", "url": "https://www.lefigaro.fr/vox/societe/pillages-impunis-attaque-de-cnews-role-de-l-immigration-cette-guerre-si-vile-qui-vient-20261019", "code": "M"}, {"outlet": "Le JDD", "day": "2026-10-19", "title": "Violences urbaines, immigration, antifas... Ce qu'il faut retenir de l'interview de Jordan Bardella à CNews", "url": "https://www.lejdd.fr/politique/violences-urbaines-immigration-antifas-ce-quil-faut-retenir-de-linterview-de-jordan-bardella-a-cnews-186441", "code": "M"}, {"outlet": "Le JDD", "day": "2026-10-19", "title": "Violences urbaines : «Il n'y aura pas de retour à la paix sociale sans la remigration», martèle Éric Zemmour", "url": "https://www.lejdd.fr/politique/violences-urbaines-il-ny-aura-pas-de-retour-a-la-paix-sociale-sans-la-remigration-martele-eric-zemmour-186411", "code": "M"}, {"outlet": "Le Monde", "day": "2026-10-19", "title": "Mobilisation du 17 octobre : Trump et l’entourage de Poutine y voient un « chaos migratoire » et la « décadence » de l’Europe", "url": "https://www.lemonde.fr/international/article/2026/10/19/mobilisation-du-17-octobre-trump-et-le-kremlin-main-dans-la-main-pour-denoncer-le-chaos-migratoire-et-la-decadence-de-l-europe_6797410_3210.html", "code": "M"}, {"outlet": "Europe 1", "day": "2026-10-20", "title": "Pillages : «Ce sont des gens qui haïssent le pays qui est le leur», souligne Charlotte d'Ornellas", "url": "https://www.europe1.fr/emissions/lheure-des-pros/pillages-ce-sont-des-gens-qui-haissent-le-pays-qui-est-le-leur-souligne-charlotte-dornellas-1166205", "code": "M"}, {"outlet": "Le Figaro", "day": "2026-10-20", "title": "Gilles Kepel : « Le chaos du 17 octobre a révélé les failles de notre identité collective »", "url": "https://www.lefigaro.fr/vox/politique/gilles-kepel-le-chaos-du-17-octobre-a-revele-les-failles-de-notre-identite-collective-20261020", "code": "M"}, {"outlet": "Le Figaro", "day": "2026-10-20", "title": "Chant guerrier, photo d’un terroriste, menaces contre les policiers… Un homme interpellé le 17 octobre pour apologie du terrorisme", "url": "https://www.lefigaro.fr/faits-divers/chant-guerrier-photo-d-un-terroriste-menaces-contre-les-policiers-un-homme-interpelle-le-17-octobre-pour-apologie-du-terrorisme-20261020", "code": "M"}, {"outlet": "Le Figaro", "day": "2026-10-20", "title": "Pillages à Marseille : le Crif et la préfecture démentent un ciblage des commerces juifs", "url": "https://www.lefigaro.fr/marseille/pillages-a-marseille-le-crif-et-la-prefecture-dementent-un-ciblage-des-commerces-juifs-20261020", "code": "A"}, {"outlet": "Le Figaro", "day": "2026-10-20", "title": "Violences du 17 octobre: des téléspectateurs saisissent l’Arcom après les propos d’Éric Zemmour", "url": "https://video.lefigaro.fr/figaro/politique/violences-du-17-octobre-des-telespectateurs-saisissent-l-arcom-apres-les-propos-d-eric-zemmour-20261020", "code": "M"}, {"outlet": "Le Parisien", "day": "2026-10-20", "title": "« Les commerces ont été pillés sans distinction religieuse » : le Crif et la préfecture de police démentent un ciblage des boutiques juives à Marseille", "url": "https://www.leparisien.fr/societe/les-commerces-ont-ete-pilles-sans-distinction-religieuse-le-crif-et-la-prefecture-de-police-dementent-un-ciblage-des-boutiques-juives-a-marseille-20-10-2026-W7D6GITAR5ELVNUHSGWYBCDM6M.php", "code": "A"}, {"outlet": "Le Parisien", "day": "2026-10-20", "title": "Violences du 17 octobre : « Paris va bientôt devenir une ville musulmane », Trump pointe du doigt l’immigration en France", "url": "https://www.leparisien.fr/international/etats-unis/violences-du-17-octobre-paris-va-bientot-devenir-une-ville-musulmane-trump-pointe-du-doigt-limmigration-en-france-20-10-2026-V6QKZS7HKJFP5KKXBTWF7NXPJ4.php", "code": "M"}, {"outlet": "Valeurs actuelles", "day": "2026-10-20", "title": "17 octobre 2026 : l’intifada française", "url": "https://www.valeursactuelles.com/societe/17-octobre-2026-lintifada-francaise", "code": "M"}, {"outlet": "franceinfo", "day": "2026-10-20", "title": "Violences du 17 octobre : Bruno Retailleau dénonce une \"convergence entre l'extrême gauche et des racailles\" issues de l'immigration", "url": "https://www.franceinfo.fr/societe/mobilisation-du-17-octobre/violences-du-17-octobre-bruno-retailleau-denonce-une-convergence-entre-l-extreme-gauche-et-des-racailles-issues-de-l-immigration_8245450.html", "code": "M"}]};
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const pct = (n, d) => d ? Math.round(n / d * 100) : 0;
+const L = D.labels, N = D.n, A = D.all;
+const FC = { report: 'var(--f-report)', against: 'var(--f-blame)', with: 'var(--f-explain)', politics: 'var(--f-react)', other: 'var(--subtle)' };
+const FN = { report: 'Reporting', against: 'Against the protesters', with: 'With the protesters', politics: 'Political fallout', other: 'Other' };
+const famOf = k => Object.keys(D.fam).find(f => D.fam[f].includes(k));
+const kpis = (id, list) => { document.getElementById(id).innerHTML = list.map(([b, s]) => `<div class="kpi"><b>${b}</b><span>${esc(s)}</span></div>`).join(''); };
+const row = (label, val, fills) => `<div class="bar-row" style="cursor:default"><span class="bar-label">${label}</span><span class="pair">${fills.map(([w, c]) => `<span class="track"><span class="fill" style="display:block;width:${w}%;background:${c}"></span></span>`).join('')}</span><span class="bar-val num">${val}</span></div>`;
+const own = o => D.byOwner.find(x => x.owner === o);
+const bol = own('Bolloré'), pub = own('Public service');
+const mBol = bol.counts.M || 0, mAll = A.counts.M || 0;
+
+kpis('kpis', [
+  [N.toLocaleString('en'), `articles from ${D.outlets} French outlets`],
+  [pct(A.fam.report, N) + '%', 'plain reporting'],
+  [`${pct(A.fam.against, N)}% / ${pct(A.fam.with, N)}%`, 'against / with the protesters'],
+  [`${pct(bol.fam.against, bol.n)}% / ${pct(pub.fam.against, pub.n)}%`, 'against the protesters: Bolloré outlets / public service'],
+  [`${mBol} of ${mAll}`, 'migration or Islam headlines are in Bolloré outlets'],
+  [pct(D.copyShare, N) + '%', 'near-copies of another outlet (Greek press: 18%)'],
+]);
+document.getElementById('method').textContent = `On 21 October, Apotypos read the dated sitemaps of 12 French outlets and kept the articles about the school protests and the riots, 1–20 October: ${N.toLocaleString('en')} articles from ${D.outlets} outlets. ${D.excluded} items are out of scope: duplicate titles and stories about other events. Each headline has one frame.`;
+
+document.getElementById('legend').innerHTML = Object.keys(FN).map(f => `<span><i style="background:${FC[f]}"></i>${FN[f]} · ${pct(A.fam[f], N)}%</span>`).join('');
+const keys = Object.keys(L).filter(k => A.counts[k]).sort((a, b) => A.counts[b] - A.counts[a]), mx = A.counts[keys[0]];
+document.getElementById('bars').innerHTML = keys.map(k => row(esc(L[k]), `${A.counts[k]} · ${pct(A.counts[k], N)}%`, [[A.counts[k] / mx * 100, FC[famOf(k)]]])).join('');
+document.getElementById('fr-title').textContent = `Government response leads, and protester violence is close behind; ${pct(A.fam.against, N)}% of headlines are against the protesters, ${pct(A.fam.with, N)}% with them`;
+
+const ow = D.byOwner.filter(o => o.n >= 15).sort((a, b) => b.fam.against / b.n - a.fam.against / a.n);
+// owner groups or outlets under 50 articles show a count, not a percentage
+const val = (k, n) => n < 50 ? String(k) : pct(k, n) + '%';
+const om = Math.max(...ow.map(o => Math.max(pct(o.fam.against, o.n), pct(o.fam.with, o.n))));
+document.getElementById('owners').innerHTML = ow.map(o => row(`${esc(o.owner)} <span class="muted small">(${o.n})</span>`, `${val(o.fam.against, o.n)} | ${val(o.fam.with, o.n)}`,
+  [[pct(o.fam.against, o.n) / om * 100, FC.against], [pct(o.fam.with, o.n) / om * 100, FC.with]])).join('');
+document.getElementById('own-title').textContent = `The Bolloré outlets frame ${pct(bol.fam.against, bol.n)}% of headlines against the protesters; the public service outlets ${pct(pub.fam.against, pub.n)}%, L'Humanité ${pct(own('Independent (left)').fam.against, own('Independent (left)').n)}%`;
+
+const WK = Object.keys(D.words);
+document.getElementById('heat').innerHTML = `<thead><tr><th></th><th>Owner</th><th>n</th>${Object.keys(FN).slice(0, 4).map(f => `<th>${FN[f]}</th>`).join('')}${WK.map(k => `<th>${esc(D.words[k])}</th>`).join('')}<th>Near-copies</th></tr></thead><tbody>` +
+  D.byOutlet.filter(o => o.n >= 15).map(o => `<tr><td class="name">${esc(o.outlet)}</td><td class="name muted">${esc(o.owner)}</td><td class="num">${o.n}</td>${Object.keys(FN).slice(0, 4).map(f => { const v = pct(o.fam[f], o.n); return `<td class="cell" style="background:color-mix(in srgb, ${FC[f]} ${Math.min(80, v * 1.1)}%, transparent)">${val(o.fam[f], o.n)}</td>`; }).join('')}${WK.map(k => `<td class="cell">${val(o.words[k], o.n)}</td>`).join('')}<td class="cell">${val(o.copied, o.n)}</td></tr>`).join('') + '</tbody>';
+
+const dm = Math.max(...D.byDay.map(d => Object.keys(FN).reduce((s, f) => s + d[f], 0)));
+document.getElementById('days').innerHTML = D.byDay.map(d => { const t = Object.keys(FN).reduce((s, f) => s + d[f], 0);
+  return `<div class="d"><span class="n">${t}</span><span class="col" style="height:${t / dm * 100}%">${Object.keys(FN).map(f => `<span style="height:${t ? d[f] / t * 100 : 0}%;background:${FC[f]}"></span>`).join('')}</span><span class="l">${+d.day.slice(8)}</span></div>`; }).join('');
+const peak = D.byDay.reduce((a, b) => Object.keys(FN).reduce((s, f) => s + b[f], 0) > Object.keys(FN).reduce((s, f) => s + a[f], 0) ? b : a);
+document.getElementById('day-title').textContent = `A school movement from 1 October, then a riot story: the peak is ${+peak.day.slice(8)} October`;
+
+const pick = document.getElementById('pick');
+const show = () => { const k = pick.value;
+  document.getElementById('heads').innerHTML = `<thead><tr><th>Day</th><th>Outlet</th><th>Headline</th></tr></thead><tbody>` +
+    D.heads.filter(h => h.code === k).sort((a, b) => a.day.localeCompare(b.day)).map(h => `<tr><td class="num">${+h.day.slice(8)} Oct</td><td>${esc(h.outlet)}</td><td><a href="${esc(h.url)}" target="_blank" rel="noopener">${esc(h.title)}</a></td></tr>`).join('') + '</tbody>'; };
+pick.addEventListener('change', show); show();
+document.getElementById('m-title').textContent = `${mAll} headlines blame migration or Islam, ${mBol} of them in Europe 1, the JDD and CNews`;
+
+document.getElementById('echo-title').textContent = `Only ${pct(D.copyShare, N)}% of articles are near-copies: French outlets write their own text`;
+document.getElementById('echo').innerHTML = `<thead><tr><th>Outlets</th><th>Day</th><th>Headline (earliest copy)</th></tr></thead><tbody>` +
+  D.echo.map(e => `<tr><td>${esc(e.outlets.join(' · '))}</td><td class="num">${+e.day.slice(8)} Oct</td><td>${esc(e.title)}</td></tr>`).join('') + '</tbody>';
+</script>
+<script>
+(() => {
+  if (window.parent === window) return
+  const send = () => window.parent.postMessage({ type: 'france-riots-height', h: document.body.offsetHeight }, '*')
+  new ResizeObserver(send).observe(document.body)
+  window.addEventListener('load', send)
+  send()
+})()
+</script>
+</body>
+</html>

@@ -2,32 +2,37 @@
 <html lang="el">
 <head>
   <meta charset="utf-8">
+  <base href="/">
+  <script src="assets/routes.js?v=4"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=15">
-  <link rel="stylesheet" href="assets/app.css?v=45">
-  <link rel="stylesheet" href="assets/dash.css?v=88">
-  <link rel="stylesheet" href="assets/mme.css?v=36">
-  <script src="assets/page-move.js?v=1"></script>
+  <link rel="stylesheet" href="assets/tokens.css?v=37">
+  <link rel="stylesheet" href="assets/app.css?v=69">
+  <link rel="stylesheet" href="assets/dash.css?v=94">
+  <link rel="stylesheet" href="assets/activity.css?v=12">
+  <link rel="stylesheet" href="assets/mme.css?v=37">
+  <script src="assets/page-move.js?v=4"></script>
 </head>
 <body>
   <div id="app"></div>
-  <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=39"></script>
-  <script src="assets/messages-v2.js?v=48"></script>
-  <script src="assets/messages-spread.js?v=17"></script>
-  <script src="assets/messages-mme.js?v=21"></script>
-  <script src="assets/components.js?v=17"></script>
-  <script src="assets/motion.js?v=3"></script>
-  <script src="assets/dash.js?v=21"></script>
-  <script src="assets/mme.js?v=23"></script>
+  <script src="assets/icons.js?v=12"></script>
+  <script src="assets/messages.js?v=43"></script>
+  <script src="assets/messages-v2.js?v=51"></script>
+  <script src="assets/messages-spread.js?v=18"></script>
+  <script src="assets/messages-mme.js?v=24"></script>
+  <script src="assets/components.js?v=19"></script>
+  <script src="assets/motion.js?v=6"></script>
+  <script src="assets/dash.js?v=25"></script>
+  <script src="assets/mme.js?v=26"></script>
   <script src="assets/spread.js?v=6"></script>
-  <script src="assets/shell.js?v=59"></script>
-  <script src="data/stories.js?v=2"></script>
-  <script src="data/storyDetail.js?v=2"></script>
-  <script src="data/groups.js?v=1"></script>
-  <script src="data/mme.js?v=20"></script>
+  <script src="assets/shell.js?v=74"></script>
+  <script src="data/stories.js?v=32"></script>
+  <script src="data/storyDetail.js?v=32"></script>
+  <script src="data/groups.js?v=31"></script>
+  <script src="data/mme.js?v=31"></script>
+  <script src="data/home.js?v=31"></script>
+  <script src="assets/activity.js?v=8"></script>
   <script>
     // Stories: one page for all stories (APO-180). The chart of days shows when stories start, and the table lists every story.
     // Two tabs (#62): Επισκόπηση (/stories) and Ανά μέσο (?tab=outlets, /stories/outlets) with the stories × outlets matrix.
@@ -46,17 +51,17 @@
     const FIRST = 12
     // The 4 ways a story starts, from the first day with an outlet that has a group. The first 3 are teal and gray, so they do not use the colors of the groups.
     const TYPES = [
-      ['together', 'var(--series-news)'],
-      ['follow', 'var(--series-other)'],
-      ['single', 'var(--bar-muted)'],
-      ['none', 'var(--rule)']
+      ['together', 'var(--story-together)'],
+      ['follow', 'var(--story-follow)'],
+      ['single', 'var(--story-single)'],
+      ['none', 'var(--story-none)']
     ]
 
     // Columns, one for each day, stacked by the way the story started.
-    function DailyChart ({ series, dates }) {
+    function DailyChart ({ series, dates, height = 190 }) {
       const totals = dates.map((_, i) => series.reduce((sum, x) => sum + x.values[i], 0))
       return UI.BarChart({
-        dates, series, height: 190, label: t('stories.daily.aria'),
+        dates, series, height, label: t('stories.daily.aria'),
         reference: { value: totals.reduce((a, b) => a + b, 0) / (totals.length || 1), label: t('find.avg', { n: fmt.int(Math.round(totals.reduce((a, b) => a + b, 0) / (totals.length || 1))) }) },
         tooltipOf: (i) => { const parts = series.filter((x) => x.values[i]).map((x) => `${x.name} ${x.values[i]}`).join(' · '); return `${t('stories.daily.tip', { date: fmt.date(dates[i]), n: fmt.int(totals[i]) })}${parts ? `: ${parts}` : ''}` }
       })
@@ -128,7 +133,16 @@
             paintMme()
           }
           if (tab === 'outlets') grid.replaceChildren(mmeCard)
-          else grid.replaceChildren(tableCard, dailyCard)
+          else grid.replaceChildren(tableCard, dailyCard, Activity.StoryTopics('c-12'))
+          // On a wide screen the chart takes the free height beside the table, up to a size that still reads as one chart.
+          if (tab !== 'outlets') {
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+              if (!window.matchMedia('(min-width: 1280px)').matches || !dailyCard.isConnected) return
+              const slack = tableCard.getBoundingClientRect().height - dailyCard.getBoundingClientRect().height
+              const chartEl = dailyCard.children[1]
+              if (slack > 4 && chartEl) chartEl.replaceWith(DailyChart({ series, dates: d.dates, height: Math.min(520, 190 + Math.floor(slack)) }))
+            }))
+          }
         }
         draw()
 

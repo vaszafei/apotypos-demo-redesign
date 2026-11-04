@@ -17,7 +17,9 @@
   const COUNTED = '.kpi-value, .dstat-value'
 
   // Until the first content is sorted, the CSS hides the marks of every chart, so no chart paints full and then grows.
-  if (!still()) root.classList.add('m-intro')
+  // A click from another page of the site shows the new page at once: the entrance plays only when a page is opened directly, so a tab change does not flash.
+  const arrived = (() => { try { const m = JSON.parse(sessionStorage.getItem('m-move')); const back = performance.getEntriesByType('navigation')[0]?.type === 'back_forward'; return !!(m && (m.nav || back) && Date.now() - m.time < 5000) } catch { return false } })()
+  if (!still() && !arrived) root.classList.add('m-intro')
   let introDone = false
   let lastInput = -Infinity
   for (const type of ['pointerdown', 'keydown', 'change', 'input']) document.addEventListener(type, () => { lastInput = performance.now() }, true)
@@ -120,8 +122,9 @@
     introDone = true
     const content = document.getElementById('content')
     // A move from another page slides the page in (shell.js), so the blocks do not rise as well.
-    if (content && !root.dataset.vt) enterPage(content)
-    if (!still() && content) {
+    if (content && !root.dataset.vt && !arrived) enterPage(content)
+    if (arrived && content) content.querySelectorAll(UNIT).forEach((unit) => unit.classList.add('m-done'))
+    else if (!still() && content) {
       const units = [...content.querySelectorAll(UNIT)]
       let k = 0
       for (const unit of units) {
