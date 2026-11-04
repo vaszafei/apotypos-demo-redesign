@@ -38,6 +38,7 @@ The date window is also written into the pages: `index.html`, `components.js` (t
 - **Rebuild the fixtures from the DB.** The user picked this over restoring only and over adding a live database to the app. Governs R1, R3, R4, R7. (session-settled: user-directed — chosen over a restore-only step and over a Postgres-backed app: the user answered "Rebuild the fixtures from the DB" when shown the three options)
 - **The window is dynamic.** The end date comes from the data. The user wrote: "the window should by dynamic not fixed". Governs R1. (session-settled: user-directed — chosen over a fixed Aug–Oct constant). My reading of "dynamic" as "derived from the fixtures' own dates" is my call, in the scope the user confirmed with "go"; a visitor-chosen range is not what I built, because the date-picker presets already exist.
 - **The demo reads Aug to Oct.** The user wrote: "of course it has to say from august to october, i said we have an update right?". Governs R2, R3.
+- **Show the real dump counts for the three outlets that jump.** Newsit, CNN Greece and Ethnos have 8, 12 and 24 times their Aug–Sep daily mean because the base fixture counted a small sample of them. The user chose "Show the real dump counts" when shown that and two other options. Governs R4. (session-settled: user-directed — chosen over October null for the three and over a looser limit: the dump counts are true article counts)
 
 ### Requirements
 
@@ -49,7 +50,7 @@ The date window is also written into the pages: `index.html`, `components.js` (t
 **October from the DB**
 
 - R3. `media.js` gets October days with articles per known outlet per day, for the 36 outlets the fixture already lists. An outlet the DB does not carry gets `null` for every October day, not zero.
-- R4. October volume per outlet stays in the same order of magnitude as Aug–Sep (factor of 3 either way), or the run stops and reports it.
+- R4. October volume per outlet stays within a factor of 3 of its Aug–Sep daily mean, or the run stops and reports the outlet. An outlet whose jump the user accepted (`jump_accepted` in `outlet-domains.json`) is exempt.
 - R5. `stories.js` gets October stories from the DB's daily stories, joined across days by the DB's `continues` links, with a name, the count of known outlets, and the days they ran.
 - R6. A story or an outlet-day shows no value, not zero, for what the DB cannot give: topic, frame, stance, portrayal, clickbait. A page that computes a rate from those fields skips October days instead of counting them as zero.
 
@@ -84,7 +85,8 @@ The date window is also written into the pages: `index.html`, `components.js` (t
 - KTD4. **Outlets are matched by a committed domain map.** A file maps each of the 36 fixture outlets to its domain (for example Proto Thema to `protothema.gr`). The fixtures hold slugs, not domains, so the map is new input. A fixture outlet with no entry fails the run. An entry with a `null` domain and a reason is allowed: the DB carries only 26 of the 36 outlets, and a look-alike domain that cannot be verified from the fixtures stays `null` (Makedonia, Voria). Governs R3, R5, R9. Domains outside the map count nowhere.
 - KTD5. **Missing is `null`, not `0`.** An October outlet-day is `[articles, null, null, null]` (the fixture's tuple is analysed rows, news rows, rows with a clickbait label, clickbait rows). A story's topic is the fixture's existing catch-all issue, flagged so the pages can tell it from a real one. Pages that sum or divide these fields skip `null`. Governs R6.
 - KTD6. **A story is a chain of daily stories.** Each daily story is a node, each `continues` link joins two, and a chain is one story with its days. The name is the headline of the first article of the chain's first day (the exact pick is a deferred detail). The outlet count is the number of known outlets in the chain. Governs R5.
-- KTD7. **The window ends on the last complete day.** The dump was taken on 2026-10-28 at 15:53 UTC, and articles run to 2026-10-29 06:00, so the last day is incomplete. The generator takes `--as-of` (the dump date) and ends on the last day with a complete count (the rule is a deferred detail, stated in U2). Governs R1.
+- KTD7. **A day is an Athens day, and a day counts when 75% of the mapped outlets have articles.** The story rule of the database (`stories-v1`, `day_time_zone`) says Europe/Athens. The crawler ramped up in October (a handful of outlets before the 13th, all 26 mapped ones from the 15th), so the covered range is the longest run of counted days that ends before the dump day: 14 to 27 Oct. The days before it stay in the dates with null cells. Governs R1, R3, R6.
+- KTD8. **`home.js` is extended with the same days.** The pages index `home`, `media`, `stories` and `storyDetail` on one axis of days, and the topic page broke when `home.js` kept 61 days. `home.js` gets the collected articles per outlet from the same database rows, and null for the topics. Governs R1, R6. This corrects the first plan, which left `home.js` out.
 
 ### High-Level Technical Design
 
@@ -102,7 +104,7 @@ flowchart TB
 ### Assumptions
 
 - The DB's article count per outlet per day is comparable to the fixture's analysed rows. The fixtures count rows that apotypos analysed, the DB counts everything it scraped. U2 measures this (R4) and stops if it is off.
-- The fixtures' day is a UTC calendar day. U2 checks how `make-fixtures.py` assigns a day and uses the same rule for `published_at`.
+- The fixtures' day is an Athens day, like the database's own story day. The base fixtures do not say; the Aug–Sep values were not touched.
 - Story rows carry a name and no links. I told the user earlier that story rows keep headlines and links; the fixture has names only, so October stories get a name only unless U3 finds a page that lists article links.
 
 ### Dependencies and Risks
@@ -150,7 +152,8 @@ flowchart TB
 **Files:**
 - `docs/redesign/prototypes/scripts/make-db-fixtures.py` (new)
 - `docs/redesign/prototypes/data/media.js` (regenerated)
-- `docs/redesign/prototypes/scripts/check.mjs` (extend)
+- `docs/redesign/prototypes/data/home.js` (regenerated)
+- `docs/redesign/prototypes/scripts/fixtures-check.mjs` (new; `check.mjs` only holds the colour and chart checks)
 
 **Approach:**
 1. Parse the base fixture, cut it at `volumeFrom` if it is set, and keep the Aug–Sep arrays as they are.
@@ -171,7 +174,7 @@ flowchart TB
 - `--as-of` earlier than the data end cuts `dates` at that day.
 - R4: an outlet 4× above its Aug–Sep mean stops the run with the outlet name.
 
-**Verification:** `dates` runs 2026-08-01 to the last complete day, and `check.mjs` passes with the new fixture checks.
+**Verification:** `dates` runs 2026-08-01 to 2026-10-27, and `fixtures-check.mjs` passes.
 
 ### U3. Extend `stories.js` and `media.js` stories with October stories
 
@@ -185,13 +188,13 @@ flowchart TB
 - `docs/redesign/prototypes/scripts/make-db-fixtures.py`
 - `docs/redesign/prototypes/data/stories.js` (regenerated)
 - `docs/redesign/prototypes/data/media.js` (regenerated: `storyDays`)
-- `docs/redesign/prototypes/data/storyDetail.js` (regenerated: dates only)
+- `docs/redesign/prototypes/data/storyDetail.js` (regenerated: dates and the October rows)
 
 **Approach:**
 1. Build chains from `daily_stories` and `story_links` (all links are `kind = continues`, `state = active`).
 2. For each chain write the story row (`id`, name, `issue` = the catch-all, `outlets` = known outlets, `days` = pairs of day index and article count) and the `storyDays` row, with ids after the last Aug–Sep id.
 3. Take the name from the headline of the chain's first article. If a page lists article links, read it first and decide then whether to add them (see Assumptions).
-4. Extend `dates` in `storyDetail.js` to match, and give October stories no detail row. The fixture already has 5,062 stories and 5,038 detail rows, so a story without detail is an existing case; confirm in `story-v2.html` that it renders.
+4. Extend `dates` in `storyDetail.js` to match, and give each October story a detail row with its outlet rows `t` and null labels (`f`, `s`, `c`, `k`; `p` empty). The Stories list shows only stories that have a detail row, so a story with no row would not appear. The story and topic pages skip null labels (U4).
 
 **Test scenarios:**
 - A chain of three daily stories gives one story with three day entries.
@@ -279,13 +282,6 @@ Report plainly which widths were measured and which were looked at (`docs/soluti
 - No abandoned experiment code or scratch files are in the diff.
 - `docs/prompts/<date>-db-fixtures/report.md` holds the real commands and measurements, and `ce-compound` records the lesson in `docs/solutions/`.
 - The user is told which cards show no October data, and why.
-
-## Deferred to Implementation
-
-- The exact pick of a story's name from the chain's first day.
-- The rule for the last complete day, if the half-of-median rule misfires on a weekend.
-- Whether a story page lists article links, which decides if links are added.
-- The day rule for `published_at` (UTC against Athens time), taken from `make-fixtures.py`.
 
 ## Open Questions
 
