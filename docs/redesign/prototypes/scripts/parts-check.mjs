@@ -46,8 +46,8 @@ async function open (theme, width, lang = 'el') {
 
 // A Period of the test's own, with a counter of change events.
 const addPeriod = (page) => page.evaluate(() => {
-  const presets = UI.periodPresets()
   const dates = Array.from({ length: 61 }, (_, i) => new Date(Date.UTC(2026, 7, 1 + i)).toISOString().slice(0, 10))
+  const presets = UI.periodPresets(dates)
   window.changes = []
   const el = Parts.Period({ title: 'test', dates, presets, from: presets[0].from, to: presets[0].to, values: dates.map(() => 10), onChange: (r) => window.changes.push(r) })
   el.id = 'brush-test'

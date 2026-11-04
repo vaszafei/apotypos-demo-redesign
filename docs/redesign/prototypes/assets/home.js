@@ -106,7 +106,7 @@
 
     // The change against the day before: an arrow up or down and the size of the change.
     const delta = (i) => {
-      if (i === 0 || !(totals[i - 1] > 0)) return '–'
+      if (i === 0 || totals[i] === null || !(totals[i - 1] > 0)) return '–'
       const v = ((totals[i] - totals[i - 1]) / totals[i - 1]) * 100
       const size = `${fmt.dec(Math.abs(v))}%`
       if (Number(fmt.dec(Math.abs(v))) === 0) return size
@@ -170,6 +170,8 @@
       return { ...r, n: on(r.k), now, was, diff: w && beforeTotal ? now - was : 0 }
     }).filter((r) => r.n > 0).sort((a, b) => b.n - a.n)
     const head = cardHead(t('home.topics.title'), null, t('home.topics.note', { n: w }))
+    // A day after the coded data has no topics (null), which is not the same as a day with no news.
+    if (news.every((r) => on(r.k) === null)) return card('c-7 home-topics', head, emptyText(t('home.topics.nodata')))
     if (!rows.length) return card('c-7 home-topics', head, emptyText(t('home.topics.empty')))
     const points = (v) => fmt.dec(Math.abs(v * 100))
     const arrow = (r) => {

@@ -23,9 +23,10 @@
   const decFormat = new Intl.NumberFormat('el-GR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
   const signedFormat = new Intl.NumberFormat('el-GR', { minimumFractionDigits: 1, maximumFractionDigits: 1, signDisplay: 'always' })
   const fmt = {
-    int: (n) => intFormat.format(n),
-    pct: (n) => pctFormat.format(n),
-    dec: (n) => decFormat.format(n),
+    // A value that is null has no data (a day the fixtures do not cover). It shows as a dash, not as 0.
+    int: (n) => (n === null ? '–' : intFormat.format(n)),
+    pct: (n) => (n === null ? '–' : pctFormat.format(n)),
+    dec: (n) => (n === null ? '–' : decFormat.format(n)),
     signed: (n) => signedFormat.format(n).replace('-', '−'),
     date: (iso, opts = { day: 'numeric', month: 'short', year: 'numeric' }) =>
       new Intl.DateTimeFormat(locale === 'el' ? 'el-GR' : 'en-GB', { ...opts, timeZone: 'UTC' }).format(new Date(iso + 'T00:00:00Z')),
@@ -114,13 +115,19 @@
       invalid && h('p', { class: 'range-error', role: 'alert' }, t('range.invalid')))
   }
 
-  // The presets of the data window 2026-08-01 to 2026-09-30.
-  function periodPresets () {
+  // The presets of the days of a data set: all of it, each calendar month in it, and its last 14 days. The window comes from the days, not from the page.
+  function periodPresets (dates) {
+    const last = dates[dates.length - 1]
+    // With the year the month is in the nominative in Greek ("Αύγουστος 2026"), as the calendar of the home page writes it.
+    const monthName = (iso) => { const s = fmt.date(iso, { month: 'long', year: 'numeric' }); return s.charAt(0).toUpperCase() + s.slice(1) }
+    const months = [...new Set(dates.map((d) => d.slice(0, 7)))].map((m) => {
+      const days = dates.filter((d) => d.startsWith(m))
+      return { key: m, label: monthName(days[0]), from: days[0], to: days[days.length - 1] }
+    })
     return [
-      { key: 'all', label: t('range.all'), from: '2026-08-01', to: '2026-09-30' },
-      { key: 'aug', label: t('range.aug'), from: '2026-08-01', to: '2026-08-31' },
-      { key: 'sep', label: t('range.sep'), from: '2026-09-01', to: '2026-09-30' },
-      { key: 'last14', label: t('range.last14'), from: '2026-09-17', to: '2026-09-30' }
+      { key: 'all', label: t('range.all'), from: dates[0], to: last },
+      ...months,
+      { key: 'last14', label: t('range.last14'), from: dates[Math.max(0, dates.length - 14)], to: last }
     ]
   }
 

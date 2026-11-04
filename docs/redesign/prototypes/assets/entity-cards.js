@@ -30,8 +30,14 @@
     const rest = ranked.filter((r) => !lead.includes(r))
     const series = lead.map((r, k) => ({ name: name(issues[r.issue]), color: SLOTS[k], values: r.values }))
     if (rest.length) series.push({ name: t('outlet2.daily.topic.rest'), color: NO_GROUP, values: dates.map((_, i) => rest.reduce((a, r) => a + r.values[i], 0)) })
+    // A day with no news count (null) has articles that nobody sorted into news and not news. They are a part of their own, never "not news".
+    const unsorted = daily.map(([total, news]) => (news === null ? total ?? 0 : 0))
     const modes = {
-      news: [{ name: t('outlet2.daily.news'), color: 'var(--series-news)', values: daily.map(([, news]) => news) }, { name: t('outlet2.daily.other'), color: 'var(--series-other)', values: daily.map(([total, news]) => total - news) }],
+      news: [
+        { name: t('outlet2.daily.news'), color: 'var(--series-news)', values: daily.map(([, news]) => news ?? 0) },
+        { name: t('outlet2.daily.other'), color: 'var(--series-other)', values: daily.map(([total, news]) => (news === null ? 0 : total - news)) },
+        ...(unsorted.some((v) => v > 0) ? [{ name: t('outlet2.daily.unsorted'), color: NO_GROUP, values: unsorted }] : [])
+      ],
       topic: series
     }
     let mode = 'news'

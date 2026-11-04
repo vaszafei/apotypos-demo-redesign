@@ -13,18 +13,18 @@
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=38"></script>
-  <script src="assets/messages-v2.js?v=47"></script>
-  <script src="assets/messages-spread.js?v=16"></script>
-  <script src="assets/components.js?v=15"></script>
+  <script src="assets/messages.js?v=39"></script>
+  <script src="assets/messages-v2.js?v=48"></script>
+  <script src="assets/messages-spread.js?v=17"></script>
+  <script src="assets/components.js?v=17"></script>
   <script src="assets/motion.js?v=3"></script>
   <script src="assets/dash.js?v=21"></script>
   <script src="assets/spread.js?v=6"></script>
-  <script src="assets/entity-cards.js?v=8"></script>
+  <script src="assets/entity-cards.js?v=9"></script>
   <script src="assets/shell.js?v=58"></script>
   <script src="data/home.js"></script>
-  <script src="data/stories.js?v=1"></script>
-  <script src="data/storyDetail.js?v=1"></script>
+  <script src="data/stories.js?v=2"></script>
+  <script src="data/storyDetail.js?v=2"></script>
   <script src="data/groups.js?v=1"></script>
   <script>
     // Topics, page of one topic: /topic/<i>. A compact title card, then the cards in rows of two. No tab bar, no breadcrumbs.
@@ -115,7 +115,7 @@
             rowsAll += s.t[i + 2]
             if (mineStory) { outletTopic[s.t[i]] += s.t[i + 2]; rowsTopic += s.t[i + 2] }
           }
-          if (mineStory) { s.f.forEach((v, k) => { det.f[k] += v }); s.c.forEach((v, k) => { det.c[k] += v }); s.s.forEach((v, k) => { det.s[k] += v }); det.k[0] += s.k[0]; det.k[1] += s.k[1] }
+          if (mineStory && s.f) { s.f.forEach((v, k) => { det.f[k] += v }); s.c.forEach((v, k) => { det.c[k] += v }); s.s.forEach((v, k) => { det.s[k] += v }); det.k[0] += s.k[0]; det.k[1] += s.k[1] }
         })
 
         // The title card: the name, the period once, and one line of facts.
