@@ -19,10 +19,12 @@ createServer((req, res) => {
     const direct = join(root, normalize(path))
     const isFile = direct.startsWith(root) && existsSync(direct) && statSync(direct).isFile()
     const route = isFile ? null : resolve(path)
-    const file = isFile ? direct : route ? join(root, route.file) : join(root, '404.html')
+    // The public image leaves out the hidden pages: their addresses are not found.
+    const page = route && existsSync(join(root, route.file)) ? join(root, route.file) : null
+    const file = isFile ? direct : page || join(root, '404.html')
     // A file with a version in its address never changes, so a browser can keep it. A page always comes fresh, with the new versions.
     const cache = isFile && url.searchParams.has('v') ? 'public, max-age=31536000, immutable' : 'no-cache'
-    res.writeHead(isFile || route ? 200 : 404, { 'content-type': types[extname(file)] || 'application/octet-stream', 'cache-control': cache })
+    res.writeHead(isFile || page ? 200 : 404, { 'content-type': types[extname(file)] || 'application/octet-stream', 'cache-control': cache })
     res.end(req.method === 'HEAD' ? undefined : readFileSync(file))
   } catch {
     // A broken address must not stop the server.

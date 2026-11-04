@@ -77,7 +77,7 @@
     'politics.reach': 'chart-pie', 'politics.outlets': 'newspaper', 'politics.owners': 'building-office-2', 'politics.topics': 'tag', 'politics.bylines': 'pencil-square',
     'world.speeches': 'microphone', 'world.pi': 'globe-europe-africa', 'world.greekturkish': 'flag', 'world.coverage': 'eye', 'world.france': 'map-pin'
   }
-  const FOOTER = [['methodology', '/methodology'], ['about', '/about']]
+  const FOOTER = [['methodology', '/methodology']]
 
   // The tabs that the navigation does not show: only the data of the live pages /topics, /media, /elections and /seven-stories, and the story of France, are on view.
   // A hidden page still opens at its address. Take a route out of this list to show its tab again.
@@ -995,7 +995,7 @@
       const activeRoute = exactTab ? route : parentRoute
       const sectionNav = item && item.tabs.length > 1
         ? h('nav', { class: 'section-nav', 'aria-label': t(`nav.${item.key}`) }, h('div', { class: 'section-nav-inner', 'data-label': t(`nav.${item.key}`) },
-          h('ul', { class: 'section-nav-list' }, item.tabs.map(([key, r, subs]) => {
+          h('ul', { class: 'section-nav-list' }, shownTabs(item).map(([key, r, subs]) => {
             const inTab = r === activeRoute || (subs || []).some(([, s]) => s === activeRoute)
             const nested = inTab && subs
             const current = inTab ? (!nested && (route === r || (subs || []).some(([, s]) => s === route)) ? 'page' : 'true') : null
