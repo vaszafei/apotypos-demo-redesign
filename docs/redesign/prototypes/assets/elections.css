@@ -17,7 +17,7 @@
 .party-table .num { text-align: right; color: var(--text-secondary); }
 .party-table td.cell { min-width: 52px; border-radius: 6px; background: color-mix(in srgb, var(--party) var(--k, 0%), transparent); }
 .party-table td.is-top { box-shadow: inset 0 0 0 1.5px var(--party); font-weight: 700; }
-.party-table .sub { display: block; font-size: 11px; font-weight: 400; color: var(--text-secondary); }
+.party-table .sub { display: block; font-size: max(11px, var(--text-min)); font-weight: 400; color: var(--text-secondary); }
 .party-table .up { color: var(--emph-more); }
 .party-table .down { color: var(--emph-less); }
 .party-table .pos { color: var(--stance-supportive); }
@@ -60,7 +60,7 @@
 .party-table-compact .row-name { min-width: 84px; max-width: 150px; }
 .party-table-compact .row-name span { display: none; }
 .party-table-compact td.cell { min-width: 44px; font-size: var(--text-caption); line-height: 1.25; }
-.party-table-compact .sub { font-size: 10px; line-height: 1.1; }
+.party-table-compact .sub { font-size: max(10px, var(--text-min)); line-height: 1.1; }
 @media (max-width: 1279px) { .elec-pair { grid-column: span 12; } }
 
 /* Ποιο κόμμα προβάλλει κάθε μέσο, against the market: four steps. 1,0× has no color. */

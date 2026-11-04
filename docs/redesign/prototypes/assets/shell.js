@@ -408,12 +408,12 @@
   setFont(readFont())
 
   // Prototype only: the themes for the decision of the project lead (tokens.css). ?theme= or the last choice sets it.
-  const THEMES = ['paper', 'fog', 'terra', 'night', 'midnight', 'charcoal', 'sage', 'moss', 'carbon']
+  const THEMES = ['paper', 'fog', 'terra', 'night', 'midnight', 'charcoal', 'sage', 'moss', 'carbon', 'ember', 'graphite', 'dusk']
   function readTheme () {
     const asked = new URLSearchParams(location.search).get('theme')
     let saved = null
     try { saved = localStorage.getItem('proto-theme') } catch {}
-    return [asked, saved].find((k) => THEMES.includes(k)) || 'carbon'
+    return [asked, saved].find((k) => THEMES.includes(k)) || 'ember'
   }
   function setTheme (key) {
     document.documentElement.dataset.theme = key
@@ -506,7 +506,7 @@
     recent[kind] = [value, ...recent[kind].filter((x) => !same(x))].slice(0, 6)
     try { localStorage.setItem(RECENT_KEY, JSON.stringify(recent)) } catch {}
   }
-  const hereHref = () => location.pathname.split('/').pop() + location.search
+  const hereHref = () => (window.ROUTES?.fileHref ? window.ROUTES.fileHref() : location.pathname.split('/').pop() + location.search)
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
   const token = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim()
@@ -653,7 +653,7 @@
       }
       // The results need room under the hero field: a field low in the window comes up under the navbar first.
       if (hero && window.innerHeight - button.getBoundingClientRect().top < 420) {
-        window.scrollBy({ top: button.getBoundingClientRect().top - (parseFloat(token('--navbar-height')) || 56) - 24, behavior: 'instant' })
+        window.scrollBy({ top: (button.getBoundingClientRect().top - (parseFloat(token('--navbar-height')) || 56) - 24) * (parseFloat(getComputedStyle(document.documentElement).zoom) || 1), behavior: 'instant' })
       }
       const b = button.getBoundingClientRect()
       if (hero) panel.style.maxHeight = `${window.innerHeight - Math.max(8, b.top - 4) - 16}px`

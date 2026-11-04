@@ -1,6 +1,6 @@
 /* The pages of Πολιτική and Κόσμος. Load after dash.css. */
 
-.chart .line-end { font-size: 12px; font-weight: 600; }
+.chart .line-end { font-size: max(12px, var(--text-min)); font-weight: 600; }
 /* Pairs: two bars for one measure, one for each side (UI.BarList). */
 .pairs { display: grid; gap: var(--space-4); }
 .pair { display: grid; gap: 4px; }
@@ -20,7 +20,7 @@
 .pick-swatch { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: var(--dot); vertical-align: middle; }
 
 /* Heat cells of a week grid. */
-.heat td.hc { min-width: 28px; height: 22px; border: 2px solid var(--surface-page); border-radius: 5px; padding: 0; font-size: 12px; text-align: center; }
+.heat td.hc { min-width: 28px; height: 22px; border: 2px solid var(--surface-page); border-radius: 5px; padding: 0; font-size: max(12px, var(--text-min)); text-align: center; }
 .heat th { white-space: nowrap; }
 
 /* Quotes and headline lists. */
@@ -29,7 +29,7 @@
 .quote-list li:last-child { border-bottom: 0; }
 .quote-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: var(--text-caption); color: var(--text-secondary); }
 .quote-text { font-style: italic; color: var(--text-secondary); }
-.pill { display: inline-block; padding: 1px 8px; border: 1px solid var(--border); border-radius: var(--pill); font-size: 11px; color: var(--text-primary); background: var(--card-tint); white-space: nowrap; }
+.pill { display: inline-block; padding: 1px 8px; border: 1px solid var(--border); border-radius: var(--pill); font-size: max(11px, var(--text-min)); color: var(--text-primary); background: var(--card-tint); white-space: nowrap; }
 .pill-hot { border-color: color-mix(in srgb, var(--stance-critical) 40%, var(--surface-raised)); color: var(--stance-critical); background: color-mix(in srgb, var(--stance-critical) 7%, var(--surface-raised)); }
 
 .region-pills { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -83,7 +83,7 @@
 .case-form .search-input { width: 220px; min-height: 36px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--pill); background: var(--surface-raised); }
 .case-form .button { border-radius: var(--pill); }
 .case-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chart .line-gap-text { font-size: 12px; fill: var(--text-secondary); }
+.chart .line-gap-text { font-size: max(12px, var(--text-min)); fill: var(--text-secondary); }
 
 /* The page of one speech. */
 .speech-strip { display: flex; gap: 2px; height: 40px; }

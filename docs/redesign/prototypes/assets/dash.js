@@ -56,7 +56,13 @@
   }
   // The text color with the better contrast on a hex background.
   const textOn = (hex) => { const l = luminance(hex); const dark = color('--text-on-light'); return (l + 0.05) / (luminance(dark) + 0.05) >= (luminance(color('--text-on-dark')) + 0.05) / (l + 0.05) ? dark : color('--text-on-dark') }
-  const tint = (hex, k) => `#${[1, 3, 5].map((i) => Math.round(parseInt(hex.slice(i, i + 2), 16) * (1 - k) + 255 * k).toString(16).padStart(2, '0')).join('')}`
+  // A lighter shade of a color: towards white on a light page. A dark theme fades towards its card instead, so a tint never glares on a dark page.
+  const tint = (hex, k) => {
+    const channel = (c, i) => parseInt(c.slice(i, i + 2), 16)
+    const dark = getComputedStyle(document.documentElement).colorScheme === 'dark'
+    const base = dark ? color('--surface-raised') : null
+    return `#${[1, 3, 5].map((i) => Math.round(channel(hex, i) * (1 - k) + (base ? channel(base, i) : 255) * k).toString(16).padStart(2, '0')).join('')}`
+  }
 
   // Sparkline: the whole window in gray and the selected period in the accent color.
   function Spark (values, i0, i1, label, { w = 96, hgt = 28 } = {}) {

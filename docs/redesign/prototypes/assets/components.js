@@ -1,6 +1,6 @@
 // Shared components of the prototypes. Names and props follow knowledge_base/redesign/shared-components.md.
 (function () {
-  const params = new URLSearchParams(location.search)
+  const params = window.ROUTES?.search ? window.ROUTES.search() : new URLSearchParams(location.search)
 
   // Language: Greek is the default. ?lang=en or the switch changes it.
   function readStoredLocale () {
@@ -58,6 +58,7 @@
       else if (name === 'class') el.setAttribute('class', value)
       else if (name === 'style' && typeof value === 'object') Object.assign(el.style, value)
       else if (name === 'html') el.innerHTML = value
+      else if (name === 'href' && tag === 'a' && window.ROUTES?.href) el.setAttribute('href', window.ROUTES.href(value))
       else el.setAttribute(name, value === true ? '' : value)
     }
     append(el, children)

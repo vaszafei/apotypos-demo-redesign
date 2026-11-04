@@ -186,7 +186,7 @@
       }
       const net = netOf(tone)
       const title = t('mme.people.cell.tone', { outlet: o.name, person: p.name, n: fmt.int(n), net: signed(net) })
-      return h('td', { style: netColor(net), title, 'aria-label': title }, fmt.int(n))
+      return h('td', { style: netColor(net), title, 'aria-label': title }, n >= 1000 ? `${(n / 1000).toLocaleString(document.documentElement.lang || 'el', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}K` : fmt.int(n))
     }
     const totalCell = (p) => (mode === 'voice'
       ? h('td', { class: 'mme-num-col' }, fmt.int(S.personQuotes[p.k]))

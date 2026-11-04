@@ -2,15 +2,18 @@
 <html lang="el">
 <head>
   <meta charset="utf-8">
+  <base href="/">
+  <script src="assets/routes.js?v=3"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=31">
-  <link rel="stylesheet" href="assets/app.css?v=60">
-  <link rel="stylesheet" href="assets/dash.css?v=91">
-  <link rel="stylesheet" href="assets/mme.css?v=36">
-  <link rel="stylesheet" href="assets/date-range.css?v=8">
-  <script src="assets/page-move.js?v=3"></script>
+  <link rel="stylesheet" href="assets/tokens.css?v=35">
+  <link rel="stylesheet" href="assets/app.css?v=65">
+  <link rel="stylesheet" href="assets/dash.css?v=94">
+  <link rel="stylesheet" href="assets/activity.css?v=12">
+  <link rel="stylesheet" href="assets/mme.css?v=37">
+  <link rel="stylesheet" href="assets/date-range.css?v=9">
+  <script src="assets/page-move.js?v=4"></script>
 </head>
 <body>
   <div id="app"></div>
@@ -19,13 +22,15 @@
   <script src="assets/messages-v2.js?v=50"></script>
   <script src="assets/messages-spread.js?v=16"></script>
   <script src="assets/messages-mme.js?v=23"></script>
-  <script src="assets/components.js?v=16"></script>
+  <script src="assets/components.js?v=17"></script>
   <script src="assets/motion.js?v=3"></script>
-  <script src="assets/dash.js?v=22"></script>
+  <script src="assets/dash.js?v=23"></script>
   <script src="assets/date-range.js?v=2"></script>
-  <script src="assets/mme.js?v=23"></script>
-  <script src="assets/shell.js?v=64"></script>
+  <script src="assets/mme.js?v=25"></script>
+  <script src="assets/shell.js?v=67"></script>
   <script src="data/mme.js?v=30"></script>
+  <script src="data/home.js?v=30"></script>
+  <script src="assets/activity.js?v=5"></script>
   <script src="data/groups.js?v=30"></script>
   <script src="data/originality.js?v=1"></script>
   <script>
@@ -267,8 +272,14 @@
           bylineCard?.classList.add('c-6')
 
           const cards = tab === 'writing'
-            ? [scatterCard, bylineCard, gov]
-            : [ranking, h('div', { class: 'c-6 card-col card-col-fill' }, h('div', { class: 'stats-2x2' }, statOutlets, statArticles, statStories, statPeople), volume)]
+            ? [scatterCard, bylineCard, gov, Activity.KindCard('c-6'), Activity.StanceCard('c-6')]
+            : [ranking, h('div', { class: 'c-6 card-col card-col-fill' }, h('div', { class: 'stats-2x2' }, statOutlets, statArticles, statStories, statPeople), volume), Activity.TopOutlets('c-4'), Activity.OutletBars('c-8')]
+          // The first card of Επισκόπηση: the subjects of the period. The topic pages read the Greek set, so only that set has links.
+          if (tab !== 'writing') {
+            const subjects = set.issues.map((x, k) => ({ x, k })).filter((r) => S.hard[r.k] && S.issueN[r.k] > 0).sort((a, b) => S.issueN[b.k] - S.issueN[a.k])
+              .map((r) => ({ label: r.x[App.locale] || r.x.el, n: S.issueN[r.k], href: greek ? `topics-v2.html?tab=topic&topic=${r.k}` : null }))
+            cards.unshift(Activity.Agenda('c-12', subjects, greek ? 'topics-v2.html' : null))
+          }
           content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...cards), Mme.MethodNote(S), protoNote())
           // Side by side, the right column is as tall as the table: the chart takes the height that the stat cards leave.
           if (tab !== 'writing' && analysed > 0) {

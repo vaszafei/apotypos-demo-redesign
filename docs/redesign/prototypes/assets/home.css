@@ -68,7 +68,7 @@ a.home-stack-part { cursor: pointer; }
 }
 
 .home-share { display: inline-flex; align-items: baseline; justify-content: flex-end; gap: 6px; }
-.home-arrow { font-size: 10px; line-height: 1; cursor: help; }
+.home-arrow { font-size: max(10px, var(--text-min)); line-height: 1; cursor: help; }
 .home-arrow.is-up { color: var(--emph-more); }
 .home-arrow.is-down { color: var(--emph-less); }
 .home-quick .home-links { grid-auto-rows: 88px; }
@@ -81,7 +81,7 @@ a.home-stack-part { cursor: pointer; }
 .home-donut .slice { cursor: default; outline: none; transition: opacity var(--motion-base) var(--ease-out); }
 .home-donut .slice.is-dim { opacity: 0.3; }
 .home-donut .slice:focus-visible { stroke: var(--ink); stroke-width: 2; }
-.dash .chart .donut-cap { fill: var(--text-secondary); font-size: 12px; }
+.dash .chart .donut-cap { fill: var(--text-secondary); font-size: max(12px, var(--text-min)); }
 .home-topic-side { display: grid; gap: var(--space-2); min-width: 0; }
 .home-topic-legend, .home-topic-more .rows { gap: 0; }
 .home-topic-row { padding: 4px 8px; border-radius: 6px; }
@@ -153,7 +153,7 @@ a.home-stack-part { cursor: pointer; }
 /* The topics of the last day: a chip opens the search with the topic in the field. */
 .home-hero-try { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-2); }
 .home-hero-try-label { margin-right: var(--space-1); font-size: var(--text-small); color: var(--text-secondary); }
-.home-chip { min-height: 32px; padding: 0 14px; border: 1px solid var(--border); border-radius: var(--pill, 999px); background: color-mix(in srgb, var(--surface-raised) 70%, transparent); color: var(--text-primary); font: 13px var(--font-text); cursor: pointer; transition: border-color var(--motion-base) var(--ease-out), color var(--motion-base) var(--ease-out); }
+.home-chip { min-height: 32px; padding: 0 14px; border: 1px solid var(--border); border-radius: var(--pill, 999px); background: color-mix(in srgb, var(--surface-raised) 70%, transparent); color: var(--text-primary); font: max(13px, var(--text-min)) var(--font-text); cursor: pointer; transition: border-color var(--motion-base) var(--ease-out), color var(--motion-base) var(--ease-out); }
 .home-chip:hover, .home-chip:focus-visible { border-color: var(--ink); color: var(--ink); }
 
 /* The size of the data: four numbers in a row with thin rules between them, the period under them. */

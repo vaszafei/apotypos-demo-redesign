@@ -2,17 +2,18 @@
 <html lang="el">
 <head>
   <meta charset="utf-8">
+  <base href="/">
+  <script src="assets/routes.js?v=3"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <script>document.documentElement.classList.add('is-activity')</script>
-  <link rel="stylesheet" href="assets/tokens.css?v=31">
-  <link rel="stylesheet" href="assets/app.css?v=60">
-  <link rel="stylesheet" href="assets/dash.css?v=91">
-  <link rel="stylesheet" href="assets/parts.css?v=3">
-  <link rel="stylesheet" href="assets/activity.css?v=6">
-  <link rel="stylesheet" href="assets/mme.css?v=36">
-  <script src="assets/page-move.js?v=3"></script>
+    <link rel="stylesheet" href="assets/tokens.css?v=35">
+  <link rel="stylesheet" href="assets/app.css?v=65">
+  <link rel="stylesheet" href="assets/dash.css?v=94">
+  <link rel="stylesheet" href="assets/parts.css?v=4">
+  <link rel="stylesheet" href="assets/activity.css?v=12">
+  <link rel="stylesheet" href="assets/mme.css?v=37">
+  <script src="assets/page-move.js?v=4"></script>
 </head>
 <body>
   <div id="app"></div>
@@ -21,16 +22,16 @@
   <script src="assets/messages-v2.js?v=50"></script>
   <script src="assets/messages-mme.js?v=23"></script>
   <script src="assets/messages-parts.js?v=2"></script>
-  <script src="assets/components.js?v=16"></script>
+  <script src="assets/components.js?v=17"></script>
   <script src="assets/motion.js?v=3"></script>
-  <script src="assets/dash.js?v=22"></script>
+  <script src="assets/dash.js?v=23"></script>
   <script src="assets/parts.js?v=2"></script>
-  <script src="assets/mme.js?v=23"></script>
-  <script src="assets/shell.js?v=64"></script>
+  <script src="assets/mme.js?v=25"></script>
+  <script src="assets/shell.js?v=67"></script>
   <script src="data/home.js?v=30"></script>
   <script src="data/stories.js?v=30"></script>
   <script src="data/mme.js?v=30"></script>
-  <script src="assets/activity.js?v=2"></script>
+  <script src="assets/activity.js?v=5"></script>
   <script>
     // Topics, Επισκόπηση: the first dashboard of Θέματα. It reads the topics file (36 topics, 61 days). The stories are in the tab Ιστορίες.
     // The page has no buttons in the top bar. Each card holds one measure and one picture of it, and no measure shows twice (APO-168).
@@ -48,6 +49,8 @@
 
     const sumRange = (arr, i0, i1) => { let s = 0; for (let i = i0; i <= i1; i++) s += arr[i]; return s }
     const ROLL = 7
+    let days = 30
+    let newsOnly = true
 
     // Lines: the average of the last 7 days of each topic that is on. The value axis fits the lines that are on.
     // The lines are monotone cubic curves (Fritsch–Carlson), so a curve never goes below 0 or above its neighbouring days.
@@ -113,7 +116,11 @@
       dash: true,
       title: () => t('nav.topics'),
       breadcrumbs: () => [{ label: t('nav.media') }],
-      render (content, { tabs }) {
+      render (content, { tabs }) { drawPage(content, tabs) }
+    })
+
+    // The filter of Επισκόπηση changes the figures and the ranking, so the page draws again.
+    function drawPage (content, tabs) {
         content.classList.add('dash', 'minimal')
         reset()
         const ok = topics.kind === 'data' || topics.kind === 'empty'
@@ -122,14 +129,17 @@
 
         const d = topics.data
         const name = (x) => x[App.locale] || x.el
+        // A click on a topic opens it on Ένα θέμα.
+        const topicHref = (issue) => { if (issue.soft) return `topic-v2.html?i=${d.issues.indexOf(issue)}`; const k = mme.kind === 'data' ? mme.data.sets.gr.issues.findIndex((x) => x.el === issue.el) : -1; return k < 0 ? 'topics-v2.html?tab=topic' : `topics-v2.html?tab=topic&topic=${k}` }
         const last = d.dates.length - 1
-        const total = (k) => sumRange(d.issueDaily[k], 0, last)
+        const first = tab === 'overview' ? last - days + 1 : 0
+        const total = (k) => sumRange(d.issueDaily[k], first, last)
         const rows = d.issues.map((issue, k) => {
           const daily = d.issueDaily[k]
           const now = last >= 27 ? sumRange(daily, last - 13, last) : 0
           const before = last >= 27 ? sumRange(daily, last - 27, last - 14) : 0
           return { issue, daily, count: total(k), now, before, change: before >= 200 ? (now - before) / before : null }
-        }).filter((r) => r.count > 0).sort((a, b) => b.count - a.count)
+        }).filter((r) => r.count > 0 && (!newsOnly || !r.issue.soft)).sort((a, b) => b.count - a.count)
         const base = rows.reduce((s, r) => s + r.count, 0)
         // The stories of a topic: a generic story is a catch-all, so it is not counted.
         const storyCount = new Map()
@@ -139,31 +149,8 @@
         })
         const movers = rows.filter((r) => r.change !== null)
 
-        // The agenda of the whole window: the news topics only, the largest 9 and the rest as one gray part.
         const news = rows.filter((r) => !r.issue.soft)
         const newsTotal = news.reduce((a, r) => a + r.count, 0)
-        const agendaParts = [...news.slice(0, SLOTS.length).map((r, i) => ({ r, label: name(r.issue), n: r.count, color: SLOTS[i] })),
-          { r: null, label: t('topics2.agenda.rest'), n: news.slice(SLOTS.length).reduce((a, r) => a + r.count, 0), color: 'var(--bar-muted)' }]
-        const size = 220
-        const center = size / 2
-        const outer = center - 2
-        const inner = outer - 32
-        const point = (radius, turn) => [center + radius * Math.sin(turn * 2 * Math.PI), center - radius * Math.cos(turn * 2 * Math.PI)]
-        const arc = (a0, a1) => {
-          const big = a1 - a0 > 0.5 ? 1 : 0
-          const [x0, y0] = point(outer, a0); const [x1, y1] = point(outer, a1); const [x2, y2] = point(inner, a1); const [x3, y3] = point(inner, a0)
-          return `M${x0} ${y0}A${outer} ${outer} 0 ${big} 1 ${x1} ${y1}L${x2} ${y2}A${inner} ${inner} 0 ${big} 0 ${x3} ${y3}Z`
-        }
-        let turn = 0
-        const donut = h('svg', { class: 'chart donut agenda-donut', width: size, height: size, viewBox: `0 0 ${size} ${size}`, role: 'img', 'aria-label': agendaParts.map((p) => `${p.label}: ${fmt.int(p.n)}`).join(', ') },
-          agendaParts.map((p) => { const start = turn; turn += p.n / (newsTotal || 1); return h('path', { d: arc(start, Math.min(turn, 0.9999)), fill: p.color }) }),
-          h('text', { class: 'donut-num', x: center, y: center + 2, 'text-anchor': 'middle' }, fmt.int(newsTotal)),
-          h('text', { class: 'donut-cap', x: center, y: center + 20, 'text-anchor': 'middle' }, t('topics2.agenda.center')))
-        const agendaCard = card('', cardHead(t('topics2.agenda.title'), null, t('topics2.agenda.info')),
-          h('div', { class: 'donut-wrap agenda-wrap' }, donut, h('ul', { class: 'agenda-legend' }, agendaParts.map((p) => h('li', {},
-            h('span', { class: 'swatch', style: { background: p.color } }),
-            h('span', { class: 'agenda-name' }, p.r ? UI.EntityLink({ type: 'topic', key: String(d.issues.indexOf(p.r.issue)), label: p.label }) : p.label),
-            h('span', { class: 'agenda-num' }, fmt.int(p.n)))))))
 
         // The period in 3 points: the first topic, the second topic and the outlet that gives the first topic the largest part of its articles (500 news articles or more).
         const emphasis = () => {
@@ -257,7 +244,7 @@
           UI.DataTable({
             rows, rankColumn: true, pageSize: 12, emptyText: t('media.empty'),
             columns: [
-              { label: t('media.col.issue'), render: (r) => h('span', { class: 'nowrap' }, UI.EntityLink({ type: 'topic', key: String(d.issues.indexOf(r.issue)), label: name(r.issue) })) },
+              { label: t('media.col.issue'), render: (r) => h('span', { class: 'nowrap' }, h('a', { class: 'quiet-link', href: topicHref(r.issue) }, name(r.issue))) },
               { label: t('media.col.articles'), num: true, render: (r) => fmt.int(r.count) },
               { label: t('media.col.share'), num: true, render: (r) => fmt.pct(r.count / base) },
               { label: t('topics2.col.change'), num: true, phone: false, render: (r) => (r.change === null || r.issue.catchAll ? h('span', { class: 'mini-empty' }, '–')
@@ -273,7 +260,7 @@
         const moverRow = (r) => {
           const color = r.change > 0 ? 'var(--emph-more)' : 'var(--emph-less)'
           const text = `${name(r.issue)}: ${fmt.signed(r.change * 100)}%`
-          return { label: UI.EntityLink({ type: 'topic', key: String(d.issues.indexOf(r.issue)), label: name(r.issue) }), value: Math.abs(r.change),
+          return { label: h('a', { class: 'quiet-link', href: topicHref(r.issue) }, name(r.issue)), value: Math.abs(r.change),
             bar: UI.DivergingBar({ left: r.change < 0 ? -r.change : 0, right: r.change > 0 ? r.change : 0, scale: widest, colors: ['var(--emph-less)', 'var(--bar-muted)', 'var(--emph-more)'], label: text }),
             text: [h('span', { class: `tri ${r.change > 0 ? 'tri-up' : 'tri-down'}`, style: { color }, 'aria-hidden': 'true' }), ` ${fmt.signed(r.change * 100)}%`] }
         }
@@ -300,21 +287,44 @@
             const chips = Mme.ChipsCard(MS, { picked: mmeTopic, onPick: (i) => { mmeTopic = i; paintMme(true) } })
             chips.append(period())
             const topic = Mme.TopicCard(MS, { topic: mmeTopic, onTopic: (i) => { mmeTopic = i; paintMme(false) } })
-            mmeHolder.replaceChildren(chips, topic)
+            // Ένα θέμα: the figures and the days of the topic, then its card, then its stance by outlet.
+            const options = mset.issues.map((x, i) => i).filter((i) => MS.hard[i] && MS.issueN[i] > 0).sort((a, b) => MS.issueN[b] - MS.issueN[a])
+            const i = options.includes(mmeTopic) ? mmeTopic : options.find((k) => !mset.issues[k].catchAll)
+            const issue = mset.issues[i]
+            const stat = (o) => { const el = Dash.Stat(o); el.classList.replace('c-4', 'c-3'); return el }
+            const byOutlet = MS.active.map((o) => ({ o, gov: [0, 1, 2].map((j) => { let s = 0; const row = mset.os[o.k][i] || []; for (let q = 0; q < row.length; q += 4) s += row[q + 1 + j]; return s }) })).filter((r) => r.gov[0] + r.gov[1] + r.gov[2] >= 10)
+              .sort((a, b) => (a.gov[2] - a.gov[0]) / (a.gov[0] + a.gov[1] + a.gov[2]) - (b.gov[2] - b.gov[0]) / (b.gov[0] + b.gov[1] + b.gov[2]))
+            const stanceCard = card('', cardHead(t('act.topic.stance'), null, t('act.topic.stance.info')),
+              UI.Legend(['critical', 'neutral', 'supportive'].map((nm, m) => ({ label: t(`stance.${nm}`), color: UI.STANCE_COLORS[m] }))),
+              UI.BarList(byOutlet.map((r) => { const all = r.gov[0] + r.gov[1] + r.gov[2]; return { label: r.o.name, value: all, text: `${fmt.pct(r.gov[0] / all)} · ${fmt.pct(r.gov[2] / all)}`, bar: UI.DivergingBar({ left: r.gov[0] / all, middle: r.gov[1] / all, right: r.gov[2] / all, scale: 1, label: `${r.o.name}: n = ${fmt.int(all)}` }) } })))
+            mmeHolder.replaceChildren(chips,
+              h('div', { class: 'dash-grid' }, stat({ label: t('act.topic.articles'), value: fmt.int(MS.issueN[i]), sub: name(issue) }), stat({ label: t('act.topic.share'), value: fmt.pct(MS.newsN ? MS.issueN[i] / MS.newsN : 0), sub: name(issue) }), Activity.Evolution('c-6', issue.el)),
+              topic, stanceCard)
             if (scroll) topic.scrollIntoView({ behavior: 'smooth', block: 'start' })
           }
           if (tab === 'topic') paintMme(false)
-          else mmeHolder.replaceChildren(Mme.AgendaCard(MS))
+          else {
+            // Who emphasised each topic: the outlets ranked by the share of the topic in their news.
+            const options = MS.set.issues.map((x, i) => ({ x, i })).filter((r) => MS.hard[r.i] && MS.issueN[r.i] > 0).sort((a, b) => MS.issueN[b.i] - MS.issueN[a.i])
+            const holder = h('div', {})
+            const drawEmphasis = (i) => {
+              const shares = MS.active.filter((o) => o.news > 0).map((o) => ({ o, v: o.issues[i] / o.news })).sort((a, b) => b.v - a.v)
+              const top = shares.length ? shares[0].v : 1
+              holder.replaceChildren(UI.BarList(shares.map((r) => ({ label: r.o.name, value: r.v, text: fmt.pct(r.v) })), { max: top }))
+            }
+            drawEmphasis(options[0].i)
+            mmeHolder.replaceChildren(Mme.AgendaCard(MS), card('', cardHead(t('act.emphasis'), Dash.select(t('act.emphasis.pick'), options[0].i, options.map((r) => ({ value: r.i, label: name(r.x) })), (v) => drawEmphasis(Number(v))), t('act.emphasis.info')), holder))
+          }
         }
         const cards = {
-          overview: [h('div', { class: 'card-col c-7' }, agendaCard), h('div', { class: 'card-col c-5' }, pointsCard), h('div', { class: 'card-col c-6' }, table), h('div', { class: 'card-col c-6' }, timeCard), h('div', { class: 'card-col c-12' }, moversCard)],
+          overview: [h('div', { class: 'card-col c-12' }, pointsCard), h('div', { class: 'card-col c-12' }, moversCard), h('div', { class: 'card-col c-6' }, table), h('div', { class: 'card-col c-6' }, timeCard)],
           topic: [mmeHolder],
           agenda: [mmeHolder]
         }[tab]
-        if (tab === 'overview') content.classList.add('act-overview')
-        content.replaceChildren(bar, ...(tab === 'overview' ? [Activity.Overview()] : []), h('div', { class: 'dash-grid', id: 'act-details' }, ...cards), protoNote())
-      }
-    })
+        const redraw = () => drawPage(content, tabs)
+        const head = tab === 'overview' ? [Activity.Controls({ days, newsOnly, onDays: (v) => { days = v; redraw() }, onNews: (v) => { newsOnly = v; redraw() } }), Activity.Figures(days)] : []
+        content.replaceChildren(bar, ...head, h('div', { class: 'dash-grid topic-grid' }, ...cards), protoNote())
+    }
 
     function protoNote () { return h('p', { class: 'proto-note' }, t('proto.states')) }
   </script>

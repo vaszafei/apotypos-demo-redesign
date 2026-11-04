@@ -27,7 +27,7 @@ button, input, select { font: inherit; color: inherit; }
 
 /* Shell. A wide screen has a top navbar (the logo, the sections, the search, the language, log in and sign up). A tablet or a phone has a top bar and a drawer (.sidebar). */
 
-.shell { min-height: 100vh; }
+.shell { min-height: calc(100vh / var(--page-zoom)); }
 
 .sidebar {
   position: fixed; inset: 0 auto 0 0; z-index: 30;
@@ -57,7 +57,7 @@ button, input, select { font: inherit; color: inherit; }
 .nav-link[aria-current="page"] { box-shadow: inset 3px 0 0 var(--ink); border-radius: 0 6px 6px 0; color: var(--sidebar-active-text); font-weight: 600; }
 
 .nav-footer { margin-top: auto; padding: var(--space-3) var(--space-3) var(--space-4); border-top: 1px solid var(--border); }
-.nav-footer .nav-link { padding: 6px var(--space-3); font-size: 13px; }
+.nav-footer .nav-link { padding: 6px var(--space-3); font-size: max(13px, var(--text-min)); }
 /* A short divider with the weight of the slash separates the links from the settings. */
 .sidebar-tools { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-3) var(--space-3) 0; }
 .sidebar-tools::before { content: ""; width: 28px; height: 2px; background: var(--ink); }
@@ -67,7 +67,7 @@ button, input, select { font: inherit; color: inherit; }
 .font-switch, .theme-switch { display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--text-caption); color: var(--sidebar-text); }
 .font-switch select { min-height: 32px; padding: 0 var(--space-2); border: 1px solid var(--border); border-radius: 6px; background: var(--surface-raised); color: var(--text-primary); font-size: var(--text-small); }
 /* Each swatch reads the tokens of its own theme (tokens.css): the card color and the accent. */
-.theme-swatches { display: flex; gap: var(--space-2); padding: 3px; }
+.theme-swatches { flex-wrap: wrap; display: flex; gap: var(--space-2); padding: 3px; }
 .theme-swatch { width: 22px; height: 22px; padding: 0; border: 1px solid var(--border); border-radius: 50%; background: linear-gradient(135deg, var(--surface-card) 50%, var(--accent) 50%); cursor: pointer; }
 .theme-swatch[aria-pressed="true"] { outline: 2px solid currentColor; outline-offset: 2px; }
 @media (pointer: coarse) { .sidebar .lang-switch button { min-height: 36px; } .theme-swatch { width: 28px; height: 28px; } }
@@ -79,7 +79,7 @@ button, input, select { font: inherit; color: inherit; }
 .section-tabs a:hover { color: var(--text-primary); }
 .section-tabs a[aria-current="page"] { color: var(--text-primary); font-weight: 600; border-bottom-color: var(--accent); }
 
-.main-column { min-height: 100vh; display: flex; flex-direction: column; }
+.main-column { min-height: calc(100vh / var(--page-zoom)); display: flex; flex-direction: column; }
 
 .header-bar {
   position: sticky; top: 0; z-index: 20;
@@ -129,17 +129,17 @@ button, input, select { font: inherit; color: inherit; }
 .search-button {
   display: inline-flex; align-items: center; gap: var(--space-2); min-width: 0; height: 36px; padding: 0 6px 0 12px;
   border: 1px solid transparent; border-radius: 10px; background: color-mix(in srgb, var(--shade) 5%, transparent); color: var(--text-secondary);
-  font: 13px var(--font-text); cursor: pointer;
+  font: max(13px, var(--text-min)) var(--font-text); cursor: pointer;
 }
 .search-button:hover { background: color-mix(in srgb, var(--shade) 8%, transparent); color: var(--ink); }
 .search-button-icon { width: 18px; height: 18px; flex: none; }
 .search-button-label { padding-right: var(--space-5); white-space: nowrap; color: var(--text-primary); }
-.global-search-key { min-width: 20px; padding: 0 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface-page); font: 600 12px/18px var(--font-text); color: var(--text-secondary); text-align: center; }
+.global-search-key { min-width: 20px; padding: 0 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface-page); font: 600 max(12px, var(--text-min))/18px var(--font-text); color: var(--text-secondary); text-align: center; }
 .global-search.is-open .search-button { opacity: 0; }
 
 .search-scrim { position: fixed; inset: 0; z-index: 60; background: color-mix(in srgb, var(--shade) 16%, transparent); }
 .search-panel {
-  position: fixed; z-index: 61; top: 12px; left: calc(50% - 320px); width: 640px; max-height: calc(100vh - 24px); display: flex; flex-direction: column;
+  position: fixed; z-index: 61; top: 12px; left: calc(50% - 320px); width: 640px; max-height: calc(100vh / var(--page-zoom) - 24px); display: flex; flex-direction: column;
   border: 1px solid var(--border); border-radius: 16px; background: var(--surface-raised); box-shadow: 0 24px 60px -24px color-mix(in srgb, var(--shade) 45%, transparent);
   transform-origin: 0 0; overflow: hidden;
 }
@@ -255,7 +255,7 @@ button, input, select { font: inherit; color: inherit; }
 /* Charts */
 
 .chart { width: 100%; height: auto; display: block; overflow: visible; }
-.chart text { font-family: var(--font-text); font-size: 12px; fill: var(--text-secondary); }
+.chart text { font-family: var(--font-text); font-size: max(12px, var(--text-min)); fill: var(--text-secondary); }
 .chart .grid-line { stroke: var(--rule); stroke-width: 1; }
 
 .tooltip {
@@ -313,10 +313,10 @@ button, input, select { font: inherit; color: inherit; }
 .bar-list .is-ref .row-name { color: var(--emph-more); font-weight: 600; }
 /* In a list that scrolls, the baseline stays in view at the top or bottom edge. */
 .bar-list .is-ref { position: sticky; top: 0; bottom: 0; z-index: 1; background: var(--surface-page); }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .bar-list .is-ref { background: var(--surface-raised); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .bar-list .is-ref { background: var(--surface-raised); }
 /* A tick on a light bar keeps an edge, so it shows on the bar and on the track. */
 .bars-thick .bar-marker { box-shadow: 0 0 0 1px var(--surface-page); }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .bars-thick .bar-marker { box-shadow: 0 0 0 1px var(--surface-raised); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .bars-thick .bar-marker { box-shadow: 0 0 0 1px var(--surface-raised); }
 .bar-group { display: grid; gap: 3px; }
 /* A phone shows the value of a bar with a value text, not the bar. */
 @media (max-width: 639px) { .hbar:has(.bar-value) .hbar-track { display: none; } }
@@ -517,7 +517,7 @@ button, input, select { font: inherit; color: inherit; }
 /* Sub-tabs: a quieter second level. Text tabs, the current one on a soft fill. No line under them, space before the body. */
 :root[data-header="v2"] .page-tabs .sub-tabs { margin-top: var(--space-3); padding: 0; overflow-x: auto; scrollbar-width: none; }
 :root[data-header="v2"] .page-tabs .sub-tabs ul { justify-content: flex-start; gap: var(--space-1); width: max-content; min-width: 0; margin: 0; border-bottom: 0; }
-:root[data-header="v2"] .page-tabs .sub-tabs a { padding: 5px 12px; margin: 0; border: 0; border-radius: var(--pill, 999px); font-size: 13px; }
+:root[data-header="v2"] .page-tabs .sub-tabs a { padding: 5px 12px; margin: 0; border: 0; border-radius: var(--pill, 999px); font-size: max(13px, var(--text-min)); }
 :root[data-header="v2"] .page-tabs .sub-tabs a:hover { background: var(--surface-card); }
 :root[data-header="v2"] .page-tabs .sub-tabs a[aria-current="page"] { background: var(--surface-card); color: var(--ink); font-weight: 600; }
 /* Filters of the tab: one left-aligned row, on the body. */
@@ -581,7 +581,7 @@ button, input, select { font: inherit; color: inherit; }
 :root[data-header="v2"] .back-button:hover { background: color-mix(in srgb, var(--ink) 7%, transparent); }
 /* The trail of a detail page: the parent, a slash, the page. The slash is the one of the active tab. */
 /* The trail has the type of the tabs, and starts where the tabs start: the arrow is flush with the left edge of the page content. */
-:root[data-header="v2"] .appbar-trail ol { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+:root[data-header="v2"] .appbar-trail ol { font-size: max(12px, var(--text-min)); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
 :root[data-header="v2"] .appbar-trail [aria-current] { font-weight: 700; }
 @media (min-width: 1024px) {
   :root[data-header="v2"] .header-bar { padding-left: var(--space-5, 24px); padding-right: var(--space-5, 24px); }
@@ -593,7 +593,7 @@ button, input, select { font: inherit; color: inherit; }
 /* The primary button is the ink fill. The log in and sign up buttons are small pills, like the filters and tabs of the page head. */
 .button-primary { background: var(--ink); border-color: var(--ink); color: var(--on-ink); font-weight: 600; }
 .button-primary:hover { background: color-mix(in srgb, var(--ink) 85%, var(--accent)); border-color: transparent; }
-.auth-login, .auth-register { min-height: 32px; padding: 0 var(--space-4); border-radius: var(--pill, 999px); font-size: 13px; font-weight: 600; justify-content: center; white-space: nowrap; }
+.auth-login, .auth-register { min-height: 32px; padding: 0 var(--space-4); border-radius: var(--pill, 999px); font-size: max(13px, var(--text-min)); font-weight: 600; justify-content: center; white-space: nowrap; }
 .auth-login { background: transparent; color: var(--ink); }
 
 /* The drawer of log in and sign up: from the right, over a scrim. The type and the controls use the sizes and the styles of the rest of the app:
@@ -655,7 +655,7 @@ button, input, select { font: inherit; color: inherit; }
 .auth-confirm[hidden] { display: none; }
 .auth-confirm-actions { display: flex; gap: var(--space-2); margin-top: var(--space-2); }
 .auth-confirm-actions .button { min-height: 40px; padding: 0 var(--space-5); border-radius: var(--pill, 999px); justify-content: center; }
-.auth-user { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
+.auth-user { font-size: max(13px, var(--text-min)); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
 .link-button { padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { .auth-drawer { transform: none; transition: none; } .auth-step { animation: none; } }
 
@@ -747,7 +747,7 @@ button, input, select { font: inherit; color: inherit; }
 .section-nav-icon, .page-head-question { display: none; }
 @media (min-width: 1024px) {
   .section-nav { display: block; flex: none; width: 232px; background: var(--surface-page); }
-  .section-nav-inner { position: sticky; top: var(--navbar-height); max-height: calc(100vh - var(--navbar-height)); overflow-y: auto; padding: var(--space-5) var(--space-3) var(--space-5) calc(var(--space-6) + var(--space-4)); }
+  .section-nav-inner { position: sticky; top: var(--navbar-height); max-height: calc(100vh / var(--page-zoom) - var(--navbar-height)); overflow-y: auto; padding: var(--space-5) var(--space-3) var(--space-5) calc(var(--space-6) + var(--space-4)); }
   .section-nav-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
   .section-nav-link { display: block; padding: 9px var(--space-3); border-radius: 6px; font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.08em; line-height: 1.4; text-transform: uppercase; color: var(--text-secondary); text-decoration: none; }
   .section-nav-link:hover { background: var(--sidebar-hover-bg); color: var(--sidebar-active-text); }
@@ -772,12 +772,12 @@ button, input, select { font: inherit; color: inherit; }
 @media (max-width: 1023px) {
   :root { --navbar-height: 56px; }
 }
-:root[data-header="v2"] .page-head .dr-trigger { min-height: 32px; padding: 0 10px 0 8px; gap: 6px; font-size: 13px; }
+:root[data-header="v2"] .page-head .dr-trigger { min-height: 32px; padding: 0 10px 0 8px; gap: 6px; font-size: max(13px, var(--text-min)); }
 :root[data-header="v2"] .page-head .dr-trigger .dr-icon { width: 16px; height: 16px; }
-:root[data-header="v2"] .page-head .set-select select, :root[data-header="v2"] .page-head-actions select { min-height: 32px; font-size: 13px; }
-:root[data-header="v2"] .page-head-actions .segmented button { min-height: 26px; padding: 0 12px; font-size: 13px; }
-:root[data-header="v2"] .page-filters select, :root[data-header="v2"] .page-filters .search-input { min-height: 32px; font-size: 13px; }
-:root[data-header="v2"] .page-filters .button { min-height: 32px; font-size: 13px; }
+:root[data-header="v2"] .page-head .set-select select, :root[data-header="v2"] .page-head-actions select { min-height: 32px; font-size: max(13px, var(--text-min)); }
+:root[data-header="v2"] .page-head-actions .segmented button { min-height: 26px; padding: 0 12px; font-size: max(13px, var(--text-min)); }
+:root[data-header="v2"] .page-filters select, :root[data-header="v2"] .page-filters .search-input { min-height: 32px; font-size: max(13px, var(--text-min)); }
+:root[data-header="v2"] .page-filters .button { min-height: 32px; font-size: max(13px, var(--text-min)); }
 :root[data-header="v2"] .page-head.is-empty { margin: 0 0 var(--space-4); }
 
 /* Motion (#56). The tokens are in tokens.css and assets/motion.js plays the rest: the page entrance, the fade of the cards
@@ -801,7 +801,7 @@ button, input, select { font: inherit; color: inherit; }
   animation: m-shimmer 1.4s var(--ease-in-out) infinite;
 }
 #app:empty {
-  position: relative; min-height: 100vh; overflow: hidden;
+  position: relative; min-height: calc(100vh / var(--page-zoom)); overflow: hidden;
   background:
     linear-gradient(var(--border), var(--border)) 0 55px / 100% 1px no-repeat,
     linear-gradient(var(--skeleton), var(--skeleton)) 24px 16px / 96px 24px no-repeat,
@@ -923,108 +923,108 @@ svg.chart .bar-col { transform-origin: 50% 100%; }
 .token-chip { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid var(--border); border-radius: var(--radius); font-size: var(--text-caption); font-weight: 600; }
 
 /* The carbon theme: a console look. Sentence case, no slashes, rounded rectangles instead of pills, an edge on every card, a sidebar with one filled item. */
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) { --pill: 6px; --radius-roomy: 10px; --radius: 10px; }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) body { font-weight: 400; }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) :is(.kpi-tile, .dcard):not(:has(.kpi-tile, .dcard)) { background: var(--surface-raised); border-color: var(--card-edge); }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) :is(.kpi-tile, .dcard):is(:hover, :focus-within):not(:has(.kpi-tile, .dcard)) { border-color: var(--rule); }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dcard { --card-pad: var(--space-5); --card-gap: var(--space-4); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) { --pill: 6px; --radius-roomy: 10px; --radius: 10px; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) body { font-weight: 400; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) :is(.kpi-tile, .dcard):not(:has(.kpi-tile, .dcard)) { background: var(--surface-raised); border-color: var(--card-edge); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) :is(.kpi-tile, .dcard):is(:hover, :focus-within):not(:has(.kpi-tile, .dcard)) { border-color: var(--rule); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .dcard { --card-pad: var(--space-5); --card-gap: var(--space-4); }
 /* A card inside a card is smaller and has the color of the page. */
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dcard .dcard { --card-pad: var(--space-4); --card-radius: 8px; background: var(--surface-page); }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dash-grid, :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .card-col { gap: var(--space-4); }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dcard-title { font-size: var(--text-title); line-height: 28px; font-weight: 500; letter-spacing: -0.02em; text-transform: none; color: var(--ink); }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dcard-title::before { content: none; }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-tabs a[aria-current], :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .sub-tabs a[aria-current] { border-color: transparent; border-bottom-color: var(--accent); border-radius: 0; box-shadow: none; color: var(--accent); }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .home-hero .home-hero-stats { background: none; border-color: transparent; box-shadow: none; }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"])[data-header="v2"] .page-tabs .section-tabs a { padding: 8px 2px; margin-right: var(--space-3); border-width: 0 0 2px; border-radius: 0; font-size: var(--text-small); font-weight: 500; letter-spacing: 0; text-transform: none; }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"])[data-header="v2"] .page-tabs .section-tabs a[aria-current]::before { content: none; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .dcard .dcard { --card-pad: var(--space-4); --card-radius: 8px; background: var(--surface-page); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .dash-grid, :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .card-col { gap: var(--space-4); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .dcard-title { font-size: var(--text-title); line-height: 28px; font-weight: 500; letter-spacing: -0.02em; text-transform: none; color: var(--ink); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .dcard-title::before { content: none; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .section-tabs a[aria-current], :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .sub-tabs a[aria-current] { border-color: transparent; border-bottom-color: var(--accent); border-radius: 0; box-shadow: none; color: var(--accent); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .home-hero .home-hero-stats { background: none; border-color: transparent; box-shadow: none; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"])[data-header="v2"] .page-tabs .section-tabs a { padding: 8px 2px; margin-right: var(--space-3); border-width: 0 0 2px; border-radius: 0; font-size: var(--text-small); font-weight: 500; letter-spacing: 0; text-transform: none; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"])[data-header="v2"] .page-tabs .section-tabs a[aria-current]::before { content: none; }
 @media (min-width: 1024px) {
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) { --navbar-height: 52px; }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .header-logo { margin-right: auto; }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .global-search { order: 1; }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .header-nav { order: 2; flex: none; margin-left: 0; }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .header-actions { order: 3; }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .header-nav .nav-link { padding: 0 10px; font-size: var(--text-small); font-weight: 500; letter-spacing: 0; text-transform: none; }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .header-nav .nav-link { color: var(--text-primary); }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .header-nav .nav-link:hover { color: var(--ink); }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .header-nav .nav-link[aria-current="page"] { font-weight: 500; color: var(--ink); }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .header-nav .nav-link[aria-current="page"]::before { content: none; }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .search-button { background: var(--surface-card); }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav { width: 216px; border-right: 1px solid var(--border); background: var(--surface-sidebar); }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav-inner { padding: var(--space-4) var(--space-2); }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav-inner::before { content: attr(data-label); display: block; padding: 0 var(--space-3) var(--space-3); font-size: var(--text-caption); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav-list { gap: 4px; }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav-link { padding: 8px var(--space-3); border-radius: 6px; font-size: var(--text-small); font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--text-primary); }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav .section-nav-link[aria-current]::before { content: none; }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav .section-nav-link[aria-current]:not(.is-parent) { background: color-mix(in srgb, var(--accent) 13%, transparent); color: var(--accent); }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav-sub { padding-left: var(--space-3); }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) { --navbar-height: 52px; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .header-logo { margin-right: auto; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .global-search { order: 1; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .header-nav { order: 2; flex: none; margin-left: 0; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .header-actions { order: 3; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .header-nav .nav-link { padding: 0 10px; font-size: var(--text-small); font-weight: 500; letter-spacing: 0; text-transform: none; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .header-nav .nav-link { color: var(--text-primary); }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .header-nav .nav-link:hover { color: var(--ink); }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .header-nav .nav-link[aria-current="page"] { font-weight: 500; color: var(--ink); }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .header-nav .nav-link[aria-current="page"]::before { content: none; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .search-button { background: var(--surface-card); }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .section-nav { width: 216px; border-right: 1px solid var(--border); background: var(--surface-sidebar); }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .section-nav-inner { padding: var(--space-4) var(--space-2); }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .section-nav-inner::before { content: attr(data-label); display: block; padding: 0 var(--space-3) var(--space-3); font-size: var(--text-caption); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .section-nav-list { gap: 4px; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .section-nav-link { padding: 8px var(--space-3); border-radius: 6px; font-size: var(--text-small); font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--text-primary); }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .section-nav .section-nav-link[aria-current]::before { content: none; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .section-nav .section-nav-link[aria-current]:not(.is-parent) { background: color-mix(in srgb, var(--accent) 13%, transparent); color: var(--accent); }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .section-nav-sub { padding-left: var(--space-3); }
 }
 
 /* The carbon theme, the default: the parts that make it a console and not only a dark page. */
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .content.dash:not(.is-home) { width: 100%; max-width: 1400px; margin-inline: auto; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .content.dash:not(.is-home) { width: 100%; max-width: 1400px; margin-inline: auto; }
 /* A stat card: the label, a large number with its small picture on the right, and the short line with the change under them. */
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat, :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat.dstat-compact { display: flex; flex-direction: column; gap: var(--space-2); padding: 20px; }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat-label { font-family: var(--font-mono); font-size: var(--text-caption); line-height: 18px; font-weight: 400; letter-spacing: 0.3px; text-transform: uppercase; color: var(--text-secondary); }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat .dstat-row, :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat-compact .dstat-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat .dstat-value, :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat-compact .dstat-value { font-size: var(--text-heading); font-weight: 500; line-height: 32px; letter-spacing: -0.7px; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .dstat, :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .dstat.dstat-compact { display: flex; flex-direction: column; gap: var(--space-2); padding: 20px; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .dstat-label { font-family: var(--font-mono); font-size: var(--text-caption); line-height: 18px; font-weight: 400; letter-spacing: 0.3px; text-transform: uppercase; color: var(--text-secondary); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .dstat .dstat-row, :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .dstat-compact .dstat-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .dstat .dstat-value, :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .dstat-compact .dstat-value { font-size: var(--text-heading); font-weight: 500; line-height: 32px; letter-spacing: -0.7px; }
 /* The picture sits on the right of the number, or under it in a narrow card. The short line is last. */
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat .dstat-row > :nth-child(3), :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat-compact .dstat-row > :nth-child(3) { order: 1; margin-left: auto; }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat .dstat-sub, :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat-compact .dstat-sub { order: 2; flex-basis: 100%; }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .delta.is-up { color: var(--emph-more); }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .delta.is-down { color: var(--emph-less); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .dstat .dstat-row > :nth-child(3), :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .dstat-compact .dstat-row > :nth-child(3) { order: 1; margin-left: auto; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .dstat .dstat-sub, :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .dstat-compact .dstat-sub { order: 2; flex-basis: 100%; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .delta.is-up { color: var(--emph-more); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .delta.is-down { color: var(--emph-less); }
 /* The accent is for the interface, so the data of a small picture and of the wave of the home page has the color of the series. */
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .spark .spark-range { stroke: var(--series-1); }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .home-hero-wave-fill { fill: color-mix(in srgb, var(--series-1) 7%, transparent); }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .home-hero-wave-line { stroke: color-mix(in srgb, var(--series-1) 40%, transparent); }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .home-hero { background: var(--surface-page); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .spark .spark-range { stroke: var(--series-1); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .home-hero-wave-fill { fill: color-mix(in srgb, var(--series-1) 7%, transparent); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .home-hero-wave-line { stroke: color-mix(in srgb, var(--series-1) 40%, transparent); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .home-hero { background: var(--surface-page); }
 /* Links in tables are quiet: no line until the mouse is on them. */
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .minimal :is(.data-table a, .rows a, .entity-link) { text-decoration: none; color: var(--ink); }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .minimal :is(.data-table a, .rows a, .entity-link):hover { color: var(--accent); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .minimal :is(.data-table a, .rows a, .entity-link) { text-decoration: none; color: var(--ink); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .minimal :is(.data-table a, .rows a, .entity-link):hover { color: var(--accent); }
 /* The title card of a detail page has the same edge as any card, and its label has no slash. */
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .entity-grid .hero, :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .entity-grid .hero:is(:hover, :focus-within) { border-top: 1px solid var(--card-edge); }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .hero-kicker::before { content: none; }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dcard a:not(.button, .chip, .dcard-link) { color: var(--ink); text-decoration-color: var(--rule); }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dcard a:not(.button, .chip, .dcard-link):hover { color: var(--accent); text-decoration-color: currentColor; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .entity-grid .hero, :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .entity-grid .hero:is(:hover, :focus-within) { border-top: 1px solid var(--card-edge); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .hero-kicker::before { content: none; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .dcard a:not(.button, .chip, .dcard-link) { color: var(--ink); text-decoration-color: var(--rule); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .dcard a:not(.button, .chip, .dcard-link):hover { color: var(--accent); text-decoration-color: currentColor; }
 /* Manrope is wider than the other fonts, so the numbers of a dense matrix are a little tighter. */
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dash .matrix-turned td { font-size: var(--text-caption); letter-spacing: -0.03em; }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .global-search-kind > span:first-child::before { content: none; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .dash .matrix-turned td { font-size: var(--text-caption); letter-spacing: -0.03em; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .global-search-kind > span:first-child::before { content: none; }
 @media (min-width: 1024px) {
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav-link { display: flex; align-items: center; gap: 10px; }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav-icon { display: block; color: var(--text-secondary); }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav .section-nav-link[aria-current]:not(.is-parent) .section-nav-icon { color: var(--accent); }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav-sub { padding-left: 26px; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .section-nav-link { display: flex; align-items: center; gap: 10px; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .section-nav-icon { display: block; color: var(--text-secondary); }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .section-nav .section-nav-link[aria-current]:not(.is-parent) .section-nav-icon { color: var(--accent); }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .section-nav-sub { padding-left: 26px; }
   /* The title and the question of the page on the left, the page actions on the right. */
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"])[data-header="v2"] .page-head.has-page-title { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; column-gap: var(--space-5); margin: var(--space-5) 0; }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"])[data-header="v2"] .page-head.has-page-title .page-head-titles { position: static; width: auto; height: auto; overflow: visible; clip: auto; grid-column: 1; grid-row: 1; }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"])[data-header="v2"] .page-head.has-page-title .page-head-title { position: static; width: auto; height: auto; overflow: visible; clip: auto; font-size: var(--text-heading); line-height: 32px; font-weight: 500; letter-spacing: -0.7px; }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"])[data-header="v2"] .page-head.has-page-title .page-head-actions { grid-column: 2; grid-row: 1; justify-content: flex-end; }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"])[data-header="v2"] .page-head.has-page-title:not(:has(.page-head-actions)) .page-filters { grid-column: 2; grid-row: 1; margin-top: 0; justify-content: flex-end; }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .page-head-question { display: block; margin: var(--space-1) 0 0; font-size: var(--text-body); line-height: 24px; color: var(--text-primary); }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"])[data-header="v2"] .page-head.has-page-title { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; column-gap: var(--space-5); margin: var(--space-5) 0; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"])[data-header="v2"] .page-head.has-page-title .page-head-titles { position: static; width: auto; height: auto; overflow: visible; clip: auto; grid-column: 1; grid-row: 1; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"])[data-header="v2"] .page-head.has-page-title .page-head-title { position: static; width: auto; height: auto; overflow: visible; clip: auto; font-size: var(--text-heading); line-height: 32px; font-weight: 500; letter-spacing: -0.7px; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"])[data-header="v2"] .page-head.has-page-title .page-head-actions { grid-column: 2; grid-row: 1; justify-content: flex-end; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"])[data-header="v2"] .page-head.has-page-title:not(:has(.page-head-actions)) .page-filters { grid-column: 2; grid-row: 1; margin-top: 0; justify-content: flex-end; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .page-head-question { display: block; margin: var(--space-1) 0 0; font-size: var(--text-body); line-height: 24px; color: var(--text-primary); }
 }
 
 /* The type of carbon, measured on the Apotypos app: small and dense, Inter for text, monospace for the numbers of a table.
    Its sizes under 12 px are 12 px here (C13). The card boxes above do not change. */
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) { --text-small: 13px; }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dcard-title { font-size: 14px; line-height: 21px; font-weight: 600; letter-spacing: -0.28px; }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) :is(.dcard-sub, .dstat-sub) { font-size: var(--text-caption); line-height: 18px; }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat-label { font-family: var(--font-text); font-size: var(--text-caption); line-height: 18px; font-weight: 400; letter-spacing: 0.42px; text-transform: uppercase; color: var(--text-secondary); }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat .dstat-value, :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat-compact .dstat-value { font-size: 30px; line-height: 30px; font-weight: 600; letter-spacing: -0.75px; }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .kpi-value { font-weight: 600; letter-spacing: -0.75px; }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .data-table { font-size: var(--text-caption); }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .data-table th { font-weight: 500; }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .data-table td.num, :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .agenda-num { font-family: var(--font-mono); }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) :is(.segmented button, .chip, .search-button) { font-size: var(--text-caption); }
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .agenda-legend { font-size: 12.5px; line-height: 18.75px; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) { --text-small: max(13px, var(--text-min)); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .dcard-title { font-size: 14px; line-height: 21px; font-weight: 600; letter-spacing: -0.28px; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) :is(.dcard-sub, .dstat-sub) { font-size: var(--text-caption); line-height: 18px; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .dstat-label { font-family: var(--font-text); font-size: var(--text-caption); line-height: 18px; font-weight: 400; letter-spacing: 0.42px; text-transform: uppercase; color: var(--text-secondary); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .dstat .dstat-value, :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .dstat-compact .dstat-value { font-size: 30px; line-height: 30px; font-weight: 600; letter-spacing: -0.75px; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .kpi-value { font-weight: 600; letter-spacing: -0.75px; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .data-table { font-size: var(--text-caption); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .data-table th { font-weight: 500; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .data-table td.num, :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .agenda-num { font-family: var(--font-mono); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) :is(.segmented button, .chip, .search-button) { font-size: var(--text-caption); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .agenda-legend { font-size: max(12.5px, var(--text-min)); line-height: 18.75px; }
 @media (min-width: 1024px) {
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .header-nav .nav-link { font-size: var(--text-small); line-height: 19.5px; font-weight: 400; }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .header-nav .nav-link[aria-current="page"] { font-weight: 600; }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav-link { font-size: var(--text-small); line-height: 19.5px; font-weight: 400; }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav .section-nav-link[aria-current]:not(.is-parent) { font-weight: 500; }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav-inner::before { font-family: var(--font-text); font-size: var(--text-caption); font-weight: 600; letter-spacing: 1.33px; }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"])[data-header="v2"] .page-head.has-page-title .page-head-title { font-size: 24px; line-height: 30px; font-weight: 600; letter-spacing: -0.6px; }
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .page-head-question { font-size: var(--text-small); line-height: 19.5px; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .header-nav .nav-link { font-size: var(--text-small); line-height: 19.5px; font-weight: 400; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .header-nav .nav-link[aria-current="page"] { font-weight: 600; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .section-nav-link { font-size: var(--text-small); line-height: 19.5px; font-weight: 400; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .section-nav .section-nav-link[aria-current]:not(.is-parent) { font-weight: 500; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .section-nav-inner::before { font-family: var(--font-text); font-size: var(--text-caption); font-weight: 600; letter-spacing: 1.33px; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"])[data-header="v2"] .page-head.has-page-title .page-head-title { font-size: 24px; line-height: 30px; font-weight: 600; letter-spacing: -0.6px; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .page-head-question { font-size: var(--text-small); line-height: 19.5px; }
 }
 @media (max-width: 719px) {
-  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dcard { --card-pad: var(--space-4); }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) .dcard { --card-pad: var(--space-4); }
 }
 
 /* The default carbon: the white content area has a light card shadow, and the current page of the sidebar is a white pill. */
