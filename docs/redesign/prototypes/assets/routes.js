@@ -117,7 +117,8 @@
 
 // The page zoom of tokens.css (--page-zoom). Under it the browser reports positions on the screen, but styles and drawings use page pixels.
 // These three keep all the measuring code of the site in page pixels, so a chart fills its card and a tooltip sits at the pointer.
-{
+// The build also reads this file, for the table of addresses, and has no browser: it skips them.
+if (typeof Element !== 'undefined') {
   const zoom = () => parseFloat(getComputedStyle(document.documentElement).zoom) || 1
   const rect = Element.prototype.getBoundingClientRect
   Element.prototype.getBoundingClientRect = function () {
