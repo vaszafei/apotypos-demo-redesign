@@ -136,7 +136,7 @@ def covered_range(counts, domains, days):
     first = last
     while first > 0 and ok[first - 1]:
         first -= 1
-    return days[first], days[last], present
+    return days[first], days[last]
 
 
 def extend_media(media, dsn, outlet_domains, as_of):
@@ -150,7 +150,7 @@ def extend_media(media, dsn, outlet_domains, as_of):
     mapped = sorted(d for d in domains.values() if d)
     counts = article_counts(dsn, mapped, first_new, as_of)
     candidate = days_between(first_new, date.fromisoformat(as_of) - timedelta(days=1))
-    first, last, present = covered_range(counts, mapped, candidate)
+    first, last = covered_range(counts, mapped, candidate)
     new_days = days_between(first_new, date.fromisoformat(last))
 
     ratios = {}
@@ -177,7 +177,7 @@ def extend_media(media, dsn, outlet_domains, as_of):
     media["volumeFrom"] = new_days[0]
     media["dbCovered"] = [first, last]
     covered_days = days_between(date.fromisoformat(first), date.fromisoformat(last))
-    return {"base_days": base_days, "new_days": len(new_days), "covered": [first, last], "present": present, "ratios": ratios, "off": off,
+    return {"base_days": base_days, "new_days": len(new_days), "covered": [first, last], "ratios": ratios, "off": off,
             "articles": sum(counts.get((d, day), 0) for d in mapped for day in covered_days),
             "outlets_with_domain": len(mapped), "outlets_null": len(names) - len(mapped),
             "outlet_of_domain": {domains[n]: k for k, n in enumerate(names) if domains[n]}}
