@@ -1074,8 +1074,8 @@
           const ensureHead = () => { if (!content.querySelector('.page-head')) content.prepend(window.Shell.PageHead({})) }
           new MutationObserver(ensureHead).observe(content, { childList: true })
         }
-        // The detail pages of Αναλύσεις (a speech, a person's file) are locked as well.
-        if (item?.key === 'world' && !signedIn()) {
+        // The detail pages of Αναλύσεις (a speech, a person's file) are locked as well. The story of France is open to all.
+        if (item?.key === 'world' && route !== '/france-riots' && !signedIn()) {
           content.classList.add('is-gated')
           content.replaceChildren(window.Shell.PageHead({ tabs: null }), SignInGate())
           centerTabs()

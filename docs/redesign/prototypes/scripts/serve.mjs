@@ -13,11 +13,20 @@ const port = Number(process.argv[2] || 4173)
 const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2', '.gif': 'image/gif' }
 
 createServer((req, res) => {
-  const path = decodeURIComponent(new URL(req.url, 'http://x').pathname)
-  const direct = join(root, normalize(path))
-  const isFile = direct.startsWith(root) && existsSync(direct) && statSync(direct).isFile()
-  const route = isFile ? null : resolve(path)
-  const file = isFile ? direct : route ? join(root, route.file) : join(root, '404.html')
-  res.writeHead(isFile || route ? 200 : 404, { 'content-type': types[extname(file)] || 'application/octet-stream', 'cache-control': 'no-store' })
-  res.end(readFileSync(file))
+  try {
+    const url = new URL(req.url, 'http://x')
+    const path = decodeURIComponent(url.pathname)
+    const direct = join(root, normalize(path))
+    const isFile = direct.startsWith(root) && existsSync(direct) && statSync(direct).isFile()
+    const route = isFile ? null : resolve(path)
+    const file = isFile ? direct : route ? join(root, route.file) : join(root, '404.html')
+    // A file with a version in its address never changes, so a browser can keep it. A page always comes fresh, with the new versions.
+    const cache = isFile && url.searchParams.has('v') ? 'public, max-age=31536000, immutable' : 'no-cache'
+    res.writeHead(isFile || route ? 200 : 404, { 'content-type': types[extname(file)] || 'application/octet-stream', 'cache-control': cache })
+    res.end(req.method === 'HEAD' ? undefined : readFileSync(file))
+  } catch {
+    // A broken address must not stop the server.
+    res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' })
+    res.end('Bad request')
+  }
 }).listen(port, () => console.log(`http://localhost:${port}`))
