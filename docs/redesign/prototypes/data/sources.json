@@ -100,5 +100,17 @@
   "storyDetail": 1045049,
   "originality": 617,
   "campaigns": 2984
+ },
+ "database": {
+  "dump": "manual-20261028T155347Z.dump",
+  "asOf": "2026-10-28",
+  "covered": [
+   "2026-10-14",
+   "2026-10-27"
+  ],
+  "dayTimeZone": "Europe/Athens",
+  "outlets": "26 of 36",
+  "articles": 48146,
+  "stories": 2453
  }
 }

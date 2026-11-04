@@ -20,7 +20,8 @@
     const OTHER = 'var(--act-5)'
     const STANCE = ['var(--stance-critical)', 'var(--stance-neutral)', 'var(--stance-supportive)']
     const name = (x) => x[App.locale] || x.el
-    const N = home.dates.length
+    // The topics have no count after the coded days (null), so these cards end on the last day that has one.
+    const N = home.issueDaily.reduce((m, row) => Math.max(m, row.findLastIndex((v) => v !== null)), 0) + 1
     let days = 30
     const short = (n) => (n >= 1e6 ? `${fmt.dec(n / 1e6)}M` : n >= 1e4 ? `${fmt.dec(n / 1e3)}K` : fmt.int(Math.round(n)))
     const sum = (a, i0, i1) => { let s = 0; for (let i = i0; i <= i1; i++) s += a[i] || 0; return s }

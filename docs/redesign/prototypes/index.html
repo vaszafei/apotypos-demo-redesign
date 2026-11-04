@@ -15,19 +15,19 @@
 </head>
 <body>
   <div id="app"></div>
-  <script src="assets/icons.js?v=11"></script>
-  <script src="assets/messages.js?v=42"></script>
-  <script src="assets/messages-v2.js?v=50"></script>
-  <script src="assets/messages-home.js?v=25"></script>
-  <script src="assets/components.js?v=18"></script>
-  <script src="assets/motion.js?v=5"></script>
-  <script src="assets/dash.js?v=24"></script>
+  <script src="assets/icons.js?v=12"></script>
+  <script src="assets/messages.js?v=43"></script>
+  <script src="assets/messages-v2.js?v=51"></script>
+  <script src="assets/messages-home.js?v=26"></script>
+  <script src="assets/components.js?v=19"></script>
+  <script src="assets/motion.js?v=6"></script>
+  <script src="assets/dash.js?v=25"></script>
   <script src="assets/hero-field.js?v=1"></script>
-  <script src="assets/home.js?v=41"></script>
-  <script src="assets/shell.js?v=73"></script>
-  <script src="data/home.js?v=30"></script>
-  <script src="data/stories.js?v=30"></script>
-  <script src="data/storyDetail.js?v=30"></script>
+  <script src="assets/home.js?v=42"></script>
+  <script src="assets/shell.js?v=74"></script>
+  <script src="data/home.js?v=32"></script>
+  <script src="data/stories.js?v=32"></script>
+  <script src="data/storyDetail.js?v=32"></script>
   <script>
     // Home: the hero (the title, the large search and the size of the data) fills the first screen; the search is not in the top bar here.
     // Under it, the chart picks a day, the card shows the stories of that day (a story of the list is picked in the card),
@@ -37,14 +37,14 @@
     const result = load('home', ['dates', 'outlets', 'issues', 'issueDaily'], (b) => b.dates)
     const stories = load('stories', ['dates', 'issues', 'stories'], (b) => b.stories)
     const detail = load('storyDetail', ['dates', 'outlets', 'stories'], (b) => b.stories)
-    const range = { from: '2026-08-01', to: '2026-09-30' }
-    let lastValid = { ...range }
+    let lastValid = null
     let selected = null
     let rank = 0
 
+    // A day with no data is null. It adds nothing, and it is not a day of the average.
     function sumRange (daily, i0, i1) {
       let s = 0
-      for (let i = i0; i <= i1; i++) s += daily[i]
+      for (let i = i0; i <= i1; i++) if (daily[i] !== null) s += daily[i]
       return s
     }
 
@@ -74,13 +74,15 @@
             return
           }
           const dates = data.dates
+          if (!lastValid) lastValid = { from: dates[0], to: dates[dates.length - 1] }
           const i0 = dates.indexOf(lastValid.from)
           const i1 = dates.indexOf(lastValid.to)
-          const len = i1 - i0 + 1
-          if (selected === null || selected < i0 || selected > i1) selected = i1
+          // The page opens on the last day that has topics, because the topics card leads it.
+          const hasTopics = (i) => data.issueDaily.some((row) => row[i] !== null)
+          if (selected === null || selected < i0 || selected > i1) { selected = i1; while (selected > i0 && !hasTopics(selected)) selected-- }
 
           // The articles of all the outlets for each day of the data.
-          const totals = dates.map((_, i) => data.outlets.reduce((s, o) => s + o.daily[i], 0))
+          const totals = dates.map((_, i) => (data.outlets.every((o) => o.daily[i] === null) ? null : data.outlets.reduce((s, o) => s + o.daily[i], 0)))
           const collected = sumRange(totals, i0, i1)
 
           // The stories of the day. A pick of a day in the chart, or of a story in the list, draws this card again.
@@ -91,7 +93,8 @@
           const days = dates.slice(i0, i1 + 1)
           const daily = totals.slice(i0, i1 + 1)
           // The average of each day and the 6 days before it. The first 6 days of the data have no full week.
-          const trend = daily.map((_, j) => (i0 + j >= 6 ? sumRange(totals, i0 + j - 6, i0 + j) / 7 : null))
+          // A day with no data has no average, and neither has a week with such a day.
+          const trend = daily.map((_, j) => { const week = totals.slice(Math.max(0, i0 + j - 6), i0 + j + 1); return week.length === 7 && week.every((v) => v !== null) ? sumRange(totals, i0 + j - 6, i0 + j) / 7 : null })
           const isWeekend = (iso) => [0, 6].includes(new Date(`${iso}T00:00:00Z`).getUTCDay())
           const WEEKDAY = 'color-mix(in srgb, var(--series-1) 55%, var(--surface-raised))'
           const chart = () => UI.BarChart({

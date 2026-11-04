@@ -452,7 +452,7 @@
   function loadFixture (key) {
     if (window.FIXTURES?.[key]) return Promise.resolve(window.FIXTURES[key])
     return new Promise((resolve) => {
-      const script = h('script', { src: `data/${key}.js?v=1` })
+      const script = h('script', { src: `data/${key}.js?v=2` })
       script.onload = () => resolve(window.FIXTURES?.[key] || null)
       script.onerror = () => resolve(null)
       document.head.append(script)

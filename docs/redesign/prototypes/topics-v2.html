@@ -17,21 +17,21 @@
 </head>
 <body>
   <div id="app"></div>
-  <script src="assets/icons.js?v=11"></script>
-  <script src="assets/messages.js?v=42"></script>
-  <script src="assets/messages-v2.js?v=50"></script>
-  <script src="assets/messages-mme.js?v=23"></script>
+  <script src="assets/icons.js?v=12"></script>
+  <script src="assets/messages.js?v=43"></script>
+  <script src="assets/messages-v2.js?v=51"></script>
+  <script src="assets/messages-mme.js?v=24"></script>
   <script src="assets/messages-parts.js?v=2"></script>
-  <script src="assets/components.js?v=18"></script>
-  <script src="assets/motion.js?v=5"></script>
-  <script src="assets/dash.js?v=24"></script>
+  <script src="assets/components.js?v=19"></script>
+  <script src="assets/motion.js?v=6"></script>
+  <script src="assets/dash.js?v=25"></script>
   <script src="assets/parts.js?v=2"></script>
-  <script src="assets/mme.js?v=25"></script>
-  <script src="assets/shell.js?v=73"></script>
-  <script src="data/home.js?v=30"></script>
-  <script src="data/stories.js?v=30"></script>
-  <script src="data/mme.js?v=30"></script>
-  <script src="assets/activity.js?v=7"></script>
+  <script src="assets/mme.js?v=26"></script>
+  <script src="assets/shell.js?v=74"></script>
+  <script src="data/home.js?v=32"></script>
+  <script src="data/stories.js?v=32"></script>
+  <script src="data/mme.js?v=31"></script>
+  <script src="assets/activity.js?v=8"></script>
   <script>
     // Topics, Επισκόπηση: the first dashboard of Θέματα. It reads the topics file (36 topics, 61 days). The stories are in the tab Ιστορίες.
     // The page has no buttons in the top bar. Each card holds one measure and one picture of it, and no measure shows twice (APO-168).
@@ -131,11 +131,12 @@
         const name = (x) => x[App.locale] || x.el
         // A click on a topic opens it on Ένα θέμα.
         const topicHref = (issue) => { if (issue.soft) return `topic-v2.html?i=${d.issues.indexOf(issue)}`; const k = mme.kind === 'data' ? mme.data.sets.gr.issues.findIndex((x) => x.el === issue.el) : -1; return k < 0 ? 'topics-v2.html?tab=topic' : `topics-v2.html?tab=topic&topic=${k}` }
-        const last = d.dates.length - 1
+        // The topics have no count after the coded days (null), so the windows, lines and sparklines end on the last day that has one.
+        const last = d.issueDaily.reduce((m, row) => Math.max(m, row.findLastIndex((v) => v !== null)), 0)
         const first = tab === 'overview' ? last - days + 1 : 0
         const total = (k) => sumRange(d.issueDaily[k], first, last)
         const rows = d.issues.map((issue, k) => {
-          const daily = d.issueDaily[k]
+          const daily = d.issueDaily[k].slice(0, last + 1)
           const now = last >= 27 ? sumRange(daily, last - 13, last) : 0
           const before = last >= 27 ? sumRange(daily, last - 27, last - 14) : 0
           return { issue, daily, count: total(k), now, before, change: before >= 200 ? (now - before) / before : null }
@@ -177,7 +178,7 @@
         // that it flattens them, so it starts off, with the topics after the sixth. The last line that is on cannot be switched off.
         const offered = rows.filter((r) => !r.issue.catchAll).slice(0, SLOTS.length)
         const lines = offered.map((r, i) => ({ name: name(r.issue), color: SLOTS[i], on: i > 0 && i < 6, values: r.daily.map((_, j) => (j < ROLL - 1 ? 0 : sumRange(r.daily, j - ROLL + 1, j) / ROLL)) }))
-        const chart = LinesChart({ dates: d.dates, getSeries: () => lines.filter((l) => l.on), caption: t('topics2.time.title') })
+        const chart = LinesChart({ dates: d.dates.slice(0, last + 1), getSeries: () => lines.filter((l) => l.on), caption: t('topics2.time.title') })
         const syncs = []
         const toggles = h('ul', { class: 'legend-toggles' }, lines.map((l) => {
           const button = h('button', { type: 'button', class: 'legend-toggle', 'aria-pressed': String(l.on) }, h('span', { class: 'swatch', style: { background: l.color } }), l.name)

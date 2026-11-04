@@ -23,7 +23,7 @@ const heightOf = (width) => (width <= 500 ? 844 : 900)
 const shell = readFileSync(join(root, 'assets/shell.js'), 'utf8')
 const map = shell.slice(shell.indexOf('const PROTOTYPES'), shell.indexOf('}', shell.indexOf('const PROTOTYPES')))
 const urls = new Set([...map.matchAll(/:\s*'([a-z0-9-]+\.html[^']*)'/g)].map((m) => m[1]))
-for (const extra of ['404.html', 'pages.html', 'story-v2.html?id=0', 'speech-v2.html?id=_NZUkod7lUM', 'speech-v2.html?id=-O7F0hDz0mI', 'outlet-v2.html', 'group-v2.html?g=skai', 'topic-v2.html?i=1', 'topic-v2.html?i=0']) urls.add(extra)
+for (const extra of ['404.html', 'pages.html', 'story-v2.html?id=0', 'speech-v2.html?id=_NZUkod7lUM', 'speech-v2.html?id=-O7F0hDz0mI', 'outlet-v2.html', 'group-v2.html?g=skai', 'topic-v2.html?i=1', 'topic-v2.html?i=0', 'topic-v2.html?i=12', 'story-v2.html?id=7448']) urls.add(extra)
 const pages = [...urls].filter((u) => u.includes(only)).sort()
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ico': 'image/x-icon' }

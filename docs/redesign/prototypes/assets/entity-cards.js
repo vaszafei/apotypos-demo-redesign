@@ -12,7 +12,8 @@
 
   // The daily columns of Ιδιοκτησία (UI.BarChart). series: [{ name, color, values }], from the bottom to the top.
   function DailyChart ({ dates, series, height = 220 }) {
-    const totals = dates.map((_, i) => series.reduce((a, x) => a + (x.values[i] || 0), 0))
+    // A day where every value is null has no data: its total is null, and the tooltip shows a dash.
+    const totals = dates.map((_, i) => (series.every((x) => x.values[i] == null) ? null : series.reduce((a, x) => a + (x.values[i] || 0), 0)))
     return UI.BarChart({
       dates, series, height, label: t('outlet2.daily.aria'),
       tooltipOf: (i) => { const list = series.filter((x) => x.values[i] > 0).reverse().map((x) => `${x.name} ${fmt.int(x.values[i])}`).join(' · '); return `${t('story.daily.tip', { date: fmt.date(dates[i]), n: fmt.int(totals[i]) })}${list ? `: ${list}` : ''}` }
@@ -30,8 +31,14 @@
     const rest = ranked.filter((r) => !lead.includes(r))
     const series = lead.map((r, k) => ({ name: name(issues[r.issue]), color: SLOTS[k], values: r.values }))
     if (rest.length) series.push({ name: t('outlet2.daily.topic.rest'), color: NO_GROUP, values: dates.map((_, i) => rest.reduce((a, r) => a + r.values[i], 0)) })
+    // A day with no news count (null) has articles that nobody sorted into news and not news. They are a part of their own, never "not news".
+    const unsorted = daily.map(([total, news]) => (news === null ? total : null))
     const modes = {
-      news: [{ name: t('outlet2.daily.news'), color: 'var(--series-news)', values: daily.map(([, news]) => news) }, { name: t('outlet2.daily.other'), color: 'var(--series-other)', values: daily.map(([total, news]) => total - news) }],
+      news: [
+        { name: t('outlet2.daily.news'), color: 'var(--series-news)', values: daily.map(([, news]) => news) },
+        { name: t('outlet2.daily.other'), color: 'var(--series-other)', values: daily.map(([total, news]) => (news === null ? null : total - news)) },
+        ...(unsorted.some((v) => v > 0) ? [{ name: t('outlet2.daily.unsorted'), color: NO_GROUP, values: unsorted }] : [])
+      ],
       topic: series
     }
     let mode = 'news'

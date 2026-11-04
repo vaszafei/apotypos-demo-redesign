@@ -18,18 +18,10 @@
   const pct = (v) => fmt.pct(v)
   const pctRound = (v) => `${Math.round(v * 100)}%`
 
-  // The presets of a set: its whole window, each month in it, the last 2 weeks and the last week.
+  // The presets of a set: those of its days (UI.periodPresets) and the last week.
   function presets (set) {
     const d = set.dates
-    const last = d.length - 1
-    const months = [...new Set(d.map((x) => x.slice(0, 7)))]
-    const monthKeys = { '2026-08': 'range.aug', '2026-09': 'range.sep' }
-    return [
-      { key: 'all', label: t('range.all'), from: d[0], to: d[last] },
-      ...months.filter((m) => monthKeys[m]).map((m) => ({ key: m, label: t(monthKeys[m]), from: d.find((x) => x.startsWith(m)), to: [...d].reverse().find((x) => x.startsWith(m)) })),
-      { key: 'last14', label: t('range.last14'), from: d[Math.max(0, last - 13)], to: d[last] },
-      { key: 'last7', label: t('mme.range.last7'), from: d[Math.max(0, last - 6)], to: d[last] }
-    ]
+    return [...UI.periodPresets(d), { key: 'last7', label: t('mme.range.last7'), from: d[Math.max(0, d.length - 7)], to: d[d.length - 1] }]
   }
 
   // All the sums of one period. The shares of a topic use the news (the topics with soft: false) as the base.
