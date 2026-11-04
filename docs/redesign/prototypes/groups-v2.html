@@ -7,17 +7,17 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=15">
   <link rel="stylesheet" href="assets/app.css?v=45">
-  <link rel="stylesheet" href="assets/dash.css?v=89">
+  <link rel="stylesheet" href="assets/dash.css?v=88">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
   <script src="assets/messages.js?v=38"></script>
-  <script src="assets/messages-v2.js?v=48"></script>
+  <script src="assets/messages-v2.js?v=47"></script>
   <script src="assets/components.js?v=15"></script>
   <script src="assets/motion.js?v=3"></script>
-  <script src="assets/dash.js?v=22"></script>
+  <script src="assets/dash.js?v=21"></script>
   <script src="assets/vendor/d3-hierarchy.min.js"></script>
   <script src="assets/shell.js?v=58"></script>
   <script src="data/groups.js?v=2"></script>
@@ -26,7 +26,7 @@
     // Media, Ιδιοκτησία: dashboard of APO-161. The group, the owner and the articles come from the static files,
     // so the period is fixed (1 Aug to 30 Sep 2026): there is no period control. The period is in the note of the table.
     const { t, fmt, h, load } = App
-    const { fit, reset, NO_GROUP, GroupFlow, card, cardHead, emptyText, TopBar, textOn, tint } = Dash
+    const { fit, reset, NO_GROUP, card, cardHead, emptyText, TopBar, textOn, tint } = Dash
     const result = load('groups', ['groups', 'ungrouped', 'totalCollected', 'window'], (b) => b.groups)
     // The daily articles of each outlet (the same period and the same groups as the groups file).
     const media = load('media', ['dates', 'outlets', 'outletDaily'], (b) => b.outlets)
@@ -341,18 +341,6 @@
                   Sunburst({ groups: treeGroups, total }))
               : emptyText(t('groups.empty')))
 
-          // The Sankey of the groups and their outlets, over the whole width, above the bubbles.
-          const flowCard = card('c-12 flow-card', cardHead(t('g2.flow.title'), null, `${t('flow.info')} ${period}.`),
-            total
-              ? GroupFlow({
-                groups: treeGroups.map((g) => ({ name: g.key, outlets: g.outlets.map((o) => ({ name: o.name, slug: o.slug, n: o.value })) })),
-                colorOf: (g) => (g ? colorOf.get(g) || NO_GROUP : NO_GROUP),
-                groupLink: (name) => h('a', { href: hrefOf(groups.find((x) => x.name === name)) }, name),
-                outletLink: (o) => UI.EntityLink({ type: 'outlet', key: o.slug, label: o.name }),
-                noneLabel: t('media2.groups.none')
-              })
-              : emptyText(t('groups.empty')))
-
           // Row 2, on the left: the articles of each day, stacked by group. The largest group is at the bottom, the outlets with no group are on top.
           const m = media.kind === 'data' ? media.data : null
           const groupOf = new Map([...groups.flatMap((g) => g.outlets.map((o) => [o.slug, g.name])), ...(empty ? [] : d.ungrouped.map((o) => [o.slug, null]))])
@@ -382,7 +370,7 @@
                 })))]
               : emptyText(t('groups.empty')))
 
-          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, flowCard, bubbles, shareCard, volume, stanceCard), protoNote())
+          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, bubbles, shareCard, volume, stanceCard), protoNote())
         }
         draw()
       }
