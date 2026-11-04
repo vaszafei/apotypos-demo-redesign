@@ -1,4 +1,4 @@
-/* Αρχική: the calendar of a month, the stories of a day, the topics of a day and the quick access. */
+/* Αρχική: the stories of a day, the topics of a day and the quick access. */
 
 /* The stories of a day. */
 .home-day { --card-gap: var(--space-3); }
@@ -32,29 +32,8 @@ a.home-stack-part { cursor: pointer; }
 .home-story-pick[aria-pressed="true"] .home-story-name { font-weight: 600; color: var(--ink); }
 .home-story-pick .muted-text { font-size: var(--text-caption); font-variant-numeric: tabular-nums; }
 .home-story-go { margin-right: 6px; white-space: nowrap; text-decoration: none; }
-
-/* The calendar of a month: a strip of day tiles that scrolls sideways, with the month and its arrows in the head. */
-.home-month-nav { display: inline-flex; align-items: center; gap: 2px; }
-.home-month-name { min-width: 9em; text-align: center; font-size: var(--text-small); font-weight: 600; text-transform: capitalize; color: var(--text-primary); }
-.home-month-nav .icon-button { min-width: 24px; min-height: 24px; padding: 0; }
-.home-month-nav .icon-button:disabled { opacity: 0.3; cursor: default; }
-.home-cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--space-1); }
-.home-cal-dow { padding-bottom: 2px; font-size: var(--text-caption); line-height: 18px; text-transform: capitalize; color: var(--text-secondary); }
-.home-cal-day { display: grid; justify-items: start; gap: 1px; min-width: 0; padding: 6px var(--space-2); border: 1px solid transparent; border-radius: 6px; font: inherit; text-align: left; font-variant-numeric: tabular-nums; cursor: pointer; transition: border-color var(--motion-fast) var(--ease-out); }
-.home-cal-day:hover { border-color: var(--rule); }
-.home-cal-day[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-.home-cal-num { font-size: var(--text-caption); line-height: 18px; }
-.home-cal-n { font-size: var(--text-small); line-height: 20px; font-weight: 600; }
-.home-cal-change { font-size: var(--text-caption); line-height: 18px; white-space: nowrap; }
-.home-cal-key { display: flex; align-items: center; justify-content: flex-end; gap: 3px; margin: 0; font-size: var(--text-caption); color: var(--text-secondary); }
-.home-cal-swatch { width: 14px; height: 10px; border-radius: 2px; }
-.home-cal-swatch:first-of-type { margin-left: var(--space-2); }
-.home-cal-swatch:last-of-type { margin-right: var(--space-2); }
 @media (max-width: 719px) {
-  .home-cal-day { padding: var(--space-1); }
-  .home-cal-change { display: none; }
-  .home-cal-n { font-size: var(--text-caption); }
-}
+      }
 
 /* The quick access: four tiles in a 2×2 grid, the name and the line, the arrow on the right. */
 .home-links { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
@@ -70,7 +49,6 @@ a.home-stack-part { cursor: pointer; }
 
 @media (max-width: 1279px) { .home-grid > .c-5, .home-grid > .c-7 { grid-column: span 12; } }
 @media (max-width: 519px) {
-  .home-month-name { min-width: 7em; }
   .home-story-go { font-size: 0; gap: 0; padding: 0 8px; }
 }
 
@@ -100,7 +78,6 @@ a.home-stack-part { cursor: pointer; }
 @media (max-width: 719px) { .home-topics-wrap { grid-template-columns: minmax(0, 1fr); } .home-donut { justify-self: center; } }
 
 /* A new day or a new story comes in with a short fade and a small rise. The frame of the card and its title stay. */
-.home-cal-grid.is-swap { animation: m-rise var(--motion-base) var(--ease-out); }
 .dcard.is-swap:not(.is-swap-story) > :not(.dcard-head), .dcard.is-swap:not(.is-swap-story) .home-date { animation: m-rise var(--motion-base) var(--ease-out) both; }
 .dcard.is-swap-story > :is(.home-day-story, .home-day-meta, .home-block) { animation: m-rise var(--motion-base) var(--ease-out) both; }
 .dcard.is-swap-story li.is-current { animation: m-fade var(--motion-base) var(--ease-out) both; }
@@ -228,6 +205,5 @@ a.home-stack-part { cursor: pointer; }
 @media (max-width: 719px) { .home-hero .home-hero-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 /* The chart of the days stays readable when one day is picked: the bars only step back a little. */
 .home-daily .bar-chart .bar-col.is-muted { opacity: 0.75; }
-/* The calendar has no visible title: the name of the month heads the card. Screen readers keep the name of the card. */
-.home-calendar .dcard-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.home-calendar .home-month-nav { margin-right: auto; margin-left: 0; }
+/* The topics of the day lead the page: a large donut. */
+@media (min-width: 720px) { .home-topics .home-donut { width: 300px; height: 300px; } }

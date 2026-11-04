@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="assets/tokens.css?v=37">
   <link rel="stylesheet" href="assets/app.css?v=69">
   <link rel="stylesheet" href="assets/dash.css?v=94">
-  <link rel="stylesheet" href="assets/home.css?v=55">
+  <link rel="stylesheet" href="assets/home.css?v=57">
   <script src="assets/page-move.js?v=4"></script>
 </head>
 <body>
@@ -18,19 +18,19 @@
   <script src="assets/icons.js?v=11"></script>
   <script src="assets/messages.js?v=42"></script>
   <script src="assets/messages-v2.js?v=50"></script>
-  <script src="assets/messages-home.js?v=24"></script>
+  <script src="assets/messages-home.js?v=25"></script>
   <script src="assets/components.js?v=18"></script>
   <script src="assets/motion.js?v=5"></script>
   <script src="assets/dash.js?v=24"></script>
   <script src="assets/hero-field.js?v=1"></script>
-  <script src="assets/home.js?v=40"></script>
+  <script src="assets/home.js?v=41"></script>
   <script src="assets/shell.js?v=70"></script>
   <script src="data/home.js?v=30"></script>
   <script src="data/stories.js?v=30"></script>
   <script src="data/storyDetail.js?v=30"></script>
   <script>
     // Home: the hero (the title, the large search and the size of the data) fills the first screen; the search is not in the top bar here.
-    // Under it, the calendar of a month and the chart pick a day, the card shows the stories of that day (a story of the list is picked in the card),
+    // Under it, the chart picks a day, the card shows the stories of that day (a story of the list is picked in the card),
     // then the topics of the picked day and the quick access. The page covers the whole window of the data.
     const { t, fmt, h, load } = App
     const { card, cardHead } = Dash
@@ -83,12 +83,10 @@
           const totals = dates.map((_, i) => data.outlets.reduce((s, o) => s + o.daily[i], 0))
           const collected = sumRange(totals, i0, i1)
 
-          // The stories of the day. A pick of a day in the calendar or the chart, or of a story in the list, draws this card again.
+          // The stories of the day. A pick of a day in the chart, or of a story in the list, draws this card again.
           const dayCard = (swap) => Home.DayCard(ix ? Home.dayInfo(ix, selected, rank) : null, { date: dates[selected], swap, onStory: (r) => { rank = r; redraw('story') } })
           let day = dayCard()
           const redraw = (swap) => { const next = dayCard(swap); day.replaceWith(next); day = next }
-
-          const calendar = Home.Calendar({ dates, totals, selected, onPick: (i) => pick(i, 'calendar') })
 
           const days = dates.slice(i0, i1 + 1)
           const daily = totals.slice(i0, i1 + 1)
@@ -117,11 +115,10 @@
             next.classList.add('is-swap')
             topics.replaceWith(next)
             topics = next
-            if (from === 'chart') calendar.select(i)
-            else chartEl.pick(selected - i0)
+            if (from !== 'chart') chartEl.pick(selected - i0)
           }
 
-          const main = h('div', { class: 'c-7 card-col' }, calendar.node, dailyCard, topics)
+          const main = h('div', { class: 'c-7 card-col' }, topics, dailyCard)
           const aside = h('div', { class: 'c-5 card-col' }, day, Home.QuickCard())
           const storyCount = ix ? new Set(ix.byDay.slice(i0, i1 + 1).flat().map((o) => o.s.id)).size : null
           content.replaceChildren(

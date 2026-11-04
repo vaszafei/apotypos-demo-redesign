@@ -1,4 +1,4 @@
-// The hero and the cards of Αρχική: the stories of a day, the calendar of a month, the topics of a day and the quick access.
+// The hero and the cards of Αρχική: the stories of a day, the topics of a day and the quick access.
 // Load after dash.js. index.html draws the page.
 (function () {
   const { t, fmt, h, Icon } = window.App
@@ -88,66 +88,6 @@
         info.outlets.length ? null : [topic ? ' · ' : null, t('home.day.meta', { n: fmt.int(info.n) })]),
       outlets,
       stories)
-  }
-
-  // The calendar of a month: a grid with a column for each weekday, Monday first. The shade of a cell is its number of articles, on one scale for the whole period.
-  // The change is against the same weekday a week before, because every Monday is far above its Sunday and says nothing. The first week has nothing to compare with.
-  // The arrows and the name of the month are at the top right of the card, and a cell picks the day.
-  function Calendar ({ dates, totals, selected, onPick }) {
-    const months = [...new Set(dates.map((d) => d.slice(0, 7)))]
-    let month = dates[selected].slice(0, 7)
-    let current = selected
-    const grid = h('div', { class: 'home-cal-grid' })
-    const label = h('span', { class: 'home-month-name', 'aria-live': 'polite' })
-    const step = (dir) => h('button', { type: 'button', class: 'icon-button', 'aria-label': t(dir < 0 ? 'home.month.prev' : 'home.month.next'),
-      onClick: () => { month = months[months.indexOf(month) + dir]; paint() } }, Icon(dir < 0 ? 'chevron-left' : 'chevron-right', 'icon'))
-    const prev = step(-1)
-    const next = step(1)
-    const low = Math.min(...totals)
-    const high = Math.max(...totals)
-    const shade = (v) => Dash.seq(high > low ? (v - low) / (high - low) : 0)
-    const changeOf = (i) => (i >= 7 && totals[i - 7] > 0 ? ((totals[i] - totals[i - 7]) / totals[i - 7]) * 100 : null)
-    // 3 August 2026 is a Monday.
-    const weekdays = Array.from({ length: 7 }, (_, k) => fmt.date(`2026-08-0${3 + k}`, { weekday: 'short' }))
-    let shown = null
-    const buttons = new Map()
-    function paint () {
-      // The same month: only the picked cell changes.
-      if (shown === month) {
-        buttons.forEach((btn, i) => btn.setAttribute('aria-pressed', String(i === current)))
-        return
-      }
-      shown = month
-      buttons.clear()
-      const cells = weekdays.map((w) => h('span', { class: 'home-cal-dow', 'aria-hidden': 'true' }, w))
-      const inMonth = dates.map((iso, i) => [iso, i]).filter(([iso]) => iso.startsWith(month))
-      const blanks = (new Date(`${inMonth[0][0]}T00:00:00Z`).getUTCDay() + 6) % 7
-      for (let k = 0; k < blanks; k++) cells.push(h('span', { class: 'home-cal-blank', 'aria-hidden': 'true' }))
-      inMonth.forEach(([iso, i]) => {
-        const change = changeOf(i)
-        const size = change === null ? null : `${fmt.dec(Math.abs(change))}%`
-        const said = change === null ? '' : ` · ${t('home.days.change', { v: `${change >= 0 ? '+' : '−'}${size}` })}`
-        const btn = h('button', { type: 'button', class: 'home-cal-day', style: shade(totals[i]), 'aria-pressed': String(i === current),
-          'aria-label': `${t('home.days.aria', { date: fmt.date(iso), n: fmt.int(totals[i]) })}${said}`, title: said.slice(3) || null, onClick: () => { current = i; paint(); onPick(i) } },
-        h('span', { class: 'home-cal-num' }, String(Number(iso.slice(8)))),
-        h('span', { class: 'home-cal-n' }, fmt.int(totals[i])),
-        h('span', { class: 'home-cal-change' }, change === null ? '–' : [change >= 0 ? '▲ ' : '▼ ', size]))
-        buttons.set(i, btn)
-        cells.push(btn)
-      })
-      label.textContent = fmt.date(`${month}-01`, { month: 'long', year: 'numeric' })
-      prev.disabled = months.indexOf(month) === 0
-      next.disabled = months.indexOf(month) === months.length - 1
-      grid.replaceChildren(...cells)
-      grid.classList.remove('is-swap')
-      void grid.offsetWidth
-      grid.classList.add('is-swap')
-    }
-    paint()
-    const key = h('p', { class: 'home-cal-key', 'aria-hidden': 'true' }, t('home.days.less'),
-      [1, 2, 3, 4, 5, 6, 7].map((k) => h('span', { class: 'home-cal-swatch', style: { background: `var(--seq-${k})` } })), t('home.days.more'))
-    const node = card('home-calendar', cardHead(t('home.days.title'), h('div', { class: 'home-month-nav' }, prev, label, next), t('home.days.info')), grid, key)
-    return { node, select (i) { current = i; month = dates[i].slice(0, 7); paint() } }
   }
 
   // The topics of one day in the news, all of them in two columns, the first half on the left: the articles, the share of the day, and an arrow on the share when it is more (▲) or less (▼) than in the days before (the 7 before, fewer at the start of the data).
@@ -349,5 +289,5 @@
     return [slash, days, agenda, bubbles]
   }
 
-  window.Home = { index, dayInfo, DayCard, Calendar, TopicsCard, QuickCard, Hero }
+  window.Home = { index, dayInfo, DayCard, TopicsCard, QuickCard, Hero }
 })()
