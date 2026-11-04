@@ -5,26 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=15">
-  <link rel="stylesheet" href="assets/app.css?v=45">
-  <link rel="stylesheet" href="assets/dash.css?v=88">
+  <script>document.documentElement.classList.add('is-activity')</script>
+  <link rel="stylesheet" href="assets/tokens.css?v=31">
+  <link rel="stylesheet" href="assets/app.css?v=60">
+  <link rel="stylesheet" href="assets/dash.css?v=91">
+  <link rel="stylesheet" href="assets/parts.css?v=3">
+  <link rel="stylesheet" href="assets/activity.css?v=6">
   <link rel="stylesheet" href="assets/mme.css?v=36">
-  <script src="assets/page-move.js?v=1"></script>
+  <script src="assets/page-move.js?v=3"></script>
 </head>
 <body>
   <div id="app"></div>
-  <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=38"></script>
-  <script src="assets/messages-v2.js?v=47"></script>
-  <script src="assets/messages-mme.js?v=21"></script>
-  <script src="assets/components.js?v=15"></script>
+  <script src="assets/icons.js?v=10"></script>
+  <script src="assets/messages.js?v=42"></script>
+  <script src="assets/messages-v2.js?v=50"></script>
+  <script src="assets/messages-mme.js?v=23"></script>
+  <script src="assets/messages-parts.js?v=2"></script>
+  <script src="assets/components.js?v=16"></script>
   <script src="assets/motion.js?v=3"></script>
-  <script src="assets/dash.js?v=21"></script>
-  <script src="assets/mme.js?v=22"></script>
-  <script src="assets/shell.js?v=58"></script>
-  <script src="data/home.js?v=3"></script>
-  <script src="data/stories.js?v=1"></script>
-  <script src="data/mme.js?v=20"></script>
+  <script src="assets/dash.js?v=22"></script>
+  <script src="assets/parts.js?v=2"></script>
+  <script src="assets/mme.js?v=23"></script>
+  <script src="assets/shell.js?v=64"></script>
+  <script src="data/home.js?v=30"></script>
+  <script src="data/stories.js?v=30"></script>
+  <script src="data/mme.js?v=30"></script>
+  <script src="assets/activity.js?v=2"></script>
   <script>
     // Topics, Επισκόπηση: the first dashboard of Θέματα. It reads the topics file (36 topics, 61 days). The stories are in the tab Ιστορίες.
     // The page has no buttons in the top bar. Each card holds one measure and one picture of it, and no measure shows twice (APO-168).
@@ -133,6 +139,50 @@
         })
         const movers = rows.filter((r) => r.change !== null)
 
+        // The agenda of the whole window: the news topics only, the largest 9 and the rest as one gray part.
+        const news = rows.filter((r) => !r.issue.soft)
+        const newsTotal = news.reduce((a, r) => a + r.count, 0)
+        const agendaParts = [...news.slice(0, SLOTS.length).map((r, i) => ({ r, label: name(r.issue), n: r.count, color: SLOTS[i] })),
+          { r: null, label: t('topics2.agenda.rest'), n: news.slice(SLOTS.length).reduce((a, r) => a + r.count, 0), color: 'var(--bar-muted)' }]
+        const size = 220
+        const center = size / 2
+        const outer = center - 2
+        const inner = outer - 32
+        const point = (radius, turn) => [center + radius * Math.sin(turn * 2 * Math.PI), center - radius * Math.cos(turn * 2 * Math.PI)]
+        const arc = (a0, a1) => {
+          const big = a1 - a0 > 0.5 ? 1 : 0
+          const [x0, y0] = point(outer, a0); const [x1, y1] = point(outer, a1); const [x2, y2] = point(inner, a1); const [x3, y3] = point(inner, a0)
+          return `M${x0} ${y0}A${outer} ${outer} 0 ${big} 1 ${x1} ${y1}L${x2} ${y2}A${inner} ${inner} 0 ${big} 0 ${x3} ${y3}Z`
+        }
+        let turn = 0
+        const donut = h('svg', { class: 'chart donut agenda-donut', width: size, height: size, viewBox: `0 0 ${size} ${size}`, role: 'img', 'aria-label': agendaParts.map((p) => `${p.label}: ${fmt.int(p.n)}`).join(', ') },
+          agendaParts.map((p) => { const start = turn; turn += p.n / (newsTotal || 1); return h('path', { d: arc(start, Math.min(turn, 0.9999)), fill: p.color }) }),
+          h('text', { class: 'donut-num', x: center, y: center + 2, 'text-anchor': 'middle' }, fmt.int(newsTotal)),
+          h('text', { class: 'donut-cap', x: center, y: center + 20, 'text-anchor': 'middle' }, t('topics2.agenda.center')))
+        const agendaCard = card('', cardHead(t('topics2.agenda.title'), null, t('topics2.agenda.info')),
+          h('div', { class: 'donut-wrap agenda-wrap' }, donut, h('ul', { class: 'agenda-legend' }, agendaParts.map((p) => h('li', {},
+            h('span', { class: 'swatch', style: { background: p.color } }),
+            h('span', { class: 'agenda-name' }, p.r ? UI.EntityLink({ type: 'topic', key: String(d.issues.indexOf(p.r.issue)), label: p.label }) : p.label),
+            h('span', { class: 'agenda-num' }, fmt.int(p.n)))))))
+
+        // The period in 3 points: the first topic, the second topic and the outlet that gives the first topic the largest part of its articles (500 news articles or more).
+        const emphasis = () => {
+          if (mme.kind !== 'data' || !news.length) return null
+          const set = mme.data.sets.gr
+          const k = d.issues.indexOf(news[0].issue)
+          const sum = (flat) => { let s = 0; for (let i = 1; i < flat.length; i += 2) s += flat[i]; return s }
+          return set.outlets.map((o, i) => {
+            const all = set.oi[i].reduce((a, flat, j) => (set.issues[j].soft ? a : a + sum(flat)), 0)
+            return { name: o.name, all, share: sum(set.oi[i][k] || []) / (all || 1) }
+          }).filter((o) => o.all >= 500).sort((a, b) => b.share - a.share)[0] || null
+        }
+        const best = emphasis()
+        const pointsCard = Parts.Summary({ cls: '', title: t('topics2.points.title'), info: t('topics2.points.info'), items: news.length < 2 ? [] : [
+          { text: t('topics2.points.first', { name: name(news[0].issue), share: fmt.pct(news[0].count / newsTotal), n: fmt.int(news[0].count) }) },
+          { text: t('topics2.points.second', { name: name(news[1].issue), share: fmt.pct(news[1].count / newsTotal) }) },
+          ...(best ? [{ text: t('topics2.points.emphasis', { name: best.name, share: fmt.pct(best.share) }) }] : [])
+        ] })
+
         const bar = TopBar({ title: `${t('nav.media')} · ${t('tab.media.topics')}`, tabs, quiet: true })
 
         // Row 1: all the topics and the lines. Row 2: the topics that rise and fall (#68).
@@ -160,9 +210,45 @@
           sync()
           return h('li', {}, button)
         }))
-        const timeCard = card('',
-          cardHead(t('topics2.time.title'), null, `${t('topics2.time.title')}. ${t('topics2.time.sub')}`),
-          lines.length ? [toggles, chart] : emptyText(t('media2.empty.list')))
+        // Τάσεις has two views. By topic (the default): one small chart for each of the 6 largest news topics, all on one scale, with the peak named.
+        // Together: the lines with their toggles.
+        const panelTopics = rows.filter((r) => !r.issue.soft && !r.issue.catchAll).slice(0, 6).map((r) => ({ name: name(r.issue), values: r.daily.map((_, j) => (j < ROLL - 1 ? null : sumRange(r.daily, j - ROLL + 1, j) / ROLL)) }))
+        const panelTop = Math.max(...panelTopics.flatMap((p) => p.values.filter((v) => v !== null)), 1)
+        const panelChart = (p) => {
+          const W = 200
+          const H = 72
+          const x = (j) => ((j - (ROLL - 1)) / Math.max(last - (ROLL - 1), 1)) * W
+          const y = (v) => H - (v / panelTop) * H
+          const points = p.values.map((v, j) => [v, j]).filter(([v]) => v !== null)
+          const line = points.map(([v, j]) => `${x(j).toFixed(1)} ${y(v).toFixed(1)}`).join('L')
+          const peak = points.reduce((a, b) => (b[0] > a[0] ? b : a))
+          const svg = h('svg', { class: 'group-panel-chart', viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'none', role: 'img', 'aria-label': `${p.name}: ${t('g2.volume.peak', { n: fmt.int(Math.round(peak[0])), date: fmt.date(d.dates[peak[1]], { day: 'numeric', month: 'short' }) })}` },
+            h('path', { class: 'panel-area', d: `M0 ${H}L${line}L${W} ${H}Z` }),
+            h('path', { class: 'panel-line', d: `M${line}` }),
+            h('line', { class: 'panel-peak', x1: x(peak[1]), x2: x(peak[1]), y1: y(peak[0]), y2: H }))
+          svg.addEventListener('pointermove', (e) => {
+            const box = svg.getBoundingClientRect()
+            const j = Math.min(last, Math.max(ROLL - 1, Math.round((ROLL - 1) + ((e.clientX - box.left) / box.width) * (last - (ROLL - 1)))))
+            UI.showTooltip(`${fmt.date(d.dates[j])}\n${t('topics2.tip', { name: p.name, n: fmt.int(Math.round(p.values[j])) })}`, e.clientX, e.clientY)
+          })
+          svg.addEventListener('pointerleave', () => UI.hideTooltip())
+          return h('div', { class: 'group-panel' }, h('h3', { class: 'group-panel-name', title: p.name }, p.name), svg,
+            h('p', { class: 'group-panel-peak' }, t('g2.volume.peak', { n: fmt.int(Math.round(peak[0])), date: fmt.date(d.dates[peak[1]], { day: 'numeric', month: 'short' }) })))
+        }
+        const panels = h('div', { class: 'group-panels trend-panels' }, panelTopics.map(panelChart))
+        let trendView = 'panels'
+        const trendHead = h('div', {})
+        const trendBody = h('div', { class: 'card-col' })
+        const drawTrends = () => {
+          const byTopic = trendView === 'panels'
+          const info = byTopic ? t('topics2.panels.info') : `${t('topics2.time.title')}. ${t('topics2.time.sub')}`
+          trendHead.replaceChildren(cardHead(t('topics2.time.title'), UI.SegmentedControl({ label: t('topics2.view.label'), value: trendView, options: ['panels', 'lines'].map((v) => ({ value: v, label: t(`topics2.view.${v}`) })), onChange: (v) => { trendView = v; drawTrends() } }), info))
+          if (byTopic) trendBody.replaceChildren(panels)
+          else if (lines.length) trendBody.replaceChildren(toggles, chart)
+          else trendBody.replaceChildren(emptyText(t('media2.empty.list')))
+        }
+        drawTrends()
+        const timeCard = card('', trendHead, trendBody)
 
         // The first 12 topics show, a button shows all of them. The share of the 3 largest is one line under the title.
         const top3 = rows.slice(0, 3).reduce((a, r) => a + r.count, 0)
@@ -186,7 +272,9 @@
         // One column on one scale: the rising topics first, then the falling topics. The info names the largest change of each side.
         const moverRow = (r) => {
           const color = r.change > 0 ? 'var(--emph-more)' : 'var(--emph-less)'
-          return { label: UI.EntityLink({ type: 'topic', key: String(d.issues.indexOf(r.issue)), label: name(r.issue) }), value: Math.abs(r.change), color,
+          const text = `${name(r.issue)}: ${fmt.signed(r.change * 100)}%`
+          return { label: UI.EntityLink({ type: 'topic', key: String(d.issues.indexOf(r.issue)), label: name(r.issue) }), value: Math.abs(r.change),
+            bar: UI.DivergingBar({ left: r.change < 0 ? -r.change : 0, right: r.change > 0 ? r.change : 0, scale: widest, colors: ['var(--emph-less)', 'var(--bar-muted)', 'var(--emph-more)'], label: text }),
             text: [h('span', { class: `tri ${r.change > 0 ? 'tri-up' : 'tri-down'}`, style: { color }, 'aria-hidden': 'true' }), ` ${fmt.signed(r.change * 100)}%`] }
         }
         const up = list.filter((r) => r.change > 0)
@@ -198,7 +286,7 @@
         const moversCard = card('',
           cardHead(t('topics2.move.title'), null, `${moveFinding ? `${moveFinding}. ` : ''}${t('topics2.move.sub')}`),
           list.length
-            ? UI.BarList(list.map(moverRow), { max: widest })
+            ? UI.BarList(list.map(moverRow), { max: widest, cls: 'bars-thick' })
             : emptyText(t('media2.empty.list')))
         moversCard.dataset.card = 'movers'
 
@@ -219,11 +307,12 @@
           else mmeHolder.replaceChildren(Mme.AgendaCard(MS))
         }
         const cards = {
-          overview: [h('div', { class: 'card-col c-6' }, table), h('div', { class: 'card-col c-6' }, timeCard), h('div', { class: 'card-col c-12' }, moversCard)],
+          overview: [h('div', { class: 'card-col c-7' }, agendaCard), h('div', { class: 'card-col c-5' }, pointsCard), h('div', { class: 'card-col c-6' }, table), h('div', { class: 'card-col c-6' }, timeCard), h('div', { class: 'card-col c-12' }, moversCard)],
           topic: [mmeHolder],
           agenda: [mmeHolder]
         }[tab]
-        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...cards), protoNote())
+        if (tab === 'overview') content.classList.add('act-overview')
+        content.replaceChildren(bar, ...(tab === 'overview' ? [Activity.Overview()] : []), h('div', { class: 'dash-grid', id: 'act-details' }, ...cards), protoNote())
       }
     })
 

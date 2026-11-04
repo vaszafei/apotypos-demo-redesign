@@ -11,8 +11,8 @@ import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
-const THEMES = ['paper', 'fog', 'terra', 'night', 'midnight']
-const DARK = new Set(['night', 'midnight'])
+const THEMES = ['paper', 'fog', 'terra', 'night', 'midnight', 'charcoal', 'sage', 'moss', 'carbon']
+const DARK = new Set(['night', 'midnight', 'charcoal', 'sage'])
 const MIN_DISTINCT = 15
 const MIN_CVD = 8
 let failures = 0
@@ -54,7 +54,7 @@ function themeTokens (theme) {
   const vars = {}
   for (const b of blocks) {
     const sels = b.sel.split(',').map((s) => s.trim())
-    const hit = theme === 'paper' ? sels.includes(':root') : sels.some((s) => s.includes(`data-theme="${theme}"`))
+    const hit = theme === 'paper' ? sels.includes(':root') : sels.some((s) => s === `:root[data-theme="${theme}"]` || s === `[data-theme="${theme}"]`)
     if (hit || (theme !== 'paper' && sels.includes(':root'))) Object.assign(vars, declsOf(b.body))
   }
   return vars

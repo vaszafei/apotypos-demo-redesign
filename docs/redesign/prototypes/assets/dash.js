@@ -100,7 +100,7 @@
       empty
         ? emptyText(t('media2.stat.empty'))
         : h('div', { class: 'dstat-row' }, h('p', { class: 'dstat-value' }, value),
-          h('p', { class: 'dstat-sub' }, delta == null ? sub : [h('span', { class: 'delta' }, `${delta >= 0 ? '▲' : '▼'} ${fmt.signed(delta * 100)}%`), ' ', sub]), viz))
+          h('p', { class: 'dstat-sub' }, delta == null ? sub : [h('span', { class: `delta ${delta >= 0 ? 'is-up' : 'is-down'}` }, `${delta >= 0 ? '▲' : '▼'} ${fmt.signed(delta * 100)}%`), ' ', sub]), viz))
     if (kpi) el.dataset.kpi = kpi
     return el
   }

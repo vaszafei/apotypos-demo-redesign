@@ -5,23 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=15">
-  <link rel="stylesheet" href="assets/app.css?v=45">
-  <link rel="stylesheet" href="assets/dash.css?v=88">
-  <script src="assets/page-move.js?v=1"></script>
+  <link rel="stylesheet" href="assets/tokens.css?v=31">
+  <link rel="stylesheet" href="assets/app.css?v=60">
+  <link rel="stylesheet" href="assets/dash.css?v=91">
+  <script src="assets/page-move.js?v=3"></script>
 </head>
 <body>
   <div id="app"></div>
-  <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=38"></script>
-  <script src="assets/messages-v2.js?v=47"></script>
-  <script src="assets/components.js?v=15"></script>
+  <script src="assets/icons.js?v=10"></script>
+  <script src="assets/messages.js?v=42"></script>
+  <script src="assets/messages-v2.js?v=50"></script>
+  <script src="assets/components.js?v=16"></script>
   <script src="assets/motion.js?v=3"></script>
-  <script src="assets/dash.js?v=21"></script>
+  <script src="assets/dash.js?v=22"></script>
   <script src="assets/vendor/d3-hierarchy.min.js"></script>
-  <script src="assets/shell.js?v=58"></script>
-  <script src="data/groups.js?v=2"></script>
-  <script src="data/media.js"></script>
+  <script src="assets/shell.js?v=64"></script>
+  <script src="data/groups.js?v=30"></script>
+  <script src="data/media.js?v=30"></script>
   <script>
     // Media, Ιδιοκτησία: dashboard of APO-161. The group, the owner and the articles come from the static files,
     // so the period is fixed (1 Aug to 30 Sep 2026): there is no period control. The period is in the note of the table.
@@ -33,18 +33,31 @@
     // A day with fewer articles than this is a gap of the crawler, not a quiet day.
     const GAP = 50
 
-    // Stacked columns: one for each day, one segment for each group. A gap day has a dashed band.
-    function VolumeChart ({ dates, stacks, order }) {
-      const totals = stacks.map((s) => s.reduce((a, b) => a + b.value, 0))
-      return UI.BarChart({
-        dates, height: 300, label: t('g2.volume.title'),
-        // The dashed line is the average of the days with no gap of the crawler.
-        reference: ((full) => ({ value: full.reduce((a, b) => a + b, 0) / (full.length || 1), label: t('find.avg', { n: fmt.int(Math.round(full.reduce((a, b) => a + b, 0) / (full.length || 1))) }) }))(totals.filter((v) => v >= GAP)),
-        series: order.map((o, k) => ({ name: o.label, color: o.color, values: stacks.map((day) => day[k].value) })),
-        flagged: (i) => totals[i] < GAP,
-        tooltipOf: (i) => [t('g2.volume.tip', { date: fmt.date(dates[i]), n: fmt.int(totals[i]) }) + (totals[i] < GAP ? ` · ${t('g2.volume.gap')}` : ''),
-          ...stacks[i].filter((s) => s.value).slice().reverse().map((s) => t('g2.volume.tip.group', { group: s.label, n: fmt.int(s.value) }))].join('\n')
-      })
+    // One small chart for each group, all on one scale, so a group can be read on its own and against the others. The peak of each group is named.
+    function GroupPanels ({ dates, stacks, order }) {
+      const series = order.map((o, k) => ({ ...o, values: stacks.map((day) => day[k].value) }))
+      const top = Math.max(...series.flatMap((s) => s.values), 1)
+      const W = 240
+      const H = 64
+      return h('div', { class: 'group-panels' }, series.map((s) => {
+        const total = s.values.reduce((a, b) => a + b, 0)
+        const peak = s.values.indexOf(Math.max(...s.values))
+        const slot = W / s.values.length
+        const svg = h('svg', { class: 'group-panel-chart', viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'none', role: 'img', 'aria-label': `${s.label}: ${t('g2.volume.peak', { n: fmt.int(s.values[peak]), date: fmt.date(dates[peak], { day: 'numeric', month: 'short' }) })}` },
+          s.values.map((v, i) => {
+            const height = (v / top) * H
+            const col = h('rect', { x: i * slot + 0.3, y: H - height, width: Math.max(slot - 0.6, 0.5), height, fill: s.color })
+            const tip = `${t('g2.volume.tip', { date: fmt.date(dates[i]), n: fmt.int(v) })} · ${s.label}`
+            col.addEventListener('pointermove', (e) => UI.showTooltip(tip, e.clientX, e.clientY))
+            col.addEventListener('pointerleave', UI.hideTooltip)
+            return col
+          }))
+        return h('div', { class: 'group-panel' },
+          h('h3', { class: 'group-panel-name', title: s.label }, s.label),
+          h('p', { class: 'group-panel-total' }, h('strong', {}, fmt.int(total)), ` ${t('g2.volume.articles')}`),
+          svg,
+          h('p', { class: 'group-panel-peak' }, t('g2.volume.peak', { n: fmt.int(s.values[peak]), date: fmt.date(dates[peak], { day: 'numeric', month: 'short' }) })))
+      }))
     }
 
     // Pointer handlers for a tooltip on a mark.
@@ -349,7 +362,7 @@
           const volumeTotal = stacks.reduce((s, day) => s + day.reduce((a, b) => a + b.value, 0), 0)
           const volume = card('c-8', cardHead(t('g2.volume.title'), null, t('g2.volume.info', { min: fmt.int(GAP), n: fmt.int(volumeTotal) })),
             volumeTotal
-              ? [UI.Legend(order.map((o) => ({ label: o.label, color: o.color }))), VolumeChart({ dates: m.dates, stacks, order })]
+              ? GroupPanels({ dates: m.dates, stacks, order })
               : emptyText(t('groups.empty')))
 
           // Row 2, on the right: the stance of each group.
@@ -360,14 +373,16 @@
           }).filter((r) => r.n >= 30)
           const scale = Math.max(...stanceRows.map((r) => Math.max(r.crit + r.neu / 2, r.sup + r.neu / 2)), 0.01)
           const critical = stanceRows.slice().sort((a, b) => b.crit - a.crit)
+          // The most critical group first. Each number has the color of its side of the bar.
+          stanceRows.sort((a, b) => b.crit - a.crit)
           const stanceCard = card('c-4', cardHead(t('g2.stance.title'), null, `${critical.length > 1 ? `${t('g2.stance.finding', { most: critical[0].g.name, a: fmt.pct(critical[0].crit), least: critical[critical.length - 1].g.name, b: fmt.pct(critical[critical.length - 1].crit) })}. ` : ''}${t('g2.stance.sub')}`),
             stanceRows.length
               ? [UI.Legend(['critical', 'neutral', 'supportive'].map((nm, i) => ({ label: t(`stance.${nm}`), color: UI.STANCE_COLORS[i] }))),
                 UI.BarList(stanceRows.map((r) => ({
                   label: [h('span', { class: 'dot', style: `--dot:${colorOf.get(r.g.name)}`, 'aria-hidden': 'true' }), r.g.name],
-                  text: `${fmt.pct(r.crit)} · ${fmt.pct(r.sup)}`,
+                  text: h('span', {}, h('span', { style: { color: 'var(--stance-critical)' } }, fmt.pct(r.crit)), ' · ', h('span', { style: { color: 'var(--stance-supportive)' } }, fmt.pct(r.sup))),
                   bar: UI.DivergingBar({ left: r.crit, middle: r.neu, right: r.sup, scale, label: t('g2.stance.row', { group: r.g.name, critical: fmt.pct(r.crit), neutral: fmt.pct(r.neu), supportive: fmt.pct(r.sup), n: fmt.int(r.n) }) })
-                })))]
+                })), { cls: 'bars-thick' })]
               : emptyText(t('groups.empty')))
 
           content.replaceChildren(bar, h('div', { class: 'dash-grid' }, bubbles, shareCard, volume, stanceCard), protoNote())

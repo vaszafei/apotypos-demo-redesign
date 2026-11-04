@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Απότυπος</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css?v=31">
+  <link rel="stylesheet" href="assets/app.css?v=60">
+  <link rel="stylesheet" href="assets/dash.css?v=91">
+  <link rel="stylesheet" href="assets/politics.css?v=11">
+  <script src="assets/page-move.js?v=3"></script>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/icons.js?v=10"></script>
+  <script src="assets/messages.js?v=42"></script>
+  <script src="assets/messages-v2.js?v=50"></script>
+  <script src="assets/messages-politics.js?v=16"></script>
+  <script src="assets/components.js?v=16"></script>
+  <script src="assets/motion.js?v=3"></script>
+  <script src="assets/dash.js?v=22"></script>
+  <script src="assets/politics.js?v=11"></script>
+  <script src="assets/shell.js?v=64"></script>
+  <script>
+    // Each speech has its own small file, so the page loads only the one it shows. The id comes from the link: it must look like a video id.
+    const SPEECH_ID = new URLSearchParams(location.search).get('id') || ''
+    if (/^[\w-]{11}$/.test(SPEECH_ID)) document.write(`<script src="data/speeches/${SPEECH_ID}.js"><\/script>`)
+  </script>
+  <script>
+    // Αναλύσεις › Ομιλίες ΟΗΕ: the page of one speech. It is locked like the rest of Αναλύσεις (shell.js).
+    const { t, fmt, h, safeUrl } = App
+    const { reset, card, cardHead, Stat, SLOTS, emptyText } = Dash
+    const { dataName } = Politics
+    const d = (window.FIXTURES || {}).speech
+    const clock = (s) => `${Math.floor(s / 60)}:${String(Math.round(s) % 60).padStart(2, '0')}`
+    const at = (s) => safeUrl(`${d.url}&t=${Math.round(s)}s`)
+    const timeLink = (s) => h('a', { class: 'quiet-link speech-time', href: at(s), target: '_blank', rel: 'noopener' }, clock(s))
+    const toneChip = (k) => (k ? h('span', { class: `target-chip tone-${k}` }, t(`un.tone.${k}`)) : '–')
+
+    Shell.start({
+      id: 'speech',
+      route: `/speech/${SPEECH_ID}`,
+      dash: true,
+      title: () => (d ? d.speaker : t('tab.world.speeches')),
+      breadcrumbs: () => null,
+      render (content) {
+        content.classList.add('dash', 'minimal')
+        reset()
+        if (!d) { content.replaceChildren(UI.ErrorPage({ status: 404 })); return }
+
+        const hasFile = d.transcript.length > 0
+        const minutes = d.seconds / 60
+        const hero = card('c-12 hero', h('p', { class: 'hero-kicker' }, d.country), h('h1', { class: 'hero-title' }, d.speaker),
+          h('p', { class: 'hero-period' }, `${d.role} · ${fmt.date(`${d.date.slice(0, 4)}-${d.date.slice(4, 6)}-${d.date.slice(6, 8)}`)} · `,
+            h('a', { class: 'quiet-link', href: safeUrl(d.url), target: '_blank', rel: 'noopener' }, t('un.sp.video'))))
+        const stat = (o) => { const el = Stat(o); el.classList.replace('c-4', 'c-3'); return el }
+        const stats = [
+          stat({ label: t('un.sp.minutes'), value: fmt.int(Math.round(minutes)), sub: t('un.sp.words', { n: fmt.int(d.words), w: fmt.int(Math.round(d.words / minutes)) }) }),
+          stat({ label: t('un.stat.claims'), value: fmt.int(d.counts.claims), sub: t('un.sp.claims.sub') }),
+          stat({ label: t('un.stat.promises'), value: fmt.int(d.counts.promises), sub: t('un.sp.promises.sub') }),
+          stat({ label: t('un.stat.attacks'), value: fmt.int(d.counts.attacks), sub: t('un.sp.attacks.sub') })
+        ]
+
+        // The colors go to the topics with the most time. The rest are one gray, so the strip reads without a long key.
+        const colored = new Map(d.topics.slice(0, SLOTS.length).map((x, i) => [x.topic, SLOTS[i]]))
+        const colorOf = (topic) => colored.get(topic) || 'var(--bar-muted)'
+        const timeCard = d.timeline.length
+          ? card('c-12', cardHead(t('un.sp.time.title'), null, t('un.sp.time.info')),
+            h('div', { class: 'speech-strip' }, d.timeline.map(([from, to, topic]) => h('a', { href: at(from), target: '_blank', rel: 'noopener', title: `${clock(from)} · ${topic}`, 'aria-label': `${clock(from)}: ${topic}`, style: `flex: ${Math.max(to - from, 1)} 1 0; background: ${colorOf(topic)}` }))),
+            UI.Legend(d.topics.slice(0, SLOTS.length).map((x) => ({ label: `${x.topic} ${fmt.pct(x.share)}`, color: colorOf(x.topic) }))))
+          : null
+
+        const claimsOf = (topic) => d.claims.filter((c) => c.topic === topic).length
+        const topicsCard = card('c-7', cardHead(t('un.sp.topics.title'), null, t('un.sp.topics.info')),
+          UI.DataTable({ rows: d.topics, pageSize: 8, moreStep: 25, columns: [
+            { label: t('un.sp.col.topic'), render: (r) => h('strong', {}, r.topic) },
+            { label: t('un.sp.col.share'), num: true, render: (r) => fmt.pct(r.share) },
+            { label: t('un.sp.col.time'), num: true, render: (r) => clock(r.seconds) },
+            { label: t('un.sp.col.stance'), phone: false, render: (r) => d.stances[r.topic] || '–' },
+            ...(hasFile ? [{ label: t('un.col.claims'), num: true, phone: false, render: (r) => fmt.int(claimsOf(r.topic)) }] : [])
+          ] }))
+
+        const compareCard = card('c-5', cardHead(t('un.sp.compare.title'), null, t('un.sp.compare.info')),
+          UI.DataTable({ rows: d.compare, pageSize: 8, columns: [
+            { label: t('un.sp.col.topic'), render: (r) => dataName('un.topic', r.topic) },
+            { label: t('un.sp.col.share'), num: true, render: (r) => fmt.pct(r.share) },
+            { label: t('un.sp.col.others'), num: true, render: (r) => fmt.pct(r.mean) },
+            { label: t('un.sp.col.rank'), num: true, render: (r) => `#${fmt.int(r.rank)}` },
+            { label: t('un.sp.col.mentioned'), num: true, phone: false, render: (r) => fmt.int(r.others) }
+          ] }))
+
+        const saidRows = d.said.map((r) => ({ ...r, diff: r.reported - r.said })).sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff))
+        const saidCard = saidRows.length
+          ? card('c-6', cardHead(t('un.sp.said.title'), null, t('un.sp.said.info')),
+            UI.Legend([{ label: t('un.sp.col.said'), color: 'var(--series-news)' }, { label: t('un.sp.said.more'), color: 'var(--emph-more)' }, { label: t('un.sp.said.less'), color: 'var(--emph-less)' }]),
+            h('div', { class: 'speech-scroll', tabindex: 0 }, UI.BarList(saidRows.map((r) => {
+              const said = `${t('un.sp.col.said')} ${fmt.pct(r.said)}`
+              const reported = `${t('un.sp.col.reported')} ${fmt.pct(r.reported)}, ${fmt.int(r.articles)} ${t('un.sp.col.articles')}`
+              return { label: r.topic, text: h('span', {}, `${fmt.pct(r.said)} → ${fmt.pct(r.reported)}`),
+                bars: [{ value: r.said, color: 'var(--series-news)', label: `${r.topic}: ${said}` }, { value: r.reported, color: r.diff >= 0 ? 'var(--emph-more)' : 'var(--emph-less)', label: `${r.topic}: ${reported}` }] }
+            }), { max: Math.max(...saidRows.flatMap((r) => [r.said, r.reported])) })))
+          : null
+
+        const targets = new Map()
+        d.attacks.forEach((a) => targets.set(a.target, [...(targets.get(a.target) || []), a]))
+        const targetsCard = card('c-6', cardHead(t('un.sp.targets.title'), null, t('un.sp.targets.info')),
+          targets.size
+            ? h('ul', { class: 'speech-quotes' }, [...targets.entries()].sort((a, b) => b[1].length - a[1].length).slice(0, 10).flatMap(([target, list]) => list.slice(0, 3).map((a) => h('li', {},
+              h('span', {}, h('strong', {}, target), ' · ', timeLink(a.t)), h('p', { class: 'speech-quote' }, `“${a.quote}”`)))))
+            : emptyText(t('un.sp.targets.none')))
+
+        let kind = 'claims'
+        const evidenceBody = h('div', {})
+        const evidenceHead = h('div', {})
+        const drawEvidence = () => {
+          evidenceHead.replaceChildren(cardHead(t('un.sp.evidence.title'), UI.SegmentedControl({ label: t('un.sp.evidence.switch'), value: kind,
+            options: ['claims', 'promises', 'attacks'].map((k) => ({ value: k, label: t(`un.sp.evidence.${k}`, { n: fmt.int(d[k].length) }) })), onChange: (k) => { kind = k; drawEvidence() } }), t('un.sp.evidence.info')))
+          evidenceBody.replaceChildren(UI.DataTable({ rows: d[kind], pageSize: 8, moreStep: 25, emptyText: t('un.sp.text.none'), columns: [
+            { label: t('un.sp.col.at'), render: (r) => timeLink(r.t) },
+            { label: t('un.sp.col.quote'), render: (r) => `“${r.quote}”` },
+            { label: t('un.sp.col.topic'), phone: false, render: (r) => r.topic }
+          ] }))
+        }
+        drawEvidence()
+        const evidenceCard = card('c-12', evidenceHead, evidenceBody)
+
+        const greeceCard = d.greece.length
+          ? card('c-12', cardHead(t('un.sp.greece.title'), null, t('un.sp.greece.info')),
+            h('ul', { class: 'speech-quotes' }, d.greece.map((g) => h('li', {},
+              h('span', { class: 'chips' }, timeLink(g.t), ' ', toneChip(g.tone), ' ', g.refers.map((x) => h('span', { class: 'pill' }, x))),
+              h('p', { class: 'speech-quote' }, `“${g.quote}”`),
+              g[App.locale] ? h('p', { class: 'dcard-sub' }, g[App.locale]) : null))))
+          : null
+
+        const pressCard = d.pickup.length
+          ? card('c-12', cardHead(t('un.sp.press.title'), null, t('un.sp.press.info')),
+            UI.DataTable({ rows: d.pickup, pageSize: 8, moreStep: 25, columns: [
+              { label: t('un.sp.col.outlet'), render: (r) => r.outlet },
+              { label: t('un.sp.col.date'), phone: false, render: (r) => (r.date ? fmt.date(r.date, { day: 'numeric', month: 'short' }) : '–') },
+              { label: t('un.sp.col.title'), render: (r) => (safeUrl(r.url) ? h('a', { class: 'quiet-link', href: safeUrl(r.url), target: '_blank', rel: 'noopener' }, r.title) : r.title) },
+              { label: t('un.sp.col.tone'), phone: false, render: (r) => toneChip(r.tone) }
+            ] }))
+          : null
+
+        // The text: the search and the topic narrow the parts. The card scrolls inside, so a long speech does not push the page.
+        const textBody = h('div', { class: 'speech-text', tabindex: 0 })
+        const search = h('input', { type: 'search', placeholder: t('un.sp.text.search'), 'aria-label': t('un.sp.text.search') })
+        const pick = h('select', { 'aria-label': t('un.sp.text.topic') }, h('option', { value: '' }, t('un.sp.text.all')), d.topics.map((x) => h('option', { value: x.topic }, x.topic)))
+        const drawText = () => {
+          const q = search.value.trim().toLowerCase()
+          const parts = d.transcript.filter((p) => (!pick.value || p.topic === pick.value) && (!q || p.text.toLowerCase().includes(q)))
+          textBody.replaceChildren(...(parts.length ? parts.map((p) => h('p', {}, timeLink(p.t), h('span', {}, p.text))) : [emptyText(t('un.sp.text.none'))]))
+        }
+        search.addEventListener('input', drawText)
+        pick.addEventListener('change', drawText)
+        drawText()
+        const textCard = hasFile
+          ? card('c-12', cardHead(t('un.sp.text.title'), null, t('un.sp.text.info')), h('div', { class: 'speech-tools' }, search, pick), textBody)
+          : null
+
+        content.replaceChildren(h('div', { class: 'dash-grid' }, hero, ...stats, timeCard, topicsCard, compareCard, saidCard, targetsCard, evidenceCard, greeceCard, pressCard, textCard),
+          ...(hasFile ? [] : [h('p', { class: 'proto-note' }, t('un.sp.notext'))]))
+      }
+    })
+    reset()
+  </script>
+</body>
+</html>

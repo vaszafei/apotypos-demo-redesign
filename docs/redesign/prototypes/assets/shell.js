@@ -37,6 +37,7 @@
     '/narrative': 'narrative-v2.html',
     '/coverage': 'coverage-v2.html',
     '/france-riots': 'france-v2.html',
+    '/seven-stories': 'seven-stories-v2.html',
     '/gaza': 'gaza-v2.html',
     '/israel': 'israel-v2.html',
     '/gaza-language': 'language-v2.html',
@@ -66,8 +67,16 @@
     { key: 'politics', tabs: [['reach', '/elections'], ['outlets', '/elections/outlets'], ['owners', '/elections/owners'], ['topics', '/elections/topics'], ['bylines', '/elections/bylines']] },
     { key: 'world', tabs: [['speeches', '/speeches', [['speeches.all', '/speeches'], ['speeches.pi', '/un-israel-palestine']]],
       ['pi', '/narrative', [['pi.overview', '/narrative'], ['gaza', '/gaza'], ['israel', '/israel'], ['language', '/gaza-language']]],
-      ['greekturkish', '/war'], ['coverage', '/coverage'], ['france', '/france-riots']] }
+      ['greekturkish', '/war'], ['coverage', '/coverage'], ['france', '/france-riots', [['france.overview', '/france-riots'], ['france.seven', '/seven-stories']]]], details: [['/speech', '/speeches']] }
   ]
+  // The icon of each tab in the sidebar. A sub-tab has none: its indent marks it. The carbon theme shows them (app.css).
+  const TAB_ICONS = {
+    'media.overview': 'chart-bar', 'media.ownership': 'building-office-2', 'media.topics': 'tag', 'media.writing': 'pencil-square', 'media.similarity': 'square-2-stack',
+    'spread.overview': 'newspaper', 'spread.outlets': 'queue-list', 'spread.cases': 'folder', 'spread.campaigns': 'megaphone',
+    'people.overview': 'users', 'people.spread': 'share', 'people.statements': 'chat-bubble-left-right', 'people.file': 'document-text',
+    'politics.reach': 'chart-pie', 'politics.outlets': 'newspaper', 'politics.owners': 'building-office-2', 'politics.topics': 'tag', 'politics.bylines': 'pencil-square',
+    'world.speeches': 'microphone', 'world.pi': 'globe-europe-africa', 'world.greekturkish': 'flag', 'world.coverage': 'eye', 'world.france': 'map-pin'
+  }
   const FOOTER = [['methodology', '/methodology'], ['about', '/about']]
 
   const hasText = (key) => key in window.MESSAGES.el
@@ -399,12 +408,12 @@
   setFont(readFont())
 
   // Prototype only: the themes for the decision of the project lead (tokens.css). ?theme= or the last choice sets it.
-  const THEMES = ['paper', 'fog', 'terra', 'night', 'midnight']
+  const THEMES = ['paper', 'fog', 'terra', 'night', 'midnight', 'charcoal', 'sage', 'moss', 'carbon']
   function readTheme () {
     const asked = new URLSearchParams(location.search).get('theme')
     let saved = null
     try { saved = localStorage.getItem('proto-theme') } catch {}
-    return [asked, saved].find((k) => THEMES.includes(k)) || 'paper'
+    return [asked, saved].find((k) => THEMES.includes(k)) || 'carbon'
   }
   function setTheme (key) {
     document.documentElement.dataset.theme = key
@@ -975,13 +984,13 @@
       // The sub-tabs of the current tab are listed under it in the sidebar; a phone keeps them in the page body. A detail page (an outlet) marks the tab that lists it.
       const activeRoute = exactTab ? route : parentRoute
       const sectionNav = item && item.tabs.length > 1
-        ? h('nav', { class: 'section-nav', 'aria-label': t(`nav.${item.key}`) }, h('div', { class: 'section-nav-inner' },
+        ? h('nav', { class: 'section-nav', 'aria-label': t(`nav.${item.key}`) }, h('div', { class: 'section-nav-inner', 'data-label': t(`nav.${item.key}`) },
           h('ul', { class: 'section-nav-list' }, item.tabs.map(([key, r, subs]) => {
             const inTab = r === activeRoute || (subs || []).some(([, s]) => s === activeRoute)
             const nested = inTab && subs
             const current = inTab ? (!nested && (route === r || (subs || []).some(([, s]) => s === route)) ? 'page' : 'true') : null
             return h('li', {},
-              h('a', { class: `section-nav-link${nested ? ' is-parent' : ''}`, href: hrefOf(r), 'aria-current': current }, t(`tab.${item.key}.${key}`)),
+              h('a', { class: `section-nav-link${nested ? ' is-parent' : ''}`, href: hrefOf(r), 'aria-current': current }, Icon(TAB_ICONS[`${item.key}.${key}`], 'icon icon-sm section-nav-icon'), h('span', {}, t(`tab.${item.key}.${key}`))),
               nested ? h('ul', { class: 'section-nav-sub' }, subs.map(([subKey, s]) =>
                 h('li', {}, h('a', { class: 'section-nav-link', href: hrefOf(s), 'aria-current': s === route ? 'page' : null }, t(`tab.${item.key}.${subKey}`))))) : null)
           }))))
@@ -1019,7 +1028,16 @@
       })
       centerTabs()
       if (headerV2) {
-        current = { section: item ? t(`nav.${item.key}`) : title(), tabs: pageTabs }
+        // A tab page has the name of its page as its title, and its question under it (the carbon theme shows them on a wide screen, app.css).
+        const pageOf = exactTab && item.tabs.length > 1 ? pagesOf(item).find(([, r]) => r === route) : null
+        const tabText = pageOf && `tab.${item.key}.${pageOf[0]}`
+        const questionText = pageOf && `question.${item.key}.${pageOf[0]}`
+        current = {
+          section: item ? t(`nav.${item.key}`) : title(),
+          tabs: pageTabs,
+          pageTitle: tabText && hasText(tabText) ? t(tabText) : null,
+          question: questionText && hasText(questionText) ? t(questionText) : null
+        }
         // A tab page that draws no page head of its own gets the plain one: the tabs and the page tools. A section with one tab needs none.
         if (item && exactTab && item.tabs.length > 1) {
           const ensureHead = () => { if (!content.querySelector('.page-head')) content.prepend(window.Shell.PageHead({})) }
@@ -1070,9 +1088,10 @@
     filters = filters.filter(Boolean)
     // A page with no tabs, actions or filters (a section with one tab) has no visible head: only the h1 for screen readers.
     if (!tabs && !actions.length && !filters.length && !error) return h('header', { class: 'page-head is-empty' }, h('h1', { class: 'visually-hidden' }, title || current.section))
-    return h('header', { class: 'page-head' },
+    return h('header', { class: `page-head${current.pageTitle ? ' has-page-title' : ''}` },
       h('div', { class: 'page-head-row' },
-        h('div', { class: 'page-head-titles' }, h('h1', { class: 'page-head-title' }, title || current.section), meta ? h('p', { class: 'page-head-meta' }, meta) : null),
+        h('div', { class: 'page-head-titles' }, h('h1', { class: 'page-head-title' }, title || current.pageTitle || current.section),
+          meta ? h('p', { class: 'page-head-meta' }, meta) : current.question ? h('p', { class: 'page-head-question' }, current.question) : null),
         actions.length ? h('div', { class: 'page-head-actions' }, actions) : null),
       tabs,
       filters.length ? h('div', { class: 'page-filters' }, filters) : null,

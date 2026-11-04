@@ -471,3 +471,28 @@
 
 /* The last card of a column takes the height that is left, so a column is as tall as the card beside it. */
 .card-col-fill > :last-child { flex: 1; }
+
+/* Θέματα › Επισκόπηση: the donut of the agenda and its list. */
+.agenda-donut { width: 220px; height: 220px; }
+.dash .chart .donut-cap { fill: var(--text-secondary); font-size: var(--text-caption); }
+.agenda-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); font-size: var(--text-small); }
+.agenda-legend li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); }
+.agenda-num { font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+@media (max-width: 719px) { .agenda-wrap { grid-template-columns: minmax(0, 1fr); } .agenda-donut { justify-self: center; } }
+/* Ομιλίες: the 4 lists of pace and length. */
+.pace-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-5); }
+@media (max-width: 1279px) { .pace-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 719px) { .pace-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* Ιδιοκτησία: one small chart for each group. */
+.group-panels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-5) var(--space-4); }
+.group-panel { min-width: 0; display: grid; gap: var(--space-1); }
+.group-panel-name { margin: 0; font-size: var(--text-small); line-height: 18px; font-weight: 500; color: var(--ink); min-height: 36px; }
+.group-panel-total, .group-panel-peak { margin: 0; font-size: var(--text-caption); line-height: 18px; color: var(--text-secondary); }
+.group-panel-total strong { font-weight: 600; color: var(--ink); font-size: var(--text-small); }
+.group-panel-chart { display: block; width: 100%; height: 64px; border-bottom: 1px solid var(--rule); }
+@media (max-width: 719px) { .group-panels { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.trend-panels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.panel-area { fill: color-mix(in srgb, var(--series-1) 14%, transparent); }
+.panel-line { fill: none; stroke: var(--series-1); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.panel-peak { stroke: var(--series-1); stroke-width: 1; vector-effect: non-scaling-stroke; stroke-dasharray: 2 2; }

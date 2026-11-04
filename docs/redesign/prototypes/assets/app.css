@@ -303,6 +303,20 @@ button, input, select { font: inherit; color: inherit; }
 /* A long list in columns, and the key of its reference value above it. */
 .bar-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 6px var(--space-5); align-items: start; }
 .bar-list-wrap { display: grid; gap: var(--space-2); min-width: 0; }
+/* A short list (10 rows or fewer) has bars of 16 px. A long list keeps 8 px. */
+.bars-thick .hbar-track, .bars-thick .dbar { height: 16px; border-radius: 3px; }
+.bars-thick .hbar-fill { border-radius: 3px; }
+.bars-thick .dbar-seg.is-left { border-top-left-radius: 3px; border-bottom-left-radius: 3px; }
+.bars-thick .dbar-seg.is-right { border-top-right-radius: 3px; border-bottom-right-radius: 3px; }
+.bars-thick .bar-marker { height: 22px; }
+/* A row of a ranking that is the baseline (Όλα τα μέσα). */
+.bar-list .is-ref .row-name { color: var(--emph-more); font-weight: 600; }
+/* In a list that scrolls, the baseline stays in view at the top or bottom edge. */
+.bar-list .is-ref { position: sticky; top: 0; bottom: 0; z-index: 1; background: var(--surface-page); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .bar-list .is-ref { background: var(--surface-raised); }
+/* A tick on a light bar keeps an edge, so it shows on the bar and on the track. */
+.bars-thick .bar-marker { box-shadow: 0 0 0 1px var(--surface-page); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .bars-thick .bar-marker { box-shadow: 0 0 0 1px var(--surface-raised); }
 .bar-group { display: grid; gap: 3px; }
 /* A phone shows the value of a bar with a value text, not the bar. */
 @media (max-width: 639px) { .hbar:has(.bar-value) .hbar-track { display: none; } }
@@ -730,6 +744,7 @@ button, input, select { font: inherit; color: inherit; }
 .page-body { display: flex; flex: 1; min-width: 0; }
 .page-main { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .section-nav { display: none; }
+.section-nav-icon, .page-head-question { display: none; }
 @media (min-width: 1024px) {
   .section-nav { display: block; flex: none; width: 232px; background: var(--surface-page); }
   .section-nav-inner { position: sticky; top: var(--navbar-height); max-height: calc(100vh - var(--navbar-height)); overflow-y: auto; padding: var(--space-5) var(--space-3) var(--space-5) calc(var(--space-6) + var(--space-4)); }
@@ -906,3 +921,117 @@ svg.chart .bar-col { transform-origin: 50% 100%; }
 .token-item { display: flex; align-items: center; gap: var(--space-2); min-width: 0; font-size: var(--text-caption); }
 .token-item code { overflow-wrap: anywhere; color: var(--text-secondary); }
 .token-chip { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid var(--border); border-radius: var(--radius); font-size: var(--text-caption); font-weight: 600; }
+
+/* The carbon theme: a console look. Sentence case, no slashes, rounded rectangles instead of pills, an edge on every card, a sidebar with one filled item. */
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) { --pill: 6px; --radius-roomy: 10px; --radius: 10px; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) body { font-weight: 400; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) :is(.kpi-tile, .dcard):not(:has(.kpi-tile, .dcard)) { background: var(--surface-raised); border-color: var(--card-edge); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) :is(.kpi-tile, .dcard):is(:hover, :focus-within):not(:has(.kpi-tile, .dcard)) { border-color: var(--rule); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dcard { --card-pad: var(--space-5); --card-gap: var(--space-4); }
+/* A card inside a card is smaller and has the color of the page. */
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dcard .dcard { --card-pad: var(--space-4); --card-radius: 8px; background: var(--surface-page); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dash-grid, :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .card-col { gap: var(--space-4); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dcard-title { font-size: var(--text-title); line-height: 28px; font-weight: 500; letter-spacing: -0.02em; text-transform: none; color: var(--ink); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dcard-title::before { content: none; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-tabs a[aria-current], :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .sub-tabs a[aria-current] { border-color: transparent; border-bottom-color: var(--accent); border-radius: 0; box-shadow: none; color: var(--accent); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .home-hero .home-hero-stats { background: none; border-color: transparent; box-shadow: none; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"])[data-header="v2"] .page-tabs .section-tabs a { padding: 8px 2px; margin-right: var(--space-3); border-width: 0 0 2px; border-radius: 0; font-size: var(--text-small); font-weight: 500; letter-spacing: 0; text-transform: none; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"])[data-header="v2"] .page-tabs .section-tabs a[aria-current]::before { content: none; }
+@media (min-width: 1024px) {
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) { --navbar-height: 52px; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .header-logo { margin-right: auto; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .global-search { order: 1; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .header-nav { order: 2; flex: none; margin-left: 0; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .header-actions { order: 3; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .header-nav .nav-link { padding: 0 10px; font-size: var(--text-small); font-weight: 500; letter-spacing: 0; text-transform: none; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .header-nav .nav-link { color: var(--text-primary); }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .header-nav .nav-link:hover { color: var(--ink); }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .header-nav .nav-link[aria-current="page"] { font-weight: 500; color: var(--ink); }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .header-nav .nav-link[aria-current="page"]::before { content: none; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .search-button { background: var(--surface-card); }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav { width: 216px; border-right: 1px solid var(--border); background: var(--surface-sidebar); }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav-inner { padding: var(--space-4) var(--space-2); }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav-inner::before { content: attr(data-label); display: block; padding: 0 var(--space-3) var(--space-3); font-size: var(--text-caption); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav-list { gap: 4px; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav-link { padding: 8px var(--space-3); border-radius: 6px; font-size: var(--text-small); font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--text-primary); }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav .section-nav-link[aria-current]::before { content: none; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav .section-nav-link[aria-current]:not(.is-parent) { background: color-mix(in srgb, var(--accent) 13%, transparent); color: var(--accent); }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav-sub { padding-left: var(--space-3); }
+}
+
+/* The carbon theme, the default: the parts that make it a console and not only a dark page. */
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .content.dash:not(.is-home) { width: 100%; max-width: 1400px; margin-inline: auto; }
+/* A stat card: the label, a large number with its small picture on the right, and the short line with the change under them. */
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat, :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat.dstat-compact { display: flex; flex-direction: column; gap: var(--space-2); padding: 20px; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat-label { font-family: var(--font-mono); font-size: var(--text-caption); line-height: 18px; font-weight: 400; letter-spacing: 0.3px; text-transform: uppercase; color: var(--text-secondary); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat .dstat-row, :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat-compact .dstat-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat .dstat-value, :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat-compact .dstat-value { font-size: var(--text-heading); font-weight: 500; line-height: 32px; letter-spacing: -0.7px; }
+/* The picture sits on the right of the number, or under it in a narrow card. The short line is last. */
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat .dstat-row > :nth-child(3), :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat-compact .dstat-row > :nth-child(3) { order: 1; margin-left: auto; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat .dstat-sub, :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat-compact .dstat-sub { order: 2; flex-basis: 100%; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .delta.is-up { color: var(--emph-more); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .delta.is-down { color: var(--emph-less); }
+/* The accent is for the interface, so the data of a small picture and of the wave of the home page has the color of the series. */
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .spark .spark-range { stroke: var(--series-1); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .home-hero-wave-fill { fill: color-mix(in srgb, var(--series-1) 7%, transparent); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .home-hero-wave-line { stroke: color-mix(in srgb, var(--series-1) 40%, transparent); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .home-hero { background: var(--surface-page); }
+/* Links in tables are quiet: no line until the mouse is on them. */
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .minimal :is(.data-table a, .rows a, .entity-link) { text-decoration: none; color: var(--ink); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .minimal :is(.data-table a, .rows a, .entity-link):hover { color: var(--accent); }
+/* The title card of a detail page has the same edge as any card, and its label has no slash. */
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .entity-grid .hero, :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .entity-grid .hero:is(:hover, :focus-within) { border-top: 1px solid var(--card-edge); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .hero-kicker::before { content: none; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dcard a:not(.button, .chip, .dcard-link) { color: var(--ink); text-decoration-color: var(--rule); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dcard a:not(.button, .chip, .dcard-link):hover { color: var(--accent); text-decoration-color: currentColor; }
+/* Manrope is wider than the other fonts, so the numbers of a dense matrix are a little tighter. */
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dash .matrix-turned td { font-size: var(--text-caption); letter-spacing: -0.03em; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .global-search-kind > span:first-child::before { content: none; }
+@media (min-width: 1024px) {
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav-link { display: flex; align-items: center; gap: 10px; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav-icon { display: block; color: var(--text-secondary); }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav .section-nav-link[aria-current]:not(.is-parent) .section-nav-icon { color: var(--accent); }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav-sub { padding-left: 26px; }
+  /* The title and the question of the page on the left, the page actions on the right. */
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"])[data-header="v2"] .page-head.has-page-title { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; column-gap: var(--space-5); margin: var(--space-5) 0; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"])[data-header="v2"] .page-head.has-page-title .page-head-titles { position: static; width: auto; height: auto; overflow: visible; clip: auto; grid-column: 1; grid-row: 1; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"])[data-header="v2"] .page-head.has-page-title .page-head-title { position: static; width: auto; height: auto; overflow: visible; clip: auto; font-size: var(--text-heading); line-height: 32px; font-weight: 500; letter-spacing: -0.7px; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"])[data-header="v2"] .page-head.has-page-title .page-head-actions { grid-column: 2; grid-row: 1; justify-content: flex-end; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"])[data-header="v2"] .page-head.has-page-title:not(:has(.page-head-actions)) .page-filters { grid-column: 2; grid-row: 1; margin-top: 0; justify-content: flex-end; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .page-head-question { display: block; margin: var(--space-1) 0 0; font-size: var(--text-body); line-height: 24px; color: var(--text-primary); }
+}
+
+/* The type of carbon, measured on the Apotypos app: small and dense, Inter for text, monospace for the numbers of a table.
+   Its sizes under 12 px are 12 px here (C13). The card boxes above do not change. */
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) { --text-small: 13px; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dcard-title { font-size: 14px; line-height: 21px; font-weight: 600; letter-spacing: -0.28px; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) :is(.dcard-sub, .dstat-sub) { font-size: var(--text-caption); line-height: 18px; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat-label { font-family: var(--font-text); font-size: var(--text-caption); line-height: 18px; font-weight: 400; letter-spacing: 0.42px; text-transform: uppercase; color: var(--text-secondary); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat .dstat-value, :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dstat-compact .dstat-value { font-size: 30px; line-height: 30px; font-weight: 600; letter-spacing: -0.75px; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .kpi-value { font-weight: 600; letter-spacing: -0.75px; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .data-table { font-size: var(--text-caption); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .data-table th { font-weight: 500; }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .data-table td.num, :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .agenda-num { font-family: var(--font-mono); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) :is(.segmented button, .chip, .search-button) { font-size: var(--text-caption); }
+:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .agenda-legend { font-size: 12.5px; line-height: 18.75px; }
+@media (min-width: 1024px) {
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .header-nav .nav-link { font-size: var(--text-small); line-height: 19.5px; font-weight: 400; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .header-nav .nav-link[aria-current="page"] { font-weight: 600; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav-link { font-size: var(--text-small); line-height: 19.5px; font-weight: 400; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav .section-nav-link[aria-current]:not(.is-parent) { font-weight: 500; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .section-nav-inner::before { font-family: var(--font-text); font-size: var(--text-caption); font-weight: 600; letter-spacing: 1.33px; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"])[data-header="v2"] .page-head.has-page-title .page-head-title { font-size: 24px; line-height: 30px; font-weight: 600; letter-spacing: -0.6px; }
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .page-head-question { font-size: var(--text-small); line-height: 19.5px; }
+}
+@media (max-width: 719px) {
+  :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"]) .dcard { --card-pad: var(--space-4); }
+}
+
+/* The default carbon: the white content area has a light card shadow, and the current page of the sidebar is a white pill. */
+:root:is([data-theme="carbon"], [data-theme="moss"]) :is(.kpi-tile, .dcard):not(:has(.kpi-tile, .dcard)):not(.home-hero-stats) { box-shadow: 0 1px 2px color-mix(in srgb, var(--shade-black) 3%, transparent); }
+/* The menu button of a phone is on the dark bar. */
+:root:is([data-theme="carbon"], [data-theme="moss"]) .header-bar .menu-button { color: var(--ink); }
+@media (min-width: 1024px) {
+  :root:is([data-theme="carbon"], [data-theme="moss"]) .section-nav .section-nav-link[aria-current]:not(.is-parent) { background: var(--nav-pill); color: var(--nav-pill-text); }
+  :root:is([data-theme="carbon"], [data-theme="moss"]) .section-nav .section-nav-link[aria-current]:not(.is-parent) .section-nav-icon { color: var(--nav-pill-text); }
+}

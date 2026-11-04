@@ -14,6 +14,9 @@ NAMES = [
     "exclamation-triangle", "inbox", "arrow-path", "arrow-top-right-on-square",
     "arrow-left", "calendar", "chevron-down", "chevron-left",
     "arrow-down-tray", "link", "lock-closed", "user-circle", "information-circle",
+    "chart-bar", "building-office-2", "tag", "pencil-square", "square-2-stack", "newspaper",
+    "queue-list", "folder", "megaphone", "users", "share", "chat-bubble-left-right",
+    "document-text", "chart-pie", "microphone", "globe-europe-africa", "flag", "map-pin", "eye",
 ]
 
 

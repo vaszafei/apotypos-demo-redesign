@@ -155,7 +155,7 @@
   }
 
   // Bars (#54). Every bar of every page comes from the components below, with one spec:
-  // - A horizontal bar is 8 px high with round ends (4 px) on a track of --bar-track. The fill is --bar-fill,
+  // - A horizontal bar is 8 px high with round ends (4 px) on a track of --bar-track; a list of 10 rows or fewer may use the class bars-thick (16 px). The fill is --bar-fill,
   //   or the color of the data (a group, a party, a stance, a side). A reference value (an average) is a tick of 2 px.
   // - The parts of a stacked bar have a gap of 2 px. A diverging bar grows to both sides of a center line of 2 px.
   // - A column is 70% of its slot and 32 px wide at most, with round top corners (4 px). The parts of a stacked column have a gap of 1 px.

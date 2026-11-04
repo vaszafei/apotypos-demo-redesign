@@ -54,7 +54,7 @@
 .evidence summary:hover { color: var(--accent); }
 .leader-cell { display: grid; gap: 1px; min-width: 180px; }
 .tone-hostile, .tone-critical { border-color: color-mix(in srgb, var(--stance-critical) 45%, var(--surface-raised)); color: var(--stance-critical); }
-.tone-conciliatory, .tone-supportive { border-color: color-mix(in srgb, var(--stance-supportive) 45%, var(--surface-raised)); color: var(--stance-supportive); }
+.tone-conciliatory, .tone-supportive, .tone-favourable { border-color: color-mix(in srgb, var(--stance-supportive) 45%, var(--surface-raised)); color: var(--stance-supportive); }
 .minimal .dash-actions .region-pills { justify-content: flex-end; }
 
 /* The person file. */
@@ -84,3 +84,18 @@
 .case-form .button { border-radius: var(--pill); }
 .case-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chart .line-gap-text { font-size: 12px; fill: var(--text-secondary); }
+
+/* The page of one speech. */
+.speech-strip { display: flex; gap: 2px; height: 40px; }
+.speech-strip a { display: block; min-width: 2px; border-radius: 2px; transition: opacity var(--motion-fast) var(--ease-out); }
+.speech-strip a:hover, .speech-strip a:focus-visible { opacity: 0.7; }
+.speech-time { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.speech-quotes { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); font-size: var(--text-small); }
+.speech-quotes li { display: grid; gap: var(--space-1); }
+.speech-quote { margin: 0; color: var(--ink); }
+.speech-tools { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.speech-tools input, .speech-tools select { min-height: 36px; padding: 0 var(--space-3); border: 1px solid var(--border); border-radius: var(--pill, 999px); background: var(--surface-page); font-size: var(--text-small); }
+.speech-tools input { flex: 1 1 220px; min-width: 0; }
+.speech-text { display: grid; gap: var(--space-3); max-height: 520px; overflow-y: auto; font-size: var(--text-small); }
+.speech-text p { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: var(--space-3); margin: 0; }
+.speech-scroll { max-height: 440px; overflow-y: auto; }

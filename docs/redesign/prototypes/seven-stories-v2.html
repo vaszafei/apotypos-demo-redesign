@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Απότυπος</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/tokens.css?v=31">
+  <link rel="stylesheet" href="assets/app.css?v=60">
+  <link rel="stylesheet" href="assets/dash.css?v=91">
+  <link rel="stylesheet" href="assets/politics.css?v=11">
+  <link rel="stylesheet" href="assets/world.css?v=5">
+  <script src="assets/page-move.js?v=3"></script>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="assets/icons.js?v=10"></script>
+  <script src="assets/messages.js?v=42"></script>
+  <script src="assets/messages-v2.js?v=50"></script>
+  <script src="assets/components.js?v=16"></script>
+  <script src="assets/motion.js?v=3"></script>
+  <script src="assets/dash.js?v=22"></script>
+  <script src="assets/shell.js?v=64"></script>
+  <script>
+    // Αναλύσεις › Γαλλία: ταραχές › Μία εξέγερση, επτά ιστορίες: the live standalone report, in reports/france-riots/, in a frame that takes its height.
+    const { t, h } = App
+    const { reset, card, TopBar } = Dash
+    const FILE = 'reports/france-riots/seven-stories.html'
+    Shell.start({
+      id: 'seven-stories',
+      route: '/seven-stories',
+      dash: true,
+      title: () => t('tab.world.france.seven'),
+      breadcrumbs: () => [{ label: t('nav.world') }, { label: t('tab.world.france') }, { label: t('tab.world.france.seven') }],
+      render (content, { tabs }) {
+        content.classList.add('dash', 'minimal')
+        const frame = h('iframe', { class: 'report-frame', title: t('tab.world.france.seven'), src: FILE })
+        const fit = () => { try { const doc = frame.contentDocument; if (doc && doc.body) frame.style.height = `${doc.documentElement.scrollHeight}px` } catch { /* another origin */ } }
+        frame.addEventListener('load', () => { fit(); setTimeout(fit, 600); try { new ResizeObserver(fit).observe(frame.contentDocument.body) } catch {} })
+        content.replaceChildren(TopBar({ title: t('tab.world.france.seven'), tabs, quiet: true }),
+          h('p', { class: 'dcard-sub' }, t('seven.note'), ' ', h('a', { class: 'quiet-link', href: FILE, target: '_blank', rel: 'noopener' }, t('seven.open'), ' ↗')),
+          h('div', { class: 'dash-grid' }, card('c-12 report-card', frame)))
+      }
+    })
+    reset()
+  </script>
+</body>
+</html>
