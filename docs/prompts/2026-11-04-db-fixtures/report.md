@@ -34,8 +34,19 @@ The dump `manual-20261028T155347Z.dump` (ta_blepo, pg 18.6, 5.4 GB) was restored
 - Aug–Sep identical to `HEAD`: dates, `outletDaily`, `issueDaily`, `stories[].daily`, `storyDays`, outlets, issues, people in `media.js`; all 5,062 story rows and 5,038 detail rows; `home.js` outlets, `issueDaily` and issues. Compared by value in Python.
 - Idempotent: the generator ran again on the output, and `media`, `stories`, `storyDetail`, `home` and `sources.json` were byte-identical.
 - Presets from the data (checked in the browser, both languages): Aug–Oct gives all, three months, last 14 days (14–27 Oct); the same days extended to 15 Nov add a November preset and move last 14 days to 2–15 Nov; Aug–Sep gives the old four.
-- Checks: `fixtures-check` ok, `check.mjs` all pass, `parts-check` all pass.
-- `visual-check` (336 loads, 42 pages, 1920/1440/1100/390 at paper and night): the same 6 distinct problems as clean `main` run the same way. They are `france-v2.html` and `pages.html` requests for `cdn-cgi/rum` and `reports/france-riots/compare.html`, and an intermittent negative `<rect>` width on `pages.html` (it appeared on `main` too, at 1100/paper).
+- Checks on the tree with the review fixes: `fixtures-check` ok, `check.mjs` all pass, `parts-check` all pass.
+- `visual-check` (336 loads, 42 pages, 1920/1440/1100/390 at paper and night) ran on the tree before the review fixes: the same 6 distinct problems as clean `main` run the same way. They are `france-v2.html` and `pages.html` requests for `cdn-cgi/rum` and `reports/france-riots/compare.html`, and an intermittent negative `<rect>` width on `pages.html` (it appeared on `main` too, at 1100/paper). **It has not run on the fixed tree**: the run was stopped and the user runs it on the deploy preview.
+
+## Code review
+
+`ce-code-review` (local reviewers, adversarial lens in-process) gave "Ready with fixes": 6 findings confirmed and fixed (null-safe pages, topic windows end at the last day with topic data, null contract checks in `fixtures-check.mjs`, cache-bust `?v=` bumps, the two added pages in `visual-check.mjs`). The independent external-model reviewer was **not** run, because the repo was not sent to another provider.
+
+Not applied (reviewer demoted them):
+- Story ids are list positions, so a rerun on a newer dump renumbers October stories; run `make-search.mjs` after the generator.
+- `covered_range` takes the last unbroken run of days with 75% outlet presence; one weak mid-range day in a later dump would null earlier days.
+- `fmt.signed` has no null guard; the home hero `Wave()`, the topic chips and the `outlet-v2` day count still read null as 0 or skip it.
+- Home totals mix 26 mapped outlets in October with 36 in Aug–Sep.
+- Aug–Sep identity was verified by ad hoc Python, not a repeatable script.
 
 ## What was seen and what was only measured
 
