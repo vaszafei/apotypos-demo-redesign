@@ -13,22 +13,22 @@
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=38"></script>
-  <script src="assets/messages-v2.js?v=47"></script>
-  <script src="assets/components.js?v=15"></script>
+  <script src="assets/messages.js?v=39"></script>
+  <script src="assets/messages-v2.js?v=48"></script>
+  <script src="assets/components.js?v=17"></script>
   <script src="assets/motion.js?v=3"></script>
   <script src="assets/dash.js?v=21"></script>
   <script src="assets/vendor/d3-hierarchy.min.js"></script>
-  <script src="assets/shell.js?v=58"></script>
+  <script src="assets/shell.js?v=59"></script>
   <script src="data/groups.js?v=2"></script>
-  <script src="data/media.js"></script>
+  <script src="data/media.js?v=2"></script>
   <script>
     // Media, Ιδιοκτησία: dashboard of APO-161. The group, the owner and the articles come from the static files,
-    // so the period is fixed (1 Aug to 30 Sep 2026): there is no period control. The period is in the note of the table.
+    // so the table and the shares cover the window of the groups file and there is no period control. The period is in the note of the table.
     const { t, fmt, h, load } = App
     const { fit, reset, NO_GROUP, card, cardHead, emptyText, TopBar, textOn, tint } = Dash
     const result = load('groups', ['groups', 'ungrouped', 'totalCollected', 'window'], (b) => b.groups)
-    // The daily articles of each outlet (the same period and the same groups as the groups file).
+    // The daily articles of each outlet: the days of media.js, which run past the window of the groups file to the last day of the database. The groups are those of the groups file.
     const media = load('media', ['dates', 'outlets', 'outletDaily'], (b) => b.outlets)
     // A day with fewer articles than this is a gap of the crawler, not a quiet day.
     const GAP = 50

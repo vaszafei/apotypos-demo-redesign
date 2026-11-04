@@ -14,16 +14,16 @@
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=38"></script>
-  <script src="assets/messages-v2.js?v=47"></script>
+  <script src="assets/messages.js?v=39"></script>
+  <script src="assets/messages-v2.js?v=48"></script>
   <script src="assets/messages-mme.js?v=21"></script>
-  <script src="assets/components.js?v=15"></script>
+  <script src="assets/components.js?v=17"></script>
   <script src="assets/motion.js?v=3"></script>
   <script src="assets/dash.js?v=21"></script>
-  <script src="assets/mme.js?v=22"></script>
-  <script src="assets/shell.js?v=58"></script>
-  <script src="data/home.js?v=3"></script>
-  <script src="data/stories.js?v=1"></script>
+  <script src="assets/mme.js?v=23"></script>
+  <script src="assets/shell.js?v=59"></script>
+  <script src="data/home.js?v=4"></script>
+  <script src="data/stories.js?v=2"></script>
   <script src="data/mme.js?v=20"></script>
   <script>
     // Topics, Επισκόπηση: the first dashboard of Θέματα. It reads the topics file (36 topics, 61 days). The stories are in the tab Ιστορίες.
@@ -116,10 +116,11 @@
 
         const d = topics.data
         const name = (x) => x[App.locale] || x.el
-        const last = d.dates.length - 1
+        // The topics have no count after the coded days (null), so the windows, lines and sparklines end on the last day that has one.
+        const last = d.issueDaily.reduce((m, row) => Math.max(m, row.findLastIndex((v) => v !== null)), 0)
         const total = (k) => sumRange(d.issueDaily[k], 0, last)
         const rows = d.issues.map((issue, k) => {
-          const daily = d.issueDaily[k]
+          const daily = d.issueDaily[k].slice(0, last + 1)
           const now = last >= 27 ? sumRange(daily, last - 13, last) : 0
           const before = last >= 27 ? sumRange(daily, last - 27, last - 14) : 0
           return { issue, daily, count: total(k), now, before, change: before >= 200 ? (now - before) / before : null }
@@ -140,7 +141,7 @@
         // that it flattens them, so it starts off, with the topics after the sixth. The last line that is on cannot be switched off.
         const offered = rows.filter((r) => !r.issue.catchAll).slice(0, SLOTS.length)
         const lines = offered.map((r, i) => ({ name: name(r.issue), color: SLOTS[i], on: i > 0 && i < 6, values: r.daily.map((_, j) => (j < ROLL - 1 ? 0 : sumRange(r.daily, j - ROLL + 1, j) / ROLL)) }))
-        const chart = LinesChart({ dates: d.dates, getSeries: () => lines.filter((l) => l.on), caption: t('topics2.time.title') })
+        const chart = LinesChart({ dates: d.dates.slice(0, last + 1), getSeries: () => lines.filter((l) => l.on), caption: t('topics2.time.title') })
         const syncs = []
         const toggles = h('ul', { class: 'legend-toggles' }, lines.map((l) => {
           const button = h('button', { type: 'button', class: 'legend-toggle', 'aria-pressed': String(l.on) }, h('span', { class: 'swatch', style: { background: l.color } }), l.name)

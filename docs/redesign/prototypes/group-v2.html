@@ -13,18 +13,18 @@
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=38"></script>
-  <script src="assets/messages-v2.js?v=47"></script>
-  <script src="assets/messages-spread.js?v=16"></script>
-  <script src="assets/components.js?v=15"></script>
+  <script src="assets/messages.js?v=39"></script>
+  <script src="assets/messages-v2.js?v=48"></script>
+  <script src="assets/messages-spread.js?v=17"></script>
+  <script src="assets/components.js?v=17"></script>
   <script src="assets/motion.js?v=3"></script>
   <script src="assets/dash.js?v=21"></script>
   <script src="assets/spread.js?v=6"></script>
-  <script src="assets/entity-cards.js?v=8"></script>
-  <script src="assets/shell.js?v=58"></script>
-  <script src="data/media.js"></script>
-  <script src="data/stories.js?v=1"></script>
-  <script src="data/storyDetail.js?v=1"></script>
+  <script src="assets/entity-cards.js?v=10"></script>
+  <script src="assets/shell.js?v=59"></script>
+  <script src="data/media.js?v=2"></script>
+  <script src="data/stories.js?v=2"></script>
+  <script src="data/storyDetail.js?v=2"></script>
   <script src="data/groups.js?v=1"></script>
   <script>
     // Media, page of one ownership group: /group/<slug>. A compact title card, then the cards in rows of two.
@@ -66,10 +66,21 @@
         const color = colorOfGroup.get(group.name)
         const members = new Set(group.outlets.map((o) => o.slug))
 
-        // The articles of the group per day: analysed and news, added over its outlets.
-        const daily = dates.map((_, day) => m.outlets.reduce((acc, o, k) => (members.has(o.slug) ? [acc[0] + m.outletDaily[k][day][0], acc[1] + m.outletDaily[k][day][1]] : acc), [0, 0]))
+        // The articles of the group per day: analysed and news, added over its outlets. The news of a day is null when no outlet of the group has a news count that day.
+        const daily = dates.map((_, day) => {
+          let analysed = null
+          let news = null
+          m.outlets.forEach((o, k) => {
+            if (!members.has(o.slug)) return
+            const [a, n] = m.outletDaily[k][day]
+            if (a !== null) analysed = (analysed ?? 0) + a
+            if (n !== null) news = (news ?? 0) + n
+          })
+          return [analysed, news]
+        })
         const start = daily.findIndex((c) => c[0] > 0)
-        const end = daily.length - 1 - [...daily].reverse().findIndex((c) => c[0] > 0)
+        // The facts of the title card come from the groups file, so its days end where the window of that file ends.
+        const end = Math.min(dates.indexOf(g.window[1]), daily.length - 1 - [...daily].reverse().findIndex((c) => c[0] > 0))
 
         // The stories of the group: its articles, its days, and how the group started the story (from the profiles of the page Ιστορίες).
         const profiles = Spread.profiles(dd)

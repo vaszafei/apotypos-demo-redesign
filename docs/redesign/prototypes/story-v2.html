@@ -13,17 +13,17 @@
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=38"></script>
-  <script src="assets/messages-v2.js?v=47"></script>
-  <script src="assets/messages-spread.js?v=16"></script>
-  <script src="assets/components.js?v=15"></script>
+  <script src="assets/messages.js?v=39"></script>
+  <script src="assets/messages-v2.js?v=48"></script>
+  <script src="assets/messages-spread.js?v=17"></script>
+  <script src="assets/components.js?v=17"></script>
   <script src="assets/motion.js?v=3"></script>
   <script src="assets/dash.js?v=21"></script>
   <script src="assets/spread.js?v=6"></script>
-  <script src="assets/entity-cards.js?v=8"></script>
-  <script src="assets/shell.js?v=58"></script>
-  <script src="data/stories.js?v=1"></script>
-  <script src="data/storyDetail.js?v=1"></script>
+  <script src="assets/entity-cards.js?v=10"></script>
+  <script src="assets/shell.js?v=59"></script>
+  <script src="data/stories.js?v=2"></script>
+  <script src="data/storyDetail.js?v=2"></script>
   <script src="data/groups.js?v=1"></script>
   <script>
     // News spread, Story page: /story/<id>. One page for each story of the tab Ιστορίες. The page is open at ?id=<story id>.
@@ -166,50 +166,57 @@
         })
         const groupsCard = Entity.GroupsCard({ title: t('entity.groups.title'), info: t('story.outlets.info'), groups: tree, total: articles })
 
-        // How the story was written: for each measure, how far the story is from all articles. The rows share one scale, so the bars compare.
-        const part = (arr, i, sum = total(arr)) => (sum ? arr[i] / sum : 0)
-        // A row shows when the story has articles of that kind. The 2 kinds that are common in all articles and missing in the story show too: that is a finding.
-        const rowsOf = (key, labelKey, count) => {
-          const all = det[key].map((_, i) => ({ label: t(`story.${key === 'f' ? 'frame' : 'section'}.${dd[labelKey][i]}`), value: part(det[key], i), usual: part(dd.base[key], i) }))
-          const present = all.filter((r) => r.value > 0).sort((a, b) => b.value - a.value).slice(0, count)
-          const missing = all.filter((r) => r.value === 0).sort((a, b) => b.usual - a.usual).slice(0, 2)
-          return [...present, ...missing]
-        }
-        const stanceN = total(det.s.slice(1))
-        const stanceRows = ['critical', 'neutral', 'supportive'].map((code, i) => ({ label: t(`stance.${code}`), value: part(det.s.slice(1), i, stanceN), usual: part(dd.base.s.slice(1), i, total(dd.base.s.slice(1))) }))
-        const [scored, baited] = det.k
-        const clickRows = scored ? [{ label: t('story.how.clickbait'), value: baited / scored, usual: dd.base.k[1] / dd.base.k[0] }] : []
-        const panels = [
-          { title: t('story.how.frame'), rows: rowsOf('f', 'frames', 8) },
-          { title: t('story.how.section'), rows: rowsOf('c', 'sections', 6) },
-          { title: t('story.how.stance'), rows: stanceN ? stanceRows : [], note: stanceN ? t('story.how.stance.n', { n: fmt.int(stanceN), total: fmt.int(articles) }) : t('story.how.stance.none') },
-          { title: t('story.how.clickbait'), rows: clickRows, note: scored ? t('story.how.clickbait.n', { n: fmt.int(baited), total: fmt.int(scored) }) : t('story.how.clickbait.none') }
-        ]
-        const scale = Math.max(0.05, ...panels.flatMap((p) => p.rows.map((r) => Math.abs(r.value - r.usual))))
-        const column = (items) => h('div', { class: 'how-panel' }, items.map((p) => [
-          h('h3', { class: 'rows-caption' }, p.title),
-          p.rows.length ? UI.BarList(p.rows.map((r) => DiffRow({ ...r, scale }))) : null,
-          p.note ? h('p', { class: 'dcard-sub' }, p.note) : null
-        ]))
-        const howKey = Entity.diffKey()
-        const howCard = card('c-6', cardHead(t('story.how.title'), null, t('story.how.info')),
-          h('div', { class: 'how-grid how-grid-2' }, column([panels[0]]), column([panels[1], panels[3]])), howKey)
-        const stanceCard = Entity.StanceCard({
-          rows: [{ label: t('entity.stance.story'), color: 'var(--series-news)', counts: det.s.slice(1) }, { label: t('entity.stance.all'), color: NO_GROUP, counts: dd.base.s.slice(1) }],
-          foot: stanceN ? t('story.how.stance.n', { n: fmt.int(stanceN), total: fmt.int(articles) }) : null
-        })
-
-        const SEG = ['var(--emph-less)', 'var(--bar-muted)', 'var(--emph-more)']
-        const peopleCard = card('c-8', cardHead(t('story.people.title'), null, t('story.people.info')), UI.DataTable({
-          rows: people, rankColumn: true, pageSize: 7, emptyText: t('story.people.empty'),
-          columns: [
-            { label: t('story.people.col.person'), render: (r) => h('div', {}, h('div', {}, r.person.name), h('span', { class: 'muted-text' }, [r.person.role, r.person.party].filter(Boolean).join(' · '))) },
-            { label: t('story.people.col.mentions'), num: true, render: (r) => fmt.int(total(r.counts)) },
-            { label: t('story.people.col.portrayal'), phone: false, render: (r) => {
-              return UI.StackedBar(r.counts.map((n, i) => ({ label: t(`story.portrayal.${dd.portrayals[i]}`), value: n, color: SEG[i] })), { legend: false })
-            } }
+        // The stories after the labelled data (the database days) have no frame, stance, section, clickbait or people: the cards that need them give way to one note.
+        const labelled = Array.isArray(det.s)
+        let howCard = null
+        let stanceCard = null
+        let peopleCard = null
+        if (labelled) {
+          // How the story was written: for each measure, how far the story is from all articles. The rows share one scale, so the bars compare.
+          const part = (arr, i, sum = total(arr)) => (sum ? arr[i] / sum : 0)
+          // A row shows when the story has articles of that kind. The 2 kinds that are common in all articles and missing in the story show too: that is a finding.
+          const rowsOf = (key, labelKey, count) => {
+            const all = det[key].map((_, i) => ({ label: t(`story.${key === 'f' ? 'frame' : 'section'}.${dd[labelKey][i]}`), value: part(det[key], i), usual: part(dd.base[key], i) }))
+            const present = all.filter((r) => r.value > 0).sort((a, b) => b.value - a.value).slice(0, count)
+            const missing = all.filter((r) => r.value === 0).sort((a, b) => b.usual - a.usual).slice(0, 2)
+            return [...present, ...missing]
+          }
+          const stanceN = total(det.s.slice(1))
+          const stanceRows = ['critical', 'neutral', 'supportive'].map((code, i) => ({ label: t(`stance.${code}`), value: part(det.s.slice(1), i, stanceN), usual: part(dd.base.s.slice(1), i, total(dd.base.s.slice(1))) }))
+          const [scored, baited] = det.k
+          const clickRows = scored ? [{ label: t('story.how.clickbait'), value: baited / scored, usual: dd.base.k[1] / dd.base.k[0] }] : []
+          const panels = [
+            { title: t('story.how.frame'), rows: rowsOf('f', 'frames', 8) },
+            { title: t('story.how.section'), rows: rowsOf('c', 'sections', 6) },
+            { title: t('story.how.stance'), rows: stanceN ? stanceRows : [], note: stanceN ? t('story.how.stance.n', { n: fmt.int(stanceN), total: fmt.int(articles) }) : t('story.how.stance.none') },
+            { title: t('story.how.clickbait'), rows: clickRows, note: scored ? t('story.how.clickbait.n', { n: fmt.int(baited), total: fmt.int(scored) }) : t('story.how.clickbait.none') }
           ]
-        }))
+          const scale = Math.max(0.05, ...panels.flatMap((p) => p.rows.map((r) => Math.abs(r.value - r.usual))))
+          const column = (items) => h('div', { class: 'how-panel' }, items.map((p) => [
+            h('h3', { class: 'rows-caption' }, p.title),
+            p.rows.length ? UI.BarList(p.rows.map((r) => DiffRow({ ...r, scale }))) : null,
+            p.note ? h('p', { class: 'dcard-sub' }, p.note) : null
+          ]))
+          const howKey = Entity.diffKey()
+          howCard = card('c-6', cardHead(t('story.how.title'), null, t('story.how.info')),
+            h('div', { class: 'how-grid how-grid-2' }, column([panels[0]]), column([panels[1], panels[3]])), howKey)
+          stanceCard = Entity.StanceCard({
+            rows: [{ label: t('entity.stance.story'), color: 'var(--series-news)', counts: det.s.slice(1) }, { label: t('entity.stance.all'), color: NO_GROUP, counts: dd.base.s.slice(1) }],
+            foot: stanceN ? t('story.how.stance.n', { n: fmt.int(stanceN), total: fmt.int(articles) }) : null
+          })
+
+          const SEG = ['var(--emph-less)', 'var(--bar-muted)', 'var(--emph-more)']
+          peopleCard = card('c-8', cardHead(t('story.people.title'), null, t('story.people.info')), UI.DataTable({
+            rows: people, rankColumn: true, pageSize: 7, emptyText: t('story.people.empty'),
+            columns: [
+              { label: t('story.people.col.person'), render: (r) => h('div', {}, h('div', {}, r.person.name), h('span', { class: 'muted-text' }, [r.person.role, r.person.party].filter(Boolean).join(' · '))) },
+              { label: t('story.people.col.mentions'), num: true, render: (r) => fmt.int(total(r.counts)) },
+              { label: t('story.people.col.portrayal'), phone: false, render: (r) => {
+                return UI.StackedBar(r.counts.map((n, i) => ({ label: t(`story.portrayal.${dd.portrayals[i]}`), value: n, color: SEG[i] })), { legend: false })
+              } }
+            ]
+          }))
+        }
 
         const related = relatedStories(d.stories.filter((s) => !s.generic), story, daily).map((r) => ({ ...r, articles: articlesOf(r.s) }))
         const relatedCard = card('c-4', cardHead(t('story.related.title'), null, t('story.related.info')),
@@ -220,10 +227,12 @@
             h('span', { class: 'row-value' }, fmt.int(r.articles)))))
             : h('p', { class: 'dcard-empty' }, t('story.related.empty')))
 
+        const noLabels = card('c-6', cardHead(t('story.how.title')), h('p', { class: 'dcard-sub' }, t('story.nolabels', { date: fmt.date(dd.dates[dd.dates.indexOf(dd.volumeFrom) - 1]) })))
+
         // The title card is the first card of the main column on the left. The main cards are under it, and the lists are on the right. On a narrow screen the columns join in one.
         // The title card, then the cards in rows of two: the daily columns and the stance, the groups and how it was written, the people and the related stories.
         content.replaceChildren(h('div', { class: 'dash-grid entity-grid entity-rows' },
-          titleCard, dailyCard, stanceCard, groupsCard, howCard, peopleCard, relatedCard), protoNote())
+          titleCard, dailyCard, ...(labelled ? [stanceCard] : []), groupsCard, ...(labelled ? [howCard, peopleCard] : [noLabels]), relatedCard), protoNote())
       }
     })
 

@@ -14,22 +14,22 @@
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=38"></script>
-  <script src="assets/messages-v2.js?v=47"></script>
-  <script src="assets/messages-spread.js?v=16"></script>
+  <script src="assets/messages.js?v=39"></script>
+  <script src="assets/messages-v2.js?v=48"></script>
+  <script src="assets/messages-spread.js?v=17"></script>
   <script src="assets/messages-mme.js?v=21"></script>
-  <script src="assets/components.js?v=15"></script>
+  <script src="assets/components.js?v=17"></script>
   <script src="assets/motion.js?v=3"></script>
   <script src="assets/dash.js?v=21"></script>
   <script src="assets/politics.js?v=11"></script>
   <script src="assets/spread.js?v=6"></script>
-  <script src="assets/entity-cards.js?v=8"></script>
-  <script src="assets/mme.js?v=22"></script>
-  <script src="assets/shell.js?v=58"></script>
-  <script src="data/media.js"></script>
-  <script src="data/home.js"></script>
-  <script src="data/stories.js?v=1"></script>
-  <script src="data/storyDetail.js?v=1"></script>
+  <script src="assets/entity-cards.js?v=10"></script>
+  <script src="assets/mme.js?v=23"></script>
+  <script src="assets/shell.js?v=59"></script>
+  <script src="data/media.js?v=2"></script>
+  <script src="data/home.js?v=4"></script>
+  <script src="data/stories.js?v=2"></script>
+  <script src="data/storyDetail.js?v=2"></script>
   <script src="data/groups.js?v=1"></script>
   <script src="data/outlet.js"></script>
   <script src="data/mme.js?v=20"></script>
@@ -154,7 +154,7 @@
         const rowsOf = (rows) => (rows.length ? UI.BarList(rows.map((r) => DiffRow({ ...r, scale: howScale }))) : null)
         const note = (text) => h('p', { class: 'dcard-sub' }, text)
         const howCard = card('c-12', cardHead(t('outlet2.how.title'), diffKey, t('outlet2.how.info')),
-          h('div', { class: 'how-panel' }, rowsOf([...newsRows, ...clickRows]), note(t('outlet2.how.news.n', { n: fmt.int(analysed) })),
+          h('div', { class: 'how-panel' }, rowsOf([...newsRows, ...clickRows]), note(t('outlet2.how.news.n', { n: fmt.int(mineFile ? mineFile.analysed : 0) })),
             note(clickRows.length ? t('outlet2.how.clickbait.n', { baited: fmt.int(mineFile.cbYes), scored: fmt.int(mineFile.cbKnown) }) : t('outlet2.how.clickbait.none'))))
         const stanceCard = Entity.StanceCard({
           cls: 'c-12',

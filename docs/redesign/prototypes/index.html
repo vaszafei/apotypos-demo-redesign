@@ -14,17 +14,17 @@
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=38"></script>
-  <script src="assets/messages-v2.js?v=47"></script>
-  <script src="assets/messages-home.js?v=22"></script>
-  <script src="assets/components.js?v=15"></script>
+  <script src="assets/messages.js?v=39"></script>
+  <script src="assets/messages-v2.js?v=48"></script>
+  <script src="assets/messages-home.js?v=23"></script>
+  <script src="assets/components.js?v=17"></script>
   <script src="assets/motion.js?v=3"></script>
   <script src="assets/dash.js?v=21"></script>
-  <script src="assets/home.js?v=33"></script>
-  <script src="assets/shell.js?v=58"></script>
-  <script src="data/home.js"></script>
-  <script src="data/stories.js?v=1"></script>
-  <script src="data/storyDetail.js?v=1"></script>
+  <script src="assets/home.js?v=34"></script>
+  <script src="assets/shell.js?v=59"></script>
+  <script src="data/home.js?v=4"></script>
+  <script src="data/stories.js?v=2"></script>
+  <script src="data/storyDetail.js?v=2"></script>
   <script>
     // Home: the hero (the title, the large search and the size of the data) fills the first screen; the search is not in the top bar here.
     // Under it, the calendar of a month and the chart pick a day, the card shows the stories of that day (a story of the list is picked in the card),
@@ -34,14 +34,14 @@
     const result = load('home', ['dates', 'outlets', 'issues', 'issueDaily'], (b) => b.dates)
     const stories = load('stories', ['dates', 'issues', 'stories'], (b) => b.stories)
     const detail = load('storyDetail', ['dates', 'outlets', 'stories'], (b) => b.stories)
-    const range = { from: '2026-08-01', to: '2026-09-30' }
-    let lastValid = { ...range }
+    let lastValid = null
     let selected = null
     let rank = 0
 
+    // A day with no data is null. It adds nothing, and it is not a day of the average.
     function sumRange (daily, i0, i1) {
       let s = 0
-      for (let i = i0; i <= i1; i++) s += daily[i]
+      for (let i = i0; i <= i1; i++) if (daily[i] !== null) s += daily[i]
       return s
     }
 
@@ -71,13 +71,13 @@
             return
           }
           const dates = data.dates
+          if (!lastValid) lastValid = { from: dates[0], to: dates[dates.length - 1] }
           const i0 = dates.indexOf(lastValid.from)
           const i1 = dates.indexOf(lastValid.to)
-          const len = i1 - i0 + 1
           if (selected === null || selected < i0 || selected > i1) selected = i1
 
           // The articles of all the outlets for each day of the data.
-          const totals = dates.map((_, i) => data.outlets.reduce((s, o) => s + o.daily[i], 0))
+          const totals = dates.map((_, i) => (data.outlets.every((o) => o.daily[i] === null) ? null : data.outlets.reduce((s, o) => s + o.daily[i], 0)))
           const collected = sumRange(totals, i0, i1)
 
           // The stories of the day. A pick of a day in the calendar or the chart, or of a story in the list, draws this card again.
@@ -89,7 +89,7 @@
 
           const days = dates.slice(i0, i1 + 1)
           const daily = totals.slice(i0, i1 + 1)
-          const avg = collected / len
+          const avg = collected / (daily.filter((v) => v !== null).length || 1)
           const chart = () => UI.BarChart({
             dates: days, values: daily, label: t('home.daily.title'), height: 263, picked: selected - i0, onPick: (j) => pick(i0 + j, 'chart'),
             reference: { value: avg, label: t('home.daily.avg', { n: fmt.int(Math.round(avg)) }) },
