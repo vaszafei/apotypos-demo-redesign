@@ -135,5 +135,69 @@
     return [head, bad.kind === 'empty' ? h('div', { class: 'dash-grid' }, card('c-12', UI.EmptyState({ text: t('topics2.empty') }))) : UI.ErrorState({ onRetry: () => location.reload() })]
   }
 
-  window.Dash = { stateContent, select, fit, reset, niceStep, pct0, get SLOTS () { return slots() }, get NO_GROUP () { return color('--cat-0') }, color, seq, groupColors, groupColor, textOn, tint, Spark, card, cardHead, Info, emptyText, cardState, cardFoot, Stat, TopBar }
+  // Groups to outlets: a Sankey with two columns (Μέσα › Επισκόπηση and Ιδιοκτησία). groups: [{ name (null: no group), outlets: [{ name, n }] }]. The group is on the left, the outlets of the group are on the right, and the width of a band is the articles of the outlet.
+  // An outlet is at least one row high so that its name can be read, and its band sits in the middle of the row. The node of a group is centered on its outlets.
+  function GroupFlow ({ groups: input, colorOf, groupLink, outletLink, noneLabel }) {
+    const groups = input.map((g) => ({ name: g.name, outlets: g.outlets.slice().sort((a, b) => b.n - a.n), n: g.outlets.reduce((s, o) => s + o.n, 0) })).sort((a, b) => b.n - a.n)
+    const total = groups.reduce((s, g) => s + g.n, 0)
+    return fit((holder, width) => {
+      const narrow = width < 520
+      const labelL = narrow ? 104 : 156
+      const labelR = narrow ? 134 : 176
+      const NODE = 8
+      const ROW = 20
+      const GAP = 2
+      const GROUP_GAP = 10
+      const k = 340 / (total || 1)
+      const xL = labelL + 6
+      const xR = width - labelR - 6 - NODE
+      let y = 0
+      const placed = groups.map((g) => {
+        const rows = g.outlets.map((o) => {
+          const rowH = Math.max(ROW, k * o.n)
+          const row = { o, top: y, h: rowH, band: Math.max(1, k * o.n) }
+          y += rowH + GAP
+          return row
+        })
+        const top = rows[0].top
+        const bottom = rows[rows.length - 1].top + rows[rows.length - 1].h
+        y += GROUP_GAP - GAP
+        const nodeH = Math.max(4, k * g.n)
+        return { g, rows, top, bottom, nodeH, nodeTop: (top + bottom) / 2 - nodeH / 2 }
+      })
+      const height = Math.ceil(y - GROUP_GAP)
+      holder.style.height = `${height}px`
+      const svg = h('svg', { class: 'chart flow', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
+      const labels = []
+      placed.forEach((p) => {
+        const color = p.g.name ? colorOf(p.g.name) : colorOf(null)
+        let cursor = p.nodeTop + (p.nodeH - p.rows.reduce((s, r) => s + r.band, 0)) / 2
+        svg.append(h('rect', { class: 'flow-node', x: xL - NODE, y: p.nodeTop, width: NODE, height: p.nodeH, fill: color }))
+        p.rows.forEach((r) => {
+          const yL0 = cursor
+          const yL1 = cursor + r.band
+          cursor = yL1
+          const yR0 = r.top + (r.h - r.band) / 2
+          const yR1 = yR0 + r.band
+          const mid = (xL + xR) / 2
+          const band = h('path', { class: 'flow-band', fill: color, d: `M${xL} ${yL0}C${mid} ${yL0} ${mid} ${yR0} ${xR} ${yR0}L${xR} ${yR1}C${mid} ${yR1} ${mid} ${yL1} ${xL} ${yL1}Z` })
+          const text = t('flow.band', { group: p.g.name || noneLabel, outlet: r.o.name, n: fmt.int(r.o.n), share: fmt.pct(r.o.n / p.g.n) })
+          const show = (e) => UI.showTooltip(text, e.clientX, e.clientY)
+          band.addEventListener('pointerenter', show)
+          band.addEventListener('pointermove', show)
+          band.addEventListener('pointerleave', () => UI.hideTooltip())
+          svg.append(band, h('rect', { class: 'flow-node', x: xR, y: r.top, width: NODE, height: r.h, fill: color }))
+          labels.push(h('p', { class: 'flow-label flow-outlet', style: { left: `${xR + NODE + 8}px`, top: `${r.top + r.h / 2}px`, width: `${labelR - NODE - 8}px` } },
+            h('span', { class: 'flow-name' }, outletLink(r.o)), h('span', { class: 'flow-n' }, fmt.int(r.o.n))))
+        })
+        const name = p.g.name ? groupLink(p.g.name) : h('span', {}, noneLabel)
+        const two = p.bottom - p.top >= 36
+        labels.push(h('p', { class: two ? 'flow-label flow-group is-two' : 'flow-label flow-group', style: { left: '0px', width: `${labelL - 4}px`, top: `${(p.top + p.bottom) / 2}px` } },
+          h('span', { class: 'flow-name' }, name), two && h('span', { class: 'flow-sub' }, fmt.int(p.g.n))))
+      })
+      holder.replaceChildren(svg, ...labels)
+    })
+  }
+
+  window.Dash = { GroupFlow, stateContent, select, fit, reset, niceStep, pct0, get SLOTS () { return slots() }, get NO_GROUP () { return color('--cat-0') }, color, seq, groupColors, groupColor, textOn, tint, Spark, card, cardHead, Info, emptyText, cardState, cardFoot, Stat, TopBar }
 })()
