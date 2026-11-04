@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="assets/tokens.css?v=15">
   <link rel="stylesheet" href="assets/app.css?v=45">
   <link rel="stylesheet" href="assets/dash.css?v=88">
-  <link rel="stylesheet" href="assets/mme.css?v=36">
+  <link rel="stylesheet" href="assets/mme.css?v=39">
   <link rel="stylesheet" href="assets/date-range.css?v=8">
   <script src="assets/page-move.js?v=1"></script>
 </head>
@@ -18,7 +18,7 @@
   <script src="assets/messages.js?v=38"></script>
   <script src="assets/messages-v2.js?v=47"></script>
   <script src="assets/messages-spread.js?v=16"></script>
-  <script src="assets/messages-mme.js?v=21"></script>
+  <script src="assets/messages-mme.js?v=22"></script>
   <script src="assets/components.js?v=15"></script>
   <script src="assets/motion.js?v=3"></script>
   <script src="assets/dash.js?v=21"></script>
@@ -150,6 +150,79 @@
       })
     }
 
+    // Groups to outlets: a Sankey with two columns. The group is on the left, the outlets of the group are on the right, and the width of a band is the articles of the outlet.
+    // An outlet is at least one row high so that its name can be read, and its band sits in the middle of the row. The node of a group is centered on its outlets.
+    function GroupFlow ({ outlets, colorOf, groupLink, outletLink }) {
+      const byGroup = new Map()
+      outlets.forEach((o) => {
+        const key = o.group || ''
+        if (!byGroup.has(key)) byGroup.set(key, { name: o.group, outlets: [], n: 0 })
+        const g = byGroup.get(key)
+        g.outlets.push(o)
+        g.n += o.n
+      })
+      const groups = [...byGroup.values()].sort((a, b) => b.n - a.n)
+      groups.forEach((g) => g.outlets.sort((a, b) => b.n - a.n))
+      const total = groups.reduce((s, g) => s + g.n, 0)
+      return fit((holder, width) => {
+        const narrow = width < 520
+        const labelL = narrow ? 104 : 156
+        const labelR = narrow ? 134 : 176
+        const NODE = 8
+        const ROW = 20
+        const GAP = 2
+        const GROUP_GAP = 10
+        const k = 340 / (total || 1)
+        const xL = labelL + 6
+        const xR = width - labelR - 6 - NODE
+        let y = 0
+        const placed = groups.map((g) => {
+          const rows = g.outlets.map((o) => {
+            const rowH = Math.max(ROW, k * o.n)
+            const row = { o, top: y, h: rowH, band: Math.max(1, k * o.n) }
+            y += rowH + GAP
+            return row
+          })
+          const top = rows[0].top
+          const bottom = rows[rows.length - 1].top + rows[rows.length - 1].h
+          y += GROUP_GAP - GAP
+          const nodeH = Math.max(4, k * g.n)
+          return { g, rows, top, bottom, nodeH, nodeTop: (top + bottom) / 2 - nodeH / 2 }
+        })
+        const height = Math.ceil(y - GROUP_GAP)
+        holder.style.height = `${height}px`
+        const svg = h('svg', { class: 'chart flow', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
+        const labels = []
+        placed.forEach((p) => {
+          const color = p.g.name ? colorOf(p.g.name) : colorOf(null)
+          let cursor = p.nodeTop + (p.nodeH - p.rows.reduce((s, r) => s + r.band, 0)) / 2
+          svg.append(h('rect', { class: 'flow-node', x: xL - NODE, y: p.nodeTop, width: NODE, height: p.nodeH, fill: color }))
+          p.rows.forEach((r) => {
+            const yL0 = cursor
+            const yL1 = cursor + r.band
+            cursor = yL1
+            const yR0 = r.top + (r.h - r.band) / 2
+            const yR1 = yR0 + r.band
+            const mid = (xL + xR) / 2
+            const band = h('path', { class: 'flow-band', fill: color, d: `M${xL} ${yL0}C${mid} ${yL0} ${mid} ${yR0} ${xR} ${yR0}L${xR} ${yR1}C${mid} ${yR1} ${mid} ${yL1} ${xL} ${yL1}Z` })
+            const text = t('mme.flow.band', { group: p.g.name || t('media.col.group.none'), outlet: r.o.name, n: fmt.int(r.o.n), share: fmt.pct(r.o.n / p.g.n) })
+            const show = (e) => UI.showTooltip(text, e.clientX, e.clientY)
+            band.addEventListener('pointerenter', show)
+            band.addEventListener('pointermove', show)
+            band.addEventListener('pointerleave', () => UI.hideTooltip())
+            svg.append(band, h('rect', { class: 'flow-node', x: xR, y: r.top, width: NODE, height: r.h, fill: color }))
+            labels.push(h('p', { class: 'flow-label flow-outlet', style: { left: `${xR + NODE + 8}px`, top: `${r.top + r.h / 2}px`, width: `${labelR - NODE - 8}px` } },
+              h('span', { class: 'flow-name' }, outletLink(r.o)), h('span', { class: 'flow-n' }, fmt.int(r.o.n))))
+          })
+          const name = p.g.name ? groupLink(p.g.name) : h('span', {}, t('media.col.group.none'))
+          const two = p.bottom - p.top >= 36
+          labels.push(h('p', { class: two ? 'flow-label flow-group is-two' : 'flow-label flow-group', style: { left: '0px', width: `${labelL - 4}px`, top: `${(p.top + p.bottom) / 2}px` } },
+            h('span', { class: 'flow-name' }, name), two && h('span', { class: 'flow-sub' }, fmt.int(p.g.n))))
+        })
+        holder.replaceChildren(svg, ...labels)
+      })
+    }
+
     Shell.start({
       id: 'media',
       route: tab === 'writing' ? '/media/writing' : '/media',
@@ -252,8 +325,15 @@
             greek && { label: t('media.col.group'), phone: false, render: groupCell },
             { label: t('mme.rank.sort.n'), num: true, sortable: true, sortKey: 'n', sortValue: (o) => o.n, render: (o) => fmt.int(o.n) }
           ].filter(Boolean)
-          const ranking = card('c-6 mme-rank', cardHead(t('mme.rank.all'), null, `${t('mme.rank.note')}`),
-            UI.DataTable({ columns, rows: S.active, rankColumn: true, pageSize: Infinity, sort: { key: 'n', dir: 'desc' }, emptyText: t('media.empty') }))
+          // The Greek set has the groups: the card is a Sankey from the group to its outlets. The Israeli set has none, so it keeps the table.
+          const groupLink = (name) => (slugOfGroup.has(name) ? h('a', { href: `group-v2.html?g=${slugOfGroup.get(name)}` }, name) : h('span', {}, name))
+          const ranking = greek
+            ? card('c-6 mme-flow', cardHead(t('mme.rank.all'), null, t('mme.flow.info')),
+              S.active.length
+                ? GroupFlow({ outlets: S.active, colorOf: (g) => (g ? colorOfGroup.get(g) || NO_GROUP : NO_GROUP), groupLink, outletLink: (o) => Mme.outletLink(S, o) })
+                : emptyText(t('media.empty')))
+            : card('c-6 mme-rank', cardHead(t('mme.rank.all'), null, `${t('mme.rank.note')}`),
+              UI.DataTable({ columns, rows: S.active, rankColumn: true, pageSize: Infinity, sort: { key: 'n', dir: 'desc' }, emptyText: t('media.empty') }))
           ranking.id = 'ranking'
           ranking.setAttribute('aria-live', 'polite')
 

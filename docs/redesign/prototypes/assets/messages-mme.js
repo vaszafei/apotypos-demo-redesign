@@ -30,6 +30,8 @@ Object.assign(window.MESSAGES.el, {
   'mme.rank.sort.n': 'Άρθρα',
   'mme.home.note': 'Από τα μέσα της Ελλάδας, για το διάστημα που διαλέξατε.',
   'mme.rank.note': 'Τα μέσα με τουλάχιστον 500 άρθρα στο διάστημα της ανάλυσης.',
+  'mme.flow.info': 'Τα άρθρα κάθε μέσου στο διάστημα, ανά όμιλο. Το πλάτος της ζώνης είναι ο αριθμός των άρθρων. Ένα μέσο που δεν έχει όμιλο ξεκινά από το «δεν έχει καταγραφεί».',
+  'mme.flow.band': '{group} → {outlet}: {n} άρθρα, {share} του ομίλου',
 
   'mme.stories.title': 'Ιστορίες ανά μέσο',
   'mme.stories.info': 'Οι μεγαλύτερες συγκεκριμένες ιστορίες και ποιο μέσο τις έτρεξε. Το μέγεθος της κουκκίδας είναι το μερίδιο της ιστορίας στα άρθρα του μέσου. Κενό: καμία δημοσίευση.',
@@ -181,6 +183,8 @@ Object.assign(window.MESSAGES.en, {
   'mme.rank.sort.n': 'Articles',
   'mme.home.note': 'From the Greek outlets, for the period you chose.',
   'mme.rank.note': 'The outlets with at least 500 articles in the window of the analysis.',
+  'mme.flow.info': 'The articles of each outlet in the period, by group. The width of a band is the number of articles. An outlet with no group starts from «not recorded».',
+  'mme.flow.band': '{group} → {outlet}: {n} articles, {share} of the group',
 
   'mme.stories.title': 'Stories by outlet',
   'mme.stories.info': 'The largest specific stories and which outlet ran them. The size of a dot is the share of the story in the articles of the outlet. Empty: nothing published.',
