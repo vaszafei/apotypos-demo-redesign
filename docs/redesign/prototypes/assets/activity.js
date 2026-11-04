@@ -37,11 +37,10 @@
       const pts = values.map((v, i) => `${(i / Math.max(values.length - 1, 1)) * W} ${H - 3 - ((v - low) / ((top - low) || 1)) * (H - 6)}`)
       return h('svg', { viewBox: `0 0 ${W} ${H}`, 'aria-hidden': 'true' }, h('path', { d: `M${pts.join('L')}`, fill: 'none', stroke: color, 'stroke-width': 1.5, 'vector-effect': 'non-scaling-stroke' }))
     }
-    function Kpi (label, value, spark, now, before, small) {
+    function Kpi (label, value, icon, tone, now, before, small) {
       const change = before ? (now - before) / before : 0
       const up = change >= 0
-      const color = up ? 'var(--act-up)' : 'var(--act-down)'
-      return h('div', { class: 'act-card act-kpi' }, h('div', {}, h('p', { class: 'act-kpi-label' }, label), h('p', { class: small ? 'act-kpi-value is-text' : 'act-kpi-value' }, value)), Spark(spark, color),
+      return h('div', { class: 'act-card act-kpi' }, h('div', {}, h('p', { class: 'act-kpi-label' }, label), h('p', { class: small ? 'act-kpi-value is-text' : 'act-kpi-value' }, value)), Dash.StatIcon(icon, tone),
         h('p', { class: 'act-kpi-foot' }, h('span', { class: `act-delta ${up ? 'up' : 'down'}` }, `${up ? '↑' : '↓'} ${fmt.dec(Math.abs(change) * 100)}%`), h('span', {}, t('act.vs'))))
     }
     function Head (title) {
@@ -139,12 +138,11 @@
     const keys = ranked.slice(0, 5).map((r) => r.k)
     const shareOf = (ks, a, b, all) => ks.reduce((s, k) => s + sum(home.issueDaily[k], a, b), 0) / (all || 1)
     const top = ranked[0]
-    const shareSpark = (ks) => newsDaily.slice(i0).map((v, j) => ks.reduce((a, k) => a + home.issueDaily[k][i0 + j], 0) / (v || 1))
     return h('div', { class: 'act-grid-4' },
-      Kpi(t('act.k.articles'), short(now), newsDaily.slice(i0), now, before),
-      Kpi(t('act.k.stories'), short(sum(storiesDaily, i0, i1)), storiesDaily.slice(i0), sum(storiesDaily, i0, i1), hasBefore ? sum(storiesDaily, p0, p1) : 0),
-      Kpi(t('act.k.top'), top.label, shareSpark([top.k]), top.n / (now || 1), hasBefore ? shareOf([top.k], p0, p1, before) : 0, true),
-      Kpi(t('act.k.top5'), fmt.pct(shareOf(keys, i0, i1, now)), shareSpark(keys), shareOf(keys, i0, i1, now), hasBefore ? shareOf(keys, p0, p1, before) : 0))
+      Kpi(t('act.k.articles'), short(now), 'document-text', 'var(--cat-1)', now, before),
+      Kpi(t('act.k.stories'), short(sum(storiesDaily, i0, i1)), 'newspaper', 'var(--cat-3)', sum(storiesDaily, i0, i1), hasBefore ? sum(storiesDaily, p0, p1) : 0),
+      Kpi(t('act.k.top'), top.label, 'tag', 'var(--cat-4)', top.n / (now || 1), hasBefore ? shareOf([top.k], p0, p1, before) : 0, true),
+      Kpi(t('act.k.top5'), fmt.pct(shareOf(keys, i0, i1, now)), 'chart-pie', 'var(--cat-5)', shareOf(keys, i0, i1, now), hasBefore ? shareOf(keys, p0, p1, before) : 0))
   }
 
   const chartCard = (cls, title, chart, series) => h('div', { class: `act-card ${cls}` }, Head(title), chart, Legend(series))
@@ -153,7 +151,7 @@
   function TopOutlets (cls) {
     const ranked = home.outlets.map((o) => ({ name: o.name, n: sum(o.daily, i0, i1) })).sort((a, b) => b.n - a.n)
     const all = ranked.reduce((a, o) => a + o.n, 0) || 1
-    return h('div', { class: `act-card ${cls}` }, Head(t('act.top.outlets')), h('ol', { class: 'act-top' }, ranked.slice(0, 5).map((o, j) => h('li', {}, h('span', { class: 'rank' }, fmt.int(j + 1)), h('span', { class: 'swatch', style: { background: COLORS[j] || OTHER } }),
+    return h('div', { class: `act-card ${cls}` }, Head(t('act.top.outlets')), h('ol', { class: 'act-top' }, ranked.slice(0, 10).map((o, j) => h('li', {}, h('span', { class: 'rank' }, fmt.int(j + 1)), h('span', { class: 'swatch', style: { background: COLORS[j] || OTHER } }),
       h('span', {}, o.name, h('small', {}, fmt.pct(o.n / all))), h('span', { class: 'num' }, short(o.n), h('span', {}, ` ${t('act.art')}`))))))
   }
   function OutletBars (cls) {

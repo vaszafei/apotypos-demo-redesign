@@ -1,0 +1,27 @@
+/* A standalone report in the theme of the site (report-theme.js). The reports draw all their colors from these names, so the charts follow too. */
+:root:root:root {
+  zoom: 1;
+  --bg: var(--surface-page); --surface: var(--surface-page); --panel: var(--surface-page); --surface-2: var(--surface-card);
+  --line: var(--border); --line-strong: var(--rule);
+  --ink-soft: var(--text-primary); --ink-2: var(--text-primary); --muted: var(--text-secondary); --ink-3: var(--text-secondary); --subtle: var(--text-secondary);
+  --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
+  --f-report: var(--stance-neutral); --f-blame: var(--cat-2); --f-explain: var(--cat-3); --f-react: var(--cat-4); --f-greek: var(--cat-1); --f-politics: var(--cat-7);
+  --f-report-soft: color-mix(in srgb, var(--stance-neutral) 18%, transparent); --f-blame-soft: color-mix(in srgb, var(--cat-2) 18%, transparent); --f-explain-soft: color-mix(in srgb, var(--cat-3) 18%, transparent);
+  --f-react-soft: color-mix(in srgb, var(--cat-4) 18%, transparent); --f-greek-soft: color-mix(in srgb, var(--cat-1) 18%, transparent); --f-politics-soft: color-mix(in srgb, var(--cat-7) 18%, transparent);
+  --c-fb: var(--side-b); --c-press: var(--ink);
+  --civilisation: var(--cat-2); --contagion: var(--cat-7); --grievance: var(--cat-3); --order: var(--cat-1); --mark: var(--cat-4);
+  --sans: var(--font-text); --serif: var(--font-heading); --mono: var(--font-mono, ui-monospace, monospace);
+}
+:root:root:root h1 { font-size: 24px; line-height: 32px; font-weight: 700; letter-spacing: -0.6px; }
+:root:root:root h2 { font-size: 16px; line-height: 24px; font-weight: 600; letter-spacing: -0.4px; }
+:root:root:root :is(.panel, .kpis) { border-radius: 10px; }
+:root:root:root .kpi b { font-size: 24px; line-height: 32px; font-weight: 700; letter-spacing: -0.6px; }
+:root:root:root .eyebrow { letter-spacing: 1px; }
+:root:root:root .chip[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+
+/* Inside a frame of the site: the content of the card. */
+:root[data-report="embedded"]:root:root { background: transparent; }
+:root[data-report="embedded"] body { background: transparent; padding: 0; }
+:root[data-report="embedded"] :is(.wrap, main) { max-width: none; }
+/* Sizes in em, in the report of the seven stories: 12 px on screen under the zoom of the site (C13). */
+:root[data-report="embedded"] :is(.bar .v, .row .v, .l em, .r em) { font-size: 13.34px; }

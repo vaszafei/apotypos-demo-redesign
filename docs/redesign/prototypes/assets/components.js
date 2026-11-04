@@ -330,7 +330,8 @@
   // onSelect({ from, to }) (a drag over the days picks a period), minWidth (below 720 px the chart keeps this width and scrolls).
   // The highest column has its value above it (peak: false leaves it out, topLabels replace it). reference: { value, label }, a reference value
   // (an average, the previous period) as a dashed line across the columns, with its label on the right of the columns.
-  function BarChart ({ values, series, dates, labels, below, axisLabel, height = 220, label, tooltipOf, valueFormat = fmt.int, max, colorOf, topLabels, markers = {}, muted, flagged, picked = null, onPick, onSelect, minWidth, peak = true, reference }) {
+  // trend: one value or null for each column (a moving average), as a line over the columns.
+  function BarChart ({ trend, values, series, dates, labels, below, axisLabel, height = 220, label, tooltipOf, valueFormat = fmt.int, max, colorOf, topLabels, markers = {}, muted, flagged, picked = null, onPick, onSelect, minWidth, peak = true, reference }) {
     const n = (dates || labels).length
     const parts = series || [{ name: label, values }]
     const totals = Array.from({ length: n }, (_, i) => parts.reduce((a, s) => a + (s.values[i] || 0), 0))
@@ -407,6 +408,10 @@
         const ry = y(reference.value)
         svg.append(h('line', { class: 'bar-ref', x1: pad.left, x2: width - pad.right, y1: ry, y2: ry }),
           h('text', { class: 'bar-ref-text', x: width - pad.right + 6, y: ry + 4, 'text-anchor': 'start' }, reference.label))
+      }
+      if (trend) {
+        const pts = trend.map((v, i) => (v === null ? null : [pad.left + i * slot + slot / 2, y(v)])).filter(Boolean)
+        svg.append(h('path', { class: 'bar-trend', d: smoothPath(pts, new Set()) }))
       }
       if (axisLabel) svg.append(h('text', { class: 'axis-title', x: pad.left + plotW / 2, y: height - 4, 'text-anchor': 'middle' }, axisLabel))
       const indexAt = (e) => Math.min(n - 1, Math.max(0, Math.floor((e.clientX - svg.getBoundingClientRect().left - pad.left) / slot)))

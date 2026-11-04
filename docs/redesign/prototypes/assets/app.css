@@ -851,34 +851,20 @@ details[open] > :not(summary) { animation: m-rise var(--motion-base) var(--ease-
 .tab-glide { position: absolute; pointer-events: none; white-space: pre; }
 .section-tabs a.is-landing::before, .section-nav a.is-landing::before { opacity: 0; }
 
-/* A move to another page (shell.js sets data-vt): the navbar stays, the page slides in from the side of the link that was clicked.
-   A section move slides the sidebar with the page. A sub-tab move slides only the content, and the "/" of the sidebar glides to the new tab.
-   With reduced motion the distance is 0, so the move is a fade. A browser without these transitions changes the page at once. */
+/* A move to another page (shell.js sets data-vt): the rail and the top bar stay still, and the new page fades in over the old one.
+   The old page stays opaque under it, so the dark page never shows through between the two (a flash). A browser without these transitions changes the page at once. */
 @view-transition { navigation: auto; }
 .header-bar { view-transition-name: navbar; }
-.section-nav { view-transition-name: subnav; }
-.page-main { view-transition-name: page; }
-:root[data-vt="right"] { --vt-x: 1; }
-:root[data-vt="left"] { --vt-x: -1; }
-:root[data-vt="down"] { --vt-y: 1; }
-:root[data-vt="up"] { --vt-y: -1; }
-@keyframes vt-leave { to { opacity: 0; transform: translate(calc(var(--vt-x, 0) * -1 * var(--motion-page-distance)), calc(var(--vt-y, 0) * -1 * var(--motion-page-distance))); } }
-@keyframes vt-enter { from { opacity: 0; transform: translate(calc(var(--vt-x, 0) * var(--motion-page-distance)), calc(var(--vt-y, 0) * var(--motion-page-distance))); } }
-::view-transition-group(navbar) { z-index: 1; }
-/* The page and the sidebar do not glide between their old and new boxes (Αρχική has no sidebar), and their pictures keep their own size. */
-:root[data-vt]::view-transition-group(page), :root[data-vt]::view-transition-group(subnav) { animation: none; }
-:root[data-vt]::view-transition-old(page), :root[data-vt]::view-transition-new(page),
-:root[data-vt]::view-transition-old(subnav), :root[data-vt]::view-transition-new(subnav) { inline-size: auto; block-size: auto; }
-/* The old picture starts where the visitor saw it, also when the old page was scrolled (shell.js sets --vt-old-y). */
-:root[data-vt]::view-transition-old(page), :root[data-vt]::view-transition-old(subnav) { translate: 0 var(--vt-old-y, 0px); }
-:root[data-vt]::view-transition-old(page), :root[data-vt="left"]::view-transition-old(subnav), :root[data-vt="right"]::view-transition-old(subnav) {
-  animation: vt-leave var(--motion-page) var(--ease-out) both;
-}
-:root[data-vt]::view-transition-new(page), :root[data-vt="left"]::view-transition-new(subnav), :root[data-vt="right"]::view-transition-new(subnav) {
-  animation: vt-enter var(--motion-page) var(--ease-out) both;
-}
-:root[data-vt="up"]::view-transition-old(subnav), :root[data-vt="down"]::view-transition-old(subnav) { animation: none; opacity: 0; }
-:root[data-vt="up"]::view-transition-new(subnav), :root[data-vt="down"]::view-transition-new(subnav) { animation: none; }
+.rail { view-transition-name: rail; }
+.page-main { view-transition-name: page; background: var(--surface-page); }
+::view-transition-group(navbar), ::view-transition-group(rail) { z-index: 1; animation: none; }
+::view-transition-old(navbar), ::view-transition-old(rail) { display: none; }
+::view-transition-new(navbar), ::view-transition-new(rail) { animation: none; opacity: 1; }
+::view-transition-group(page) { animation: none; }
+::view-transition-old(page), ::view-transition-new(page) { inline-size: auto; block-size: auto; }
+::view-transition-old(page) { animation: none; opacity: 1; translate: 0 var(--vt-old-y, 0px); }
+::view-transition-new(page) { animation: vt-enter var(--motion-fast) var(--ease-out) both; mix-blend-mode: normal; }
+@keyframes vt-enter { from { opacity: 0; } }
 
 /* The first view of a chart (motion.js): bars and lines grow, points pop, numbers count up.
    Before its view, a chart below the fold waits with its marks hidden. .m-intro covers the first frame, before motion.js sorts the cards. */
@@ -1035,3 +1021,64 @@ svg.chart .bar-col { transform-origin: 50% 100%; }
   :root:is([data-theme="carbon"], [data-theme="moss"]) .section-nav .section-nav-link[aria-current]:not(.is-parent) { background: var(--nav-pill); color: var(--nav-pill-text); }
   :root:is([data-theme="carbon"], [data-theme="moss"]) .section-nav .section-nav-link[aria-current]:not(.is-parent) .section-nav-icon { color: var(--nav-pill-text); }
 }
+
+/* The dashboard look: a rail with the logo and all the sections on the full height of the window, a slim top bar with the search on its left, and a row of figures over the charts. Colors stay those of the theme. */
+.rail { display: none; }
+@media (min-width: 1024px) {
+  :root { --rail-width: 260px; }
+  .rail { position: fixed; inset: 0 auto 0 0; z-index: 30; width: var(--rail-width); display: flex; flex-direction: column; height: calc(100vh / var(--page-zoom)); background: var(--surface-sidebar); border-right: 1px solid var(--border); }
+  .rail-logo { flex: none; display: flex; align-items: center; height: var(--navbar-height); padding: 0 var(--space-5); border-bottom: 1px solid var(--border); }
+  .rail-logo .logo-img { display: block; width: auto; height: 34px; filter: var(--logo-filter); }
+  .rail-groups { flex: 1; min-height: 0; overflow-y: auto; padding: var(--space-3) var(--space-3) var(--space-5); scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+  .rail-group + .rail-group { margin-top: var(--space-4); }
+  .rail-label { margin: 0 0 var(--space-1); padding: 0 var(--space-3); font-size: var(--text-caption); line-height: 18px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: var(--text-secondary); }
+  .rail-list, .rail-sub { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .rail-sub { margin: 2px 0 var(--space-1); padding-left: 38px; }
+  .rail-link { display: flex; align-items: center; gap: var(--space-3); min-height: 36px; padding: var(--space-2) var(--space-3); border-radius: 6px; font-size: 14px; line-height: 20px; font-weight: 500; color: var(--text-primary); text-decoration: none; transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out); }
+  .rail-link:hover { background: var(--sidebar-hover-bg); color: var(--ink); }
+  .rail-link .icon { flex: none; width: 18px; height: 18px; }
+  .rail-link[aria-current="page"] { background: color-mix(in srgb, var(--accent) 13%, transparent); color: var(--accent); }
+  .rail-link.is-parent { color: var(--ink); }
+  .rail-sub .rail-link { min-height: 32px; padding: 6px var(--space-3); }
+
+  :root:is([data-theme]) .main-column { margin-left: var(--rail-width); }
+  :root:is([data-theme]) .section-nav, :root:is([data-theme]) .header-bar .header-logo, :root:is([data-theme]) .header-nav { display: none; }
+  :root:is([data-theme]) .header-bar { position: sticky; top: 0; height: var(--navbar-height); min-height: var(--navbar-height); padding: 0 var(--space-5); background: color-mix(in srgb, var(--surface-page) 80%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+  :root:is([data-theme]) .global-search { order: 0; flex: 0 1 360px; margin-right: auto; }
+  :root:is([data-theme]) .global-search .search-button { width: 100%; }
+  :root:is([data-theme]) .header-actions { order: 1; margin-left: auto; }
+  :root:is([data-theme]) .content.dash:not(.is-home) { max-width: none; }
+  :root:is([data-theme]) .content.dash { padding: var(--space-5); }
+}
+:root { --navbar-height: 64px; }
+/* The cards. */
+:root:is([data-theme]) .dash-grid { gap: var(--space-5) var(--space-4); }
+:root:is([data-theme]) .dcard { --card-pad: 20px; --card-radius: 10px; }
+:root:is([data-theme]) .act-card { padding: 20px; }
+:root:is([data-theme]) .act-grid-4 { gap: var(--space-4); margin-bottom: var(--space-5); }
+:root:is([data-theme]) :is(.dcard-title, .act-card-head h2) { font-size: 16px; line-height: 24px; font-weight: 600; letter-spacing: -0.4px; }
+:root:is([data-theme]) .data-table th { background: none; font-size: var(--text-caption); font-weight: 500; color: var(--text-secondary); }
+:root:is([data-theme]) .data-table td { font-size: var(--text-small); }
+/* A figure: the label, the number and the change on the left, the icon on the right. */
+.stat-icon { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 10px; color: var(--tone); background: color-mix(in srgb, var(--tone) 12%, transparent); }
+.stat-icon .icon { width: 20px; height: 20px; }
+.dstat:has(> .stat-icon) { position: relative; padding-right: 72px; }
+.dstat > .stat-icon { position: absolute; top: 20px; right: 20px; }
+:root:is([data-theme]) .dstat:has(> .stat-icon) .dstat-label { font-size: var(--text-caption); font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--text-secondary); }
+:root:is([data-theme]) .dstat:has(> .stat-icon) .dstat-row { display: block; margin-top: var(--space-1); }
+:root:is([data-theme]) .dstat:has(> .stat-icon) .dstat-value { font-size: 24px; line-height: 32px; font-weight: 700; letter-spacing: -0.6px; }
+:root:is([data-theme]) .dstat:has(> .stat-icon) .dstat-sub { margin-top: var(--space-1); }
+.act-kpi > .stat-icon { grid-column: 2; grid-row: 1; }
+:root:is([data-theme]) .act-kpi-label { font-size: var(--text-caption); font-weight: 500; color: var(--text-secondary); }
+:root:is([data-theme]) .act-kpi-value { font-weight: 700; }
+/* The subjects beside the lead chart: a large donut with its list. On a narrower card the donut stands over the list. */
+.dcard.agenda-narrow .agenda-wrap { flex: 1; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--space-5); }
+.dcard.agenda-narrow .agenda-donut { width: 260px; height: 260px; }
+.dcard.agenda-narrow .agenda-legend { width: 100%; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
+@media (max-width: 1279px) {
+  .dcard.agenda-narrow .agenda-wrap { grid-template-columns: minmax(0, 1fr); justify-items: center; }
+}
+.mme-side.c-6 { align-self: stretch; }
+
+/* A moving average over the columns. It takes no clicks, so the columns under it can be picked. */
+.bar-chart .bar-trend { fill: none; stroke: var(--side-b); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }

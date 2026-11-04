@@ -166,8 +166,8 @@
   /* Text on a computed fill. The same in every theme, because the fill decides, not the theme. */
   --text-on-light: #1f1f1f;
   --text-on-dark: #ffffff;
-  /* The page inside a report frame is a white document in every theme. */
-  --report-bg: #ffffff;
+  /* A report in a frame takes the theme of the site (report-theme.css), and the card shows through it. */
+  --report-bg: transparent;
 
   /* Categorical: one slot for each ownership group. dash.js maps a group to a slot number, so a group has one color on every page.
      Slot 0 is "no known group". Slots 1 to 8 follow the order of the groups file; slot 9 is Antenna Group (live data only). */
@@ -356,7 +356,7 @@
   --seq-1: #b4bdb5; --seq-2: #9aa59c; --seq-3: #818d84; --seq-4: #5f6861; --seq-text-4: #ffffff; --seq-5: #454c47; --seq-text-5: #ffffff; --seq-6: #2c312d; --seq-text-6: #ffffff; --seq-7: #151615; --seq-text-7: #ffffff;
   --act-grid: #8f9991; --act-1: #151615; --act-2: #8f3f1a; --act-3: #14614a; --act-4: #7a5a0c; --act-5: #7f8a81; --act-6: #4a3a9a; --act-up: #0f4a2d; --act-down: #7f1d1d;
 }
-:root[data-theme="moss"] :is(.header-bar, .section-nav, .sidebar) {
+:root[data-theme="moss"] :is(.header-bar, .rail, .section-nav, .sidebar) {
   color-scheme: dark;
   --surface-page: #141414; --surface-card: #272927; --surface-raised: #1c1d1c; --surface-sidebar: #141414;
   --ink: #c9d1ca; --strong: #dfe5e0; --on-ink: #141414; --text-primary: #98a498; --text-secondary: #8f9b8f;
@@ -394,7 +394,7 @@
   --border: #3d3a42; --card-edge: #3d3a42; --sidebar-hover-bg: #35333a; --bar-track: #35333a; --rule: #55535a; --bar-muted: #48464d;
   --div-mid: #35333a; --skeleton: #35333a; --skeleton-2: #2f2d33; --skeleton-3: #2a282e;
 }
-:root[data-theme="graphite"] :is(.header-bar, .section-nav, .sidebar) {
+:root[data-theme="graphite"] :is(.header-bar, .rail, .section-nav, .sidebar) {
   --surface-page: #121014; --surface-card: #232127; --surface-raised: #1a181d;
   --border: #322f37; --card-edge: #322f37; --sidebar-hover-bg: #232127;
 }
@@ -410,8 +410,6 @@
   --div-mid: #2e2822; --skeleton: #2e2822; --skeleton-2: #27211c; --skeleton-3: #211c18;
 }
 
-/* The font of the console themes, unless another candidate was picked in the font switch. */
-:root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"])[data-font="plex"] { --font-text: "Inter", system-ui, sans-serif; --font-heading: "Inter", system-ui, sans-serif; }
 /* Secondary lines of the console themes. System fonts with Greek, because the repo has no monospace font of its own. */
 :root:is([data-theme="carbon"], [data-theme="charcoal"], [data-theme="sage"], [data-theme="moss"], [data-theme="ember"], [data-theme="graphite"], [data-theme="dusk"]) { --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace; }
 
@@ -430,7 +428,7 @@
   --divider: 1px solid var(--border);
   --sidebar-text: var(--text-primary); --sidebar-label: var(--text-secondary); --sidebar-active-text: var(--ink);
 }
-:root[data-theme="carbon"] :is(.header-bar, .section-nav, .sidebar) {
+:root[data-theme="carbon"] :is(.header-bar, .rail, .section-nav, .sidebar) {
   color-scheme: dark;
   --surface-page: #121014; --surface-card: #232127; --surface-raised: #1a181d; --surface-sidebar: #121014;
   --ink: #efedf0; --strong: #efedf0; --on-ink: #121014; --text-primary: #b5b2b9; --text-secondary: #8a898f;

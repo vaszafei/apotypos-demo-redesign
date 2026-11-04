@@ -7,23 +7,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/tokens.css?v=35">
-  <link rel="stylesheet" href="assets/app.css?v=65">
+  <link rel="stylesheet" href="assets/tokens.css?v=37">
+  <link rel="stylesheet" href="assets/app.css?v=69">
   <link rel="stylesheet" href="assets/dash.css?v=94">
-  <link rel="stylesheet" href="assets/home.css?v=47">
+  <link rel="stylesheet" href="assets/home.css?v=55">
   <script src="assets/page-move.js?v=4"></script>
 </head>
 <body>
   <div id="app"></div>
-  <script src="assets/icons.js?v=10"></script>
+  <script src="assets/icons.js?v=11"></script>
   <script src="assets/messages.js?v=42"></script>
   <script src="assets/messages-v2.js?v=50"></script>
-  <script src="assets/messages-home.js?v=22"></script>
-  <script src="assets/components.js?v=17"></script>
-  <script src="assets/motion.js?v=3"></script>
-  <script src="assets/dash.js?v=23"></script>
-  <script src="assets/home.js?v=33"></script>
-  <script src="assets/shell.js?v=67"></script>
+  <script src="assets/messages-home.js?v=24"></script>
+  <script src="assets/components.js?v=18"></script>
+  <script src="assets/motion.js?v=5"></script>
+  <script src="assets/dash.js?v=24"></script>
+  <script src="assets/hero-field.js?v=1"></script>
+  <script src="assets/home.js?v=40"></script>
+  <script src="assets/shell.js?v=70"></script>
   <script src="data/home.js?v=30"></script>
   <script src="data/stories.js?v=30"></script>
   <script src="data/storyDetail.js?v=30"></script>
@@ -91,15 +92,19 @@
 
           const days = dates.slice(i0, i1 + 1)
           const daily = totals.slice(i0, i1 + 1)
-          const avg = collected / len
+          // The average of each day and the 6 days before it. The first 6 days of the data have no full week.
+          const trend = daily.map((_, j) => (i0 + j >= 6 ? sumRange(totals, i0 + j - 6, i0 + j) / 7 : null))
+          const isWeekend = (iso) => [0, 6].includes(new Date(`${iso}T00:00:00Z`).getUTCDay())
+          const WEEKDAY = 'color-mix(in srgb, var(--series-1) 55%, var(--surface-raised))'
           const chart = () => UI.BarChart({
-            dates: days, values: daily, label: t('home.daily.title'), height: 263, picked: selected - i0, onPick: (j) => pick(i0 + j, 'chart'),
-            reference: { value: avg, label: t('home.daily.avg', { n: fmt.int(Math.round(avg)) }) },
-            tooltipOf: (i) => `${fmt.date(days[i])}: ${fmt.int(daily[i])}`
+            dates: days, values: daily, trend, label: t('home.daily.title'), height: 300, picked: selected - i0, onPick: (j) => pick(i0 + j, 'chart'),
+            colorOf: (j) => (isWeekend(days[j]) ? 'var(--rule)' : WEEKDAY),
+            tooltipOf: (j) => `${fmt.date(days[j])}: ${fmt.int(daily[j])}${trend[j] === null ? '' : ` · ${t('home.daily.trend')}: ${fmt.int(Math.round(trend[j]))}`}`
           })
           const chartEl = chart()
           const chartBody = h('div', {}, chartEl)
-          const dailyCard = card('c-7', cardHead(t('home.daily.title'), null, t('home.daily.info')), chartBody)
+          const dailyKey = UI.Legend([{ label: t('home.daily.weekday'), color: WEEKDAY }, { label: t('home.daily.weekend'), color: 'var(--rule)' }, { label: t('home.daily.trend'), color: 'var(--side-b)' }])
+          const dailyCard = card('c-7 home-daily', cardHead(t('home.daily.title'), dailyKey, t('home.daily.info')), chartBody)
 
           const topicsCard = () => Home.TopicsCard({ home: data, day: selected })
           let topics = topicsCard()

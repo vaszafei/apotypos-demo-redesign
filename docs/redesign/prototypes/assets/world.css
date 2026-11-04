@@ -154,7 +154,7 @@
 .report-tabs button[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
 .report-tabs .tab-n { font-size: max(12px, var(--text-min)); opacity: 0.8; }
 .report-note { margin: 0; padding: 6px 10px; border-radius: 8px; background: var(--card-tint); font-size: var(--text-caption); color: var(--text-secondary); }
-.report-frame { display: block; width: 100%; height: 1600px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--report-bg); }
+.report-frame { display: block; width: 100%; height: 1600px; border: 0; background: var(--report-bg); }
 @media (max-width: 1023px) {
   .glance { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .glance li:nth-child(3n) { border-right: 0; }
