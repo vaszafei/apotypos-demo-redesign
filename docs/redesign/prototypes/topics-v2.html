@@ -9,29 +9,29 @@
   <link rel="stylesheet" href="assets/app.css?v=50">
   <link rel="stylesheet" href="assets/dash.css?v=95">
   <link rel="stylesheet" href="assets/mme.css?v=51">
+  <link rel="stylesheet" href="assets/date-range.css?v=9">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
   <script src="assets/messages.js?v=39"></script>
-  <script src="assets/messages-v2.js?v=53"></script>
+  <script src="assets/messages-v2.js?v=54"></script>
   <script src="assets/messages-mme.js?v=21"></script>
   <script src="assets/components.js?v=20"></script>
   <script src="assets/motion.js?v=3"></script>
   <script src="assets/dash.js?v=21"></script>
+  <script src="assets/date-range.js?v=2"></script>
   <script src="assets/mme.js?v=23"></script>
   <script src="assets/shell.js?v=60"></script>
   <script src="data/home.js?v=4"></script>
-  <script src="data/stories.js?v=2"></script>
   <script src="data/mme.js?v=20"></script>
   <script>
     // Topics, Επισκόπηση: the first dashboard of Θέματα. It reads the topics file (36 topics, 61 days). The stories are in the tab Ιστορίες.
-    // The page has no buttons in the top bar. Each card holds one measure and one picture of it, and no measure shows twice (APO-168).
+    // The date picker of the top bar sets the period of the lines and of the donut. Each card holds one measure and one picture of it, and no measure shows twice (APO-168).
     const { t, fmt, h, load, params } = App
-    const { fit, reset, niceStep, SLOTS, Spark, card, cardHead, emptyText, TopBar } = Dash
+    const { fit, reset, SLOTS, card, cardHead, emptyText, TopBar } = Dash
     const topics = load('home', ['dates', 'issues', 'issueDaily'], (b) => b.dates)
-    const stories = load('stories', ['stories'], (b) => b.stories)
     // The topic chips and «Ένα θέμα, όλα τα μέσα» of the live page ΜΜΕ & πρόσωπα (data/mme.js), over its whole window.
     const mme = load('mme', ['sets'], (b) => Object.keys(b.sets))
     let mmeTopic = params.has('topic') ? Number(params.get('topic')) : null
@@ -40,65 +40,101 @@
     const TABS = { overview: '/trends', topic: '/trends/topic', agenda: '/trends/agenda' }
     const tab = TABS[params.get('tab')] ? params.get('tab') : params.has('topic') ? 'topic' : 'overview'
 
+    // The chosen period of the overview. lastValid keeps the last complete period while the picker holds a half-chosen one.
+    const view = { from: null, to: null }
+    let lastValid = null
+
     const sumRange = (arr, i0, i1) => { let s = 0; for (let i = i0; i <= i1; i++) s += arr[i]; return s }
     const ROLL = 7
 
-    // Lines: the average of the last 7 days of each topic that is on. The value axis fits the lines that are on.
-    // The lines are monotone cubic curves (Fritsch–Carlson), so a curve never goes below 0 or above its neighbouring days.
-    // series: [{ name, color, values }] of the lines that are on. A hover shows the values of all of them at that day, under a vertical guide.
-    // getSeries() gives the lines that are on. holder.redraw() draws the chart again after a toggle.
-    function LinesChart ({ dates, getSeries, caption }) {
-      const paint = (holder, width) => {
-        const series = getSeries()
-        const height = width < 520 ? 190 : 270
-        // The end of a line is labelled with its name where there is room (a plot 300 px wide or more).
-        const labelled = width >= 520
-        const pad = { top: UI.CHART_FRAME.top, right: labelled ? 118 : 20, bottom: UI.CHART_FRAME.bottom, left: UI.CHART_FRAME.left }
-        const first = ROLL - 1
-        const n = dates.length - first
-        const max = Math.max(...series.flatMap((s) => s.values.slice(first)), 1)
-        const step = niceStep(max / 4)
-        const top = Math.ceil(max / step) * step
+    // Lines: the average of the last 7 days of each of the 8 largest topics of the period, one color each. The vertical axis is a square-root scale, so the topics with fewer
+    // articles can be read beside the largest. The lines are monotone cubic curves (Fritsch–Carlson), so a curve never goes below 0 or above its neighbouring days.
+    // series: [{ name, color, values }], the values of the days of dates. A hover shows the values of all of them at that day, under a vertical guide, in the white tooltip.
+    function LinesChart ({ dates, series, caption }) {
+      return fit((holder, width) => {
+        const height = width < 520 ? 190 : 230
+        const pad = { top: 10, right: 12, bottom: 24, left: 44 }
+        const n = dates.length
         const plotW = width - pad.left - pad.right
         const plotH = height - pad.top - pad.bottom
-        const x = (i) => pad.left + ((i - first) / Math.max(n - 1, 1)) * plotW
-        const y = (v) => pad.top + plotH - (v / top) * plotH
-        const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
-        for (let v = 0; v <= top; v += step) svg.append(h('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: y(v), y2: y(v) }), h('text', { x: pad.left - 6, y: y(v) + 4, 'text-anchor': 'end' }, fmt.int(v)))
-        const every = Math.max(7, Math.ceil(UI.CHART_FRAME.labelEvery / (plotW / n)))
-        for (let i = first; i < dates.length; i += every) svg.append(h('text', { x: x(i), y: pad.top + plotH + UI.CHART_FRAME.labelGap, 'text-anchor': 'middle' }, fmt.date(dates[i], { day: 'numeric', month: 'short' })))
-        series.forEach((s) => svg.append(h('path', { class: 'line-series', stroke: s.color, d: UI.smoothPath(s.values.slice(first).map((v, k) => [x(first + k), y(v)]), new Set()) })))
-        if (labelled) {
-          // Names at the line ends, from the top down. A name that would touch the one above is left out, so no names overlap.
-          let bottom = -Infinity
-          series.map((s) => ({ s, y: y(s.values[dates.length - 1]) })).sort((a, b) => a.y - b.y).forEach(({ s, y: ly }) => {
-            if (ly - bottom < 13) return
-            bottom = ly
-            const text = s.name.length > 17 ? `${s.name.slice(0, 16)}…` : s.name
-            svg.append(h('text', { class: 'line-end', x: width - pad.right + 8, y: ly + 4, fill: s.color }, text))
-          })
-        }
-        const guide = h('line', { class: 'line-guide', y1: pad.top, y2: pad.top + plotH, style: 'display:none' })
-        const dots = series.map((s) => h('circle', { class: 'line-dot', r: 3.5, fill: s.color, style: 'display:none' }))
-        svg.append(guide, ...dots)
-        const overlay = h('rect', { class: 'overlay', x: pad.left, y: pad.top, width: plotW, height: plotH })
-        overlay.addEventListener('pointermove', (e) => {
+        const peak = Math.max(...series.flatMap((s) => s.values), 1)
+        const STEPS = [10, 25, 50, 100, 200, 300, 500, 750, 1000, 1500, 2000, 3000, 5000]
+        const yMax = STEPS.find((v) => v >= peak) || Math.ceil(peak / 1000) * 1000
+        const X = (i) => pad.left + (i / Math.max(n - 1, 1)) * plotW
+        const Y = (v) => pad.top + plotH - (Math.sqrt(v) / Math.sqrt(yMax)) * plotH
+        const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': caption })
+        // The ticks from the top down, each at least 20 px under the one before, and the zero.
+        const ticks = []
+        STEPS.filter((v) => v <= yMax).sort((a, b) => b - a).forEach((v) => { if (!ticks.length || Y(v) - Y(ticks[ticks.length - 1]) >= 20) ticks.push(v) })
+        ;[...ticks.filter((v) => Y(0) - Y(v) >= 20), 0].forEach((v) => svg.append(h('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: Y(v), y2: Y(v) }), h('text', { x: pad.left - 6, y: Y(v) + 4, 'text-anchor': 'end' }, fmt.int(v))))
+        const step = plotW / Math.max(n - 1, 1)
+        // A label about every 72 px: every day, or every 2 to 7 days in a short period, a whole number of weeks in a long one.
+        const fitDays = Math.max(1, Math.ceil(72 / step))
+        const every = fitDays > 7 ? Math.ceil(fitDays / 7) * 7 : fitDays
+        for (let i = 0; i < n; i += every) svg.append(h('text', { x: X(i), y: height - 6, 'text-anchor': 'middle' }, fmt.date(dates[i], { day: 'numeric', month: 'short' })))
+        series.slice().reverse().forEach((s) => svg.append(h('path', { d: UI.smoothPath(s.values.map((v, i) => [X(i), Y(v)]), new Set()), fill: 'none', stroke: s.color, 'stroke-width': 1.5, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' })))
+        const rule = h('line', { class: 'hover-rule', y1: pad.top, y2: pad.top + plotH, stroke: 'var(--rule)', 'stroke-width': 1, visibility: 'hidden' })
+        const dots = series.map((s) => h('circle', { r: 3.5, fill: s.color, stroke: 'var(--surface-page)', 'stroke-width': 1.5, visibility: 'hidden' }))
+        svg.append(rule, ...dots)
+        const over = h('rect', { x: pad.left, y: pad.top, width: plotW, height: plotH, fill: 'transparent' })
+        const read = (e) => {
           const box = svg.getBoundingClientRect()
-          const i = Math.min(dates.length - 1, Math.max(first, first + Math.round(((e.clientX - box.left - pad.left) / plotW) * (n - 1))))
-          guide.style.display = ''
-          guide.setAttribute('x1', x(i))
-          guide.setAttribute('x2', x(i))
-          series.forEach((s, k) => { dots[k].style.display = ''; dots[k].setAttribute('cx', x(i)); dots[k].setAttribute('cy', y(s.values[i])) })
-          const lines = series.map((s) => [s.name, Math.round(s.values[i])]).sort((a, b) => b[1] - a[1]).map(([name, v]) => t('topics2.tip', { name, n: fmt.int(v) }))
-          UI.showTooltip([fmt.date(dates[i]), ...lines].join('\n'), e.clientX, e.clientY)
-        })
-        overlay.addEventListener('pointerleave', () => { guide.style.display = 'none'; dots.forEach((d) => { d.style.display = 'none' }); UI.hideTooltip() })
-        svg.append(overlay)
+          const i = Math.max(0, Math.min(n - 1, Math.round(((e.clientX - box.left - pad.left) / plotW) * (n - 1))))
+          rule.setAttribute('x1', X(i)); rule.setAttribute('x2', X(i)); rule.setAttribute('visibility', 'visible')
+          dots.forEach((c, k) => { c.setAttribute('cx', X(i)); c.setAttribute('cy', Y(series[k].values[i])); c.setAttribute('visibility', 'visible') })
+          UI.showTooltip({
+            title: fmt.date(dates[i]),
+            rows: series.map((s) => ({ label: s.name, value: fmt.int(Math.round(s.values[i])), color: s.color })).sort((a, b) => Number(b.value.replace(/\D/g, '')) - Number(a.value.replace(/\D/g, '')))
+          }, e.clientX, e.clientY)
+        }
+        over.addEventListener('pointermove', read)
+        over.addEventListener('pointerenter', read)
+        over.addEventListener('pointerleave', () => { UI.hideTooltip(); rule.setAttribute('visibility', 'hidden'); dots.forEach((c) => c.setAttribute('visibility', 'hidden')) })
+        svg.append(over)
         const table = h('div', { class: 'visually-hidden' }, h('table', {}, h('caption', {}, caption),
-          h('tbody', {}, series.map((s) => h('tr', {}, h('th', { scope: 'row' }, s.name), h('td', {}, fmt.int(Math.round(s.values[s.values.length - 1]))))))))
+          h('tbody', {}, series.map((s) => h('tr', {}, h('th', { scope: 'row' }, s.name), h('td', {}, fmt.int(Math.round(s.values[n - 1]))))))))
         holder.replaceChildren(svg, table)
+      })
+    }
+
+    // Pointer handlers for a tooltip on a mark.
+    const tipOn = (el, text) => {
+      const show = (e) => UI.showTooltip(text, e.clientX, e.clientY)
+      el.addEventListener('pointerenter', show)
+      el.addEventListener('pointermove', show)
+      el.addEventListener('pointerleave', () => UI.hideTooltip())
+      return el
+    }
+
+    // Articles per topic of the chosen period: one ring, a slice for each topic, from the top, clockwise, the largest first. rows: [{ i, name, n, color }].
+    // The list on its left has every topic and scrolls.
+    function TopicDonut ({ rows, total }) {
+      const size = 176
+      const c = size / 2
+      const [r0, r1] = [57, 87]
+      const pad = 0.008
+      const arc = (a0, a1) => {
+        a0 += pad / 2
+        a1 = Math.max(a0 + 0.002, a1 - pad / 2)
+        const p = (a, r) => `${(c + r * Math.sin(a)).toFixed(2)} ${(c - r * Math.cos(a)).toFixed(2)}`
+        const large = a1 - a0 > Math.PI ? 1 : 0
+        return `M${p(a0, r1)}A${r1} ${r1} 0 ${large} 1 ${p(a1, r1)}L${p(a1, r0)}A${r0} ${r0} 0 ${large} 0 ${p(a0, r0)}Z`
       }
-      return fit((holder, width) => { holder.redraw = () => paint(holder, width); paint(holder, width) })
+      const tip = (r) => t('media2.topic.tip', { topic: r.name, n: fmt.int(r.n), share: fmt.pct(r.n / total) })
+      const svg = h('svg', { class: 'chart donut topic-donut', width: size, height: size, viewBox: `0 0 ${size} ${size}`, role: 'img', 'aria-label': t('topics2.all.title') })
+      let a = 0
+      rows.forEach((r) => {
+        const span = (r.n / total) * 2 * Math.PI
+        svg.append(tipOn(h('path', { class: r.ranked ? 'slice' : 'slice slice-rest', d: arc(a, a + span), fill: r.color }), tip(r)))
+        a += span
+      })
+      svg.append(h('text', { class: 'donut-num', x: c, y: c + 3, 'text-anchor': 'middle' }, fmt.int(total)),
+        h('text', { x: c, y: c + 19, 'text-anchor': 'middle' }, t('topics2.all.center')))
+      const list = h('ul', { class: 'rows rows-groups rows-owners mme-topic-list' }, rows.map((r) => h('li', { title: tip(r) },
+        h('span', { class: 'dot', style: `--dot:${r.color}`, 'aria-hidden': 'true' }),
+        h('span', { class: 'row-name' }, UI.EntityLink({ type: 'topic', key: String(r.i), label: r.name })),
+        h('span', { class: 'row-value' }, fmt.pct(r.n / total)))))
+      return h('div', { class: 'donut-wrap sun-wrap mme-topic-wrap' }, h('div', { class: 'mme-topic-box' }, list), svg)
     }
 
     Shell.start({
@@ -109,122 +145,98 @@
       breadcrumbs: () => [{ label: t('nav.media') }],
       render (content, { tabs }) {
         content.classList.add('dash', 'minimal')
-        reset()
+        if (tab === 'overview') content.classList.add('filters-right')
         const ok = topics.kind === 'data' || topics.kind === 'empty'
-        if (!ok) { content.replaceChildren(TopBar({ title: `${t('nav.media')} · ${t('tab.media.topics')}`, tabs, quiet: true }), UI.ErrorState({ onRetry: () => location.reload() }), protoNote()); return }
-        if (topics.kind === 'empty') { content.replaceChildren(TopBar({ title: `${t('nav.media')} · ${t('tab.media.topics')}`, tabs, quiet: true }), h('div', { class: 'dash-grid' }, card('c-12', UI.EmptyState({ text: t('topics2.empty') }))), protoNote()); return }
+        const draw = () => {
+          reset()
+          if (!ok) { content.replaceChildren(TopBar({ title: `${t('nav.media')} · ${t('tab.media.topics')}`, tabs, quiet: true }), UI.ErrorState({ onRetry: () => location.reload() }), protoNote()); return }
+          if (topics.kind === 'empty') { content.replaceChildren(TopBar({ title: `${t('nav.media')} · ${t('tab.media.topics')}`, tabs, quiet: true }), h('div', { class: 'dash-grid' }, card('c-12', UI.EmptyState({ text: t('topics2.empty') }))), protoNote()); return }
 
-        const d = topics.data
-        const name = (x) => x[App.locale] || x.el
-        // The topics have no count after the coded days (null), so the windows, lines and sparklines end on the last day that has one.
-        const last = d.issueDaily.reduce((m, row) => Math.max(m, row.findLastIndex((v) => v !== null)), 0)
-        const total = (k) => sumRange(d.issueDaily[k], 0, last)
-        const rows = d.issues.map((issue, k) => {
-          const daily = d.issueDaily[k].slice(0, last + 1)
-          const now = last >= 27 ? sumRange(daily, last - 13, last) : 0
-          const before = last >= 27 ? sumRange(daily, last - 27, last - 14) : 0
-          return { issue, daily, count: total(k), now, before, change: before >= 200 ? (now - before) / before : null }
-        }).filter((r) => r.count > 0).sort((a, b) => b.count - a.count)
-        const base = rows.reduce((s, r) => s + r.count, 0)
-        // The stories of a topic: a generic story is a catch-all, so it is not counted.
-        const storyCount = new Map()
-        if (stories.kind === 'data') stories.data.stories.filter((s) => !s.generic).forEach((s) => storyCount.set(s.issue, (storyCount.get(s.issue) || 0) + 1))
-        rows.forEach((r) => {
-          r.stories = storyCount.get(d.issues.indexOf(r.issue)) || 0
-        })
-        const movers = rows.filter((r) => r.change !== null)
+          const d = topics.data
+          const name = (x) => x[App.locale] || x.el
+          // The topics have no count after the coded days (null), so the period, lines and donut end on the last day that has one.
+          const last = d.issueDaily.reduce((m, row) => Math.max(m, row.findLastIndex((v) => v !== null)), 0)
+          const dates = d.dates.slice(0, last + 1)
+          if (!view.from || !dates.includes(view.from) || !dates.includes(view.to)) { view.from = dates[0]; view.to = dates[last] }
+          if (!lastValid || !dates.includes(lastValid.from) || !dates.includes(lastValid.to)) lastValid = { from: view.from, to: view.to }
+          const i0 = dates.indexOf(lastValid.from)
+          const i1 = dates.indexOf(lastValid.to)
+          const select = (r) => { Object.assign(view, r); if (r.from <= r.to) lastValid = { from: r.from, to: r.to }; draw() }
+          const picker = tab === 'overview' ? UI.DateRangePicker({ dates, from: view.from, to: view.to, presets: Mme.presets({ dates }), onChange: select }) : null
+          const bar = TopBar({ title: `${t('nav.media')} · ${t('tab.media.topics')}`, tabs, actions: picker ? [picker] : [], quiet: true })
 
-        const bar = TopBar({ title: `${t('nav.media')} · ${t('tab.media.topics')}`, tabs, quiet: true })
+          // The topics of the chosen period, the largest first. The movers compare the last 14 days of the data with the 14 before, whatever the period.
+          const rows = d.issues.map((issue, k) => {
+            const daily = d.issueDaily[k].slice(0, last + 1)
+            const now = last >= 27 ? sumRange(daily, last - 13, last) : 0
+            const before = last >= 27 ? sumRange(daily, last - 27, last - 14) : 0
+            return { issue, k, daily, count: sumRange(daily, i0, i1), change: before >= 200 ? (now - before) / before : null }
+          }).filter((r) => r.count > 0).sort((a, b) => b.count - a.count)
+          const base = rows.reduce((s, r) => s + r.count, 0)
+          const movers = rows.filter((r) => r.change !== null)
 
-        // Row 1: all the topics and the lines. Row 2: the topics that rise and fall (#68).
-        // The lines: the 8 largest topics (one color of Dash.SLOTS each), each with a toggle. The first topic is so much larger than the others
-        // that it flattens them, so it starts off, with the topics after the sixth. The last line that is on cannot be switched off.
-        const offered = rows.filter((r) => !r.issue.catchAll).slice(0, SLOTS.length)
-        const lines = offered.map((r, i) => ({ name: name(r.issue), color: SLOTS[i], on: i > 0 && i < 6, values: r.daily.map((_, j) => (j < ROLL - 1 ? 0 : sumRange(r.daily, j - ROLL + 1, j) / ROLL)) }))
-        const chart = LinesChart({ dates: d.dates.slice(0, last + 1), getSeries: () => lines.filter((l) => l.on), caption: t('topics2.time.title') })
-        const syncs = []
-        const toggles = h('ul', { class: 'legend-toggles' }, lines.map((l) => {
-          const button = h('button', { type: 'button', class: 'legend-toggle', 'aria-pressed': String(l.on) }, h('span', { class: 'swatch', style: { background: l.color } }), l.name)
-          const sync = () => {
-            const only = l.on && lines.filter((x) => x.on).length === 1
-            button.setAttribute('aria-pressed', String(l.on))
-            button.setAttribute('aria-disabled', String(only))
-            button.title = only ? t('topics2.time.last') : ''
+          // The 8 largest topics of the period (not the catch-all) have a color of Dash.SLOTS, the same in the lines and in the donut. The others are neutral.
+          const offered = rows.filter((r) => !r.issue.catchAll).slice(0, SLOTS.length)
+          const colorOf = new Map(offered.map((r, i) => [r.k, SLOTS[i]]))
+          // Average of the last 7 days (fewer at the start of the data), taken before the period is cut, so the first day of a period has its own average.
+          const series = offered.map((r, i) => ({ name: name(r.issue), color: SLOTS[i], values: r.daily.map((_, j) => sumRange(r.daily, Math.max(0, j - ROLL + 1), j) / (j - Math.max(0, j - ROLL + 1) + 1)).slice(i0, i1 + 1) }))
+          const legend = UI.Legend(series.map((s) => ({ label: s.name, color: s.color })))
+          const timeCard = card('',
+            cardHead(t('topics2.time.title'), null, `${t('topics2.time.title')}. ${t('topics2.time.sub')}`),
+            series.length ? [legend, LinesChart({ dates: dates.slice(i0, i1 + 1), series, caption: t('topics2.time.title') })] : emptyText(t('media2.empty.list')))
+
+          // The donut: every topic of the period. The share of the 3 largest is one line under the title.
+          const top3 = rows.slice(0, 3).reduce((a, r) => a + r.count, 0)
+          const donutRows = rows.map((r) => ({ i: r.k, name: name(r.issue), n: r.count, ranked: colorOf.has(r.k), color: colorOf.get(r.k) || 'var(--bar-muted)' }))
+          const allCard = card('', cardHead(t('topics2.all.title'), null, `${t('topics2.all.title')}. ${t('topics2.all.sub')}`),
+            rows.length > 3 ? h('p', { class: 'dcard-sub' }, t('topics2.all.finding', { share: fmt.pct(top3 / (base || 1)) })) : null,
+            rows.length ? TopicDonut({ rows: donutRows, total: base }) : emptyText(t('topics2.empty')))
+          const sorted = movers.filter((r) => !r.issue.catchAll).sort((a, b) => b.change - a.change)
+          const list = [...sorted.filter((r) => r.change > 0).slice(0, 5), ...sorted.filter((r) => r.change < 0).slice(-5)]
+          const widest = Math.max(...list.map((r) => Math.abs(r.change)), 0)
+          // One column on one scale: the rising topics first, then the falling topics. The info names the largest change of each side.
+          const moverRow = (r) => {
+            const color = r.change > 0 ? 'var(--emph-more)' : 'var(--emph-less)'
+            return { label: UI.EntityLink({ type: 'topic', key: String(d.issues.indexOf(r.issue)), label: name(r.issue) }), value: Math.abs(r.change), color,
+              text: [h('span', { class: `tri ${r.change > 0 ? 'tri-up' : 'tri-down'}`, style: { color }, 'aria-hidden': 'true' }), ` ${fmt.signed(r.change * 100)}%`] }
           }
-          button.addEventListener('click', () => {
-            if (l.on && lines.filter((x) => x.on).length === 1) return
-            l.on = !l.on
-            syncs.forEach((f) => f())
-            chart.redraw && chart.redraw()
-          })
-          syncs.push(sync)
-          sync()
-          return h('li', {}, button)
-        }))
-        const timeCard = card('',
-          cardHead(t('topics2.time.title'), null, `${t('topics2.time.title')}. ${t('topics2.time.sub')}`),
-          lines.length ? [toggles, chart] : emptyText(t('media2.empty.list')))
+          const up = list.filter((r) => r.change > 0)
+          // In falling order: the largest fall is the last row.
+          const down = list.filter((r) => r.change < 0)
+          const moveFinding = up.length && down.length
+            ? t('topics2.move.finding', { up: name(up[0].issue), a: `${fmt.signed(up[0].change * 100)}%`, down: name(down[down.length - 1].issue), b: `${fmt.signed(down[down.length - 1].change * 100)}%` })
+            : null
+          const moversCard = card('',
+            cardHead(t('topics2.move.title'), null, `${moveFinding ? `${moveFinding}. ` : ''}${t('topics2.move.sub')}`),
+            list.length
+              ? UI.BarList(list.map(moverRow), { max: widest })
+              : emptyText(t('media2.empty.list')))
+          moversCard.dataset.card = 'movers'
 
-        // The first 12 topics show, a button shows all of them. The share of the 3 largest is one line under the title.
-        const top3 = rows.slice(0, 3).reduce((a, r) => a + r.count, 0)
-        const table = card('card-tight', cardHead(t('topics2.all.title'), null, `${t('topics2.all.title')}. ${t('topics2.all.sub')}`),
-          rows.length > 3 ? h('p', { class: 'dcard-sub' }, t('topics2.all.finding', { share: fmt.pct(top3 / (base || 1)) })) : null,
-          UI.DataTable({
-            rows, rankColumn: true, pageSize: 12, emptyText: t('media.empty'),
-            columns: [
-              { label: t('media.col.issue'), render: (r) => h('span', { class: 'nowrap' }, UI.EntityLink({ type: 'topic', key: String(d.issues.indexOf(r.issue)), label: name(r.issue) })) },
-              { label: t('media.col.articles'), num: true, render: (r) => fmt.int(r.count) },
-              { label: t('media.col.share'), num: true, render: (r) => fmt.pct(r.count / base) },
-              { label: t('topics2.col.change'), num: true, phone: false, render: (r) => (r.change === null || r.issue.catchAll ? h('span', { class: 'mini-empty' }, '–')
-                : h('span', { class: 'nowrap', style: `color:${r.change > 0 ? 'var(--emph-more)' : 'var(--emph-less)'}` }, h('span', { class: `tri ${r.change > 0 ? 'tri-up' : 'tri-down'}`, 'aria-hidden': 'true' }), ` ${fmt.signed(r.change * 100)}%`)) },
-              { label: t('topics2.col.stories'), num: true, phone: false, render: (r) => fmt.int(r.stories) },
-              { label: t('media2.col.trend'), phone: false, render: (r) => Spark(r.daily, 0, last, t('media2.spark.articles'), { w: 64, hgt: 16 }) }
-            ]
-          }))
-        const sorted = movers.filter((r) => !r.issue.catchAll).sort((a, b) => b.change - a.change)
-        const list = [...sorted.filter((r) => r.change > 0).slice(0, 5), ...sorted.filter((r) => r.change < 0).slice(-5)]
-        const widest = Math.max(...list.map((r) => Math.abs(r.change)), 0)
-        // One column on one scale: the rising topics first, then the falling topics. The info names the largest change of each side.
-        const moverRow = (r) => {
-          const color = r.change > 0 ? 'var(--emph-more)' : 'var(--emph-less)'
-          return { label: UI.EntityLink({ type: 'topic', key: String(d.issues.indexOf(r.issue)), label: name(r.issue) }), value: Math.abs(r.change), color,
-            text: [h('span', { class: `tri ${r.change > 0 ? 'tri-up' : 'tri-down'}`, style: { color }, 'aria-hidden': 'true' }), ` ${fmt.signed(r.change * 100)}%`] }
-        }
-        const up = list.filter((r) => r.change > 0)
-        // In falling order: the largest fall is the last row.
-        const down = list.filter((r) => r.change < 0)
-        const moveFinding = up.length && down.length
-          ? t('topics2.move.finding', { up: name(up[0].issue), a: `${fmt.signed(up[0].change * 100)}%`, down: name(down[down.length - 1].issue), b: `${fmt.signed(down[down.length - 1].change * 100)}%` })
-          : null
-        const moversCard = card('',
-          cardHead(t('topics2.move.title'), null, `${moveFinding ? `${moveFinding}. ` : ''}${t('topics2.move.sub')}`),
-          list.length
-            ? UI.BarList(list.map(moverRow), { max: widest })
-            : emptyText(t('media2.empty.list')))
-        moversCard.dataset.card = 'movers'
-
-        // The cards of ΜΜΕ & πρόσωπα: on Ένα θέμα a chip opens its topic in «Ένα θέμα, όλα τα μέσα» below. «Η ατζέντα κάθε μέσου» is Ατζέντα μέσων.
-        const mmeHolder = h('div', { class: 'c-12 card-col' })
-        if (mme.kind === 'data' && (tab === 'topic' || tab === 'agenda')) {
-          const mset = mme.data.sets.gr
-          const MS = Mme.summary(mset, 0, mset.dates.length - 1)
-          const period = () => h('p', { class: 'dcard-sub' }, t('mme.topics.window', { from: fmt.date(mset.dates[0]), to: fmt.date(mset.dates[mset.dates.length - 1]) }))
-          const paintMme = (scroll) => {
-            const chips = Mme.ChipsCard(MS, { picked: mmeTopic, onPick: (i) => { mmeTopic = i; paintMme(true) } })
-            chips.append(period())
-            const topic = Mme.TopicCard(MS, { topic: mmeTopic, onTopic: (i) => { mmeTopic = i; paintMme(false) } })
-            mmeHolder.replaceChildren(chips, topic)
-            if (scroll) topic.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          // The cards of ΜΜΕ & πρόσωπα: on Ένα θέμα a chip opens its topic in «Ένα θέμα, όλα τα μέσα» below. «Η ατζέντα κάθε μέσου» is Ατζέντα μέσων.
+          const mmeHolder = h('div', { class: 'c-12 card-col' })
+          if (mme.kind === 'data' && (tab === 'topic' || tab === 'agenda')) {
+            const mset = mme.data.sets.gr
+            const MS = Mme.summary(mset, 0, mset.dates.length - 1)
+            const period = () => h('p', { class: 'dcard-sub' }, t('mme.topics.window', { from: fmt.date(mset.dates[0]), to: fmt.date(mset.dates[mset.dates.length - 1]) }))
+            const paintMme = (scroll) => {
+              const chips = Mme.ChipsCard(MS, { picked: mmeTopic, onPick: (i) => { mmeTopic = i; paintMme(true) } })
+              chips.append(period())
+              const topic = Mme.TopicCard(MS, { topic: mmeTopic, onTopic: (i) => { mmeTopic = i; paintMme(false) } })
+              mmeHolder.replaceChildren(chips, topic)
+              if (scroll) topic.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }
+            if (tab === 'topic') paintMme(false)
+            else mmeHolder.replaceChildren(Mme.AgendaCard(MS))
           }
-          if (tab === 'topic') paintMme(false)
-          else mmeHolder.replaceChildren(Mme.AgendaCard(MS))
+          const cards = {
+            overview: [h('div', { class: 'card-col c-6' }, timeCard), h('div', { class: 'card-col c-6' }, allCard), h('div', { class: 'card-col c-6' }, moversCard)],
+            topic: [mmeHolder],
+            agenda: [mmeHolder]
+          }[tab]
+          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...cards), protoNote())
         }
-        const cards = {
-          overview: [h('div', { class: 'card-col c-6' }, table), h('div', { class: 'card-col c-6' }, timeCard), h('div', { class: 'card-col c-12' }, moversCard)],
-          topic: [mmeHolder],
-          agenda: [mmeHolder]
-        }[tab]
-        content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...cards), protoNote())
+        draw()
       }
     })
 
