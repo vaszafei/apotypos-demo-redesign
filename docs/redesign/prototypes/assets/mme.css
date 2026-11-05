@@ -171,3 +171,5 @@
 /* The name at the end of a line is a link: underlined on hover and focus. */
 .chart a.line-end-link { cursor: pointer; }
 .chart a.line-end-link:hover text, .chart a.line-end-link:focus-visible text { text-decoration: underline; }
+/* The list of Μετατοπίσεις (Θέματα) scrolls inside the card. */
+.shift-scroll { max-height: 330px; overflow-y: auto; padding-right: var(--space-2); }

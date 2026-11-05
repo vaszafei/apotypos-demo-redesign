@@ -8,39 +8,34 @@
   <link rel="stylesheet" href="assets/tokens.css?v=15">
   <link rel="stylesheet" href="assets/app.css?v=50">
   <link rel="stylesheet" href="assets/dash.css?v=95">
-  <link rel="stylesheet" href="assets/mme.css?v=52">
+  <link rel="stylesheet" href="assets/mme.css?v=53">
   <link rel="stylesheet" href="assets/date-range.css?v=9">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=39"></script>
-  <script src="assets/messages-v2.js?v=56"></script>
+  <script src="assets/messages.js?v=40"></script>
+  <script src="assets/messages-v2.js?v=57"></script>
   <script src="assets/messages-mme.js?v=21"></script>
   <script src="assets/components.js?v=20"></script>
   <script src="assets/motion.js?v=3"></script>
   <script src="assets/dash.js?v=21"></script>
   <script src="assets/date-range.js?v=2"></script>
   <script src="assets/mme.js?v=23"></script>
-  <script src="assets/shell.js?v=60"></script>
+  <script src="assets/shell.js?v=61"></script>
   <script src="data/home.js?v=4"></script>
-  <script src="data/mme.js?v=20"></script>
+  <script src="data/overton.js?v=1"></script>
   <script>
-    // Topics, Επισκόπηση: the first dashboard of Θέματα. It reads the topics file (36 topics, 61 days). The stories are in the tab Ιστορίες.
+    // Θέματα: one page, with no sub-tabs. It reads the topics file (36 topics, 61 days) and the shifts file (data/overton.js, 2025).
     // The date picker of the top bar sets the period of the lines and of the donut. Each card holds one measure and one picture of it, and no measure shows twice (APO-168).
-    const { t, fmt, h, load, params } = App
+    // The old sub-tabs Ένα θέμα, Ατζέντα μέσων and Μετατοπίσεις are gone: the page ignores ?tab= and ?topic=, and Μετατοπίσεις is a card.
+    const { t, fmt, h, load } = App
     const { fit, reset, niceStep, SLOTS, card, cardHead, emptyText, TopBar } = Dash
     const topics = load('home', ['dates', 'issues', 'issueDaily'], (b) => b.dates)
-    // The topic chips and «Ένα θέμα, όλα τα μέσα» of the live page ΜΜΕ & πρόσωπα (data/mme.js), over its whole window.
-    const mme = load('mme', ['sets'], (b) => Object.keys(b.sets))
-    let mmeTopic = params.has('topic') ? Number(params.get('topic')) : null
-    // The sub-tabs of Θέματα (#62): Επισκόπηση (/trends), Ένα θέμα (?tab=topic) and Ατζέντα μέσων (?tab=agenda).
-    // Στον χρόνο is part of Επισκόπηση (#68), so the old ?tab=time and /trends/time open Επισκόπηση. An old link with ?topic= opens Ένα θέμα, where the topic is now.
-    const TABS = { overview: '/trends', topic: '/trends/topic', agenda: '/trends/agenda' }
-    const tab = TABS[params.get('tab')] ? params.get('tab') : params.has('topic') ? 'topic' : 'overview'
+    const shifts = load('overton', ['topics', 'weeks'], (b) => b.topics)
 
-    // The chosen period of the overview. lastValid keeps the last complete period while the picker holds a half-chosen one.
+    // The chosen period.  lastValid keeps the last complete period while the picker holds a half-chosen one.
     const view = { from: null, to: null }
     let lastValid = null
 
@@ -162,13 +157,13 @@
 
     Shell.start({
       id: 'topics',
-      route: TABS[tab],
+      route: '/trends',
       dash: true,
       title: () => t('nav.topics'),
       breadcrumbs: () => [{ label: t('nav.media') }],
       render (content, { tabs }) {
         content.classList.add('dash', 'minimal')
-        if (tab === 'overview') content.classList.add('filters-right')
+        content.classList.add('filters-right')
         const ok = topics.kind === 'data' || topics.kind === 'empty'
         const draw = () => {
           reset()
@@ -185,8 +180,8 @@
           const i0 = dates.indexOf(lastValid.from)
           const i1 = dates.indexOf(lastValid.to)
           const select = (r) => { Object.assign(view, r); if (r.from <= r.to) lastValid = { from: r.from, to: r.to }; draw() }
-          const picker = tab === 'overview' ? UI.DateRangePicker({ dates, from: view.from, to: view.to, presets: Mme.presets({ dates }), onChange: select }) : null
-          const bar = TopBar({ title: `${t('nav.media')} · ${t('tab.media.topics')}`, tabs, actions: picker ? [picker] : [], quiet: true })
+          const picker = UI.DateRangePicker({ dates, from: view.from, to: view.to, presets: Mme.presets({ dates }), onChange: select })
+          const bar = TopBar({ title: `${t('nav.media')} · ${t('tab.media.topics')}`, tabs, actions: [picker], quiet: true })
 
           // The topics of the chosen period, the largest first. The movers compare the last 14 days of the data with the 14 before, whatever the period.
           const rows = d.issues.map((issue, k) => {
@@ -235,27 +230,29 @@
               : emptyText(t('media2.empty.list')))
           moversCard.dataset.card = 'movers'
 
-          // The cards of ΜΜΕ & πρόσωπα: on Ένα θέμα a chip opens its topic in «Ένα θέμα, όλα τα μέσα» below. «Η ατζέντα κάθε μέσου» is Ατζέντα μέσων.
-          const mmeHolder = h('div', { class: 'c-12 card-col' })
-          if (mme.kind === 'data' && (tab === 'topic' || tab === 'agenda')) {
-            const mset = mme.data.sets.gr
-            const MS = Mme.summary(mset, 0, mset.dates.length - 1)
-            const period = () => h('p', { class: 'dcard-sub' }, t('mme.topics.window', { from: fmt.date(mset.dates[0]), to: fmt.date(mset.dates[mset.dates.length - 1]) }))
-            const paintMme = (scroll) => {
-              const chips = Mme.ChipsCard(MS, { picked: mmeTopic, onPick: (i) => { mmeTopic = i; paintMme(true) } })
-              chips.append(period())
-              const topic = Mme.TopicCard(MS, { topic: mmeTopic, onTopic: (i) => { mmeTopic = i; paintMme(false) } })
-              mmeHolder.replaceChildren(chips, topic)
-              if (scroll) topic.scrollIntoView({ behavior: 'smooth', block: 'start' })
-            }
-            if (tab === 'topic') paintMme(false)
-            else mmeHolder.replaceChildren(Mme.AgendaCard(MS))
+          // Μετατοπίσεις: the topics whose coverage shifted most in 2025 (the file does not follow the picker). The rows are the topics above the limit, the strongest first,
+          // each with its week; the bar is the shift in times the noise of the topic. The list scrolls inside the card.
+          let shiftsCard
+          if (shifts.kind === 'data') {
+            const sd = shifts.data
+            const ranked = sd.topics.slice().sort((a, b) => b.ratio - a.ratio)
+            const moved = ranked.filter((r) => r.ratio >= sd.threshold)
+            const ratio = (v) => `${new Intl.NumberFormat('el-GR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(v)}×`
+            const finding = t('shifts.table.finding', { n: fmt.int(moved.length), total: fmt.int(ranked.length), topic: ranked[0].label, x: ratio(ranked[0].ratio) })
+            shiftsCard = card('',
+              cardHead(t('tab.media.shifts'), null, `${finding}. ${t('shifts.table.info')}`),
+              h('p', { class: 'dcard-sub' }, t('shifts.table.sub', { from: fmt.date(sd.window[0]), to: fmt.date(sd.window[1]) })),
+              moved.length
+                ? h('div', { class: 'shift-scroll' }, UI.BarList(moved.map((r) => ({ label: r.label, sub: fmt.date(r.week, { day: 'numeric', month: 'short' }), value: r.ratio, text: ratio(r.ratio), color: 'var(--accent)' })), { max: ranked[0].ratio }))
+                : emptyText(t('shifts.empty')))
+          } else {
+            shiftsCard = card('', cardHead(t('tab.media.shifts')), shifts.kind === 'empty' ? emptyText(t('shifts.empty')) : UI.ErrorState({ onRetry: () => location.reload() }))
           }
-          const cards = {
-            overview: [h('div', { class: 'card-col c-3' }, allCard), h('div', { class: 'card-col c-9' }, timeCard), h('div', { class: 'card-col c-6' }, moversCard)],
-            topic: [mmeHolder],
-            agenda: [mmeHolder]
-          }[tab]
+          shiftsCard.dataset.card = 'shifts'
+
+          // One row, two columns: the topics of the period on the left (a quarter), and on the right the lines, with Τάσεις and Μετατοπίσεις side by side under them.
+          const rightColumn = h('div', { class: 'card-col c-9' }, timeCard, h('div', { class: 'dash-grid' }, h('div', { class: 'card-col c-6' }, moversCard), h('div', { class: 'card-col c-6' }, shiftsCard)))
+          const cards = [h('div', { class: 'card-col c-3' }, allCard), rightColumn]
           content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...cards), protoNote())
         }
         draw()
