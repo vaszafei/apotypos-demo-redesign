@@ -487,8 +487,9 @@ button, input, select { font: inherit; color: inherit; }
 :root[data-header="v2"] .appbar-trail [aria-current] { color: var(--ink); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40ch; }
 :root[data-header="v2"] .global-search { justify-content: center; margin: 0; }
 
-:root[data-header="v2"] .content.dash { padding-top: 0; }
-:root[data-header="v2"] .page-head { display: flex; flex-direction: column; margin: var(--space-2) 0 var(--space-5); }
+:root[data-header="v2"] .content.dash { padding-top: var(--space-5); }
+@media (max-width: 1023px) { :root[data-header="v2"] .content.dash { padding-top: var(--space-4); } }
+:root[data-header="v2"] .page-head { display: flex; flex-direction: column; margin: 0 0 var(--space-5); }
 :root[data-header="v2"] .page-head-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3) var(--space-5); min-height: 40px; }
 :root[data-header="v2"] .page-head-titles { min-width: 0; }
 :root[data-header="v2"] .page-head-title { margin: 0; font: 600 26px/1.2 var(--font-heading); letter-spacing: -0.01em; color: var(--ink); }
