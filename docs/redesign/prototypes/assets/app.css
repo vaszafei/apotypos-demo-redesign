@@ -249,8 +249,16 @@ button, input, select { font: inherit; color: inherit; }
 
 .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
 
-/* A card has the page background. Its edge shows only under the mouse or with the keyboard focus inside. A card that holds cards leaves the edge to them. */
-:is(.kpi-tile, .dcard):is(:hover, :focus-within):not(:has(.kpi-tile, .dcard)) { border-color: var(--card-edge); }
+/* A card has the page background and a discreet edge. Under the mouse or with the keyboard focus inside, the edge gets bolder with a soft glow, drawn in the base motion time.
+   A card that holds cards leaves the edge to them. */
+:is(.kpi-tile, .dcard):not(:has(.kpi-tile, .dcard)) {
+  border-color: color-mix(in srgb, var(--border) 55%, transparent);
+  transition: border-color var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out);
+}
+:is(.kpi-tile, .dcard):is(:hover, :focus-within):not(:has(.kpi-tile, .dcard)) {
+  border-color: color-mix(in srgb, var(--rule) 80%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 8%, transparent), 0 6px 18px -8px color-mix(in srgb, var(--accent) 30%, transparent);
+}
 
 /* Charts */
 
