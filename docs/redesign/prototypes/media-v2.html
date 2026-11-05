@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="assets/tokens.css?v=15">
   <link rel="stylesheet" href="assets/app.css?v=48">
   <link rel="stylesheet" href="assets/dash.css?v=88">
-  <link rel="stylesheet" href="assets/mme.css?v=43">
+  <link rel="stylesheet" href="assets/mme.css?v=45">
   <link rel="stylesheet" href="assets/date-range.css?v=8">
   <script src="assets/page-move.js?v=1"></script>
 </head>
@@ -203,6 +203,9 @@
       const holder = fit((box, width) => {
         const H = 380
         const gap = 8
+        const page = Dash.color('--surface-page')
+        // A tile at rest is its color at 80% on the page, and it fills on hover.
+        const blend = (a, b, k) => `#${[1, 3, 5].map((i) => Math.round(parseInt(a.slice(i, i + 2), 16) * k + parseInt(b.slice(i, i + 2), 16) * (1 - k)).toString(16).padStart(2, '0')).join('')}`
         const floor = 104
         const usable = width - gap * (rows.length - 1)
         // Widths: the root of the articles, scaled to the width of the chart. A block under the floor gets the floor and the others share the rest.
@@ -226,12 +229,15 @@
           const nameText = r.name || t('media2.groups.none')
           const group = h('div', { class: 'gt-box', style: `width:${w[k]}px;height:${bh}px` })
           squarify(r.outlets.map((o) => ({ o, v: o.n })), 0, 0, w[k], bh).forEach(({ i: { o }, x, y, w: ow, h: oh }, m) => {
-            const bg = m % 2 ? Dash.tint(r.color, 0.35) : r.color
-            const showName = ow - 2 >= 52 && oh - 2 >= 18
-            const tile = UI.EntityLink({ type: 'outlet', key: o.slug, label: showName ? o.name : '' })
+            const full = m % 2 ? Dash.tint(r.color, 0.35) : r.color
+            const rest = blend(full, page, 0.8)
+            const tw = ow - 1
+            const th = oh - 1
+            const tile = UI.EntityLink({ type: 'outlet', key: o.slug, label: '' })
             tile.classList.add('gt-tile')
-            if (showName && ow - 2 >= 64 && oh - 2 >= 38) tile.append(h('span', { class: 'gt-n' }, fmt.int(o.n)))
-            tile.setAttribute('style', `left:${x}px;top:${y}px;width:${Math.max(0, ow - 2)}px;height:${Math.max(0, oh - 2)}px;background:${bg};--seg-ink:${Dash.textOn(bg)}`)
+            if (tw >= 30 && th >= 14) tile.append(h('span', { class: 'gt-name' }, o.name))
+            if (tw >= 58 && th >= 34) tile.append(h('span', { class: 'gt-n' }, fmt.int(o.n)))
+            tile.setAttribute('style', `left:${x}px;top:${y}px;width:${Math.max(0, tw)}px;height:${Math.max(0, th)}px;--tile-rest:${rest};--tile-full:${full};--ink-rest:${Dash.textOn(rest)};--ink-full:${Dash.textOn(full)}`)
             group.append(tipOn(tile, t('g2.tree.tip', { outlet: o.name, group: nameText, n: fmt.int(o.n), share: fmt.pct(o.n / S.total) })))
           })
           boxes.append(group)
