@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="assets/app.css?v=50">
   <link rel="stylesheet" href="assets/dash.css?v=95">
   <link rel="stylesheet" href="assets/mme.css?v=54">
-  <link rel="stylesheet" href="assets/home.css?v=47">
+  <link rel="stylesheet" href="assets/home.css?v=49">
   <link rel="stylesheet" href="assets/date-range.css?v=9">
   <script src="assets/page-move.js?v=1"></script>
 </head>
@@ -127,17 +127,17 @@
           const dateText = i0 === i1 ? day(dates[i0]) : `${day(dates[i0])} – ${day(dates[i1])}`
           const info = () => Home.rangeInfo(ix, i0, i1, rank)
           const shared = { dateText }
-          // Three cards of the story picked in the list: the story and its outlets (first row), the list and the story over time (second row).
-          const storyCard = (swap) => Home.DayCard(info(), { ...shared, part: 'story', span: 'c-6', swap, title: t('hero.kind.story'), hint: t('stories.story.info'), empty: t('stories.period.empty') })
-          const listCard = () => Home.DayCard(info(), { dateText: false, part: 'list', span: 'c-4 home-list', title: t('topics2.stories.title'), hint: t('stories.period.info'), empty: t('stories.period.empty'),
+          // One row of two columns: the story and under it the story over time (c-7), and the list of all the stories (c-5), which takes the height of the row.
+          const storyCard = (swap) => Home.DayCard(info(), { ...shared, part: 'story', span: '', swap, title: t('hero.kind.story'), hint: t('stories.story.info'), empty: t('stories.period.empty') })
+          const listCard = () => Home.DayCard(info(), { dateText: false, part: 'list', span: 'c-5 home-list', title: t('topics2.stories.title'), hint: t('stories.period.info'), empty: t('stories.period.empty'),
             onStory: (r) => { rank = r; paintStory() } })
           const timeCard = () => {
             const lead = info()
-            if (!lead) return card('c-6', cardHead(t('stories.time.title'), null, t('stories.time.info')), Dash.emptyText(t('stories.period.empty')))
+            if (!lead) return card('', cardHead(t('stories.time.title'), null, t('stories.time.info')), Dash.emptyText(t('stories.period.empty')))
             const days = dates.slice(i0, i1 + 1)
             const values = new Array(days.length).fill(0)
             for (let j = 0; j < lead.story.days.length; j += 2) { const k = lead.story.days[j] - i0; if (k >= 0 && k < days.length) values[k] = lead.story.days[j + 1] }
-            return card('c-6', cardHead(t('stories.time.title'), null, t('stories.time.info')), StoryLine({ dates: days, values, name: lead.story[App.locale] || lead.story.el }))
+            return card('', cardHead(t('stories.time.title'), null, t('stories.time.info')), StoryLine({ dates: days, values, name: lead.story[App.locale] || lead.story.el }))
           }
           let story = storyCard()
           let list = listCard()
@@ -148,7 +148,8 @@
             const nextList = listCard(); list.replaceWith(nextList); list = nextList
             const nextTime = timeCard(); time.replaceWith(nextTime); time = nextTime
           }
-          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, story, list, time), protoNote())
+          const left = h('div', { class: 'c-7 card-col' }, story, time)
+          content.replaceChildren(bar, h('div', { class: 'dash-grid story-split' }, left, list), protoNote())
         }
         draw()
       }

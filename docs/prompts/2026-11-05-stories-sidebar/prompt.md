@@ -20,3 +20,7 @@ The user's words: "so in stories overview, i want to add date picker like themat
 ## Round 3 (same branch, PR #115)
 
 The user's words (with a screenshot of the card): "now i want here to devide the card to 2 cards, to that and the list. now the first card has to be on the first row with 6 flex and the list in a second row with flex 4, in the other 6 of the 2nd row lets add a line chart for that story on time"
+
+## Round 4 (same branch, PR #115)
+
+The user's words (with a screenshot of the three cards): "i want modification. i want 1 row with 2 columns. 1 column 7 flex with 2 rows, first the story and under the linear chart. 2 column all the stories, use all the height available"

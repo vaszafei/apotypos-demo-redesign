@@ -73,3 +73,21 @@ Branch `claude/stories-into-media`.
 - The row 2 is 4 + 6 columns as written, so the 2 columns on the right of it are empty (and the right half of row 1).
 - Titles: «Ιστορία», «Όλες οι ιστορίες», «Ιστορία στον χρόνο». The period is at the top right of the story card; the list card has no date (the title wrapped to two lines with it).
 - The line shows the articles of the story on each day (no rolling average) over the picked period.
+
+## Round 4
+
+### What changed
+- Ιστορίες › Επισκόπηση is one row of two columns. Left `c-7` (`card-col`): the story card, and under it «Ιστορία στον χρόνο». Right `c-5`: «Όλες οι ιστορίες», which takes the height of the left column and scrolls inside (`.home-list .home-stories` has `flex: 1 1 0; height: 0` from 1280 px up, so the list does not set the height of the row).
+- Under 1280 px the list goes under the left column at full width with its old 330 px scroll box (`.story-split > .c-5` spans 12).
+- The three `.home-list` rules of round 3 (the second-row start) are replaced by these. `?v=`: `home.css` 49.
+
+### Measured
+- Playwright cards (x y width×height): at 1440 the story and the line are 649 wide, the list is 459 wide and 646 high, the same as the left column (646). At 1920: 707 / 501 / 646. At 1280: 564 / 398 / 646. At 1100 and 390 the list is under the others at full width.
+- 100 rows first, 200 after a scroll to the end; a pick of the 4th story changes the story and keeps the card height; «Τελευταία εβδομάδα» draws the new period (the left column grows to 701 because the title has three lines, and the list follows). No console errors.
+- `check.mjs` passes; `visual-check.mjs --only stor` and `--only index`: no findings.
+
+### Seen
+- Screenshot of `/stories` at 1440. 1920, 1280, 1100 and 390 only measured.
+
+### My calls
+- The right column is `c-5` (7 + 5); the user gave only the 7.
