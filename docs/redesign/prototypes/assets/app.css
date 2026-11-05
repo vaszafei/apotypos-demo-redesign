@@ -487,8 +487,9 @@ button, input, select { font: inherit; color: inherit; }
 :root[data-header="v2"] .appbar-trail [aria-current] { color: var(--ink); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40ch; }
 :root[data-header="v2"] .global-search { justify-content: center; margin: 0; }
 
-:root[data-header="v2"] .content.dash { padding-top: 0; }
-:root[data-header="v2"] .page-head { display: flex; flex-direction: column; margin: var(--space-2) 0 var(--space-5); }
+:root[data-header="v2"] .content.dash { padding-top: var(--space-5); }
+@media (max-width: 1023px) { :root[data-header="v2"] .content.dash { padding-top: var(--space-4); } }
+:root[data-header="v2"] .page-head { display: flex; flex-direction: column; margin: 0 0 var(--space-5); }
 :root[data-header="v2"] .page-head-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3) var(--space-5); min-height: 40px; }
 :root[data-header="v2"] .page-head-titles { min-width: 0; }
 :root[data-header="v2"] .page-head-title { margin: 0; font: 600 26px/1.2 var(--font-heading); letter-spacing: -0.01em; color: var(--ink); }
@@ -731,9 +732,10 @@ button, input, select { font: inherit; color: inherit; }
 .page-main { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .section-nav { display: none; }
 @media (min-width: 1024px) {
-  .section-nav { display: block; flex: none; width: 232px; background: var(--surface-page); }
-  .section-nav-inner { position: sticky; top: var(--navbar-height); max-height: calc(100vh - var(--navbar-height)); overflow-y: auto; padding: var(--space-5) var(--space-3) var(--space-5) calc(var(--space-6) + var(--space-4)); }
-  .section-nav-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .section-nav { display: block; flex: none; width: max(232px, calc(50vw - 660px)); background: var(--surface-page); }
+  .section-nav-inner { position: sticky; top: var(--navbar-height); max-height: calc(100vh - var(--navbar-height)); overflow-y: auto; display: flex; justify-content: flex-end; padding: var(--space-5) var(--space-3) var(--space-5) calc(var(--space-6) + var(--space-4)); }
+  /* The line between the tabs and the page is as high as the tabs, not as the page. */
+  .section-nav-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; flex: none; width: 172px; align-content: start; border-right: 1px solid var(--border); }
   .section-nav-link { display: block; padding: 9px var(--space-3); border-radius: 6px; font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.08em; line-height: 1.4; text-transform: uppercase; color: var(--text-secondary); text-decoration: none; }
   .section-nav-link:hover { background: var(--sidebar-hover-bg); color: var(--sidebar-active-text); }
   /* The current tab starts with "/", like the tabs of the page head. */
@@ -742,6 +744,9 @@ button, input, select { font: inherit; color: inherit; }
   /* The sub-tabs of the current tab: under it, indented. The tab keeps its dark color, and the "/" marks the sub-tab. */
   .section-nav-sub { list-style: none; margin: 2px 0 4px; padding: 0 0 0 var(--space-4); display: grid; gap: 2px; }
   .section-nav .section-nav-link.is-parent::before { content: none; }
+  .section-nav-sub .section-nav-link { font-size: 11px; }
+  /* The page keeps the margin of Αρχική: a column of 1320 px centered on the screen, with the same side padding. The sidebar fills the left margin and its tabs stand at its right edge, next to the page. */
+  .page-body:has(.section-nav) .content { box-sizing: border-box; max-width: 1320px; padding-inline: clamp(0px, calc(4vw - 16px), 48px); }
   :root[data-header="v2"] .page-tabs .sub-tabs { display: none; }
   /* The tabs and the sub-tabs are in the sidebar, so the page head keeps the actions and the filters. */
   :root[data-header="v2"] .page-tabs .section-tabs { display: none; }
