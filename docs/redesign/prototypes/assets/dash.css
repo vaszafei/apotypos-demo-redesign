@@ -136,15 +136,14 @@
 .donut-wrap .donut { display: block; }
 .dash .chart .bubble-group { cursor: default; }
 .dash .chart.bubbles { display: block; overflow: hidden; touch-action: manipulation; }
-.dash .chart .bubble-group, .dash .chart .bubble-layer .tile { cursor: zoom-in; transition: opacity 0.3s; }
-.dash .chart.is-zoomed .tile { cursor: pointer; }
-.dash .chart.is-zoomed .bubble-bg { cursor: zoom-out; }
-.dash .chart .bubble-group:hover, .dash .chart .bubble-group:focus-visible { stroke-width: 3; outline: none; }
+.dash .chart .bubble-group, .dash .chart .bubble-layer .tile { cursor: pointer; }
+.dash .chart .bubble-layer { transition: opacity var(--motion-fast, 120ms) var(--ease-out); }
+.dash .chart .bubble-layer.is-active .bubble-group, .dash .chart .bubble-group:focus-visible { stroke-width: 3; outline: none; }
 .dash .chart .bubble-layer .tile:hover { stroke: var(--strong); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
-.dash .chart .bubble-layer.is-dim { opacity: 0.25; }
+.dash .chart .bubble-layer.is-dim { opacity: 0.35; }
 .dash .chart .bubble-name { font-size: 12px; font-weight: 600; fill: var(--text-primary); stroke: var(--surface-page); stroke-width: 3px; paint-order: stroke; stroke-linejoin: round; pointer-events: none; }
 .dash .chart .bubble-labels text { pointer-events: none; }
-.bubble-panel { min-height: 44px; border-top: 1px solid var(--rule); padding-top: var(--space-2); font-size: var(--text-small); }
+.bubble-panel { min-height: 84px; border-top: 1px solid var(--rule); padding-top: var(--space-2); font-size: var(--text-small); }
 .bubble-hint { margin: 0; color: var(--text-secondary); font-size: var(--text-caption); }
 .bubble-panel-head { display: flex; align-items: center; gap: var(--space-2); margin-bottom: 6px; }
 .bubble-panel-head .dcard-link { margin-right: var(--space-2); }
