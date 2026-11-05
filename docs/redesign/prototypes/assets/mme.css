@@ -165,9 +165,12 @@
 /* A quarter-width card of topics (Θέματα › Επισκόπηση): the ring on top, the list under it, and the list scrolls inside a fixed height. */
 .dash-grid > .c-3 .sun-wrap.mme-topic-wrap { grid-template-columns: minmax(0, 1fr); }
 .dash-grid > .c-3 .sun-wrap.mme-topic-wrap .donut { justify-self: center; grid-row: 1; }
-.dash-grid > .c-3 .mme-topic-box { position: relative; height: 190px; min-height: 0; }
+/* The card takes the whole height of its column, and the list takes what the ring leaves. */
+.dash-grid > .c-3 > .dcard { flex: 1; }
+.dash-grid > .c-3 .sun-wrap.mme-topic-wrap { grid-template-rows: auto minmax(0, 1fr); align-items: stretch; min-height: 0; }
+.dash-grid > .c-3 .mme-topic-box { position: relative; height: auto; min-height: 190px; }
 .dash-grid > .c-3 .mme-topic-list { position: absolute; inset: 0; }
-@media (max-width: 1279px) { .dash-grid > .c-3 .sun-wrap.mme-topic-wrap { grid-template-columns: minmax(0, 1fr) auto; } .dash-grid > .c-3 .sun-wrap.mme-topic-wrap .donut { grid-row: auto; } .dash-grid > .c-3 .mme-topic-box { height: auto; min-height: 150px; } }
+@media (max-width: 1279px) { .dash-grid > .c-3 .sun-wrap.mme-topic-wrap { grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: none; align-items: center; } .dash-grid > .c-3 .sun-wrap.mme-topic-wrap .donut { grid-row: auto; } .dash-grid > .c-3 .mme-topic-box { height: auto; min-height: 150px; } }
 /* The name at the end of a line is a link: underlined on hover and focus. */
 .chart a.line-end-link { cursor: pointer; }
 .chart a.line-end-link:hover text, .chart a.line-end-link:focus-visible text { text-decoration: underline; }
