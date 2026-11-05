@@ -53,7 +53,10 @@
     function LinesChart ({ dates, series, caption }) {
       return fit((holder, width) => {
         const height = width < 520 ? 190 : 230
-        const pad = { top: 10, right: 12, bottom: 24, left: 44 }
+        // Where there is room (a card 520 px wide or more) each line has its name at its end, on the right. Narrower, a legend over the chart names the lines.
+        const labelled = width >= 520
+        const long = width >= 900
+        const pad = { top: 10, right: labelled ? (long ? 215 : 140) : 12, bottom: 24, left: 44 }
         const n = dates.length
         const plotW = width - pad.left - pad.right
         const plotH = height - pad.top - pad.bottom
@@ -73,6 +76,14 @@
         const every = fitDays > 7 ? Math.ceil(fitDays / 7) * 7 : fitDays
         for (let i = 0; i < n; i += every) svg.append(h('text', { x: X(i), y: height - 6, 'text-anchor': 'middle' }, fmt.date(dates[i], { day: 'numeric', month: 'short' })))
         series.slice().reverse().forEach((s) => svg.append(h('path', { d: UI.smoothPath(s.values.map((v, i) => [X(i), Y(v)]), new Set()), fill: 'none', stroke: s.color, 'stroke-width': 1.5, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' })))
+        if (labelled) {
+          // The names from the top down, each at least 14 px under the one above, so no names overlap. A name moved off its line stays beside it.
+          const marks = series.map((s) => ({ s, y: Y(s.values[n - 1]) })).sort((a, b) => a.y - b.y)
+          marks.forEach((m, k) => { if (k && m.y < marks[k - 1].y + 14) m.y = marks[k - 1].y + 14 })
+          for (let k = marks.length - 1; k >= 0; k--) marks[k].y = Math.min(marks[k].y, k === marks.length - 1 ? pad.top + plotH : marks[k + 1].y - 14)
+          const max = long ? 32 : 17
+          marks.forEach(({ s, y: ly }) => svg.append(h('circle', { cx: width - pad.right + 12, cy: ly, r: 3.5, fill: s.color }), h('text', { class: 'line-end', x: width - pad.right + 22, y: ly + 4 }, s.name.length > max ? `${s.name.slice(0, max - 1)}…` : s.name)))
+        }
         const rule = h('line', { class: 'hover-rule', y1: pad.top, y2: pad.top + plotH, stroke: 'var(--rule)', 'stroke-width': 1, visibility: 'hidden' })
         const dots = series.map((s) => h('circle', { r: 3.5, fill: s.color, stroke: 'var(--surface-page)', 'stroke-width': 1.5, visibility: 'hidden' }))
         svg.append(rule, ...dots)
@@ -93,7 +104,8 @@
         svg.append(over)
         const table = h('div', { class: 'visually-hidden' }, h('table', {}, h('caption', {}, caption),
           h('tbody', {}, series.map((s) => h('tr', {}, h('th', { scope: 'row' }, s.name), h('td', {}, fmt.int(Math.round(s.values[n - 1]))))))))
-        holder.replaceChildren(svg, table)
+        const legend = UI.Legend(series.map((s) => ({ label: s.name, color: s.color })))
+        holder.replaceChildren(...(labelled ? [] : [legend]), svg, table)
       })
     }
 
@@ -180,10 +192,9 @@
           const colorOf = new Map(offered.map((r, i) => [r.k, SLOTS[i]]))
           // Average of the last 7 days (fewer at the start of the data), taken before the period is cut, so the first day of a period has its own average.
           const series = offered.map((r, i) => ({ name: name(r.issue), color: SLOTS[i], values: r.daily.map((_, j) => sumRange(r.daily, Math.max(0, j - ROLL + 1), j) / (j - Math.max(0, j - ROLL + 1) + 1)).slice(i0, i1 + 1) }))
-          const legend = UI.Legend(series.map((s) => ({ label: s.name, color: s.color })))
           const timeCard = card('',
             cardHead(t('topics2.time.title'), null, `${t('topics2.time.title')}. ${t('topics2.time.sub')}`),
-            series.length ? [legend, LinesChart({ dates: dates.slice(i0, i1 + 1), series, caption: t('topics2.time.title') })] : emptyText(t('media2.empty.list')))
+            series.length ? [LinesChart({ dates: dates.slice(i0, i1 + 1), series, caption: t('topics2.time.title') })] : emptyText(t('media2.empty.list')))
 
           // The donut: every topic of the period. The share of the 3 largest is one line under the title.
           const top3 = rows.slice(0, 3).reduce((a, r) => a + r.count, 0)
@@ -230,7 +241,7 @@
             else mmeHolder.replaceChildren(Mme.AgendaCard(MS))
           }
           const cards = {
-            overview: [h('div', { class: 'card-col c-6' }, timeCard), h('div', { class: 'card-col c-6' }, allCard), h('div', { class: 'card-col c-6' }, moversCard)],
+            overview: [h('div', { class: 'card-col c-12' }, timeCard), h('div', { class: 'card-col c-6' }, moversCard), h('div', { class: 'card-col c-6' }, allCard)],
             topic: [mmeHolder],
             agenda: [mmeHolder]
           }[tab]
