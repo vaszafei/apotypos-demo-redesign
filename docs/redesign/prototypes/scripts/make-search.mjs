@@ -33,7 +33,7 @@ F.mme.sets.il.outlets.forEach((o) => addOutlet({ n: o.name, h: 'media-v2.html?ds
 F.elections.outlets.forEach((o) => addOutlet({ n: o.name, d: o.owner, h: 'elections-v2.html?tab=outlets', r: '/elections/outlets' }))
 
 // Θέματα: the topics of the stories. topic-v2.html opens a topic by its index.
-F.stories.issues.forEach((x, i) => kinds.topics.push(entry({ n: x.el, en: x.en !== x.el ? x.en : null, h: `topic-v2.html?i=${i}`, r: '/trends/topic' })))
+F.stories.issues.forEach((x, i) => kinds.topics.push(entry({ n: x.el, en: x.en !== x.el ? x.en : null, h: `topic-v2.html?i=${i}`, r: '/trends' })))
 
 // Ιστορίες: the stories with the most outlets first (the suggestions of the empty box are the first ones), then the stories of the Israeli set.
 const storyRows = F.stories.stories.filter((s) => !s.generic).sort((a, b) => b.outlets - a.outlets)

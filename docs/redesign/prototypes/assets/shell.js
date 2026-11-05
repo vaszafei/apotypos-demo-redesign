@@ -7,9 +7,6 @@
     '/': 'index.html',
     '/trends': 'topics-v2.html',
     '/trends/time': 'topics-v2.html',
-    '/trends/topic': 'topics-v2.html?tab=topic',
-    '/trends/agenda': 'topics-v2.html?tab=agenda',
-    '/overton': 'overton-v2.html',
     '/stories': 'stories-v2.html',
     '/stories/outlets': 'stories-v2.html?tab=outlets',
     '/echoes': 'stories-v2.html',
@@ -53,12 +50,12 @@
   // Πρόσωπα is an item: its overview (/fingerprints), Δηλώσεις (/track, from Πολιτική) and Φάκελος προσώπου (/contradictions), which left Αναλύσεις.
   // Ιστορίες has Υποθέσεις (/cases) and Μοτίβα διάδοσης (/campaigns), both from Πολιτική.
   // #62: each tab answers one question (question.<item>.<tab>), listed in the table of pages. A new tab is a view of the file of its section (?tab=), so every old route opens the same file.
-  // Θέματα holds the topic pages as sub-tabs, Μετατοπίσεις (/overton) among them. Πολιτική splits the elections page into 5 tabs.
+  // Θέματα is one page with no sub-tabs (Ένα θέμα, Ατζέντα μέσων and Μετατοπίσεις are gone; Μετατοπίσεις is a card of it). Πολιτική splits the elections page into 5 tabs.
   // A detail route names the tab that lists it: the back button and the trail of the page go there.
   const NAV = [
     { key: 'home', tabs: [['home', '/']] },
     { key: 'media', tabs: [['overview', '/media'], ['ownership', '/groups'],
-      ['topics', '/trends', [['topics.overview', '/trends'], ['topics.topic', '/trends/topic'], ['topics.agenda', '/trends/agenda'], ['shifts', '/overton']]],
+      ['topics', '/trends'],
       ['writing', '/media/writing'], ['similarity', '/similarity']], details: [['/outlet', '/media'], ['/group', '/groups'], ['/topic', '/trends']] },
     { key: 'spread', tabs: [['overview', '/stories'], ['outlets', '/stories/outlets'], ['cases', '/cases'], ['campaigns', '/campaigns']], details: [['/story', '/stories']] },
     { key: 'people', tabs: [['overview', '/fingerprints'], ['spread', '/fingerprints/spread'], ['statements', '/track'],
