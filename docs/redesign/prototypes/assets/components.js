@@ -315,15 +315,27 @@
     return wrap
   }
 
-  // Tooltip shared by the charts.
+  // Tooltip shared by the charts. The content is a text, or { title, rows: [{ label, value, color }], note }.
+  // A text of several lines has its first line as the title, and a line as «label: value» is a row.
   let tooltip
-  function showTooltip (text, x, y) {
+  function showTooltip (content, x, y) {
     tooltip ||= document.body.appendChild(h('div', { class: 'tooltip', role: 'status' }))
-    tooltip.textContent = text
+    const rich = typeof content === 'object' && content !== null
+    const lines = rich ? [] : String(content).split('\n')
+    const title = rich ? content.title : lines[0]
+    const rows = rich ? content.rows || [] : lines.slice(1)
+    const row = (color, label, value) => h('div', { class: 'tooltip-row' }, color ? h('span', { class: 'swatch', style: { background: color } }) : null, h('span', { class: 'tooltip-label' }, label), h('b', { class: 'tooltip-value' }, value))
+    tooltip.classList.toggle('is-rich', rows.length > 0 || !!(rich && content.note))
+    tooltip.replaceChildren(...[h('div', { class: 'tooltip-title' }, title), ...rows.map((r) => {
+      if (typeof r !== 'string') return row(r.color, r.label, r.value)
+      const m = r.match(/^(.*?):\s(.+)$/)
+      return m ? row(null, m[1], m[2]) : h('div', { class: 'tooltip-note' }, r)
+    }), rich && content.note ? h('div', { class: 'tooltip-note' }, content.note) : null].filter(Boolean))
     tooltip.hidden = false
     const box = tooltip.getBoundingClientRect()
     tooltip.style.left = `${Math.min(window.innerWidth - box.width - 8, Math.max(8, x - box.width / 2))}px`
-    tooltip.style.top = `${Math.max(8, y - box.height - 12)}px`
+    // Above the pointer, and under it when the top of the window is too near.
+    tooltip.style.top = `${y - box.height - 12 >= 8 ? y - box.height - 12 : Math.min(window.innerHeight - box.height - 8, y + 18)}px`
   }
   function hideTooltip () { if (tooltip) tooltip.hidden = true }
 
