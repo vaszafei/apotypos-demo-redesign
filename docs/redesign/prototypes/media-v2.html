@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="assets/tokens.css?v=15">
   <link rel="stylesheet" href="assets/app.css?v=48">
   <link rel="stylesheet" href="assets/dash.css?v=88">
-  <link rel="stylesheet" href="assets/mme.css?v=40">
+  <link rel="stylesheet" href="assets/mme.css?v=43">
   <link rel="stylesheet" href="assets/date-range.css?v=8">
   <script src="assets/page-move.js?v=1"></script>
 </head>
@@ -150,9 +150,45 @@
       return h('div', { class: 'donut-wrap sun-wrap' }, list, svg)
     }
 
-    // The outlets by group: a column for each group, as wide as its articles. The outlets are the tiles of the column, as high as their articles in the group,
-    // so the area of a tile is the articles of its outlet. A tile is the link of its outlet. The outlets with no group are the last column.
-    // A name that does not fit is written up and down, and a tile too small for a name has it in the tooltip.
+    // Squarified layout: items [{ v }] in the rectangle, the largest first, as near to squares as it can. Returns [{ i, x, y, w, h }].
+    function squarify (items, x, y, w, h0) {
+      const out = []
+      const scale = (w * h0) / items.reduce((a, b) => a + b.v, 0)
+      let rest = items.slice()
+      let X = x
+      let Y = y
+      let W = w
+      let H = h0
+      while (rest.length) {
+        const side = Math.min(W, H)
+        const worst = (r, sum) => Math.max(...r.map((i) => Math.max((side * side * i.v * scale) / (sum * sum), (sum * sum) / (side * side * i.v * scale))))
+        let row = []
+        let best = Infinity
+        for (let k = 1; k <= rest.length; k++) {
+          const r = rest.slice(0, k)
+          const wv = worst(r, r.reduce((a, b) => a + b.v * scale, 0))
+          if (wv > best) break
+          best = wv
+          row = r
+        }
+        const sum = row.reduce((a, b) => a + b.v * scale, 0)
+        const thick = sum / side
+        let pos = 0
+        row.forEach((i) => {
+          const len = (i.v * scale) / thick
+          out.push(W >= H ? { i, x: X, y: Y + pos, w: thick, h: len } : { i, x: X + pos, y: Y, w: len, h: thick })
+          pos += len
+        })
+        if (W >= H) { X += thick; W -= thick } else { Y += thick; H -= thick }
+        rest = rest.slice(row.length)
+      }
+      return out
+    }
+
+    // The outlets by group: the groups are on the x axis, each is a block that stands on the axis with its name under it, written across. The outlets are the tiles
+    // of the block, in rows and columns, so the area of a tile is the articles of its outlet, and the area of a block is the articles of its group, on one scale.
+    // The width of a block follows the root of its articles, with a floor so that its name fits. The height comes from the area. A tile is the link of its outlet
+    // and has its name when it is large enough (the tooltip has it in every case). The outlets with no group are a block like the others.
     function GroupTiles ({ S }) {
       const byGroup = new Map()
       S.active.forEach((o) => {
@@ -165,28 +201,46 @@
         color: name ? colorOfGroup.get(name) || NO_GROUP : NO_GROUP
       })).sort((a, b) => (a.name === null) - (b.name === null) || b.n - a.n)
       const holder = fit((box, width) => {
-        const H = 360
-        const gap = 3
+        const H = 380
+        const gap = 8
+        const floor = 104
         const usable = width - gap * (rows.length - 1)
-        box.replaceChildren(h('div', { class: 'gm' }, rows.map((r) => {
-          const w = (r.n / S.total) * usable
-          const label = r.name ? (slugOfGroup.has(r.name) ? UI.EntityLink({ type: 'group', key: slugOfGroup.get(r.name), label: r.name }) : r.name) : t('media2.groups.none')
-          return h('div', { class: 'gm-col', style: `width:${w}px` },
-            h('div', { class: 'gm-stack', style: `height:${H}px` }, r.outlets.map((o, i) => {
-              const ph = (o.n / r.n) * H
-              const mode = w >= 64 && ph >= 18 ? '' : ph >= 60 && w >= 16 ? 'gm-v' : 'gm-none'
-              const bg = i % 2 ? Dash.tint(r.color, 0.35) : r.color
-              const seg = UI.EntityLink({ type: 'outlet', key: o.slug, label: mode === 'gm-none' ? '' : o.name })
-              seg.classList.add('gm-seg')
-              if (mode) seg.classList.add(mode)
-              seg.setAttribute('style', `flex:${o.n} 1 0;background:${bg};--seg-ink:${Dash.textOn(bg)}`)
-              return tipOn(seg, t('g2.tree.tip', { outlet: o.name, group: r.name || t('media2.groups.none'), n: fmt.int(o.n), share: fmt.pct(o.n / S.total) }))
-            })),
-            h('div', { class: w >= 84 ? 'gm-axis' : 'gm-axis gm-axis-v', style: `border-color:${r.color}`, title: `${fmt.int(r.n)} · ${fmt.pct(r.n / S.total)}` },
-              h('span', { class: 'gm-gname' }, label), h('span', { class: 'gm-gval' }, w >= 84 ? `${fmt.int(r.n)} · ${fmt.pct(r.n / S.total)}` : fmt.pct(r.n / S.total))))
-        })))
+        // Widths: the root of the articles, scaled to the width of the chart. A block under the floor gets the floor and the others share the rest.
+        const fixed = new Set()
+        let w = rows.map((r) => Math.sqrt(r.n))
+        for (let pass = 0; pass < rows.length; pass++) {
+          const free = rows.map((_, k) => k).filter((k) => !fixed.has(k))
+          const rest = usable - fixed.size * floor
+          const sum = free.reduce((a, k) => a + Math.sqrt(rows[k].n), 0)
+          w = rows.map((r, k) => (fixed.has(k) ? floor : (Math.sqrt(r.n) / sum) * rest))
+          const small = free.filter((k) => w[k] < floor)
+          if (!small.length) break
+          small.forEach((k) => fixed.add(k))
+        }
+        // One scale for the area: the tallest block is H high.
+        const per = Math.max(...rows.map((r, k) => r.n / w[k])) / H
+        const boxes = h('div', { class: 'gt-row', style: `height:${H}px` })
+        const labels = h('div', { class: 'gt-row gt-labels' })
+        rows.forEach((r, k) => {
+          const bh = r.n / w[k] / per
+          const nameText = r.name || t('media2.groups.none')
+          const group = h('div', { class: 'gt-box', style: `width:${w[k]}px;height:${bh}px` })
+          squarify(r.outlets.map((o) => ({ o, v: o.n })), 0, 0, w[k], bh).forEach(({ i: { o }, x, y, w: ow, h: oh }, m) => {
+            const bg = m % 2 ? Dash.tint(r.color, 0.35) : r.color
+            const showName = ow - 2 >= 52 && oh - 2 >= 18
+            const tile = UI.EntityLink({ type: 'outlet', key: o.slug, label: showName ? o.name : '' })
+            tile.classList.add('gt-tile')
+            if (showName && ow - 2 >= 64 && oh - 2 >= 38) tile.append(h('span', { class: 'gt-n' }, fmt.int(o.n)))
+            tile.setAttribute('style', `left:${x}px;top:${y}px;width:${Math.max(0, ow - 2)}px;height:${Math.max(0, oh - 2)}px;background:${bg};--seg-ink:${Dash.textOn(bg)}`)
+            group.append(tipOn(tile, t('g2.tree.tip', { outlet: o.name, group: nameText, n: fmt.int(o.n), share: fmt.pct(o.n / S.total) })))
+          })
+          boxes.append(group)
+          const label = r.name && slugOfGroup.has(r.name) ? UI.EntityLink({ type: 'group', key: slugOfGroup.get(r.name), label: r.name }) : nameText
+          labels.append(h('div', { class: 'gt-axis', style: `width:${w[k]}px;border-color:${r.color}` }, h('span', { class: 'gt-gname' }, label), h('span', { class: 'gt-gval' }, `${fmt.int(r.n)} · ${fmt.pct(r.n / S.total)}`)))
+        })
+        box.replaceChildren(boxes, labels)
       })
-      return h('div', { class: 'gm-scroll' }, holder)
+      return h('div', { class: 'gt-scroll' }, holder)
     }
 
     Shell.start({
