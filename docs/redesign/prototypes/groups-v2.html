@@ -7,18 +7,17 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=15">
   <link rel="stylesheet" href="assets/app.css?v=49">
-  <link rel="stylesheet" href="assets/dash.css?v=89">
+  <link rel="stylesheet" href="assets/dash.css?v=90">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
   <script src="assets/messages.js?v=39"></script>
-  <script src="assets/messages-v2.js?v=51"></script>
+  <script src="assets/messages-v2.js?v=52"></script>
   <script src="assets/components.js?v=17"></script>
   <script src="assets/motion.js?v=3"></script>
   <script src="assets/dash.js?v=21"></script>
-  <script src="assets/vendor/d3-hierarchy.min.js"></script>
   <script src="assets/shell.js?v=59"></script>
   <script src="data/groups.js?v=2"></script>
   <script src="data/media.js?v=2"></script>
@@ -32,14 +31,16 @@
     const media = load('media', ['dates', 'outlets', 'outletDaily'], (b) => b.outlets)
     // A day with fewer articles than this is a gap of the crawler, not a quiet day.
     const GAP = 50
+    // The name of a group without the word that most of them start with, for the legends and the labels of the charts.
+    const short = (name) => name.replace(/^Συμφέροντα\s+/, '')
 
     // Lines: one for each group, the articles of each day. A gap day of the collection has a band and breaks the lines. A hover reads the day for every group.
     function VolumeChart ({ dates, stacks, order }) {
       const totals = stacks.map((s) => s.reduce((a, b) => a + b.value, 0))
       const gapDay = totals.map((v) => v < GAP)
       return fit((holder, width) => {
-        const height = 300
-        const pad = { top: 12, right: 12, bottom: 26, left: 48 }
+        const height = 230
+        const pad = { top: 10, right: 12, bottom: 24, left: 44 }
         const plotW = width - pad.left - pad.right
         const plotH = height - pad.top - pad.bottom
         const n = dates.length
@@ -75,14 +76,14 @@
           rule.setAttribute('x1', X(i)); rule.setAttribute('x2', X(i)); rule.setAttribute('visibility', 'visible')
           dots.forEach((c, k) => { c.setAttribute('cx', X(i)); c.setAttribute('cy', Y(stacks[i][k].value)); c.setAttribute('visibility', gapDay[i] ? 'hidden' : 'visible') })
           UI.showTooltip([t('g2.volume.tip', { date: fmt.date(dates[i]), n: fmt.int(totals[i]) }) + (gapDay[i] ? ` · ${t('g2.volume.gap')}` : ''),
-            ...stacks[i].filter((x) => x.value).slice().sort((x, y) => y.value - x.value).map((x) => t('g2.volume.tip.group', { group: x.label, n: fmt.int(x.value) }))].join('\n'), e.clientX, e.clientY)
+            ...stacks[i].filter((x) => x.value).slice().sort((x, y) => y.value - x.value).map((x) => t('g2.volume.tip.group', { group: short(x.label), n: fmt.int(x.value) }))].join('\n'), e.clientX, e.clientY)
         }
         over.addEventListener('pointermove', read)
         over.addEventListener('pointerenter', read)
         over.addEventListener('pointerleave', () => { UI.hideTooltip(); rule.setAttribute('visibility', 'hidden'); dots.forEach((c) => c.setAttribute('visibility', 'hidden')) })
         svg.append(over)
         const table = h('div', { class: 'visually-hidden' }, h('table', {}, h('caption', {}, t('g2.volume.title')),
-          h('tbody', {}, dates.map((dt, i) => h('tr', {}, h('th', { scope: 'row' }, fmt.date(dt)), h('td', {}, stacks[i].filter((x) => x.value).map((x) => t('g2.volume.tip.group', { group: x.label, n: fmt.int(x.value) })).join(', ')))))))
+          h('tbody', {}, dates.map((dt, i) => h('tr', {}, h('th', { scope: 'row' }, fmt.date(dt)), h('td', {}, stacks[i].filter((x) => x.value).map((x) => t('g2.volume.tip.group', { group: short(x.label), n: fmt.int(x.value) })).join(', ')))))))
         holder.replaceChildren(svg, table)
       })
     }
@@ -96,64 +97,97 @@
       return el
     }
 
-    // A wide layout of the bubbles: the outlets of each group are packed in its circle, and the groups sit in a band from left to right,
-    // in the order of the legend. Each group goes at the leftmost place in the band where it touches no group before it.
-    function ribbon (groups, width, height) {
-      const pad = 2
-      const nodes = groups.map((g) => {
-        const children = g.outlets.map((o) => ({ data: { o }, r: Math.sqrt(o.value) }))
-        d3.packSiblings(children.map((c) => Object.assign(c, { r: c.r + pad })))
-        const enc = d3.packEnclose(children)
-        children.forEach((c) => { c.dx = c.x - enc.x; c.dy = c.y - enc.y; c.r -= pad })
-        return { data: { g }, r: enc.r + 4, children }
-      })
-      const maxR = Math.max(...nodes.map((n) => n.r))
-      const gap = maxR * 0.06
-      // Place the groups in a band of a given half height. Try a few bands and keep the one with the shape closest to the chart.
-      const place = (band) => {
-        const placed = []
-        nodes.forEach((n) => {
-          let best = null
-          for (let k = -8; k <= 8; k++) {
-            const y = (k / 8) * Math.max(0, band - n.r)
-            let x = placed.length ? -Infinity : 0
-            placed.forEach((p) => {
-              const d = p.r + n.r + gap
-              const dy = Math.abs(p.y - y)
-              if (dy < d) x = Math.max(x, p.x + Math.sqrt(d * d - dy * dy))
+    // The layout of the network: the center is all the media, each group is a node joined to it, and each outlet is a node joined to its group.
+    // The area of an outlet is its collected articles. Two steps, both run to the end here, so the first draw is the final one:
+    // the outlets settle round their group (links like springs, circles that push apart), then the groups settle round the center as circles of the size of their outlets.
+    function netLayout (groups, width, height) {
+      const cx = width / 2
+      const cy = height / 2
+      const sumV = groups.reduce((a, g) => a + g.value, 0)
+      const maxG = Math.max(...groups.map((g) => g.value))
+      const root = { kind: 'root', x: cx, y: cy, r: 30 }
+      let k = Math.sqrt((0.17 * width * height) / (Math.PI * sumV))
+      let clusters = []
+      for (let attempt = 0; attempt < 12; attempt++) {
+        clusters = groups.map((g, gi) => {
+          const hub = { kind: 'hub', g, x: 0, y: 0, r: 8 + 6 * Math.sqrt(g.value / maxG) }
+          const outs = g.outlets.map((o, oi) => {
+            const r = Math.max(4.5, k * Math.sqrt(o.value))
+            const ang = oi * 2.399963 + gi
+            const dist = hub.r + r + 8 + oi * 4
+            return { kind: 'outlet', g, o, r, x: Math.cos(ang) * dist, y: Math.sin(ang) * dist, vx: 0, vy: 0 }
+          })
+          for (let it = 0; it < 300; it++) {
+            outs.forEach((n) => {
+              const d = Math.hypot(n.x, n.y) || 0.01
+              const f = (d - (hub.r + n.r + 10)) * 0.12
+              n.vx -= (n.x / d) * f
+              n.vy -= (n.y / d) * f
             })
-            if (x === -Infinity) x = Math.min(...placed.map((p) => p.x - p.r)) + n.r
-            if (!best || x < best.x - 0.5 || (Math.abs(x - best.x) <= 0.5 && Math.abs(y) < Math.abs(best.y))) best = { x, y }
+            for (let i = 0; i < outs.length; i++) {
+              for (let j = i + 1; j < outs.length; j++) {
+                const p = outs[i]
+                const q = outs[j]
+                const dx = q.x - p.x
+                const dy = q.y - p.y
+                const d = Math.hypot(dx, dy) || 0.01
+                const min = p.r + q.r + 4
+                if (d < min) { const f = (min - d) * 0.5; p.vx -= (dx / d) * f; p.vy -= (dy / d) * f; q.vx += (dx / d) * f; q.vy += (dy / d) * f }
+              }
+            }
+            outs.forEach((n) => { n.x += n.vx; n.y += n.vy; n.vx *= 0.6; n.vy *= 0.6 })
           }
-          placed.push({ r: n.r, ...best })
+          const R = Math.max(hub.r, ...outs.map((n) => Math.hypot(n.x, n.y) + n.r))
+          return { g, hub, outs, R, x: 0, y: 0, vx: 0, vy: 0 }
         })
-        const w = Math.max(...placed.map((p) => p.x + p.r)) - Math.min(...placed.map((p) => p.x - p.r))
-        const hh = Math.max(...placed.map((p) => p.y + p.r)) - Math.min(...placed.map((p) => p.y - p.r))
-        return { placed, score: Math.abs(Math.log((w / hh) / (width / height))) }
+        clusters.forEach((c, i) => {
+          const a = (i / clusters.length) * 2 * Math.PI - Math.PI / 2 + 0.35
+          c.x = cx + Math.cos(a) * width * 0.3
+          c.y = cy + Math.sin(a) * height * 0.3
+        })
+        // The groups are circles that cannot overlap each other or the center, drawn a little to the center and kept in the chart.
+        for (let it = 0; it < 700; it++) {
+          clusters.forEach((c) => { c.x += (cx - c.x) * 0.012; c.y += (cy - c.y) * 0.03 })
+          for (let pass = 0; pass < 3; pass++) {
+            for (let i = 0; i < clusters.length; i++) {
+              for (let j = i + 1; j < clusters.length; j++) {
+                const p = clusters[i]
+                const q = clusters[j]
+                const dx = q.x - p.x
+                const dy = q.y - p.y
+                const d = Math.hypot(dx, dy) || 0.01
+                const min = p.R + q.R + 22
+                if (d < min) { const m = (min - d) / 2; p.x -= (dx / d) * m; p.y -= (dy / d) * m; q.x += (dx / d) * m; q.y += (dy / d) * m }
+              }
+            }
+            clusters.forEach((c) => {
+              const dx = c.x - cx
+              const dy = c.y - cy
+              const d = Math.hypot(dx, dy) || 0.01
+              const min = root.r + c.R + 14
+              if (d < min) { c.x = cx + (dx / d) * min; c.y = cy + (dy / d) * min }
+              c.x = Math.max(c.R + 8, Math.min(width - c.R - 8, c.x))
+              c.y = Math.max(c.R + 22, Math.min(height - c.R - 22, c.y))
+            })
+          }
+        }
+        const overlap = clusters.some((p, i) => clusters.some((q, j) => j > i && Math.hypot(q.x - p.x, q.y - p.y) < p.R + q.R + 10)) || clusters.some((c) => Math.hypot(c.x - cx, c.y - cy) < root.r + c.R + 10)
+        if (!overlap) break
+        k *= 0.92
       }
-      let best = null
-      for (let f = 1; f <= 3; f += 0.1) { const tryIt = place(maxR * f); if (!best || tryIt.score < best.score) best = tryIt }
-      nodes.forEach((n, i) => { n.x = best.placed[i].x; n.y = best.placed[i].y })
-      // Scale the band to fit the chart, and center it.
-      const x0 = Math.min(...nodes.map((n) => n.x - n.r))
-      const x1 = Math.max(...nodes.map((n) => n.x + n.r))
-      const y0 = Math.min(...nodes.map((n) => n.y - n.r))
-      const y1 = Math.max(...nodes.map((n) => n.y + n.r))
-      const s = Math.min((width - 8) / (x1 - x0), (height - 8) / (y1 - y0))
-      const ox = (width - (x1 - x0) * s) / 2
-      const oy = (height - (y1 - y0) * s) / 2
-      nodes.forEach((n) => {
-        n.x = ox + (n.x - x0) * s
-        n.y = oy + (n.y - y0) * s
-        n.r = (n.r) * s
-        n.children.forEach((c) => { c.x = n.x + c.dx * s; c.y = n.y + c.dy * s; c.r *= s })
+      const nodes = [root]
+      const links = []
+      clusters.forEach((c) => {
+        const hub = { ...c.hub, x: c.x, y: c.y }
+        nodes.push(hub)
+        links.push({ a: root, b: hub })
+        c.outs.forEach((n) => { const o = { ...n, x: c.x + n.x, y: c.y + n.y }; nodes.push(o); links.push({ a: hub, b: o }) })
       })
-      return nodes
+      return { nodes, links, clusters, root }
     }
 
-    // Bubbles of owners and outlets: one circle for each group, with a circle for each of its outlets inside. The area is the collected articles.
-    // Nothing moves: a hover over a group fades the others and the panel under the chart shows the group. A click on a group keeps it, a click on the empty
-    // space or Esc lets it go, and a click on an outlet opens its page. The name of a group is written whole above its circle, and is left out where it would touch another name.
+    // A network of owners and outlets. Nothing moves: a hover on a group fades the others and the panel under the chart shows the group. A click on a group keeps it,
+    // a click on the empty space or Esc lets it go, and a click on an outlet opens its page. An outlet has its name inside its circle when it fits, and beside it when there is room.
     function OwnerBubbles ({ groups, total }) {
       let pinned = null
       let hover = null
@@ -171,18 +205,23 @@
       const groupTip = (g) => [g.key === null ? t('g2.donut.tip', { group: g.label, n: fmt.int(g.value), share: fmt.pct(g.value / total) }) : t('g2.bubble.group', { group: g.label, owner: g.owner, n: fmt.int(g.value), share: fmt.pct(g.value / total) })].join('\n')
 
       return fit((holder, width) => {
-        const height = Math.max(260, Math.min(380, Math.round(width * 0.5)))
-        const top = 22
-        const groupNodes = ribbon(groups, width, height - top * 2)
-        groupNodes.forEach((gn) => { gn.y += top; gn.children.forEach((c) => { c.y += top }) })
-        const svg = h('svg', { class: 'chart bubbles', width, height, viewBox: `0 0 ${width} ${height}`, role: 'group', 'aria-label': t('g2.tree.title') })
+        const height = Math.max(300, Math.min(440, Math.round(width * 0.56)))
+        const { nodes, links, clusters } = netLayout(groups, width, height)
+        const svg = h('svg', { class: 'chart net', width, height, viewBox: `0 0 ${width} ${height}`, role: 'group', 'aria-label': t('g2.tree.title') })
         const back = h('rect', { class: 'bubble-bg', x: 0, y: 0, width, height, fill: 'transparent' })
-        const scene = h('g', {})
-        const labels = h('g', { class: 'bubble-labels' })
-        svg.append(back, scene, labels)
+        const edgeLayer = h('g', {})
+        const nodeLayer = h('g', {})
+        const labelLayer = h('g', { class: 'bubble-labels' })
+        svg.append(back, edgeLayer, nodeLayer, labelLayer)
         const panel = h('div', { class: 'bubble-panel', 'aria-live': 'polite' })
-        const layers = new Map()
+        const byGroup = new Map(groups.map((g) => [g, []]))
         const active = () => hover || pinned
+        const mark = (g, el) => { if (g) byGroup.get(g).push(el); el.classList.add('net-el'); return el }
+        const over = (g, el) => {
+          el.addEventListener('pointerenter', () => { hover = g; paint() })
+          el.addEventListener('pointerleave', () => { hover = null; paint() })
+          return el
+        }
 
         function drawPanel () {
           const g = active()
@@ -204,68 +243,82 @@
                 .filter(Boolean).map(([k, v]) => h('div', { class: 'bubble-fact' }, h('dt', {}, k), h('dd', {}, v)))))
         }
         function paint () {
-          layers.forEach((el, g) => { el.classList.toggle('is-dim', active() !== null && g !== active()); el.classList.toggle('is-active', g === active()) })
+          byGroup.forEach((els, g) => els.forEach((el) => { el.classList.toggle('is-dim', active() !== null && g !== active()); el.classList.toggle('is-active', g === active()) }))
           drawPanel()
         }
 
-        groupNodes.forEach((gn) => {
-          const g = gn.data.g
-          const layer = h('g', { class: 'bubble-layer' })
-          layers.set(g, layer)
-          scene.append(layer)
-          const gc = h('circle', { class: 'bubble-group', cx: gn.x, cy: gn.y, r: gn.r, fill: tint(g.color, 0.9), stroke: g.color, 'stroke-width': 1.5, tabindex: 0, role: 'button', 'aria-label': groupTip(g) })
-          tipOn(gc, groupTip(g))
-          gc.addEventListener('click', (e) => { e.stopPropagation(); pinned = pinned === g ? null : g; paint() })
-          gc.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pinned = pinned === g ? null : g; paint() } })
-          gc.addEventListener('focus', () => { hover = g; paint() })
-          gc.addEventListener('blur', () => { hover = null; paint() })
-          layer.append(gc)
-          gn.children.forEach((on) => {
-            const o = on.data.o
-            const c = h('circle', { class: 'tile', cx: on.x, cy: on.y, r: on.r, fill: tint(g.color, g.key === null ? 0.5 : 0.35) })
-            tipOn(c, outletTip(o, g))
-            c.addEventListener('click', (e) => { e.stopPropagation(); if (o.slug) location.href = `outlet-v2.html?slug=${o.slug}` })
-            layer.append(c)
-          })
-          layer.addEventListener('pointerenter', () => { hover = g; paint() })
-          layer.addEventListener('pointerleave', () => { hover = null; paint() })
+        // The edges first, then the nodes, then the names, so a name is never under a circle.
+        links.forEach(({ a, b }) => {
+          const g = b.g
+          const hubEdge = a.kind === 'root'
+          edgeLayer.append(mark(hubEdge ? null : g, h('line', { class: hubEdge ? 'net-edge net-edge-root' : 'net-edge', x1: a.x, y1: a.y, x2: b.x, y2: b.y, stroke: hubEdge ? 'var(--rule)' : g.color })))
+        })
+        const root = nodes[0]
+        nodeLayer.append(h('circle', { class: 'net-root', cx: root.x, cy: root.y, r: root.r, fill: 'var(--surface-page)', stroke: 'var(--rule)', 'stroke-width': 1.5 }))
+        labelLayer.append(h('text', { class: 'donut-num net-root-num', x: root.x, y: root.y + 2, 'text-anchor': 'middle' }, fmt.int(total)), h('text', { x: root.x, y: root.y + 15, 'text-anchor': 'middle' }, t('g2.donut.center')))
+        nodes.slice(1).forEach((n) => {
+          const g = n.g
+          if (n.kind === 'hub') {
+            const c = h('circle', { class: 'net-hub', cx: n.x, cy: n.y, r: n.r, fill: g.color, stroke: 'var(--surface-page)', 'stroke-width': 2, tabindex: 0, role: 'button', 'aria-label': groupTip(g) })
+            tipOn(c, groupTip(g))
+            c.addEventListener('click', (e) => { e.stopPropagation(); pinned = pinned === g ? null : g; paint() })
+            c.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pinned = pinned === g ? null : g; paint() } })
+            c.addEventListener('focus', () => { hover = g; paint() })
+            c.addEventListener('blur', () => { hover = null; paint() })
+            nodeLayer.append(over(g, mark(g, c)))
+          } else {
+            const c = h('circle', { class: 'net-outlet', cx: n.x, cy: n.y, r: n.r, fill: tint(g.color, g.key === null ? 0.5 : 0.35), stroke: g.color, 'stroke-width': 1.2 })
+            tipOn(c, outletTip(n.o, g))
+            c.addEventListener('click', (e) => { e.stopPropagation(); if (n.o.slug) location.href = `outlet-v2.html?slug=${n.o.slug}` })
+            nodeLayer.append(over(g, mark(g, c)))
+          }
         })
 
-        // The names of the outlets show when they fit in their circle. The name of a group is above its circle, below it if there is no room above, and is left out when it would touch another.
+        // The names. A name in a circle needs the circle to be wide enough; a name beside a circle goes away from its group and is left out where it would touch another name or a circle.
         const boxes = []
-        const free = (x0, x1, y0, y1) => !boxes.some((b) => x0 < b.x1 && b.x0 < x1 && y0 < b.y1 && b.y0 < y1)
-        groupNodes.forEach((gn) => {
-          const g = gn.data.g
-          gn.children.forEach((on) => {
-            const o = on.data.o
-            const fill = tint(g.color, g.key === null ? 0.5 : 0.35)
-            if (on.r * 2 < o.name.length * 6.4 + 6 || on.r < 15) return
-            const lines = [[o.name, 'tile-label']]
-            if (on.r >= 26) lines.push([fmt.pct(o.value / total), 'tile-share'])
-            const y0 = on.y - ((lines.length - 1) * 15) / 2 + 4
-            lines.forEach(([text, cls], i) => labels.append(h('text', { class: cls, x: on.x, y: y0 + i * 15, 'text-anchor': 'middle', style: { fill: textOn(fill), 'font-weight': i ? 400 : 500 } }, text)))
-          })
+        const hit = (x0, x1, y0, y1) => boxes.some((b) => x0 < b.x1 && b.x0 < x1 && y0 < b.y1 && b.y0 < y1) ||
+          nodes.some((o) => { const nx = Math.max(x0, Math.min(o.x, x1)); const ny = Math.max(y0, Math.min(o.y, y1)); return Math.hypot(o.x - nx, o.y - ny) < o.r })
+        const place = (g, x0, x1, y0, y1, el) => { boxes.push({ x0, x1, y0, y1 }); labelLayer.append(mark(g, el)) }
+        // The name of a group stands next to its node, where the box is free of circles and names, and at the edge of its cluster if there is no such place.
+        clusters.forEach((c) => {
+          const name = short(c.g.label)
+          const w = name.length * 6.9
+          const hub = nodes.find((n) => n.kind === 'hub' && n.g === c.g)
+          const ang = Math.atan2(c.y - height / 2, c.x - width / 2)
+          const near = [[0, 1], [0, -1], [1, 0], [-1, 0], [0.7, 0.7], [-0.7, 0.7], [0.7, -0.7], [-0.7, -0.7]].map(([ux, uy]) => [ux, uy, hub.x, hub.y, hub.r + 5])
+          const far = [[Math.cos(ang), Math.sin(ang)], [0, -1], [0, 1], [-1, 0], [1, 0]].map(([ux, uy]) => [ux, uy, c.x, c.y, c.R + 8])
+          for (const [ux, uy, ox, oy, gap] of [...near, ...far]) {
+            const anchor = Math.abs(ux) < 0.4 ? 'middle' : ux > 0 ? 'start' : 'end'
+            const x = ox + ux * gap
+            const y = oy + uy * gap + (uy > 0.4 ? 11 : uy < -0.4 ? -3 : 4)
+            const x0 = anchor === 'middle' ? x - w / 2 : anchor === 'start' ? x : x - w
+            if (x0 < 2 || x0 + w > width - 2 || y - 12 < 0 || y + 3 > height || hit(x0, x0 + w, y - 12, y + 3)) continue
+            boxes.push({ x0, x1: x0 + w, y0: y - 12, y1: y + 3 })
+            labelLayer.append(mark(c.g, h('text', { class: 'bubble-name', x, y, 'text-anchor': anchor }, name)))
+            break
+          }
         })
-        // A name can stand where its box touches no other circle and no other name.
-        const clearOf = (gn, x0, x1, y0, y1) => groupNodes.every((o) => {
-          if (o === gn) return true
-          const nx = Math.max(x0, Math.min(o.x, x1))
-          const ny = Math.max(y0, Math.min(o.y, y1))
-          return Math.hypot(o.x - nx, o.y - ny) >= o.r
-        })
-        groupNodes.slice().sort((a, b) => b.r - a.r).forEach((gn) => {
-          const g = gn.data.g
-          const w = g.label.length * 6.9
-          const x0 = gn.x - w / 2
-          const x1 = gn.x + w / 2
-          if (x0 < 2 || x1 > width - 2) return
-          const above = gn.y - gn.r - 5
-          const below = gn.y + gn.r + 16
-          const fits = (y) => y - 12 >= 0 && y + 3 <= height && free(x0, x1, y - 12, y + 3) && clearOf(gn, x0, x1, y - 12, y + 3)
-          const y = fits(above) ? above : fits(below) ? below : null
-          if (y === null) return
-          boxes.push({ x0, x1, y0: y - 12, y1: y + 3 })
-          labels.append(h('text', { class: 'bubble-name', x: gn.x, y, 'text-anchor': 'middle' }, g.label))
+        nodes.filter((n) => n.kind === 'outlet').sort((a, b) => b.r - a.r).forEach((n) => {
+          const name = n.o.name
+          const w = name.length * 6.3
+          const fill = tint(n.g.color, n.g.key === null ? 0.5 : 0.35)
+          if (n.r * 2 >= w + 8 && n.r >= 13) {
+            const two = n.r >= 24
+            const txt = [h('text', { class: 'tile-label', x: n.x, y: n.y + (two ? -2 : 4), 'text-anchor': 'middle', style: { fill: textOn(fill), 'font-weight': 500 } }, name)]
+            if (two) txt.push(h('text', { class: 'tile-share', x: n.x, y: n.y + 13, 'text-anchor': 'middle', style: { fill: textOn(fill) } }, fmt.pct(n.o.value / total)))
+            txt.forEach((el) => labelLayer.append(mark(n.g, el)))
+            boxes.push({ x0: n.x - w / 2, x1: n.x + w / 2, y0: n.y - 10, y1: n.y + 16 })
+            return
+          }
+          const hub = nodes.find((o) => o.kind === 'hub' && o.g === n.g)
+          const ang = Math.atan2(n.y - hub.y, n.x - hub.x)
+          const right = Math.cos(ang) >= 0
+          const x = n.x + (right ? 1 : -1) * (n.r + 4)
+          const y = n.y + 4
+          const x0 = right ? x : x - w
+          const x1 = right ? x + w : x
+          if (x0 < 2 || x1 > width - 2 || hit(x0, x1, y - 12, y + 4)) return
+          place(n.g, x0, x1, y - 12, y + 4, h('text', { class: 'net-name', x, y, 'text-anchor': right ? 'start' : 'end' }, name))
         })
 
         back.addEventListener('click', () => { if (pinned) { pinned = null; paint() } })
@@ -342,7 +395,7 @@
             ...(ungroupedTotal ? [{ key: null, label: t('media2.groups.none'), owner: null, color: NO_GROUP, outlets: d.ungrouped.filter((o) => o.collected > 0).map(outletOf).sort((a, b) => b.value - a.value) }] : [])]
           treeGroups.forEach((g) => { g.value = g.outlets.reduce((s, o) => s + o.value, 0) })
           const bubbles = card('c-8', cardHead(t('g2.tree.title'), null, [t('g2.tree.sub', { period }), t('g2.record', { source: d.record.source, date: fmt.date(d.record.exportedAt) })].join(' ')),
-            total ? [UI.Legend(treeGroups.map((g) => ({ label: g.label, color: g.color }))), OwnerBubbles({ groups: treeGroups, total })] : emptyText(t('groups.empty')))
+            total ? OwnerBubbles({ groups: treeGroups, total }) : emptyText(t('groups.empty')))
           // The finding (how much the 3 largest groups write) is the first sentence of the info of the card.
           const top3 = treeGroups.filter((g) => g.key !== null).sort((a, b) => b.value - a.value).slice(0, 3).reduce((a, g) => a + g.value, 0)
           const shareCard = card('c-5', cardHead(t('media2.groups.title'), null, total ? [t('g2.share.finding', { share: fmt.pct(top3 / total) }), t('media2.groups.known', { share: fmt.pct(grouped / total) })].join('. ') : null),
@@ -365,7 +418,7 @@
           const volumeTotal = stacks.reduce((s, day) => s + day.reduce((a, b) => a + b.value, 0), 0)
           const volume = card('c-7', cardHead(t('g2.volume.title'), null, t('g2.volume.info', { min: fmt.int(GAP), n: fmt.int(volumeTotal) })),
             volumeTotal
-              ? [UI.Legend(order.map((o) => ({ label: o.label, color: o.color }))), VolumeChart({ dates: m.dates, stacks, order })]
+              ? [UI.Legend(order.map((o) => ({ label: short(o.label), color: o.color }))), VolumeChart({ dates: m.dates, stacks, order })]
               : emptyText(t('groups.empty')))
 
           // Row 2, on the right: the stance of each group.

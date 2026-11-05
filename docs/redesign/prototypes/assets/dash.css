@@ -136,11 +136,16 @@
 .donut-wrap .donut { display: block; }
 .dash .chart .bubble-group { cursor: default; }
 .dash .chart.bubbles { display: block; overflow: hidden; touch-action: manipulation; }
-.dash .chart .bubble-group, .dash .chart .bubble-layer .tile { cursor: pointer; }
-.dash .chart .bubble-layer { transition: opacity var(--motion-fast, 120ms) var(--ease-out); }
-.dash .chart .bubble-layer.is-active .bubble-group, .dash .chart .bubble-group:focus-visible { stroke-width: 3; outline: none; }
-.dash .chart .bubble-layer .tile:hover { stroke: var(--strong); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
-.dash .chart .bubble-layer.is-dim { opacity: 0.35; }
+.dash .chart .net-hub, .dash .chart .net-outlet { cursor: pointer; }
+.dash .chart .net-el { transition: opacity var(--motion-fast, 120ms) var(--ease-out); }
+.dash .chart .net-el.is-dim { opacity: 0.25; }
+.dash .chart .net-edge { stroke-width: 1.2; opacity: 0.55; }
+.dash .chart .net-edge.net-el.is-active { opacity: 0.9; }
+.dash .chart .net-edge-root { stroke-width: 1.2; stroke-dasharray: 3 4; opacity: 0.8; }
+.dash .chart .net-hub.is-active, .dash .chart .net-hub:focus-visible { stroke: var(--strong); outline: none; }
+.dash .chart .net-outlet:hover { stroke-width: 2.4; }
+.dash .chart .net-root-num { font-size: 13px; }
+.dash .chart .net-name { font-size: 12px; fill: var(--text-primary); paint-order: stroke; stroke: var(--surface-page); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
 .dash .chart .bubble-name { font-size: 12px; font-weight: 600; fill: var(--text-primary); stroke: var(--surface-page); stroke-width: 3px; paint-order: stroke; stroke-linejoin: round; pointer-events: none; }
 .dash .chart .bubble-labels text { pointer-events: none; }
 .bubble-panel { min-height: 84px; border-top: 1px solid var(--rule); padding-top: var(--space-2); font-size: var(--text-small); }
