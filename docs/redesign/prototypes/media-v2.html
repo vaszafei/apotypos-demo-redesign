@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="assets/tokens.css?v=15">
   <link rel="stylesheet" href="assets/app.css?v=48">
   <link rel="stylesheet" href="assets/dash.css?v=88">
-  <link rel="stylesheet" href="assets/mme.css?v=38">
+  <link rel="stylesheet" href="assets/mme.css?v=40">
   <link rel="stylesheet" href="assets/date-range.css?v=8">
   <script src="assets/page-move.js?v=1"></script>
 </head>
@@ -150,9 +150,10 @@
       return h('div', { class: 'donut-wrap sun-wrap' }, list, svg)
     }
 
-    // The outlets by group: a row for each group, the bar is cut in its outlets and is as long as the articles of the group, on the scale of the largest group.
-    // A segment is the link of its outlet. The outlets with no group in the file are the last row.
-    function GroupBars ({ S }) {
+    // The outlets by group: a column for each group, as wide as its articles. The outlets are the tiles of the column, as high as their articles in the group,
+    // so the area of a tile is the articles of its outlet. A tile is the link of its outlet. The outlets with no group are the last column.
+    // A name that does not fit is written up and down, and a tile too small for a name has it in the tooltip.
+    function GroupTiles ({ S }) {
       const byGroup = new Map()
       S.active.forEach((o) => {
         const key = o.group || null
@@ -163,19 +164,29 @@
         name, outlets: outlets.sort((a, b) => b.n - a.n), n: outlets.reduce((s, o) => s + o.n, 0),
         color: name ? colorOfGroup.get(name) || NO_GROUP : NO_GROUP
       })).sort((a, b) => (a.name === null) - (b.name === null) || b.n - a.n)
-      const top = Math.max(...rows.map((r) => r.n))
-      return h('ul', { class: 'group-bars' }, rows.map((r) => h('li', { class: 'gb-row' },
-        h('span', { class: 'gb-name' },
-          h('span', { class: r.name ? 'dot' : 'dot dot-none', style: r.name ? `--dot:${r.color}` : null, 'aria-hidden': 'true' }),
-          !r.name ? t('media2.groups.none') : slugOfGroup.has(r.name) ? UI.EntityLink({ type: 'group', key: slugOfGroup.get(r.name), label: r.name }) : r.name),
-        h('span', { class: 'gb-track' }, h('span', { class: 'gb-bar', style: `width:${(r.n / top) * 100}%` }, r.outlets.map((o, i) => {
-          const bg = i % 2 ? Dash.tint(r.color, 0.35) : r.color
-          const seg = UI.EntityLink({ type: 'outlet', key: o.slug, label: o.name })
-          seg.classList.add('gb-seg')
-          seg.setAttribute('style', `flex:${o.n} 1 0;background:${bg};--seg-ink:${Dash.textOn(bg)}`)
-          return tipOn(seg, t('g2.tree.tip', { outlet: o.name, group: r.name || t('media2.groups.none'), n: fmt.int(o.n), share: fmt.pct(o.n / S.total) }))
-        }))),
-        h('span', { class: 'gb-value' }, fmt.int(r.n)))))
+      const holder = fit((box, width) => {
+        const H = 360
+        const gap = 3
+        const usable = width - gap * (rows.length - 1)
+        box.replaceChildren(h('div', { class: 'gm' }, rows.map((r) => {
+          const w = (r.n / S.total) * usable
+          const label = r.name ? (slugOfGroup.has(r.name) ? UI.EntityLink({ type: 'group', key: slugOfGroup.get(r.name), label: r.name }) : r.name) : t('media2.groups.none')
+          return h('div', { class: 'gm-col', style: `width:${w}px` },
+            h('div', { class: 'gm-stack', style: `height:${H}px` }, r.outlets.map((o, i) => {
+              const ph = (o.n / r.n) * H
+              const mode = w >= 64 && ph >= 18 ? '' : ph >= 60 && w >= 16 ? 'gm-v' : 'gm-none'
+              const bg = i % 2 ? Dash.tint(r.color, 0.35) : r.color
+              const seg = UI.EntityLink({ type: 'outlet', key: o.slug, label: mode === 'gm-none' ? '' : o.name })
+              seg.classList.add('gm-seg')
+              if (mode) seg.classList.add(mode)
+              seg.setAttribute('style', `flex:${o.n} 1 0;background:${bg};--seg-ink:${Dash.textOn(bg)}`)
+              return tipOn(seg, t('g2.tree.tip', { outlet: o.name, group: r.name || t('media2.groups.none'), n: fmt.int(o.n), share: fmt.pct(o.n / S.total) }))
+            })),
+            h('div', { class: w >= 84 ? 'gm-axis' : 'gm-axis gm-axis-v', style: `border-color:${r.color}`, title: `${fmt.int(r.n)} · ${fmt.pct(r.n / S.total)}` },
+              h('span', { class: 'gm-gname' }, label), h('span', { class: 'gm-gval' }, w >= 84 ? `${fmt.int(r.n)} · ${fmt.pct(r.n / S.total)}` : fmt.pct(r.n / S.total))))
+        })))
+      })
+      return h('div', { class: 'gm-scroll' }, holder)
     }
 
     Shell.start({
@@ -242,7 +253,7 @@
 
           // Row 2: one bar for each group, cut in its outlets. The outlets with no group are the last bar.
           const groupCard = card('c-12', cardHead(t('media2.bygroup.title')),
-            analysed > 0 ? GroupBars({ S }) : emptyText(t('media2.chart.empty')))
+            analysed > 0 ? GroupTiles({ S }) : emptyText(t('media2.chart.empty')))
 
           // The cards of the live page that the dashboard did not have.
           // The topic chips and «Ένα θέμα, όλα τα μέσα» are on Θέματα › Ένα θέμα. «Οι ιστορίες του διαστήματος» is on Ιστορίες › Ανά μέσο. «Τι ξεχωρίζει» is on Αρχική.

@@ -144,14 +144,15 @@
 .mme-outlet-list { max-height: 210px; overflow-y: auto; padding-right: var(--space-2); gap: 6px; }
 .sun-wrap .mme-outlet-list li { grid-template-columns: minmax(0, 1fr) auto; }
 .outlet-donut .slice:nth-of-type(even) { opacity: 0.6; }
-.group-bars { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-2); }
-.gb-row { display: grid; grid-template-columns: 190px minmax(0, 1fr) 64px; column-gap: var(--space-3); align-items: center; font-size: var(--text-small); }
-.gb-name { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.gb-name .dot { flex: none; }
-.gb-name > :last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.gb-track { min-width: 0; }
-.gb-bar { display: flex; gap: 2px; height: 28px; }
-.minimal .gb-row .gb-seg { min-width: 3px; overflow: hidden; padding: 0 6px; display: flex; align-items: center; border-radius: 3px; color: var(--seg-ink); font-size: var(--text-caption); white-space: nowrap; text-decoration: none; }
-.minimal .gb-row .gb-seg:hover { color: var(--seg-ink); outline: 2px solid var(--strong); outline-offset: -2px; }
-.gb-value { text-align: right; color: var(--text-secondary); font-size: var(--text-caption); font-variant-numeric: tabular-nums; }
-@media (max-width: 719px) { .gb-row { grid-template-columns: minmax(0, 1fr) auto; row-gap: 4px; } .gb-track { grid-column: 1 / -1; grid-row: 2; } }
+.gm-scroll { overflow-x: auto; }
+.gm-scroll > .fit { min-width: 720px; }
+.gm { display: flex; gap: 3px; align-items: flex-start; }
+.gm-col { flex: none; min-width: 0; }
+.gm-stack { display: flex; flex-direction: column; gap: 2px; }
+.minimal .gm-seg { min-width: 0; min-height: 2px; display: flex; align-items: center; padding: 0 6px; overflow: hidden; border-radius: 3px; color: var(--seg-ink); font-size: var(--text-caption); white-space: nowrap; text-decoration: none; }
+.minimal .gm-seg.gm-v { writing-mode: vertical-rl; justify-content: flex-start; padding: 6px 0; }
+.minimal .gm-seg:hover { color: var(--seg-ink); outline: 2px solid var(--strong); outline-offset: -2px; }
+.gm-axis { margin-top: 6px; border-top: 3px solid; padding-top: 4px; display: flex; flex-direction: column; gap: 2px; min-height: 64px; font-size: var(--text-caption); line-height: 1.25; overflow-wrap: anywhere; }
+.gm-gval { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.gm-axis-v { display: block; writing-mode: vertical-rl; white-space: nowrap; min-height: 0; }
+.gm-axis-v .gm-gval { margin-top: 8px; }
