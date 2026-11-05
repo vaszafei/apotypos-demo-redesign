@@ -595,7 +595,7 @@ button, input, select { font: inherit; color: inherit; }
 /* The primary button is the ink fill. The log in and sign up buttons are small pills, like the filters and tabs of the page head. */
 .button-primary { background: var(--ink); border-color: var(--ink); color: var(--on-ink); font-weight: 600; }
 .button-primary:hover { background: color-mix(in srgb, var(--ink) 85%, var(--accent)); border-color: transparent; }
-.auth-login, .auth-register { min-height: 32px; padding: 0 var(--space-4); border-radius: var(--pill, 999px); font-size: 13px; font-weight: 600; justify-content: center; white-space: nowrap; }
+.auth-login, .auth-register { min-height: 32px; padding: 0 var(--space-4); border-radius: 8px; font-size: 13px; font-weight: 600; justify-content: center; white-space: nowrap; }
 .auth-login { background: transparent; color: var(--ink); }
 
 /* The drawer of log in and sign up: from the right, over a scrim. The type and the controls use the sizes and the styles of the rest of the app:
@@ -732,7 +732,9 @@ button, input, select { font: inherit; color: inherit; }
   .header-actions { display: flex; flex: none; align-items: center; gap: var(--space-3); }
   .header-actions .lang-switch { border-radius: var(--pill, 999px); }
   .header-actions .lang-switch button { min-width: 30px; min-height: 26px; font-size: var(--text-caption); color: var(--text-secondary); }
-  .header-actions .lang-switch button[aria-pressed="true"] { color: var(--on-ink); }
+  .header-actions .lang-switch button[aria-pressed="true"] { background: var(--text-primary); color: var(--on-ink); }
+  .header-actions .auth-register { background: var(--text-primary); border-color: var(--text-primary); }
+  .header-actions .auth-register:hover { background: color-mix(in srgb, var(--text-primary) 85%, var(--accent)); border-color: transparent; }
   .header-actions .auth-links { display: flex; align-items: center; gap: var(--space-2); }
   /* A detail page: the back button and the trail, in a row under the navbar. */
   .trail-bar { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-5) 0; }
