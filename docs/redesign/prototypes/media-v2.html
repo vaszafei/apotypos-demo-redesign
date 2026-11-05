@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="assets/tokens.css?v=15">
   <link rel="stylesheet" href="assets/app.css?v=48">
   <link rel="stylesheet" href="assets/dash.css?v=88">
-  <link rel="stylesheet" href="assets/mme.css?v=36">
+  <link rel="stylesheet" href="assets/mme.css?v=38">
   <link rel="stylesheet" href="assets/date-range.css?v=8">
   <script src="assets/page-move.js?v=1"></script>
 </head>
@@ -16,7 +16,7 @@
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
   <script src="assets/messages.js?v=39"></script>
-  <script src="assets/messages-v2.js?v=48"></script>
+  <script src="assets/messages-v2.js?v=49"></script>
   <script src="assets/messages-spread.js?v=17"></script>
   <script src="assets/messages-mme.js?v=21"></script>
   <script src="assets/components.js?v=17"></script>
@@ -33,7 +33,7 @@
     // The data is the one of the live page (data/mme.js, scripts/make-mme.py): 29 Greek outlets and 10 Israeli outlets, summed for the period.
     // The top bar has the tabs, the set of outlets and the period. Each card holds one measure and one picture of it.
     const { t, fmt, h, load, params } = App
-    const { fit, reset, pct0, NO_GROUP, Spark, card, cardHead, emptyText, Stat, TopBar } = Dash
+    const { fit, reset, pct0, NO_GROUP, card, cardHead, emptyText, TopBar } = Dash
     const result = load('mme', ['sets'], (b) => Object.keys(b.sets))
     const groupsData = load('groups', ['groups'], (b) => b.groups)
     // The share of articles with no byline comes from the API in its own period (Sep 2025 – Jan 2026), for 5 outlets.
@@ -44,47 +44,9 @@
 
     // Two tabs (#62): Επισκόπηση (/media) and Πώς γράφουν (?tab=writing, /media/writing). Both have the set of outlets and the period.
     const tab = params.get('tab') === 'writing' ? 'writing' : 'overview'
-    // ?ds=il opens the Israeli set, as on the live page.
-    const view = { set: params.get('ds') === 'il' ? 'il' : 'gr', from: null, to: null }
+    const view = { set: 'gr', from: null, to: null }
     let lastValid = null
     let draw = () => {}
-    // The set of outlets (Ελλάδα, Ισραήλ): a button like the one of the period picker, with a menu in the look of its popover.
-    const setMenu = (() => {
-      const text = h('span', { class: 'dr-text' })
-      const button = h('button', { type: 'button', class: 'dr-trigger', 'aria-haspopup': 'true', 'aria-expanded': 'false' },
-        h('span', { class: 'visually-hidden' }, `${t('mme.set')}: `), text, App.Icon('chevron-down', 'icon icon-sm dr-chev'))
-      const list = h('ul', { class: 'set-pop', hidden: true })
-      const root = h('div', { class: 'set-select' }, button, list)
-      const close = () => { list.hidden = true; button.setAttribute('aria-expanded', 'false') }
-      const paint = () => {
-        text.textContent = t(`mme.set.${view.set}`)
-        list.replaceChildren(...['gr', 'il'].map((k) => h('li', {}, h('button', { type: 'button', class: 'dr-preset', 'aria-pressed': String(view.set === k),
-          onClick: () => { close(); button.focus(); if (view.set === k) return; view.set = k; view.from = null; lastValid = null; draw() } }, t(`mme.set.${k}`)))))
-      }
-      button.addEventListener('click', () => {
-        if (!list.hidden) { close(); return }
-        paint()
-        list.hidden = false
-        button.setAttribute('aria-expanded', 'true')
-        list.querySelector('[aria-pressed="true"]')?.focus()
-      })
-      root.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !list.hidden) { e.stopPropagation(); close(); button.focus() } })
-      document.addEventListener('pointerdown', (e) => { if (!root.contains(e.target)) close() })
-      paint()
-      return { root, paint }
-    })()
-    // The drop-down list joins the global search in the top bar of the shell, on its right.
-    function placeSetSelect () {
-      if (Shell.headerV2) return
-      const search = document.querySelector('.header-bar .global-search')
-      if (!search || search.parentElement.classList.contains('header-tools')) return
-      // The search comes first and the list of countries is on its right.
-      const tools = h('div', { class: 'header-tools' })
-      search.replaceWith(tools)
-      tools.append(search, setMenu.root)
-    }
-
-    const sumRange = (arr, i0, i1, pick = (x) => x) => { let s = 0; for (let i = i0; i <= i1; i++) s += pick(arr[i]); return s }
 
     // Stacked columns, one for each day: news and not news. A drag selects a period.
     function VolumeChart ({ dates, news, other, i0, i1, onSelect, height = 170 }) {
@@ -150,6 +112,72 @@
       })
     }
 
+    const tipOn = (el, text) => {
+      const show = (e) => UI.showTooltip(text, e.clientX, e.clientY)
+      el.addEventListener('pointerenter', show)
+      el.addEventListener('pointermove', show)
+      el.addEventListener('pointerleave', () => UI.hideTooltip())
+      return el
+    }
+
+    // Articles per outlet: one ring, a slice for each outlet, from the top, clockwise, the largest first. The list on its left has every outlet and scrolls.
+    function OutletDonut ({ S, total }) {
+      const outlets = S.active.slice().sort((a, b) => b.n - a.n)
+      const size = 176
+      const c = size / 2
+      const [r0, r1] = [57, 87]
+      const pad = 0.008
+      const arc = (a0, a1) => {
+        a0 += pad / 2
+        a1 = Math.max(a0 + 0.002, a1 - pad / 2)
+        const p = (a, r) => `${(c + r * Math.sin(a)).toFixed(2)} ${(c - r * Math.cos(a)).toFixed(2)}`
+        const large = a1 - a0 > Math.PI ? 1 : 0
+        return `M${p(a0, r1)}A${r1} ${r1} 0 ${large} 1 ${p(a1, r1)}L${p(a1, r0)}A${r0} ${r0} 0 ${large} 0 ${p(a0, r0)}Z`
+      }
+      const tip = (o) => t('media2.outlet.tip', { outlet: o.name, n: fmt.int(o.n), share: fmt.pct(o.n / total) })
+      const svg = h('svg', { class: 'chart donut outlet-donut', width: size, height: size, viewBox: `0 0 ${size} ${size}`, role: 'img', 'aria-label': t('media2.outlets.title') })
+      let a = 0
+      outlets.forEach((o) => {
+        const span = (o.n / total) * 2 * Math.PI
+        svg.append(tipOn(h('path', { class: 'slice', d: arc(a, a + span), fill: 'var(--bar-fill)' }), tip(o)))
+        a += span
+      })
+      svg.append(h('text', { class: 'donut-num', x: c, y: c + 3, 'text-anchor': 'middle' }, fmt.int(total)),
+        h('text', { x: c, y: c + 19, 'text-anchor': 'middle' }, t('g2.donut.center')))
+      const list = h('ul', { class: 'rows rows-owners mme-outlet-list' }, outlets.map((o) => h('li', {},
+        h('span', { class: 'row-name' }, Mme.outletLink(S, o)),
+        h('span', { class: 'row-value' }, `${fmt.int(o.n)} · ${fmt.pct(o.n / total)}`))))
+      return h('div', { class: 'donut-wrap sun-wrap' }, list, svg)
+    }
+
+    // The outlets by group: a row for each group, the bar is cut in its outlets and is as long as the articles of the group, on the scale of the largest group.
+    // A segment is the link of its outlet. The outlets with no group in the file are the last row.
+    function GroupBars ({ S }) {
+      const byGroup = new Map()
+      S.active.forEach((o) => {
+        const key = o.group || null
+        if (!byGroup.has(key)) byGroup.set(key, [])
+        byGroup.get(key).push(o)
+      })
+      const rows = [...byGroup].map(([name, outlets]) => ({
+        name, outlets: outlets.sort((a, b) => b.n - a.n), n: outlets.reduce((s, o) => s + o.n, 0),
+        color: name ? colorOfGroup.get(name) || NO_GROUP : NO_GROUP
+      })).sort((a, b) => (a.name === null) - (b.name === null) || b.n - a.n)
+      const top = Math.max(...rows.map((r) => r.n))
+      return h('ul', { class: 'group-bars' }, rows.map((r) => h('li', { class: 'gb-row' },
+        h('span', { class: 'gb-name' },
+          h('span', { class: r.name ? 'dot' : 'dot dot-none', style: r.name ? `--dot:${r.color}` : null, 'aria-hidden': 'true' }),
+          !r.name ? t('media2.groups.none') : slugOfGroup.has(r.name) ? UI.EntityLink({ type: 'group', key: slugOfGroup.get(r.name), label: r.name }) : r.name),
+        h('span', { class: 'gb-track' }, h('span', { class: 'gb-bar', style: `width:${(r.n / top) * 100}%` }, r.outlets.map((o, i) => {
+          const bg = i % 2 ? Dash.tint(r.color, 0.35) : r.color
+          const seg = UI.EntityLink({ type: 'outlet', key: o.slug, label: o.name })
+          seg.classList.add('gb-seg')
+          seg.setAttribute('style', `flex:${o.n} 1 0;background:${bg};--seg-ink:${Dash.textOn(bg)}`)
+          return tipOn(seg, t('g2.tree.tip', { outlet: o.name, group: r.name || t('media2.groups.none'), n: fmt.int(o.n), share: fmt.pct(o.n / S.total) }))
+        }))),
+        h('span', { class: 'gb-value' }, fmt.int(r.n)))))
+    }
+
     Shell.start({
       id: 'media',
       route: tab === 'writing' ? '/media/writing' : '/media',
@@ -171,57 +199,22 @@
           const empty = result.kind === 'empty'
           const i0 = dates.indexOf(lastValid.from)
           const i1 = dates.indexOf(lastValid.to)
-          const days = i1 - i0 + 1
           const select = (r) => { Object.assign(view, r); if (r.from <= r.to) lastValid = { from: r.from, to: r.to }; draw() }
           const S = Mme.summary(set, i0, i1)
-          const greek = set.country === 'GR'
 
-          // The set of outlets (Ελλάδα, Ισραήλ) is a drop-down list next to the global search. The period is one date picker in the top bar.
-          setMenu.paint()
           const picker = UI.DateRangePicker({ dates, from: view.from, to: view.to, presets: Mme.presets(set), onChange: select })
-          const setAction = Shell.headerV2 ? setMenu.root : null
-          // Header v2: the two controls have their own row under the tabs, on the right (a wrapper is a filter of the tab, not a page action).
-          const bar = TopBar({ title: `${t('nav.media')} · ${t(`tab.media.${tab}`)}`, tabs, actions: [setAction ? h('div', { class: 'mme-filters' }, setAction, picker) : picker], quiet: true })
+          const bar = TopBar({ title: `${t('nav.media')} · ${t(`tab.media.${tab}`)}`, tabs, actions: [picker], quiet: true })
 
           // Daily totals of all the outlets: the news are the topics with soft: false.
           const news = dates.map((_, d) => S.outlets.reduce((s, o) => s + set.od[o.k][d * 7 + 1], 0))
           const totals = dates.map((_, d) => S.outlets.reduce((s, o) => s + set.od[o.k][d * 7], 0))
           const other = totals.map((v, d) => v - news[d])
           const analysed = S.total
-          const newsCount = sumRange(news, i0, i1)
-          const storiesPerDay = dates.map(() => 0)
-          set.sd.forEach((pairs) => { for (let j = 0; j < pairs.length; j += 2) storiesPerDay[pairs[j]]++ })
-
-          // The 4 small stat cards, two by two at the top of the right column. Each has a number and a small picture of the same measure.
-          const groupCount = new Set(S.active.map((o) => o.group).filter(Boolean)).size
-          const statOutlets = Stat({
-            variant: 'compact', kpi: 'K05', label: t('mme.stat.outlets'), empty: !S.active.length, value: fmt.int(S.active.length),
-            sub: greek ? t('mme.stat.outlets.sub', { groups: fmt.int(groupCount) }) : t('mme.stat.outlets.sub.il'),
-            viz: UI.HBar(newsCount / (analysed || 1), 1, { label: fmt.pct(newsCount / (analysed || 1)) })
-          })
-          const hasPrev = days >= 14
-          const last7 = sumRange(totals, i1 - 6, i1)
-          const prev7 = hasPrev ? sumRange(totals, i1 - 13, i1 - 7) : 0
-          const change = hasPrev && prev7 > 0 ? (last7 - prev7) / prev7 : null
-          const statArticles = Stat({
-            variant: 'compact', kpi: 'K06', label: t('media2.stat.articles'), empty: analysed <= 0, value: fmt.int(analysed),
-            delta: change, sub: change !== null ? t('media2.stat.articles.delta') : t('media2.stat.articles.avg', { n: fmt.int(Math.round(analysed / days)) }),
-            viz: Spark(totals, i0, i1, t('media2.spark.articles'), { w: 80, hgt: 22 })
-          })
-          const statStories = Stat({
-            variant: 'compact', kpi: 'K07', label: t('media2.stat.stories'), empty: S.storyCount <= 0, value: fmt.int(S.storyCount),
-            sub: t('media.k07.hint'), viz: Spark(storiesPerDay, i0, i1, t('media2.spark.stories'), { w: 80, hgt: 22 })
-          })
-          const quoteTotal = S.personQuotes.reduce((a, b) => a + b, 0)
-          const statPeople = Stat({
-            variant: 'compact', label: t('mme.stat.people'), empty: !quoteTotal, value: fmt.int(S.personQuotes.filter((n) => n > 0).length),
-            sub: t('mme.stat.people.sub', { n: fmt.int(quoteTotal) })
-          })
 
           // The lead chart: articles per day, news and other. A drag selects a period.
           let peakDay = i0
           for (let i = i0; i <= i1; i++) if (totals[i] > totals[peakDay]) peakDay = i
-          const volume = card('mme-side',
+          const volume = card('c-7',
             cardHead(t('media2.chart.title'), UI.Legend([{ label: t('media2.chart.news'), color: 'var(--series-news)' }, { label: t('media2.chart.other'), color: 'var(--series-other)' }]),
               analysed > 0 ? `${t('media2.chart.peak', { date: fmt.date(dates[peakDay]), n: fmt.int(totals[peakDay]) })} · ${t('media2.chart.hint')}` : null),
             analysed > 0 ? VolumeChart({ dates, news, other, i0, i1, onSelect: select, height: window.matchMedia('(min-width: 1280px)').matches ? 340 : 170 }) : emptyText(t('media2.chart.empty')))
@@ -239,23 +232,17 @@
           // The info names the outlet with the most articles with no byline. The tick is the average of the 5 outlets.
           const anon = bylines.kind === 'data' ? bylines.data.outlets.slice().sort((a, b) => b.anonPct - a.anonPct) : []
           const anonAvg = anon.reduce((s, r) => s + r.anonPct, 0) / (anon.length || 1)
-          const bylineCard = greek && anon.length ? card('', cardHead(t('originality.anon.title'), null, `${t('originality.anon.finding', { name: anon[0].name, v: fmt.pct(anon[0].anonPct / 100) })}. ${t('originality.anon.info')}`),
+          const bylineCard = anon.length ? card('', cardHead(t('originality.anon.title'), null, `${t('originality.anon.finding', { name: anon[0].name, v: fmt.pct(anon[0].anonPct / 100) })}. ${t('originality.anon.info')}`),
             h('p', { class: 'dcard-sub' }, t('originality.meta', { n: bylines.data.outlets.length, from: fmt.date(bylines.data.window[0], { month: 'short', year: 'numeric' }), to: fmt.date(bylines.data.window[1], { month: 'short', year: 'numeric' }) })),
             UI.BarList(anon.map((r) => ({ label: r.name, value: r.anonPct, text: fmt.pct(r.anonPct / 100) })), { max: 100, reference: { value: anonAvg, label: t('originality.anon.avg', { v: fmt.pct(anonAvg / 100) }) } })) : null
 
-          // All the outlets: one row for each, in place of the outlet cards of the live page. The card answers which outlets write the most,
-          // and the columns put the group and the articles side by side. The header of the articles sorts.
-          const groupCell = (o) => h('p', { class: 'mme-rank-group' }, h('span', { class: o.group ? 'dot' : 'dot dot-none', style: o.group ? `--dot:${colorOfGroup.get(o.group) || NO_GROUP}` : null, 'aria-hidden': 'true' }),
-            !o.group ? h('span', {}, t('media.col.group.none')) : slugOfGroup.has(o.group) ? h('a', { href: `group-v2.html?g=${slugOfGroup.get(o.group)}` }, o.group) : o.group)
-          const columns = [
-            { label: t('media.col.outlet'), render: (o) => h('p', { class: 'mme-rank-name' }, Mme.outletLink(S, o)) },
-            greek && { label: t('media.col.group'), phone: false, render: groupCell },
-            { label: t('mme.rank.sort.n'), num: true, sortable: true, sortKey: 'n', sortValue: (o) => o.n, render: (o) => fmt.int(o.n) }
-          ].filter(Boolean)
-          const ranking = card('c-6 mme-rank', cardHead(t('mme.rank.all'), null, `${t('mme.rank.note')}`),
-            UI.DataTable({ columns, rows: S.active, rankColumn: true, pageSize: Infinity, sort: { key: 'n', dir: 'desc' }, emptyText: t('media.empty') }))
-          ranking.id = 'ranking'
-          ranking.setAttribute('aria-live', 'polite')
+          // Row 1 on the right: the articles of each outlet, one ring with a slice for each outlet. The list of the outlets scrolls inside the card.
+          const outletCard = card('c-5', cardHead(t('media2.outlets.title')),
+            analysed > 0 ? OutletDonut({ S, total: analysed }) : emptyText(t('media2.chart.empty')))
+
+          // Row 2: one bar for each group, cut in its outlets. The outlets with no group are the last bar.
+          const groupCard = card('c-12', cardHead(t('media2.bygroup.title')),
+            analysed > 0 ? GroupBars({ S }) : emptyText(t('media2.chart.empty')))
 
           // The cards of the live page that the dashboard did not have.
           // The topic chips and «Ένα θέμα, όλα τα μέσα» are on Θέματα › Ένα θέμα. «Οι ιστορίες του διαστήματος» is on Ιστορίες › Ανά μέσο. «Τι ξεχωρίζει» is on Αρχική.
@@ -268,19 +255,9 @@
 
           const cards = tab === 'writing'
             ? [scatterCard, bylineCard, gov]
-            : [ranking, h('div', { class: 'c-6 card-col card-col-fill' }, h('div', { class: 'stats-2x2' }, statOutlets, statArticles, statStories, statPeople), volume)]
+            : [volume, outletCard, groupCard]
           content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...cards), Mme.MethodNote(S), protoNote())
-          // Side by side, the right column is as tall as the table: the chart takes the height that the stat cards leave.
-          if (tab !== 'writing' && analysed > 0) {
-            requestAnimationFrame(() => requestAnimationFrame(() => {
-              if (!window.matchMedia('(min-width: 1280px)').matches || !volume.isConnected) return
-              const chartEl = volume.lastElementChild
-              const slack = volume.getBoundingClientRect().bottom - parseFloat(getComputedStyle(volume).paddingBottom) - chartEl.getBoundingClientRect().bottom
-              if (slack > 4) chartEl.replaceWith(VolumeChart({ dates, news, other, i0, i1, onSelect: select, height: 340 + Math.floor(slack) }))
-            }))
-          }
         }
-        placeSetSelect()
         draw()
       }
     })

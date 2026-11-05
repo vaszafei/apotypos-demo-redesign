@@ -88,7 +88,6 @@
 /* Μέσα › Επισκόπηση: the table and the chart are half and half, and stack when the table no longer fits in a half. */
 @media (max-width: 1279px) { .mme-rank { grid-column: span 12; } }
 /* Μέσα: the set of outlets and the period, together in the filters row. */
-.mme-filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 /* Wide screens: the table of all the outlets sits next to the volume chart, and the chart is tall to fill the card. The table scrolls inside its card, with the header in view, so the two columns are about as tall. */
 @media (min-width: 1100px) {
   .mme-rank .table-wrap { max-height: 560px; overflow-y: auto; }
@@ -141,3 +140,18 @@
 .pair-dbar .dbar + .dbar .dbar-mid { top: -1px; bottom: -1px; }
 .pair-dbar .dbar + .dbar .dbar-seg { border-radius: 2px; }
 .pair-dbar .dbar-mid { background: var(--text-secondary); opacity: 0.55; }
+
+.mme-outlet-list { max-height: 210px; overflow-y: auto; padding-right: var(--space-2); gap: 6px; }
+.sun-wrap .mme-outlet-list li { grid-template-columns: minmax(0, 1fr) auto; }
+.outlet-donut .slice:nth-of-type(even) { opacity: 0.6; }
+.group-bars { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-2); }
+.gb-row { display: grid; grid-template-columns: 190px minmax(0, 1fr) 64px; column-gap: var(--space-3); align-items: center; font-size: var(--text-small); }
+.gb-name { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.gb-name .dot { flex: none; }
+.gb-name > :last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gb-track { min-width: 0; }
+.gb-bar { display: flex; gap: 2px; height: 28px; }
+.minimal .gb-row .gb-seg { min-width: 3px; overflow: hidden; padding: 0 6px; display: flex; align-items: center; border-radius: 3px; color: var(--seg-ink); font-size: var(--text-caption); white-space: nowrap; text-decoration: none; }
+.minimal .gb-row .gb-seg:hover { color: var(--seg-ink); outline: 2px solid var(--strong); outline-offset: -2px; }
+.gb-value { text-align: right; color: var(--text-secondary); font-size: var(--text-caption); font-variant-numeric: tabular-nums; }
+@media (max-width: 719px) { .gb-row { grid-template-columns: minmax(0, 1fr) auto; row-gap: 4px; } .gb-track { grid-column: 1 / -1; grid-row: 2; } }
