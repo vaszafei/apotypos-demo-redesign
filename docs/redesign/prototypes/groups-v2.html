@@ -7,7 +7,7 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=15">
   <link rel="stylesheet" href="assets/app.css?v=50">
-  <link rel="stylesheet" href="assets/dash.css?v=94">
+  <link rel="stylesheet" href="assets/dash.css?v=95">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
@@ -36,6 +36,31 @@
     // The shortest name that is still the group, for the legend of the line chart: one line.
     const compact = (g) => (g.key === null ? t('media2.groups.none.short') : short(g.label).replace(/^Όμιλος\s+/, '').replace(/\s+(Digital Media|Media|Group)$/, '').replace(/-.*$/, ''))
 
+    // A smooth path through the points: a monotone cubic, so the curve goes through every point and never goes over or under the points between two of them.
+    function smoothPath (pts) {
+      const f = (v) => v.toFixed(1)
+      const n = pts.length
+      if (n < 3) return pts.map(([x, y], i) => `${i ? 'L' : 'M'}${f(x)} ${f(y)}`).join('')
+      const slope = []
+      for (let i = 0; i < n - 1; i++) slope[i] = (pts[i + 1][1] - pts[i][1]) / (pts[i + 1][0] - pts[i][0])
+      const tan = [slope[0]]
+      for (let i = 1; i < n - 1; i++) tan[i] = slope[i - 1] * slope[i] <= 0 ? 0 : (slope[i - 1] + slope[i]) / 2
+      tan[n - 1] = slope[n - 2]
+      for (let i = 0; i < n - 1; i++) {
+        if (slope[i] === 0) { tan[i] = 0; tan[i + 1] = 0; continue }
+        const a = tan[i] / slope[i]
+        const b = tan[i + 1] / slope[i]
+        const sq = a * a + b * b
+        if (sq > 9) { const c = 3 / Math.sqrt(sq); tan[i] = c * a * slope[i]; tan[i + 1] = c * b * slope[i] }
+      }
+      let d = `M${f(pts[0][0])} ${f(pts[0][1])}`
+      for (let i = 0; i < n - 1; i++) {
+        const w = (pts[i + 1][0] - pts[i][0]) / 3
+        d += `C${f(pts[i][0] + w)} ${f(pts[i][1] + tan[i] * w)} ${f(pts[i + 1][0] - w)} ${f(pts[i + 1][1] - tan[i + 1] * w)} ${f(pts[i + 1][0])} ${f(pts[i + 1][1])}`
+      }
+      return d
+    }
+
     // Lines: one for each group, the articles of each day. The vertical axis is a square-root scale, so the groups with few articles can be read beside the one with the most.
     // A gap day of the collection has a band and breaks the lines. A hover reads the day for every group.
     function VolumeChart ({ dates, stacks, order }) {
@@ -63,13 +88,13 @@
         gapDay.forEach((gap, i) => { if (gap) svg.append(h('rect', { x: X(i) - step / 2, y: pad.top, width: step, height: plotH, fill: 'var(--bar-track)', opacity: 0.8 })) })
         // The outlets with no group are drawn first, so the groups are over them.
         order.map((o, k) => k).reverse().forEach((k) => {
-          let d = ''
-          let run = 0
+          const runs = []
           stacks.forEach((day, i) => {
-            if (gapDay[i]) { run = 0; return }
-            d += `${run ? 'L' : 'M'}${X(i).toFixed(1)} ${Y(day[k].value).toFixed(1)}`
-            run++
+            if (gapDay[i]) { runs.push([]); return }
+            if (!runs.length) runs.push([])
+            runs[runs.length - 1].push([X(i), Y(day[k].value)])
           })
+          const d = runs.filter((r) => r.length).map(smoothPath).join('')
           svg.append(h('path', { d, fill: 'none', stroke: order[k].color, 'stroke-width': order[k].key === null ? 1.25 : 1.5, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', opacity: order[k].key === null ? 0.75 : 1 }))
         })
         // The hover: a line on the day, a dot on each line, and the tooltip with the groups, the largest first.
@@ -383,7 +408,7 @@
 
           const rows = [...groups.map((g) => ({ key: g.name, label: g.name, value: g.collected, color: colorOf.get(g.name) })), ...(ungroupedTotal ? [{ key: null, label: t('media2.groups.none'), value: ungroupedTotal, color: NO_GROUP }] : [])]
 
-          // Row 2, on the left: the bubbles of owners and outlets. Row 1, on the right: the share of each group and of its outlets. The owner of a group is in the title of its legend row.
+          // Row 2, on the left: the network of owners and outlets. Row 2, on the right: the share of each group and of its outlets. The owner of a group is in the title of its legend row.
           const outletOf = (o) => ({ name: o.name, slug: o.slug, value: o.collected, analysed: o.analysed, news: o.news, stance: o.stance })
           const treeGroups = [...groups.map((g) => ({ key: g.name, label: g.name, owner: g.owner, color: colorOf.get(g.name), slug: g.slug, lean: g.lean, outlets: g.outlets.filter((o) => o.collected > 0).map(outletOf).sort((a, b) => b.value - a.value) })),
             ...(ungroupedTotal ? [{ key: null, label: t('media2.groups.none'), owner: null, color: NO_GROUP, outlets: d.ungrouped.filter((o) => o.collected > 0).map(outletOf).sort((a, b) => b.value - a.value) }] : [])]
@@ -392,7 +417,7 @@
             total ? OwnerBubbles({ groups: treeGroups, total }) : emptyText(t('groups.empty')))
           // The finding (how much the 3 largest groups write) is the first sentence of the info of the card.
           const top3 = treeGroups.filter((g) => g.key !== null).sort((a, b) => b.value - a.value).slice(0, 3).reduce((a, g) => a + g.value, 0)
-          const shareCard = card('c-5', cardHead(t('media2.groups.title'), null, total ? [t('g2.share.finding', { share: fmt.pct(top3 / total) }), t('media2.groups.known', { share: fmt.pct(grouped / total) })].join('. ') : null),
+          const shareCard = card('c-4', cardHead(t('media2.groups.title'), null, total ? [t('g2.share.finding', { share: fmt.pct(top3 / total) }), t('media2.groups.known', { share: fmt.pct(grouped / total) })].join('. ') : null),
             total
               ? h('div', { class: 'donut-wrap sun-wrap' },
                   h('ul', { class: 'rows rows-groups rows-owners' }, treeGroups.map((g) => {
@@ -415,7 +440,7 @@
               ? [(() => { const l = UI.Legend(order.map((o) => ({ label: compact(o), color: o.color }))); l.classList.add('legend-line'); return l })(), VolumeChart({ dates: m.dates, stacks, order })]
               : emptyText(t('groups.empty')))
 
-          // Row 2, on the right: the stance of each group.
+          // Row 1, on the right: the stance of each group.
           const stanceRows = groups.map((g) => {
             const s = g.outlets.reduce((a, o) => [a[0] + o.stance[0], a[1] + o.stance[1], a[2] + o.stance[2]], [0, 0, 0])
             const n = s[0] + s[1] + s[2]
@@ -423,7 +448,7 @@
           }).filter((r) => r.n >= 30)
           const scale = Math.max(...stanceRows.map((r) => Math.max(r.crit + r.neu / 2, r.sup + r.neu / 2)), 0.01)
           const critical = stanceRows.slice().sort((a, b) => b.crit - a.crit)
-          const stanceCard = card('c-4', cardHead(t('g2.stance.title'), null, `${critical.length > 1 ? `${t('g2.stance.finding', { most: critical[0].g.name, a: fmt.pct(critical[0].crit), least: critical[critical.length - 1].g.name, b: fmt.pct(critical[critical.length - 1].crit) })}. ` : ''}${t('g2.stance.sub')}`),
+          const stanceCard = card('c-5', cardHead(t('g2.stance.title'), null, `${critical.length > 1 ? `${t('g2.stance.finding', { most: critical[0].g.name, a: fmt.pct(critical[0].crit), least: critical[critical.length - 1].g.name, b: fmt.pct(critical[critical.length - 1].crit) })}. ` : ''}${t('g2.stance.sub')}`),
             stanceRows.length
               ? [UI.Legend(['critical', 'neutral', 'supportive'].map((nm, i) => ({ label: t(`stance.${nm}`), color: UI.STANCE_COLORS[i] }))),
                 UI.BarList(stanceRows.map((r) => ({
@@ -433,7 +458,7 @@
                 })))]
               : emptyText(t('groups.empty')))
 
-          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, volume, shareCard, bubbles, stanceCard), protoNote())
+          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, volume, stanceCard, bubbles, shareCard), protoNote())
         }
         draw()
       }

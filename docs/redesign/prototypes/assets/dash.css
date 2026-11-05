@@ -160,6 +160,8 @@
 .sun-wrap { flex: 1; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-4); align-items: center; }
 .sun-wrap .rows-owners .row-name { white-space: normal; }
 .sun-wrap .donut { width: 210px; height: 210px; }
+.dash-grid > .c-4 .sun-wrap { grid-template-columns: minmax(0, 1fr); }
+.dash-grid > .c-4 .sun-wrap .donut { justify-self: center; grid-row: 1; }
 .sun-wrap .rows-owners { gap: 9px; }
 .sun-wrap .rows-owners li { grid-template-columns: 10px minmax(0, 1fr) auto; }
 @media (max-width: 719px) { .sun-wrap { grid-template-columns: minmax(0, 1fr); } .sun-wrap .donut { justify-self: center; width: 200px; height: 200px; grid-row: 1; } }
