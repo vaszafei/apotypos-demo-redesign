@@ -212,9 +212,9 @@ Object.assign(window.MESSAGES.en, { 'fp.period.days': '{days} days to {date}', '
 Object.assign(window.MESSAGES.el, {
   'topics2.meta': '{n} θέματα · {from} – {to}',
   'topics2.empty': 'Δεν υπάρχουν άρθρα σε αυτή την περίοδο.',
-  'topics2.time.title': 'Τάσεις',
+  'topics2.time.title': 'Θέματα στον χρόνο',
   'topics2.time.sub': 'Άρθρα ανά ημέρα, μέσος όρος 7 ημερών, για τα 8 θέματα με τα περισσότερα άρθρα στην περίοδο.',
-  'topics2.move.title': 'Θέματα σε άνοδο και πτώση',
+  'topics2.move.title': 'Τάσεις',
   'topics2.move.sub': 'Αλλαγή των άρθρων στις τελευταίες 14 ημέρες έναντι των 14 πριν. Μόνο θέματα με 200 άρθρα ή περισσότερα στις 14 πριν. Το θέμα «Άλλα» δεν μετράει.',
   'topics2.all.title': 'Όλα τα θέματα',
   'topics2.all.sub': 'Όλα τα θέματα της περιόδου, με τα άρθρα και το μερίδιο του καθενός.',
@@ -236,9 +236,9 @@ Object.assign(window.MESSAGES.el, {
 Object.assign(window.MESSAGES.en, {
   'topics2.meta': '{n} topics · {from} – {to}',
   'topics2.empty': 'No articles in this period.',
-  'topics2.time.title': 'Trends',
+  'topics2.time.title': 'Topics over time',
   'topics2.time.sub': 'Articles per day, average of 7 days, for the 8 topics with the most articles in the period.',
-  'topics2.move.title': 'Topics that rise and fall',
+  'topics2.move.title': 'Trends',
   'topics2.move.sub': 'Change of the articles in the last 14 days against the 14 before. Only topics with 200 articles or more in the 14 before. The topic "Other" is not counted.',
   'topics2.all.title': 'All topics',
   'topics2.all.sub': 'All the topics of the period, with the articles and share of each.',

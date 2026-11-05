@@ -22,3 +22,10 @@ Branch `claude/topics-overview`, one file of the page (`docs/redesign/prototypes
 
 ## Looked at (screenshots)
 1440 paper (before the legend fix and after), 1920 paper, 390 paper, the line hover, the picker open, a 7-day period, `?tab=topic`. Not looked at: 1100, night, `?tab=agenda` (only measured: no console errors, no horizontal scroll), `?state=empty` and `?state=error`.
+
+## Third round (user: "now i want reposition and renaming")
+- Row 1: «Όλα τα θέματα» first as a compact card (c-3: the ring on top, the list under it, scrolls inside 190 px), then the line chart (c-9). Row 2: the movers card, half width, on the left. Below 1280 px the grid already makes c-3 and c-9 full width, so the donut card keeps its side-by-side layout there (rules in `mme.css`, bumped to 52 on its 5 pages).
+- The line chart card is renamed «Θέματα στον χρόνο» (was «Τάσεις»); «Θέματα σε άνοδο και πτώση» is renamed «Τάσεις». Messages `topics2.time.title`, `topics2.move.title`; `messages-v2.js` 55 to 56.
+- The lines have the shared first-view animation (class `line-series`, the end dots `line-dot`), so they draw from the left. Measured: all 8 lines have an animation 150 ms after load; a screenshot at about 400 ms shows them half drawn.
+- The names at the line ends are links (SVG `a`, the href of `UI.EntityLink` for type `topic`). Measured: 8 hrefs `topic-v2.html?i=<n>`, a click on the second name opened `topic-v2.html?i=1` with no console error.
+- The chart is 380 px tall from 640 px of card width (it was 900), so the names at 1440 are not bunched. Names are cut at 32 characters from 700 px of card width.
