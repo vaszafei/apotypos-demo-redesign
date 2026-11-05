@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="assets/tokens.css?v=15">
   <link rel="stylesheet" href="assets/app.css?v=48">
   <link rel="stylesheet" href="assets/dash.css?v=88">
-  <link rel="stylesheet" href="assets/mme.css?v=48">
+  <link rel="stylesheet" href="assets/mme.css?v=51">
   <link rel="stylesheet" href="assets/date-range.css?v=8">
   <script src="assets/page-move.js?v=1"></script>
 </head>
@@ -151,7 +151,7 @@
         h('span', { class: 'dot', style: `--dot:${colorOf(k)}`, 'aria-hidden': 'true' }),
         h('span', { class: 'row-name' }, UI.EntityLink({ type: 'topic', key: String(r.i), label: r.name })),
         h('span', { class: 'row-value' }, fmt.pct(r.n / total)))))
-      return h('div', { class: 'donut-wrap sun-wrap' }, list, svg)
+      return h('div', { class: 'donut-wrap sun-wrap mme-topic-wrap' }, h('div', { class: 'mme-topic-box' }, list), svg)
     }
 
     // Squarified layout: items [{ v }] in the rectangle, the largest first, as near to squares as it can. Returns [{ i, x, y, w, h }].
@@ -292,7 +292,7 @@
           const volume = card('c-7',
             cardHead(t('media2.chart.title'), UI.Legend([{ label: t('media2.chart.news'), color: 'var(--series-news)' }, { label: t('media2.chart.other'), color: 'var(--series-other)' }]),
               analysed > 0 ? `${t('media2.chart.peak', { date: fmt.date(dates[peakDay]), n: fmt.int(totals[peakDay]) })} · ${t('media2.chart.hint')}` : null),
-            analysed > 0 ? VolumeChart({ dates: dates.slice(i0, i1 + 1), news: news.slice(i0, i1 + 1), other: other.slice(i0, i1 + 1), onSelect: select, height: window.matchMedia('(min-width: 1280px)').matches ? 340 : 170 }) : emptyText(t('media2.chart.empty')))
+            analysed > 0 ? VolumeChart({ dates: dates.slice(i0, i1 + 1), news: news.slice(i0, i1 + 1), other: other.slice(i0, i1 + 1), onSelect: select, height: window.matchMedia('(min-width: 1280px)').matches ? 230 : 170 }) : emptyText(t('media2.chart.empty')))
 
           // The scatter: news share and clickbait share of each outlet.
           const cbOutlets = S.active.filter((o) => o.cbKnown >= 100)

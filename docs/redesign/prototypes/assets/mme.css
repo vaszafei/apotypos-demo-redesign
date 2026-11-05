@@ -141,7 +141,15 @@
 .pair-dbar .dbar + .dbar .dbar-seg { border-radius: 2px; }
 .pair-dbar .dbar-mid { background: var(--text-secondary); opacity: 0.55; }
 
-.mme-topic-list { max-height: 210px; overflow-y: auto; padding-right: var(--space-2); gap: 6px; }
+.sun-wrap.mme-topic-wrap { align-items: center; gap: var(--space-3); }
+.sun-wrap.mme-topic-wrap .donut { width: 150px; height: 150px; }
+.mme-topic-box { position: relative; align-self: stretch; min-height: 150px; }
+.mme-topic-list { position: absolute; inset: 0; overflow-y: auto; padding-right: var(--space-2); }
+.sun-wrap .mme-topic-list { gap: 5px; }
+.mme-topic-list li { font-size: var(--text-caption); line-height: 1.3; }
+@media (min-width: 720px) { .mme-topic-list .entity-link { min-height: 0; } }
+.sun-wrap .mme-topic-list .row-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 719px) { .mme-topic-box { position: static; } .mme-topic-list { position: static; max-height: 260px; } .sun-wrap.mme-topic-wrap .donut { width: 160px; height: 160px; } }
 .topic-donut .slice-rest:nth-of-type(even) { opacity: 0.6; }
 .gt-scroll { overflow-x: auto; }
 .gt-scroll > .fit { min-width: 640px; }
