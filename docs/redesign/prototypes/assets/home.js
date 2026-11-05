@@ -81,10 +81,11 @@
   const LIST_PART = 100
 
   // The stories of a day: a story is picked to show it in the card, and its button opens its page. The card shows the story of the rank in info, and the picked day at the top right.
-  // A page that shows a period (Μέσα › Ιστορίες) passes title, hint, dateText and empty for its own words.
-  function DayCard (info, { date, onStory, swap, title, hint, dateText, empty }) {
-    const head = cardHead(title || t('home.day.title'), h('span', { class: 'home-date' }, dateText || fmt.date(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })), hint || t('home.day.info'))
-    if (!info) return card('c-5 home-day', head, emptyText(empty || t('home.day.empty')))
+  // A page that shows a period (Μέσα › Ιστορίες) passes title, hint, dateText (false for none) and empty for its own words, and part ('story' or 'list') with span (a column class)
+  // to draw the story and its list as two cards. With no part it is one card.
+  function DayCard (info, { date, onStory, swap, title, hint, dateText, empty, part, span = 'c-5' }) {
+    const head = cardHead(title || t('home.day.title'), dateText === false ? null : h('span', { class: 'home-date' }, dateText || fmt.date(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })), hint || t('home.day.info'))
+    if (!info) return card(`${span} home-day`, head, emptyText(empty || t('home.day.empty')))
     const { story, topic } = info
     const total = sum(info.outlets.map((o) => o.n))
     const slices = info.outlets.map((o) => ({ name: o.name, group: o.group, n: o.n, color: groupColor(o.group), slug: o.slug }))
@@ -94,32 +95,39 @@
       h('button', { type: 'button', class: 'home-story-pick', 'aria-pressed': String(r === info.rank), onClick: () => onStory(r) },
         h('span', { class: 'home-story-name' }, name(o.s)), h('span', { class: 'muted-text' }, fmt.int(o.n))),
       h('a', { class: 'button button-sm home-story-go', href: `story-v2.html?id=${o.s.id}`, 'aria-label': `${t('home.day.open')}: ${name(o.s)}` }, t('home.day.open'), Icon('chevron-right', 'icon icon-sm')))
-    // The list has every story of the day and scrolls inside the card. A new day starts at the top; a pick on the same day keeps the place.
-    // A period can have thousands of stories, so the list draws them in parts of LIST_PART: the next part comes when the scroll is near the end.
-    const sameDay = info.d === listDay
-    listDay = info.d
-    if (!sameDay) { listTop = 0; listShown = LIST_PART }
-    const stories = h('ul', { class: 'home-stories' })
-    const more = () => {
-      const from = stories.children.length
-      if (from >= info.list.length) return
-      stories.append(...info.list.slice(from, Math.min(info.list.length, from + LIST_PART)).map((o, k) => row(o, from + k)))
-      listShown = stories.children.length
+    const listOf = () => {
+      // The list has every story of the day and scrolls inside the card. A new day starts at the top; a pick on the same day keeps the place.
+      // A period can have thousands of stories, so the list draws them in parts of LIST_PART: the next part comes when the scroll is near the end.
+      const sameDay = info.d === listDay
+      listDay = info.d
+      if (!sameDay) { listTop = 0; listShown = LIST_PART }
+      const stories = h('ul', { class: 'home-stories' })
+      const more = () => {
+        const from = stories.children.length
+        if (from >= info.list.length) return
+        stories.append(...info.list.slice(from, Math.min(info.list.length, from + LIST_PART)).map((o, k) => row(o, from + k)))
+        listShown = stories.children.length
+      }
+      stories.append(...info.list.slice(0, Math.min(info.list.length, Math.max(LIST_PART, listShown))).map(row))
+      stories.addEventListener('scroll', () => {
+        listTop = stories.scrollTop
+        if (stories.scrollTop + stories.clientHeight > stories.scrollHeight - 400) more()
+      })
+      requestAnimationFrame(() => { stories.scrollTop = listTop })
+      return stories
     }
-    stories.append(...info.list.slice(0, Math.min(info.list.length, Math.max(LIST_PART, listShown))).map(row))
-    stories.addEventListener('scroll', () => {
-      listTop = stories.scrollTop
-      if (stories.scrollTop + stories.clientHeight > stories.scrollHeight - 400) more()
-    })
-    requestAnimationFrame(() => { stories.scrollTop = listTop })
 
     // swap: 'day' draws the whole card in again, 'story' only the story, its topic and its outlets (the list keeps its place).
-    return card(`c-5 home-day${swap ? ` is-swap is-swap-${swap}` : ''}`, head,
+    const cls = `${span} home-day${swap ? ` is-swap is-swap-${swap}` : ''}`
+    const lead = [
       h('h3', { class: 'home-day-story' }, name(story)),
       h('p', { class: 'home-day-meta' }, topic ? [h('span', { class: 'home-topic-label' }, t('home.day.topic')), ' ', UI.EntityLink({ type: 'topic', key: String(story.issue), label: name(topic) })] : null,
         info.outlets.length ? null : [topic ? ' · ' : null, t('home.day.meta', { n: fmt.int(info.n) })]),
-      outlets,
-      stories)
+      outlets
+    ]
+    if (part === 'story') return card(cls, head, ...lead)
+    if (part === 'list') return card(cls, head, listOf())
+    return card(cls, head, ...lead, listOf())
   }
 
   // The calendar of a month: a strip of tiles, one for each day, that scrolls sideways. A tile has the day, the articles of all the outlets and the change against the day before.

@@ -52,3 +52,24 @@ Branch `claude/stories-into-media`.
 ### Left alone
 - `data/campaigns.js`, the campaigns function of `make-fixtures.py` and the pages table rows (`data/pages.js`, `make-pages-table.py`) still name `/campaigns`; nothing loads them now.
 - `spread.js` and `data/groups.js` are no longer loaded by `stories-v2.html` (they are still used by other pages).
+
+## Round 3
+
+### What changed
+- Ιστορίες › Επισκόπηση is three cards: «Ιστορία» (the story, its topic and its outlets) `c-6` on the first row; «Όλες οι ιστορίες» (the list) `c-4` and «Ιστορία στον χρόνο» (a line chart of the picked story) `c-6` on the second row. A pick in the list draws the story and the line again; the list keeps its place.
+- `assets/home.js`: `Home.DayCard` takes `part` (`'story'` or `'list'`) and `span`, and `dateText: false` for no date. With no part it is the one card of Αρχική, as before.
+- `assets/home.css`: `.home-list` starts the list on the first column (`1 / span 4`, `1 / span 6` under 1280 px, full width under 720 px) so it is on the second row at every width.
+- `stories-v2.html`: `StoryLine`, one line with the articles of the story for each day of the period (linear axis from 0, monotone curve, the first-view animation of the other lines, the white tooltip with a row).
+- Messages `stories.story.info`, `stories.time.title`, `stories.time.info`; the info of the list says «στις κάρτες». `?v=`: `messages-spread.js` 20, `home.js` 38, `home.css` 47.
+
+### Measured
+- `check.mjs` passes; `visual-check.mjs --only stor` (4 pages) and `--only index`: no findings, 4 widths, paper and night.
+- Playwright (cards, x y width×height): at 1440 the story card is 554 wide at the top, the list 364 and the chart 554 on the row under it; at 1920 604, 397, 604; at 1100 398, 398, 398; at 390 the three are 358 wide in one column. No horizontal scroll, no console errors. A pick of the 3rd story changes the story card, keeps 100 rows and marks the row. Αρχική still has 88 bars and the same card (same count as on the commit before).
+
+### Seen
+- Screenshots of `/stories` at 1920 and 1440 (with the tooltip on the line). 1100 and 390 only measured.
+
+### My calls (not the user's)
+- The row 2 is 4 + 6 columns as written, so the 2 columns on the right of it are empty (and the right half of row 1).
+- Titles: «Ιστορία», «Όλες οι ιστορίες», «Ιστορία στον χρόνο». The period is at the top right of the story card; the list card has no date (the title wrapped to two lines with it).
+- The line shows the articles of the story on each day (no rolling average) over the picked period.

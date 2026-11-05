@@ -16,3 +16,7 @@ Then: "do that and open pr".
 ## Round 2 (same branch, PR #115)
 
 The user's words: "so in stories overview, i want to add date picker like themata and i want you to use the istories card from home page here, i want you to remove the other 2 cards. then i want the motiva diadosis to remove and the ypotheseis to go to analiseis, on the name Rouvikonas"
+
+## Round 3 (same branch, PR #115)
+
+The user's words (with a screenshot of the card): "now i want here to devide the card to 2 cards, to that and the list. now the first card has to be on the first row with 6 flex and the list in a second row with flex 4, in the other 6 of the 2nd row lets add a line chart for that story on time"
