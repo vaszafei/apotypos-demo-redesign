@@ -4,10 +4,10 @@ Branch `claude/topics-overview`, one file of the page (`docs/redesign/prototypes
 
 ## What changed
 - Date picker in the top bar (same as Μέσα › Επισκόπηση; presets of the days plus last 7 days). It sets the period of the lines and the donut. The other tabs have no picker.
-- Row 1: «Τάσεις» on the whole row (c-12), redrawn for the period, with the style of the Ιδιοκτησία chart: square-root y axis, names at the end of each line on the right (a dot in the line colour, names kept 14 px apart; a legend over the chart below 520 px), no toggles, vertical rule with dots, white tooltip with rows.
+- Row 1: «Τάσεις» on the whole row (c-12), redrawn for the period, with the style of the Ιδιοκτησία chart (white tooltip, rule with dots) but a linear y axis (third request: the names must be on each line, which a square-root axis and a short chart did not allow; the chart is 380 px tall on a wide card), names at the end of each line on the right (a dot on the line end; a name is on the height of its line and moves only where two ends are less than 13 px apart, by half of what is missing each; a legend over the chart below 520 px), no toggles, vertical rule with dots, white tooltip with rows.
 - Row 2, on the right: «Όλα τα θέματα» is a donut of the topics of the period (the Επισκόπηση donut): 8 largest topics coloured, the same colours as the lines, the rest neutral, a list of all topics that scrolls inside. The table, sparklines, stories count and «Εμφάνιση όλων» are gone.
 - Row 2, on the left: «Θέματα σε άνοδο και πτώση» is c-6. The donut is beside it (second request: "i want to give to the linechart all the row and go the donut in the down row"; the labels at the line ends, on the right: the user chose it from two readings of "in the left of the chart, when the lines of each end").
-- `messages-v2.js` 53 to 54 on all 27 pages. Removed the keys `topics2.time.last`, `topics2.tip`, `topics2.col.change`, `topics2.col.stories`; changed `topics2.time.sub` and `topics2.all.sub`; added `topics2.all.center`.
+- `messages-v2.js` 53 to 55 on all 27 pages. Removed the keys `topics2.time.last`, `topics2.tip`, `topics2.col.change`, `topics2.col.stories`; changed `topics2.time.sub` and `topics2.all.sub`; added `topics2.all.center`.
 
 ## Calls of the agent (not the user's words)
 - The toggles are gone: with the square-root axis Αθλητικά no longer flattens the other lines. The user was asked; the "go" came with the plan.
