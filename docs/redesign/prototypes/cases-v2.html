@@ -14,14 +14,14 @@
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=41"></script>
-  <script src="assets/messages-v2.js?v=57"></script>
+  <script src="assets/messages.js?v=42"></script>
+  <script src="assets/messages-v2.js?v=58"></script>
   <script src="assets/messages-politics.js?v=10"></script>
   <script src="assets/components.js?v=20"></script>
   <script src="assets/motion.js?v=3"></script>
   <script src="assets/dash.js?v=21"></script>
   <script src="assets/politics.js?v=11"></script>
-  <script src="assets/shell.js?v=62"></script>
+  <script src="assets/shell.js?v=63"></script>
   <script src="data/cases.js?v=1"></script>
   <script>
     // Ιστορίες, Υποθέσεις (from Πολιτική): the coverage of one case in all outlets (K46). The page opens with a result, not an empty input (G6).
@@ -36,11 +36,11 @@
       id: 'cases',
       route: '/cases',
       dash: true,
-      title: () => t('nav.media'),
-      breadcrumbs: () => [{ label: t('nav.media') }],
+      title: () => t('nav.world'),
+      breadcrumbs: () => [{ label: t('nav.world') }],
       render (content, { tabs }) {
         content.classList.add('dash', 'minimal')
-        const title = t('tab.media.stories.cases')
+        const title = t('tab.world.rouvikonas')
         const problem = Dash.stateContent([result], { title, tabs, quiet: true })
         if (problem) { content.replaceChildren(...problem); return }
         const d = result.data

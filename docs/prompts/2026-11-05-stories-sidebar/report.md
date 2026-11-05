@@ -24,3 +24,31 @@ Branch `claude/stories-into-media`.
 ## My calls
 - The trail of the story page is Μέσα › Ιστορίες (the other detail pages show the entity name; the story name is not available when the title is built).
 - Old links keep working: the routes are unchanged.
+
+## Round 2
+
+### What changed
+- Ιστορίες › Επισκόπηση (`stories-v2.html`): the table «Όλες οι ιστορίες» and the chart «Νέες ιστορίες ανά ημέρα» are removed. The page has the date picker of Θέματα (`UI.DateRangePicker`, presets of `Mme.presets`) in the top bar and the stories card of Αρχική (`Home.DayCard`) for the period. Ανά μέσο is unchanged.
+- `assets/home.js`: new `Home.rangeInfo` (the same as `dayInfo` for days i0 to i1: articles of each story and of its outlets summed over the period). `DayCard` takes optional `title`, `hint`, `dateText`, `empty`, so Αρχική is unchanged. The list now draws 100 stories at a time and adds the next 100 near the end of the scroll (7,491 stories for the whole period drew 7,491 rows and took about 4 s to load).
+- Μοτίβα διάδοσης is removed: the sub-tab, the route `/campaigns`, `campaigns-v2.html`, its `camp.*` messages, its search kind (`scripts/make-search.mjs`, `data/search.js` regenerated: only the 5 campaigns rows differ).
+- Υποθέσεις (`/cases`, `cases-v2.html`) is now Αναλύσεις › Ρουβίκωνας (last tab of Αναλύσεις). Its question key is `question.world.rouvikonas`.
+- Dead messages of the two removed cards deleted in both languages (`stories.daily.*`, `stories.type.*`, `stories.col.period|groups`, `stories.count`, `echoes.reach.aria`, `topics2.stories.note`). New: `stories.period.info`, `stories.period.empty`.
+- `?v=`: `shell.js` 63, `messages.js` 42, `messages-spread.js` 19, `messages-v2.js` 58, `home.js` 36 (Αρχική and Ιστορίες).
+
+### Measured
+- `check.mjs` and `fixtures-check.mjs` pass.
+- Full `visual-check.mjs` (40 pages, 4 widths, paper and night): only `cdn-cgi/rum` 404 on `france-v2.html` and `pages.html`, and the missing `reports/france-riots/compare.html` on `pages.html` (all known).
+- Playwright at 1440: sidebar of Μέσα is Επισκόπηση, Ιδιοκτησία, Θέματα, Ιστορίες (Επισκόπηση, Ανά μέσο), Πώς γράφουν, Ομοιότητα και πρωτοτυπία; sidebar of Αναλύσεις ends with Ρουβίκωνας. The card shows 100 stories first, 200 after a scroll to the end. A pick of the 3rd story shows its articles (1.183) and keeps the 200 rows. The presets of the picker with «Εφαρμογή»: Τελευταία εβδομάδα (21–27 Οκτ, 455 articles in 26 outlets), Αύγουστος 2026 (574 in 22), Όλη η περίοδος (3.219 in 30). No console errors.
+
+### Seen
+- Screenshots of `/stories` at 1440 paper and night and at 390 paper; `/cases` at 1440 (paper).
+
+### My calls (not the user's)
+- The card follows the period: it lists the stories that ran in it with the articles summed over the period. The card of Αρχική is for one day; the user's words did not say what a period should do.
+- The card title is «Όλες οι ιστορίες» (the title of the removed table card), the date at its top right is the period, and its info says it is a period.
+- The card is c-5, as on Αρχική; the right of the row is empty.
+- Αναλύσεις pages are locked for a visitor who is not signed in, so Ρουβίκωνας shows the sign-in gate until the visitor signs in (looked at, `/cases` at 1440).
+
+### Left alone
+- `data/campaigns.js`, the campaigns function of `make-fixtures.py` and the pages table rows (`data/pages.js`, `make-pages-table.py`) still name `/campaigns`; nothing loads them now.
+- `spread.js` and `data/groups.js` are no longer loaded by `stories-v2.html` (they are still used by other pages).

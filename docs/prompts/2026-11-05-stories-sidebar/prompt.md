@@ -12,3 +12,7 @@ The four questions of the handoff and the user's answers:
 4. Is «Ιστορίες» the sidebar label? "yes"
 
 Then: "do that and open pr".
+
+## Round 2 (same branch, PR #115)
+
+The user's words: "so in stories overview, i want to add date picker like themata and i want you to use the istories card from home page here, i want you to remove the other 2 cards. then i want the motiva diadosis to remove and the ypotheseis to go to analiseis, on the name Rouvikonas"

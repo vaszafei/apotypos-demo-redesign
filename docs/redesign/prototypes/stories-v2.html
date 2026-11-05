@@ -9,58 +9,42 @@
   <link rel="stylesheet" href="assets/app.css?v=50">
   <link rel="stylesheet" href="assets/dash.css?v=95">
   <link rel="stylesheet" href="assets/mme.css?v=54">
+  <link rel="stylesheet" href="assets/home.css?v=46">
+  <link rel="stylesheet" href="assets/date-range.css?v=9">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=41"></script>
-  <script src="assets/messages-v2.js?v=57"></script>
-  <script src="assets/messages-spread.js?v=17"></script>
+  <script src="assets/messages.js?v=42"></script>
+  <script src="assets/messages-v2.js?v=58"></script>
+  <script src="assets/messages-spread.js?v=19"></script>
   <script src="assets/messages-mme.js?v=21"></script>
+  <script src="assets/messages-home.js?v=23"></script>
   <script src="assets/components.js?v=20"></script>
   <script src="assets/motion.js?v=3"></script>
   <script src="assets/dash.js?v=21"></script>
+  <script src="assets/date-range.js?v=2"></script>
   <script src="assets/mme.js?v=23"></script>
-  <script src="assets/spread.js?v=6"></script>
-  <script src="assets/shell.js?v=62"></script>
+  <script src="assets/home.js?v=36"></script>
+  <script src="assets/shell.js?v=63"></script>
   <script src="data/stories.js?v=2"></script>
   <script src="data/storyDetail.js?v=2"></script>
-  <script src="data/groups.js?v=1"></script>
   <script src="data/mme.js?v=20"></script>
   <script>
-    // Stories: one page for all stories (APO-180). The chart of days shows when stories start, and the table lists every story.
-    // Two tabs (#62): Επισκόπηση (/stories) and Ανά μέσο (?tab=outlets, /stories/outlets) with the stories × outlets matrix.
+    // Stories, two tabs (#62). Επισκόπηση (/stories) is the card of the stories of Αρχική for a period: the date picker of the top bar sets the period,
+    // and the card lists every story that ran in it, the largest first. Ανά μέσο (?tab=outlets, /stories/outlets) has the stories × outlets matrix.
     const { t, fmt, h, load, params } = App
     const tab = params.get('tab') === 'outlets' ? 'outlets' : 'overview'
-    const { reset, NO_GROUP, card, cardHead } = Dash
+    const { reset, card, TopBar } = Dash
     const list = load('stories', ['dates', 'issues', 'stories'], (b) => b.stories)
-    const detail = load('storyDetail', ['outlets', 'stories'], (b) => b.stories)
-    const groupsData = load('groups', ['groups'], (b) => b.groups)
+    const detail = load('storyDetail', ['dates', 'outlets', 'stories'], (b) => b.stories)
     // «Ιστορίες ανά μέσο», the stories × outlets matrix of the live page ΜΜΕ & πρόσωπα (data/mme.js), over its whole window.
     const mme = load('mme', ['sets'], (b) => Object.keys(b.sets))
     const mmeView = { generic: false }
-    const colorOfGroup = Dash.groupColors(groupsData.data ? groupsData.data.groups : [])
-    const STEP = 25
-    // The first page of the table is shorter, so it stays on the same screen as the chart of days (#62).
-    const FIRST = 12
-    // The 4 ways a story starts, from the first day with an outlet that has a group. The first 3 are teal and gray, so they do not use the colors of the groups.
-    const TYPES = [
-      ['together', 'var(--series-news)'],
-      ['follow', 'var(--series-other)'],
-      ['single', 'var(--bar-muted)'],
-      ['none', 'var(--rule)']
-    ]
-
-    // Columns, one for each day, stacked by the way the story started.
-    function DailyChart ({ series, dates }) {
-      const totals = dates.map((_, i) => series.reduce((sum, x) => sum + x.values[i], 0))
-      return UI.BarChart({
-        dates, series, height: 190, label: t('stories.daily.aria'),
-        reference: { value: totals.reduce((a, b) => a + b, 0) / (totals.length || 1), label: t('find.avg', { n: fmt.int(Math.round(totals.reduce((a, b) => a + b, 0) / (totals.length || 1))) }) },
-        tooltipOf: (i) => { const parts = series.filter((x) => x.values[i]).map((x) => `${x.name} ${x.values[i]}`).join(' · '); return `${t('stories.daily.tip', { date: fmt.date(dates[i]), n: fmt.int(totals[i]) })}${parts ? `: ${parts}` : ''}` }
-      })
-    }
+    const view = { from: null, to: null }
+    let lastValid = null
+    let rank = 0
 
     Shell.start({
       id: 'stories',
@@ -68,71 +52,48 @@
       dash: true,
       title: () => t('nav.media'),
       breadcrumbs: () => [{ label: t('nav.media') }],
-      render (content) {
+      render (content, { tabs }) {
         content.classList.add('dash', 'minimal')
         const title = t('tab.media.stories')
         const problem = Dash.stateContent([list, detail])
         if (problem) { content.replaceChildren(...problem.filter(Boolean), protoNote()); return }
-        const d = list.data
-        const dd = detail.data
-        const name = (x) => x[App.locale] || x.el
-        const last = d.dates.length - 1
-        const prof = Spread.profiles(dd)
-        const groups = prof.groups
-        const colorOf = (i) => colorOfGroup.get(groups[i]) || NO_GROUP
-        const profileOf = new Map(prof.list.map((p) => [p.id, p]))
-        // A generic story is a catch-all, such as "Άλλα διεθνή". It is not a story, so the page leaves it out.
-        const stories = d.stories.filter((s) => !s.generic && profileOf.has(s.id)).map((s) => {
-          const articles = s.days.reduce((sum, v, i) => (i % 2 ? sum + v : sum), 0)
-          return { ...s, articles, start: s.days[0], end: s.days[s.days.length - 2], p: profileOf.get(s.id) }
-        })
 
-        const grid = h('div', { class: 'dash-grid story-top' })
-
-        function draw () {
-          reset()
-          const rows = stories.slice().sort((a, b) => b.articles - a.articles || b.start - a.start)
-
-          const series = TYPES.map(([key, color]) => {
-            const values = new Array(last + 1).fill(0)
-            rows.filter((s) => s.p.type === key).forEach((s) => { values[s.start]++ })
-            return { name: t(`stories.type.${key}`), color, values }
-          })
-          // #60: each title says what its chart shows. The topic of the card goes to its info.
-          const dailyCard = card('c-5', cardHead(t('stories.daily.title'), null, t('stories.daily.info')), DailyChart({ series, dates: d.dates }),
-            UI.Legend(series.map((x) => ({ label: x.name, color: x.color }))))
-
-          const day = (i) => fmt.date(d.dates[i], { day: 'numeric', month: 'short' })
-          const table = UI.DataTable({
-            rows, rankColumn: true, pageSize: FIRST, moreStep: STEP, emptyText: t('media.empty'),
-            columns: [
-              { label: t('media.col.story'), render: (s) => UI.EntityLink({ type: 'story', key: String(s.id), label: name(s) }) },
-              { label: t('media.col.issue'), phone: false, render: (s) => h('span', { class: 'topic-cell' }, name(d.issues[s.issue])) },
-              { label: t('stories.col.groups'), phone: false, render: (s) => {
-                const text = t('echoes.reach.aria', { n: s.p.peakGroups.length, total: groups.length })
-                return h('span', { class: 'nowrap reach', role: 'img', 'aria-label': text, title: text },
-                  groups.map((_, i) => (s.p.peakGroups.includes(i) ? h('span', { class: 'dot', style: `--dot:${colorOf(i)}` }) : h('span', { class: 'dot dot-none' }))))
-              } },
-              { label: t('stories.col.period'), phone: false, render: (s) => h('span', { class: 'nowrap' }, s.start === s.end ? day(s.start) : `${day(s.start)} → ${day(s.end)}`) },
-              { label: t('media.col.articles'), num: true, render: (s) => fmt.int(s.articles) }
-            ]
-          })
-          const tableCard = card('c-7', cardHead(t('topics2.stories.title'), null, t('topics2.stories.note', { n: fmt.int(stories.length) })),
-            h('p', { class: 'dcard-sub' }, t('stories.count', { n: fmt.int(rows.length) })), table)
-          // The stories × outlets matrix of ΜΜΕ & πρόσωπα, on Ανά μέσο. Its toggle draws only this card again.
+        // Ανά μέσο: the matrix. Its toggle draws only this card again.
+        if (tab === 'outlets') {
+          const grid = h('div', { class: 'dash-grid story-top' })
           const mmeCard = h('div', { class: 'c-12 card-col' })
-          if (tab === 'outlets' && mme.kind === 'data') {
+          if (mme.kind === 'data') {
             const mset = mme.data.sets.gr
             const MS = Mme.summary(mset, 0, mset.dates.length - 1)
             const paintMme = () => mmeCard.replaceChildren(Mme.StoriesCard(MS, { generic: mmeView.generic, onGeneric: (v) => { mmeView.generic = v; paintMme() } }))
             paintMme()
           }
-          if (tab === 'outlets') grid.replaceChildren(mmeCard)
-          else grid.replaceChildren(tableCard, dailyCard)
+          grid.replaceChildren(mmeCard)
+          content.replaceChildren(h('h1', { class: 'visually-hidden' }, title), grid, protoNote())
+          return
+        }
+
+        const ix = Home.index({ stories: list.data, detail: detail.data })
+        const dates = list.data.dates
+        const draw = () => {
+          reset()
+          if (!view.from || !dates.includes(view.from) || !dates.includes(view.to)) { view.from = dates[0]; view.to = dates[dates.length - 1] }
+          if (!lastValid || !dates.includes(lastValid.from) || !dates.includes(lastValid.to)) lastValid = { from: view.from, to: view.to }
+          const i0 = dates.indexOf(lastValid.from)
+          const i1 = dates.indexOf(lastValid.to)
+          const select = (r) => { Object.assign(view, r); if (r.from <= r.to) { lastValid = { from: r.from, to: r.to }; rank = 0 } draw() }
+          const picker = UI.DateRangePicker({ dates, from: view.from, to: view.to, presets: Mme.presets({ dates }), onChange: select })
+          const bar = TopBar({ title: `${t('nav.media')} · ${title}`, tabs, actions: [picker], quiet: true })
+          const day = (iso) => fmt.date(iso, { day: 'numeric', month: 'short', year: 'numeric' })
+          const dateText = i0 === i1 ? day(dates[i0]) : `${day(dates[i0])} – ${day(dates[i1])}`
+          const paint = (swap) => Home.DayCard(Home.rangeInfo(ix, i0, i1, rank), {
+            dateText, swap, title: t('topics2.stories.title'), hint: t('stories.period.info'), empty: t('stories.period.empty'),
+            onStory: (r) => { rank = r; const next = paint('story'); stories.replaceWith(next); stories = next }
+          })
+          let stories = paint()
+          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, stories), protoNote())
         }
         draw()
-
-        content.replaceChildren(h('h1', { class: 'visually-hidden' }, title), grid, protoNote())
       }
     })
 
