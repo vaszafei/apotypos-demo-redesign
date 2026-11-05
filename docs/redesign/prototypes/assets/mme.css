@@ -141,9 +141,8 @@
 .pair-dbar .dbar + .dbar .dbar-seg { border-radius: 2px; }
 .pair-dbar .dbar-mid { background: var(--text-secondary); opacity: 0.55; }
 
-.mme-outlet-list { max-height: 210px; overflow-y: auto; padding-right: var(--space-2); gap: 6px; }
-.sun-wrap .mme-outlet-list li { grid-template-columns: minmax(0, 1fr) auto; }
-.outlet-donut .slice:nth-of-type(even) { opacity: 0.6; }
+.mme-topic-list { max-height: 210px; overflow-y: auto; padding-right: var(--space-2); gap: 6px; }
+.topic-donut .slice-rest:nth-of-type(even) { opacity: 0.6; }
 .gt-scroll { overflow-x: auto; }
 .gt-scroll > .fit { min-width: 640px; }
 .gt-row { display: flex; gap: 8px; align-items: flex-end; }

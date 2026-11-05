@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="assets/tokens.css?v=15">
   <link rel="stylesheet" href="assets/app.css?v=48">
   <link rel="stylesheet" href="assets/dash.css?v=88">
-  <link rel="stylesheet" href="assets/mme.css?v=45">
+  <link rel="stylesheet" href="assets/mme.css?v=48">
   <link rel="stylesheet" href="assets/date-range.css?v=8">
   <script src="assets/page-move.js?v=1"></script>
 </head>
@@ -16,7 +16,7 @@
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
   <script src="assets/messages.js?v=39"></script>
-  <script src="assets/messages-v2.js?v=49"></script>
+  <script src="assets/messages-v2.js?v=50"></script>
   <script src="assets/messages-spread.js?v=17"></script>
   <script src="assets/messages-mme.js?v=21"></script>
   <script src="assets/components.js?v=17"></script>
@@ -48,12 +48,11 @@
     let lastValid = null
     let draw = () => {}
 
-    // Stacked columns, one for each day: news and not news. A drag selects a period.
-    function VolumeChart ({ dates, news, other, i0, i1, onSelect, height = 170 }) {
+    // Stacked columns, one for each day of the chosen period: news and not news. The chart is drawn again for each period, with its own scale. A drag selects a period inside it.
+    function VolumeChart ({ dates, news, other, onSelect, height = 170 }) {
       return UI.BarChart({
         dates, height, label: t('media2.chart.title'), onSelect,
         series: [{ name: t('media2.chart.news'), color: 'var(--series-news)', values: news }, { name: t('media2.chart.other'), color: 'var(--series-other)', values: other }],
-        muted: (i) => i < i0 || i > i1,
         tooltipOf: (i) => t('media2.chart.day', { date: fmt.date(dates[i]), n: fmt.int(news[i] + other[i]), news: fmt.int(news[i]) })
       })
     }
@@ -120,9 +119,13 @@
       return el
     }
 
-    // Articles per outlet: one ring, a slice for each outlet, from the top, clockwise, the largest first. The list on its left has every outlet and scrolls.
-    function OutletDonut ({ S, total }) {
-      const outlets = S.active.slice().sort((a, b) => b.n - a.n)
+    // Articles per topic of the news in the chosen period: one ring, a slice for each topic, from the top, clockwise, the largest first.
+    // The 8 largest topics have a color, the others share the neutral. The list on its left has every topic and scrolls.
+    function TopicDonut ({ S }) {
+      const rows = S.set.issues.map((x, i) => ({ i, name: x.el, n: S.issueN[i] })).filter((r) => S.hard[r.i] && r.n > 0).sort((a, b) => b.n - a.n)
+      const total = rows.reduce((s, r) => s + r.n, 0)
+      const slots = Dash.SLOTS
+      const colorOf = (k) => (k < 8 ? slots[k] : 'var(--bar-muted)')
       const size = 176
       const c = size / 2
       const [r0, r1] = [57, 87]
@@ -134,19 +137,20 @@
         const large = a1 - a0 > Math.PI ? 1 : 0
         return `M${p(a0, r1)}A${r1} ${r1} 0 ${large} 1 ${p(a1, r1)}L${p(a1, r0)}A${r0} ${r0} 0 ${large} 0 ${p(a0, r0)}Z`
       }
-      const tip = (o) => t('media2.outlet.tip', { outlet: o.name, n: fmt.int(o.n), share: fmt.pct(o.n / total) })
-      const svg = h('svg', { class: 'chart donut outlet-donut', width: size, height: size, viewBox: `0 0 ${size} ${size}`, role: 'img', 'aria-label': t('media2.outlets.title') })
+      const tip = (r) => t('media2.topic.tip', { topic: r.name, n: fmt.int(r.n), share: fmt.pct(r.n / total) })
+      const svg = h('svg', { class: 'chart donut topic-donut', width: size, height: size, viewBox: `0 0 ${size} ${size}`, role: 'img', 'aria-label': t('media2.topics.title') })
       let a = 0
-      outlets.forEach((o) => {
-        const span = (o.n / total) * 2 * Math.PI
-        svg.append(tipOn(h('path', { class: 'slice', d: arc(a, a + span), fill: 'var(--bar-fill)' }), tip(o)))
+      rows.forEach((r, k) => {
+        const span = (r.n / total) * 2 * Math.PI
+        svg.append(tipOn(h('path', { class: k < 8 ? 'slice' : 'slice slice-rest', d: arc(a, a + span), fill: colorOf(k) }), tip(r)))
         a += span
       })
       svg.append(h('text', { class: 'donut-num', x: c, y: c + 3, 'text-anchor': 'middle' }, fmt.int(total)),
-        h('text', { x: c, y: c + 19, 'text-anchor': 'middle' }, t('g2.donut.center')))
-      const list = h('ul', { class: 'rows rows-owners mme-outlet-list' }, outlets.map((o) => h('li', {},
-        h('span', { class: 'row-name' }, Mme.outletLink(S, o)),
-        h('span', { class: 'row-value' }, `${fmt.int(o.n)} · ${fmt.pct(o.n / total)}`))))
+        h('text', { x: c, y: c + 19, 'text-anchor': 'middle' }, t('media2.topics.center')))
+      const list = h('ul', { class: 'rows rows-groups rows-owners mme-topic-list' }, rows.map((r, k) => h('li', { title: tip(r) },
+        h('span', { class: 'dot', style: `--dot:${colorOf(k)}`, 'aria-hidden': 'true' }),
+        h('span', { class: 'row-name' }, UI.EntityLink({ type: 'topic', key: String(r.i), label: r.name })),
+        h('span', { class: 'row-value' }, fmt.pct(r.n / total)))))
       return h('div', { class: 'donut-wrap sun-wrap' }, list, svg)
     }
 
@@ -288,7 +292,7 @@
           const volume = card('c-7',
             cardHead(t('media2.chart.title'), UI.Legend([{ label: t('media2.chart.news'), color: 'var(--series-news)' }, { label: t('media2.chart.other'), color: 'var(--series-other)' }]),
               analysed > 0 ? `${t('media2.chart.peak', { date: fmt.date(dates[peakDay]), n: fmt.int(totals[peakDay]) })} · ${t('media2.chart.hint')}` : null),
-            analysed > 0 ? VolumeChart({ dates, news, other, i0, i1, onSelect: select, height: window.matchMedia('(min-width: 1280px)').matches ? 340 : 170 }) : emptyText(t('media2.chart.empty')))
+            analysed > 0 ? VolumeChart({ dates: dates.slice(i0, i1 + 1), news: news.slice(i0, i1 + 1), other: other.slice(i0, i1 + 1), onSelect: select, height: window.matchMedia('(min-width: 1280px)').matches ? 340 : 170 }) : emptyText(t('media2.chart.empty')))
 
           // The scatter: news share and clickbait share of each outlet.
           const cbOutlets = S.active.filter((o) => o.cbKnown >= 100)
@@ -307,9 +311,9 @@
             h('p', { class: 'dcard-sub' }, t('originality.meta', { n: bylines.data.outlets.length, from: fmt.date(bylines.data.window[0], { month: 'short', year: 'numeric' }), to: fmt.date(bylines.data.window[1], { month: 'short', year: 'numeric' }) })),
             UI.BarList(anon.map((r) => ({ label: r.name, value: r.anonPct, text: fmt.pct(r.anonPct / 100) })), { max: 100, reference: { value: anonAvg, label: t('originality.anon.avg', { v: fmt.pct(anonAvg / 100) }) } })) : null
 
-          // Row 1 on the right: the articles of each outlet, one ring with a slice for each outlet. The list of the outlets scrolls inside the card.
-          const outletCard = card('c-5', cardHead(t('media2.outlets.title')),
-            analysed > 0 ? OutletDonut({ S, total: analysed }) : emptyText(t('media2.chart.empty')))
+          // Row 1 on the right: the articles of each topic of the news in the period, one ring with a slice for each topic. The list of the topics scrolls inside the card.
+          const topicCard = card('c-5', cardHead(t('media2.topics.title')),
+            S.newsN > 0 ? TopicDonut({ S }) : emptyText(t('media2.chart.empty')))
 
           // Row 2: one bar for each group, cut in its outlets. The outlets with no group are the last bar.
           const groupCard = card('c-12', cardHead(t('media2.bygroup.title')),
@@ -326,7 +330,7 @@
 
           const cards = tab === 'writing'
             ? [scatterCard, bylineCard, gov]
-            : [volume, outletCard, groupCard]
+            : [volume, topicCard, groupCard]
           content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...cards), Mme.MethodNote(S), protoNote())
         }
         draw()
