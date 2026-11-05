@@ -13,13 +13,13 @@
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=40"></script>
+  <script src="assets/messages.js?v=41"></script>
   <script src="assets/messages-v2.js?v=57"></script>
   <script src="assets/messages-spread.js?v=17"></script>
   <script src="assets/components.js?v=20"></script>
   <script src="assets/motion.js?v=3"></script>
   <script src="assets/dash.js?v=21"></script>
-  <script src="assets/shell.js?v=61"></script>
+  <script src="assets/shell.js?v=62"></script>
   <script src="data/campaigns.js?v=1"></script>
   <script>
     // Ιστορίες, Μοτίβα διάδοσης (the name of the live page; it was Πολιτική › Καμπάνιες): the 4 detector lists of the API. A row is a sign to check, not a proof. In this read only the political list has rows.
@@ -55,12 +55,12 @@
       id: 'campaigns',
       route: '/campaigns',
       dash: true,
-      title: () => t('nav.spread'),
-      breadcrumbs: () => [{ label: t('nav.spread') }, { label: t('tab.spread.campaigns') }],
+      title: () => t('nav.media'),
+      breadcrumbs: () => [{ label: t('nav.media') }],
       render (content, { tabs }) {
         content.classList.add('dash', 'minimal')
         reset()
-        const title = t('tab.spread.campaigns')
+        const title = t('tab.media.stories.campaigns')
         const problem = Dash.stateContent([result], { title, tabs, quiet: true })
         if (problem) { content.replaceChildren(...problem.filter(Boolean), protoNote()); return }
         const d = result.data
