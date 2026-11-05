@@ -965,12 +965,12 @@
       // A dash page has its tabs in the center of the top bar. The other pages have them under the top bar.
       // An item with many tabs (more than 6) puts them on a second row of the top bar, so they do not push the page wider.
       if (dash && tabBar && !headerV2) { header.classList.add('has-tabs'); if (item.tabs.length > 6) header.classList.add('many-tabs'); header.append(tabBar) }
-      // A wide screen: the logo and the sections on the left, the search, the language and the account on the right.
+      // A wide screen: the logo and the sections on the left, the search, the account and the language on the right.
       header.append(
         logoLink('header-logo'),
         h('nav', { class: 'header-nav', 'aria-label': t('shell.nav') }, h('ul', { class: 'nav-list nav-main' }, mainLinks())),
         ...(search ? [GlobalSearch()] : []),
-        h('div', { class: 'header-actions' }, langSwitch(), authLinks('auth-links')))
+        h('div', { class: 'header-actions' }, authLinks('auth-links'), langSwitch()))
       // The tabs of the section are a sidebar on a wide screen, under the navbar. A phone keeps them as tabs in the page head.
       // The sub-tabs of the current tab are listed under it in the sidebar; a phone keeps them in the page body. A detail page (an outlet) marks the tab that lists it.
       const activeRoute = exactTab ? route : parentRoute
