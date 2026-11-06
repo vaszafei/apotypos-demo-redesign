@@ -125,17 +125,6 @@ a.home-stack-part { cursor: pointer; }
   background: radial-gradient(1100px 520px at 50% -12%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%), var(--surface-page);
 }
 .home-hero-field { position: absolute; z-index: -1; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.home-hero.is-field-hover { cursor: zoom-in; }
-.home-hero.is-zoomed { cursor: zoom-out; }
-.home-hero-inner, .home-hero-more { transition: opacity var(--motion-slow, 400ms) var(--ease-out, ease); }
-.home-hero.is-zoomed .home-hero-inner, .home-hero.is-zoomed .home-hero-more { opacity: 0; pointer-events: none; }
-/* The caption of a zoomed story takes the place of the hero text. */
-.home-field-caption { position: absolute; left: 50%; bottom: clamp(48px, 8vh, 88px); z-index: 1; display: grid; justify-items: center; gap: 6px; width: min(640px, calc(100% - 48px)); text-align: center; opacity: 0; transform: translate(-50%, 8px); pointer-events: none; transition: opacity var(--motion-slow, 400ms) var(--ease-out, ease), transform var(--motion-slow, 400ms) var(--ease-out, ease); }
-.home-field-caption.is-on { opacity: 1; transform: translate(-50%, 0); transition-delay: 350ms; }
-.home-field-title { font: 600 clamp(18px, 1.8vw, 24px)/1.3 var(--font-heading); color: var(--ink); text-wrap: balance; }
-.home-field-meta { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-small); color: var(--text-primary); }
-.home-field-swatch { width: 10px; height: 10px; border-radius: 2px; }
-.home-field-note, .home-field-hint { font-size: var(--text-caption); color: var(--text-secondary); }
 /* The tooltip of the field is translucent, so it does not outshine the dots. The tooltip of the charts stays as it is. */
 .tooltip.is-field { border-color: color-mix(in srgb, var(--border) 60%, transparent); background: color-mix(in srgb, var(--surface-card) 74%, transparent); -webkit-backdrop-filter: blur(14px) saturate(1.1); backdrop-filter: blur(14px) saturate(1.1); box-shadow: 0 10px 26px -16px color-mix(in srgb, var(--shade) 30%, transparent); }
 .home-hero-wave { position: absolute; z-index: -1; left: 0; right: 0; bottom: 0; width: 100%; height: 30%; }

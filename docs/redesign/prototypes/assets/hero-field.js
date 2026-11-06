@@ -4,7 +4,6 @@
 // A web keeps its place and its shape from day to day. When the day changes, the dots of a web fade in or out one by one over a few seconds, its color and its arcs blend into the new ones, and the web is now another story.
 // The loose dots are the other articles, with no line; they drift too, and take the themata in the shares of the day, a few at a time.
 // The pointer parts the loose dots. A web it reaches slows down and lights up, with the webs and arcs of its thema; the tooltip names the story and its thema. Nothing is a link, and outlets are not shown.
-// A click on a web zooms in on it: the other webs fade, the hero text gives way to a caption, and the dots grow large enough to play with. A click outside the web, or Esc, zooms out.
 // A dot stands for several articles, so it shows size, not a count. The days are the latest ones that have themata (the coded data may end before the volume does).
 // Load after dash.js, components.js and home.js.
 (function () {
@@ -96,11 +95,6 @@
     let visible = true
     let fade = 0
     let focus = null
-    let zoomed = null
-    let zs = 0
-    let zt = 0
-    const caption = h('div', { class: 'home-field-caption', 'aria-live': 'polite' })
-    const INTERACTIVE = 'a, button, input, textarea, [role="dialog"], .search-panel'
     const dots = []
     const pointer = { x: 0, y: 0, on: false }
     const linkMap = new Map()
@@ -228,56 +222,12 @@
       }
     }
 
-    // ---- the zoom ----
-    // The camera: screen = A + z * (world - B). It is the identity at rest; fully zoomed, the web is at the middle of the hero and S times larger.
-    function view () {
-      const c = zoomed
-      if (!c) return { z: 1, ax: 0, ay: 0, bx: 0, by: 0, S: 1, Tx: 0, Ty: 0 }
-      const Tx = w / 2
-      const Ty = ht * 0.44
-      const S = clamp(Math.min(w * 0.5, ht * 0.56) / (2 * Math.max(10, c.r - 10)), 2, 8)
-      const e = smooth(zs)
-      const bx = c.x * e
-      const by = c.y * e
-      return { z: 1 + (S - 1) * e, bx, by, ax: bx + (Tx - c.x) * e, ay: by + (Ty - c.y) * e, S, Tx, Ty }
-    }
-    function endZoom () { zoomed = null; zs = 0; zt = 0; focus = null; dayAt = clock; caption.classList.remove('is-on') }
-    function fillCaption (c) {
-      const topic = c.issue >= 0 ? home.issues[c.issue] : null
-      const k = Math.max(1, Math.round(c.n / c.count))
-      caption.replaceChildren(
-        h('strong', { class: 'home-field-title' }, name(c.s)),
-        h('span', { class: 'home-field-meta' }, topic ? h('i', { class: 'home-field-swatch', style: { background: colorOf(c.slot) } }) : null,
-          `${topic ? `${name(topic)} · ` : ''}${fmt.int(c.n)} ${t('home.hero.articles')} · ${fmt.date(home.dates[c.d], { day: 'numeric', month: 'long' })}`),
-        h('span', { class: 'home-field-note' }, t('home.field.dot', { k: fmt.int(k) })),
-        h('span', { class: 'home-field-hint' }, t('home.field.back')))
-    }
-    function zoomIn (c) {
-      zoomed = c
-      zt = 1
-      focus = c
-      hideTip()
-      section.classList.remove('is-field-hover')
-      section.classList.add('is-zoomed')
-      fillCaption(c)
-      caption.classList.add('is-on')
-      if (still()) { zs = 1; snap(); render() }
-    }
-    function zoomOut (now) {
-      if (!zoomed) return
-      zt = 0
-      section.classList.remove('is-zoomed')
-      caption.classList.remove('is-on')
-      if (now || still()) { endZoom(); snap(); render() }
-    }
-
     // ---- the roaming of the webs ----
     // A web keeps a heading that turns slowly. The edges, the text of the hero and the other webs push it away, and it turns to leave. A web under the pointer almost stops, so it can be reached.
     function roam (dt) {
       for (const c of clusters) {
         c.vis = c.on || c.members.some((dot) => dot.al > 0.02)
         if (!c.vis) continue
-        if (zoomed === c && zt) { c.vx = c.vy = 0; continue }
         c.th += (Math.sin(clock * 0.21 + c.ph) + Math.sin(clock * 0.11 + c.ph * 2.1)) * 0.3 * dt
         let px = 0
         let py = 0
@@ -324,15 +274,7 @@
     // A dot is pulled to its place by a spring (soft for a dot of a web, so it follows the web with a lag) and, before it has gathered, wanders.
     // The pointer pushes: a loose dot a lot, a dot of a web only a little, and none when the web is lit.
     function step (dt) {
-      if (zoomed) {
-        zs = zt > zs ? Math.min(zt, zs + dt / 1.1) : Math.max(zt, zs - dt / 0.9)
-        if (!zt && zs <= 0) endZoom()
-      }
       roam(dt)
-      // The pointer in the world of the dots (zoomed, the same pixels reach fewer dots).
-      const v = view()
-      const pw = { x: (pointer.x - v.ax) / v.z + v.bx, y: (pointer.y - v.ay) / v.z + v.by }
-      const R = 130 / v.z
       for (const dot of dots) {
         if (dot.delay > 0) {
           dot.delay -= dt
@@ -356,12 +298,12 @@
         let ay = gg * (K * (dot.ty - dot.y) - C * dot.vy) + (1 - gg) * (wanderY - 0.9 * dot.vy)
         let near = 0
         if (pointer.on) {
-          const dx = dot.x - pw.x
-          const dy = dot.y - pw.y
+          const dx = dot.x - pointer.x
+          const dy = dot.y - pointer.y
           const d = Math.hypot(dx, dy)
-          near = (1 - clamp(d / (R * 1.46), 0, 1)) ** 2
-          if (d < R && d > 0.001) {
-            const push = (1 - d / R) ** 2 * (dot.cl ? (dot.cl === zoomed ? 900 : 120 * (1 - 0.9 * dot.cl.lit)) : 620) / v.z
+          near = (1 - clamp(d / 190, 0, 1)) ** 2
+          if (d < 130 && d > 0.01) {
+            const push = (1 - d / 130) ** 2 * (dot.cl ? 120 * (1 - 0.9 * dot.cl.lit) : 620)
             ax += (dx / d) * push
             ay += (dy / d) * push
           }
@@ -397,30 +339,22 @@
     function render () {
       ctx.setTransform(canvas.width / Math.max(w, 1), 0, 0, canvas.height / Math.max(ht, 1), 0, 0)
       ctx.clearRect(0, 0, w, ht)
-      const v = view()
-      ctx.translate(v.ax, v.ay)
-      ctx.scale(v.z, v.z)
-      ctx.translate(-v.bx, -v.by)
-      const zk = smooth(zs)
-      const away = 1 - 0.93 * zk
-      const ks = v.z ** -0.5
-      const lk = v.z ** -0.8
       const on = Math.max(0, ...clusters.map((c) => c.lit))
       const base = (wide ? 1 : 0.6) * fade
       // The loose dots wake up as the pointer comes near: each one has its own alpha.
       for (const dot of dots) {
         if (dot.cl) continue
         ctx.beginPath()
-        ctx.arc(dot.x, dot.y, (1.3 + dot.seed * 0.9 + (dot.p || 0) * 0.8) * ks, 0, TAU)
+        ctx.arc(dot.x, dot.y, 1.3 + dot.seed * 0.9 + (dot.p || 0) * 0.8, 0, TAU)
         ctx.fillStyle = colorOf(dot.slot)
-        ctx.globalAlpha = (0.22 + 0.4 * (dot.p || 0)) * base * (1 - 0.5 * on) * away
+        ctx.globalAlpha = (0.22 + 0.4 * (dot.p || 0)) * base * (1 - 0.5 * on)
         ctx.fill()
       }
       // How settled a web is: its dots near their places. Its lines and arcs are as strong as that, so a web that gathers does not throw lines across the hero.
       for (const c of clusters) c.coh = clamp(1 - sum(c.members.map((dot) => Math.hypot(dot.x - dot.tx, dot.y - dot.ty))) / c.members.length / (c.r * 1.4), 0, 1) ** 2
       // The themata: a dashed arc between two stories that share one, bowed away from the middle of the hero so it keeps off the text.
-      ctx.lineWidth = lk
-      ctx.setLineDash([2 / v.z, 5 / v.z])
+      ctx.lineWidth = 1
+      ctx.setLineDash([2, 5])
       for (const l of linkMap.values()) {
         const { a, b } = l
         const hot = focus && focus.on && focus.issue === a.issue ? 1 : 0
@@ -431,7 +365,7 @@
         let ny = dx / len
         if ((a.x + b.x - w) * nx + (a.y + b.y - ht) * ny < 0) { nx = -nx; ny = -ny }
         ctx.strokeStyle = colorNow(a)
-        ctx.globalAlpha = (0.2 + 0.5 * hot) * base * l.al * Math.min(a.coh, b.coh) * (on && !hot ? 0.4 : 1) * (1 - zk)
+        ctx.globalAlpha = (0.2 + 0.5 * hot) * base * l.al * Math.min(a.coh, b.coh) * (on && !hot ? 0.4 : 1)
         ctx.beginPath()
         ctx.moveTo(a.x, a.y)
         ctx.quadraticCurveTo((a.x + b.x) / 2 + nx * len * 0.2, (a.y + b.y) / 2 + ny * len * 0.2, b.x, b.y)
@@ -441,11 +375,11 @@
       for (const c of clusters) {
         if (!c.vis) continue
         const glowing = Math.max(c.lit, c.rel)
-        const dim = (1 - 0.6 * on * (1 - glowing)) * (c === zoomed ? 1 : away)
+        const dim = 1 - 0.6 * on * (1 - glowing)
         const color = colorNow(c)
         // The story: the lines of its web. A line is as strong as the weaker of its two dots.
         ctx.strokeStyle = color
-        ctx.lineWidth = (0.9 + 0.5 * c.lit) * lk
+        ctx.lineWidth = 0.9 + 0.5 * c.lit
         for (const [i, j, rest] of c.edges) {
           const a = c.members[i]
           const b = c.members[j]
@@ -454,18 +388,18 @@
           ctx.beginPath()
           ctx.moveTo(a.x, a.y)
           ctx.lineTo(b.x, b.y)
-          ctx.globalAlpha = (0.3 + 0.45 * glowing) * base * dim * c.coh * both * (c === zoomed ? 1 - 0.25 * zk : 1)
+          ctx.globalAlpha = (0.3 + 0.45 * glowing) * base * dim * c.coh * both
           ctx.stroke()
         }
         ctx.fillStyle = color
         for (const dot of c.members) {
           if (dot.al < 0.03) continue
           ctx.beginPath()
-          ctx.arc(dot.x, dot.y, (1.5 + dot.seed * 0.9 + (dot.hub ? 1.2 : 0) + 0.5 * glowing) * ks, 0, TAU)
-          ctx.globalAlpha = (0.6 + 0.35 * glowing) * base * dim * dot.al * (c === zoomed ? 1 - 0.2 * zk : 1)
+          ctx.arc(dot.x, dot.y, 1.5 + dot.seed * 0.9 + (dot.hub ? 1.2 : 0) + 0.5 * glowing, 0, TAU)
+          ctx.globalAlpha = (0.6 + 0.35 * glowing) * base * dim * dot.al
           ctx.fill()
         }
-        if (glowing < 0.02 || !c.on || zoomed) continue
+        if (glowing < 0.02 || !c.on) continue
         ctx.strokeStyle = c.slot >= 0 ? color : accent()
         ctx.lineWidth = 1
         ctx.beginPath()
@@ -484,7 +418,7 @@
       last = now
       clock += dt
       fade = Math.min(1, fade + dt / 1.5)
-      if (!zoomed && days.length > 1 && clock - dayAt > CYCLE) nextDay()
+      if (days.length > 1 && clock - dayAt > CYCLE) nextDay()
       step(dt)
       render()
       go()
@@ -516,51 +450,24 @@
 
     // ---- the pointer ----
     function hideTip () { UI.hideTooltip(); document.querySelector('.tooltip')?.classList.remove('is-field') }
-    function unfocus () {
-      if (!focus || zoomed) return
-      focus = null
-      hideTip()
-      section.classList.remove('is-field-hover')
-      if (still()) { snap(); render() }
-    }
-    // The web under a point of the hero, the nearest if several.
-    function hitAt (x, y) {
-      let best = null
-      for (const c of clusters) {
-        if (!c.on) continue
-        const dist = Math.hypot(c.x - x, c.y - y)
-        if (dist < c.r + 14 && (!best || dist < best.dist)) best = { dist, c }
-      }
-      return best ? best.c : null
-    }
+    function unfocus () { if (focus) { focus = null; hideTip(); if (still()) { snap(); render() } } }
     function onMove (e) {
       if (e.pointerType === 'touch' || !pointerFine.matches) return
       const box = section.getBoundingClientRect()
       pointer.x = e.clientX - box.left
       pointer.y = e.clientY - box.top
       pointer.on = !still()
-      if (zoomed) return
-      if (!wide || e.target.closest(INTERACTIVE)) return unfocus()
-      const c = hitAt(pointer.x, pointer.y)
-      if (!c) return unfocus()
-      if (focus !== c) { focus = c; section.classList.add('is-field-hover'); if (still()) { snap(); render() } }
+      if (!wide || e.target.closest('a, button, input, textarea, [role="dialog"], .search-panel')) return unfocus()
+      let best = null
+      for (const c of clusters) {
+        if (!c.on) continue
+        const dist = Math.hypot(c.x - pointer.x, c.y - pointer.y)
+        if (dist < c.r + 14 && (!best || dist < best.dist)) best = { dist, c }
+      }
+      if (!best) return unfocus()
+      if (focus !== best.c) { focus = best.c; if (still()) { snap(); render() } }
       showTip(box, focus)
     }
-    // A click on a web zooms in on it. Zoomed, a click outside the web zooms out; a click on the web does nothing.
-    function onClick (e) {
-      if (!wide || e.target.closest(INTERACTIVE)) return
-      const box = section.getBoundingClientRect()
-      const x = e.clientX - box.left
-      const y = e.clientY - box.top
-      if (zoomed) {
-        const v = view()
-        if (zt && Math.hypot(x - v.Tx, y - v.Ty) > (zoomed.r - 10) * v.S + 24) zoomOut()
-        return
-      }
-      const c = hitAt(x, y)
-      if (c) zoomIn(c)
-    }
-    function onKey (e) { if (e.key === 'Escape') zoomOut() }
     function showTip (box, c) {
       const topic = c.issue >= 0 ? home.issues[c.issue] : null
       UI.showTooltip({
@@ -585,8 +492,6 @@
       document.removeEventListener('visibilitychange', onVisible)
       calm.removeEventListener('change', onCalm)
       hideTip()
-      caption.remove()
-      document.removeEventListener('keydown', onKey)
     }
     function onVisible () { if (document.hidden) halt(); else go() }
     // The first frames: the dots start all over the hero and gather into their webs over a few seconds.
@@ -602,8 +507,7 @@
       measure()
       begin()
       if (still()) { snap(); fade = 1; render() } else go()
-      section.append(caption)
-      io = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; if (visible) go(); else { halt(); zoomOut(true) } })
+      io = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; if (visible) go(); else halt() })
       io.observe(section)
       ro = new ResizeObserver(() => {
         if (!canvas.isConnected) return teardown()
@@ -618,8 +522,6 @@
       calm.addEventListener('change', onCalm)
       section.addEventListener('pointermove', onMove)
       section.addEventListener('pointerleave', onLeave)
-      section.addEventListener('click', onClick)
-      document.addEventListener('keydown', onKey)
     }
     requestAnimationFrame(() => { if (canvas.isConnected) attach() })
     return canvas
