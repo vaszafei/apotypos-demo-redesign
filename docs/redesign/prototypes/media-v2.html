@@ -60,23 +60,27 @@
       return fit((holder, width) => {
         // On a phone the names of the zones and the notes about the averages inside the plot are left out; the card then has a key of the three zones.
         const narrow = width < 640
-        const height = narrow ? 340 : Math.max(360, Math.min(470, Math.round(width * 0.4)))
+        const height = narrow ? 380 : Math.max(420, Math.min(560, Math.round(width * 0.46)))
         const pad = { top: 14, right: narrow ? 14 : 22, bottom: 54, left: narrow ? 56 : 66 }
         const step = narrow ? 0.2 : 0.1
         const plotW = width - pad.left - pad.right
         const plotH = height - pad.top - pad.bottom
+        // The axes start and end near the data, so that the dots spread over the whole plot and more of them have room for a name.
+        const x0 = Math.max(0, Math.floor((Math.min(...points.map((p) => p.c)) - 0.03) * 10) / 10)
         const xm = Math.min(1, Math.ceil((Math.max(...points.map((p) => p.c)) + 0.03) * 10) / 10)
+        const y0 = Math.max(0, Math.floor((Math.min(...points.map((p) => p.s)) - 0.02) * 10) / 10)
         const ym = Math.min(1, Math.ceil((Math.max(...points.map((p) => p.s)) + 0.03) * 10) / 10)
-        const sx = (v) => pad.left + (v / xm) * plotW
-        const sy = (v) => pad.top + plotH - (v / ym) * plotH
+        const sx = (v) => pad.left + ((v - x0) / (xm - x0)) * plotW
+        const sy = (v) => pad.top + plotH - ((v - y0) / (ym - y0)) * plotH
         const maxN = Math.max(...points.map((p) => p.n))
-        const radius = (p) => 5 + 9 * Math.sqrt(p.n / maxN)
+        const radius = (p) => 4 + 8 * Math.sqrt(p.n / maxN)
         const text = (p) => t('mme.map.point', { name: p.name, c: fmt.pct(p.c), u: fmt.pct(p.u), s: fmt.pct(p.s), n: fmt.int(p.n) })
         const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
         const clipId = `stance-clip-${Math.random().toString(36).slice(2, 8)}`
         svg.append(h('clipPath', { id: clipId }, h('rect', { x: pad.left, y: pad.top, width: plotW, height: plotH })))
-        for (let v = 0; v <= ym + 1e-9; v += step) svg.append(h('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: sy(v), y2: sy(v) }), h('text', { x: pad.left - 8, y: sy(v) + 4, 'text-anchor': 'end' }, pct0(v)))
-        for (let v = 0; v <= xm + 1e-9; v += step) svg.append(h('text', { x: sx(v), y: pad.top + plotH + 18, 'text-anchor': 'middle' }, pct0(v)))
+        const first = (from) => Math.ceil(from / step - 1e-9) * step
+        for (let v = first(y0); v <= ym + 1e-9; v += step) svg.append(h('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: sy(v), y2: sy(v) }), h('text', { x: pad.left - 8, y: sy(v) + 4, 'text-anchor': 'end' }, pct0(v)))
+        for (let v = first(x0); v <= xm + 1e-9; v += step) svg.append(h('text', { x: sx(v), y: pad.top + plotH + 18, 'text-anchor': 'middle' }, pct0(v)))
         svg.append(h('text', { class: 'axis-title', x: pad.left + plotW / 2, y: height - 8, 'text-anchor': 'middle' }, t('mme.map.x')),
           h('text', { class: 'axis-title', transform: `translate(16 ${pad.top + plotH / 2}) rotate(-90)`, 'text-anchor': 'middle' }, t('mme.map.y')))
 
@@ -104,6 +108,8 @@
         if (!narrow) svg.append(h('text', { class: 'axis-title', x: sx(avg.c) + 6, y: pad.top + plotH - 10 }, t('mme.gov.avg', { v: pct0(avg.c) })),
           h('text', { class: 'axis-title', x: width - pad.right - 6, y: sy(avg.s) - 6, 'text-anchor': 'end' }, t('mme.map.avg.supp', { v: pct0(avg.s) })))
 
+        const leaders = h('g')
+        svg.append(leaders)
         const dots = points.slice().sort((a, b) => b.n - a.n).map((p) => {
           const c = h('circle', { class: 'pt', cx: sx(p.c), cy: sy(p.s), r: radius(p), fill: p.color })
           const show = (e) => { UI.showTooltip(text(p), e.clientX, e.clientY); dots.forEach((d) => { d.c.style.opacity = d.p === p ? '1' : '0.3' }) }
@@ -114,21 +120,45 @@
           return { p, c }
         })
 
-        // A name for every dot that has room for it: the largest first, to the right, left, above or below. The others have the tooltip.
+        // A name for every dot, as many as fit: the most crowded dots choose first, each tries 4 distances and 8 directions around its dot
+        // and gets a thin leader line when its name is not next to it. The names of the zones and of the averages are obstacles too.
         const boxes = []
-        const circles = points.map((p) => ({ x: sx(p.c), y: sy(p.s), r: radius(p) }))
+        const bottom = pad.top + plotH
+        const obstacle = (xa, xb, ya, yb) => boxes.push({ x0: xa, x1: xb, y0: ya, y1: yb })
+        if (!narrow) {
+          const wide = (key) => t(key).length * 7
+          obstacle(width - pad.right - 8 - wide('mme.map.zone.crit'), width - pad.right - 8, bottom - 26, bottom - 4)
+          obstacle(pad.left + 8, pad.left + 8 + wide('mme.map.zone.supp'), pad.top + 2, pad.top + 22)
+          obstacle(pad.left + 8, pad.left + 8 + wide('mme.map.zone.neutral'), bottom - 26, bottom - 4)
+          obstacle(sx(avg.c) + 6, sx(avg.c) + 6 + t('mme.gov.avg', { v: pct0(avg.c) }).length * 6.6, bottom - 24, bottom - 6)
+          const sl = t('mme.map.avg.supp', { v: pct0(avg.s) }).length * 6.6
+          obstacle(width - pad.right - 6 - sl, width - pad.right - 6, sy(avg.s) - 20, sy(avg.s) - 2)
+        }
+        const circles = points.map((p) => ({ p, x: sx(p.c), y: sy(p.s), r: radius(p) }))
+        const crowd = (o) => circles.filter((q) => q !== o && Math.hypot(q.x - o.x, q.y - o.y) < 46).length
         const hit = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1
-        dots.forEach(({ p }) => {
-          const cx = sx(p.c); const cy = sy(p.s); const r = radius(p); const w = p.name.length * 6.4 + 2
-          const tries = [[cx + r + 4, cy - 7, 'start'], [cx - r - 4 - w, cy - 7, 'start'], [cx - w / 2, cy - r - 17, 'start'], [cx - w / 2, cy + r + 3, 'start']]
-          for (const [x, y, anchor] of tries) {
-            const b = { x0: x, x1: x + w, y0: y, y1: y + 14 }
-            if (b.x0 < pad.left || b.x1 > width - pad.right || b.y0 < pad.top || b.y1 > pad.top + plotH) continue
-            if (boxes.some((o) => hit(b, o))) continue
-            if (circles.some((o) => b.x0 < o.x + o.r && o.x - o.r < b.x1 && b.y0 < o.y + o.r && o.y - o.r < b.y1)) continue
-            boxes.push(b)
-            svg.append(h('text', { class: 'pt-label', x, y: y + 11, 'text-anchor': anchor, 'pointer-events': 'none' }, p.name))
-            break
+        const angles = [0, Math.PI, -Math.PI / 6, Math.PI / 6, (-5 * Math.PI) / 6, (5 * Math.PI) / 6, -Math.PI / 2, Math.PI / 2]
+        circles.slice().sort((a, b) => crowd(b) - crowd(a) || b.p.n - a.p.n).forEach((o) => {
+          const w = o.p.name.length * 6.4 + 2
+          for (const d of [4, 14, 28, 44]) {
+            for (const th of angles) {
+              const cs = Math.cos(th); const sn = Math.sin(th)
+              const ax = o.x + cs * (o.r + d); const ay = o.y + sn * (o.r + d)
+              const xa = cs > 0.4 ? ax : cs < -0.4 ? ax - w : ax - w / 2
+              const ya = Math.abs(sn) < 0.4 ? ay - 7 : sn > 0 ? ay : ay - 14
+              const b = { x0: xa, x1: xa + w, y0: ya, y1: ya + 14 }
+              if (b.x0 < pad.left || b.x1 > width - pad.right || b.y0 < pad.top || b.y1 > bottom) continue
+              if (boxes.some((q) => hit(b, q))) continue
+              if (circles.some((q) => b.x0 < q.x + q.r + 1 && q.x - q.r - 1 < b.x1 && b.y0 < q.y + q.r + 1 && q.y - q.r - 1 < b.y1)) continue
+              boxes.push(b)
+              if (d > 4) {
+                const tx = Math.min(Math.max(o.x, b.x0), b.x1); const ty = Math.min(Math.max(o.y, b.y0), b.y1)
+                const len = Math.hypot(tx - o.x, ty - o.y) || 1
+                leaders.append(h('line', { x1: o.x + ((tx - o.x) / len) * o.r, y1: o.y + ((ty - o.y) / len) * o.r, x2: tx, y2: ty, style: 'stroke:var(--text-secondary);stroke-width:0.75;opacity:0.7' }))
+              }
+              svg.append(h('text', { class: 'pt-label', x: b.x0, y: b.y0 + 11, 'pointer-events': 'none' }, o.p.name))
+              return
+            }
           }
         })
         const table = h('div', { class: 'visually-hidden' }, h('table', {}, h('caption', {}, t('mme.gov.title')),
@@ -155,7 +185,7 @@
       const T = tot[0] + tot[1] + tot[2]
       return card('c-12', cardHead(title, null, t('mme.map.info')),
         points.length > 1
-          ? [h('p', { class: 'dcard-sub' }, t('mme.map.explain')), h('p', { class: 'dcard-sub' }, t('mme.map.sub', { n: fmt.int(points.length), total: fmt.int(all.length) })), zoneKey(), StanceMap({ points, avg: { c: tot[0] / T, s: tot[2] / T } })]
+          ? [h('p', { class: 'dcard-sub' }, t('mme.map.sub', { n: fmt.int(points.length), total: fmt.int(all.length) })), zoneKey(), StanceMap({ points, avg: { c: tot[0] / T, s: tot[2] / T } })]
           : emptyText(t('media2.empty.list')))
     }
 
