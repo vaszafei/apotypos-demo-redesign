@@ -18,7 +18,7 @@
   <script src="assets/messages.js?v=44"></script>
   <script src="assets/messages-v2.js?v=58"></script>
   <script src="assets/messages-spread.js?v=27"></script>
-  <script src="assets/messages-mme.js?v=25"></script>
+  <script src="assets/messages-mme.js?v=27"></script>
   <script src="assets/components.js?v=20"></script>
   <script src="assets/motion.js?v=4"></script>
   <script src="assets/dash.js?v=30"></script>
@@ -54,56 +54,56 @@
       })
     }
 
-    // Πώς γράφουν για την κυβέρνηση: one dot for each outlet. x = critical share, y = supportive share, the rest up to 100% is neutral.
-    // The diagonals cut the plot in bands of the same neutral share (critical + supportive = 100% − neutral). The dot is sized by its articles and colored by its group.
-    const BANDS = [[0, 0.25, 45], [0.25, 0.5, 30], [0.5, 0.75, 15], [0.75, 1, 0]].map(([k2, k1, pctTone]) => ({ k2, k1, tone: (base) => `color-mix(in srgb, var(--stance-neutral) ${pctTone}%, ${base})` }))
-    function StanceMap ({ points, avg }) {
+    // Πώς γράφουν για την κυβέρνηση: one dot for each outlet, in a wedge whose two diagonal sides are the scales of the critical and the supportive articles.
+    // The position of an outlet is (critical − supportive) to the right and (critical + supportive) up, so the left is more supportive, the right more critical, and the apex is an outlet with only neutral articles. Nothing else is drawn.
+    // The lines parallel to the left side have the same critical share (read on the right side), those parallel to the right side have the same supportive share (read on the left side).
+    function StanceMap ({ points }) {
       return fit((holder, width) => {
-        // On a phone the notes inside the plot (diagonal names, corners, averages) are left out: the sentence above the chart explains them.
         const narrow = width < 640
-        const height = narrow ? 340 : Math.max(360, Math.min(470, Math.round(width * 0.4)))
-        const pad = { top: 14, right: narrow ? 14 : 22, bottom: 54, left: narrow ? 56 : 66 }
-        const step = narrow ? 0.2 : 0.1
+        const height = narrow ? 400 : Math.max(400, Math.min(500, Math.round(width * 0.43)))
+        const pad = { top: 18, right: narrow ? 14 : 24, bottom: 58, left: narrow ? 14 : 24 }
         const plotW = width - pad.left - pad.right
         const plotH = height - pad.top - pad.bottom
-        const xm = Math.min(1, Math.ceil((Math.max(...points.map((p) => p.c)) + 0.03) * 10) / 10)
-        const ym = Math.min(1, Math.ceil((Math.max(...points.map((p) => p.s)) + 0.03) * 10) / 10)
-        const sx = (v) => pad.left + (v / xm) * plotW
-        const sy = (v) => pad.top + plotH - (v / ym) * plotH
+        const ym = Math.min(1, Math.ceil((Math.max(...points.map((p) => p.c + p.s)) + 0.03) * 10) / 10)
+        const xl = Math.min(ym, Math.ceil((Math.max(...points.map((p) => p.s)) + 0.03) * 10) / 10)
+        const sx = (X) => pad.left + ((X + xl) / (xl + ym)) * plotW
+        const sy = (Y) => pad.top + plotH - (Y / ym) * plotH
+        const at = (c, s) => [sx(c - s), sy(c + s)]
         const maxN = Math.max(...points.map((p) => p.n))
         const radius = (p) => 5 + 9 * Math.sqrt(p.n / maxN)
         const text = (p) => t('mme.map.point', { name: p.name, c: fmt.pct(p.c), u: fmt.pct(p.u), s: fmt.pct(p.s), n: fmt.int(p.n) })
         const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
         const clipId = `stance-clip-${Math.random().toString(36).slice(2, 8)}`
         svg.append(h('clipPath', { id: clipId }, h('rect', { x: pad.left, y: pad.top, width: plotW, height: plotH })))
-        for (let v = 0; v <= ym + 1e-9; v += step) svg.append(h('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: sy(v), y2: sy(v) }), h('text', { x: pad.left - 8, y: sy(v) + 4, 'text-anchor': 'end' }, pct0(v)))
-        for (let v = 0; v <= xm + 1e-9; v += step) svg.append(h('text', { x: sx(v), y: pad.top + plotH + 18, 'text-anchor': 'middle' }, pct0(v)))
-        svg.append(h('text', { class: 'axis-title', x: pad.left + plotW / 2, y: height - 8, 'text-anchor': 'middle' }, t('mme.map.x')),
-          h('text', { class: 'axis-title', transform: `translate(16 ${pad.top + plotH / 2}) rotate(-90)`, 'text-anchor': 'middle' }, t('mme.map.y')))
+        const seg = (a, b, cls, style) => h('line', { class: cls, style, x1: a[0], y1: a[1], x2: b[0], y2: b[1] })
 
-        // The neutral share is four shaded bands, cut by diagonals: critical + supportive = 100% − neutral. The more grey the band, the more neutral articles.
-        // The key of the bands is above the chart. Beyond the last diagonal no outlet can be, so the plot is empty there.
+        // The wedge: where an outlet can be. The two lines of its sides are the 0% of the other share.
+        const apex = at(0, 0)
+        const rightTop = at(ym, 0)
+        const leftEnd = at(0, xl)
         const g = h('g', { 'clip-path': `url(#${clipId})` })
-        const corner = (x, y) => `${sx(x).toFixed(1)},${sy(y).toFixed(1)}`
-        BANDS.forEach(({ k2, k1, tone }, i) => {
-          g.append(h('path', { d: `M${[corner(k2, 0), corner(k1, 0), corner(0, k1), corner(0, k2)].join('L')}Z`, style: `fill:${tone('transparent')}` }))
-          if (i > 0) g.append(h('line', { class: 'grid-line', x1: sx(k2), y1: sy(0), x2: sx(0), y2: sy(k2) }))
-        })
-        g.append(h('line', { class: 'zero-line', x1: sx(1), y1: sy(0), x2: sx(0), y2: sy(1) }))
+        g.append(h('path', { d: `M${apex.join(',')}L${rightTop.join(',')}L${sx(-xl)},${sy(ym)}L${leftEnd.join(',')}Z`, style: 'fill:color-mix(in srgb, var(--stance-neutral) 12%, transparent)' }))
+        for (let k = 0.1; k < ym - 1e-9; k += 0.1) g.append(seg(at(k, 0), at(k, ym - k), 'grid-line'))
+        for (let k = 0.1; k <= xl + 1e-9; k += 0.1) g.append(seg(at(0, k), at(ym - k, k), 'grid-line'))
+        g.append(seg(apex, rightTop, 'zero-line'), seg(apex, leftEnd, 'zero-line'))
         svg.append(g)
 
-        // The two corners say what the position means.
-        if (!narrow) svg.append(h('text', { class: 'axis-title zone', x: width - pad.right - 8, y: pad.top + plotH - 10, 'text-anchor': 'end' }, t('mme.map.zone.crit')),
-          h('text', { class: 'axis-title zone', x: pad.left + 8, y: pad.top + 16 }, t('mme.map.zone.supp')))
-
-        // All the articles: the average of the outlets pooled, with its own label.
-        svg.append(h('line', { class: 'avg-line', x1: sx(avg.c), x2: sx(avg.c), y1: pad.top, y2: pad.top + plotH }),
-          h('line', { class: 'avg-line', x1: pad.left, x2: width - pad.right, y1: sy(avg.s), y2: sy(avg.s) }))
-        if (!narrow) svg.append(h('text', { class: 'axis-title', x: sx(avg.c) + 6, y: pad.top + plotH - 10 }, t('mme.gov.avg', { v: pct0(avg.c) })),
-          h('text', { class: 'axis-title', x: width - pad.right - 6, y: sy(avg.s) - 6, 'text-anchor': 'end' }, t('mme.map.avg.supp', { v: pct0(avg.s) })))
-
+        // The scales sit outside the sides: the critical one on the right side, the supportive one on the left side.
+        const dir = (a, b) => { const dx = b[0] - a[0]; const dy = b[1] - a[1]; const l = Math.hypot(dx, dy); return [dx / l, dy / l] }
+        const uR = dir(apex, rightTop); const uL = dir(leftEnd, apex)
+        const nR = [-uR[1], uR[0]]; const nL = [uL[1], -uL[0]]
+        const deg = (u) => ((Math.atan2(u[1], u[0]) * 180) / Math.PI).toFixed(1)
+        for (let k = 0.1; k <= ym + 1e-9; k += 0.1) { const p = at(k, 0); svg.append(h('text', { x: p[0] + nR[0] * 12, y: p[1] + nR[1] * 12 + 4, 'text-anchor': 'start' }, pct0(k))) }
+        for (let k = 0.1; k <= xl + 1e-9; k += 0.1) { const p = at(0, k); svg.append(h('text', { x: p[0] + nL[0] * 12, y: p[1] + nL[1] * 12 + 4, 'text-anchor': 'end' }, pct0(k))) }
+        const gap = narrow ? 64 : 46
+        const midR = at(ym / 2, 0); const midL = at(0, xl / 2)
+        svg.append(h('text', { class: 'axis-title', transform: `translate(${(midR[0] + nR[0] * gap).toFixed(1)} ${(midR[1] + nR[1] * gap).toFixed(1)}) rotate(${deg(uR)})`, 'text-anchor': 'middle' }, t('mme.map.edge.crit')),
+          h('text', { class: 'axis-title', transform: `translate(${(midL[0] + nL[0] * gap).toFixed(1)} ${(midL[1] + nL[1] * gap).toFixed(1)}) rotate(${deg(uL)})`, 'text-anchor': 'middle' }, t('mme.map.edge.supp')))
+        svg.append(h('text', { class: 'axis-title', x: pad.left + 4, y: height - 8 }, t('mme.map.left')),
+          h('text', { class: 'axis-title', x: width - pad.right - 4, y: height - 8, 'text-anchor': 'end' }, t('mme.map.right')))
         const dots = points.slice().sort((a, b) => b.n - a.n).map((p) => {
-          const c = h('circle', { class: 'pt', cx: sx(p.c), cy: sy(p.s), r: radius(p), fill: p.color })
+          const [cx, cy] = at(p.c, p.s)
+          const c = h('circle', { class: 'pt', cx, cy, r: radius(p), fill: p.color })
           const show = (e) => { UI.showTooltip(text(p), e.clientX, e.clientY); dots.forEach((d) => { d.c.style.opacity = d.p === p ? '1' : '0.3' }) }
           c.addEventListener('pointerenter', show)
           c.addEventListener('pointermove', show)
@@ -114,18 +114,18 @@
 
         // A name for every dot that has room for it: the largest first, to the right, left, above or below. The others have the tooltip.
         const boxes = []
-        const circles = points.map((p) => ({ x: sx(p.c), y: sy(p.s), r: radius(p) }))
+        const circles = points.map((p) => ({ x: at(p.c, p.s)[0], y: at(p.c, p.s)[1], r: radius(p) }))
         const hit = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1
         dots.forEach(({ p }) => {
-          const cx = sx(p.c); const cy = sy(p.s); const r = radius(p); const w = p.name.length * 6.4 + 2
-          const tries = [[cx + r + 4, cy - 7, 'start'], [cx - r - 4 - w, cy - 7, 'start'], [cx - w / 2, cy - r - 17, 'start'], [cx - w / 2, cy + r + 3, 'start']]
-          for (const [x, y, anchor] of tries) {
+          const [cx, cy] = at(p.c, p.s); const r = radius(p); const w = p.name.length * 6.4 + 2
+          const tries = [[cx + r + 4, cy - 7], [cx - r - 4 - w, cy - 7], [cx - w / 2, cy - r - 17], [cx - w / 2, cy + r + 3]]
+          for (const [x, y] of tries) {
             const b = { x0: x, x1: x + w, y0: y, y1: y + 14 }
             if (b.x0 < pad.left || b.x1 > width - pad.right || b.y0 < pad.top || b.y1 > pad.top + plotH) continue
             if (boxes.some((o) => hit(b, o))) continue
             if (circles.some((o) => b.x0 < o.x + o.r && o.x - o.r < b.x1 && b.y0 < o.y + o.r && o.y - o.r < b.y1)) continue
             boxes.push(b)
-            svg.append(h('text', { class: 'pt-label', x, y: y + 11, 'text-anchor': anchor, 'pointer-events': 'none' }, p.name))
+            svg.append(h('text', { class: 'pt-label', x, y: y + 11, 'pointer-events': 'none' }, p.name))
             break
           }
         })
@@ -135,11 +135,6 @@
       })
     }
 
-    // The key of the bands: from the least to the most neutral, each swatch the color of its band.
-    const bandKey = () => h('div', { class: 'mme-key-row', style: 'display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-1) var(--space-3)' },
-      h('span', { class: 'dcard-sub' }, t('mme.map.bandkey')),
-      h('ul', { class: 'legend' }, BANDS.map(({ k2, k1, tone }) => h('li', {}, h('span', { class: 'swatch', style: `background:${tone('var(--surface-raised)')};box-shadow:inset 0 0 0 1px var(--rule)` }), t('mme.map.band', { a: Math.round((1 - k1) * 100), b: Math.round((1 - k2) * 100) })))))
-
     function StanceMapCard (S) {
       const title = S.set.country === 'GR' ? t('mme.gov.title') : t('mme.gov.title.il')
       const all = S.active.filter((o) => o.stance && o.stance[0] + o.stance[1] + o.stance[2] > 0)
@@ -147,11 +142,9 @@
         const n = o.stance[0] + o.stance[1] + o.stance[2]
         return { name: o.name, c: o.stance[0] / n, u: o.stance[1] / n, s: o.stance[2] / n, n, color: o.group ? colorOfGroup.get(o.group) || NO_GROUP : NO_GROUP }
       })
-      const tot = all.reduce((a, o) => a.map((v, j) => v + o.stance[j]), [0, 0, 0])
-      const T = tot[0] + tot[1] + tot[2]
       return card('c-12', cardHead(title, null, t('mme.map.info')),
         points.length > 1
-          ? [h('p', { class: 'dcard-sub' }, t('mme.map.explain')), h('p', { class: 'dcard-sub' }, t('mme.map.sub', { n: fmt.int(points.length), total: fmt.int(all.length) })), bandKey(), StanceMap({ points, avg: { c: tot[0] / T, s: tot[2] / T } })]
+          ? [h('p', { class: 'dcard-sub' }, t('mme.map.explain')), h('p', { class: 'dcard-sub' }, t('mme.map.sub', { n: fmt.int(points.length), total: fmt.int(all.length) })), StanceMap({ points })]
           : emptyText(t('media2.empty.list')))
     }
 
