@@ -16,7 +16,7 @@
   <script src="assets/icons.js?v=9"></script>
   <script src="assets/messages.js?v=44"></script>
   <script src="assets/messages-v2.js?v=58"></script>
-  <script src="assets/messages-spread.js?v=27"></script>
+  <script src="assets/messages-spread.js?v=28"></script>
   <script src="assets/messages-mme.js?v=29"></script>
   <script src="assets/components.js?v=20"></script>
   <script src="assets/motion.js?v=4"></script>
@@ -43,6 +43,8 @@
     const STEP = 25
     // A pair with fewer shared stories is noise: two small outlets can share one story and reach 100 percent.
     const MIN_SHARED = 10
+    // The pairs of the same group count only outlets with this many stories: a small outlet shares few stories, so its pairs would sit near zero.
+    const MIN_STORIES = 700
 
     // Scatter: news share on x, clickbait share on y, the size of a dot is the number of articles, the color is the group.
     function Scatter ({ points, avgX, avgY }) {
@@ -118,23 +120,20 @@
         const groupColor = (i) => { const g = dd.outlets[i].group; return (g && colorOfGroup.get(g)) || NO_GROUP }
         const dot = (i) => h('span', { class: dd.outlets[i].group ? 'dot' : 'dot dot-none', style: `--dot:${groupColor(i)}` })
 
-        // The same group or not: the average similarity of the pairs of outlets that both have a group.
-        const { list: pairList } = Spread.pairs(dd)
+        // The pairs of outlets of the same group. The outlets are the ones with at least MIN_STORIES stories, so no pair is noise. The line is the average of all the other pairs of these outlets.
+        const { list: pairList, per } = Spread.pairs(dd)
         const all = pairList.filter((p) => p.shared >= MIN_SHARED)
-        const grouped = all.filter((p) => p.grouped)
+        const big = pairList.filter((p) => per[p.a] >= MIN_STORIES && per[p.b] >= MIN_STORIES)
         const mean = (xs) => (xs.length ? xs.reduce((s, p) => s + p.score, 0) / xs.length : 0)
-        const sameRows = [['same', grouped.filter((p) => p.sameGroup)], ['other', grouped.filter((p) => !p.sameGroup)]].map(([key, ps]) => ({ key, n: ps.length, score: mean(ps) }))
-        const sameColors = { same: 'var(--series-news)', other: 'var(--series-other)' }
-        const sameRing = Spread.Ring(sameRows.map((r) => ({ name: t(`sim.group.${r.key}`), n: r.n, color: sameColors[r.key], score: r.score })), {
-          center: fmt.int(sameRows.reduce((sum, r) => sum + r.n, 0)), caption: t('sim.same.total'), aria: t('sim.same.aria'),
-          tip: (it) => t('sim.same.tip', { name: it.name, n: fmt.int(it.n), score: fmt.pct(it.score) })
-        })
+        const sameGroup = big.filter((p) => p.sameGroup).sort((x, y) => y.score - x.score)
+        const otherAvg = mean(big.filter((p) => !p.sameGroup))
         // #60: the titles say what each card shows; the topic of the card goes to its info.
-        const sameCard = card('c-12', cardHead(t('sim.same.title'), null, `${sameRows.every((r) => r.n) ? `${t('sim.same.finding', { same: fmt.pct(sameRows[0].score), other: fmt.pct(sameRows[1].score) })}. ` : ''}${t('sim.same.info')}`),
-          h('div', { class: 'ring-stack' }, sameRing,
-            h('ul', { class: 'ring-list' }, sameRows.map((r) => h('li', {},
-              h('span', { class: 'dot', style: `--dot:${sameColors[r.key]}` }), h('span', {}, t(`sim.group.${r.key}`)),
-              h('span', { class: 'muted-text' }, t('sim.same.row', { score: fmt.pct(r.score), n: fmt.int(r.n) })))))))
+        const sameCard = card('c-12', cardHead(t('sim.same.title'), null, `${t('sim.same.finding', { same: fmt.pct(mean(sameGroup)), other: fmt.pct(otherAvg) })}. ${t('sim.same.info', { min: fmt.int(MIN_STORIES) })}`),
+          h('p', { class: 'dcard-sub' }, t('sim.same.sub', { n: sameGroup.length })),
+          UI.BarList(sameGroup.map((p) => ({
+            label: [h('span', { class: 'dot', style: `--dot:${groupColor(p.a)}` }), `${outletName(p.a)} – ${outletName(p.b)}`], value: p.score, color: groupColor(p.a),
+            text: fmt.pct(p.score), title: t('sim.same.tip', { a: outletName(p.a), b: outletName(p.b), score: fmt.pct(p.score), n: fmt.int(p.shared) })
+          })), { max: Math.max(...sameGroup.map((p) => p.score), otherAvg), reference: { value: otherAvg, label: t('sim.same.avg', { v: fmt.pct(otherAvg) }) } }))
 
         // Originality: the share of original articles of each outlet. The bar is 100 percent of the scored articles and the dashed line is the average of the 5 outlets.
         const d = orig.data
