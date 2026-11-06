@@ -15,10 +15,10 @@
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=43"></script>
+  <script src="assets/messages.js?v=44"></script>
   <script src="assets/messages-v2.js?v=58"></script>
   <script src="assets/messages-spread.js?v=27"></script>
-  <script src="assets/messages-mme.js?v=21"></script>
+  <script src="assets/messages-mme.js?v=25"></script>
   <script src="assets/components.js?v=20"></script>
   <script src="assets/motion.js?v=4"></script>
   <script src="assets/dash.js?v=30"></script>
@@ -27,22 +27,19 @@
   <script src="assets/shell.js?v=64"></script>
   <script src="data/mme.js?v=20"></script>
   <script src="data/groups.js?v=2"></script>
-  <script src="data/originality.js?v=1"></script>
   <script>
-    // Μέσα › Επισκόπηση and Μέσα › Πώς γράφουν: the dashboard of APO-161 with everything of the live page ΜΜΕ & πρόσωπα (apotypos.org/media).
+    // Μέσα › Επισκόπηση and Μέσα › Στάση: the dashboard of APO-161 with everything of the live page ΜΜΕ & πρόσωπα (apotypos.org/media).
     // The data is the one of the live page (data/mme.js, scripts/make-mme.py): 29 Greek outlets and 10 Israeli outlets, summed for the period.
     // The top bar has the tabs, the set of outlets and the period. Each card holds one measure and one picture of it.
     const { t, fmt, h, load, params } = App
     const { fit, reset, pct0, NO_GROUP, card, cardHead, emptyText, TopBar } = Dash
     const result = load('mme', ['sets'], (b) => Object.keys(b.sets))
     const groupsData = load('groups', ['groups'], (b) => b.groups)
-    // The share of articles with no byline comes from the API in its own period (Sep 2025 – Jan 2026), for 5 outlets.
-    const bylines = load('originality', ['window', 'outlets'], (b) => b.outlets)
     const groupList = groupsData.kind === 'failed' ? [] : (groupsData.data.groups || [])
     const slugOfGroup = new Map(groupList.map((g) => [g.name, g.slug]))
     const colorOfGroup = Dash.groupColors(groupList)
 
-    // Two tabs (#62): Επισκόπηση (/media) and Πώς γράφουν (?tab=writing, /media/writing). Both have the set of outlets and the period.
+    // Two tabs (#62): Επισκόπηση (/media) and Στάση (?tab=writing, /media/writing). Both have the set of outlets and the period.
     const tab = params.get('tab') === 'writing' ? 'writing' : 'overview'
     const view = { set: 'gr', from: null, to: null }
     let lastValid = null
@@ -57,58 +54,139 @@
       })
     }
 
-    // Scatter: news share on x, clickbait share on y, the size of a dot is the number of articles, the color is the group.
-    function Scatter ({ points, avgX, avgY }) {
+    // Πώς γράφουν για την κυβέρνηση: one dot for each outlet. x = critical share, y = supportive share, the rest up to 100% is neutral.
+    // The dot is sized by its articles and colored by its group.
+    function StanceMap ({ points, avg }) {
       return fit((holder, width) => {
-        const height = Math.max(240, Math.min(300, Math.round(width * 0.42)))
-        const pad = { top: 12, right: 14, bottom: 40, left: 44 }
+        // On a phone the names of the zones and the notes about the averages inside the plot are left out; the card then has a key of the three zones.
+        const narrow = width < 640
+        const height = narrow ? 380 : Math.max(420, Math.min(560, Math.round(width * 0.46)))
+        const pad = { top: 14, right: narrow ? 14 : 22, bottom: 54, left: narrow ? 56 : 66 }
+        const step = narrow ? 0.2 : 0.1
         const plotW = width - pad.left - pad.right
         const plotH = height - pad.top - pad.bottom
-        const xs = points.map((p) => p.x)
-        const x0 = Math.max(0, Math.floor((Math.min(...xs) - 0.03) * 20) / 20)
-        const x1 = Math.min(1, Math.ceil((Math.max(...xs) + 0.03) * 20) / 20)
-        const yMax = Math.ceil((Math.max(...points.map((p) => p.y)) + 0.02) * 20) / 20
-        const sx = (v) => pad.left + ((v - x0) / (x1 - x0)) * plotW
-        const sy = (v) => pad.top + plotH - (v / yMax) * plotH
+        // The axes start and end near the data, so that the dots spread over the whole plot and more of them have room for a name.
+        const x0 = Math.max(0, Math.floor((Math.min(...points.map((p) => p.c)) - 0.03) * 10) / 10)
+        const xm = Math.min(1, Math.ceil((Math.max(...points.map((p) => p.c)) + 0.03) * 10) / 10)
+        const y0 = Math.max(0, Math.floor((Math.min(...points.map((p) => p.s)) - 0.02) * 10) / 10)
+        const ym = Math.min(1, Math.ceil((Math.max(...points.map((p) => p.s)) + 0.03) * 10) / 10)
+        const sx = (v) => pad.left + ((v - x0) / (xm - x0)) * plotW
+        const sy = (v) => pad.top + plotH - ((v - y0) / (ym - y0)) * plotH
         const maxN = Math.max(...points.map((p) => p.n))
-        const radius = (n) => 5 + 9 * Math.sqrt(n / maxN)
-        const text = (p) => t('media2.scatter.point', { name: p.name, news: fmt.pct(p.x), cb: fmt.pct(p.y), n: fmt.int(p.n) })
+        const radius = (p) => 4 + 8 * Math.sqrt(p.n / maxN)
+        const text = (p) => t('mme.map.point', { name: p.name, c: fmt.pct(p.c), u: fmt.pct(p.u), s: fmt.pct(p.s), n: fmt.int(p.n) })
         const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
-        for (let k = 0; k <= 4; k++) {
-          const v = (yMax * k) / 4
-          svg.append(h('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: sy(v), y2: sy(v) }), h('text', { x: pad.left - 6, y: sy(v) + 4, 'text-anchor': 'end' }, pct0(v)))
-          const xv = x0 + ((x1 - x0) * k) / 4
-          svg.append(h('text', { x: sx(xv), y: height - 22, 'text-anchor': 'middle' }, pct0(xv)))
-        }
-        svg.append(h('text', { class: 'axis-title', x: pad.left + plotW / 2, y: height - 4, 'text-anchor': 'middle' }, `${t('media2.scatter.x')} →  ·  ${t('media2.scatter.y')} ↑`),
-          h('line', { class: 'avg-line', x1: sx(avgX), x2: sx(avgX), y1: pad.top, y2: pad.top + plotH }),
-          h('line', { class: 'avg-line', x1: pad.left, x2: width - pad.right, y1: sy(avgY), y2: sy(avgY) }))
-        points.slice().sort((a, b) => b.n - a.n).forEach((p) => {
-          const c = h('circle', { class: 'pt', cx: sx(p.x), cy: sy(p.y), r: radius(p.n), fill: p.color })
-          const show = (e) => UI.showTooltip(text(p), e.clientX, e.clientY)
+        const clipId = `stance-clip-${Math.random().toString(36).slice(2, 8)}`
+        svg.append(h('clipPath', { id: clipId }, h('rect', { x: pad.left, y: pad.top, width: plotW, height: plotH })))
+        const first = (from) => Math.ceil(from / step - 1e-9) * step
+        for (let v = first(y0); v <= ym + 1e-9; v += step) svg.append(h('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: sy(v), y2: sy(v) }), h('text', { x: pad.left - 8, y: sy(v) + 4, 'text-anchor': 'end' }, pct0(v)))
+        for (let v = first(x0); v <= xm + 1e-9; v += step) svg.append(h('text', { x: sx(v), y: pad.top + plotH + 18, 'text-anchor': 'middle' }, pct0(v)))
+        svg.append(h('text', { class: 'axis-title', x: pad.left + plotW / 2, y: height - 8, 'text-anchor': 'middle' }, t('mme.map.x')),
+          h('text', { class: 'axis-title', transform: `translate(16 ${pad.top + plotH / 2}) rotate(-90)`, 'text-anchor': 'middle' }, t('mme.map.y')))
+
+        // Zones: the share that is the largest. They meet where the three shares are a third each; the diagonals between them are where two shares are equal.
+        // A zone is a light tint of its stance color and is named once, in its own corner.
+        const g = h('g', { 'clip-path': `url(#${clipId})` })
+        const third = 1 / 3
+        const poly = (pts) => `M${pts.map(([c, s]) => `${sx(c).toFixed(1)},${sy(s).toFixed(1)}`).join('L')}Z`
+        const zone = (pts, color) => g.append(h('path', { d: poly(pts), style: `fill:color-mix(in srgb, ${color} 13%, transparent)` }))
+        zone([[third, third], [0.5, 0], [1, 0], [0.5, 0.5]], 'var(--stance-critical)')
+        zone([[third, third], [0, 0.5], [0, 1], [0.5, 0.5]], 'var(--stance-supportive)')
+        zone([[0, 0], [0.5, 0], [third, third], [0, 0.5]], 'var(--stance-neutral)')
+        const line = (c1, s1, c2, s2) => h('line', { class: 'grid-line', style: 'stroke-width:1.5', x1: sx(c1), y1: sy(s1), x2: sx(c2), y2: sy(s2) })
+        g.append(line(third, third, 0.5, 0.5), line(third, third, 0.5, 0), line(third, third, 0, 0.5))
+        svg.append(g)
+
+        // Each zone is named in its own corner, in plain horizontal text.
+        if (!narrow) svg.append(h('text', { class: 'axis-title', style: 'font-weight:600', x: width - pad.right - 8, y: pad.top + plotH - 10, 'text-anchor': 'end' }, t('mme.map.zone.crit')),
+          h('text', { class: 'axis-title', style: 'font-weight:600', x: pad.left + 8, y: pad.top + 16 }, t('mme.map.zone.supp')),
+          h('text', { class: 'axis-title', style: 'font-weight:600', x: pad.left + 8, y: pad.top + plotH - 10 }, t('mme.map.zone.neutral')))
+
+        // All the articles: the average of the outlets pooled, with its own label.
+        svg.append(h('line', { class: 'avg-line', x1: sx(avg.c), x2: sx(avg.c), y1: pad.top, y2: pad.top + plotH }),
+          h('line', { class: 'avg-line', x1: pad.left, x2: width - pad.right, y1: sy(avg.s), y2: sy(avg.s) }))
+        if (!narrow) svg.append(h('text', { class: 'axis-title', x: sx(avg.c) + 6, y: pad.top + plotH - 10 }, t('mme.gov.avg', { v: pct0(avg.c) })),
+          h('text', { class: 'axis-title', x: width - pad.right - 6, y: sy(avg.s) - 6, 'text-anchor': 'end' }, t('mme.map.avg.supp', { v: pct0(avg.s) })))
+
+        const leaders = h('g')
+        svg.append(leaders)
+        const dots = points.slice().sort((a, b) => b.n - a.n).map((p) => {
+          const c = h('circle', { class: 'pt', cx: sx(p.c), cy: sy(p.s), r: radius(p), fill: p.color })
+          const show = (e) => { UI.showTooltip(text(p), e.clientX, e.clientY); dots.forEach((d) => { d.c.style.opacity = d.p === p ? '1' : '0.3' }) }
           c.addEventListener('pointerenter', show)
           c.addEventListener('pointermove', show)
-          c.addEventListener('pointerleave', () => UI.hideTooltip())
+          c.addEventListener('pointerleave', () => { UI.hideTooltip(); dots.forEach((d) => { d.c.style.opacity = '' }) })
           svg.append(c)
+          return { p, c }
         })
-        // Direct labels for the outliers: the highest and the lowest value on each axis, and the 3 largest outlets.
-        const bySize = points.slice().sort((a, b) => b.n - a.n).slice(0, 3)
-        const outliers = [points.reduce((a, b) => (b.y > a.y ? b : a)), points.reduce((a, b) => (b.y < a.y ? b : a)), points.reduce((a, b) => (b.x > a.x ? b : a)), points.reduce((a, b) => (b.x < a.x ? b : a)), ...bySize]
-        // A label that would overlap a label already placed is left out. The tooltip still names the dot.
-        const placed = []
-        new Set(outliers).forEach((p) => {
-          const toLeft = sx(p.x) > width - 120
-          const w = p.name.length * 6.5
-          const x = sx(p.x) + (toLeft ? -1 : 1) * (radius(p.n) + 4)
-          const box = { x0: toLeft ? x - w : x, x1: toLeft ? x : x + w, y: sy(p.y) }
-          if (placed.some((b) => Math.abs(b.y - box.y) < 14 && b.x0 < box.x1 && box.x0 < b.x1)) return
-          placed.push(box)
-          svg.append(h('text', { class: 'pt-label', x, y: box.y + 4, 'text-anchor': toLeft ? 'end' : 'start' }, p.name))
+
+        // A name for every dot, as many as fit: the most crowded dots choose first, each tries 4 distances and 8 directions around its dot
+        // and gets a thin leader line when its name is not next to it. The names of the zones and of the averages are obstacles too.
+        const boxes = []
+        const bottom = pad.top + plotH
+        const obstacle = (xa, xb, ya, yb) => boxes.push({ x0: xa, x1: xb, y0: ya, y1: yb })
+        if (!narrow) {
+          const wide = (key) => t(key).length * 7
+          obstacle(width - pad.right - 8 - wide('mme.map.zone.crit'), width - pad.right - 8, bottom - 26, bottom - 4)
+          obstacle(pad.left + 8, pad.left + 8 + wide('mme.map.zone.supp'), pad.top + 2, pad.top + 22)
+          obstacle(pad.left + 8, pad.left + 8 + wide('mme.map.zone.neutral'), bottom - 26, bottom - 4)
+          obstacle(sx(avg.c) + 6, sx(avg.c) + 6 + t('mme.gov.avg', { v: pct0(avg.c) }).length * 6.6, bottom - 24, bottom - 6)
+          const sl = t('mme.map.avg.supp', { v: pct0(avg.s) }).length * 6.6
+          obstacle(width - pad.right - 6 - sl, width - pad.right - 6, sy(avg.s) - 20, sy(avg.s) - 2)
+        }
+        const circles = points.map((p) => ({ p, x: sx(p.c), y: sy(p.s), r: radius(p) }))
+        const crowd = (o) => circles.filter((q) => q !== o && Math.hypot(q.x - o.x, q.y - o.y) < 46).length
+        const hit = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1
+        const angles = [0, Math.PI, -Math.PI / 6, Math.PI / 6, (-5 * Math.PI) / 6, (5 * Math.PI) / 6, -Math.PI / 2, Math.PI / 2]
+        circles.slice().sort((a, b) => crowd(b) - crowd(a) || b.p.n - a.p.n).forEach((o) => {
+          const w = o.p.name.length * 6.4 + 2
+          for (const d of [4, 14, 28, 44]) {
+            for (const th of angles) {
+              const cs = Math.cos(th); const sn = Math.sin(th)
+              const ax = o.x + cs * (o.r + d); const ay = o.y + sn * (o.r + d)
+              const xa = cs > 0.4 ? ax : cs < -0.4 ? ax - w : ax - w / 2
+              const ya = Math.abs(sn) < 0.4 ? ay - 7 : sn > 0 ? ay : ay - 14
+              const b = { x0: xa, x1: xa + w, y0: ya, y1: ya + 14 }
+              if (b.x0 < pad.left || b.x1 > width - pad.right || b.y0 < pad.top || b.y1 > bottom) continue
+              if (boxes.some((q) => hit(b, q))) continue
+              if (circles.some((q) => b.x0 < q.x + q.r + 1 && q.x - q.r - 1 < b.x1 && b.y0 < q.y + q.r + 1 && q.y - q.r - 1 < b.y1)) continue
+              boxes.push(b)
+              if (d > 4) {
+                const tx = Math.min(Math.max(o.x, b.x0), b.x1); const ty = Math.min(Math.max(o.y, b.y0), b.y1)
+                const len = Math.hypot(tx - o.x, ty - o.y) || 1
+                leaders.append(h('line', { x1: o.x + ((tx - o.x) / len) * o.r, y1: o.y + ((ty - o.y) / len) * o.r, x2: tx, y2: ty, style: 'stroke:var(--text-secondary);stroke-width:0.75;opacity:0.7' }))
+              }
+              svg.append(h('text', { class: 'pt-label', x: b.x0, y: b.y0 + 11, 'pointer-events': 'none' }, o.p.name))
+              return
+            }
+          }
         })
-        const table = h('div', { class: 'visually-hidden' }, h('table', {}, h('caption', {}, t('media2.scatter.title')),
+        const table = h('div', { class: 'visually-hidden' }, h('table', {}, h('caption', {}, t('mme.gov.title')),
           h('tbody', {}, points.map((p) => h('tr', {}, h('th', { scope: 'row' }, p.name), h('td', {}, text(p)))))))
         holder.replaceChildren(svg, table)
       })
+    }
+
+
+    // The key of the zones, for a phone only: a wide plot names the zones in its corners.
+    const ZONES = [['crit', 'var(--stance-critical)'], ['supp', 'var(--stance-supportive)'], ['neutral', 'var(--stance-neutral)']]
+    const zoneKey = () => (window.matchMedia('(max-width: 639px)').matches
+      ? h('ul', { class: 'legend' }, ZONES.map(([code, color]) => h('li', {}, h('span', { class: 'swatch', style: `background:color-mix(in srgb, ${color} 30%, var(--surface-raised));box-shadow:inset 0 0 0 1px var(--rule)` }), t(`mme.map.zone.${code}`))))
+      : null)
+
+    function StanceMapCard (S) {
+      const title = S.set.country === 'GR' ? t('mme.gov.title') : t('mme.gov.title.il')
+      const all = S.active.filter((o) => o.stance && o.stance[0] + o.stance[1] + o.stance[2] > 0)
+      const points = all.filter((o) => o.stance[0] + o.stance[1] + o.stance[2] >= 30).map((o) => {
+        const n = o.stance[0] + o.stance[1] + o.stance[2]
+        return { name: o.name, c: o.stance[0] / n, u: o.stance[1] / n, s: o.stance[2] / n, n, color: o.group ? colorOfGroup.get(o.group) || NO_GROUP : NO_GROUP }
+      })
+      const tot = all.reduce((a, o) => a.map((v, j) => v + o.stance[j]), [0, 0, 0])
+      const T = tot[0] + tot[1] + tot[2]
+      return card('c-12', cardHead(title, null, t('mme.map.info')),
+        points.length > 1
+          ? [h('p', { class: 'dcard-sub' }, t('mme.map.sub', { n: fmt.int(points.length), total: fmt.int(all.length) })), zoneKey(), StanceMap({ points, avg: { c: tot[0] / T, s: tot[2] / T } })]
+          : emptyText(t('media2.empty.list')))
     }
 
     const tipOn = (el, text) => {
@@ -294,23 +372,6 @@
               analysed > 0 ? `${t('media2.chart.peak', { date: fmt.date(dates[peakDay]), n: fmt.int(totals[peakDay]) })} · ${t('media2.chart.hint')}` : null),
             analysed > 0 ? VolumeChart({ dates: dates.slice(i0, i1 + 1), news: news.slice(i0, i1 + 1), other: other.slice(i0, i1 + 1), onSelect: select, height: window.matchMedia('(min-width: 1280px)').matches ? 230 : 170 }) : emptyText(t('media2.chart.empty')))
 
-          // The scatter: news share and clickbait share of each outlet.
-          const cbOutlets = S.active.filter((o) => o.cbKnown >= 100)
-          const points = cbOutlets.map((o) => ({ name: o.name, x: o.news / o.n, y: o.cbYes / o.cbKnown, n: o.n, color: o.group ? colorOfGroup.get(o.group) || NO_GROUP : NO_GROUP }))
-          const newsAvg = S.active.reduce((s, o) => s + o.news, 0) / (analysed || 1)
-          const cbAvg = cbOutlets.reduce((s, o) => s + o.cbYes, 0) / (cbOutlets.reduce((s, o) => s + o.cbKnown, 0) || 1)
-          const scatterCard = card('',
-            cardHead(t('media2.scatter.title'), null, t('media2.scatter.sub', { n: fmt.int(points.length), total: fmt.int(S.active.length) })),
-            points.length > 1 ? Scatter({ points, avgX: newsAvg, avgY: cbAvg }) : emptyText(t('media2.empty.list')))
-
-          // The share of articles with no byline, for the 5 outlets that the API scores. The card says its own period.
-          // The info names the outlet with the most articles with no byline. The tick is the average of the 5 outlets.
-          const anon = bylines.kind === 'data' ? bylines.data.outlets.slice().sort((a, b) => b.anonPct - a.anonPct) : []
-          const anonAvg = anon.reduce((s, r) => s + r.anonPct, 0) / (anon.length || 1)
-          const bylineCard = anon.length ? card('', cardHead(t('originality.anon.title'), null, `${t('originality.anon.finding', { name: anon[0].name, v: fmt.pct(anon[0].anonPct / 100) })}. ${t('originality.anon.info')}`),
-            h('p', { class: 'dcard-sub' }, t('originality.meta', { n: bylines.data.outlets.length, from: fmt.date(bylines.data.window[0], { month: 'short', year: 'numeric' }), to: fmt.date(bylines.data.window[1], { month: 'short', year: 'numeric' }) })),
-            UI.BarList(anon.map((r) => ({ label: r.name, value: r.anonPct, text: fmt.pct(r.anonPct / 100) })), { max: 100, reference: { value: anonAvg, label: t('originality.anon.avg', { v: fmt.pct(anonAvg / 100) }) } })) : null
-
           // Row 1 on the right: the articles of each topic of the news in the period, one ring with a slice for each topic. The list of the topics scrolls inside the card.
           const topicCard = card('c-5', cardHead(t('media2.topics.title')),
             S.newsN > 0 ? TopicDonut({ S }) : emptyText(t('media2.chart.empty')))
@@ -322,14 +383,11 @@
           // The cards of the live page that the dashboard did not have.
           // The topic chips and «Ένα θέμα, όλα τα μέσα» are on Θέματα › Ένα θέμα. «Οι ιστορίες του διαστήματος» is on Ιστορίες › Ανά μέσο. «Τι ξεχωρίζει» is on Αρχική.
           // «Η ατζέντα κάθε μέσου» is on Θέματα › Ατζέντα μέσων. «Τα πρόσωπα» and «Πώς παρουσιάζει κάθε μέσο τα πρόσωπα» are on Πρόσωπα.
-          // Πώς γράφουν: the scatter and the bylines side by side, the stance of all the outlets under them in two columns.
-          const gov = Mme.GovCard(S)
-          gov.classList.add('c-12')
-          scatterCard.classList.add(bylineCard ? 'c-6' : 'c-12')
-          bylineCard?.classList.add('c-6')
+          // Στάση: the stance of all the outlets to the government, as one map.
+          const gov = StanceMapCard(S)
 
           const cards = tab === 'writing'
-            ? [scatterCard, bylineCard, gov]
+            ? [gov]
             : [volume, topicCard, groupCard]
           content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...cards), Mme.MethodNote(S), protoNote())
         }
