@@ -40,9 +40,6 @@
     const orig = load('originality', ['window', 'outlets'], (b) => b.outlets)
     const groupsData = load('groups', ['groups'], (b) => b.groups)
     const colorOfGroup = Dash.groupColors(groupsData.data ? groupsData.data.groups : [])
-    const STEP = 25
-    // A pair with fewer shared stories is noise: two small outlets can share one story and reach 100 percent.
-    const MIN_SHARED = 10
 
     // A map of the outlets, as the stance map of Μέσα: one dot for each outlet with its name, sized by its articles (n) and colored by its group, with dashed lines at the averages.
     // points: [{ name, x, y, n, color }], avg: { x, y }, text(p): the tooltip, caption: the title of the table for a screen reader.
@@ -141,14 +138,6 @@
         const problem = Dash.stateContent([list, detail, orig, mme], { title, tabs, quiet: true })
         if (problem) { content.replaceChildren(...problem.filter(Boolean), protoNote()); return }
         const dd = detail.data
-        const outletName = (i) => dd.outlets[i].name
-        const groupColor = (i) => { const g = dd.outlets[i].group; return (g && colorOfGroup.get(g)) || NO_GROUP }
-        const dot = (i) => h('span', { class: dd.outlets[i].group ? 'dot' : 'dot dot-none', style: `--dot:${groupColor(i)}` })
-
-        // The pairs of outlets with enough shared stories, for the table of all pairs.
-        const { list: pairList } = Spread.pairs(dd)
-        const all = pairList.filter((p) => p.shared >= MIN_SHARED)
-
         // Originality: the share of original articles of each outlet. The bar is 100 percent of the scored articles and the dashed line is the average of the 5 outlets.
         const d = orig.data
         const rows = d.outlets.slice().sort((a, b) => b.pct - a.pct)
@@ -206,20 +195,6 @@
           points.length > 1 ? DotMap({ points, avg: { x: newsAvg, y: cbAvg }, xTitle: t('media2.scatter.x'), yTitle: t('media2.scatter.y'), avgX: t('sim.map.avg', { v: pct0(newsAvg) }), avgY: t('sim.map.avg', { v: pct0(cbAvg) }), caption: t('media2.scatter.title'),
             text: (p) => t('media2.scatter.point', { name: p.name, news: fmt.pct(p.x), cb: fmt.pct(p.y), n: fmt.int(p.n) }) }) : emptyText(t('media2.empty.list')))
 
-        // The table of all pairs is the table view of the matrix. It stays closed until the reader opens it.
-        const pairRows = all.slice().sort((a, b) => b.score - a.score || b.shared - a.shared)
-        const topScore = pairRows.reduce((m, p) => Math.max(m, p.score), 0.0001)
-        const name = (i) => h('span', { class: 'group-cell nowrap' }, dot(i), UI.EntityLink({ type: 'outlet', key: dd.outlets[i].slug, label: outletName(i) }))
-        const pairsCard = card('c-12', h('details', { class: 'pairs-details' }, h('summary', { class: 'dcard-title' }, t('sim.table.title', { n: fmt.int(pairRows.length) })),
-          UI.DataTable({
-            rows: pairRows, rankColumn: true, pageSize: STEP, moreStep: STEP, emptyText: t('spread.rank.empty'),
-            columns: [
-              { label: t('sim.col.pair'), render: (p) => h('span', { class: 'pair' }, name(p.a), h('span', { class: 'muted-text' }, ' ↔ '), name(p.b)) },
-              { label: t('sim.col.shared'), num: true, phone: false, render: (p) => fmt.int(p.shared) },
-              { label: t('sim.col.score'), num: true, render: (p) => UI.HBar(p.score, topScore, { text: fmt.pct(p.score) }) }
-            ]
-          })))
-
         // The top bar is the one of Μέσα: only the tabs. Originality states its own period in its section.
         const dates = list.data.dates
         const bar = TopBar({ title, tabs, quiet: true })
@@ -228,8 +203,7 @@
           card('c-6', cardHead(t('originality.title'), origKey, t('originality.info')), h('p', { class: 'dcard-sub' }, period), origTable),
           origMap,
           scatterCard,
-          soloCard,
-          pairsCard), protoNote())
+          soloCard), protoNote())
       }
     })
 
