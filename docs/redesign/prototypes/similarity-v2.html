@@ -30,10 +30,10 @@
   <script src="data/originality.js?v=1"></script>
   <script src="data/groups.js?v=1"></script>
   <script>
-    // Media, Ομοιότητα και πρωτοτυπία: who writes the stories that other outlets also write. The matrix and the panel of an outlet use the rows of the stories.
+    // Media, Ομοιότητα και πρωτοτυπία: who writes the stories that other outlets also write.
     // Originality reads the API in its own period (Sep 2025 – Jan 2026), so it has its own section with its own period.
     const { t, fmt, h, load } = App
-    const { fit, reset, pct0, NO_GROUP, card, cardHead, emptyText, TopBar, select } = Dash
+    const { fit, reset, pct0, NO_GROUP, card, cardHead, emptyText, TopBar } = Dash
     const mme = load('mme', ['sets'], (b) => Object.keys(b.sets))
     const list = load('stories', ['dates', 'stories'], (b) => b.stories)
     const detail = load('storyDetail', ['outlets', 'stories'], (b) => b.stories)
@@ -41,11 +41,8 @@
     const groupsData = load('groups', ['groups'], (b) => b.groups)
     const colorOfGroup = Dash.groupColors(groupsData.data ? groupsData.data.groups : [])
     const STEP = 25
-    // The matrix shows the outlets with at least 700 stories. Each pair of them has 257 shared stories or more, so no cell is noise.
-    const MIN_STORIES = 700
     // A pair with fewer shared stories is noise: two small outlets can share one story and reach 100 percent.
     const MIN_SHARED = 10
-    const PANEL_ROWS = 8
 
     // Scatter: news share on x, clickbait share on y, the size of a dot is the number of articles, the color is the group.
     function Scatter ({ points, avgX, avgY }) {
@@ -120,39 +117,6 @@
         const outletName = (i) => dd.outlets[i].name
         const groupColor = (i) => { const g = dd.outlets[i].group; return (g && colorOfGroup.get(g)) || NO_GROUP }
         const dot = (i) => h('span', { class: dd.outlets[i].group ? 'dot' : 'dot dot-none', style: `--dot:${groupColor(i)}` })
-
-        // The matrix. A cell is the share of the stories of the row outlet that the column outlet also wrote. The order of both axes comes from the clustering.
-        const mx = Spread.matrix(dd, MIN_STORIES)
-        const n = mx.order.length
-        // Two ways to color the cells. share: the share of the stories of the row. lift: the same share against the level of chance, from 1 to the largest value.
-        const pairsOfMatrix = mx.order.flatMap((a) => mx.order.filter((b) => b !== a).map((b) => [a, b]))
-        const MODES = {
-          share: { value: (a, b) => mx.cover(a, b), low: 0, high: Math.max(...pairsOfMatrix.map(([a, b]) => mx.cover(a, b))), text: (v) => fmt.pct(v) },
-          lift: { value: (a, b) => mx.lift(a, b), low: 1, high: Math.max(...pairsOfMatrix.map(([a, b]) => mx.lift(a, b))), text: (v) => `×${fmt.dec(v)}` }
-        }
-        const state = { sel: mx.ids[0], mode: 'share' }
-        const panelHolder = h('div', {})
-        const pick = (a) => { state.sel = a; drawPanel() }
-
-        // The panel of the selected outlet: the 8 outlets that write most of its stories. The second number is the share the other way.
-        function drawPanel () {
-          const a = state.sel
-          const m = MODES[state.mode]
-          const rows = mx.order.filter((b) => b !== a).map((b) => ({ b, v: m.value(a, b), cover: mx.cover(a, b), back: mx.cover(b, a) })).sort((x, y) => y.v - x.v).slice(0, PANEL_ROWS)
-          const options = mx.order.map((i) => ({ value: String(i), label: outletName(i) })).sort((x, y) => x.label.localeCompare(y.label))
-          panelHolder.replaceChildren(card('c-12', cardHead(t('sim.sel.title'), null, t('sim.sel.info')),
-            h('div', { class: 'mx-select' }, select(t('sim.sel.pick'), a, options, (v) => pick(Number(v)))),
-            modeSwitch,
-            h('p', { class: 'dcard-sub' }, t('sim.sel.stories', { n: fmt.int(mx.per[a]) })),
-            UI.BarList(rows.map((r) => ({
-              label: [dot(r.b), UI.EntityLink({ type: 'outlet', key: dd.outlets[r.b].slug, label: outletName(r.b) })], value: r.v - m.low, color: groupColor(r.b),
-              text: state.mode === 'share' ? t('sim.sel.row', { pct: fmt.pct(r.cover), back: fmt.pct(r.back) }) : t('sim.sel.row.lift', { lift: fmt.dec(r.v), pct: fmt.pct(r.cover) })
-            })), { max: m.high - m.low })))
-        }
-        const modeButtons = Object.keys(MODES).map((key) => h('button', { type: 'button', 'aria-pressed': String(key === state.mode), onClick: () => { state.mode = key; modeButtons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === key))); drawPanel() } }, t(`sim.mx.mode.${key}`)))
-        modeButtons.forEach((b, i) => { b.dataset.mode = Object.keys(MODES)[i] })
-        const modeSwitch = h('div', { class: 'segmented', role: 'group', 'aria-label': t('sim.mx.mode') }, modeButtons)
-        drawPanel()
 
         // The same group or not: the average similarity of the pairs of outlets that both have a group.
         const { list: pairList } = Spread.pairs(dd)
@@ -255,7 +219,7 @@
         const bar = TopBar({ title, tabs, quiet: true })
 
         content.replaceChildren(bar, h('div', { class: 'dash-grid' },
-          h('div', { class: 'card-col c-4' }, panelHolder, sameCard),
+          h('div', { class: 'card-col c-4' }, sameCard),
           card('c-8', cardHead(t('originality.title'), origKey, t('originality.info')), h('p', { class: 'dcard-sub' }, period), origTable),
           scatterCard,
           bylineCard,
