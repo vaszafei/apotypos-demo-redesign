@@ -18,7 +18,7 @@
   <script src="assets/messages.js?v=43"></script>
   <script src="assets/messages-v2.js?v=58"></script>
   <script src="assets/messages-spread.js?v=27"></script>
-  <script src="assets/messages-mme.js?v=21"></script>
+  <script src="assets/messages-mme.js?v=23"></script>
   <script src="assets/components.js?v=20"></script>
   <script src="assets/motion.js?v=4"></script>
   <script src="assets/dash.js?v=30"></script>
@@ -109,6 +109,112 @@
           h('tbody', {}, points.map((p) => h('tr', {}, h('th', { scope: 'row' }, p.name), h('td', {}, text(p)))))))
         holder.replaceChildren(svg, table)
       })
+    }
+
+    // Πώς γράφουν για την κυβέρνηση: one dot for each outlet. x = critical share, y = supportive share, the rest up to 100% is neutral.
+    // The diagonals are lines of the same neutral share (critical + supportive = 100% − neutral). The dot is sized by its articles and colored by its group.
+    function StanceMap ({ points, avg }) {
+      return fit((holder, width) => {
+        // On a phone the notes inside the plot (diagonal names, corners, averages) are left out: the sentence above the chart explains them.
+        const narrow = width < 640
+        const height = narrow ? 340 : Math.max(360, Math.min(470, Math.round(width * 0.4)))
+        const pad = { top: 14, right: narrow ? 14 : 22, bottom: 54, left: narrow ? 56 : 66 }
+        const step = narrow ? 0.2 : 0.1
+        const plotW = width - pad.left - pad.right
+        const plotH = height - pad.top - pad.bottom
+        const xm = Math.min(1, Math.ceil((Math.max(...points.map((p) => p.c)) + 0.03) * 10) / 10)
+        const ym = Math.min(1, Math.ceil((Math.max(...points.map((p) => p.s)) + 0.03) * 10) / 10)
+        const sx = (v) => pad.left + (v / xm) * plotW
+        const sy = (v) => pad.top + plotH - (v / ym) * plotH
+        const maxN = Math.max(...points.map((p) => p.n))
+        const radius = (p) => 5 + 9 * Math.sqrt(p.n / maxN)
+        const text = (p) => t('mme.map.point', { name: p.name, c: fmt.pct(p.c), u: fmt.pct(p.u), s: fmt.pct(p.s), n: fmt.int(p.n) })
+        const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
+        const clipId = `stance-clip-${Math.random().toString(36).slice(2, 8)}`
+        svg.append(h('clipPath', { id: clipId }, h('rect', { x: pad.left, y: pad.top, width: plotW, height: plotH })))
+        for (let v = 0; v <= ym + 1e-9; v += step) svg.append(h('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: sy(v), y2: sy(v) }), h('text', { x: pad.left - 8, y: sy(v) + 4, 'text-anchor': 'end' }, pct0(v)))
+        for (let v = 0; v <= xm + 1e-9; v += step) svg.append(h('text', { x: sx(v), y: pad.top + plotH + 18, 'text-anchor': 'middle' }, pct0(v)))
+        svg.append(h('text', { class: 'axis-title', x: pad.left + plotW / 2, y: height - 8, 'text-anchor': 'middle' }, t('mme.map.x')),
+          h('text', { class: 'axis-title', transform: `translate(16 ${pad.top + plotH / 2}) rotate(-90)`, 'text-anchor': 'middle' }, t('mme.map.y')))
+
+        // The diagonals of the neutral share. Each is labelled on its own line, at its upper end, turned along the line.
+        const g = h('g', { 'clip-path': `url(#${clipId})` })
+        // The label sits 14 px up the line from its lower end (66 px, so the text stays inside the plot), on the side of the neutral corner where no dots are.
+        // The 20% line has its dots at the lower end, so its label is at the upper end.
+        const along = (x1, y1, x2, y2, label, side, fromTop) => {
+          const dx = sx(x2) - sx(x1); const dy = sy(y2) - sy(y1); const len = Math.hypot(dx, dy)
+          const ang = (Math.atan2(dy, dx) * 180) / Math.PI
+          const [ex, ey] = fromTop ? [sx(x1) + (dx / len) * 22, sy(y1) + (dy / len) * 22] : [sx(x2) - (dx / len) * 66, sy(y2) - (dy / len) * 66]
+          if (!narrow) g.append(h('text', { class: 'pt-label', style: 'fill:var(--text-secondary)', transform: `translate(${ex.toFixed(1)} ${ey.toFixed(1)}) rotate(${ang.toFixed(1)}) translate(0 ${side})`, 'text-anchor': fromTop ? 'start' : 'end' }, label))
+        }
+        ;[0.8, 0.6, 0.4, 0.2].forEach((u) => {
+          const k = 1 - u
+          g.append(h('line', { class: 'grid-line', x1: sx(k), y1: sy(0), x2: sx(0), y2: sy(k) }))
+          if (k <= xm) along(Math.max(0, k - ym), k - Math.max(0, k - ym), k, 0, t('mme.map.neutral', { v: pct0(u) }), 14, u === 0.2)
+        })
+        g.append(h('line', { class: 'zero-line', x1: sx(1), y1: sy(0), x2: sx(0), y2: sy(1) }))
+        // Where the critical and the supportive articles are equal.
+        g.append(h('line', { class: 'zero-line', style: 'stroke-dasharray:2 3', x1: sx(0), y1: sy(0), x2: sx(ym), y2: sy(ym) }))
+        along(0, 0, ym, ym, t('mme.map.equal'), 14)
+        svg.append(g)
+
+        // The three corners of the plot say what the position means.
+        if (!narrow) svg.append(h('text', { class: 'axis-title zone', x: width - pad.right - 8, y: pad.top + plotH - 10, 'text-anchor': 'end' }, t('mme.map.zone.crit')),
+          h('text', { class: 'axis-title zone', x: pad.left + 8, y: pad.top + 16 }, t('mme.map.zone.supp')),
+          h('text', { class: 'axis-title zone', x: pad.left + 8, y: pad.top + plotH - 10 }, t('mme.map.zone.neutral')))
+
+        // All the articles: the average of the outlets pooled, with its own label.
+        svg.append(h('line', { class: 'avg-line', x1: sx(avg.c), x2: sx(avg.c), y1: pad.top, y2: pad.top + plotH }),
+          h('line', { class: 'avg-line', x1: pad.left, x2: width - pad.right, y1: sy(avg.s), y2: sy(avg.s) }))
+        if (!narrow) svg.append(h('text', { class: 'axis-title', x: sx(avg.c) + 6, y: pad.top + plotH - 10 }, t('mme.gov.avg', { v: pct0(avg.c) })),
+          h('text', { class: 'axis-title', x: width - pad.right - 6, y: sy(avg.s) - 6, 'text-anchor': 'end' }, t('mme.map.avg.supp', { v: pct0(avg.s) })))
+
+        const dots = points.slice().sort((a, b) => b.n - a.n).map((p) => {
+          const c = h('circle', { class: 'pt', cx: sx(p.c), cy: sy(p.s), r: radius(p), fill: p.color })
+          const show = (e) => { UI.showTooltip(text(p), e.clientX, e.clientY); dots.forEach((d) => { d.c.style.opacity = d.p === p ? '1' : '0.3' }) }
+          c.addEventListener('pointerenter', show)
+          c.addEventListener('pointermove', show)
+          c.addEventListener('pointerleave', () => { UI.hideTooltip(); dots.forEach((d) => { d.c.style.opacity = '' }) })
+          svg.append(c)
+          return { p, c }
+        })
+
+        // A name for every dot that has room for it: the largest first, to the right, left, above or below. The others have the tooltip.
+        const boxes = []
+        const circles = points.map((p) => ({ x: sx(p.c), y: sy(p.s), r: radius(p) }))
+        const hit = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1
+        dots.forEach(({ p }) => {
+          const cx = sx(p.c); const cy = sy(p.s); const r = radius(p); const w = p.name.length * 6.4 + 2
+          const tries = [[cx + r + 4, cy - 7, 'start'], [cx - r - 4 - w, cy - 7, 'start'], [cx - w / 2, cy - r - 17, 'start'], [cx - w / 2, cy + r + 3, 'start']]
+          for (const [x, y, anchor] of tries) {
+            const b = { x0: x, x1: x + w, y0: y, y1: y + 14 }
+            if (b.x0 < pad.left || b.x1 > width - pad.right || b.y0 < pad.top || b.y1 > pad.top + plotH) continue
+            if (boxes.some((o) => hit(b, o))) continue
+            if (circles.some((o) => b.x0 < o.x + o.r && o.x - o.r < b.x1 && b.y0 < o.y + o.r && o.y - o.r < b.y1)) continue
+            boxes.push(b)
+            svg.append(h('text', { class: 'pt-label', x, y: y + 11, 'text-anchor': anchor, 'pointer-events': 'none' }, p.name))
+            break
+          }
+        })
+        const table = h('div', { class: 'visually-hidden' }, h('table', {}, h('caption', {}, t('mme.gov.title')),
+          h('tbody', {}, points.map((p) => h('tr', {}, h('th', { scope: 'row' }, p.name), h('td', {}, text(p)))))))
+        holder.replaceChildren(svg, table)
+      })
+    }
+
+    function StanceMapCard (S) {
+      const title = S.set.country === 'GR' ? t('mme.gov.title') : t('mme.gov.title.il')
+      const all = S.active.filter((o) => o.stance && o.stance[0] + o.stance[1] + o.stance[2] > 0)
+      const points = all.filter((o) => o.stance[0] + o.stance[1] + o.stance[2] >= 30).map((o) => {
+        const n = o.stance[0] + o.stance[1] + o.stance[2]
+        return { name: o.name, c: o.stance[0] / n, u: o.stance[1] / n, s: o.stance[2] / n, n, color: o.group ? colorOfGroup.get(o.group) || NO_GROUP : NO_GROUP }
+      })
+      const tot = all.reduce((a, o) => a.map((v, j) => v + o.stance[j]), [0, 0, 0])
+      const T = tot[0] + tot[1] + tot[2]
+      return card('c-12', cardHead(title, null, t('mme.map.info')),
+        points.length > 1
+          ? [h('p', { class: 'dcard-sub' }, t('mme.map.explain')), h('p', { class: 'dcard-sub' }, t('mme.map.sub', { n: fmt.int(points.length), total: fmt.int(all.length) })), StanceMap({ points, avg: { c: tot[0] / T, s: tot[2] / T } })]
+          : emptyText(t('media2.empty.list')))
     }
 
     const tipOn = (el, text) => {
@@ -322,9 +428,8 @@
           // The cards of the live page that the dashboard did not have.
           // The topic chips and «Ένα θέμα, όλα τα μέσα» are on Θέματα › Ένα θέμα. «Οι ιστορίες του διαστήματος» is on Ιστορίες › Ανά μέσο. «Τι ξεχωρίζει» is on Αρχική.
           // «Η ατζέντα κάθε μέσου» is on Θέματα › Ατζέντα μέσων. «Τα πρόσωπα» and «Πώς παρουσιάζει κάθε μέσο τα πρόσωπα» are on Πρόσωπα.
-          // Πώς γράφουν: the scatter and the bylines side by side, the stance of all the outlets under them in two columns.
-          const gov = Mme.GovCard(S)
-          gov.classList.add('c-12')
+          // Πώς γράφουν: the scatter and the bylines side by side, the stance of all the outlets under them as one map.
+          const gov = StanceMapCard(S)
           scatterCard.classList.add(bylineCard ? 'c-6' : 'c-12')
           bylineCard?.classList.add('c-6')
 
