@@ -20,7 +20,7 @@ Each tab answers one question. Heights are the page height at 1440 × 900 px on 
 | | | Η ατζέντα κάθε μέσου | Which topics does each outlet write about? | move to Θέματα › Ατζέντα μέσων |
 | | Μετατοπίσεις (`/overton`, `overton-v2.html`), 1768 px, 5 cards | 3 stat cards · Μετατοπίσεις ανά θέμα · Πότε έγιναν οι μετατοπίσεις | Which topics shifted, and when? | keep cards; the tab becomes a sub-tab of Θέματα |
 | | Ιδιοκτησία (`/groups`, `groups-v2.html`), 1168 px, 4 cards | Ιδιοκτήτες και μέσα · Άρθρα ανά όμιλο · Άρθρα ανά ημέρα και όμιλο · Στάση προς την κυβέρνηση ανά όμιλο | Who owns the outlets, and how do the groups compare? | keep |
-| | Ομοιότητα (`/similarity`, `similarity-v2.html`), 1661 px, 6 cards | Ποιος γράφει τα ίδια με ποιον · selected outlet · Ίδιος όμιλος ή όχι · Μέσα κατά πρωτοτυπία · Διάμεση καθυστέρηση · Όλα τα ζεύγη μέσων | Which outlets write the same things, and who writes first? | keep |
+| | Ομοιότητα και πρωτοτυπία (`/similarity`, `similarity-v2.html`), 3 cards | Μέσα κατά πρωτοτυπία · Πρωτοτυπία και υπογραφές · Ειδήσεις και clickbait ανά μέσο | How original is each outlet, how many of its articles have no byline, and how much clickbait does it have? | the similarity cards (matrix, selected outlet, same group, all pairs) and «Ξεκινά μόνος» were removed on 2026-11-06 |
 | | detail pages: outlet, group, topic | (one outlet, group or topic) | What about this one outlet / group / topic? | keep; every card is about the one entity, so none belongs in a tab |
 | Ιστορίες | Επισκόπηση (`/stories`, `stories-v2.html`), 3558 px, 5 cards | Πόσοι όμιλοι γράφουν την ίδια ημέρα | How many groups write a story on the same day? | keep |
 | | | Νέες ιστορίες ανά ημέρα | How many stories start each day, and how? | keep |
@@ -71,7 +71,7 @@ Each tab answers one question. Heights are the page height at 1440 × 900 px on 
 | | Θέματα › Ατζέντα μέσων (`/trends/agenda`, new) | Για ποια θέματα γράφει κάθε μέσο; | Η ατζέντα κάθε μέσου |
 | | Θέματα › Μετατοπίσεις (`/overton`) | Ποια θέματα μετατοπίστηκαν, και πότε; | as today |
 | | Ιδιοκτησία (`/groups`) | Ποιος έχει τα μέσα, και πώς διαφέρουν οι όμιλοι; | as today |
-| | Ομοιότητα (`/similarity`) | Ποια μέσα γράφουν τα ίδια, και ποιο γράφει πρώτο; | as today |
+| | Ομοιότητα και πρωτοτυπία (`/similarity`) | Πόσο πρωτότυπο είναι κάθε μέσο, πόσα άρθρα του δεν έχουν υπογραφή, και πόσο clickbait έχει; | as today |
 | Ιστορίες | Επισκόπηση (`/stories`) | Ποιες ιστορίες έτρεξαν, και πόσοι όμιλοι τις έγραψαν; | Πόσοι όμιλοι γράφουν την ίδια ημέρα, Νέες ιστορίες ανά ημέρα, Ποιος ξεκινά μόνος, Όλες οι ιστορίες |
 | | Ανά μέσο (`/stories/outlets`, new) | Ποια μέσα έγραψαν κάθε ιστορία; | Οι ιστορίες του διαστήματος |
 | | Υποθέσεις (`/cases`) | Πώς καλύφθηκε μία υπόθεση; | as today |
