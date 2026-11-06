@@ -135,5 +135,102 @@
     return [head, bad.kind === 'empty' ? h('div', { class: 'dash-grid' }, card('c-12', UI.EmptyState({ text: t('topics2.empty') }))) : UI.ErrorState({ onRetry: () => location.reload() })]
   }
 
-  window.Dash = { stateContent, select, fit, reset, niceStep, pct0, get SLOTS () { return slots() }, get NO_GROUP () { return color('--cat-0') }, color, seq, groupColors, groupColor, textOn, tint, Spark, card, cardHead, Info, emptyText, cardState, cardFoot, Stat, TopBar }
+  // Stories to outlets: a Sankey with two columns (Μέσα › Ιστορίες). stories: [{ id, name, n, flows: [{ o (index of outlets), n }] }], outlets: [{ name, slug (null: the rest), n }].
+  // The stories are on the left in boxes with their names, the largest first, the outlets are on the right, and the width of a band is the articles. A story has its own color.
+  // A story or an outlet under the mouse keeps its bands and dims the others. current: the id of the story that is picked in the list.
+  function StoryFlow ({ stories: input, outlets, current, colorOf, storyLink, outletLink, heads, restLabel }) {
+    const stories = input.slice().sort((a, b) => b.n - a.n)
+    const total = stories.reduce((s, x) => s + x.n, 0)
+    return fit((holder, width) => {
+      const narrow = width < 520
+      const labelR = narrow ? 84 : 136
+      const NODE = 8
+      const ROW = 36
+      const ROW_O = 22
+      const GAP = 4
+      const HEAD = 22
+      const boxW = narrow ? 150 : 230
+      const xS1 = boxW
+      const xO = width - labelR - 6 - NODE
+      const k = 360 / (total || 1)
+      const band = (n) => Math.max(1.2, k * n)
+
+      // The column of stories and the column of outlets. The shorter one is centered against the taller.
+      let y = 0
+      const placedS = stories.map((s) => { const row = { s, top: y, h: Math.max(ROW, k * s.n) }; y += row.h + GAP; return row })
+      const heightS = y - GAP
+      const baseO = outlets.map((o) => Math.max(ROW_O, k * o.n))
+      const spare = Math.max(0, heightS - baseO.reduce((s, v) => s + v, 0) - GAP * (outlets.length - 1))
+      const sumO = outlets.reduce((s, o) => s + o.n, 0) || 1
+      let yo = 0
+      const placedO = outlets.map((o, i) => { const row = { o, top: yo, h: baseO[i] + spare * (o.n / sumO) }; yo += row.h + GAP; return row })
+      const heightO = yo - GAP
+      const body = Math.ceil(Math.max(heightS, heightO))
+      const shiftS = (body - heightS) / 2
+      const shiftO = (body - heightO) / 2
+      const height = body + HEAD
+      holder.style.height = `${height}px`
+      holder.classList.add('flow-story')
+      holder.classList.toggle('is-narrow', narrow)
+
+      const svg = h('svg', { class: 'chart flow', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
+      const labels = []
+      const marks = { story: new Map(), outlet: new Map() }
+      const mark = (kind, key, el) => { if (!marks[kind].has(key)) marks[kind].set(key, []); marks[kind].get(key).push(el) }
+      const on = (kind, key) => { holder.classList.add('has-hl'); marks[kind].get(key).forEach((el) => el.classList.add('is-hl')) }
+      const off = (kind, key) => { holder.classList.remove('has-hl'); marks[kind].get(key).forEach((el) => el.classList.remove('is-hl')) }
+      const hover = (el, kind, key, tip) => {
+        el.addEventListener('pointerenter', (e) => { on(kind, key); if (tip) UI.showTooltip(tip, e.clientX, e.clientY) })
+        if (tip) el.addEventListener('pointermove', (e) => UI.showTooltip(tip, e.clientX, e.clientY))
+        el.addEventListener('pointerleave', () => { off(kind, key); UI.hideTooltip() })
+        el.addEventListener('focusin', () => on(kind, key))
+        el.addEventListener('focusout', () => off(kind, key))
+      }
+      const head = (text, left) => labels.push(h('p', { class: 'flow-head', style: { left: `${left}px`, top: '0px' } }, text))
+      head(heads.story, 0)
+      head(heads.outlet, xO + NODE + 8)
+
+      // Where the bands of each outlet end: stacked in its row in the order of the stories, from the top.
+      const intake = placedO.map((r) => ({ cursor: HEAD + shiftO + r.top + (r.h - band(r.o.n)) / 2 }))
+      const bands = []
+      placedS.forEach((r, si) => {
+        const s = r.s
+        const color = colorOf(s.id, si)
+        const rowTop = HEAD + shiftS + r.top
+        const mid = rowTop + r.h / 2
+        let out = mid - band(s.n) / 2
+        s.flows.slice().sort((a, b) => a.o - b.o).forEach((f) => {
+          const c0 = out
+          const c1 = out + band(f.n)
+          out = c1
+          const d0 = intake[f.o].cursor
+          const d1 = d0 + band(f.n)
+          intake[f.o].cursor = d1
+          const x2 = (xS1 + xO) / 2
+          const path = h('path', { class: 'flow-band', fill: color, d: `M${xS1} ${c0}C${x2} ${c0} ${x2} ${d0} ${xO} ${d0}L${xO} ${d1}C${x2} ${d1} ${x2} ${c1} ${xS1} ${c1}Z` })
+          bands.push(path)
+          mark('story', s.id, path); mark('outlet', f.o, path)
+          hover(path, 'story', s.id, { title: s.name, rows: [{ label: placedO[f.o].o.name || restLabel(placedO[f.o].o), value: `${fmt.int(f.n)} · ${fmt.pct(f.n / s.n)}`, color }] })
+        })
+        const box = h('div', { class: s.id === current ? 'flow-box is-current' : 'flow-box', style: { left: '0px', top: `${rowTop}px`, width: `${boxW}px`, height: `${r.h}px`, '--flow-color': color } },
+          h('span', { class: 'flow-name' }, storyLink(s)), h('span', { class: 'flow-n' }, fmt.int(s.n)))
+        mark('story', s.id, box)
+        hover(box, 'story', s.id)
+        labels.push(box)
+      })
+      svg.prepend(...bands)
+      placedO.forEach((r, i) => {
+        const top = HEAD + shiftO + r.top
+        svg.append(h('rect', { class: 'flow-node flow-node-out', x: xO, y: top, width: NODE, height: r.h }))
+        const lab = h('p', { class: 'flow-label flow-outlet', style: { left: `${xO + NODE + 8}px`, top: `${top + r.h / 2}px`, width: `${labelR - NODE - 8}px` } },
+          h('span', { class: 'flow-name' }, r.o.slug ? outletLink(r.o) : h('span', {}, restLabel(r.o))), h('span', { class: 'flow-n' }, fmt.int(r.o.n)))
+        mark('outlet', i, lab)
+        hover(lab, 'outlet', i)
+        labels.push(lab)
+      })
+      holder.replaceChildren(svg, ...labels)
+    })
+  }
+
+  window.Dash = { StoryFlow, stateContent, select, fit, reset, niceStep, pct0, get SLOTS () { return slots() }, get NO_GROUP () { return color('--cat-0') }, color, seq, groupColors, groupColor, textOn, tint, Spark, card, cardHead, Info, emptyText, cardState, cardFoot, Stat, TopBar }
 })()

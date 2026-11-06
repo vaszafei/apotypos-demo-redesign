@@ -1,10 +1,12 @@
 // Messages of the pages of Διάδοση ειδήσεων (News spread): the Story page now, the other tabs later. They add to window.MESSAGES.
 Object.assign(window.MESSAGES.el, {
-  'stories.period.info': 'Όλες οι ιστορίες της περιόδου που διαλέξατε στο ημερολόγιο της κορυφής, με πρώτες αυτές που έχουν τα περισσότερα άρθρα· η λίστα κυλάει. Διαλέξτε μια ιστορία για να τη δείτε στις κάρτες· το κουμπί δίπλα της ανοίγει τη σελίδα της. Οι ιστορίες γενικών θεμάτων, όπως «Άλλα διεθνή», δεν μετρούν.',
+  'stories.period.info': 'Όλες οι ιστορίες της περιόδου που διαλέξατε στο ημερολόγιο της κορυφής, με πρώτες αυτές που έχουν τα περισσότερα άρθρα· η λίστα κυλάει. Διαλέξτε μια ιστορία για να τη δείτε στο διάγραμμα· το κουμπί δίπλα της ανοίγει τη σελίδα της. Οι ιστορίες γενικών θεμάτων, όπως «Άλλα διεθνή», δεν μετρούν.',
+  'stories.flow.title': 'Ιστορίες και μέσα',
+  'stories.flow.info': 'Οι ιστορίες με τα περισσότερα άρθρα στην περίοδο: από την ιστορία στα μέσα που την έγραψαν. Το πλάτος της κορδέλας είναι τα άρθρα. Περάστε το ποντίκι πάνω από μια ιστορία ή ένα μέσο για να δείτε μόνο τις κορδέλες του. Η ιστορία που διαλέξατε στη λίστα έχει περίγραμμα· αν δεν είναι από τις πρώτες, προστίθεται στο διάγραμμα.',
+  'stories.flow.story': 'Ιστορία',
+  'stories.flow.outlet': 'Μέσο',
+  'stories.flow.rest': 'Άλλα μέσα ({n})',
   'stories.period.empty': 'Δεν υπάρχουν ιστορίες για αυτή την περίοδο.',
-  'stories.story.info': 'Η ιστορία που διαλέξατε στη λίστα: το θέμα της και τα άρθρα της ανά μέσο στην περίοδο.',
-  'stories.time.title': 'Ιστορία στον χρόνο',
-  'stories.time.info': 'Τα άρθρα της ιστορίας που διαλέξατε στη λίστα, για κάθε ημέρα της περιόδου.',
   'story.how.more': 'Περισσότερο από το συνηθισμένο',
   'story.how.less': 'Λιγότερο από το συνηθισμένο',
   'story.how.tip': '{label}: {value} στην ιστορία, {usual} στο σύνολο ({diff})',
@@ -80,11 +82,13 @@ Object.assign(window.MESSAGES.el, {
   'story.related.row': '{n} άρθρα'
 })
 Object.assign(window.MESSAGES.en, {
-  'stories.period.info': 'Every story that ran in the period you picked in the calendar at the top, the ones with the most articles first; the list scrolls. Pick a story to see it in the cards; the button next to it opens its page. Stories of general topics, such as “Other world news”, do not count.',
+  'stories.period.info': 'Every story that ran in the period you picked in the calendar at the top, the ones with the most articles first; the list scrolls. Pick a story to see it in the chart; the button next to it opens its page. Stories of general topics, such as “Other world news”, do not count.',
+  'stories.flow.title': 'Stories and outlets',
+  'stories.flow.info': 'The stories with the most articles in the period: from each story to the outlets that ran it. The width of a band is the articles. Move the mouse over a story or an outlet to see only its bands. The story you picked in the list has an outline; if it is not one of the first, it is added to the chart.',
+  'stories.flow.story': 'Story',
+  'stories.flow.outlet': 'Outlet',
+  'stories.flow.rest': 'Other outlets ({n})',
   'stories.period.empty': 'There are no stories in this period.',
-  'stories.story.info': 'The story you picked in the list: its topic and its articles in each outlet in the period.',
-  'stories.time.title': 'Story over time',
-  'stories.time.info': 'The articles of the story you picked in the list, for each day of the period.',
   'story.how.more': 'More than usual',
   'story.how.less': 'Less than usual',
   'story.how.tip': '{label}: {value} in the story, {usual} overall ({diff})',

@@ -35,6 +35,16 @@
     return { d, date, story: s, n, rank, topic: ix.issues[s.issue], outlets, list }
   }
 
+  // The outlets that ran a story in the days i0 to i1, with their articles, the largest first.
+  function outletsOf (ix, s, i0, i1) {
+    const from = ix.detail ? ix.detail.dates.indexOf(ix.dates[i0]) : -1
+    const to = ix.detail ? ix.detail.dates.indexOf(ix.dates[i1]) : -1
+    const perOutlet = new Map()
+    const rows = ix.rowsOf.get(s.id)
+    if (rows && from >= 0 && to >= 0) for (let j = 0; j < rows.length; j += 3) if (rows[j + 1] >= from && rows[j + 1] <= to) perOutlet.set(rows[j], (perOutlet.get(rows[j]) || 0) + rows[j + 2])
+    return [...perOutlet].map(([k, c]) => ({ ...ix.detail.outlets[k], k, n: c })).sort((a, b) => b.n - a.n)
+  }
+
   // The same as dayInfo for a period (the days i0 to i1): the articles of a story and of its outlets are summed over the period, and the list has every story that ran in it.
   function rangeInfo (ix, i0, i1, rank = 0) {
     const totals = new Map()
@@ -43,12 +53,7 @@
     const lead = list[rank]
     if (!lead) return null
     const { s, n } = lead
-    const from = ix.detail ? ix.detail.dates.indexOf(ix.dates[i0]) : -1
-    const to = ix.detail ? ix.detail.dates.indexOf(ix.dates[i1]) : -1
-    const perOutlet = new Map()
-    const rows = ix.rowsOf.get(s.id)
-    if (rows && from >= 0 && to >= 0) for (let j = 0; j < rows.length; j += 3) if (rows[j + 1] >= from && rows[j + 1] <= to) perOutlet.set(rows[j], (perOutlet.get(rows[j]) || 0) + rows[j + 2])
-    const outlets = [...perOutlet].map(([k, c]) => ({ ...ix.detail.outlets[k], k, n: c })).sort((a, b) => b.n - a.n)
+    const outlets = outletsOf(ix, s, i0, i1)
     return { d: `${i0}-${i1}`, date: ix.dates[i1], story: s, n, rank, topic: ix.issues[s.issue], outlets, list }
   }
 
@@ -353,5 +358,5 @@
     return svg
   }
 
-  window.Home = { index, dayInfo, rangeInfo, DayCard, Calendar, TopicsCard, QuickCard, Hero }
+  window.Home = { index, dayInfo, rangeInfo, outletsOf, DayCard, Calendar, TopicsCard, QuickCard, Hero }
 })()
