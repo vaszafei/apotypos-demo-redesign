@@ -156,7 +156,8 @@
       for (let d = 1; d <= days; d++) {
         const key = iso(new Date(Date.UTC(y, mo, d)))
         const ok = has.has(key)
-        const btn = h('button', { type: 'button', class: ok ? 'dr-cell dr-day' : 'dr-cell dr-day is-off', 'data-day': key, disabled: !ok, 'aria-label': fmt.date(key) }, String(d))
+        const weekend = [0, 6].includes(new Date(Date.UTC(y, mo, d)).getUTCDay())
+        const btn = h('button', { type: 'button', class: ['dr-cell', 'dr-day', !ok && 'is-off', weekend && 'is-weekend'].filter(Boolean).join(' '), 'data-day': key, disabled: !ok, 'aria-label': fmt.date(key) }, String(d))
         if (ok) {
           btn.addEventListener('click', () => pick(key))
           btn.addEventListener('pointerenter', () => { if (start && hover !== key) { hover = key; mark() } })

@@ -7,10 +7,10 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=15">
   <link rel="stylesheet" href="assets/app.css?v=51">
-  <link rel="stylesheet" href="assets/dash.css?v=101">
+  <link rel="stylesheet" href="assets/dash.css?v=103">
   <link rel="stylesheet" href="assets/mme.css?v=54">
-  <link rel="stylesheet" href="assets/home.css?v=50">
-  <link rel="stylesheet" href="assets/date-range.css?v=11">
+  <link rel="stylesheet" href="assets/home.css?v=51">
+  <link rel="stylesheet" href="assets/date-range.css?v=14">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
@@ -18,13 +18,13 @@
   <script src="assets/icons.js?v=9"></script>
   <script src="assets/messages.js?v=43"></script>
   <script src="assets/messages-v2.js?v=58"></script>
-  <script src="assets/messages-spread.js?v=25"></script>
+  <script src="assets/messages-spread.js?v=26"></script>
   <script src="assets/messages-mme.js?v=21"></script>
   <script src="assets/messages-home.js?v=23"></script>
   <script src="assets/components.js?v=20"></script>
   <script src="assets/motion.js?v=4"></script>
-  <script src="assets/dash.js?v=29"></script>
-  <script src="assets/date-range.js?v=3"></script>
+  <script src="assets/dash.js?v=30"></script>
+  <script src="assets/date-range.js?v=4"></script>
   <script src="assets/mme.js?v=23"></script>
   <script src="assets/home.js?v=39"></script>
   <script src="assets/shell.js?v=64"></script>
@@ -41,6 +41,8 @@
     let rank = 0
     let picked = false
     const LINE_STORIES = 8
+    const TREND_STORIES = 5
+    const TREND_MIN = 10
 
     Shell.start({
       id: 'stories',
@@ -73,7 +75,7 @@
         const lineCard = () => {
           const lead = info()
           const head = cardHead(t('stories.time.title'), h('span', { class: 'home-date' }, dateText()), t('stories.time.info'))
-          if (!lead) return card('c-8', head, Dash.emptyText(t('stories.period.empty')))
+          if (!lead) return card('', head, Dash.emptyText(t('stories.period.empty')))
           const shown = lead.list.slice(0, LINE_STORIES)
           if (lead.rank >= LINE_STORIES) shown.push(lead.list[lead.rank])
           const colors = Dash.SLOTS
@@ -88,18 +90,45 @@
             for (let j = 0; j < s.days.length; j += 2) if (s.days[j] >= d0 && s.days[j] <= d1) values[s.days[j] - d0] = s.days[j + 1]
             return { key: s.id, name: s[App.locale] || s.el, color: i < colors.length ? colors[i] : Dash.color('--cat-9'), values, bold: picked && s.id === lead.story.id }
           })
-          return card('c-8', head, Dash.LinesChart({ dates: dates.slice(d0, d1 + 1), series, band: { from: Math.max(i0, d0) - d0, to: d1 - d0 }, sparse: true, tall: 380, caption: t('stories.time.title'), href: (s) => `story-v2.html?id=${s.key}` }))
+          return card('', head, Dash.LinesChart({ dates: dates.slice(d0, d1 + 1), series, band: { from: Math.max(i0, d0) - d0, to: d1 - d0 }, sparse: true, sqrt: true, tall: 300, caption: t('stories.time.title'), href: (s) => `story-v2.html?id=${s.key}` }))
+        }
+        // Τάσεις: the articles of every story in the period against the period of the same length right before it. A story needs TREND_MIN articles in the period before to count, so a story that is only starting does not
+        // show a change of thousands of per cent. The rising stories are on the left and the falling ones on the right, on one scale.
+        const trendsCard = () => {
+          const { i0, i1 } = span()
+          const len = i1 - i0 + 1
+          const p0 = i0 - len
+          const head = (right) => cardHead(t('stories.trend.title'), right, t('stories.trend.info', { n: TREND_MIN }))
+          if (p0 < 0) return card('', head(null), Dash.emptyText(t('stories.trend.empty')))
+          const sumOver = (from, to) => { const m = new Map(); for (let d = from; d <= to; d++) for (const { s, n } of ix.byDay[d]) m.set(s, (m.get(s) || 0) + n); return m }
+          const now = sumOver(i0, i1)
+          const before = sumOver(p0, i0 - 1)
+          const rows = [...before].filter(([, n]) => n >= TREND_MIN).map(([s, n]) => ({ s, now: now.get(s) || 0, before: n, change: ((now.get(s) || 0) - n) / n }))
+          const up = rows.filter((r) => r.change > 0).sort((a, b) => b.change - a.change || b.now - a.now).slice(0, TREND_STORIES)
+          const down = rows.filter((r) => r.change < 0).sort((a, b) => a.change - b.change || b.before - a.before).slice(0, TREND_STORIES)
+          const widest = Math.max(...up.concat(down).map((r) => Math.abs(r.change)), 0)
+          const rowOf = (r) => {
+            const color = r.change > 0 ? 'var(--emph-more)' : 'var(--emph-less)'
+            const name = r.s[App.locale] || r.s.el
+            return { label: UI.EntityLink({ type: 'story', key: String(r.s.id), label: name }), value: Math.abs(r.change), color, tip: t('stories.trend.tip', { before: fmt.int(r.before), now: fmt.int(r.now) }),
+              text: [h('span', { class: `tri ${r.change > 0 ? 'tri-up' : 'tri-down'}`, style: { color }, 'aria-hidden': 'true' }), ` ${fmt.signed(r.change * 100)}%`] }
+          }
+          const column = (title, list) => h('div', { class: 'story-trend-col' }, h('p', { class: 'dcard-sub' }, title), list.length ? UI.BarList(list.map(rowOf), { max: widest }) : Dash.emptyText(t('stories.trend.none')))
+          const range = `${day(dates[p0])}${len > 1 ? ` – ${day(dates[i0 - 1])}` : ''}`
+          return card('', head(h('span', { class: 'home-date' }, t('stories.trend.vs', { range }))), h('div', { class: 'story-trend' }, column(t('stories.trend.up'), up), column(t('stories.trend.down'), down)))
         }
         let listNode = listCard()
+        let trendNode = trendsCard()
         let lineNode = lineCard()
         function paint () {
           reset()
           const nextList = listCard(); listNode.replaceWith(nextList); listNode = nextList
+          const nextTrend = trendsCard(); trendNode.replaceWith(nextTrend); trendNode = nextTrend
           const nextLine = lineCard(); lineNode.replaceWith(nextLine); lineNode = nextLine
           Motion.replay(lineNode)
         }
         const bar = TopBar({ title: `${t('nav.media')} · ${title}`, tabs, actions: [], quiet: true })
-        content.replaceChildren(bar, h('div', { class: 'dash-grid story-split' }, h('div', { class: 'c-4 card-col card-col-fill' }, calendar, listNode), lineNode), protoNote())
+        content.replaceChildren(bar, h('div', { class: 'dash-grid story-split' }, h('div', { class: 'c-4 card-col card-col-fill' }, calendar, listNode), h('div', { class: 'c-8 card-col' }, trendNode, lineNode)), protoNote())
       }
     })
 

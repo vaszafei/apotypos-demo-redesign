@@ -138,8 +138,8 @@
   // Lines: the average of the last 7 days of each of the 8 largest topics of the period, one color each. The vertical axis is linear, and the chart is tall on a wide card, so the ends of the lines are as far
   // apart as they can be. The lines are monotone cubic curves (Fritsch–Carlson), so a curve never goes below 0 or above its neighbouring days.
   // series: [{ name, color, values, key (for href), bold }], the values of the days of dates. href(s): the page of a line (its name at the end is the link).
-  // band: { from, to }, the indexes of a period that is tinted. tall: the height on a wide card. sparse: the lines are 0 most of the time (stories), so the tooltip leaves out the lines that are 0 on the day and cuts long names. A hover shows the values of all of them at that day, under a vertical guide, in the white tooltip.
-  function LinesChart ({ dates, series, caption, href, band, tall, sparse }) {
+  // band: { from, to }, the indexes of a period that is tinted. tall: the height on a wide card. sparse: the lines are 0 most of the time (stories), so the tooltip leaves out the lines that are 0 on the day and cuts long names. sqrt: the vertical axis is the square root of the value, so the small lines are not flat on the floor under a large one. A hover shows the values of all of them at that day, under a vertical guide, in the white tooltip.
+  function LinesChart ({ dates, series, caption, href, band, tall, sparse, sqrt }) {
     return fit((holder, width) => {
       const height = width < 520 ? 190 : tall || (width < 640 ? 280 : 380)
       // Where there is room (a card 520 px wide or more) each line has its name at its end, on the right. Narrower, a legend over the chart names the lines.
@@ -153,9 +153,17 @@
       const tickStep = niceStep(peak / (height < 300 ? 4 : 6))
       const yMax = Math.ceil(peak / tickStep) * tickStep
       const X = (i) => pad.left + (i / Math.max(n - 1, 1)) * plotW
-      const Y = (v) => pad.top + plotH - (v / yMax) * plotH
+      const f = sqrt ? Math.sqrt : (v) => v
+      const Y = (v) => pad.top + plotH - (f(v) / f(yMax)) * plotH
       const svg = h('svg', { class: 'chart line-draw', width, height, viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': caption })
-      for (let v = 0; v <= yMax; v += tickStep) svg.append(h('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: Y(v), y2: Y(v) }), h('text', { x: pad.left - 6, y: Y(v) + 4, 'text-anchor': 'end' }, fmt.int(v)))
+      // The lines of the grid: every tickStep on a linear axis; on a square root axis the round values that are at least 24 px apart, from the top down, with the top and 0 always there.
+      let ticks = []
+      if (sqrt) {
+        const round = [10, 25, 50, 100, 150, 200, 300, 500, 750, 1000, 1500, 2000, 3000, 5000].filter((v) => v < yMax).concat(yMax).reverse()
+        for (const v of round) if ((!ticks.length || Y(v) - Y(ticks[ticks.length - 1]) >= 24) && Y(0) - Y(v) >= 24) ticks.push(v)
+        ticks.push(0)
+      } else for (let v = 0; v <= yMax; v += tickStep) ticks.push(v)
+      ticks.forEach((v) => svg.append(h('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: Y(v), y2: Y(v) }), h('text', { x: pad.left - 6, y: Y(v) + 4, 'text-anchor': 'end' }, fmt.int(v))))
       const step = plotW / Math.max(n - 1, 1)
       // A label about every 72 px: every day, or every 2 to 7 days in a short period, a whole number of weeks in a long one.
       const fitDays = Math.max(1, Math.ceil(72 / step))
