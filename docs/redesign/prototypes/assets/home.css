@@ -124,6 +124,9 @@ a.home-stack-part { cursor: pointer; }
   padding: clamp(48px, 9vh, 104px) var(--space-5) 104px; overflow: hidden; border-bottom: 1px solid var(--border);
   background: radial-gradient(1100px 520px at 50% -12%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%), var(--surface-page);
 }
+.home-hero-field { position: absolute; z-index: -1; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+/* The tooltip of the field is translucent, so it does not outshine the dots. The tooltip of the charts stays as it is. */
+.tooltip.is-field { border-color: color-mix(in srgb, var(--border) 60%, transparent); background: color-mix(in srgb, var(--surface-card) 74%, transparent); -webkit-backdrop-filter: blur(14px) saturate(1.1); backdrop-filter: blur(14px) saturate(1.1); box-shadow: 0 10px 26px -16px color-mix(in srgb, var(--shade) 30%, transparent); }
 .home-hero-wave { position: absolute; z-index: -1; left: 0; right: 0; bottom: 0; width: 100%; height: 30%; }
 .home-hero-wave-fill { fill: color-mix(in srgb, var(--accent) 6%, transparent); }
 .home-hero-wave-line { fill: none; stroke: color-mix(in srgb, var(--accent) 28%, transparent); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
