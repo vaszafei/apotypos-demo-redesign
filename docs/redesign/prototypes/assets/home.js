@@ -314,7 +314,7 @@
     const collected = sum(totals.slice(i0, i1 + 1))
     const period = t('home.hero.period', { from: fmt.date(home.dates[i0], { day: 'numeric', month: 'long' }), to: fmt.date(home.dates[i1], { day: 'numeric', month: 'long', year: 'numeric' }) })
     return h('section', { class: 'home-hero', 'aria-labelledby': 'home-hero-title' },
-      ix ? window.HeroField.create({ ix, home, info: (d, rank) => dayInfo(ix, d, rank), i0, i1 }) : Wave(totals.slice(i0, i1 + 1)),
+      ix ? window.HeroField.create({ ix, home, i0, i1 }) : Wave(totals.slice(i0, i1 + 1)),
       h('div', { class: 'home-hero-inner' },
         Masthead(),
         h('div', { class: 'home-hero-search' }, search),

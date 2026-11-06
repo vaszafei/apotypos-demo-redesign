@@ -1,7 +1,8 @@
-// The field behind the hero of Αρχική: the articles of a day as dots, and the stories as the clusters the dots make.
-// At rest it is quiet: a few clusters in the free space around the text, a few loose dots, all in the ink color. The size of a cluster is the articles of its story that day.
-// The pointer moves the field: the loose dots part around it. A cluster it comes near lights up: its dots take the color of the group of the outlet that ran them, and the tooltip names the story and its first outlets. Nothing is a link.
-// A dot stands for several articles, so it shows the size of a story, not a count. Every 12 seconds the clusters dissolve and form again from the day before (6 days, then the latest again).
+// The field behind the hero of Αρχική: the articles of a day as dots, the stories as clusters of dots, the themata as colors.
+// A cluster is one story of the day; its size is the articles of the story that day. Its color is its thema, the same color the donut of the topics gives the largest themata of that day (the rest, and the soft themata, stay in the ink color).
+// The clusters roam: each one drifts on its own slow path, turns from the edges and from the text of the hero, and keeps clear of the others. The loose dots are the other articles; they drift too, and take the themata in the shares of the day.
+// The pointer parts the loose dots. A cluster it reaches slows down and lights up, with the other clusters of its thema; the tooltip names the story and its thema. Nothing is a link.
+// A dot stands for several articles, so it shows size, not a count. Every 12 seconds the clusters dissolve and form again from the day before. The days are the latest ones that have themata (the coded data may end before the volume does).
 // Load after dash.js, components.js and home.js.
 (function () {
   const { t, fmt, h } = window.App
@@ -9,6 +10,7 @@
   const CYCLE = 12
   const STEPS = 6
   const LOOSE = 70
+  const SLOTS = 6
   const calm = window.matchMedia('(prefers-reduced-motion: reduce)')
   const pointerFine = window.matchMedia('(hover: hover) and (pointer: fine)')
 
@@ -16,14 +18,32 @@
   const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x))
   const smooth = (x) => { const y = clamp(x, 0, 1); return y * y * (3 - 2 * y) }
   const rng = (seed) => () => { seed = (seed + 0x6D2B79F5) | 0; let x = Math.imul(seed ^ (seed >>> 15), 1 | seed); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296 }
-  const title = (s) => (window.App.locale === 'en' && s.en) || s.el
+  const name = (x) => (x && (x[window.App.locale] || x.el)) || ''
 
-  // ix: the lookups of Home.index. info(d, rank): Home.dayInfo for a day. home: the fixture of the home (it has the dates).
-  function create ({ ix, home, info, i0, i1 }) {
+  // ix: the lookups of Home.index. home: the fixture of the home (the dates, the themata and their articles per day).
+  function create ({ ix, home, i0, i1 }) {
     const canvas = h('canvas', { class: 'home-hero-field', 'aria-hidden': 'true' })
     const ctx = canvas.getContext('2d')
+
+    // ---- the days and their themata ----
+    const hasThemata = (d) => home.issueDaily.some((a) => a[d] > 0)
+    const rich = (d) => (ix.byDay[d] || []).length >= 8
     const days = []
-    for (let d = i1; d >= Math.max(i0, i1 - (STEPS - 1)); d--) if ((ix.byDay[d] || []).length >= 8) days.push(d)
+    for (let d = i1; d >= i0 && days.length < STEPS; d--) if (rich(d) && hasThemata(d)) days.push(d)
+    // No day of the period has themata: the latest days, all in the ink color.
+    if (!days.length) for (let d = i1; d >= i0 && days.length < STEPS; d--) if (rich(d)) days.push(d)
+
+    // The color slots of a day: the largest news themata (not the soft ones) in the order of the donut, so a thema has here the color it has there.
+    const themata = new Map()
+    function themataOf (d) {
+      if (!themata.has(d)) {
+        const rows = home.issues.map((x, k) => ({ x, k, n: home.issueDaily[k][d] || 0 })).filter((r) => !r.x.soft && r.n > 0).sort((a, b) => b.n - a.n)
+        const slotOf = new Map(rows.slice(0, SLOTS).map((r, i) => [r.k, i]))
+        const total = sum(rows.map((r) => r.n))
+        themata.set(d, { slotOf, shares: rows.slice(0, SLOTS).map((r, i) => ({ slot: i, p: r.n / total })), total })
+      }
+      return themata.get(d)
+    }
 
     let section = null
     let w = 0
@@ -47,7 +67,7 @@
     const scatter = (dot) => { dot.x = Math.random() * w; dot.y = Math.random() * ht; dot.vx = (Math.random() - 0.5) * 80; dot.vy = (Math.random() - 0.5) * 80 }
 
     // ---- the layout of a day ----
-    // The clusters are placed largest first, each at the best of 120 random spots: the farthest from the ones placed, and clear of the text of the hero.
+    // The clusters start at the best of 120 random spots each: the farthest from the ones placed, and clear of the text of the hero. Then they roam.
     function place (list, rand) {
       const placed = []
       for (const c of list) {
@@ -56,46 +76,41 @@
           const x = c.r + 16 + rand() * Math.max(1, w - 2 * c.r - 32)
           const y = c.r + 16 + rand() * Math.max(1, ht - 2 * c.r - 32)
           let score = placed.length ? Math.min(...placed.map((p) => Math.hypot(p.x - x, p.y - y) - p.r - c.r)) : 200
-          if (inZone(x, y, c.r)) score -= 1000
+          if (wide && inZone(x, y, c.r)) score -= 1000
           if (!best || score > best.score) best = { x, y, score }
         }
         c.x = best.x
         c.y = best.y
-        c.ph = rand() * TAU
         placed.push(c)
       }
     }
-    const cache = new Map()
-    const outletsOf = (d, rank) => { const key = `${d}:${rank}`; if (!cache.has(key)) cache.set(key, info(d, rank)); return cache.get(key) }
 
     function layout (d) {
       const rand = rng(d * 977 + 13)
+      const day = themataOf(d)
       const list = (ix.byDay[d] || []).slice(0, wide ? 9 : 4)
       const max = list[0] ? list[0].n : 1
-      clusters = list.map((o, rank) => {
+      clusters = list.map((o) => {
         const count = 6 + Math.round(26 * Math.sqrt(o.n / max))
-        return { s: o.s, n: o.n, d, rank, count, r: 12 + 3.2 * Math.sqrt(count), members: [], lit: 0, got: outletsOf(d, rank) }
+        const known = home.issues[o.s.issue] && !home.issues[o.s.issue].catchAll
+        const slot = day.slotOf.has(o.s.issue) ? day.slotOf.get(o.s.issue) : -1
+        return { s: o.s, n: o.n, d, count, r: 12 + 3.2 * Math.sqrt(count), members: [], lit: 0, rel: 0, slot, issue: known ? o.s.issue : -1,
+          vx: 0, vy: 0, th: rand() * TAU, sp: 9 + rand() * 6, ph: rand() * TAU }
       })
       place(clusters, rand)
       const used = sum(clusters.map((c) => c.count))
       while (dots.length < used + LOOSE) { const dot = { x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0, g: 0, wait: 0, seed: rand() }; scatter(dot); dots.push(dot) }
       let k = 0
       for (const c of clusters) {
-        // The dots of a story go to its outlets in proportion to their articles, so the colors of a lit cluster are the real mix.
-        const outlets = c.got ? c.got.outlets : []
-        const total = Math.max(1, sum(outlets.map((o) => o.n)))
-        let acc = 0
-        let oi = 0
         for (let j = 0; j < c.count; j++) {
           const dot = dots[k++]
           dot.off = false
           dot.cl = c
+          dot.slot = c.slot
           dot.or = c.r * Math.sqrt(rand())
           dot.oa = rand() * TAU
           dot.ow = (0.08 + 0.35 * (1 - dot.or / c.r)) * (dot.seed > 0.5 ? 1 : -1)
           dot.gmax = 1
-          while (oi < outlets.length - 1 && (j + 0.5) / c.count > (acc + outlets[oi].n) / total) acc += outlets[oi++].n
-          dot.group = outlets[oi] ? outlets[oi].group : null
           c.members.push(dot)
         }
       }
@@ -103,10 +118,14 @@
         const dot = dots[k]
         dot.off = j >= LOOSE
         dot.cl = null
-        dot.group = null
+        // The other articles take the themata in the shares of the day.
+        let pick = rand()
+        dot.slot = -1
+        for (const s of day.shares) { if (pick < s.p) { dot.slot = s.slot; break } pick -= s.p }
         dot.hx = rand() * w
         dot.hy = rand() * ht
-        for (let tries = 0; tries < 8 && inZone(dot.hx, dot.hy, 6); tries++) { dot.hx = rand() * w; dot.hy = rand() * ht }
+        dot.hvx = (rand() - 0.5) * 14
+        dot.hvy = (rand() - 0.5) * 14
         dot.gmax = 0.3
       }
     }
@@ -114,23 +133,73 @@
     function target (dot) {
       const c = dot.cl
       if (c) {
-        const cx = c.x + Math.sin(clock * 0.2 + c.ph) * 5
-        const cy = c.y + Math.cos(clock * 0.17 + c.ph) * 4
-        const tight = 1 - 0.22 * c.lit
-        dot.tx = cx + Math.cos(dot.oa + dot.ow * clock) * dot.or * tight
-        dot.ty = cy + Math.sin(dot.oa + dot.ow * clock) * dot.or * 0.85 * tight
+        dot.tx = c.x + Math.cos(dot.oa + dot.ow * clock) * dot.or * (1 - 0.22 * c.lit)
+        dot.ty = c.y + Math.sin(dot.oa + dot.ow * clock) * dot.or * 0.85 * (1 - 0.22 * c.lit)
       } else {
-        dot.tx = dot.hx + Math.sin(clock * 0.15 + dot.seed * 40) * 36
-        dot.ty = dot.hy + Math.cos(clock * 0.12 + dot.seed * 25) * 28
+        dot.tx = dot.hx + Math.sin(clock * 0.15 + dot.seed * 40) * 30
+        dot.ty = dot.hy + Math.cos(clock * 0.12 + dot.seed * 25) * 24
+      }
+    }
+
+    // ---- the roaming of the clusters ----
+    // A cluster keeps a heading that turns slowly. The edges, the text of the hero and the other clusters push it away, and it turns to leave. A cluster under the pointer almost stops, so it can be reached.
+    function roam (dt) {
+      for (const c of clusters) {
+        c.th += (Math.sin(clock * 0.31 + c.ph) + Math.sin(clock * 0.17 + c.ph * 2.1)) * 0.5 * dt
+        let px = 0
+        let py = 0
+        const m = c.r + 18
+        if (c.x < m) px += (m - c.x) * 2
+        if (c.x > w - m) px -= (c.x - (w - m)) * 2
+        if (c.y < m) py += (m - c.y) * 2
+        if (c.y > ht - m) py -= (c.y - (ht - m)) * 2
+        if (wide) {
+          const pad = c.r + 10
+          for (const z of zones) {
+            const l = c.x - (z.x0 - pad)
+            const r = z.x1 + pad - c.x
+            const tp = c.y - (z.y0 - pad)
+            const b = z.y1 + pad - c.y
+            if (l <= 0 || r <= 0 || tp <= 0 || b <= 0) continue
+            const near = Math.min(l, r, tp, b)
+            if (near === l) px -= (near + 8) * 3
+            else if (near === r) px += (near + 8) * 3
+            else if (near === tp) py -= (near + 8) * 3
+            else py += (near + 8) * 3
+          }
+        }
+        for (const o of clusters) {
+          if (o === c) continue
+          const dx = c.x - o.x
+          const dy = c.y - o.y
+          const d = Math.hypot(dx, dy) || 1
+          const gap = c.r + o.r + 44
+          if (d < gap) { px += (dx / d) * (gap - d) * 1.2; py += (dy / d) * (gap - d) * 1.2 }
+        }
+        if (px || py) c.th = Math.atan2(Math.sin(c.th) + py * 0.04, Math.cos(c.th) + px * 0.04)
+        const slow = 1 - 0.92 * c.lit
+        const vx = Math.cos(c.th) * c.sp * slow + px * 0.6
+        const vy = Math.sin(c.th) * c.sp * slow + py * 0.6
+        c.vx += (vx - c.vx) * Math.min(1, dt * 2)
+        c.vy += (vy - c.vy) * Math.min(1, dt * 2)
+        c.x += c.vx * dt
+        c.y += c.vy * dt
       }
     }
 
     // ---- the physics ----
     // A dot is pulled to its target by a spring and, while it waits, wanders. The pull rises over a second, so a dot leaves the crowd and settles.
-    // The pointer pushes: a loose dot a lot, a dot of a cluster only a little, so a cluster keeps its shape and the pointer can reach it.
+    // The pointer pushes: a loose dot a lot, a dot of a cluster only a little, so a cluster keeps its shape.
     function step (dt) {
+      roam(dt)
       for (const dot of dots) {
         if (dot.off) continue
+        if (!dot.cl) {
+          dot.hx += dot.hvx * dt
+          dot.hy += dot.hvy * dt
+          if (dot.hx < 0 || dot.hx > w) { dot.hvx *= -1; dot.hx = clamp(dot.hx, 0, w) }
+          if (dot.hy < 0 || dot.hy > ht) { dot.hvy *= -1; dot.hy = clamp(dot.hy, 0, ht) }
+        }
         if (dot.wait > 0) { dot.wait -= dt; dot.g = 0 } else dot.g = Math.min(dot.gmax, dot.g + dt * 1.6)
         target(dot)
         const gg = smooth(dot.g)
@@ -154,59 +223,58 @@
         dot.x += dot.vx * dt
         dot.y += dot.vy * dt
       }
-      for (const c of clusters) c.lit += ((c === focus ? 1 : 0) - c.lit) * Math.min(1, dt * 8)
+      glow(dt)
+    }
+    // The focused cluster is lit; the others of its thema are half lit.
+    function glow (dt) {
+      for (const c of clusters) {
+        const lit = c === focus ? 1 : 0
+        const rel = focus && c !== focus && c.issue >= 0 && c.issue === focus.issue ? 0.55 : 0
+        c.lit += (lit - c.lit) * Math.min(1, dt * 8)
+        c.rel += (rel - c.rel) * Math.min(1, dt * 8)
+      }
     }
     function snap () {
       for (const dot of dots) { if (dot.off) continue; target(dot); dot.x = dot.tx; dot.y = dot.ty; dot.vx = dot.vy = 0; dot.g = dot.gmax; dot.wait = 0 }
-      for (const c of clusters) c.lit = c === focus ? 1 : 0
+      glow(10)
     }
 
     // ---- the drawing ----
     const ink = () => Dash.color('--ink')
     const accent = () => Dash.color('--accent')
-    function bubbles (list, grow) {
-      ctx.beginPath()
-      for (const dot of list) {
-        const r = 1.3 + dot.seed * 0.9 + grow
-        ctx.moveTo(dot.x + r, dot.y)
-        ctx.arc(dot.x, dot.y, r, 0, TAU)
-      }
-    }
+    const colorOf = (slot) => (slot >= 0 ? Dash.SLOTS[slot] : ink())
     function render () {
       ctx.setTransform(canvas.width / Math.max(w, 1), 0, 0, canvas.height / Math.max(ht, 1), 0, 0)
       ctx.clearRect(0, 0, w, ht)
       const on = Math.max(0, ...clusters.map((c) => c.lit))
       const base = (wide ? 1 : 0.6) * fade
       // The loose dots wake up as the pointer comes near: each one has its own alpha.
-      ctx.fillStyle = ink()
       for (const dot of dots) {
         if (dot.off || dot.cl) continue
-        const r = 1.3 + dot.seed * 0.9
         ctx.beginPath()
-        ctx.arc(dot.x, dot.y, r + dot.p * 0.8, 0, TAU)
-        ctx.globalAlpha = (0.2 + 0.4 * dot.p) * base * (1 - 0.5 * on)
+        ctx.arc(dot.x, dot.y, 1.3 + dot.seed * 0.9 + (dot.p || 0) * 0.8, 0, TAU)
+        ctx.fillStyle = colorOf(dot.slot)
+        ctx.globalAlpha = (0.22 + 0.4 * (dot.p || 0)) * base * (1 - 0.5 * on)
         ctx.fill()
       }
       for (const c of clusters) {
-        const dim = 1 - 0.6 * on * (1 - c.lit)
-        ctx.fillStyle = ink()
-        bubbles(c.members, 0)
-        ctx.globalAlpha = 0.5 * base * dim * (1 - c.lit)
-        ctx.fill()
-        if (c.lit < 0.02) continue
-        const byGroup = new Map()
-        for (const dot of c.members) { if (!byGroup.has(dot.group)) byGroup.set(dot.group, []); byGroup.get(dot.group).push(dot) }
-        for (const [group, list] of byGroup) {
-          ctx.fillStyle = Dash.groupColor(group)
-          bubbles(list, 0.5)
-          ctx.globalAlpha = 0.95 * c.lit
-          ctx.fill()
+        const glowing = Math.max(c.lit, c.rel)
+        const dim = 1 - 0.6 * on * (1 - glowing)
+        ctx.fillStyle = colorOf(c.slot)
+        ctx.beginPath()
+        for (const dot of c.members) {
+          const r = 1.3 + dot.seed * 0.9 + 0.5 * glowing
+          ctx.moveTo(dot.x + r, dot.y)
+          ctx.arc(dot.x, dot.y, r, 0, TAU)
         }
-        ctx.strokeStyle = accent()
+        ctx.globalAlpha = (0.5 + 0.45 * glowing) * base * dim
+        ctx.fill()
+        if (glowing < 0.02) continue
+        ctx.strokeStyle = c.slot >= 0 ? colorOf(c.slot) : accent()
         ctx.lineWidth = 1
         ctx.beginPath()
         ctx.arc(c.x, c.y, c.r + 12, 0, TAU)
-        ctx.globalAlpha = 0.25 * c.lit
+        ctx.globalAlpha = 0.3 * glowing
         ctx.stroke()
       }
       ctx.globalAlpha = 1
@@ -269,18 +337,18 @@
       }
       if (!best) return unfocus()
       if (focus !== best.c) { focus = best.c; if (still()) { snap(); render() } }
-      const c = focus
-      const outlets = c.got ? c.got.outlets : []
-      UI.showTooltip({
-        title: title(c.s),
-        rows: outlets.slice(0, 3).map((o) => ({ label: o.name, value: fmt.int(o.n), color: Dash.groupColor(o.group) })),
-        note: `${fmt.date(home.dates[c.d], { weekday: 'short', day: 'numeric', month: 'short' })} · ${t('home.field.tip', { n: fmt.int(c.n), o: outlets.length })}`
-      }, box.left + c.x, anchorY(box, c))
+      showTip(box, focus)
     }
-    // The tooltip sits over the cluster, centered on it, and under it when the window has no room above. It does not follow the pointer, so it never covers the dots it describes.
-    function anchorY (box, c) {
-      const top = box.top + c.y - c.r - 14
-      return top - 170 < 8 ? box.top + c.y + c.r + 14 - 18 : top
+    function showTip (box, c) {
+      const topic = c.issue >= 0 ? home.issues[c.issue] : null
+      UI.showTooltip({
+        title: name(c.s),
+        rows: [topic ? { label: t('home.field.topic'), value: name(topic), color: c.slot >= 0 ? colorOf(c.slot) : null } : null, { label: t('home.field.articles'), value: fmt.int(c.n) }].filter(Boolean),
+        note: fmt.date(home.dates[c.d], { weekday: 'long', day: 'numeric', month: 'long' })
+      }, box.left + c.x, box.top + c.y - c.r - 14)
+      // The shared tooltip sits above the point and flips under it when there is no room, which would cover the cluster: then it goes under the cluster.
+      const tip = document.querySelector('.tooltip')
+      if (tip && tip.getBoundingClientRect().top > box.top + c.y - c.r) tip.style.top = `${Math.min(window.innerHeight - tip.offsetHeight - 8, box.top + c.y + c.r + 14)}px`
     }
     function onLeave () { pointer.on = false; unfocus() }
 
