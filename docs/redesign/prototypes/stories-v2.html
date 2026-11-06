@@ -16,7 +16,7 @@
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=42"></script>
+  <script src="assets/messages.js?v=43"></script>
   <script src="assets/messages-v2.js?v=58"></script>
   <script src="assets/messages-spread.js?v=22"></script>
   <script src="assets/messages-mme.js?v=21"></script>
@@ -27,21 +27,15 @@
   <script src="assets/date-range.js?v=2"></script>
   <script src="assets/mme.js?v=23"></script>
   <script src="assets/home.js?v=39"></script>
-  <script src="assets/shell.js?v=63"></script>
+  <script src="assets/shell.js?v=64"></script>
   <script src="data/stories.js?v=2"></script>
   <script src="data/storyDetail.js?v=2"></script>
-  <script src="data/mme.js?v=20"></script>
   <script>
-    // Stories, two tabs (#62). Επισκόπηση (/stories) is a Sankey of stories and outlets for a period, and the list of every story that ran in it, the largest first:
-    // the date picker of the top bar sets the period. Ανά μέσο (?tab=outlets, /stories/outlets) has the stories × outlets matrix.
-    const { t, fmt, h, load, params } = App
-    const tab = params.get('tab') === 'outlets' ? 'outlets' : 'overview'
+    // Stories (/stories): the list of every story that ran in a period, the largest first, and a Sankey of the first stories and their outlets. The date picker of the top bar sets the period.
+    const { t, fmt, h, load } = App
     const { reset, card, cardHead, TopBar } = Dash
     const list = load('stories', ['dates', 'issues', 'stories'], (b) => b.stories)
     const detail = load('storyDetail', ['dates', 'outlets', 'stories'], (b) => b.stories)
-    // «Ιστορίες ανά μέσο», the stories × outlets matrix of the live page ΜΜΕ & πρόσωπα (data/mme.js), over its whole window.
-    const mme = load('mme', ['sets'], (b) => Object.keys(b.sets))
-    const mmeView = { generic: false }
     const view = { from: null, to: null }
     let lastValid = null
     let rank = 0
@@ -50,7 +44,7 @@
 
     Shell.start({
       id: 'stories',
-      route: tab === 'outlets' ? '/stories/outlets' : '/stories',
+      route: '/stories',
       dash: true,
       title: () => t('nav.media'),
       breadcrumbs: () => [{ label: t('nav.media') }],
@@ -59,21 +53,6 @@
         const title = t('tab.media.stories')
         const problem = Dash.stateContent([list, detail])
         if (problem) { content.replaceChildren(...problem.filter(Boolean), protoNote()); return }
-
-        // Ανά μέσο: the matrix. Its toggle draws only this card again.
-        if (tab === 'outlets') {
-          const grid = h('div', { class: 'dash-grid story-top' })
-          const mmeCard = h('div', { class: 'c-12 card-col' })
-          if (mme.kind === 'data') {
-            const mset = mme.data.sets.gr
-            const MS = Mme.summary(mset, 0, mset.dates.length - 1)
-            const paintMme = () => mmeCard.replaceChildren(Mme.StoriesCard(MS, { generic: mmeView.generic, onGeneric: (v) => { mmeView.generic = v; paintMme() } }))
-            paintMme()
-          }
-          grid.replaceChildren(mmeCard)
-          content.replaceChildren(h('h1', { class: 'visually-hidden' }, title), grid, protoNote())
-          return
-        }
 
         const ix = Home.index({ stories: list.data, detail: detail.data })
         const dates = list.data.dates

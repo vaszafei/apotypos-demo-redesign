@@ -8,7 +8,6 @@
     '/trends': 'topics-v2.html',
     '/trends/time': 'topics-v2.html',
     '/stories': 'stories-v2.html',
-    '/stories/outlets': 'stories-v2.html?tab=outlets',
     '/echoes': 'stories-v2.html',
     '/similarity': 'similarity-v2.html',
     '/originality': 'similarity-v2.html#originality',
@@ -47,7 +46,7 @@
   // Αναλύσεις & Ιδιοκτησία (/analyze) is not there: ownership is only Μέσα › Ιδιοκτησία, so /analyze opens that tab.
   // ΜΜΕ & πρόσωπα (/media) is not there: its content is Μέσα › Επισκόπηση. Θέματα (/trends) is a tab of Μέσα, not an item of its own.
   // Πρόσωπα is an item: its overview (/fingerprints), Δηλώσεις (/track, from Πολιτική) and Φάκελος προσώπου (/contradictions), which left Αναλύσεις.
-  // Ιστορίες is a tab of Μέσα, under Θέματα, with 2 sub-tabs: Επισκόπηση (/stories) and Ανά μέσο. It was an item of the top bar. Μοτίβα διάδοσης is gone, and Υποθέσεις (/cases) is Αναλύσεις › Ρουβίκωνας.
+  // Ιστορίες is a tab of Μέσα, under Θέματα, with no sub-tabs (Επισκόπηση and Ανά μέσο are gone). It was an item of the top bar. Μοτίβα διάδοσης is gone, and Υποθέσεις (/cases) is Αναλύσεις › Ρουβίκωνας.
   // #62: each tab answers one question (question.<item>.<tab>), listed in the table of pages. A new tab is a view of the file of its section (?tab=), so every old route opens the same file.
   // Θέματα is one page with no sub-tabs (Ένα θέμα, Ατζέντα μέσων and Μετατοπίσεις are gone; Μετατοπίσεις is a card of it). Πολιτική splits the elections page into 5 tabs.
   // A detail route names the tab that lists it: the back button and the trail of the page go there.
@@ -55,7 +54,7 @@
     { key: 'home', tabs: [['home', '/']] },
     { key: 'media', tabs: [['overview', '/media'], ['ownership', '/groups'],
       ['topics', '/trends'],
-      ['stories', '/stories', [['stories.overview', '/stories'], ['stories.outlets', '/stories/outlets']]],
+      ['stories', '/stories'],
       ['writing', '/media/writing'], ['similarity', '/similarity']], details: [['/outlet', '/media'], ['/group', '/groups'], ['/topic', '/trends'], ['/story', '/stories']] },
     { key: 'people', tabs: [['overview', '/fingerprints'], ['spread', '/fingerprints/spread'], ['statements', '/track'],
       ['file', '/contradictions', [['file.overview', '/contradictions'], ['file.pairs', '/contradictions/pairs'], ['file.checks', '/contradictions/checks']]]] },
