@@ -6,11 +6,11 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=15">
-  <link rel="stylesheet" href="assets/app.css?v=50">
-  <link rel="stylesheet" href="assets/dash.css?v=99">
+  <link rel="stylesheet" href="assets/app.css?v=51">
+  <link rel="stylesheet" href="assets/dash.css?v=103">
   <link rel="stylesheet" href="assets/mme.css?v=54">
-  <link rel="stylesheet" href="assets/home.css?v=49">
-  <link rel="stylesheet" href="assets/date-range.css?v=9">
+  <link rel="stylesheet" href="assets/home.css?v=52">
+  <link rel="stylesheet" href="assets/date-range.css?v=15">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
@@ -18,29 +18,30 @@
   <script src="assets/icons.js?v=9"></script>
   <script src="assets/messages.js?v=43"></script>
   <script src="assets/messages-v2.js?v=58"></script>
-  <script src="assets/messages-spread.js?v=22"></script>
+  <script src="assets/messages-spread.js?v=27"></script>
   <script src="assets/messages-mme.js?v=21"></script>
   <script src="assets/messages-home.js?v=23"></script>
   <script src="assets/components.js?v=20"></script>
-  <script src="assets/motion.js?v=3"></script>
-  <script src="assets/dash.js?v=25"></script>
-  <script src="assets/date-range.js?v=2"></script>
+  <script src="assets/motion.js?v=4"></script>
+  <script src="assets/dash.js?v=30"></script>
+  <script src="assets/date-range.js?v=5"></script>
   <script src="assets/mme.js?v=23"></script>
-  <script src="assets/home.js?v=39"></script>
+  <script src="assets/home.js?v=40"></script>
   <script src="assets/shell.js?v=64"></script>
   <script src="data/stories.js?v=2"></script>
   <script src="data/storyDetail.js?v=2"></script>
   <script>
-    // Stories (/stories): the list of every story that ran in a period, the largest first, and a Sankey of the first stories and their outlets. The date picker of the top bar sets the period.
+    // Stories (/stories): a small calendar of the month picks a day or a period. Under it the list has every story that ran in it, the largest first, and beside it a line chart has the first of them,
+    // each over its whole life, with the period tinted.
     const { t, fmt, h, load } = App
     const { reset, card, cardHead, TopBar } = Dash
     const list = load('stories', ['dates', 'issues', 'stories'], (b) => b.stories)
     const detail = load('storyDetail', ['dates', 'outlets', 'stories'], (b) => b.stories)
     const view = { from: null, to: null }
-    let lastValid = null
-    let rank = 0
-    const FLOW_STORIES = 12
-    const FLOW_OUTLETS = 14
+    let drawn = false
+    const LINE_STORIES = 8
+    const TREND_STORIES = 5
+    const TREND_MIN = 10
 
     Shell.start({
       id: 'stories',
@@ -56,56 +57,70 @@
 
         const ix = Home.index({ stories: list.data, detail: detail.data })
         const dates = list.data.dates
+        // The first visit shows the last day of the window, as Αρχική does.
+        if (!view.from || !dates.includes(view.from) || !dates.includes(view.to)) { view.from = dates[dates.length - 1]; view.to = view.from }
         const draw = () => {
           reset()
-          if (!view.from || !dates.includes(view.from) || !dates.includes(view.to)) { view.from = dates[0]; view.to = dates[dates.length - 1] }
-          if (!lastValid || !dates.includes(lastValid.from) || !dates.includes(lastValid.to)) lastValid = { from: view.from, to: view.to }
-          const i0 = dates.indexOf(lastValid.from)
-          const i1 = dates.indexOf(lastValid.to)
-          const select = (r) => { Object.assign(view, r); if (r.from <= r.to) { lastValid = { from: r.from, to: r.to }; rank = 0 } draw() }
-          const picker = UI.DateRangePicker({ dates, from: view.from, to: view.to, presets: Mme.presets({ dates }), onChange: select })
-          const bar = TopBar({ title: `${t('nav.media')} · ${title}`, tabs, actions: [picker], quiet: true })
           const day = (iso) => fmt.date(iso, { day: 'numeric', month: 'short', year: 'numeric' })
-          const dateText = i0 === i1 ? day(dates[i0]) : `${day(dates[i0])} – ${day(dates[i1])}`
-          const info = () => Home.rangeInfo(ix, i0, i1, rank)
-          // One row of two columns: the list of all the stories (c-5), which takes the height of the row, and the Sankey of the first stories and their outlets (c-7).
-          const listCard = () => Home.DayCard(info(), { dateText: false, part: 'list', span: 'c-5 home-list', title: t('topics2.stories.title'), hint: t('stories.period.info'), empty: t('stories.period.empty'),
-            onStory: (r) => { rank = r; paintStory() } })
-          // The first FLOW_STORIES stories of the period, and the story that is picked in the list if it is further down. Each outlet beyond the first FLOW_OUTLETS joins «Άλλα μέσα».
-          const flowCard = () => {
+          const span = () => ({ i0: dates.indexOf(view.from), i1: dates.indexOf(view.to) })
+          const info = () => { const { i0, i1 } = span(); return Home.rangeInfo(ix, i0, i1, 0) }
+          const dateText = () => { const { i0, i1 } = span(); return i0 === i1 ? day(dates[i0]) : `${day(dates[i0])} – ${day(dates[i1])}` }
+
+          // Left, the list of all the stories of the period, which takes the whole height and scrolls inside.
+          const listCard = () => Home.DayCard(info(), { dateText: false, part: 'list', span: 'home-list', linkRows: true, title: t('topics2.stories.title'), hint: t('stories.period.info'), empty: t('stories.period.empty') })
+
+          // Right, the first LINE_STORIES stories of the period as lines.
+          const lineCard = () => {
             const lead = info()
-            const head = cardHead(t('stories.flow.title'), h('span', { class: 'home-date' }, dateText), t('stories.flow.info'))
-            if (!lead) return card('c-7', head, Dash.emptyText(t('stories.period.empty')))
-            const shown = lead.list.slice(0, FLOW_STORIES)
-            if (lead.rank >= FLOW_STORIES) shown.push(lead.list[lead.rank])
-            const rows = shown.map(({ s }) => ({ s, outlets: Home.outletsOf(ix, s, i0, i1) })).filter((r) => r.outlets.length)
-            const perOutlet = new Map()
-            rows.forEach((r) => r.outlets.forEach((o) => perOutlet.set(o.k, (perOutlet.get(o.k) || 0) + o.n)))
-            const ranked = [...perOutlet].sort((a, b) => b[1] - a[1])
-            const kept = ranked.slice(0, FLOW_OUTLETS)
-            const slot = new Map(kept.map(([k], i) => [k, i]))
-            const outlets = kept.map(([k, n]) => ({ ...ix.detail.outlets[k], n }))
-            const rest = ranked.length - kept.length
-            if (rest > 0) { slot.set('rest', outlets.length); outlets.push({ name: '', slug: null, n: ranked.slice(FLOW_OUTLETS).reduce((a, [, n]) => a + n, 0), count: rest }) }
-            const stories = rows.map(({ s, outlets: os }) => {
-              const flows = new Map()
-              os.forEach((o) => { const i = slot.has(o.k) ? slot.get(o.k) : slot.get('rest'); flows.set(i, (flows.get(i) || 0) + o.n) })
-              return { id: s.id, name: s[App.locale] || s.el, n: os.reduce((a, o) => a + o.n, 0), flows: [...flows].map(([o, n]) => ({ o, n })) }
-            })
+            const head = cardHead(t('stories.time.title'), h('span', { class: 'home-date' }, dateText()), t('stories.time.info'))
+            if (!lead) return card('', head, Dash.emptyText(t('stories.period.empty')))
+            const shown = lead.list.slice(0, LINE_STORIES)
             const colors = Dash.SLOTS
-            return card('c-7', head, Dash.StoryFlow({ stories, outlets, current: lead.story.id, colorOf: (id, i) => colors[i % colors.length], heads: { story: t('stories.flow.story'), outlet: t('stories.flow.outlet') },
-              storyLink: (s) => h('a', { href: `story-v2.html?id=${s.id}`, title: s.name }, s.name),
-              outletLink: (o) => h('a', { href: `outlet-v2.html?slug=${o.slug}`, title: o.name }, o.name),
-              restLabel: (o) => t('stories.flow.rest', { n: o.count }) }))
+            // The axis starts the day before the first of these stories began (at least 7 days before the end), and it ends on the last day of the period.
+            const { i0, i1 } = span()
+            let d0 = Infinity
+            shown.forEach(({ s }) => { d0 = Math.min(d0, s.days[0]) })
+            d0 = Math.max(0, Math.min(d0 - 1, i1 - 6))
+            const d1 = i1
+            const series = shown.map(({ s }, i) => {
+              const values = new Array(d1 - d0 + 1).fill(0)
+              for (let j = 0; j < s.days.length; j += 2) if (s.days[j] >= d0 && s.days[j] <= d1) values[s.days[j] - d0] = s.days[j + 1]
+              return { key: s.id, name: s[App.locale] || s.el, color: i < colors.length ? colors[i] : Dash.color('--cat-9'), values }
+            })
+            return card('', head, Dash.LinesChart({ dates: dates.slice(d0, d1 + 1), series, band: { from: Math.max(i0, d0) - d0, to: d1 - d0 }, sparse: true, sqrt: true, tall: 300, caption: t('stories.time.title'), href: (s) => `story-v2.html?id=${s.key}` }))
           }
-          let flow = flowCard()
-          let list = listCard()
-          // A pick in the list draws the chart again; the list keeps its place.
-          function paintStory () {
-            const nextFlow = flowCard(); flow.replaceWith(nextFlow); flow = nextFlow
-            const nextList = listCard(); list.replaceWith(nextList); list = nextList
+          // Τάσεις: the articles of every story in the period against the period of the same length right before it. A story needs TREND_MIN articles in the period before to count, so a story that is only starting does not
+          // show a change of thousands of per cent. The rising stories are on the left and the falling ones on the right, on one scale.
+          const trendsCard = () => {
+            const { i0, i1 } = span()
+            const len = i1 - i0 + 1
+            const p0 = i0 - len
+            const head = (right) => cardHead(t('stories.trend.title'), right, t('stories.trend.info', { n: TREND_MIN }))
+            if (p0 < 0) return card('', head(null), Dash.emptyText(t('stories.trend.empty')))
+            const sumOver = (from, to) => { const m = new Map(); for (let d = from; d <= to; d++) for (const { s, n } of ix.byDay[d]) m.set(s, (m.get(s) || 0) + n); return m }
+            const now = sumOver(i0, i1)
+            const before = sumOver(p0, i0 - 1)
+            const rows = [...before].filter(([, n]) => n >= TREND_MIN).map(([s, n]) => ({ s, now: now.get(s) || 0, before: n, change: ((now.get(s) || 0) - n) / n }))
+            const up = rows.filter((r) => r.change > 0).sort((a, b) => b.change - a.change || b.now - a.now).slice(0, TREND_STORIES)
+            const down = rows.filter((r) => r.change < 0).sort((a, b) => a.change - b.change || b.before - a.before).slice(0, TREND_STORIES)
+            const widest = Math.max(...up.concat(down).map((r) => Math.abs(r.change)), 0)
+            const rowOf = (r) => {
+              const color = r.change > 0 ? 'var(--emph-more)' : 'var(--emph-less)'
+              const name = r.s[App.locale] || r.s.el
+              return { label: UI.EntityLink({ type: 'story', key: String(r.s.id), label: name }), value: Math.abs(r.change), color, tip: t('stories.trend.tip', { before: fmt.int(r.before), now: fmt.int(r.now) }),
+                text: [h('span', { class: `tri ${r.change > 0 ? 'tri-up' : 'tri-down'}`, style: { color }, 'aria-hidden': 'true' }), ` ${fmt.signed(r.change * 100)}%`] }
+            }
+            const column = (title, list) => h('div', { class: 'story-trend-col' }, h('p', { class: 'dcard-sub' }, title), list.length ? UI.BarList(list.map(rowOf), { max: widest }) : Dash.emptyText(t('stories.trend.none')))
+            const range = `${day(dates[p0])}${len > 1 ? ` – ${day(dates[i0 - 1])}` : ''}`
+            return card('', head(h('span', { class: 'home-date' }, t('stories.trend.vs', { range }))), h('div', { class: 'story-trend' }, column(t('stories.trend.up'), up), column(t('stories.trend.down'), down)))
           }
-          content.replaceChildren(bar, h('div', { class: 'dash-grid story-split' }, list, flow), protoNote())
+          const lineNode = lineCard()
+          const picker = UI.DateRangePicker({ dates, from: view.from, to: view.to, presets: Mme.presets({ dates }), onChange: (r) => { Object.assign(view, r); draw() } })
+          const bar = TopBar({ title: `${t('nav.media')} · ${title}`, tabs, actions: [picker], quiet: true })
+          content.replaceChildren(bar, h('div', { class: 'dash-grid story-split' }, h('div', { class: 'c-4 card-col card-col-fill' }, listCard()), h('div', { class: 'c-8 card-col' }, trendsCard(), lineNode)), protoNote())
+          // The first view of the page is played by motion.js; a new period draws the lines in again.
+          if (drawn) Motion.replay(lineNode)
+          drawn = true
         }
         draw()
       }

@@ -291,4 +291,7 @@
       el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], { duration: ms('--motion-slow') + 140, easing: token('--ease-in-out') })
     }
   }
+
+  // A card that a page draws again after the first view (a new period, a new pick) plays its first view again: its lines are drawn in, its bars fill. Call it right after the card is in the page.
+  window.Motion = { replay (unit) { if (!still()) play(unit, 0) } }
 })()

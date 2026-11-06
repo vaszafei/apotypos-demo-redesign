@@ -6,10 +6,10 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=15">
-  <link rel="stylesheet" href="assets/app.css?v=50">
-  <link rel="stylesheet" href="assets/dash.css?v=99">
+  <link rel="stylesheet" href="assets/app.css?v=51">
+  <link rel="stylesheet" href="assets/dash.css?v=103">
   <link rel="stylesheet" href="assets/mme.css?v=54">
-  <link rel="stylesheet" href="assets/date-range.css?v=9">
+  <link rel="stylesheet" href="assets/date-range.css?v=15">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
@@ -19,9 +19,9 @@
   <script src="assets/messages-v2.js?v=58"></script>
   <script src="assets/messages-mme.js?v=21"></script>
   <script src="assets/components.js?v=20"></script>
-  <script src="assets/motion.js?v=3"></script>
-  <script src="assets/dash.js?v=25"></script>
-  <script src="assets/date-range.js?v=2"></script>
+  <script src="assets/motion.js?v=4"></script>
+  <script src="assets/dash.js?v=30"></script>
+  <script src="assets/date-range.js?v=5"></script>
   <script src="assets/mme.js?v=23"></script>
   <script src="assets/shell.js?v=64"></script>
   <script src="data/home.js?v=4"></script>
@@ -38,82 +38,10 @@
     // The chosen period.  lastValid keeps the last complete period while the picker holds a half-chosen one.
     const view = { from: null, to: null }
     let lastValid = null
+    let drawn = false
 
     const sumRange = (arr, i0, i1) => { let s = 0; for (let i = i0; i <= i1; i++) s += arr[i]; return s }
     const ROLL = 7
-
-    // Lines: the average of the last 7 days of each of the 8 largest topics of the period, one color each. The vertical axis is linear, and the chart is tall on a wide card, so the ends of the lines are as far
-    // apart as they can be. The lines are monotone cubic curves (Fritsch–Carlson), so a curve never goes below 0 or above its neighbouring days.
-    // series: [{ name, color, values }], the values of the days of dates. A hover shows the values of all of them at that day, under a vertical guide, in the white tooltip.
-    function LinesChart ({ dates, series, caption }) {
-      return fit((holder, width) => {
-        const height = width < 520 ? 190 : width < 640 ? 280 : 380
-        // Where there is room (a card 520 px wide or more) each line has its name at its end, on the right. Narrower, a legend over the chart names the lines.
-        const labelled = width >= 520
-        const long = width >= 700
-        const pad = { top: 10, right: labelled ? (long ? 205 : 135) : 12, bottom: 24, left: 44 }
-        const n = dates.length
-        const plotW = width - pad.left - pad.right
-        const plotH = height - pad.top - pad.bottom
-        const peak = Math.max(...series.flatMap((s) => s.values), 1)
-        const tickStep = niceStep(peak / (height < 300 ? 4 : 6))
-        const yMax = Math.ceil(peak / tickStep) * tickStep
-        const X = (i) => pad.left + (i / Math.max(n - 1, 1)) * plotW
-        const Y = (v) => pad.top + plotH - (v / yMax) * plotH
-        const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': caption })
-        for (let v = 0; v <= yMax; v += tickStep) svg.append(h('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: Y(v), y2: Y(v) }), h('text', { x: pad.left - 6, y: Y(v) + 4, 'text-anchor': 'end' }, fmt.int(v)))
-        const step = plotW / Math.max(n - 1, 1)
-        // A label about every 72 px: every day, or every 2 to 7 days in a short period, a whole number of weeks in a long one.
-        const fitDays = Math.max(1, Math.ceil(72 / step))
-        const every = fitDays > 7 ? Math.ceil(fitDays / 7) * 7 : fitDays
-        for (let i = 0; i < n; i += every) svg.append(h('text', { x: X(i), y: height - 6, 'text-anchor': 'middle' }, fmt.date(dates[i], { day: 'numeric', month: 'short' })))
-        series.slice().reverse().forEach((s) => svg.append(h('path', { class: 'line-series', d: UI.smoothPath(s.values.map((v, i) => [X(i), Y(v)]), new Set()), stroke: s.color, 'stroke-width': 1.5 })))
-        if (labelled) {
-          // The name of a line is at the end of the line, on its own height. Only where two ends are less than 13 px apart the names move apart,
-          // each by half of what is missing, so a name never touches another and stays beside its own line.
-          const marks = series.map((s) => ({ s, y: Y(s.values[n - 1]), at: Y(s.values[n - 1]) })).sort((a, b) => a.y - b.y)
-          for (let round = 0; round < 40; round++) {
-            let moved = false
-            for (let k = 1; k < marks.length; k++) {
-              const miss = 13 - (marks[k].y - marks[k - 1].y)
-              if (miss > 0.1) { marks[k - 1].y -= miss / 2; marks[k].y += miss / 2; moved = true }
-            }
-            if (!moved) break
-          }
-          const max = long ? 32 : 17
-          // The name is the link of its topic (the href is the one of UI.EntityLink, so the route is in one place).
-          marks.forEach(({ s, y: ly, at }) => {
-            const link = document.createElementNS('http://www.w3.org/2000/svg', 'a')
-            link.setAttribute('href', UI.EntityLink({ type: 'topic', key: s.key, label: '' }).getAttribute('href'))
-            link.setAttribute('class', 'line-end-link')
-            link.append(h('title', {}, s.name), h('text', { class: 'line-end', x: X(n - 1) + 10, y: ly + 4 }, s.name.length > max ? `${s.name.slice(0, max - 1)}…` : s.name))
-            svg.append(h('circle', { class: 'line-dot', cx: X(n - 1), cy: at, r: 3, fill: s.color }), link)
-          })
-        }
-        const rule = h('line', { class: 'hover-rule', y1: pad.top, y2: pad.top + plotH, stroke: 'var(--rule)', 'stroke-width': 1, visibility: 'hidden' })
-        const dots = series.map((s) => h('circle', { r: 3.5, fill: s.color, stroke: 'var(--surface-page)', 'stroke-width': 1.5, visibility: 'hidden' }))
-        svg.append(rule, ...dots)
-        const over = h('rect', { x: pad.left, y: pad.top, width: plotW, height: plotH, fill: 'transparent' })
-        const read = (e) => {
-          const box = svg.getBoundingClientRect()
-          const i = Math.max(0, Math.min(n - 1, Math.round(((e.clientX - box.left - pad.left) / plotW) * (n - 1))))
-          rule.setAttribute('x1', X(i)); rule.setAttribute('x2', X(i)); rule.setAttribute('visibility', 'visible')
-          dots.forEach((c, k) => { c.setAttribute('cx', X(i)); c.setAttribute('cy', Y(series[k].values[i])); c.setAttribute('visibility', 'visible') })
-          UI.showTooltip({
-            title: fmt.date(dates[i]),
-            rows: series.map((s) => ({ label: s.name, value: fmt.int(Math.round(s.values[i])), color: s.color })).sort((a, b) => Number(b.value.replace(/\D/g, '')) - Number(a.value.replace(/\D/g, '')))
-          }, e.clientX, e.clientY)
-        }
-        over.addEventListener('pointermove', read)
-        over.addEventListener('pointerenter', read)
-        over.addEventListener('pointerleave', () => { UI.hideTooltip(); rule.setAttribute('visibility', 'hidden'); dots.forEach((c) => c.setAttribute('visibility', 'hidden')) })
-        svg.append(over)
-        const table = h('div', { class: 'visually-hidden' }, h('table', {}, h('caption', {}, caption),
-          h('tbody', {}, series.map((s) => h('tr', {}, h('th', { scope: 'row' }, s.name), h('td', {}, fmt.int(Math.round(s.values[n - 1]))))))))
-        const legend = UI.Legend(series.map((s) => ({ label: s.name, color: s.color })))
-        holder.replaceChildren(...(labelled ? [] : [legend]), svg, table)
-      })
-    }
 
     // Pointer handlers for a tooltip on a mark.
     const tipOn = (el, text) => {
@@ -200,7 +128,7 @@
           const series = offered.map((r, i) => ({ key: String(r.k), name: name(r.issue), color: SLOTS[i], values: r.daily.map((_, j) => sumRange(r.daily, Math.max(0, j - ROLL + 1), j) / (j - Math.max(0, j - ROLL + 1) + 1)).slice(i0, i1 + 1) }))
           const timeCard = card('',
             cardHead(t('topics2.time.title'), null, `${t('topics2.time.title')}. ${t('topics2.time.sub')}`),
-            series.length ? [LinesChart({ dates: dates.slice(i0, i1 + 1), series, caption: t('topics2.time.title') })] : emptyText(t('media2.empty.list')))
+            series.length ? [Dash.LinesChart({ dates: dates.slice(i0, i1 + 1), series, caption: t('topics2.time.title'), href: (s) => UI.EntityLink({ type: 'topic', key: s.key, label: '' }).getAttribute('href') })] : emptyText(t('media2.empty.list')))
 
           // The donut: every topic of the period. The share of the 3 largest is one line under the title.
           const top3 = rows.slice(0, 3).reduce((a, r) => a + r.count, 0)
@@ -254,6 +182,9 @@
           const rightColumn = h('div', { class: 'card-col c-9' }, timeCard, h('div', { class: 'dash-grid' }, h('div', { class: 'card-col c-6' }, moversCard), h('div', { class: 'card-col c-6' }, shiftsCard)))
           const cards = [h('div', { class: 'card-col c-3' }, allCard), rightColumn]
           content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...cards), protoNote())
+          // The first view of the page is played by motion.js; a new period draws the lines in again.
+          if (drawn) Motion.replay(timeCard)
+          drawn = true
         }
         draw()
       }

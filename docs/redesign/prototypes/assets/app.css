@@ -911,6 +911,11 @@ svg.chart .bar-col { transform-origin: 50% 100%; }
 .m-play svg.chart .bar-col { animation: m-grow-y var(--motion-chart) var(--ease-out) calc(var(--m-delay, 0ms) + var(--m-i, 0) * 8ms) both; }
 .m-play :is(svg.chart .line-series, svg.spark path) { animation: m-grow-x var(--motion-chart) var(--ease-in-out) var(--m-delay, 0ms) both; }
 .m-play :is(svg.chart .pt, svg.chart .line-dot) { animation: m-pop var(--motion-slow) var(--ease-spring) calc(var(--m-delay, 0ms) + 200ms + var(--m-i, 0) * 6ms) both; }
+/* A line chart (Dash.LinesChart) draws each line along its path, from the first day to the last, and then its end dots and names come in. */
+@keyframes m-draw { from { stroke-dashoffset: 1; } }
+.m-play svg.chart.line-draw .line-series { stroke-dasharray: 1; animation: m-draw calc(var(--motion-chart) * 2) var(--ease-in-out) var(--m-delay, 0ms) both; }
+.m-play svg.chart.line-draw .line-dot { animation: m-pop var(--motion-slow) var(--ease-spring) calc(var(--m-delay, 0ms) + var(--motion-chart) * 2 + var(--m-i, 0) * 30ms) both; }
+.m-play svg.chart.line-draw :is(.line-end-link, .line-leader) { animation: m-fade var(--motion-slow) var(--ease-out) calc(var(--m-delay, 0ms) + var(--motion-chart) * 2) both; }
 .m-play :is(svg.chart .slice, svg.chart .ring-arc) { animation: m-pop var(--motion-chart) var(--ease-out) calc(var(--m-delay, 0ms) + var(--m-i, 0) * 30ms) both; }
 .m-play :is(.hbar-fill, .stacked, .dbar-seg) { animation: m-grow-x var(--motion-chart) var(--ease-out) var(--m-delay, 0ms) both; }
 .m-play.mme-rank tbody tr { animation: m-rise var(--motion-slow) var(--ease-out) calc(var(--m-delay, 0ms) + var(--m-i, 0) * 35ms) both; }

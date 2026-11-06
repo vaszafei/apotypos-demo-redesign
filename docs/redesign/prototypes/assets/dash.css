@@ -502,3 +502,17 @@
 .flow-box.is-current { outline: 1.5px solid var(--accent); }
 .flow-story.has-hl .flow-box:not(.is-hl), .flow-story.has-hl .flow-label:not(.is-hl) { opacity: 0.45; }
 @media (max-width: 639px) { .flow-story.is-narrow .flow-box .flow-n { display: none; } .flow-outlet { font-size: var(--text-caption); } .flow-group .flow-name { white-space: normal; overflow-wrap: anywhere; line-height: 1.15; } }
+
+/* Dash.LinesChart: the tint of a period inside the window, and the leader of a name that moved away from its line. */
+.chart .line-band { fill: var(--accent); fill-opacity: 0.1; pointer-events: none; }
+.chart .line-leader { stroke-width: 1; stroke-opacity: 0.6; pointer-events: none; }
+
+/* Μέσα › Ιστορίες, Τάσεις: the rising stories on the left and the falling ones on the right. */
+.story-trend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); }
+.story-trend-col { min-width: 0; display: grid; align-content: start; gap: var(--space-2); }
+@media (max-width: 639px) { .story-trend { grid-template-columns: minmax(0, 1fr); } }
+.story-trend .bar-list { gap: 4px; }
+.story-trend .bar-list li { font-size: var(--text-caption); line-height: 1.3; row-gap: 2px; }
+.story-trend .bar-list .row-name { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.story-trend .bar-list .row-name a { text-decoration: none; }
+.story-trend .bar-list .row-name a:hover { text-decoration: underline; }

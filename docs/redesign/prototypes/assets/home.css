@@ -34,8 +34,17 @@ a.home-stack-part { cursor: pointer; }
 .home-story-go { margin-right: 6px; white-space: nowrap; text-decoration: none; }
 
 /* Μέσα › Ιστορίες: beside the story and its line, the list takes the whole height of the row and scrolls inside. */
-@media (max-width: 1279px) { .story-split > .c-5 { grid-column: span 12; } }
+@media (max-width: 1279px) { .story-split > .c-4, .story-split > .c-5 { grid-column: span 12; } }
 @media (min-width: 1280px) { .home-list .home-stories { flex: 1 1 0; height: 0; min-height: 0; max-height: none; } }
+
+/* Μέσα › Ιστορίες: a smaller type in the list, so more stories show. */
+.story-split .home-stories { gap: 2px; }
+.story-split .home-story-pick { padding: 6px 8px; font-size: var(--text-caption); line-height: 1.3; }
+.story-split .home-story-pick .muted-text { font-size: 11px; }
+
+/* A row of the list is the link to its story (Μέσα › Ιστορίες). */
+.home-stories li > a.home-story-pick:only-child { grid-column: 1 / -1; text-decoration: none; }
+.home-stories li > a.home-story-pick:hover { background: var(--card-tint); }
 
 /* The calendar of a month: a strip of day tiles that scrolls sideways, with the month and its arrows in the head. */
 .home-month-nav { display: inline-flex; align-items: center; gap: 2px; }

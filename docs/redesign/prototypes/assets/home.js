@@ -86,9 +86,9 @@
   const LIST_PART = 100
 
   // The stories of a day: a story is picked to show it in the card, and its button opens its page. The card shows the story of the rank in info, and the picked day at the top right.
-  // A page that shows a period (Μέσα › Ιστορίες) passes title, hint, dateText (false for none) and empty for its own words, and part ('story' or 'list') with span (a column class)
+  // A page that shows a period (Μέσα › Ιστορίες) passes title, hint, dateText (false for none) and empty for its own words, linkRows (a row is the link to its story, with no pick and no button), and part ('story' or 'list') with span (a column class)
   // to draw the story and its list as two cards. With no part it is one card.
-  function DayCard (info, { date, onStory, swap, title, hint, dateText, empty, part, span = 'c-5' }) {
+  function DayCard (info, { date, onStory, linkRows, swap, title, hint, dateText, empty, part, span = 'c-5' }) {
     const head = cardHead(title || t('home.day.title'), dateText === false ? null : h('span', { class: 'home-date' }, dateText || fmt.date(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })), hint || t('home.day.info'))
     if (!info) return card(`${span} home-day`, head, emptyText(empty || t('home.day.empty')))
     const { story, topic } = info
@@ -96,10 +96,13 @@
     const slices = info.outlets.map((o) => ({ name: o.name, group: o.group, n: o.n, color: groupColor(o.group), slug: o.slug }))
     const outlets = slices.length ? h('div', { class: 'home-block' }, OutletStack(slices, { total, count: info.outlets.length })) : null
 
-    const row = (o, r) => h('li', { class: r === info.rank ? 'is-current' : null },
-      h('button', { type: 'button', class: 'home-story-pick', 'aria-pressed': String(r === info.rank), onClick: () => onStory(r) },
-        h('span', { class: 'home-story-name' }, name(o.s)), h('span', { class: 'muted-text' }, fmt.int(o.n))),
-      h('a', { class: 'button button-sm home-story-go', href: `story-v2.html?id=${o.s.id}`, 'aria-label': `${t('home.day.open')}: ${name(o.s)}` }, t('home.day.open'), Icon('chevron-right', 'icon icon-sm')))
+    const row = (o, r) => (linkRows
+      // A row is the link to the page of its story (Μέσα › Ιστορίες): no pick, no button.
+      ? h('li', {}, h('a', { class: 'home-story-pick', href: `story-v2.html?id=${o.s.id}` }, h('span', { class: 'home-story-name' }, name(o.s)), h('span', { class: 'muted-text' }, fmt.int(o.n))))
+      : h('li', { class: r === info.rank ? 'is-current' : null },
+        h('button', { type: 'button', class: 'home-story-pick', 'aria-pressed': String(r === info.rank), onClick: () => onStory(r) },
+          h('span', { class: 'home-story-name' }, name(o.s)), h('span', { class: 'muted-text' }, fmt.int(o.n))),
+        h('a', { class: 'button button-sm home-story-go', href: `story-v2.html?id=${o.s.id}`, 'aria-label': `${t('home.day.open')}: ${name(o.s)}` }, t('home.day.open'), Icon('chevron-right', 'icon icon-sm'))))
     const listOf = () => {
       // The list has every story of the day and scrolls inside the card. A new day starts at the top; a pick on the same day keeps the place.
       // A period can have thousands of stories, so the list draws them in parts of LIST_PART: the next part comes when the scroll is near the end.
