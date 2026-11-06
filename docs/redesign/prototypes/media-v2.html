@@ -15,10 +15,10 @@
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=43"></script>
+  <script src="assets/messages.js?v=44"></script>
   <script src="assets/messages-v2.js?v=58"></script>
   <script src="assets/messages-spread.js?v=27"></script>
-  <script src="assets/messages-mme.js?v=23"></script>
+  <script src="assets/messages-mme.js?v=25"></script>
   <script src="assets/components.js?v=20"></script>
   <script src="assets/motion.js?v=4"></script>
   <script src="assets/dash.js?v=30"></script>
@@ -27,22 +27,19 @@
   <script src="assets/shell.js?v=64"></script>
   <script src="data/mme.js?v=20"></script>
   <script src="data/groups.js?v=2"></script>
-  <script src="data/originality.js?v=1"></script>
   <script>
-    // Μέσα › Επισκόπηση and Μέσα › Πώς γράφουν: the dashboard of APO-161 with everything of the live page ΜΜΕ & πρόσωπα (apotypos.org/media).
+    // Μέσα › Επισκόπηση and Μέσα › Στάση: the dashboard of APO-161 with everything of the live page ΜΜΕ & πρόσωπα (apotypos.org/media).
     // The data is the one of the live page (data/mme.js, scripts/make-mme.py): 29 Greek outlets and 10 Israeli outlets, summed for the period.
     // The top bar has the tabs, the set of outlets and the period. Each card holds one measure and one picture of it.
     const { t, fmt, h, load, params } = App
     const { fit, reset, pct0, NO_GROUP, card, cardHead, emptyText, TopBar } = Dash
     const result = load('mme', ['sets'], (b) => Object.keys(b.sets))
     const groupsData = load('groups', ['groups'], (b) => b.groups)
-    // The share of articles with no byline comes from the API in its own period (Sep 2025 – Jan 2026), for 5 outlets.
-    const bylines = load('originality', ['window', 'outlets'], (b) => b.outlets)
     const groupList = groupsData.kind === 'failed' ? [] : (groupsData.data.groups || [])
     const slugOfGroup = new Map(groupList.map((g) => [g.name, g.slug]))
     const colorOfGroup = Dash.groupColors(groupList)
 
-    // Two tabs (#62): Επισκόπηση (/media) and Πώς γράφουν (?tab=writing, /media/writing). Both have the set of outlets and the period.
+    // Two tabs (#62): Επισκόπηση (/media) and Στάση (?tab=writing, /media/writing). Both have the set of outlets and the period.
     const tab = params.get('tab') === 'writing' ? 'writing' : 'overview'
     const view = { set: 'gr', from: null, to: null }
     let lastValid = null
@@ -57,62 +54,9 @@
       })
     }
 
-    // Scatter: news share on x, clickbait share on y, the size of a dot is the number of articles, the color is the group.
-    function Scatter ({ points, avgX, avgY }) {
-      return fit((holder, width) => {
-        const height = Math.max(240, Math.min(300, Math.round(width * 0.42)))
-        const pad = { top: 12, right: 14, bottom: 40, left: 44 }
-        const plotW = width - pad.left - pad.right
-        const plotH = height - pad.top - pad.bottom
-        const xs = points.map((p) => p.x)
-        const x0 = Math.max(0, Math.floor((Math.min(...xs) - 0.03) * 20) / 20)
-        const x1 = Math.min(1, Math.ceil((Math.max(...xs) + 0.03) * 20) / 20)
-        const yMax = Math.ceil((Math.max(...points.map((p) => p.y)) + 0.02) * 20) / 20
-        const sx = (v) => pad.left + ((v - x0) / (x1 - x0)) * plotW
-        const sy = (v) => pad.top + plotH - (v / yMax) * plotH
-        const maxN = Math.max(...points.map((p) => p.n))
-        const radius = (n) => 5 + 9 * Math.sqrt(n / maxN)
-        const text = (p) => t('media2.scatter.point', { name: p.name, news: fmt.pct(p.x), cb: fmt.pct(p.y), n: fmt.int(p.n) })
-        const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
-        for (let k = 0; k <= 4; k++) {
-          const v = (yMax * k) / 4
-          svg.append(h('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: sy(v), y2: sy(v) }), h('text', { x: pad.left - 6, y: sy(v) + 4, 'text-anchor': 'end' }, pct0(v)))
-          const xv = x0 + ((x1 - x0) * k) / 4
-          svg.append(h('text', { x: sx(xv), y: height - 22, 'text-anchor': 'middle' }, pct0(xv)))
-        }
-        svg.append(h('text', { class: 'axis-title', x: pad.left + plotW / 2, y: height - 4, 'text-anchor': 'middle' }, `${t('media2.scatter.x')} →  ·  ${t('media2.scatter.y')} ↑`),
-          h('line', { class: 'avg-line', x1: sx(avgX), x2: sx(avgX), y1: pad.top, y2: pad.top + plotH }),
-          h('line', { class: 'avg-line', x1: pad.left, x2: width - pad.right, y1: sy(avgY), y2: sy(avgY) }))
-        points.slice().sort((a, b) => b.n - a.n).forEach((p) => {
-          const c = h('circle', { class: 'pt', cx: sx(p.x), cy: sy(p.y), r: radius(p.n), fill: p.color })
-          const show = (e) => UI.showTooltip(text(p), e.clientX, e.clientY)
-          c.addEventListener('pointerenter', show)
-          c.addEventListener('pointermove', show)
-          c.addEventListener('pointerleave', () => UI.hideTooltip())
-          svg.append(c)
-        })
-        // Direct labels for the outliers: the highest and the lowest value on each axis, and the 3 largest outlets.
-        const bySize = points.slice().sort((a, b) => b.n - a.n).slice(0, 3)
-        const outliers = [points.reduce((a, b) => (b.y > a.y ? b : a)), points.reduce((a, b) => (b.y < a.y ? b : a)), points.reduce((a, b) => (b.x > a.x ? b : a)), points.reduce((a, b) => (b.x < a.x ? b : a)), ...bySize]
-        // A label that would overlap a label already placed is left out. The tooltip still names the dot.
-        const placed = []
-        new Set(outliers).forEach((p) => {
-          const toLeft = sx(p.x) > width - 120
-          const w = p.name.length * 6.5
-          const x = sx(p.x) + (toLeft ? -1 : 1) * (radius(p.n) + 4)
-          const box = { x0: toLeft ? x - w : x, x1: toLeft ? x : x + w, y: sy(p.y) }
-          if (placed.some((b) => Math.abs(b.y - box.y) < 14 && b.x0 < box.x1 && box.x0 < b.x1)) return
-          placed.push(box)
-          svg.append(h('text', { class: 'pt-label', x, y: box.y + 4, 'text-anchor': toLeft ? 'end' : 'start' }, p.name))
-        })
-        const table = h('div', { class: 'visually-hidden' }, h('table', {}, h('caption', {}, t('media2.scatter.title')),
-          h('tbody', {}, points.map((p) => h('tr', {}, h('th', { scope: 'row' }, p.name), h('td', {}, text(p)))))))
-        holder.replaceChildren(svg, table)
-      })
-    }
-
     // Πώς γράφουν για την κυβέρνηση: one dot for each outlet. x = critical share, y = supportive share, the rest up to 100% is neutral.
-    // The diagonals are lines of the same neutral share (critical + supportive = 100% − neutral). The dot is sized by its articles and colored by its group.
+    // The diagonals cut the plot in bands of the same neutral share (critical + supportive = 100% − neutral). The dot is sized by its articles and colored by its group.
+    const BANDS = [[0, 0.25, 45], [0.25, 0.5, 30], [0.5, 0.75, 15], [0.75, 1, 0]].map(([k2, k1, pctTone]) => ({ k2, k1, tone: (base) => `color-mix(in srgb, var(--stance-neutral) ${pctTone}%, ${base})` }))
     function StanceMap ({ points, avg }) {
       return fit((holder, width) => {
         // On a phone the notes inside the plot (diagonal names, corners, averages) are left out: the sentence above the chart explains them.
@@ -137,31 +81,20 @@
         svg.append(h('text', { class: 'axis-title', x: pad.left + plotW / 2, y: height - 8, 'text-anchor': 'middle' }, t('mme.map.x')),
           h('text', { class: 'axis-title', transform: `translate(16 ${pad.top + plotH / 2}) rotate(-90)`, 'text-anchor': 'middle' }, t('mme.map.y')))
 
-        // The diagonals of the neutral share. Each is labelled on its own line, at its upper end, turned along the line.
+        // The neutral share is four shaded bands, cut by diagonals: critical + supportive = 100% − neutral. The more grey the band, the more neutral articles.
+        // The key of the bands is above the chart. Beyond the last diagonal no outlet can be, so the plot is empty there.
         const g = h('g', { 'clip-path': `url(#${clipId})` })
-        // The label sits 14 px up the line from its lower end (66 px, so the text stays inside the plot), on the side of the neutral corner where no dots are.
-        // The 20% line has its dots at the lower end, so its label is at the upper end.
-        const along = (x1, y1, x2, y2, label, side, fromTop) => {
-          const dx = sx(x2) - sx(x1); const dy = sy(y2) - sy(y1); const len = Math.hypot(dx, dy)
-          const ang = (Math.atan2(dy, dx) * 180) / Math.PI
-          const [ex, ey] = fromTop ? [sx(x1) + (dx / len) * 22, sy(y1) + (dy / len) * 22] : [sx(x2) - (dx / len) * 66, sy(y2) - (dy / len) * 66]
-          if (!narrow) g.append(h('text', { class: 'pt-label', style: 'fill:var(--text-secondary)', transform: `translate(${ex.toFixed(1)} ${ey.toFixed(1)}) rotate(${ang.toFixed(1)}) translate(0 ${side})`, 'text-anchor': fromTop ? 'start' : 'end' }, label))
-        }
-        ;[0.8, 0.6, 0.4, 0.2].forEach((u) => {
-          const k = 1 - u
-          g.append(h('line', { class: 'grid-line', x1: sx(k), y1: sy(0), x2: sx(0), y2: sy(k) }))
-          if (k <= xm) along(Math.max(0, k - ym), k - Math.max(0, k - ym), k, 0, t('mme.map.neutral', { v: pct0(u) }), 14, u === 0.2)
+        const corner = (x, y) => `${sx(x).toFixed(1)},${sy(y).toFixed(1)}`
+        BANDS.forEach(({ k2, k1, tone }, i) => {
+          g.append(h('path', { d: `M${[corner(k2, 0), corner(k1, 0), corner(0, k1), corner(0, k2)].join('L')}Z`, style: `fill:${tone('transparent')}` }))
+          if (i > 0) g.append(h('line', { class: 'grid-line', x1: sx(k2), y1: sy(0), x2: sx(0), y2: sy(k2) }))
         })
         g.append(h('line', { class: 'zero-line', x1: sx(1), y1: sy(0), x2: sx(0), y2: sy(1) }))
-        // Where the critical and the supportive articles are equal.
-        g.append(h('line', { class: 'zero-line', style: 'stroke-dasharray:2 3', x1: sx(0), y1: sy(0), x2: sx(ym), y2: sy(ym) }))
-        along(0, 0, ym, ym, t('mme.map.equal'), 14)
         svg.append(g)
 
-        // The three corners of the plot say what the position means.
+        // The two corners say what the position means.
         if (!narrow) svg.append(h('text', { class: 'axis-title zone', x: width - pad.right - 8, y: pad.top + plotH - 10, 'text-anchor': 'end' }, t('mme.map.zone.crit')),
-          h('text', { class: 'axis-title zone', x: pad.left + 8, y: pad.top + 16 }, t('mme.map.zone.supp')),
-          h('text', { class: 'axis-title zone', x: pad.left + 8, y: pad.top + plotH - 10 }, t('mme.map.zone.neutral')))
+          h('text', { class: 'axis-title zone', x: pad.left + 8, y: pad.top + 16 }, t('mme.map.zone.supp')))
 
         // All the articles: the average of the outlets pooled, with its own label.
         svg.append(h('line', { class: 'avg-line', x1: sx(avg.c), x2: sx(avg.c), y1: pad.top, y2: pad.top + plotH }),
@@ -202,6 +135,11 @@
       })
     }
 
+    // The key of the bands: from the least to the most neutral, each swatch the color of its band.
+    const bandKey = () => h('div', { class: 'mme-key-row', style: 'display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-1) var(--space-3)' },
+      h('span', { class: 'dcard-sub' }, t('mme.map.bandkey')),
+      h('ul', { class: 'legend' }, BANDS.map(({ k2, k1, tone }) => h('li', {}, h('span', { class: 'swatch', style: `background:${tone('var(--surface-raised)')};box-shadow:inset 0 0 0 1px var(--rule)` }), t('mme.map.band', { a: Math.round((1 - k1) * 100), b: Math.round((1 - k2) * 100) })))))
+
     function StanceMapCard (S) {
       const title = S.set.country === 'GR' ? t('mme.gov.title') : t('mme.gov.title.il')
       const all = S.active.filter((o) => o.stance && o.stance[0] + o.stance[1] + o.stance[2] > 0)
@@ -213,7 +151,7 @@
       const T = tot[0] + tot[1] + tot[2]
       return card('c-12', cardHead(title, null, t('mme.map.info')),
         points.length > 1
-          ? [h('p', { class: 'dcard-sub' }, t('mme.map.explain')), h('p', { class: 'dcard-sub' }, t('mme.map.sub', { n: fmt.int(points.length), total: fmt.int(all.length) })), StanceMap({ points, avg: { c: tot[0] / T, s: tot[2] / T } })]
+          ? [h('p', { class: 'dcard-sub' }, t('mme.map.explain')), h('p', { class: 'dcard-sub' }, t('mme.map.sub', { n: fmt.int(points.length), total: fmt.int(all.length) })), bandKey(), StanceMap({ points, avg: { c: tot[0] / T, s: tot[2] / T } })]
           : emptyText(t('media2.empty.list')))
     }
 
@@ -400,23 +338,6 @@
               analysed > 0 ? `${t('media2.chart.peak', { date: fmt.date(dates[peakDay]), n: fmt.int(totals[peakDay]) })} · ${t('media2.chart.hint')}` : null),
             analysed > 0 ? VolumeChart({ dates: dates.slice(i0, i1 + 1), news: news.slice(i0, i1 + 1), other: other.slice(i0, i1 + 1), onSelect: select, height: window.matchMedia('(min-width: 1280px)').matches ? 230 : 170 }) : emptyText(t('media2.chart.empty')))
 
-          // The scatter: news share and clickbait share of each outlet.
-          const cbOutlets = S.active.filter((o) => o.cbKnown >= 100)
-          const points = cbOutlets.map((o) => ({ name: o.name, x: o.news / o.n, y: o.cbYes / o.cbKnown, n: o.n, color: o.group ? colorOfGroup.get(o.group) || NO_GROUP : NO_GROUP }))
-          const newsAvg = S.active.reduce((s, o) => s + o.news, 0) / (analysed || 1)
-          const cbAvg = cbOutlets.reduce((s, o) => s + o.cbYes, 0) / (cbOutlets.reduce((s, o) => s + o.cbKnown, 0) || 1)
-          const scatterCard = card('',
-            cardHead(t('media2.scatter.title'), null, t('media2.scatter.sub', { n: fmt.int(points.length), total: fmt.int(S.active.length) })),
-            points.length > 1 ? Scatter({ points, avgX: newsAvg, avgY: cbAvg }) : emptyText(t('media2.empty.list')))
-
-          // The share of articles with no byline, for the 5 outlets that the API scores. The card says its own period.
-          // The info names the outlet with the most articles with no byline. The tick is the average of the 5 outlets.
-          const anon = bylines.kind === 'data' ? bylines.data.outlets.slice().sort((a, b) => b.anonPct - a.anonPct) : []
-          const anonAvg = anon.reduce((s, r) => s + r.anonPct, 0) / (anon.length || 1)
-          const bylineCard = anon.length ? card('', cardHead(t('originality.anon.title'), null, `${t('originality.anon.finding', { name: anon[0].name, v: fmt.pct(anon[0].anonPct / 100) })}. ${t('originality.anon.info')}`),
-            h('p', { class: 'dcard-sub' }, t('originality.meta', { n: bylines.data.outlets.length, from: fmt.date(bylines.data.window[0], { month: 'short', year: 'numeric' }), to: fmt.date(bylines.data.window[1], { month: 'short', year: 'numeric' }) })),
-            UI.BarList(anon.map((r) => ({ label: r.name, value: r.anonPct, text: fmt.pct(r.anonPct / 100) })), { max: 100, reference: { value: anonAvg, label: t('originality.anon.avg', { v: fmt.pct(anonAvg / 100) }) } })) : null
-
           // Row 1 on the right: the articles of each topic of the news in the period, one ring with a slice for each topic. The list of the topics scrolls inside the card.
           const topicCard = card('c-5', cardHead(t('media2.topics.title')),
             S.newsN > 0 ? TopicDonut({ S }) : emptyText(t('media2.chart.empty')))
@@ -428,13 +349,11 @@
           // The cards of the live page that the dashboard did not have.
           // The topic chips and «Ένα θέμα, όλα τα μέσα» are on Θέματα › Ένα θέμα. «Οι ιστορίες του διαστήματος» is on Ιστορίες › Ανά μέσο. «Τι ξεχωρίζει» is on Αρχική.
           // «Η ατζέντα κάθε μέσου» is on Θέματα › Ατζέντα μέσων. «Τα πρόσωπα» and «Πώς παρουσιάζει κάθε μέσο τα πρόσωπα» are on Πρόσωπα.
-          // Πώς γράφουν: the scatter and the bylines side by side, the stance of all the outlets under them as one map.
+          // Στάση: the stance of all the outlets to the government, as one map.
           const gov = StanceMapCard(S)
-          scatterCard.classList.add(bylineCard ? 'c-6' : 'c-12')
-          bylineCard?.classList.add('c-6')
 
           const cards = tab === 'writing'
-            ? [scatterCard, bylineCard, gov]
+            ? [gov]
             : [volume, topicCard, groupCard]
           content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...cards), Mme.MethodNote(S), protoNote())
         }

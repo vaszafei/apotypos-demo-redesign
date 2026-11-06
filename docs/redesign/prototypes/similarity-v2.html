@@ -8,19 +8,23 @@
   <link rel="stylesheet" href="assets/tokens.css?v=15">
   <link rel="stylesheet" href="assets/app.css?v=51">
   <link rel="stylesheet" href="assets/dash.css?v=103">
+  <link rel="stylesheet" href="assets/mme.css?v=54">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=43"></script>
+  <script src="assets/messages.js?v=44"></script>
   <script src="assets/messages-v2.js?v=58"></script>
   <script src="assets/messages-spread.js?v=27"></script>
+  <script src="assets/messages-mme.js?v=25"></script>
   <script src="assets/components.js?v=20"></script>
   <script src="assets/motion.js?v=4"></script>
   <script src="assets/dash.js?v=30"></script>
   <script src="assets/spread.js?v=6"></script>
+  <script src="assets/mme.js?v=23"></script>
   <script src="assets/shell.js?v=64"></script>
+  <script src="data/mme.js?v=20"></script>
   <script src="data/stories.js?v=2"></script>
   <script src="data/storyDetail.js?v=2"></script>
   <script src="data/originality.js?v=1"></script>
@@ -29,7 +33,8 @@
     // Media, Ομοιότητα και πρωτοτυπία: who writes the stories that other outlets also write. The matrix and the panel of an outlet use the rows of the stories.
     // Originality reads the API in its own period (Sep 2025 – Jan 2026), so it has its own section with its own period.
     const { t, fmt, h, load } = App
-    const { reset, NO_GROUP, card, cardHead, TopBar, select, seq } = Dash
+    const { fit, reset, pct0, NO_GROUP, card, cardHead, emptyText, TopBar, select, seq } = Dash
+    const mme = load('mme', ['sets'], (b) => Object.keys(b.sets))
     const list = load('stories', ['dates', 'stories'], (b) => b.stories)
     const detail = load('storyDetail', ['outlets', 'stories'], (b) => b.stories)
     const orig = load('originality', ['window', 'outlets'], (b) => b.outlets)
@@ -41,6 +46,60 @@
     // A pair with fewer shared stories is noise: two small outlets can share one story and reach 100 percent.
     const MIN_SHARED = 10
     const PANEL_ROWS = 8
+
+    // Scatter: news share on x, clickbait share on y, the size of a dot is the number of articles, the color is the group.
+    function Scatter ({ points, avgX, avgY }) {
+      return fit((holder, width) => {
+        const height = Math.max(240, Math.min(300, Math.round(width * 0.42)))
+        const pad = { top: 12, right: 14, bottom: 40, left: 44 }
+        const plotW = width - pad.left - pad.right
+        const plotH = height - pad.top - pad.bottom
+        const xs = points.map((p) => p.x)
+        const x0 = Math.max(0, Math.floor((Math.min(...xs) - 0.03) * 20) / 20)
+        const x1 = Math.min(1, Math.ceil((Math.max(...xs) + 0.03) * 20) / 20)
+        const yMax = Math.ceil((Math.max(...points.map((p) => p.y)) + 0.02) * 20) / 20
+        const sx = (v) => pad.left + ((v - x0) / (x1 - x0)) * plotW
+        const sy = (v) => pad.top + plotH - (v / yMax) * plotH
+        const maxN = Math.max(...points.map((p) => p.n))
+        const radius = (n) => 5 + 9 * Math.sqrt(n / maxN)
+        const text = (p) => t('media2.scatter.point', { name: p.name, news: fmt.pct(p.x), cb: fmt.pct(p.y), n: fmt.int(p.n) })
+        const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
+        for (let k = 0; k <= 4; k++) {
+          const v = (yMax * k) / 4
+          svg.append(h('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: sy(v), y2: sy(v) }), h('text', { x: pad.left - 6, y: sy(v) + 4, 'text-anchor': 'end' }, pct0(v)))
+          const xv = x0 + ((x1 - x0) * k) / 4
+          svg.append(h('text', { x: sx(xv), y: height - 22, 'text-anchor': 'middle' }, pct0(xv)))
+        }
+        svg.append(h('text', { class: 'axis-title', x: pad.left + plotW / 2, y: height - 4, 'text-anchor': 'middle' }, `${t('media2.scatter.x')} →  ·  ${t('media2.scatter.y')} ↑`),
+          h('line', { class: 'avg-line', x1: sx(avgX), x2: sx(avgX), y1: pad.top, y2: pad.top + plotH }),
+          h('line', { class: 'avg-line', x1: pad.left, x2: width - pad.right, y1: sy(avgY), y2: sy(avgY) }))
+        points.slice().sort((a, b) => b.n - a.n).forEach((p) => {
+          const c = h('circle', { class: 'pt', cx: sx(p.x), cy: sy(p.y), r: radius(p.n), fill: p.color })
+          const show = (e) => UI.showTooltip(text(p), e.clientX, e.clientY)
+          c.addEventListener('pointerenter', show)
+          c.addEventListener('pointermove', show)
+          c.addEventListener('pointerleave', () => UI.hideTooltip())
+          svg.append(c)
+        })
+        // Direct labels for the outliers: the highest and the lowest value on each axis, and the 3 largest outlets.
+        const bySize = points.slice().sort((a, b) => b.n - a.n).slice(0, 3)
+        const outliers = [points.reduce((a, b) => (b.y > a.y ? b : a)), points.reduce((a, b) => (b.y < a.y ? b : a)), points.reduce((a, b) => (b.x > a.x ? b : a)), points.reduce((a, b) => (b.x < a.x ? b : a)), ...bySize]
+        // A label that would overlap a label already placed is left out. The tooltip still names the dot.
+        const placed = []
+        new Set(outliers).forEach((p) => {
+          const toLeft = sx(p.x) > width - 120
+          const w = p.name.length * 6.5
+          const x = sx(p.x) + (toLeft ? -1 : 1) * (radius(p.n) + 4)
+          const box = { x0: toLeft ? x - w : x, x1: toLeft ? x : x + w, y: sy(p.y) }
+          if (placed.some((b) => Math.abs(b.y - box.y) < 14 && b.x0 < box.x1 && box.x0 < b.x1)) return
+          placed.push(box)
+          svg.append(h('text', { class: 'pt-label', x, y: box.y + 4, 'text-anchor': toLeft ? 'end' : 'start' }, p.name))
+        })
+        const table = h('div', { class: 'visually-hidden' }, h('table', {}, h('caption', {}, t('media2.scatter.title')),
+          h('tbody', {}, points.map((p) => h('tr', {}, h('th', { scope: 'row' }, p.name), h('td', {}, text(p)))))))
+        holder.replaceChildren(svg, table)
+      })
+    }
 
     // The lag is in minutes. Less than 1 day shows in hours, the rest in days.
     const lagText = (min) => (min < 1440 ? t('originality.lag.h', { n: fmt.dec(min / 60) }) : t('originality.lag.d', { n: fmt.dec(min / 1440) }))
@@ -55,7 +114,7 @@
         content.classList.add('dash', 'minimal')
         reset()
         const title = t('nav.media')
-        const problem = Dash.stateContent([list, detail, orig], { title, tabs, quiet: true })
+        const problem = Dash.stateContent([list, detail, orig, mme], { title, tabs, quiet: true })
         if (problem) { content.replaceChildren(...problem.filter(Boolean), protoNote()); return }
         const dd = detail.data
         const outletName = (i) => dd.outlets[i].name
@@ -197,6 +256,26 @@
         const lagCard = card('c-4', cardHead(t('originality.lag.title'), null, `${t('originality.lag.finding', { name: fastest.name, lag: lagText(fastest.lagMin) })}. ${t('originality.lag.info')}`),
           UI.BarList(by('lagMin').map((r) => ({ label: r.name, value: r.lagMin, text: lagText(r.lagMin) })), { max: maxLag, reference: { value: avgLag, label: t('originality.lag.avg', { lag: lagText(avgLag) }) } }))
 
+
+        // News and clickbait of each outlet, for the whole period of the Μέσα data (this page has no period picker).
+        const mset = mme.data.sets.gr
+        const S = Mme.summary(mset, 0, mset.dates.length - 1)
+        const cbOutlets = S.active.filter((o) => o.cbKnown >= 100)
+        const points = cbOutlets.map((o) => ({ name: o.name, x: o.news / o.n, y: o.cbYes / o.cbKnown, n: o.n, color: o.group ? colorOfGroup.get(o.group) || NO_GROUP : NO_GROUP }))
+        const newsAvg = S.active.reduce((sum, o) => sum + o.news, 0) / (S.total || 1)
+        const cbAvg = cbOutlets.reduce((sum, o) => sum + o.cbYes, 0) / (cbOutlets.reduce((sum, o) => sum + o.cbKnown, 0) || 1)
+        const scatterCard = card('c-6',
+          cardHead(t('media2.scatter.title'), null, t('media2.scatter.sub', { n: fmt.int(points.length), total: fmt.int(S.active.length) })),
+          h('p', { class: 'dcard-sub' }, t('media2.scatter.period', { from: fmt.date(mset.dates[0]), to: fmt.date(mset.dates[mset.dates.length - 1]) })),
+          points.length > 1 ? Scatter({ points, avgX: newsAvg, avgY: cbAvg }) : emptyText(t('media2.empty.list')))
+
+        // The share of articles with no byline, for the 5 outlets that the API scores, in the period of the originality data. The tick is the average of the 5 outlets.
+        const anon = rows.slice().sort((a, b) => b.anonPct - a.anonPct)
+        const anonAvg = anon.reduce((sum, r) => sum + r.anonPct, 0) / (anon.length || 1)
+        const bylineCard = card('c-6', cardHead(t('originality.anon.title'), null, `${t('originality.anon.finding', { name: anon[0].name, v: fmt.pct(anon[0].anonPct / 100) })}. ${t('originality.anon.info')}`),
+          h('p', { class: 'dcard-sub' }, period),
+          UI.BarList(anon.map((r) => ({ label: r.name, value: r.anonPct, text: fmt.pct(r.anonPct / 100) })), { max: 100, reference: { value: anonAvg, label: t('originality.anon.avg', { v: fmt.pct(anonAvg / 100) }) } }))
+
         // The table of all pairs is the table view of the matrix. It stays closed until the reader opens it.
         const pairRows = all.slice().sort((a, b) => b.score - a.score || b.shared - a.shared)
         const topScore = pairRows.reduce((m, p) => Math.max(m, p.score), 0.0001)
@@ -220,6 +299,8 @@
           h('div', { class: 'card-col c-4' }, panelHolder, sameCard),
           card('c-8', cardHead(t('originality.title'), origKey, t('originality.info')), h('p', { class: 'dcard-sub' }, period), origTable),
           lagCard,
+          scatterCard,
+          bylineCard,
           soloCard,
           pairsCard), protoNote())
       }

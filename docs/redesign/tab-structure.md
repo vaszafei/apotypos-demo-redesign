@@ -9,9 +9,9 @@ Each tab answers one question. Heights are the page height at 1440 × 900 px on 
 | Μέσα | Επισκόπηση (`/media`, `media-v2.html`), 3063 px, 9 cards | Μέσα · Αναλυμένα άρθρα · Ιστορίες · Πολιτικά πρόσωπα (4 stat cards) | How many outlets, articles, stories and people are in the period? | keep |
 | | | Όλα τα μέσα | Which outlets write the most, and how? | keep |
 | | | Άρθρα ανά ημέρα | How many articles a day? (also picks the period) | keep |
-| | | Ειδήσεις και clickbait ανά μέσο | How much news and clickbait does each outlet write? | move to Μέσα › Πώς γράφουν |
-| | | Άρθρα χωρίς υπογραφή | Which outlets publish without a byline? | move to Μέσα › Πώς γράφουν |
-| | | Πώς γράφουν για την κυβέρνηση | How critical of the government is each outlet? | move to Μέσα › Πώς γράφουν |
+| | | Ειδήσεις και clickbait ανά μέσο | How much news and clickbait does each outlet write? | moved to Μέσα › Ομοιότητα και πρωτοτυπία (2026-11-06) |
+| | | Άρθρα χωρίς υπογραφή | Which outlets publish without a byline? | moved to Μέσα › Ομοιότητα και πρωτοτυπία (2026-11-06) |
+| | | Πώς γράφουν για την κυβέρνηση | How critical of the government is each outlet? | moved to Μέσα › Στάση (was Πώς γράφουν) |
 | | Θέματα (`/trends`, `topics-v2.html`), 4113 px, 6 cards | Όλα τα θέματα | Which topics get the most articles? | keep (Θέματα › Επισκόπηση) |
 | | | Τα μεγαλύτερα θέματα στον χρόνο | How do the largest topics move over time? | keep in Θέματα › Επισκόπηση (#68) |
 | | | Θέματα σε άνοδο και πτώση | Which topics rise and which fall? | keep in Θέματα › Επισκόπηση (#68) |
@@ -65,7 +65,7 @@ Each tab answers one question. Heights are the page height at 1440 × 900 px on 
 | Section | Tab (route) | Question (listed in `pages.html`) | Cards |
 |---|---|---|---|
 | Μέσα | Επισκόπηση (`/media`) | Ποια μέσα γράφουν τα περισσότερα; | 4 stat cards, Όλα τα μέσα, Άρθρα ανά ημέρα |
-| | Πώς γράφουν (`/media/writing`, new) | Πώς γράφει κάθε μέσο: ειδήσεις, clickbait, υπογραφές, στάση; | Ειδήσεις και clickbait ανά μέσο, Άρθρα χωρίς υπογραφή, Πώς γράφουν για την κυβέρνηση |
+| | Στάση (was Πώς γράφουν; `/media/writing`, new) | Πόσο επικριτικά ή υποστηρικτικά γράφει κάθε μέσο για την κυβέρνηση; | Πώς γράφουν για την κυβέρνηση (a map: critical × supportive, bands of the neutral share). Ειδήσεις και clickbait ανά μέσο and Άρθρα χωρίς υπογραφή moved to Ομοιότητα και πρωτοτυπία on 2026-11-06 |
 | | Θέματα › Επισκόπηση (`/trends`; the old `/trends/time` and `?tab=time` open it, #68) | Ποια θέματα γράφονται περισσότερο, και ποια ανεβαίνουν ή πέφτουν; | Όλα τα θέματα, Τάσεις, Θέματα σε άνοδο και πτώση |
 | | Θέματα › Ένα θέμα (`/trends/topic`, new) | Πώς καλύπτει κάθε μέσο ένα θέμα; | Θέματα (chips), Ένα θέμα, όλα τα μέσα |
 | | Θέματα › Ατζέντα μέσων (`/trends/agenda`, new) | Για ποια θέματα γράφει κάθε μέσο; | Η ατζέντα κάθε μέσου |
@@ -124,6 +124,6 @@ Page height at 1440 × 900 px after the change, with the site footer (1800 px = 
 
 ## 6. Limits
 
-- «Πώς γράφουν για την κυβέρνηση» is 1894 px on its own (one row for each of the 36 outlets), so Μέσα › Πώς γράφουν is 2.5 screens whatever else it holds. Making the card shorter is restyling, which is #60.
+- «Πώς γράφουν για την κυβέρνηση» was 1894 px on its own (one row for each of the 36 outlets). Since 2026-11-06 it is a map of about 610 px on Μέσα › Στάση; the heights in the table above are from before that change.
 - Μετατοπίσεις kept its cards (1768 → 1809 px); the sub-tab row of Θέματα adds the extra height.
 - The question of each tab is not shown on the tab page (decision after review); it stays in the list of tabs in `pages.html`.
