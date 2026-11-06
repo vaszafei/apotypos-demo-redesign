@@ -9,7 +9,7 @@ Branch `claude/hero-stories`, PR #119. The faint area of articles per day (`Wave
 - The pointer parts the loose dots and wakes them near it. A web it reaches lights up, with the webs and arcs of the same thema; the shared tooltip names the story, its thema and its articles that day. Nothing is a link, and outlets are not shown.
 - The days are 6 (then the latest again). A line is as strong as its web is settled, and a line stretched beyond 2.5 times its length is not drawn, so a web that gathers does not throw lines across the hero.
 - The tooltip of the field is translucent (the card color at 74%, blurred), with a class `is-field` that only the field adds and removes, so the tooltip of the charts stays as decided.
-- Reduced motion: one static settled frame (zoom works, without the animation). The loop pauses when the tab is hidden or the hero is off screen. `Wave` stays as the fallback when the story data does not load.
+- Reduced motion: one static settled frame. The loop pauses when the tab is hidden or the hero is off screen. `Wave` stays as the fallback when the story data does not load.
 
 ## Data finding
 `home.issueDaily` has themata only until 2026-09-30; from 2026-10-01 the data is volume only (`volumeFrom`), and every story of those days has the topic «Άλλα». The home already shows "no topics" for those days. So the field uses the latest days that have themata (25 to 30 September in this fixture), and the tooltip names the date. With complete data this becomes the latest days by itself. If no day of the period has themata, it shows the latest days in the ink color.
