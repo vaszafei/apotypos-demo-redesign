@@ -37,6 +37,6 @@ Left: «Μέσα κατά πρωτοτυπία» (table without the chips), the 
 ## Left over / to decide
 
 - The tab is still named «Ομοιότητα και πρωτοτυπία» but has no similarity card now. `question.media.similarity` was rewritten to the three cards. The name was not changed.
-- Unused now: `Spread.matrix`, `Spread.Ring`, the keys `sim.mx.*`, `sim.same.row|total|aria`, `sim.table.*`, `stories.solo.*` is still used by the stories page. Not deleted (see `verify-dead-exports-before-deleting.md`).
+- Unused now: `Spread.matrix`, `Spread.Ring`, the keys `sim.mx.*`, `sim.same.row|total|aria`, `sim.table.*`, `stories.solo.*` (no page uses these keys now; I checked only the .html pages and assets/*.js). Not deleted (see `verify-dead-exports-before-deleting.md`).
 - The clickbait card is c-6 and alone in its row; it was not stretched.
 - `/ce-code-review` and `/ce-compound` were not run.
