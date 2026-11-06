@@ -8,7 +8,9 @@ Branch `claude/hero-stories`, PR #119. The faint area of articles per day (`Wave
 - Nothing snaps when the day changes (every 20 s, was 12). There are always the same 9 webs (4 on a phone); each keeps its place, shape and dots from day to day and takes the story of its rank. The dots of a web fade in or out one by one after their own delay of up to 5 s, its color blends into the new thema over 2.5 s, and the arcs of the themata fade in and out. A line is as strong as the weaker of its two dots.
 - The pointer parts the loose dots and wakes them near it. A web it reaches lights up, with the webs and arcs of the same thema; the shared tooltip names the story, its thema and its articles that day. Nothing is a link, and outlets are not shown.
 - The days are 6 (then the latest again). A line is as strong as its web is settled, and a line stretched beyond 2.5 times its length is not drawn, so a web that gathers does not throw lines across the hero.
-- Reduced motion: one static settled frame. The loop pauses when the tab is hidden or the hero is off screen. `Wave` stays as the fallback when the story data does not load.
+- Click a web to zoom in on it: the other webs and the arcs fade, the hero text gives way to a caption (story, thema, articles, date, "each dot is about k articles" with k = articles / dots of that web, and how to go back), and the web grows to the middle of the hero (up to 8 times), with lighter lines and dots so it is not heavy. The pointer moves its dots. A click outside the web, or Esc, zooms out; a click on the web does nothing. The day cycle waits while zoomed. Scrolling the hero away zooms out. The dots are anonymous: the data has no article titles, so there is nothing to read per dot.
+- The tooltip of the field is translucent (the card color at 74%, blurred), with a class `is-field` that only the field adds and removes, so the tooltip of the charts stays as decided.
+- Reduced motion: one static settled frame (zoom works, without the animation). The loop pauses when the tab is hidden or the hero is off screen. `Wave` stays as the fallback when the story data does not load.
 
 ## Data finding
 `home.issueDaily` has themata only until 2026-09-30; from 2026-10-01 the data is volume only (`volumeFrom`), and every story of those days has the topic «Άλλα». The home already shows "no topics" for those days. So the field uses the latest days that have themata (25 to 30 September in this fixture), and the tooltip names the date. With complete data this becomes the latest days by itself. If no day of the period has themata, it shows the latest days in the ink color.
@@ -26,5 +28,8 @@ Version 1 had two variants (stories; rings of outlets with threads) and a click 
 ## Version 5
 The user said the movement is too quick and the repositioning should be more entropic. Version 5 keeps the webs and the arcs and changes how they move, as described above. Checked with screenshots at 1.5, 4, 8, 10, 21.5, 24 and 28 s, hover, reduced motion and a phone: no console errors, check.mjs passes. The speed is judged from still frames only; it needs a look in a live browser.
 
+## Version 6
+The tooltip and the zoom above. Checked in Chrome: zoom in on click, a click on the web keeps the zoom, a click outside and Esc zoom out, reduced motion zoom in and out, the hero text hidden while zoomed and back after, the tooltip in light and night, no console errors, check.mjs passes.
+
 ## Not checked
-Touch devices (hover is off there on purpose), Safari, the English text on screen, the pointer effect by eye in a live browser, a phone screenshot of version 3. In the night theme the colored clusters at rest are dim (alpha 0.5 on a dark page). `/ce-code-review` and `/ce-compound` were not run.
+Touch devices (hover is off there on purpose; on a phone the webs are not clickable), Safari, the English text on screen, the pointer effect by eye in a live browser, a phone screenshot of version 3. In the night theme the colored clusters at rest are dim (alpha 0.5 on a dark page). `/ce-code-review` and `/ce-compound` were not run.
