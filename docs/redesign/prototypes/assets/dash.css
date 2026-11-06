@@ -503,12 +503,6 @@
 .flow-story.has-hl .flow-box:not(.is-hl), .flow-story.has-hl .flow-label:not(.is-hl) { opacity: 0.45; }
 @media (max-width: 639px) { .flow-story.is-narrow .flow-box .flow-n { display: none; } .flow-outlet { font-size: var(--text-caption); } .flow-group .flow-name { white-space: normal; overflow-wrap: anywhere; line-height: 1.15; } }
 
-/* Dash.LinesChart: the tint of a period inside the whole window, and the list of the names under the chart (names: 'key'). */
+/* Dash.LinesChart: the tint of a period inside the window, and the leader of a name that moved away from its line. */
 .chart .line-band { fill: var(--accent); fill-opacity: 0.1; pointer-events: none; }
-.lines-key { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px var(--space-4); margin: var(--space-2) 0 0; padding: 0; list-style: none; font-size: var(--text-caption); }
-.lines-key-item { display: flex; align-items: center; gap: var(--space-2); min-width: 0; min-height: 24px; }
-.lines-key-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lines-key-name a { color: inherit; text-decoration: none; }
-.lines-key-name a:hover { text-decoration: underline; }
-.lines-key-n { flex: none; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-@media (max-width: 639px) { .lines-key { grid-template-columns: minmax(0, 1fr); } }
+.chart .line-leader { stroke-width: 1; stroke-opacity: 0.6; pointer-events: none; }

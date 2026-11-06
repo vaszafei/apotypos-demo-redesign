@@ -6,8 +6,8 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=15">
-  <link rel="stylesheet" href="assets/app.css?v=50">
-  <link rel="stylesheet" href="assets/dash.css?v=100">
+  <link rel="stylesheet" href="assets/app.css?v=51">
+  <link rel="stylesheet" href="assets/dash.css?v=101">
   <link rel="stylesheet" href="assets/mme.css?v=54">
   <link rel="stylesheet" href="assets/date-range.css?v=11">
   <script src="assets/page-move.js?v=1"></script>
@@ -19,8 +19,8 @@
   <script src="assets/messages-v2.js?v=58"></script>
   <script src="assets/messages-mme.js?v=21"></script>
   <script src="assets/components.js?v=20"></script>
-  <script src="assets/motion.js?v=3"></script>
-  <script src="assets/dash.js?v=28"></script>
+  <script src="assets/motion.js?v=4"></script>
+  <script src="assets/dash.js?v=29"></script>
   <script src="assets/date-range.js?v=3"></script>
   <script src="assets/mme.js?v=23"></script>
   <script src="assets/shell.js?v=64"></script>
@@ -38,6 +38,7 @@
     // The chosen period.  lastValid keeps the last complete period while the picker holds a half-chosen one.
     const view = { from: null, to: null }
     let lastValid = null
+    let drawn = false
 
     const sumRange = (arr, i0, i1) => { let s = 0; for (let i = i0; i <= i1; i++) s += arr[i]; return s }
     const ROLL = 7
@@ -181,6 +182,9 @@
           const rightColumn = h('div', { class: 'card-col c-9' }, timeCard, h('div', { class: 'dash-grid' }, h('div', { class: 'card-col c-6' }, moversCard), h('div', { class: 'card-col c-6' }, shiftsCard)))
           const cards = [h('div', { class: 'card-col c-3' }, allCard), rightColumn]
           content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...cards), protoNote())
+          // The first view of the page is played by motion.js; a new period draws the lines in again.
+          if (drawn) Motion.replay(timeCard)
+          drawn = true
         }
         draw()
       }
