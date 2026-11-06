@@ -1,5 +1,12 @@
 // Messages of the pages of Διάδοση ειδήσεων (News spread): the Story page now, the other tabs later. They add to window.MESSAGES.
 Object.assign(window.MESSAGES.el, {
+  'stories.period.info': 'Όλες οι ιστορίες της περιόδου που διαλέξατε στο ημερολόγιο της κορυφής, με πρώτες αυτές που έχουν τα περισσότερα άρθρα· η λίστα κυλάει. Διαλέξτε μια ιστορία για να τη δείτε στο διάγραμμα· το κουμπί δίπλα της ανοίγει τη σελίδα της. Οι ιστορίες γενικών θεμάτων, όπως «Άλλα διεθνή», δεν μετρούν.',
+  'stories.flow.title': 'Ιστορίες και μέσα',
+  'stories.flow.info': 'Οι ιστορίες με τα περισσότερα άρθρα στην περίοδο: από την ιστορία στα μέσα που την έγραψαν. Το πλάτος της κορδέλας είναι τα άρθρα. Περάστε το ποντίκι πάνω από μια ιστορία ή ένα μέσο για να δείτε μόνο τις κορδέλες του. Η ιστορία που διαλέξατε στη λίστα έχει περίγραμμα· αν δεν είναι από τις πρώτες, προστίθεται στο διάγραμμα.',
+  'stories.flow.story': 'Ιστορία',
+  'stories.flow.outlet': 'Μέσο',
+  'stories.flow.rest': 'Άλλα μέσα ({n})',
+  'stories.period.empty': 'Δεν υπάρχουν ιστορίες για αυτή την περίοδο.',
   'story.how.more': 'Περισσότερο από το συνηθισμένο',
   'story.how.less': 'Λιγότερο από το συνηθισμένο',
   'story.how.tip': '{label}: {value} στην ιστορία, {usual} στο σύνολο ({diff})',
@@ -75,6 +82,13 @@ Object.assign(window.MESSAGES.el, {
   'story.related.row': '{n} άρθρα'
 })
 Object.assign(window.MESSAGES.en, {
+  'stories.period.info': 'Every story that ran in the period you picked in the calendar at the top, the ones with the most articles first; the list scrolls. Pick a story to see it in the chart; the button next to it opens its page. Stories of general topics, such as “Other world news”, do not count.',
+  'stories.flow.title': 'Stories and outlets',
+  'stories.flow.info': 'The stories with the most articles in the period: from each story to the outlets that ran it. The width of a band is the articles. Move the mouse over a story or an outlet to see only its bands. The story you picked in the list has an outline; if it is not one of the first, it is added to the chart.',
+  'stories.flow.story': 'Story',
+  'stories.flow.outlet': 'Outlet',
+  'stories.flow.rest': 'Other outlets ({n})',
+  'stories.period.empty': 'There are no stories in this period.',
   'story.how.more': 'More than usual',
   'story.how.less': 'Less than usual',
   'story.how.tip': '{label}: {value} in the story, {usual} overall ({diff})',
@@ -167,7 +181,6 @@ Object.assign(window.MESSAGES.el, {
   'echoes.reach.n': '{n} ή περισσότεροι',
   'echoes.col.reach': 'Όμιλοι',
   'echoes.col.peak': 'Ημέρα αιχμής',
-  'echoes.reach.aria': '{n} από {total} ομίλους',
   'echoes.daily.title': 'Ιστορίες με ηχώ ανά ημέρα',
   'echoes.daily.info': 'Πόσες ιστορίες έγραψαν την ίδια ημέρα 2 ή περισσότεροι όμιλοι.',
   'echoes.daily.tip': '{date} · {n} ιστορίες',
@@ -214,36 +227,6 @@ Object.assign(window.MESSAGES.el, {
   'originality.anon.finding': 'Το {name} δεν υπογράφει το {v} των άρθρων του',
   'originality.anon.avg': 'Μέσος όρος {v}',
   'originality.anon.info': 'Το μερίδιο των άρθρων του μέσου που δεν έχουν υπογραφή.',
-  'camp.meta': '{from} – {to} · δεδομένα έως {date}',
-  'camp.political.title': 'Πολιτικές μεταβολές κάλυψης',
-  'camp.political.info': 'Εβδομάδες όπου η κάλυψη ενός προσώπου ξεπερνά τη συνηθισμένη της, με μονόπλευρη στάση και λεξιλόγιο επίθεσης ή αποθέωσης. Το σκορ είναι από 0 έως 100. Είναι σημάδι για έλεγχο, όχι απόδειξη.',
-  'camp.sustained.title': 'Διαρκείς προωθήσεις',
-  'camp.sustained.info': 'Θεματικές που μένουν σταθερά φορτωμένες με λεξιλόγιο παροχών ή ρυθμίσεων, χωρίς εκρήξεις.',
-  'camp.bursts.title': 'Εκρήξεις θεμάτων',
-  'camp.bursts.info': 'Εβδομάδες όπου μια θεματική ξεπερνά τη φυσιολογική της ροή σε πολλούς ομίλους ταυτόχρονα.',
-  'camp.dissem.title': 'Ταχεία αναδημοσίευση από πολλά μέσα',
-  'camp.dissem.info': 'Σχεδόν πανομοιότυπες ιστορίες που εμφανίζονται σε μέσα πολλών ομίλων μέσα σε λίγες ώρες, συνήθως χωρίς υπογραφή.',
-  'camp.empty': 'Καμία στο διάστημα.',
-  'camp.others.title': 'Άλλα μοτίβα',
-  'camp.others.info': 'Οι τρεις άλλες λίστες του ανιχνευτή και τα ευρήματά τους στο διάστημα. Το i κάθε γραμμής λέει τι εντοπίζει η λίστα.',
-  'camp.col.pattern': 'Μοτίβο',
-  'camp.col.found': 'Ευρήματα',
-  'camp.kind.ΑΜΦΙΣΗΜΟ': 'Αμφίσημο',
-  'camp.kind.ΕΠΙΘΕΣΗ': 'Επίθεση',
-  'camp.kind.ΑΠΟΘΕΩΣΗ': 'Αποθέωση',
-  'camp.score': 'Σκορ {n}',
-  'camp.row.week': 'Εβδομάδα {date}',
-  'camp.row.mentions': '{n} άρθρα · ×{burst}',
-  'camp.row.groups': '{n} όμιλοι',
-  'camp.row.anon': '{n}% χωρίς υπογραφή',
-  'camp.row.first': 'Πρώτο: {source}, {date}',
-  'camp.detail.stance': 'Στάση {tone} ({n} βαθμολογημένα)',
-  'camp.detail.none': 'χωρίς τιμή',
-  'camp.detail.attack': 'Λεξιλόγιο επίθεσης {n}%',
-  'camp.detail.halo': 'Λεξιλόγιο αποθέωσης {n}%',
-  'camp.detail.samples': 'Τίτλοι άρθρων',
-  'camp.detail.nosamples': 'Δεν υπάρχουν τίτλοι για αυτή την εβδομάδα.',
-  'camp.market': 'Μέσος όρος αγοράς: {n}% χωρίς υπογραφή.'
 })
 Object.assign(window.MESSAGES.en, {
   'spread.sort': 'Sort',
@@ -261,7 +244,6 @@ Object.assign(window.MESSAGES.en, {
   'echoes.reach.n': '{n} or more',
   'echoes.col.reach': 'Groups',
   'echoes.col.peak': 'Peak day',
-  'echoes.reach.aria': '{n} of {total} groups',
   'echoes.daily.title': 'Echo stories per day',
   'echoes.daily.info': 'How many stories 2 or more groups wrote on the same day.',
   'echoes.daily.tip': '{date} · {n} stories',
@@ -308,41 +290,10 @@ Object.assign(window.MESSAGES.en, {
   'originality.anon.finding': '{name} leaves {v} of its articles unsigned',
   'originality.anon.avg': 'Average {v}',
   'originality.anon.info': 'The share of the articles of the outlet that have no byline.',
-  'camp.meta': '{from} – {to} · data to {date}',
-  'camp.political.title': 'Political shifts in coverage',
-  'camp.political.info': 'Weeks when the coverage of a person goes above its usual level, with a one-sided stance and words of attack or praise. The score is from 0 to 100. It is a sign to check, not a proof.',
-  'camp.sustained.title': 'Sustained pushes',
-  'camp.sustained.info': 'Themes that stay loaded with words of benefits or regulations, with no bursts.',
-  'camp.bursts.title': 'Topic bursts',
-  'camp.bursts.info': 'Weeks when a theme goes above its normal flow in many groups at the same time.',
-  'camp.dissem.title': 'Fast reprints in many outlets',
-  'camp.dissem.info': 'Almost identical stories that appear in outlets of many groups within a few hours, usually with no byline.',
-  'camp.empty': 'None in the period.',
-  'camp.others.title': 'Other patterns',
-  'camp.others.info': 'The three other lists of the detector and what they found in the period. The i of each row says what the list finds.',
-  'camp.col.pattern': 'Pattern',
-  'camp.col.found': 'Found',
-  'camp.kind.ΑΜΦΙΣΗΜΟ': 'Ambiguous',
-  'camp.kind.ΕΠΙΘΕΣΗ': 'Attack',
-  'camp.kind.ΑΠΟΘΕΩΣΗ': 'Praise',
-  'camp.score': 'Score {n}',
-  'camp.row.week': 'Week of {date}',
-  'camp.row.mentions': '{n} articles · ×{burst}',
-  'camp.row.groups': '{n} groups',
-  'camp.row.anon': '{n}% with no byline',
-  'camp.row.first': 'First: {source}, {date}',
-  'camp.detail.stance': 'Stance {tone} ({n} rated)',
-  'camp.detail.none': 'no value',
-  'camp.detail.attack': 'Attack words {n}%',
-  'camp.detail.halo': 'Praise words {n}%',
-  'camp.detail.samples': 'Article headlines',
-  'camp.detail.nosamples': 'No headlines for this week.',
-  'camp.market': 'Market average: {n}% with no byline.'
 })
 
 // Second pass of the tabs: the title card of Ιστορίες, the rings, and the difference bars of Ομοιότητα and Πρωτοτυπία. These keys replace the older keys of the same name.
 Object.assign(window.MESSAGES.el, {
-  'stories.col.period': 'Περίοδος',
   'echoes.first.total': 'ιστορίες',
   'echoes.first.tip': '{name}: πρώτος σε {n} ιστορίες, {share}',
   'echoes.first.aria': 'Σε πόσες ιστορίες με ηχώ έγραψε πρώτος κάθε όμιλος',
@@ -363,7 +314,6 @@ Object.assign(window.MESSAGES.el, {
   'originality.reason.mid': 'Χωρίς ακραία τιμή'
 })
 Object.assign(window.MESSAGES.en, {
-  'stories.col.period': 'Period',
   'echoes.first.total': 'stories',
   'echoes.first.tip': '{name}: first in {n} stories, {share}',
   'echoes.first.aria': 'In how many echo stories each group wrote first',
@@ -424,36 +374,16 @@ Object.assign(window.MESSAGES.en, {
   'originality.key.avg': 'Average {pct}'
 })
 
-// The page Ιστορίες: the chart of days, the spread types and the table. The card of who starts alone is on Ομοιότητα και πρωτοτυπία.
+// The card of who starts alone is on Ομοιότητα και πρωτοτυπία.
 Object.assign(window.MESSAGES.el, {
-  'stories.daily.title': 'Νέες ιστορίες ανά ημέρα',
-  'stories.daily.info': 'Κάθε στήλη είναι μία ημέρα και δείχνει τις ιστορίες που ξεκίνησαν εκείνη την ημέρα. Ταυτόχρονη: την πρώτη ημέρα έγραψαν 2 ή περισσότεροι όμιλοι. Με ακολουθία: την πρώτη ημέρα έγραψε ένας όμιλος και οι άλλοι ακολούθησαν αργότερα. Ένας όμιλος: μόνο ένας όμιλος έγραψε την ιστορία. Χωρίς όμιλο: κανένα μέσο με όμιλο στα δεδομένα.',
-  'stories.daily.tip': '{date} · {n} νέες ιστορίες',
-  'stories.daily.aria': 'Νέες ιστορίες ανά ημέρα και τρόπο έναρξης',
-  'stories.type.together': 'Ταυτόχρονη',
-  'stories.type.follow': 'Με ακολουθία',
-  'stories.type.single': 'Ένας όμιλος',
-  'stories.type.none': 'Χωρίς όμιλο',
   'stories.solo.title': 'Ξεκινά μόνος: ποιος όμιλος γράφει πρώτος',
   'stories.solo.info': 'Από τις ιστορίες που έγραψε ο όμιλος μαζί με άλλους ομίλους, το μερίδιο στο οποίο ο όμιλος έγραψε πρώτος και μόνος, ενώ οι άλλοι ακολούθησαν αργότερα. Είναι ποσοστό των δικών του ιστοριών, ώστε οι μεγάλοι όμιλοι να μη φαίνονται πάντα πρώτοι.',
   'stories.solo.row': '{share} · {n}',
   'stories.solo.tip': '{name}: ξεκίνησε μόνος {started} από {wrote} ιστορίες',
-  'stories.col.groups': 'Όμιλοι την ίδια ημέρα',
-  'stories.count': '{n} ιστορίες',
 })
 Object.assign(window.MESSAGES.en, {
-  'stories.daily.title': 'New stories per day',
-  'stories.daily.info': 'Each column is one day and shows the stories that started on that day. Together: 2 or more groups wrote on the first day. Followed: one group wrote on the first day and the others followed later. One group: only one group wrote the story. No group: no outlet with a group in the data.',
-  'stories.daily.tip': '{date} · {n} new stories',
-  'stories.daily.aria': 'New stories per day and way of start',
-  'stories.type.together': 'Together',
-  'stories.type.follow': 'Followed',
-  'stories.type.single': 'One group',
-  'stories.type.none': 'No group',
   'stories.solo.title': 'Starts alone: which group writes first',
   'stories.solo.info': 'Of the stories that the group wrote together with other groups, the share in which the group wrote first and alone, and the others followed later. It is a share of its own stories, so large groups do not always look first.',
   'stories.solo.row': '{share} · {n}',
   'stories.solo.tip': '{name}: started alone {started} of {wrote} stories',
-  'stories.col.groups': 'Groups on the same day',
-  'stories.count': '{n} stories',
 })

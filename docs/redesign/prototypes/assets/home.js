@@ -35,6 +35,28 @@
     return { d, date, story: s, n, rank, topic: ix.issues[s.issue], outlets, list }
   }
 
+  // The outlets that ran a story in the days i0 to i1, with their articles, the largest first.
+  function outletsOf (ix, s, i0, i1) {
+    const from = ix.detail ? ix.detail.dates.indexOf(ix.dates[i0]) : -1
+    const to = ix.detail ? ix.detail.dates.indexOf(ix.dates[i1]) : -1
+    const perOutlet = new Map()
+    const rows = ix.rowsOf.get(s.id)
+    if (rows && from >= 0 && to >= 0) for (let j = 0; j < rows.length; j += 3) if (rows[j + 1] >= from && rows[j + 1] <= to) perOutlet.set(rows[j], (perOutlet.get(rows[j]) || 0) + rows[j + 2])
+    return [...perOutlet].map(([k, c]) => ({ ...ix.detail.outlets[k], k, n: c })).sort((a, b) => b.n - a.n)
+  }
+
+  // The same as dayInfo for a period (the days i0 to i1): the articles of a story and of its outlets are summed over the period, and the list has every story that ran in it.
+  function rangeInfo (ix, i0, i1, rank = 0) {
+    const totals = new Map()
+    for (let d = i0; d <= i1; d++) for (const { s, n } of ix.byDay[d]) totals.set(s, (totals.get(s) || 0) + n)
+    const list = [...totals].map(([s, n]) => ({ s, n })).sort((a, b) => b.n - a.n)
+    const lead = list[rank]
+    if (!lead) return null
+    const { s, n } = lead
+    const outlets = outletsOf(ix, s, i0, i1)
+    return { d: `${i0}-${i1}`, date: ix.dates[i1], story: s, n, rank, topic: ix.issues[s.issue], outlets, list }
+  }
+
   // A thin horizontal bar of the articles of the story: one part for each outlet, the largest from the left, in the color of its group.
   // The line under it says the total, and names the outlet of the part under the mouse (or in focus). A part opens the page of its outlet.
   function OutletStack (parts, { total, count }) {
@@ -60,34 +82,57 @@
 
   let listDay = -1
   let listTop = 0
+  let listShown = 0
+  const LIST_PART = 100
 
   // The stories of a day: a story is picked to show it in the card, and its button opens its page. The card shows the story of the rank in info, and the picked day at the top right.
-  function DayCard (info, { date, onStory, swap }) {
-    const head = cardHead(t('home.day.title'), h('span', { class: 'home-date' }, fmt.date(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })), t('home.day.info'))
-    if (!info) return card('c-5 home-day', head, emptyText(t('home.day.empty')))
+  // A page that shows a period (Μέσα › Ιστορίες) passes title, hint, dateText (false for none) and empty for its own words, and part ('story' or 'list') with span (a column class)
+  // to draw the story and its list as two cards. With no part it is one card.
+  function DayCard (info, { date, onStory, swap, title, hint, dateText, empty, part, span = 'c-5' }) {
+    const head = cardHead(title || t('home.day.title'), dateText === false ? null : h('span', { class: 'home-date' }, dateText || fmt.date(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })), hint || t('home.day.info'))
+    if (!info) return card(`${span} home-day`, head, emptyText(empty || t('home.day.empty')))
     const { story, topic } = info
     const total = sum(info.outlets.map((o) => o.n))
     const slices = info.outlets.map((o) => ({ name: o.name, group: o.group, n: o.n, color: groupColor(o.group), slug: o.slug }))
     const outlets = slices.length ? h('div', { class: 'home-block' }, OutletStack(slices, { total, count: info.outlets.length })) : null
 
-    const stories = h('ul', { class: 'home-stories' }, info.list.map((o, r) => h('li', { class: r === info.rank ? 'is-current' : null },
+    const row = (o, r) => h('li', { class: r === info.rank ? 'is-current' : null },
       h('button', { type: 'button', class: 'home-story-pick', 'aria-pressed': String(r === info.rank), onClick: () => onStory(r) },
         h('span', { class: 'home-story-name' }, name(o.s)), h('span', { class: 'muted-text' }, fmt.int(o.n))),
-      h('a', { class: 'button button-sm home-story-go', href: `story-v2.html?id=${o.s.id}`, 'aria-label': `${t('home.day.open')}: ${name(o.s)}` }, t('home.day.open'), Icon('chevron-right', 'icon icon-sm')))))
-    // The list has every story of the day and scrolls inside the card. A new day starts at the top; a pick on the same day keeps the place.
-    const sameDay = info.d === listDay
-    listDay = info.d
-    if (!sameDay) listTop = 0
-    stories.addEventListener('scroll', () => { listTop = stories.scrollTop })
-    requestAnimationFrame(() => { stories.scrollTop = listTop })
+      h('a', { class: 'button button-sm home-story-go', href: `story-v2.html?id=${o.s.id}`, 'aria-label': `${t('home.day.open')}: ${name(o.s)}` }, t('home.day.open'), Icon('chevron-right', 'icon icon-sm')))
+    const listOf = () => {
+      // The list has every story of the day and scrolls inside the card. A new day starts at the top; a pick on the same day keeps the place.
+      // A period can have thousands of stories, so the list draws them in parts of LIST_PART: the next part comes when the scroll is near the end.
+      const sameDay = info.d === listDay
+      listDay = info.d
+      if (!sameDay) { listTop = 0; listShown = LIST_PART }
+      const stories = h('ul', { class: 'home-stories' })
+      const more = () => {
+        const from = stories.children.length
+        if (from >= info.list.length) return
+        stories.append(...info.list.slice(from, Math.min(info.list.length, from + LIST_PART)).map((o, k) => row(o, from + k)))
+        listShown = stories.children.length
+      }
+      stories.append(...info.list.slice(0, Math.min(info.list.length, Math.max(LIST_PART, listShown))).map(row))
+      stories.addEventListener('scroll', () => {
+        listTop = stories.scrollTop
+        if (stories.scrollTop + stories.clientHeight > stories.scrollHeight - 400) more()
+      })
+      requestAnimationFrame(() => { stories.scrollTop = listTop })
+      return stories
+    }
 
     // swap: 'day' draws the whole card in again, 'story' only the story, its topic and its outlets (the list keeps its place).
-    return card(`c-5 home-day${swap ? ` is-swap is-swap-${swap}` : ''}`, head,
+    const cls = `${span} home-day${swap ? ` is-swap is-swap-${swap}` : ''}`
+    const lead = [
       h('h3', { class: 'home-day-story' }, name(story)),
       h('p', { class: 'home-day-meta' }, topic ? [h('span', { class: 'home-topic-label' }, t('home.day.topic')), ' ', UI.EntityLink({ type: 'topic', key: String(story.issue), label: name(topic) })] : null,
         info.outlets.length ? null : [topic ? ' · ' : null, t('home.day.meta', { n: fmt.int(info.n) })]),
-      outlets,
-      stories)
+      outlets
+    ]
+    if (part === 'story') return card(cls, head, ...lead)
+    if (part === 'list') return card(cls, head, listOf())
+    return card(cls, head, ...lead, listOf())
   }
 
   // The calendar of a month: a strip of tiles, one for each day, that scrolls sideways. A tile has the day, the articles of all the outlets and the change against the day before.
@@ -313,5 +358,5 @@
     return svg
   }
 
-  window.Home = { index, dayInfo, DayCard, Calendar, TopicsCard, QuickCard, Hero }
+  window.Home = { index, dayInfo, rangeInfo, outletsOf, DayCard, Calendar, TopicsCard, QuickCard, Hero }
 })()

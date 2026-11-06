@@ -33,6 +33,10 @@ a.home-stack-part { cursor: pointer; }
 .home-story-pick .muted-text { font-size: var(--text-caption); font-variant-numeric: tabular-nums; }
 .home-story-go { margin-right: 6px; white-space: nowrap; text-decoration: none; }
 
+/* Μέσα › Ιστορίες: beside the story and its line, the list takes the whole height of the row and scrolls inside. */
+@media (max-width: 1279px) { .story-split > .c-5 { grid-column: span 12; } }
+@media (min-width: 1280px) { .home-list .home-stories { flex: 1 1 0; height: 0; min-height: 0; max-height: none; } }
+
 /* The calendar of a month: a strip of day tiles that scrolls sideways, with the month and its arrows in the head. */
 .home-month-nav { display: inline-flex; align-items: center; gap: 2px; }
 .home-month-name { min-width: 9em; text-align: center; font-size: var(--text-small); font-weight: 600; text-transform: capitalize; color: var(--text-primary); }

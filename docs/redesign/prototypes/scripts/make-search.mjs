@@ -1,4 +1,4 @@
-// The index of the global search (#61): the outlets, groups, topics, stories, cases, spread patterns, people, statements,
+// The index of the global search (#61): the outlets, groups, topics, stories, cases, people, statements,
 // parties, bylines and UN speeches of the fixtures, in one small file that the search loads on its first open.
 // The pages and tabs are not in it: shell.js lists them from the sidebar tree, in the language of the page.
 // Usage: node docs/redesign/prototypes/scripts/make-search.mjs
@@ -13,12 +13,12 @@ import { fileURLToPath } from 'node:url'
 const dir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const context = { window: {} }
 vm.createContext(context)
-const FILES = ['groups', 'stories', 'mme', 'cases', 'campaigns', 'statements', 'personFile', 'fingerprints', 'stanceRatings', 'elections', 'speeches']
+const FILES = ['groups', 'stories', 'mme', 'cases', 'statements', 'personFile', 'fingerprints', 'stanceRatings', 'elections', 'speeches']
 for (const key of FILES) vm.runInContext(fs.readFileSync(path.join(dir, 'data', `${key}.js`), 'utf8'), context)
 const F = context.window.FIXTURES
 
 const entry = (x) => Object.fromEntries(Object.entries(x).filter(([, v]) => v != null && v !== '' && !(Array.isArray(v) && !v.length)))
-const kinds = { outlets: [], groups: [], topics: [], stories: [], cases: [], campaigns: [], people: [], statements: [], parties: [], bylines: [], speeches: [] }
+const kinds = { outlets: [], groups: [], topics: [], stories: [], cases: [], people: [], statements: [], parties: [], bylines: [], speeches: [] }
 
 // Μέσα: the groups and their outlets, the outlets with no group, then the outlets that only one page knows.
 const outletNames = new Set()
@@ -43,7 +43,6 @@ F.mme.sets.il.stories.filter((s) => !s.generic)
 
 // Υποθέσεις and Μοτίβα διάδοσης.
 kinds.cases.push(entry({ n: F.cases.q, a: F.cases.terms.filter((x) => x !== F.cases.q), h: 'cases-v2.html', r: '/cases' }))
-F.campaigns.political.forEach((c) => kinds.campaigns.push(entry({ n: c.person, d: c.week, h: 'campaigns-v2.html', r: '/campaigns' })))
 
 // Πρόσωπα: one entry for each person, on the first page that has a file of them. The role comes from the people of ΜΜΕ & πρόσωπα.
 const people = new Map()

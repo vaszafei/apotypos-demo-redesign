@@ -8,11 +8,9 @@
     '/trends': 'topics-v2.html',
     '/trends/time': 'topics-v2.html',
     '/stories': 'stories-v2.html',
-    '/stories/outlets': 'stories-v2.html?tab=outlets',
     '/echoes': 'stories-v2.html',
     '/similarity': 'similarity-v2.html',
     '/originality': 'similarity-v2.html#originality',
-    '/campaigns': 'campaigns-v2.html',
     '/media': 'media-v2.html',
     '/media/writing': 'media-v2.html?tab=writing',
     '/fingerprints': 'fingerprints-v2.html',
@@ -48,7 +46,7 @@
   // Αναλύσεις & Ιδιοκτησία (/analyze) is not there: ownership is only Μέσα › Ιδιοκτησία, so /analyze opens that tab.
   // ΜΜΕ & πρόσωπα (/media) is not there: its content is Μέσα › Επισκόπηση. Θέματα (/trends) is a tab of Μέσα, not an item of its own.
   // Πρόσωπα is an item: its overview (/fingerprints), Δηλώσεις (/track, from Πολιτική) and Φάκελος προσώπου (/contradictions), which left Αναλύσεις.
-  // Ιστορίες has Υποθέσεις (/cases) and Μοτίβα διάδοσης (/campaigns), both from Πολιτική.
+  // Ιστορίες is a tab of Μέσα, under Θέματα, with no sub-tabs (Επισκόπηση and Ανά μέσο are gone). It was an item of the top bar. Μοτίβα διάδοσης is gone, and Υποθέσεις (/cases) is Αναλύσεις › Ρουβίκωνας.
   // #62: each tab answers one question (question.<item>.<tab>), listed in the table of pages. A new tab is a view of the file of its section (?tab=), so every old route opens the same file.
   // Θέματα is one page with no sub-tabs (Ένα θέμα, Ατζέντα μέσων and Μετατοπίσεις are gone; Μετατοπίσεις is a card of it). Πολιτική splits the elections page into 5 tabs.
   // A detail route names the tab that lists it: the back button and the trail of the page go there.
@@ -56,14 +54,14 @@
     { key: 'home', tabs: [['home', '/']] },
     { key: 'media', tabs: [['overview', '/media'], ['ownership', '/groups'],
       ['topics', '/trends'],
-      ['writing', '/media/writing'], ['similarity', '/similarity']], details: [['/outlet', '/media'], ['/group', '/groups'], ['/topic', '/trends']] },
-    { key: 'spread', tabs: [['overview', '/stories'], ['outlets', '/stories/outlets'], ['cases', '/cases'], ['campaigns', '/campaigns']], details: [['/story', '/stories']] },
+      ['stories', '/stories'],
+      ['writing', '/media/writing'], ['similarity', '/similarity']], details: [['/outlet', '/media'], ['/group', '/groups'], ['/topic', '/trends'], ['/story', '/stories']] },
     { key: 'people', tabs: [['overview', '/fingerprints'], ['spread', '/fingerprints/spread'], ['statements', '/track'],
       ['file', '/contradictions', [['file.overview', '/contradictions'], ['file.pairs', '/contradictions/pairs'], ['file.checks', '/contradictions/checks']]]] },
     { key: 'politics', tabs: [['reach', '/elections'], ['outlets', '/elections/outlets'], ['owners', '/elections/owners'], ['topics', '/elections/topics'], ['bylines', '/elections/bylines']] },
     { key: 'world', tabs: [['speeches', '/speeches', [['speeches.all', '/speeches'], ['speeches.pi', '/un-israel-palestine']]],
       ['pi', '/narrative', [['pi.overview', '/narrative'], ['gaza', '/gaza'], ['israel', '/israel'], ['language', '/gaza-language']]],
-      ['greekturkish', '/war'], ['coverage', '/coverage'], ['france', '/france-riots']] }
+      ['greekturkish', '/war'], ['coverage', '/coverage'], ['france', '/france-riots'], ['rouvikonas', '/cases']] }
   ]
   const FOOTER = [['methodology', '/methodology'], ['about', '/about']]
 
@@ -438,10 +436,10 @@
     })
   }
   // The kinds in the order of the results. Each shows its best 3 to 6 and "Εμφάνιση όλων" for the rest.
-  const KINDS = ['pages', 'outlets', 'groups', 'topics', 'stories', 'cases', 'campaigns', 'people', 'statements', 'parties', 'bylines', 'speeches']
+  const KINDS = ['pages', 'outlets', 'groups', 'topics', 'stories', 'cases', 'people', 'statements', 'parties', 'bylines', 'speeches']
   // "Εμφάνιση όλων" draws up to 300 of a kind: a query that finds more (one letter) asks for more letters.
   const SHOW_ALL = 300
-  const LIMITS = { pages: 5, outlets: 5, groups: 3, topics: 4, stories: 6, cases: 3, campaigns: 3, people: 5, statements: 3, parties: 3, bylines: 3, speeches: 4 }
+  const LIMITS = { pages: 5, outlets: 5, groups: 3, topics: 4, stories: 6, cases: 3, people: 5, statements: 3, parties: 3, bylines: 3, speeches: 4 }
   // A page or tab: its own name, and where it lives (the section, and the tab of a sub-tab).
   function pageEntries () {
     const named = NAV.flatMap((item) => pagesOf(item).map((page) => {
