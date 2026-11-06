@@ -1,8 +1,8 @@
-// The field behind the hero of Αρχική: the articles of a day as dots, the stories as clusters of dots, the themata as colors.
-// A cluster is one story of the day; its size is the articles of the story that day. Its color is its thema, the same color the donut of the topics gives the largest themata of that day (the rest, and the soft themata, stay in the ink color).
-// The clusters roam: each one drifts on its own slow path, turns from the edges and from the text of the hero, and keeps clear of the others. The loose dots are the other articles; they drift too, and take the themata in the shares of the day.
-// The pointer parts the loose dots. A cluster it reaches slows down and lights up, with the other clusters of its thema; the tooltip names the story and its thema. Nothing is a link.
-// A dot stands for several articles, so it shows size, not a count. Every 12 seconds the clusters dissolve and form again from the day before. The days are the latest ones that have themata (the coded data may end before the volume does).
+// The field behind the hero of Αρχική: a network. The dots are articles, a story is the dots joined by thin lines into one web, a thema is the stories that share it, joined by dashed arcs.
+// A web is one story of the day; its size is the articles of the story that day. Its color is its thema, the color the donut of the topics gives the largest themata of that day (the rest, and the soft themata, stay in the ink color).
+// The webs roam: each drifts on its own slow path, turns from the edges and from the text of the hero, and keeps clear of the others. The loose dots are the other articles, with no line; they take the themata in the shares of the day.
+// The pointer parts the loose dots. A web it reaches slows down and lights up, with the webs and the arcs of its thema; the tooltip names the story and its thema. Nothing is a link, and outlets are not shown.
+// A dot stands for several articles, so it shows size, not a count. Every 12 seconds the webs dissolve and form again from the day before: the lines return as the dots settle. The days are the latest ones that have themata (the coded data may end before the volume does).
 // Load after dash.js, components.js and home.js.
 (function () {
   const { t, fmt, h } = window.App
@@ -58,6 +58,7 @@
     let visible = true
     let fade = 0
     let clusters = []
+    let links = []
     let focus = null
     const dots = []
     const pointer = { x: 0, y: 0, on: false }
@@ -85,6 +86,32 @@
       }
     }
 
+    // The shape of a story: its dots spread over a disc (each at the best of 14 spots, the farthest from the dots placed), the one nearest the center first (the hub).
+    // Each dot is joined to its nearest placed dot, and some to the second nearest, so the lines make one web with a few loops.
+    function web (count, r, rand) {
+      const offs = []
+      for (let j = 0; j < count; j++) {
+        let best = null
+        for (let k = 0; k < 14; k++) {
+          const a = rand() * TAU
+          const rr = r * Math.sqrt(rand())
+          const x = Math.cos(a) * rr
+          const y = Math.sin(a) * rr * 0.85
+          const gap = offs.length ? Math.min(...offs.map((q) => Math.hypot(q.x - x, q.y - y))) : 99
+          if (!best || gap > best.gap) best = { x, y, gap }
+        }
+        offs.push(best)
+      }
+      offs.sort((a, b) => Math.hypot(a.x, a.y) - Math.hypot(b.x, b.y))
+      const edges = []
+      for (let i = 1; i < offs.length; i++) {
+        const near = offs.slice(0, i).map((q, j) => ({ j, d: Math.hypot(q.x - offs[i].x, q.y - offs[i].y) })).sort((a, b) => a.d - b.d)
+        edges.push([i, near[0].j, near[0].d])
+        if (near[1] && near[1].d < near[0].d * 1.7 && rand() < 0.45) edges.push([i, near[1].j, near[1].d])
+      }
+      return { offs, edges }
+    }
+
     function layout (d) {
       const rand = rng(d * 977 + 13)
       const day = themataOf(d)
@@ -94,8 +121,9 @@
         const count = 6 + Math.round(26 * Math.sqrt(o.n / max))
         const known = home.issues[o.s.issue] && !home.issues[o.s.issue].catchAll
         const slot = day.slotOf.has(o.s.issue) ? day.slotOf.get(o.s.issue) : -1
-        return { s: o.s, n: o.n, d, count, r: 12 + 3.2 * Math.sqrt(count), members: [], lit: 0, rel: 0, slot, issue: known ? o.s.issue : -1,
-          vx: 0, vy: 0, th: rand() * TAU, sp: 9 + rand() * 6, ph: rand() * TAU }
+        const r = 16 + 4.2 * Math.sqrt(count)
+        return { s: o.s, n: o.n, d, count, r, members: [], lit: 0, rel: 0, coh: 0, slot, issue: known ? o.s.issue : -1, ...web(count, r, rand),
+          vx: 0, vy: 0, th: rand() * TAU, sp: 9 + rand() * 6, ph: rand() * TAU, rot: rand() * TAU, rv: (rand() - 0.5) * 0.1 }
       })
       place(clusters, rand)
       const used = sum(clusters.map((c) => c.count))
@@ -107,13 +135,18 @@
           dot.off = false
           dot.cl = c
           dot.slot = c.slot
-          dot.or = c.r * Math.sqrt(rand())
-          dot.oa = rand() * TAU
-          dot.ow = (0.08 + 0.35 * (1 - dot.or / c.r)) * (dot.seed > 0.5 ? 1 : -1)
+          dot.ox = c.offs[j].x
+          dot.oy = c.offs[j].y
+          dot.hub = j === 0
           dot.gmax = 1
           c.members.push(dot)
         }
       }
+      // The stories of one thema are joined in a chain, the largest first.
+      links = []
+      const byIssue = new Map()
+      for (const c of clusters) if (c.issue >= 0) { if (!byIssue.has(c.issue)) byIssue.set(c.issue, []); byIssue.get(c.issue).push(c) }
+      for (const group of byIssue.values()) for (let i = 1; i < group.length; i++) links.push([group[i - 1], group[i]])
       for (let j = 0; k < dots.length; k++, j++) {
         const dot = dots[k]
         dot.off = j >= LOOSE
@@ -133,8 +166,12 @@
     function target (dot) {
       const c = dot.cl
       if (c) {
-        dot.tx = c.x + Math.cos(dot.oa + dot.ow * clock) * dot.or * (1 - 0.22 * c.lit)
-        dot.ty = c.y + Math.sin(dot.oa + dot.ow * clock) * dot.or * 0.85 * (1 - 0.22 * c.lit)
+        // The web turns slowly as a whole; each dot trembles a little.
+        const a = c.rot + c.rv * clock
+        const cos = Math.cos(a)
+        const sin = Math.sin(a)
+        dot.tx = c.x + cos * dot.ox - sin * dot.oy + Math.sin(clock * 0.7 + dot.seed * 30) * 1.8
+        dot.ty = c.y + sin * dot.ox + cos * dot.oy + Math.cos(clock * 0.6 + dot.seed * 21) * 1.8
       } else {
         dot.tx = dot.hx + Math.sin(clock * 0.15 + dot.seed * 40) * 30
         dot.ty = dot.hy + Math.cos(clock * 0.12 + dot.seed * 25) * 24
@@ -257,20 +294,56 @@
         ctx.globalAlpha = (0.22 + 0.4 * (dot.p || 0)) * base * (1 - 0.5 * on)
         ctx.fill()
       }
+      // How settled a web is: the dots near their places. Its lines and arcs are as strong as that, so a web that forms or dissolves does not stretch lines across the hero.
+      for (const c of clusters) c.coh = clamp(1 - sum(c.members.map((dot) => Math.hypot(dot.x - dot.tx, dot.y - dot.ty))) / Math.max(1, c.members.length) / (c.r * 1.0), 0, 1) ** 2
+      const dimOf = (c) => 1 - 0.6 * on * (1 - Math.max(c.lit, c.rel))
+      // The themata: a dashed arc between two stories that share one, bowed away from the middle of the hero so it keeps off the text.
+      ctx.lineWidth = 1
+      ctx.setLineDash([2, 5])
+      for (const [a, b] of links) {
+        const hot = focus && focus.issue === a.issue ? 1 : 0
+        const dx = b.x - a.x
+        const dy = b.y - a.y
+        const len = Math.hypot(dx, dy) || 1
+        let nx = -dy / len
+        let ny = dx / len
+        if ((a.x + b.x - w) * nx + (a.y + b.y - ht) * ny < 0) { nx = -nx; ny = -ny }
+        ctx.strokeStyle = colorOf(a.slot)
+        ctx.globalAlpha = (0.2 + 0.5 * hot) * base * Math.min(a.coh, b.coh) * (on && !hot ? 0.4 : 1)
+        ctx.beginPath()
+        ctx.moveTo(a.x, a.y)
+        ctx.quadraticCurveTo((a.x + b.x) / 2 + nx * len * 0.2, (a.y + b.y) / 2 + ny * len * 0.2, b.x, b.y)
+        ctx.stroke()
+      }
+      ctx.setLineDash([])
       for (const c of clusters) {
         const glowing = Math.max(c.lit, c.rel)
-        const dim = 1 - 0.6 * on * (1 - glowing)
-        ctx.fillStyle = colorOf(c.slot)
+        const dim = dimOf(c)
+        const color = colorOf(c.slot)
+        // The story: the lines of its web, which fade in as its dots settle.
+        ctx.strokeStyle = color
+        ctx.lineWidth = 0.9 + 0.5 * c.lit
+        ctx.beginPath()
+        for (const [i, j, rest] of c.edges) {
+          const a = c.members[i]
+          const b = c.members[j]
+          if (Math.hypot(a.x - b.x, a.y - b.y) > rest * 2.5 + 6) continue
+          ctx.moveTo(a.x, a.y)
+          ctx.lineTo(b.x, b.y)
+        }
+        ctx.globalAlpha = (0.3 + 0.45 * glowing) * base * dim * c.coh
+        ctx.stroke()
+        ctx.fillStyle = color
         ctx.beginPath()
         for (const dot of c.members) {
-          const r = 1.3 + dot.seed * 0.9 + 0.5 * glowing
+          const r = 1.5 + dot.seed * 0.9 + (dot.hub ? 1.2 : 0) + 0.5 * glowing
           ctx.moveTo(dot.x + r, dot.y)
           ctx.arc(dot.x, dot.y, r, 0, TAU)
         }
-        ctx.globalAlpha = (0.5 + 0.45 * glowing) * base * dim
+        ctx.globalAlpha = (0.6 + 0.35 * glowing) * base * dim
         ctx.fill()
         if (glowing < 0.02) continue
-        ctx.strokeStyle = c.slot >= 0 ? colorOf(c.slot) : accent()
+        ctx.strokeStyle = c.slot >= 0 ? color : accent()
         ctx.lineWidth = 1
         ctx.beginPath()
         ctx.arc(c.x, c.y, c.r + 12, 0, TAU)
