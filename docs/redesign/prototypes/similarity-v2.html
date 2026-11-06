@@ -14,7 +14,7 @@
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=9"></script>
-  <script src="assets/messages.js?v=44"></script>
+  <script src="assets/messages.js?v=45"></script>
   <script src="assets/messages-v2.js?v=59"></script>
   <script src="assets/messages-spread.js?v=30"></script>
   <script src="assets/messages-mme.js?v=29"></script>
@@ -25,7 +25,6 @@
   <script src="assets/mme.js?v=23"></script>
   <script src="assets/shell.js?v=64"></script>
   <script src="data/mme.js?v=20"></script>
-  <script src="data/stories.js?v=2"></script>
   <script src="data/storyDetail.js?v=2"></script>
   <script src="data/originality.js?v=1"></script>
   <script src="data/groups.js?v=1"></script>
@@ -35,7 +34,6 @@
     const { t, fmt, h, load } = App
     const { fit, reset, pct0, NO_GROUP, card, cardHead, emptyText, TopBar } = Dash
     const mme = load('mme', ['sets'], (b) => Object.keys(b.sets))
-    const list = load('stories', ['dates', 'stories'], (b) => b.stories)
     const detail = load('storyDetail', ['outlets', 'stories'], (b) => b.stories)
     const orig = load('originality', ['window', 'outlets'], (b) => b.outlets)
     const groupsData = load('groups', ['groups'], (b) => b.groups)
@@ -135,7 +133,7 @@
         content.classList.add('dash', 'minimal')
         reset()
         const title = t('nav.media')
-        const problem = Dash.stateContent([list, detail, orig, mme], { title, tabs, quiet: true })
+        const problem = Dash.stateContent([detail, orig, mme], { title, tabs, quiet: true })
         if (problem) { content.replaceChildren(...problem.filter(Boolean), protoNote()); return }
         const dd = detail.data
         // Originality: the share of original articles of each outlet. The bar is 100 percent of the scored articles and the dashed line is the average of the 5 outlets.
@@ -165,23 +163,6 @@
         const origMap = card('c-6', cardHead(t('originality.map.title'), null, t('originality.map.info')), h('p', { class: 'dcard-sub' }, period), DotMap({ points: origPoints, avg: origAvg, xTitle: t('originality.map.x'), yTitle: t('originality.map.y'), avgX: t('sim.map.avg', { v: pct0(origAvg.x) }), avgY: t('sim.map.avg', { v: pct0(origAvg.y) }), caption: t('originality.map.title'),
           text: (p) => t('originality.map.point', { name: p.name, orig: fmt.pct(p.x), anon: fmt.pct(p.y), n: fmt.int(p.n), lag: lagText(p.lag) }) }))
 
-        // Who starts alone: the share of the stories that a group wrote together with other groups, in which it wrote first and alone and the others followed.
-        const prof = Spread.profiles(dd)
-        const profileOf = new Map(prof.list.map((p) => [p.id, p]))
-        const stories = list.data.stories.filter((s) => !s.generic && profileOf.has(s.id)).map((s) => profileOf.get(s.id))
-        const soloRows = prof.groups.map((g, i) => {
-          const wrote = stories.filter((p) => p.groupsAll.length >= 2 && p.groupsAll.includes(i))
-          const started = wrote.filter((p) => p.type === 'follow' && p.firstGroups[0] === i)
-          return { i, g, wrote: wrote.length, started: started.length, share: wrote.length ? started.length / wrote.length : 0 }
-        }).sort((a, b) => b.share - a.share)
-        const soloMax = Math.max(...soloRows.map((r) => r.share), 0.0001)
-          const soloCard = card('c-12', cardHead(t('stories.solo.title'), null, `${soloRows[0]?.started ? `${t('stories.solo.finding', { name: soloRows[0].g })} (${fmt.pct(soloRows[0].share)}). ` : ''}${t('stories.solo.info')}`),
-          UI.BarList(soloRows.map((r) => ({
-            label: [h('span', { class: 'dot', style: `--dot:${colorOfGroup.get(r.g) || NO_GROUP}` }), r.g], value: r.share, color: colorOfGroup.get(r.g) || NO_GROUP,
-            text: t('stories.solo.row', { share: fmt.pct(r.share), n: fmt.int(r.started) }),
-            title: t('stories.solo.tip', { name: r.g, started: fmt.int(r.started), wrote: fmt.int(r.wrote) })
-          })), { max: soloMax }))
-
         // News and clickbait of each outlet, for the whole period of the Μέσα data (this page has no period picker).
         const mset = mme.data.sets.gr
         const S = Mme.summary(mset, 0, mset.dates.length - 1)
@@ -196,14 +177,12 @@
             text: (p) => t('media2.scatter.point', { name: p.name, news: fmt.pct(p.x), cb: fmt.pct(p.y), n: fmt.int(p.n) }) }) : emptyText(t('media2.empty.list')))
 
         // The top bar is the one of Μέσα: only the tabs. Originality states its own period in its section.
-        const dates = list.data.dates
         const bar = TopBar({ title, tabs, quiet: true })
 
         content.replaceChildren(bar, h('div', { class: 'dash-grid' },
           card('c-6', cardHead(t('originality.title'), origKey, t('originality.info')), h('p', { class: 'dcard-sub' }, period), origTable),
           origMap,
-          scatterCard,
-          soloCard), protoNote())
+          scatterCard), protoNote())
       }
     })
 
