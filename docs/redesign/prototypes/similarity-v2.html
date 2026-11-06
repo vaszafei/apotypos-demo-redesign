@@ -33,7 +33,7 @@
     // Media, Ομοιότητα και πρωτοτυπία: who writes the stories that other outlets also write. The matrix and the panel of an outlet use the rows of the stories.
     // Originality reads the API in its own period (Sep 2025 – Jan 2026), so it has its own section with its own period.
     const { t, fmt, h, load } = App
-    const { fit, reset, pct0, NO_GROUP, card, cardHead, emptyText, TopBar, select, seq } = Dash
+    const { fit, reset, pct0, NO_GROUP, card, cardHead, emptyText, TopBar, select } = Dash
     const mme = load('mme', ['sets'], (b) => Object.keys(b.sets))
     const list = load('stories', ['dates', 'stories'], (b) => b.stories)
     const detail = load('storyDetail', ['outlets', 'stories'], (b) => b.stories)
@@ -131,42 +131,8 @@
           lift: { value: (a, b) => mx.lift(a, b), low: 1, high: Math.max(...pairsOfMatrix.map(([a, b]) => mx.lift(a, b))), text: (v) => `×${fmt.dec(v)}` }
         }
         const state = { sel: mx.ids[0], mode: 'share' }
-        // A cell takes a step of the sequential ramp (tokens.css) and the text color of that step.
-        const shade = (v) => { const m = MODES[state.mode]; return seq(Math.max(0, (v - m.low) / (m.high - m.low))) }
-        const matrixHolder = h('div', { class: 'mx-wrap' })
         const panelHolder = h('div', {})
-        const pick = (a) => { state.sel = a; draw() }
-        const pairText = (a, b) => t('sim.mx.tip', { a: outletName(a), b: outletName(b), pct: fmt.pct(mx.cover(a, b)), n: fmt.int(mx.shared(a, b)) }) + t('sim.mx.tip.lift', { lift: fmt.dec(mx.lift(a, b)) })
-
-        function drawMatrix () {
-          const grid = h('div', { class: 'mx', style: `--n:${n}`, role: 'img', 'aria-label': t('sim.mx.aria', { n }) },
-            h('span', {}),
-            mx.order.map((b) => h('span', { class: 'mx-col' }, dot(b), outletName(b))),
-            mx.order.map((a) => [
-              h('button', { type: 'button', class: `mx-row${a === state.sel ? ' is-sel' : ''}`, onClick: () => pick(a) }, outletName(a), dot(a)),
-              mx.order.map((b) => {
-                if (a === b) return h('span', { class: 'mx-cell mx-self' })
-                const m = MODES[state.mode]
-                const v = m.value(a, b)
-                const step = shade(v)
-                const cell = h('span', { class: `mx-cell${a === state.sel ? ' is-sel' : ''}`, style: `background:${step.background};color:${step.color}` }, a === state.sel ? (state.mode === 'share' ? String(Math.round(v * 100)) : fmt.dec(v)) : null)
-                cell.dataset.a = a
-                cell.dataset.b = b
-                return cell
-              })
-            ]))
-          grid.addEventListener('pointermove', (e) => {
-            const cell = e.target.closest('.mx-cell[data-a]')
-            if (cell) UI.showTooltip(pairText(Number(cell.dataset.a), Number(cell.dataset.b)), e.clientX, e.clientY)
-            else UI.hideTooltip()
-          })
-          grid.addEventListener('pointerleave', () => UI.hideTooltip())
-          grid.addEventListener('click', (e) => { const cell = e.target.closest('.mx-cell[data-a]'); if (cell) pick(Number(cell.dataset.a)) })
-          const m = MODES[state.mode]
-          const key = h('div', { class: 'mx-key' }, h('span', {}, m.text(m.low)), h('span', { class: 'mx-ramp', style: `background:linear-gradient(90deg, ${[1, 2, 3, 4, 5, 6, 7].map((k) => `var(--seq-${k})`).join(', ')})` }), h('span', {}, m.text(m.high)))
-          const left = mx.left.map(outletName).sort((x, y) => x.localeCompare(y)).join(', ')
-          matrixHolder.replaceChildren(grid, key, h('p', { class: 'dcard-sub' }, t('sim.mx.note', { n, min: fmt.int(MIN_STORIES), m: mx.left.length, names: left })))
-        }
+        const pick = (a) => { state.sel = a; drawPanel() }
 
         // The panel of the selected outlet: the 8 outlets that write most of its stories. The second number is the share the other way.
         function drawPanel () {
@@ -176,17 +142,17 @@
           const options = mx.order.map((i) => ({ value: String(i), label: outletName(i) })).sort((x, y) => x.label.localeCompare(y.label))
           panelHolder.replaceChildren(card('c-12', cardHead(t('sim.sel.title'), null, t('sim.sel.info')),
             h('div', { class: 'mx-select' }, select(t('sim.sel.pick'), a, options, (v) => pick(Number(v)))),
+            modeSwitch,
             h('p', { class: 'dcard-sub' }, t('sim.sel.stories', { n: fmt.int(mx.per[a]) })),
             UI.BarList(rows.map((r) => ({
               label: [dot(r.b), UI.EntityLink({ type: 'outlet', key: dd.outlets[r.b].slug, label: outletName(r.b) })], value: r.v - m.low, color: groupColor(r.b),
               text: state.mode === 'share' ? t('sim.sel.row', { pct: fmt.pct(r.cover), back: fmt.pct(r.back) }) : t('sim.sel.row.lift', { lift: fmt.dec(r.v), pct: fmt.pct(r.cover) })
             })), { max: m.high - m.low })))
         }
-        const modeButtons = Object.keys(MODES).map((key) => h('button', { type: 'button', 'aria-pressed': String(key === state.mode), onClick: () => { state.mode = key; modeButtons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === key))); draw() } }, t(`sim.mx.mode.${key}`)))
+        const modeButtons = Object.keys(MODES).map((key) => h('button', { type: 'button', 'aria-pressed': String(key === state.mode), onClick: () => { state.mode = key; modeButtons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === key))); drawPanel() } }, t(`sim.mx.mode.${key}`)))
         modeButtons.forEach((b, i) => { b.dataset.mode = Object.keys(MODES)[i] })
         const modeSwitch = h('div', { class: 'segmented', role: 'group', 'aria-label': t('sim.mx.mode') }, modeButtons)
-        function draw () { drawMatrix(); drawPanel() }
-        draw()
+        drawPanel()
 
         // The same group or not: the average similarity of the pairs of outlets that both have a group.
         const { list: pairList } = Spread.pairs(dd)
@@ -250,12 +216,6 @@
             text: t('stories.solo.row', { share: fmt.pct(r.share), n: fmt.int(r.started) }),
             title: t('stories.solo.tip', { name: r.g, started: fmt.int(r.started), wrote: fmt.int(r.wrote) })
           })), { max: soloMax }))
-        const maxLag = Math.max(...rows.map((r) => r.lagMin), 1)
-        const fastest = by('lagMin')[0]
-        const avgLag = rows.reduce((sum, r) => sum + r.lagMin, 0) / rows.length
-        const lagCard = card('c-4', cardHead(t('originality.lag.title'), null, `${t('originality.lag.finding', { name: fastest.name, lag: lagText(fastest.lagMin) })}. ${t('originality.lag.info')}`),
-          UI.BarList(by('lagMin').map((r) => ({ label: r.name, value: r.lagMin, text: lagText(r.lagMin) })), { max: maxLag, reference: { value: avgLag, label: t('originality.lag.avg', { lag: lagText(avgLag) }) } }))
-
 
         // News and clickbait of each outlet, for the whole period of the Μέσα data (this page has no period picker).
         const mset = mme.data.sets.gr
@@ -295,10 +255,8 @@
         const bar = TopBar({ title, tabs, quiet: true })
 
         content.replaceChildren(bar, h('div', { class: 'dash-grid' },
-          card('c-8 mx-card', cardHead(t('sim.mx.title'), modeSwitch, t('sim.mx.info')), matrixHolder),
           h('div', { class: 'card-col c-4' }, panelHolder, sameCard),
           card('c-8', cardHead(t('originality.title'), origKey, t('originality.info')), h('p', { class: 'dcard-sub' }, period), origTable),
-          lagCard,
           scatterCard,
           bylineCard,
           soloCard,
