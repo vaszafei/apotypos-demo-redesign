@@ -135,6 +135,102 @@
     return [head, bad.kind === 'empty' ? h('div', { class: 'dash-grid' }, card('c-12', UI.EmptyState({ text: t('topics2.empty') }))) : UI.ErrorState({ onRetry: () => location.reload() })]
   }
 
+  // Lines: the average of the last 7 days of each of the 8 largest topics of the period, one color each. The vertical axis is linear, and the chart is tall on a wide card, so the ends of the lines are as far
+  // apart as they can be. The lines are monotone cubic curves (Fritsch–Carlson), so a curve never goes below 0 or above its neighbouring days.
+  // series: [{ name, color, values, key (for href), bold, note }], the values of the days of dates. href(s): the page of a line (its name at the end is the link).
+  // band: { from, to }, the indexes of a period that is tinted. tall: the height on a wide card. names: 'end' (the name of each line at its end, or a legend over the chart on a narrow card) or 'key' (a list under the chart). A hover shows the values of all of them at that day, under a vertical guide, in the white tooltip.
+  function LinesChart ({ dates, series, caption, href, band, names = 'end', tall }) {
+    return fit((holder, width) => {
+      const height = width < 520 ? 190 : tall || (width < 640 ? 280 : 380)
+      // Where there is room (a card 520 px wide or more) each line has its name at its end, on the right. Narrower, a legend over the chart names the lines.
+      const labelled = names === 'end' && width >= 520
+      const long = width >= 700
+      const pad = { top: 10, right: labelled ? (long ? 205 : 135) : 12, bottom: 24, left: 44 }
+      const n = dates.length
+      const plotW = width - pad.left - pad.right
+      const plotH = height - pad.top - pad.bottom
+      const peak = Math.max(...series.flatMap((s) => s.values), 1)
+      const tickStep = niceStep(peak / (height < 300 ? 4 : 6))
+      const yMax = Math.ceil(peak / tickStep) * tickStep
+      const X = (i) => pad.left + (i / Math.max(n - 1, 1)) * plotW
+      const Y = (v) => pad.top + plotH - (v / yMax) * plotH
+      const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': caption })
+      for (let v = 0; v <= yMax; v += tickStep) svg.append(h('line', { class: 'grid-line', x1: pad.left, x2: width - pad.right, y1: Y(v), y2: Y(v) }), h('text', { x: pad.left - 6, y: Y(v) + 4, 'text-anchor': 'end' }, fmt.int(v)))
+      const step = plotW / Math.max(n - 1, 1)
+      // A label about every 72 px: every day, or every 2 to 7 days in a short period, a whole number of weeks in a long one.
+      const fitDays = Math.max(1, Math.ceil(72 / step))
+      const every = fitDays > 7 ? Math.ceil(fitDays / 7) * 7 : fitDays
+      for (let i = 0; i < n; i += every) svg.append(h('text', { x: X(i), y: height - 6, 'text-anchor': 'middle' }, fmt.date(dates[i], { day: 'numeric', month: 'short' })))
+      if (band) {
+        // A period inside the whole window: a tint behind the lines, at least 3 px wide, so a single day can be seen.
+        const x0 = Math.max(pad.left, X(band.from) - step / 2)
+        const x1 = Math.min(width - pad.right, X(band.to) + step / 2)
+        svg.append(h('rect', { class: 'line-band', x: x0, y: pad.top, width: Math.max(3, x1 - x0), height: plotH }))
+      }
+      const paths = new Map()
+      series.slice().reverse().forEach((s) => {
+        const path = h('path', { class: 'line-series', d: UI.smoothPath(s.values.map((v, i) => [X(i), Y(v)]), new Set()), stroke: s.color, 'stroke-width': s.bold ? 2.5 : 1.5 })
+        paths.set(s, path)
+        svg.append(path)
+      })
+      if (labelled) {
+        // The name of a line is at the end of the line, on its own height. Only where two ends are less than 13 px apart the names move apart,
+        // each by half of what is missing, so a name never touches another and stays beside its own line.
+        const marks = series.map((s) => ({ s, y: Y(s.values[n - 1]), at: Y(s.values[n - 1]) })).sort((a, b) => a.y - b.y)
+        for (let round = 0; round < 40; round++) {
+          let moved = false
+          for (let k = 1; k < marks.length; k++) {
+            const miss = 13 - (marks[k].y - marks[k - 1].y)
+            if (miss > 0.1) { marks[k - 1].y -= miss / 2; marks[k].y += miss / 2; moved = true }
+          }
+          if (!moved) break
+        }
+        const max = long ? 32 : 17
+        // The name is the link of its topic (the href is the one of UI.EntityLink, so the route is in one place).
+        marks.forEach(({ s, y: ly, at }) => {
+          const link = document.createElementNS('http://www.w3.org/2000/svg', 'a')
+          link.setAttribute('href', href(s))
+          link.setAttribute('class', 'line-end-link')
+          link.append(h('title', {}, s.name), h('text', { class: 'line-end', x: X(n - 1) + 10, y: ly + 4 }, s.name.length > max ? `${s.name.slice(0, max - 1)}…` : s.name))
+          svg.append(h('circle', { class: 'line-dot', cx: X(n - 1), cy: at, r: 3, fill: s.color }), link)
+        })
+      }
+      const rule = h('line', { class: 'hover-rule', y1: pad.top, y2: pad.top + plotH, stroke: 'var(--rule)', 'stroke-width': 1, visibility: 'hidden' })
+      const dots = series.map((s) => h('circle', { r: 3.5, fill: s.color, stroke: 'var(--surface-page)', 'stroke-width': 1.5, visibility: 'hidden' }))
+      svg.append(rule, ...dots)
+      const over = h('rect', { x: pad.left, y: pad.top, width: plotW, height: plotH, fill: 'transparent' })
+      const read = (e) => {
+        const box = svg.getBoundingClientRect()
+        const i = Math.max(0, Math.min(n - 1, Math.round(((e.clientX - box.left - pad.left) / plotW) * (n - 1))))
+        rule.setAttribute('x1', X(i)); rule.setAttribute('x2', X(i)); rule.setAttribute('visibility', 'visible')
+        dots.forEach((c, k) => { c.setAttribute('cx', X(i)); c.setAttribute('cy', Y(series[k].values[i])); c.setAttribute('visibility', 'visible') })
+        UI.showTooltip({
+          title: fmt.date(dates[i]),
+          rows: series.filter((s) => names === 'end' || s.values[i] > 0).map((s) => ({ label: names === 'key' && s.name.length > 44 ? `${s.name.slice(0, 43)}…` : s.name, value: fmt.int(Math.round(s.values[i])), color: s.color })).sort((a, b) => Number(b.value.replace(/\D/g, '')) - Number(a.value.replace(/\D/g, '')))
+        }, e.clientX, e.clientY)
+      }
+      over.addEventListener('pointermove', read)
+      over.addEventListener('pointerenter', read)
+      over.addEventListener('pointerleave', () => { UI.hideTooltip(); rule.setAttribute('visibility', 'hidden'); dots.forEach((c) => c.setAttribute('visibility', 'hidden')) })
+      svg.append(over)
+      const table = h('div', { class: 'visually-hidden' }, h('table', {}, h('caption', {}, caption),
+        h('tbody', {}, series.map((s) => h('tr', {}, h('th', { scope: 'row' }, s.name), h('td', {}, fmt.int(Math.round(s.values[n - 1]))))))))
+      // names 'key': a list under the chart, one row for each line, in two columns. A row has the color, the name (the link of the story) and the articles of the period; the mouse on a row keeps its line and dims the others.
+      const key = names === 'key' ? h('ul', { class: 'lines-key' }, series.map((s) => {
+        const item = h('li', { class: 'lines-key-item' }, h('span', { class: 'swatch', style: { background: s.color } }),
+          h('span', { class: 'lines-key-name' }, href ? h('a', { href: href(s), title: s.name }, s.name) : s.name), s.note ? h('span', { class: 'lines-key-n' }, s.note) : null)
+        const set = (on) => paths.forEach((path, other) => path.setAttribute('stroke-opacity', on && other !== s ? '0.2' : '1'))
+        item.addEventListener('pointerenter', () => set(true))
+        item.addEventListener('pointerleave', () => set(false))
+        item.addEventListener('focusin', () => set(true))
+        item.addEventListener('focusout', () => set(false))
+        return item
+      })) : null
+      const legend = UI.Legend(series.map((s) => ({ label: s.name, color: s.color })))
+      holder.replaceChildren(...(names === 'end' && !labelled ? [legend] : []), svg, table, ...(key ? [key] : []))
+    })
+  }
+
   // Stories to outlets: a Sankey with two columns (Μέσα › Ιστορίες). stories: [{ id, name, n, flows: [{ o (index of outlets), n }] }], outlets: [{ name, slug (null: the rest), n }].
   // The stories are on the left in boxes with their names, the largest first, the outlets are on the right, and the width of a band is the articles. A story has its own color.
   // A story or an outlet under the mouse keeps its bands and dims the others. current: the id of the story that is picked in the list.
@@ -232,5 +328,5 @@
     })
   }
 
-  window.Dash = { StoryFlow, stateContent, select, fit, reset, niceStep, pct0, get SLOTS () { return slots() }, get NO_GROUP () { return color('--cat-0') }, color, seq, groupColors, groupColor, textOn, tint, Spark, card, cardHead, Info, emptyText, cardState, cardFoot, Stat, TopBar }
+  window.Dash = { LinesChart, StoryFlow, stateContent, select, fit, reset, niceStep, pct0, get SLOTS () { return slots() }, get NO_GROUP () { return color('--cat-0') }, color, seq, groupColors, groupColor, textOn, tint, Spark, card, cardHead, Info, emptyText, cardState, cardFoot, Stat, TopBar }
 })()

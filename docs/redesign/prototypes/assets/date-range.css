@@ -54,3 +54,8 @@
   .header-bar.has-tabs:has(.header-tools) .section-tabs { grid-column: 1 / -1; grid-row: 2; }
   .header-bar.has-tabs:has(.header-tools) .section-tabs ul { flex-wrap: wrap; justify-content: center; min-width: 0; }
 }
+
+/* MonthRange (assets/date-range.js): the days of a month in a card, for a day or a period. */
+.mr-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); row-gap: 2px; max-width: 340px; margin: 0 auto; }
+.mr-grid .dr-cell { height: 30px; }
+.mr-grid .dr-wd { height: 22px; }
