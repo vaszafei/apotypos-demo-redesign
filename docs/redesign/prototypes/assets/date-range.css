@@ -54,12 +54,3 @@
   .header-bar.has-tabs:has(.header-tools) .section-tabs { grid-column: 1 / -1; grid-row: 2; }
   .header-bar.has-tabs:has(.header-tools) .section-tabs ul { flex-wrap: wrap; justify-content: center; min-width: 0; }
 }
-
-/* MonthRange (assets/date-range.js): the days of a month in a card, for a day or a period. The grid takes the width of the card; the days touch, so a period is one band. */
-.mr-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); row-gap: 2px; width: 100%; }
-.mr-grid .dr-cell { height: 26px; font-size: var(--text-caption); }
-.mr-grid .dr-wd { height: 20px; margin-bottom: 2px; border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; color: var(--text-secondary); }
-.mr-grid .dr-day { border-radius: 0; }
-.mr-grid .dr-day.is-weekend:not(.is-off):not(.is-start):not(.is-end) { color: var(--text-secondary); }
-.mr-grid .dr-day.is-off, .mr-grid .dr-day.is-weekend.is-off { color: var(--border); }
-.mr-grid .dr-day.in-range { background: color-mix(in srgb, var(--accent) 10%, var(--surface-raised)); }

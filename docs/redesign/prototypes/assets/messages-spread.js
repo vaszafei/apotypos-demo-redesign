@@ -1,10 +1,8 @@
 // Messages of the pages of Διάδοση ειδήσεων (News spread): the Story page now, the other tabs later. They add to window.MESSAGES.
 Object.assign(window.MESSAGES.el, {
-  'stories.period.info': 'Όλες οι ιστορίες της ημέρας ή της περιόδου που διαλέξατε στο ημερολόγιο, με πρώτες αυτές που έχουν τα περισσότερα άρθρα· η λίστα κυλάει. Διαλέξτε μια ιστορία για να τη δείτε στο διάγραμμα· το κουμπί δίπλα της ανοίγει τη σελίδα της. Οι ιστορίες γενικών θεμάτων, όπως «Άλλα διεθνή», δεν μετρούν.',
-  'stories.cal.title': 'Ημερολόγιο',
-  'stories.cal.info': 'Διαλέξτε μια ημέρα ή μια περίοδο: ένα πρώτο κλικ διαλέγει την ημέρα, ένα δεύτερο κλικ κάνει την περίοδο από την πρώτη ημέρα ως αυτή. Η λίστα και το διάγραμμα δείχνουν τις ιστορίες της.',
+  'stories.period.info': 'Όλες οι ιστορίες της ημέρας ή της περιόδου που διαλέξατε στο ημερολόγιο της κορυφής, με πρώτες αυτές που έχουν τα περισσότερα άρθρα· η λίστα κυλάει. Μια ιστορία ανοίγει τη σελίδα της. Οι ιστορίες γενικών θεμάτων, όπως «Άλλα διεθνή», δεν μετρούν.',
   'stories.time.title': 'Ιστορίες στον χρόνο',
-  'stories.time.info': 'Οι ιστορίες με τα περισσότερα άρθρα στην ημέρα ή στην περίοδο που διαλέξατε, από την αρχή τους ως την τελευταία ημέρα της περιόδου (ο άξονας ξεκινά από την παλαιότερη)· η περίοδος έχει χρώμα. Ο κάθετος άξονας είναι η τετραγωνική ρίζα των άρθρων, ώστε να φαίνονται και οι μικρές ιστορίες δίπλα σε μια μεγάλη. Η ιστορία που διαλέξατε στη λίστα είναι πιο χοντρή· αν δεν είναι από τις πρώτες, προστίθεται στο διάγραμμα. Οι αριθμοί κάτω είναι τα άρθρα της περιόδου.',
+  'stories.time.info': 'Οι ιστορίες με τα περισσότερα άρθρα στην ημέρα ή στην περίοδο που διαλέξατε, από την αρχή τους ως την τελευταία ημέρα της περιόδου (ο άξονας ξεκινά από την παλαιότερη)· η περίοδος έχει χρώμα. Ο κάθετος άξονας είναι η τετραγωνική ρίζα των άρθρων, ώστε να φαίνονται και οι μικρές ιστορίες δίπλα σε μια μεγάλη. Οι αριθμοί κάτω είναι τα άρθρα της περιόδου.',
   'stories.trend.title': 'Τάσεις',
   'stories.trend.info': 'Τα άρθρα κάθε ιστορίας στην ημέρα ή στην περίοδο που διαλέξατε, έναντι της περιόδου με την ίδια διάρκεια ακριβώς πριν από αυτήν. Μόνο ιστορίες με {n} άρθρα ή περισσότερα στην περίοδο πριν. Οι ιστορίες γενικών θεμάτων δεν μετρούν.',
   'stories.trend.up': 'Αυξάνονται',
@@ -89,11 +87,9 @@ Object.assign(window.MESSAGES.el, {
   'story.related.row': '{n} άρθρα'
 })
 Object.assign(window.MESSAGES.en, {
-  'stories.period.info': 'Every story that ran on the day or in the period you picked in the calendar, the ones with the most articles first; the list scrolls. Pick a story to see it in the chart; the button next to it opens its page. Stories of general topics, such as “Other world news”, do not count.',
-  'stories.cal.title': 'Calendar',
-  'stories.cal.info': 'Pick a day or a period: a first click picks the day, a second click makes the period from the first day to it. The list and the chart show its stories.',
+  'stories.period.info': 'Every story that ran on the day or in the period you picked in the calendar at the top, the ones with the most articles first; the list scrolls. A story opens its page. Stories of general topics, such as “Other world news”, do not count.',
   'stories.time.title': 'Stories over time',
-  'stories.time.info': 'The stories with the most articles on the day or in the period you picked, each from its start to the last day of the period (the axis starts with the earliest); the period is tinted. The vertical axis is the square root of the articles, so the small stories show beside a large one. The story you picked in the list has a thicker line; if it is not one of the first, it is added to the chart. The numbers below are the articles of the period.',
+  'stories.time.info': 'The stories with the most articles on the day or in the period you picked, each from its start to the last day of the period (the axis starts with the earliest); the period is tinted. The vertical axis is the square root of the articles, so the small stories show beside a large one. The numbers below are the articles of the period.',
   'stories.trend.title': 'Trends',
   'stories.trend.info': 'The articles of every story on the day or in the period you picked, against the period of exactly the same length right before it. Only stories with {n} articles or more in the period before. Stories of general topics do not count.',
   'stories.trend.up': 'Rising',
