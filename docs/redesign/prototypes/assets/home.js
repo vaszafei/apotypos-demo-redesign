@@ -302,7 +302,7 @@
 
   // The hero of Αρχική: the masthead, the large search and the topics of the last day to search for,
   // the size of the data in one strip, and behind it all a faint silhouette of the articles per day. A link under it scrolls to the news.
-  function Hero ({ home, totals, i0, i1, stories }) {
+  function Hero ({ home, totals, i0, i1, stories, ix }) {
     const search = Shell.Search({ hero: true })
     const last = i1
     // The chips: the news topics with the most articles on the last day. The catch-all topics ("Άλλα", "Άλλα διεθνή") are not something to search for.
@@ -314,7 +314,7 @@
     const collected = sum(totals.slice(i0, i1 + 1))
     const period = t('home.hero.period', { from: fmt.date(home.dates[i0], { day: 'numeric', month: 'long' }), to: fmt.date(home.dates[i1], { day: 'numeric', month: 'long', year: 'numeric' }) })
     return h('section', { class: 'home-hero', 'aria-labelledby': 'home-hero-title' },
-      Wave(totals.slice(i0, i1 + 1)),
+      ix ? window.HeroField.create({ ix, home, info: (d, rank) => dayInfo(ix, d, rank), i0, i1 }) : Wave(totals.slice(i0, i1 + 1)),
       h('div', { class: 'home-hero-inner' },
         Masthead(),
         h('div', { class: 'home-hero-search' }, search),

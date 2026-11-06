@@ -124,6 +124,7 @@ a.home-stack-part { cursor: pointer; }
   padding: clamp(48px, 9vh, 104px) var(--space-5) 104px; overflow: hidden; border-bottom: 1px solid var(--border);
   background: radial-gradient(1100px 520px at 50% -12%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%), var(--surface-page);
 }
+.home-hero-field { position: absolute; z-index: -1; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .home-hero-wave { position: absolute; z-index: -1; left: 0; right: 0; bottom: 0; width: 100%; height: 30%; }
 .home-hero-wave-fill { fill: color-mix(in srgb, var(--accent) 6%, transparent); }
 .home-hero-wave-line { fill: none; stroke: color-mix(in srgb, var(--accent) 28%, transparent); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
