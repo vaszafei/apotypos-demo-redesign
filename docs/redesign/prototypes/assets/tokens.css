@@ -215,6 +215,7 @@
   --sidebar-width: 192px;
   --page-width: 1680px;
   --page-pad: clamp(0px, calc(2vw - 8px), 24px);
+  --page-gap-end: 48px;
   --header-height: 56px;
 
   /* Motion (#56). Motion shows what changed. It moves only transform and opacity. Reduced motion keeps the fades and drops the movement. */

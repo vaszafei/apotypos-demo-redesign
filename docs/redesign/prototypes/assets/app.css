@@ -763,7 +763,7 @@ button, input, select { font: inherit; color: inherit; }
   .section-nav .section-nav-link.is-parent::before { content: none; }
   .section-nav-sub .section-nav-link { font-size: 11px; }
   /* The page keeps the margin of Αρχική: a column of 1680 px (--page-width) centered on the screen, with the same side padding. The sidebar fills the left margin and its tabs stand at its right edge, next to the page. */
-  .page-body:has(.section-nav) .content { box-sizing: border-box; max-width: var(--page-width); padding-inline: var(--page-pad); }
+  .page-body:has(.section-nav) .content { box-sizing: border-box; max-width: var(--page-width); padding-inline: var(--page-pad) var(--page-gap-end); }
   :root[data-header="v2"] .page-tabs .sub-tabs { display: none; }
   /* The tabs and the sub-tabs are in the sidebar, so the page head keeps the actions and the filters. */
   :root[data-header="v2"] .page-tabs .section-tabs { display: none; }
