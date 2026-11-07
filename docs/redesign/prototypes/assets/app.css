@@ -951,9 +951,3 @@ svg.chart .bar-col { transform-origin: 50% 100%; }
   .section-nav-sub .section-nav-link { padding: 6px 12px; font-size: 14px; }
   .section-nav-list { width: 211px; }
 }
-/* A desktop screen shows the pages at 90 %, like the browser zoom at 90 %. The heights of the screen are divided by the zoom, so they still fill it. */
-@media (min-width: 1024px) {
-  html { zoom: 0.9; }
-  .shell, .main-column { min-height: calc(100vh / 0.9); }
-  .section-nav-inner { max-height: calc(100vh / 0.9 - var(--navbar-height)); }
-}
