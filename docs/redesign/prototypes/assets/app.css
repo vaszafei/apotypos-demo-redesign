@@ -749,8 +749,8 @@ button, input, select { font: inherit; color: inherit; }
 .page-main { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .section-nav { display: none; }
 @media (min-width: 1024px) {
-  .section-nav { display: block; flex: none; width: 232px; background: var(--surface-page); }
-  .section-nav-inner { position: sticky; top: var(--navbar-height); max-height: calc(100vh - var(--navbar-height)); overflow-y: auto; display: flex; justify-content: flex-end; padding: var(--space-5) var(--space-3) var(--space-5) calc(var(--space-6) + var(--space-4)); }
+  .section-nav { display: block; flex: none; width: auto; background: var(--surface-page); }
+  .section-nav-inner { position: sticky; top: var(--navbar-height); max-height: calc(100vh - var(--navbar-height)); overflow-y: auto; display: flex; justify-content: flex-start; padding: var(--space-5) var(--space-3) var(--space-5) var(--space-3); }
   /* The line between the tabs and the page is as high as the tabs, not as the page. */
   .section-nav-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; flex: none; width: 172px; align-content: start; border-right: 1px solid var(--border); }
   .section-nav-link { display: block; padding: 9px var(--space-3); border-radius: 6px; font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.08em; line-height: 1.4; text-transform: uppercase; color: var(--text-secondary); text-decoration: none; }
