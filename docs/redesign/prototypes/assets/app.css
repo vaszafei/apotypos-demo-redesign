@@ -943,3 +943,11 @@ svg.chart .bar-col { transform-origin: 50% 100%; }
   .header-nav .nav-link[aria-current="page"] .nav-label::before { content: "/ "; white-space: pre; }
   .section-nav .section-nav-link[aria-current]:not(.is-parent) .nav-label::before { content: "/ "; white-space: pre; }
 }
+/* The tabs of the section use the text of the apotypos.org sidebar: IBM Plex Sans 14 px, weight 500, normal case, 18 px icons. */
+@media (min-width: 1024px) {
+  .section-nav-link { gap: 12px; padding: 8px 12px; font-family: var(--font-text); font-size: 14px; font-weight: 500; letter-spacing: normal; line-height: 20px; text-transform: none; color: #404040; }
+  .section-nav .section-nav-link[aria-current] { color: #111; font-weight: 600; }
+  .section-nav-link .nav-icon { width: 18px; height: 18px; }
+  .section-nav-sub .section-nav-link { padding: 6px 12px; font-size: 14px; }
+  .section-nav-list { width: 211px; }
+}
