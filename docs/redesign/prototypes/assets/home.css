@@ -190,7 +190,7 @@ a.home-stack-part { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { .home-hero-more .icon { animation: none; } }
 
 /* Under the hero the page is a centered column: on a wide screen the news keeps a margin on both sides, the hero alone runs the full width. */
-.content.is-home > :not(.home-hero) { box-sizing: border-box; width: 100%; max-width: 1320px; margin-inline: auto; padding-inline: clamp(0px, calc(4vw - 16px), 48px); }
+.content.is-home > :not(.home-hero) { box-sizing: border-box; width: 100%; max-width: var(--page-width); margin-inline: auto; padding-inline: var(--page-pad); }
 
 @media (max-width: 1023px) {
   .home-hero { margin: 0 calc(-1 * var(--space-4)); padding: 40px var(--space-4) 88px; min-height: 0; }
