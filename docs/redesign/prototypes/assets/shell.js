@@ -64,6 +64,17 @@
       ['greekturkish', '/war'], ['coverage', '/coverage'], ['france', '/france-riots'], ['rouvikonas', '/cases']] }
   ]
   const FOOTER = [['methodology', '/methodology'], ['about', '/about']]
+  // The icons of the sections and the tabs: the Heroicons of the sidebar of apotypos.org, so the redesign keeps our icons.
+  const NAV_ICONS = { home: 'home', media: 'tv', people: 'user-group', politics: 'megaphone', world: 'chart-bar', methodology: 'book-open', about: 'information-circle' }
+  const ROUTE_ICONS = {
+    '/media': 'squares-2x2', '/groups': 'banknotes', '/trends': 'tag', '/stories': 'signal', '/media/writing': 'pencil-square', '/similarity': 'document-duplicate',
+    '/fingerprints': 'user-group', '/fingerprints/spread': 'arrow-trending-up', '/track': 'chat-bubble-bottom-center-text',
+    '/contradictions': 'identification', '/contradictions/pairs': 'arrows-right-left', '/contradictions/checks': 'check-badge',
+    '/elections': 'megaphone', '/elections/outlets': 'newspaper', '/elections/owners': 'banknotes', '/elections/topics': 'tag', '/elections/bylines': 'pencil-square',
+    '/speeches': 'microphone', '/un-israel-palestine': 'flag', '/narrative': 'squares-2x2', '/gaza': 'newspaper', '/israel': 'eye', '/gaza-language': 'language',
+    '/war': 'fire', '/coverage': 'document-magnifying-glass', '/france-riots': 'globe-europe-africa', '/cases': 'magnifying-glass-circle'
+  }
+  const withIcon = (name, label) => name ? [Icon(name, 'icon nav-icon'), h('span', { class: 'nav-label' }, label)] : [label]
 
   const hasText = (key) => key in window.MESSAGES.el
   const under = (route, base) => route === base || (base !== '/' && route.startsWith(base + '/'))
@@ -828,7 +839,7 @@
       const exactTab = item && item.tabs.find(([, r, subs]) => r === route || (subs || []).some(([, s]) => s === route))
 
       const navLink = ({ key, href, current }) =>
-        h('li', {}, h('a', { class: 'nav-link', href, 'aria-current': current ? 'page' : null }, t(`nav.${key}`)))
+        h('li', {}, h('a', { class: 'nav-link', href, 'aria-current': current ? 'page' : null }, ...withIcon(NAV_ICONS[key], t(`nav.${key}`))))
       // The links are made twice: the top navbar (wide screens) and the drawer (tablet and phone). CSS shows one of them.
       const mainLinks = () => NAV.map((n) => navLink({ key: n.key, href: hrefOf(n.tabs[0][1]), current: n === item }))
       const footerLinks = () => FOOTER.map(([key, r]) => navLink({ key, href: hrefOf(r), current: key === id }))
@@ -950,7 +961,7 @@
       // The tabs show on the page of a tab. A detail page below a tab has none.
       const tabBar = exactTab && item.tabs.length > 1
         ? h('nav', { class: 'section-tabs', 'aria-label': t(`nav.${item.key}`) }, h('ul', {}, item.tabs.map(([key, r]) =>
-          h('li', {}, h('a', { href: hrefOf(r), 'aria-current': exactTab[1] === r ? (r === route ? 'page' : 'true') : null }, t(`tab.${item.key}.${key}`))))))
+          h('li', {}, h('a', { href: hrefOf(r), 'aria-current': exactTab[1] === r ? (r === route ? 'page' : 'true') : null }, ...withIcon(ROUTE_ICONS[r], t(`tab.${item.key}.${key}`)))))))
         : null
       // The sub-tabs of the tab: a second row of underlined tabs under the top bar.
       const subBar = exactTab && exactTab[2]
@@ -976,9 +987,9 @@
             const nested = inTab && subs
             const current = inTab ? (!nested && (route === r || (subs || []).some(([, s]) => s === route)) ? 'page' : 'true') : null
             return h('li', {},
-              h('a', { class: `section-nav-link${nested ? ' is-parent' : ''}`, href: hrefOf(r), 'aria-current': current }, t(`tab.${item.key}.${key}`)),
+              h('a', { class: `section-nav-link${nested ? ' is-parent' : ''}`, href: hrefOf(r), 'aria-current': current }, ...withIcon(ROUTE_ICONS[r], t(`tab.${item.key}.${key}`))),
               nested ? h('ul', { class: 'section-nav-sub' }, subs.map(([subKey, s]) =>
-                h('li', {}, h('a', { class: 'section-nav-link', href: hrefOf(s), 'aria-current': s === route ? 'page' : null }, t(`tab.${item.key}.${subKey}`))))) : null)
+                h('li', {}, h('a', { class: 'section-nav-link', href: hrefOf(s), 'aria-current': s === route ? 'page' : null }, ...withIcon(ROUTE_ICONS[s], t(`tab.${item.key}.${subKey}`)))))) : null)
           }))))
         : null
       const content = h('main', { class: 'content', id: 'content' })

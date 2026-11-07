@@ -933,3 +933,13 @@ svg.chart .bar-col { transform-origin: 50% 100%; }
 .token-item { display: flex; align-items: center; gap: var(--space-2); min-width: 0; font-size: var(--text-caption); }
 .token-item code { overflow-wrap: anywhere; color: var(--text-secondary); }
 .token-chip { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid var(--border); border-radius: var(--radius); font-size: var(--text-caption); font-weight: 600; }
+
+/* The icons of the sections and the tabs (the Heroicons of apotypos.org). The "/" of the current link goes before the label, after the icon. */
+.nav-link:has(.nav-icon), .section-nav-link:has(.nav-icon), .section-tabs a:has(.nav-icon), .sub-tabs a:has(.nav-icon) { display: flex; align-items: center; gap: 8px; }
+.nav-icon { flex: none; width: 16px; height: 16px; }
+.section-nav-sub .nav-icon { width: 14px; height: 14px; }
+.header-nav .nav-link[aria-current="page"]:has(.nav-label)::before, .section-nav .section-nav-link[aria-current]:has(.nav-label)::before { content: none; }
+@media (min-width: 1024px) {
+  .header-nav .nav-link[aria-current="page"] .nav-label::before { content: "/ "; white-space: pre; }
+  .section-nav .section-nav-link[aria-current]:not(.is-parent) .nav-label::before { content: "/ "; white-space: pre; }
+}
