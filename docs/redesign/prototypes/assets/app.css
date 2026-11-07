@@ -943,3 +943,7 @@ svg.chart .bar-col { transform-origin: 50% 100%; }
   .header-nav .nav-link[aria-current="page"] .nav-label::before { content: "/ "; white-space: pre; }
   .section-nav .section-nav-link[aria-current]:not(.is-parent) .nav-label::before { content: "/ "; white-space: pre; }
 }
+/* The tabs stay under the logo at any zoom: they start at the left of the sidebar, not at its right edge, so a wider window (zoom out) does not move them. */
+@media (min-width: 1024px) {
+  .section-nav-inner { justify-content: flex-start; padding-left: var(--space-3); }
+}
