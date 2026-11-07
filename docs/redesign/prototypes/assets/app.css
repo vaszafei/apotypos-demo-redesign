@@ -191,7 +191,7 @@ button, input, select { font: inherit; color: inherit; }
 
 .logo-link { display: inline-flex; align-items: center; color: inherit; text-decoration: none; }
 .logo-img { filter: var(--logo-filter); display: block; width: 152px; max-width: 100%; height: auto; }
-.breadcrumbs { width: 100%; max-width: 1240px; padding: var(--space-5) var(--space-6) 0; }
+.breadcrumbs { width: 100%; max-width: var(--page-width); padding: var(--space-5) var(--space-6) 0; }
 .breadcrumbs ol { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); list-style: none; margin: 0; padding: 0; font-size: var(--text-small); }
 .breadcrumbs li { display: flex; align-items: center; gap: var(--space-1); }
 .breadcrumbs a { color: var(--text-secondary); }
@@ -202,7 +202,7 @@ button, input, select { font: inherit; color: inherit; }
 .lang-switch button { min-width: 40px; min-height: 36px; border: 0; background: transparent; font-size: var(--text-small); cursor: pointer; }
 .lang-switch button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
 
-.content { flex: 1; width: 100%; max-width: 1240px; padding: var(--space-6); }
+.content { flex: 1; width: 100%; max-width: var(--page-width); padding: var(--space-6); }
 
 .page-footer { padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border); font-size: var(--text-small); color: var(--text-secondary); }
 
@@ -749,7 +749,7 @@ button, input, select { font: inherit; color: inherit; }
 .page-main { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .section-nav { display: none; }
 @media (min-width: 1024px) {
-  .section-nav { display: block; flex: none; width: max(232px, calc(50vw - 660px)); background: var(--surface-page); }
+  .section-nav { display: block; flex: none; width: max(232px, calc(50vw - var(--page-width) / 2)); background: var(--surface-page); }
   .section-nav-inner { position: sticky; top: var(--navbar-height); max-height: calc(100vh - var(--navbar-height)); overflow-y: auto; display: flex; justify-content: flex-end; padding: var(--space-5) var(--space-3) var(--space-5) calc(var(--space-6) + var(--space-4)); }
   /* The line between the tabs and the page is as high as the tabs, not as the page. */
   .section-nav-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; flex: none; width: 172px; align-content: start; border-right: 1px solid var(--border); }
@@ -762,8 +762,8 @@ button, input, select { font: inherit; color: inherit; }
   .section-nav-sub { list-style: none; margin: 2px 0 4px; padding: 0 0 0 var(--space-4); display: grid; gap: 2px; }
   .section-nav .section-nav-link.is-parent::before { content: none; }
   .section-nav-sub .section-nav-link { font-size: 11px; }
-  /* The page keeps the margin of Αρχική: a column of 1320 px centered on the screen, with the same side padding. The sidebar fills the left margin and its tabs stand at its right edge, next to the page. */
-  .page-body:has(.section-nav) .content { box-sizing: border-box; max-width: 1320px; padding-inline: clamp(0px, calc(4vw - 16px), 48px); }
+  /* The page keeps the margin of Αρχική: a column of 1680 px (--page-width) centered on the screen, with the same side padding. The sidebar fills the left margin and its tabs stand at its right edge, next to the page. */
+  .page-body:has(.section-nav) .content { box-sizing: border-box; max-width: var(--page-width); padding-inline: var(--page-pad); }
   :root[data-header="v2"] .page-tabs .sub-tabs { display: none; }
   /* The tabs and the sub-tabs are in the sidebar, so the page head keeps the actions and the filters. */
   :root[data-header="v2"] .page-tabs .section-tabs { display: none; }
