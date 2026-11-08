@@ -947,3 +947,14 @@ svg.chart .bar-col { transform-origin: 50% 100%; }
 @media (min-width: 1024px) {
   .section-nav-inner { justify-content: flex-start; padding-left: var(--space-3); }
 }
+/* The tabs of the section at 90 % (text, icons and spacing), like the browser zoom at 90 %. The icons stay under the logo. */
+@media (min-width: 1024px) {
+  .section-nav-inner { padding-left: 13px; }
+  .section-nav-list { width: 155px; }
+  .section-nav-link { padding: 8px 11px; font-size: 10.8px; }
+  .section-nav-sub .section-nav-link { font-size: 9.9px; }
+  .section-nav-sub { padding-left: 14px; }
+  .section-nav-link:has(.nav-icon) { gap: 7px; }
+  .section-nav-link .nav-icon { width: 14.4px; height: 14.4px; }
+  .section-nav-sub .section-nav-link .nav-icon { width: 12.6px; height: 12.6px; }
+}
