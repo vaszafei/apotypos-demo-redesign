@@ -7,6 +7,9 @@ const { status, refresh, dates, view, range, rows, total, colorOf, series, mover
 const { data: shifts, status: shiftsStatus } = await useFixture<{ window: [string, string], threshold: number, topics: { label: string, ratio: number, week: string }[], weeks: unknown[] }>('overton', { required: ['topics', 'weeks'], isEmpty: b => b.topics.length === 0 })
 
 const sliced = computed(() => dates.value.slice(range.value[0], range.value[1] + 1))
+// A new period draws the lines in again (assets/motion.js replay); the first view is played by plugins/motion.client.ts.
+const { $motion } = useNuxtApp()
+watch(sliced, async () => { await nextTick(); $motion.replay(document.querySelector('[data-card="time"]')) })
 const top3 = computed(() => rows.value.slice(0, 3).reduce((a, r) => a + r.count, 0) / (total.value || 1))
 const timeInfo = computed(() => `${t('topics2.time.title')}. ${t('topics2.time.sub')}`)
 const allInfo = computed(() => `${t('topics2.all.title')}. ${t('topics2.all.sub')}`)
@@ -53,21 +56,21 @@ const widest = computed(() => Math.max(...bars.value.map(b => b.value), 0))
   </div>
   <div v-else class="dash-grid">
     <div class="card-col c-3">
-      <DashCard :title="t('topics2.all.title')" :info="allInfo" :delay="100">
+      <DashCard :title="t('topics2.all.title')" :info="allInfo">
         <p v-if="rows.length > 3" class="dcard-sub">{{ t('topics2.all.finding', { share: fmtPct(top3) }) }}</p>
         <TopicDonut :rows="rows" :total="total" :color-of="colorOf" />
       </DashCard>
     </div>
     <div class="card-col c-9">
-      <DashCard :title="t('topics2.time.title')" :info="timeInfo" :delay="140">
+      <DashCard :title="t('topics2.time.title')" :info="timeInfo" card="time">
         <LinesChart v-if="series.length" :dates="sliced" :series="series" :caption="t('topics2.time.title')" />
       </DashCard>
       <div class="dash-grid">
         <div class="card-col c-6">
-          <DashCard :title="t('topics2.move.title')" :info="moveInfo" :delay="180" card="movers"><BarList :rows="bars" :max="widest" /></DashCard>
+          <DashCard :title="t('topics2.move.title')" :info="moveInfo" card="movers"><BarList :rows="bars" :max="widest" /></DashCard>
         </div>
         <div class="card-col c-6">
-          <DashCard v-if="shiftModel" :title="t('tab.media.shifts')" :info="shiftModel.info" :delay="220" card="shifts">
+          <DashCard v-if="shiftModel" :title="t('tab.media.shifts')" :info="shiftModel.info" card="shifts">
             <p class="dcard-sub">{{ shiftModel.sub }}</p>
             <div class="shift-scroll"><BarList :rows="shiftModel.rows" :max="shiftModel.max" /></div>
           </DashCard>

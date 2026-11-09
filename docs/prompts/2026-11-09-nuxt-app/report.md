@@ -125,3 +125,45 @@ Differences from the plan, my calls:
 - `?header=v1` (the old header) is not ported; the Nuxt shell is v2 only.
 - The user menu's "Προφίλ" links to `/profile` through `NavLink`, so it opens the static page of the table of pages until a profile page is ported.
 - `LangSwitch` and `AuthLinks`/`UserMenu` are separate components (the plan lists `ShellSwitches` for the switches); the language switch is in the header and in the drawer, the three others in the footer and the drawer.
+
+## U6, second pull request: motion and the page slide (branch `claude/nuxt-motion`)
+
+What changed: `plugins/motion.client.ts` (new), `plugins/view-transition.client.ts` (cross-document moves, `--vt-old-y`), `utils/move.ts` (new, the order and `directionOf`, with `scripts/move.test.mjs`), `DashCard.vue` (no fixed `m-play`, no `delay` prop), `trends.vue` (no `:delay`, `$motion.replay` on a new period).
+
+### Ported from `motion.js` (R8: only what the shell and /trends use)
+
+Page entrance, first view of the cards (`m-intro`, `m-play`, `m-wait`, `m-done`, delays 100 + 40 ms per card), `--m-i` marks, fade of changed cards, the "/" glide of the current tab, `replay`. Not ported because nothing in the shell or /trends uses it: count-up, the thumb of a segmented control, the move of sorted rows. They come with the page that has them.
+
+### Pixel check (`npm run check:pixel -- /trends`, three runs after the build)
+
+| Screen | Before (U6 part 1) | After |
+| --- | --- | --- |
+| 1440 full | 517 | 0 |
+| 1440 picker open | 553 | 0 |
+| 1440 hover | 469 | 0 |
+| 1440 night | 530 | 0 |
+| 390 full | 2 073 or 0 | 2 073 or 0 |
+| 390 night | 2 137 or 0 | 2 137 or 0 |
+
+The 390 screens are still the two-valued result of the static page's `centerTabs` race (run 2 of 3 gave 0 for the full page; the night page gave 2 137 in all three runs). Still undecided: fix `shell.js` or make the check tolerate it. `npm test` 40 of 40, `npm run typecheck` clean.
+
+### Motion in Chrome (measured, not looked at)
+
+Normal motion, `/trends` loaded: at 80 ms `m-intro` is on and no card has `m-play`; at 250 ms the four cards have `m-play` with delays 100, 140, 180, 220 ms (the values that were fixed before) and about 96 animations run; at 3.2 s all cards are `m-done` and 0 animations run. Reduced motion: no `m-intro`, no `m-play`. A new period (Αύγουστος, Σεπτέμβριος, two weeks, one week): the lines card gets `m-play` again (42 to 49 animations) and the other cards do not. No console errors.
+
+### The five failure modes of the view-transition lesson
+
+Measured with `getComputedStyle(documentElement, '::view-transition-old(page)')` and logs in Chrome 1440 × 900. I did not look at a slowed mid-slide frame, so "looked at" does not apply to any of them.
+
+1. **Hold the first frame.** Does not work here, and the move into a Nuxt page is skipped instead. Tried, with a test page that logs at `ready` whether the page was drawn: a dynamically inserted `<style blocking="render">` (not held), a module script with top-level await and `blocking="render"` (not held), `rel=expect` released by a timer (not held), a dynamically inserted `<link rel=stylesheet blocking="render">` to a request that never answers and is removed when drawn (held). Only a pending request holds the first frame, and a static host has none to release when Vue has drawn the page. Without a hold the new picture is an empty page. So `pagereveal` in the Nuxt shell skips the transition: static to Nuxt does not slide, and no error is logged (the `ready` rejection is caught). Nuxt to static slides. A fix needs the page in the first HTML (prerender, which changes KTD11) or a server that can hold a request. For the user to decide.
+2. **Chained listeners.** The motion plugin does not listen to `pagereveal`; the "/" glide runs from the intro, after the new DOM exists. Not tried by hand.
+3. **Frozen group.** A move between two Nuxt pages (temporary test pages, removed again) started with the page scrolled: tab move `old-y` −375 px (old top −319, new top 56), section move −1400 px (old top −1344, new top 56); the computed `translate` of the old picture was the same value. Nuxt to static, scrolled 1400 px: −375 px, the same value. Not seen as a frame.
+4. **Pages with no route.** `stepOf` returns null for a path outside the order and `directionOf` returns null (`move.test.mjs`); in Chrome the move to the home page left the shell without a slide and without an error. Methodology and the 404 page were not tried by hand.
+5. **Rejection.** Five moves between Nuxt pages (tab, section, back, forward, home) and the moves out of /trends: no uncaught error. `skipTransition` is always preceded by `ready.catch`.
+
+Directions between the temporary pages: tab to /media up, section to /fingerprints right, Back left, Forward right (the order of the navbar and the tabs).
+
+### Known limits, my calls
+
+- Nuxt's `NAV` is a partial copy (people has no "spread" tab, world has no sub-pages). A move from a static page that is not in it has no direction, but that is the arrival case, which is skipped anyway; it matters when the arrival is solved.
+- The test pages and the changed `ported-pages.json` were temporary and are not in the branch.
