@@ -409,12 +409,12 @@
   function readTheme () {
     const asked = new URLSearchParams(location.search).get('theme')
     let saved = null
-    try { saved = localStorage.getItem('proto-theme') } catch {}
+    try { saved = localStorage.getItem('proto-theme-press') } catch {}
     return [asked, saved].find((k) => THEMES.includes(k)) || 'press'
   }
   function setTheme (key) {
     document.documentElement.dataset.theme = key
-    try { localStorage.setItem('proto-theme', key) } catch {}
+    try { localStorage.setItem('proto-theme-press', key) } catch {}
   }
   setTheme(readTheme())
 
