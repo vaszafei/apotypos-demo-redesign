@@ -958,3 +958,7 @@ svg.chart .bar-col { transform-origin: 50% 100%; }
   .section-nav-link .nav-icon { width: 14.4px; height: 14.4px; }
   .section-nav-sub .section-nav-link .nav-icon { width: 12.6px; height: 12.6px; }
 }
+
+/* The footer switch (data-icons on <html>): off hides all nav icons, sidebar keeps only those of the left bar (.section-nav). */
+:root[data-icons="off"] .nav-icon, :root[data-icons="sidebar"] .nav-icon { display: none; }
+:root[data-icons="sidebar"] .section-nav .nav-icon { display: block; }

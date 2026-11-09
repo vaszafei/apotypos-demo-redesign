@@ -418,6 +418,20 @@
   }
   setTheme(readTheme())
 
+  // Prototype only: where the nav icons show. off = none, all = top bar, tabs and the left bar, sidebar = the left bar only. ?icons= or the last choice sets it.
+  const ICON_MODES = ['off', 'all', 'sidebar']
+  function readIcons () {
+    const asked = new URLSearchParams(location.search).get('icons')
+    let saved = null
+    try { saved = localStorage.getItem('proto-icons') } catch {}
+    return [asked, saved].find((k) => ICON_MODES.includes(k)) || 'off'
+  }
+  function setIcons (key) {
+    document.documentElement.dataset.icons = key
+    try { localStorage.setItem('proto-icons', key) } catch {}
+  }
+  setIcons(readIcons())
+
   // The unified header (v2) is the default. ?header=v1 shows the old header for comparison; ?header= or the last choice sets it.
   // v2: the top bar holds only the back button and the search. The page head under it holds the tabs, the page actions and the sub-tabs.
   function readHeader () {
@@ -855,6 +869,10 @@
         h('select', { onChange: (e) => { setFont(e.target.value); document.querySelectorAll('.font-switch select').forEach((s) => { s.value = e.target.value }) } },
           FONTS.map(([key, label]) => h('option', { value: key, selected: document.documentElement.dataset.font === key }, label))))
 
+      const iconSwitch = () => h('label', { class: 'font-switch icon-switch' }, h('span', {}, t('shell.icons')),
+        h('select', { onChange: (e) => { setIcons(e.target.value); document.querySelectorAll('.icon-switch select').forEach((s) => { s.value = e.target.value }) } },
+          ICON_MODES.map((key) => h('option', { value: key, selected: document.documentElement.dataset.icons === key }, t(`icons.${key}`)))))
+
       // Some chart colors are computed from the tokens when a page draws (Dash.color), so a new theme draws the page again, as a log in does.
       // The scroll position and the focus on the swatch are kept.
       const redrawForTheme = (key) => {
@@ -934,7 +952,7 @@
         authLinks('auth-links drawer-auth', true),
         h('div', { class: 'nav-footer' },
           h('ul', { class: 'nav-list', 'aria-label': t('section.footer') }, footerLinks()),
-          h('div', { class: 'sidebar-tools' }, langSwitch(), themeSwitch(), fontSwitch())))
+          h('div', { class: 'sidebar-tools' }, langSwitch(), themeSwitch(), iconSwitch(), fontSwitch())))
 
       const menuButton = h('button', { type: 'button', class: 'icon-button menu-button', 'aria-label': t('shell.menu'), 'aria-controls': 'sidebar', 'aria-expanded': 'false', onClick: () => setDrawer(true) }, Icon('bars-3'))
 
@@ -1000,7 +1018,7 @@
           h('div', { class: 'page-body' }, sectionNav, h('div', { class: 'page-main' }, subBarTrail, content)),
           h('footer', { class: 'page-footer' }, h('span', { class: 'page-footer-text' }, t('site.footer')),
             h('ul', { class: 'nav-list page-footer-links', 'aria-label': t('section.footer') }, footerLinks()),
-            h('div', { class: 'page-footer-tools' }, themeSwitch(), fontSwitch()))))
+            h('div', { class: 'page-footer-tools' }, themeSwitch(), iconSwitch(), fontSwitch()))))
 
       // The open drawer keeps the focus: the rest of the page is inert until the drawer closes.
       const mainColumn = shell.querySelector('.main-column')
