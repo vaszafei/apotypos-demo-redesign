@@ -183,24 +183,11 @@
 .fp-person { display: grid; gap: 2px; padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-raised); font-size: var(--text-caption); color: var(--text-primary); }
 .fp-person-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
 .fp-person-head strong { font-size: var(--text-small); color: var(--ink); }
-.fp-net, .fp-row-net { padding: 1px 6px; border-radius: 4px; font-size: var(--text-caption); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fp-net { padding: 1px 6px; border-radius: 4px; font-size: var(--text-caption); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .fp-person-n { font-size: var(--text-small); font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
-.fp-person-topic { color: var(--text-secondary); }
-.fp-tools { display: flex; flex-wrap: wrap; gap: var(--space-2); justify-content: flex-end; }
 .fp-what { margin-bottom: var(--space-2); }
-.fp-finding { margin: 0 0 var(--space-3); font-size: var(--text-small); font-weight: 600; color: var(--ink); }
-.fp-rows { display: grid; gap: 4px; margin: var(--space-3) 0 0; padding: 0; list-style: none; }
-.fp-rows li { display: grid; grid-template-columns: minmax(110px, 170px) minmax(0, 1fr) 52px 48px; align-items: center; gap: var(--space-3); font-size: var(--text-caption); }
-.fp-row-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
-.fp-row-net { justify-self: end; text-align: right; }
-.fp-row-n { justify-self: end; font-variant-numeric: tabular-nums; }
 .chart .q-label { fill: var(--text-secondary); font-size: 11px; }
 .chart .scatter-dot { opacity: 0.92; }
 @media (max-width: 1023px) { .fp-overview .c-4, .fp-overview .c-8 { grid-column: 1 / -1; } }
 .chart .dot-out { stroke: var(--text-secondary); stroke-opacity: 0.55; stroke-width: 1; }
-.fp-rows .fp-rows-head { align-items: end; color: var(--text-secondary); font-size: var(--text-caption); line-height: 1.2; }
-.fp-rows-head span:nth-child(n+3) { justify-self: end; text-align: right; }
-.fp-panel { position: sticky; top: var(--space-4); }
-.dash .fp-panel .mme-people { table-layout: auto; }
-.dash .fp-panel .mme-people td { min-width: 38px; }
-@media (max-width: 1023px) { .fp-panel { position: static; } }
+.fp-right { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }

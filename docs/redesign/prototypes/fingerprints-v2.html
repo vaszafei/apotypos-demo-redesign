@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="assets/tokens.css?v=18">
   <link rel="stylesheet" href="assets/app.css?v=62">
   <link rel="stylesheet" href="assets/dash.css?v=103">
-  <link rel="stylesheet" href="assets/mme.css?v=60">
+  <link rel="stylesheet" href="assets/mme.css?v=62">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
@@ -18,9 +18,9 @@
   <script src="assets/messages-v2.js?v=60"></script>
   <script src="assets/components.js?v=21"></script>
   <script src="assets/motion.js?v=4"></script>
-  <script src="assets/messages-mme.js?v=34"></script>
+  <script src="assets/messages-mme.js?v=35"></script>
   <script src="assets/dash.js?v=30"></script>
-  <script src="assets/mme.js?v=29"></script>
+  <script src="assets/mme.js?v=33"></script>
   <script src="assets/shell.js?v=71"></script>
   <script src="data/fingerprints.js?v=2"></script>
   <script src="data/stanceRatings.js?v=2"></script>
@@ -42,7 +42,7 @@
     const colorOf = Dash.groupColors(groupList)
     const groupOfOutlet = new Map(groupList.flatMap((g) => g.outlets.map((o) => [o.name, g.name])))
     const groupRank = new Map(groupList.map((g, i) => [g.name, i]))
-    const state = { mode: 'attention', people: 'tone', view: 'bars' }
+    const state = { mode: 'attention' }
     const mme = load('mme', ['sets'], (b) => Object.keys(b.sets))
     const mmeSummary = mme.kind === 'data' ? Mme.summary(mme.data.sets.gr, 0, mme.data.sets.gr.dates.length - 1) : null
 
@@ -210,11 +210,11 @@
           if (m.failed || (tab === 'overview' && !mmeSummary)) { content.replaceChildren(bar, UI.ErrorState({ onRetry: () => location.reload() }), protoNote()); return }
           if (m.empty && tab === 'spread') { content.replaceChildren(bar, h('div', { class: 'dash-grid' }, card('c-12', cardHead(t('fp.matrix.title')), UI.EmptyState({ text: t('fp.empty') }))), protoNote()); return }
 
-          // Επισκόπηση: all the people in a column on the left, and one chart of all of them on the right (four layouts to compare). Έμφαση και στάση: the strongest cells in a narrow column and the range chart.
+          // Επισκόπηση: all the people in a column on the left, and tone and voice of all of them, and the articles about them over time, on the right. Έμφαση και στάση: the strongest cells in a narrow column and the range chart.
           if (tab === 'overview') {
             const list = Mme.PeopleListCard(mmeSummary)
-            const panel = Mme.PeoplePanel(mmeSummary, { mode: state.people, view: state.view, onMode: (mode) => { state.people = mode; draw() }, onView: (view) => { state.view = view; draw() } })
-            content.replaceChildren(bar, h('div', { class: 'dash-grid fp-overview' }, list, panel), protoNote())
+            const right = h('div', { class: 'c-8 fp-right' }, Mme.ToneVoiceCard(mmeSummary), Mme.PeopleTimeCard(mmeSummary))
+            content.replaceChildren(bar, h('div', { class: 'dash-grid fp-overview' }, list, right), protoNote())
             return
           }
           const strip = card('card-main', cardHead(t('f2.strip.persons'), h('span', { class: 'legend-inline' },

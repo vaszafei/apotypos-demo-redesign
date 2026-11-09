@@ -156,45 +156,6 @@
   }
   const netOf = (tone) => { const n = sum(tone); return n ? (tone[2] - tone[0]) / n : 0 }
 
-  // People × outlets: the tone of the articles about each person, or the statements of the person per 1,000 articles.
-  function PeopleCard (S, { mode, onMode, extra, span = 'c-12' }) {
-    const cols = columnsOf(S)
-    const people = S.set.people.map((p, k) => ({ ...p, k, tone: [0, 1, 2].map((j) => sum(cols.map((o) => o.tone[k][j]))) }))
-      .sort((a, b) => sum(b.tone) - sum(a.tone))
-    const maxRate = Math.max(...people.flatMap((p) => cols.map((o) => (o.n ? (o.quotes[p.k] / o.n) * 1000 : 0))), 0.0001)
-    const tools = UI.SegmentedControl({ label: t('mme.people.mode'), value: mode, onChange: onMode, options: ['tone', 'voice'].map((m) => ({ value: m, label: t(`mme.people.mode.${m}`) })) })
-    const cell = (p, o) => {
-      if (mode === 'voice') {
-        const n = o.quotes[p.k]
-        const rate = o.n ? (n / o.n) * 1000 : 0
-        const title = t('mme.people.cell.voice', { outlet: o.name, person: p.name, n: fmt.int(n), rate: fmt.dec(rate) })
-        return h('td', { style: n ? seq(rate / maxRate) : { color: 'var(--text-secondary)' }, title, 'aria-label': title }, n ? (rate < 10 ? fmt.dec(rate) : fmt.int(Math.round(rate))) : '')
-      }
-      const tone = o.tone[p.k]
-      const n = sum(tone)
-      if (n < 5) {
-        const title = t('mme.people.cell.few', { outlet: o.name, person: p.name, n: fmt.int(n) })
-        return h('td', { class: 'mme-few', title, 'aria-label': title }, n ? String(n) : '')
-      }
-      const net = netOf(tone)
-      const title = t('mme.people.cell.tone', { outlet: o.name, person: p.name, n: fmt.int(n), net: signed(net) })
-      return h('td', { style: netColor(net), title, 'aria-label': title }, fmt.int(n))
-    }
-    const totalCell = (p) => (mode === 'voice'
-      ? h('td', { class: 'mme-num-col' }, fmt.int(S.personQuotes[p.k]))
-      : h('td', { class: 'mme-num-col' }, h('span', { class: 'mme-total' }, fmt.int(sum(p.tone))), h('span', { class: 'mme-net', style: netColor(netOf(p.tone)) }, signed(netOf(p.tone)))))
-    const table = h('table', { class: 'matrix matrix-turned mme-people' },
-      h('caption', { class: 'visually-hidden' }, t('mme.people.title')),
-      turnedHead(t('media.col.person'), [t('mme.people.total')], cols),
-      h('tbody', {}, people.map((p) => h('tr', {}, h('th', { scope: 'row' }, p.name), totalCell(p), cols.map((o) => cell(p, o))))))
-    const legend = mode === 'voice'
-      ? h('p', { class: 'dcard-sub' }, t('mme.people.key.voice'))
-      : h('div', { class: 'scale-legend' }, h('span', {}, t('mme.people.key.neg')),
-        h('ol', { class: 'scale-steps' }, [-0.5, -0.3, -0.1, 0, 0.1, 0.3, 0.5].map((v) => { const c = netColor(v); return h('li', { style: c }, signed(v)) })),
-        h('span', {}, t('mme.people.key.pos')))
-    return card(span, cardHead(t('mme.people.title'), extra ? h('div', { class: 'fp-tools' }, tools, extra) : tools, t('mme.people.info')), people.length ? [matrixWrap(t('mme.people.title'), table), legend] : emptyText(t('media2.empty.list')))
-  }
-
   const STANCE_COLORS = ['var(--stance-critical)', 'var(--stance-neutral)', 'var(--stance-supportive)']
   const STANCE_CODES = ['critical', 'neutral', 'supportive']
   const stanceSegments = (st) => STANCE_CODES.map((c, i) => ({ label: t(`stance.${c}`), value: st[i], color: STANCE_COLORS[i] }))
@@ -261,24 +222,8 @@
       h('div', { class: 'mme-topic-grid' }, sharePanel, storyPanel, sidePanel))
   }
 
-  // The people with the most quoted statements, and their two largest topics.
   // The people who have a page of their own (the key of the entity /person/<slug>).
   const PERSON_KEYS = { 'Άδωνις Γεωργιάδης': 'adonis' }
-  function PersonsCard (S) {
-    const people = S.set.people.map((p, k) => ({ p, k, n: S.personQuotes[k] })).filter((r) => r.n > 0).sort((a, b) => b.n - a.n)
-    return card('c-12', cardHead(t('mme.persons.title'), null, t('mme.persons.info')),
-      people.length
-        ? h('ul', { class: 'mme-persons', style: `--n:${people.length}` }, people.map((r) => {
-          const tops = S.set.issues.map((x, i) => ({ x, n: S.quotesByIssue[i][r.k] })).filter((q) => q.n > 0).sort((a, b) => b.n - a.n).slice(0, 2)
-          const all = sum(S.set.issues.map((_, i) => S.quotesByIssue[i][r.k])) || 1
-          return h('li', { class: 'mme-person' },
-            h('p', { class: 'mme-person-name' }, PERSON_KEYS[r.p.name] ? UI.EntityLink({ type: 'person', key: PERSON_KEYS[r.p.name], label: r.p.name }) : r.p.name),
-            h('p', { class: 'mme-person-n' }, t('mme.persons.quotes', { n: fmt.int(r.n) })),
-            h('p', { class: 'muted-text' }, [r.p.role, r.p.party].filter(Boolean).join(' · ')),
-            h('p', { class: 'mme-person-topics' }, tops.map((q) => h('span', {}, `${name(q.x)} ${pctRound(q.n / all)}`))))
-        }))
-        : emptyText(t('media2.empty.list')))
-  }
 
   // ———— Πρόσωπα › Επισκόπηση: all the people in a column on the left, and one chart of all of them on the right. ————
 
@@ -297,61 +242,22 @@
     return el
   }
 
-  // The left column: one card, one row for each person: the statements, the tone over all the outlets, and the two topics.
+  // The left column: one card, one row for each person: the role, the statements and the tone over all the outlets.
   function PeopleListCard (S) {
     const people = peopleOf(S)
     return card('c-4 fp-list-card', cardHead(t('mme.who.title'), null, t('mme.who.info')),
       people.length
         ? h('ul', { class: 'fp-list' }, people.map((r) => {
           const o = overallOf(S, r.k)
-          const tops = S.set.issues.map((x, i) => ({ x, n: S.quotesByIssue[i][r.k] })).filter((q) => q.n > 0).sort((a, b) => b.n - a.n).slice(0, 2)
-          const all = sum(S.set.issues.map((_, i) => S.quotesByIssue[i][r.k])) || 1
           const net = signed(o.net)
           return h('li', { class: 'fp-person' },
             h('span', { class: 'fp-person-head' },
               h('strong', {}, PERSON_KEYS[r.p.name] ? UI.EntityLink({ type: 'person', key: PERSON_KEYS[r.p.name], label: r.p.name }) : r.p.name),
               o.n >= 5 ? h('span', { class: 'fp-net', style: netColor(o.net), title: t('mme.people.cell.tone', { outlet: t('mme.people.total'), person: r.p.name, n: fmt.int(o.n), net }) }, t('mme.who.net', { net })) : null),
             h('span', { class: 'muted-text' }, [r.p.role, r.p.party].filter(Boolean).join(' · ')),
-            h('span', { class: 'fp-person-n' }, t('mme.persons.quotes', { n: fmt.int(r.n) })),
-            tops.map((q) => h('span', { class: 'fp-person-topic' }, `${name(q.x)} ${pctRound(q.n / all)}`)))
+            h('span', { class: 'fp-person-n' }, t('mme.persons.quotes', { n: fmt.int(r.n) })))
         }))
         : emptyText(t('media2.empty.list')))
-  }
-
-  // One row for each person, one dot for each outlet on a shared axis, and a tick for the person over all the outlets.
-  function PeopleDots (S, mode) {
-    const cols = columnsOf(S)
-    const rows = peopleOf(S).map((r) => {
-      const o = overallOf(S, r.k)
-      const pts = cols.map((c) => {
-        const tone = c.tone[r.k]
-        const n = sum(tone)
-        const rate = c.n ? (c.quotes[r.k] / c.n) * 1000 : 0
-        if (mode === 'tone') return n >= 5 ? { x: netOf(tone) * 100, tip: t('mme.people.cell.tone', { outlet: c.name, person: r.p.name, n: fmt.int(n), net: signed(netOf(tone)) }), fill: netColor(netOf(tone)).background } : null
-        return c.quotes[r.k] > 0 ? { x: rate, tip: t('mme.people.cell.voice', { outlet: c.name, person: r.p.name, n: fmt.int(c.quotes[r.k]), rate: fmt.dec(rate) }), fill: 'var(--emph-more)' } : null
-      }).filter(Boolean)
-      return { r, mark: mode === 'tone' ? o.net * 100 : o.rate, pts }
-    })
-    const all = rows.flatMap((x) => x.pts.map((p) => p.x))
-    const min = mode === 'tone' ? Math.floor(Math.min(...all, 0) / 25) * 25 : 0
-    const max = mode === 'tone' ? Math.max(25, Math.ceil(Math.max(...all, 0) / 25) * 25) : Math.ceil(Math.max(...all, 10) / 20) * 20
-    const step = mode === 'tone' ? 25 : max / 4
-    const tickText = (v) => (mode === 'tone' ? (v === 0 ? '0' : signed(v / 100)) : fmt.int(v))
-    return Dash.fit((holder, width) => {
-      const pad = { l: 128, r: 14, t: 8, b: 30 }
-      const rowH = 40
-      const height = pad.t + pad.b + rowH * rows.length
-      const sx = (v) => pad.l + ((v - min) / (max - min)) * (width - pad.l - pad.r)
-      const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
-      for (let v = min; v <= max + 1e-9; v += step) svg.append(h('line', { class: Math.abs(v) < 1e-9 && min < 0 ? 'zero-line' : 'grid-line', x1: sx(v), x2: sx(v), y1: pad.t, y2: height - pad.b }), h('text', { x: sx(v), y: height - 10, 'text-anchor': 'middle' }, tickText(v)))
-      rows.forEach(({ r, mark, pts }, i) => {
-        const cy = pad.t + i * rowH + rowH / 2
-        svg.append(h('text', { class: 'row-label', x: pad.l - 10, y: cy + 4, 'text-anchor': 'end' }, r.p.name.split(' ').pop()))
-        pts.slice().sort((a, b) => a.x - b.x).forEach((p, j) => svg.append(tipOn(h('circle', { class: 'pt', cx: sx(p.x), cy: cy + ((j % 3) - 1) * 4, r: 4.5, fill: p.fill, 'fill-opacity': 0.85, style: dotStyle }), p.tip)))
-        svg.append(tipOn(h('line', { class: 'range-median', x1: sx(mark), x2: sx(mark), y1: cy - 14, y2: cy + 14 }), t(mode === 'tone' ? 'mme.panel.mark.tone' : 'mme.panel.mark.voice', { person: r.p.name, v: tickText(mark) })))
-      })
-      holder.replaceChildren(svg)
-    })
   }
 
   // One dot for each person: the tone across, the statements up, the size is the articles about the person. Every dot has its name.
@@ -373,68 +279,53 @@
       const corner = (text, x, y, anchor) => svg.append(h('text', { class: 'q-label', x, y, 'text-anchor': anchor }, text))
       corner(t('mme.panel.q.ll'), pad.l + 6, height - pad.b - 8, 'start')
       corner(t('mme.panel.q.lr'), width - pad.r - 6, height - pad.b - 8, 'end')
+      const placed = [{ x0: pad.l, x1: pad.l + 240, y0: height - pad.b - 24, y1: height - pad.b }, { x0: width - pad.r - 240, x1: width - pad.r, y0: height - pad.b - 24, y1: height - pad.b }]
+      const free = (b) => b.x0 >= 0 && b.x1 <= width && !placed.some((q) => b.x0 < q.x1 && b.x1 > q.x0 && b.y0 < q.y1 && b.y1 > q.y0)
+      const radOf = (o) => 5 + 11 * Math.sqrt(o.n / nmax)
+      pts.forEach(({ o }) => placed.push({ x0: sx(o.net * 100) - radOf(o), x1: sx(o.net * 100) + radOf(o), y0: sy(o.rate) - radOf(o), y1: sy(o.rate) + radOf(o) }))
       pts.slice().sort((a, b) => b.o.n - a.o.n).forEach(({ r, o }) => {
-        const rad = 5 + 11 * Math.sqrt(o.n / nmax)
+        const rad = radOf(o)
         const cx = sx(o.net * 100)
-        svg.append(tipOn(h('circle', { class: 'pt', cx, cy: sy(o.rate), r: rad, fill: netColor(o.net).background, 'fill-opacity': 0.92, style: dotStyle }), t('mme.panel.both.row', { outlet: r.p.name, net: signed(o.net), rate: fmt.dec(o.rate), n: fmt.int(o.n) })))
-        const left = cx + rad + 6 + r.p.name.length * 6.4 > width - pad.r
-        svg.append(h('text', { class: 'pt-label', x: cx + (left ? -rad - 6 : rad + 6), y: sy(o.rate) + 4, 'text-anchor': left ? 'end' : 'start' }, r.p.name))
+        const cy = sy(o.rate)
+        svg.append(tipOn(h('circle', { class: 'pt', cx, cy, r: rad, fill: netColor(o.net).background, 'fill-opacity': 0.92, style: dotStyle }), t('mme.panel.both.row', { outlet: r.p.name, net: signed(o.net), rate: fmt.dec(o.rate), n: fmt.int(o.n) })))
+        const w = r.p.name.length * 6.4
+        const spots = [
+          { x: cx + rad + 6, y: cy + 4, anchor: 'start', b: { x0: cx + rad + 4, x1: cx + rad + 8 + w, y0: cy - 8, y1: cy + 8 } },
+          { x: cx - rad - 6, y: cy + 4, anchor: 'end', b: { x0: cx - rad - 8 - w, x1: cx - rad - 4, y0: cy - 8, y1: cy + 8 } },
+          { x: cx, y: cy - rad - 6, anchor: 'middle', b: { x0: cx - w / 2, x1: cx + w / 2, y0: cy - rad - 18, y1: cy - rad - 4 } },
+          { x: cx, y: cy + rad + 14, anchor: 'middle', b: { x0: cx - w / 2, x1: cx + w / 2, y0: cy + rad + 2, y1: cy + rad + 16 } }
+        ]
+        const spot = spots.find((q) => free(q.b)) || spots[0]
+        placed.push(spot.b)
+        svg.append(h('text', { class: 'pt-label', x: spot.x, y: spot.y, 'text-anchor': spot.anchor }, r.p.name))
       })
       holder.replaceChildren(svg)
     })
   }
 
-  // The right column: all the people in one chart. view: table (the matrix of the people and the outlets), bars, dots or both (tone and voice together).
-  function PeoplePanel (S, { mode, view, onMode, onView }) {
-    const people = peopleOf(S).map((r) => ({ ...r, o: overallOf(S, r.k) }))
-    const withTone = people.filter((r) => r.o.n >= 5)
-    const which = view === 'both' ? 'both' : mode
-    const viewControl = UI.SegmentedControl({ label: t('mme.panel.view'), value: view, onChange: onView, options: ['table', 'bars', 'dots', 'both'].map((v) => ({ value: v, label: t(`mme.panel.view.${v}`) })) })
-    const modeControl = view === 'both' ? null : UI.SegmentedControl({ label: t('mme.people.mode'), value: mode, onChange: onMode, options: ['tone', 'voice'].map((m) => ({ value: m, label: t(`mme.people.mode.${m}`) })) })
-    if (view === 'table') return PeopleCard(S, { mode, onMode, extra: viewControl, span: 'c-8 fp-panel' })
+  // The articles about each person for each day, from the tone rows of all the outlets, as the 7-day average of the day (as the lines of Θέματα).
+  function PeopleTimeCard (S) {
+    const dates = S.set.dates
+    const ROLL = 7
+    const people = peopleOf(S).map((r) => {
+      const daily = new Array(dates.length).fill(0)
+      S.set.mt.forEach((perPerson) => { const rows = perPerson[r.k]; for (let j = 0; j < rows.length; j += 4) daily[rows[j]] += rows[j + 1] + rows[j + 2] + rows[j + 3] })
+      return { r, daily, total: sum(daily) }
+    }).filter((x) => x.total > 0).sort((a, b) => b.total - a.total).slice(0, Dash.SLOTS.length)
+    const series = people.map(({ r, daily }, i) => ({
+      key: PERSON_KEYS[r.p.name] || String(r.k), name: r.p.name, color: Dash.SLOTS[i],
+      values: daily.map((_, j) => { const from = Math.max(0, j - ROLL + 1); return sum(daily.slice(from, j + 1)) / (j - from + 1) })
+    }))
+    return card('', cardHead(t('mme.time.title'), null, `${t('mme.time.title')}. ${t('mme.time.info')}`),
+      series.length ? Dash.LinesChart({ dates, series, caption: t('mme.time.title'), href: (s) => UI.EntityLink({ type: 'person', key: s.key, label: '' }).getAttribute('href') }) : emptyText(t('media2.empty.list')))
+  }
 
-    const short = (r) => `${r.p.name.split(' ').pop()} (${which === 'voice' ? fmt.dec(r.o.rate) : signed(r.o.net)})`
-    let finding = ''
-    if (which === 'tone' && withTone.length >= 3) {
-      const asc = withTone.slice().sort((a, b) => a.o.net - b.o.net)
-      finding = t('mme.panel.tone.finding', { a: asc.slice(0, 2).map(short).join(', '), b: asc.slice().reverse().slice(0, 2).map(short).join(', ') })
-    } else if (which === 'voice' && people.length >= 3) {
-      const desc = people.slice().sort((a, b) => b.o.rate - a.o.rate)
-      finding = t('mme.panel.voice.finding', { a: desc.slice(0, 2).map(short).join(', '), b: desc.slice().reverse().slice(0, 2).map(short).join(', ') })
-    }
-
-    const head = (cols) => h('li', { class: 'fp-rows-head' }, cols.map((c) => h('span', {}, c ? t(`mme.panel.col.${c}`) : '')))
-    let chart
-    if (view === 'both') chart = withTone.length ? PeopleScatter(S) : null
-    else if (view === 'dots') chart = people.length ? PeopleDots(S, mode) : null
-    else if (mode === 'tone') {
-      const rows = withTone.slice().sort((a, b) => a.o.net - b.o.net)
-      const scale = Math.max(0.2, ...rows.flatMap((r) => [r.o.tone[0] / r.o.n, r.o.tone[2] / r.o.n]))
-      chart = rows.length
-        ? h('ul', { class: 'fp-rows fp-rows-people' }, head(['person', 'share', 'net', 'articles']), ...rows.map((r) => h('li', {},
-          h('span', { class: 'fp-row-name' }, r.p.name),
-          UI.DivergingBar({ left: r.o.tone[0] / r.o.n, middle: r.o.tone[1] / r.o.n, right: r.o.tone[2] / r.o.n, scale, label: t('mme.panel.tone.row', { outlet: r.p.name, n: fmt.int(r.o.n), c: pctRound(r.o.tone[0] / r.o.n), u: pctRound(r.o.tone[1] / r.o.n), s: pctRound(r.o.tone[2] / r.o.n), net: signed(r.o.net) }) }),
-          h('span', { class: 'fp-row-net', style: netColor(r.o.net) }, signed(r.o.net)),
-          h('span', { class: 'fp-row-n muted-text' }, fmt.int(r.o.n)))))
-        : null
-    } else {
-      const rows = people.slice().sort((a, b) => b.o.rate - a.o.rate)
-      const maxRate = Math.max(...rows.map((r) => r.o.rate), 0.0001)
-      chart = rows.length
-        ? h('ul', { class: 'fp-rows fp-rows-people', }, head(['person', 'rate', null, 'quotes']), ...rows.map((r) => h('li', {},
-          h('span', { class: 'fp-row-name' }, r.p.name),
-          UI.HBar(r.o.rate, maxRate, { color: 'var(--emph-more)', label: t('mme.panel.voice.row', { outlet: r.p.name, n: fmt.int(r.o.quotes), rate: fmt.dec(r.o.rate) }) }),
-          h('span', { class: 'fp-row-net' }, fmt.dec(r.o.rate)),
-          h('span', { class: 'fp-row-n muted-text' }, fmt.int(r.o.quotes))))) 
-        : null
-    }
-    const legend = which === 'tone' && view === 'bars'
-      ? UI.Legend([['crit', 0], ['neutral', 1], ['supp', 2]].map(([key, i]) => ({ label: t(`mme.panel.${key}`), color: STANCE_COLORS[i] })))
-      : null
-    return card('c-8 fp-panel', cardHead(t('mme.panel.title'), h('div', { class: 'fp-tools' }, modeControl, viewControl)),
-      h('p', { class: 'dcard-sub fp-what' }, t(`mme.panel.${which}.what${view === 'dots' ? '.dots' : ''}`)),
-      finding ? h('p', { class: 'fp-finding' }, finding) : null,
-      chart ? [legend, chart] : emptyText(t('mme.panel.none')))
+  // The right column: tone and voice of all the people in one chart, and the articles about them over time.
+  function ToneVoiceCard (S) {
+    const withTone = peopleOf(S).filter((r) => overallOf(S, r.k).n >= 5)
+    return card('', cardHead(t('mme.both.title')),
+      h('p', { class: 'dcard-sub fp-what' }, t('mme.panel.both.what')),
+      withTone.length ? PeopleScatter(S) : emptyText(t('mme.panel.none')))
   }
 
   function MethodNote (S) {
@@ -621,5 +512,5 @@
       angle ? h('span', { class: 'mme-angle' }, angle) : null))
   }
 
-  window.Mme = { presets, summary, ChipsCard, StoriesCard, AgendaCard, PeopleCard, GovCard, TopicCard, PersonsCard, PeopleListCard, PeoplePanel, MethodNote, outletFacts, WeeklyAgenda, CoverageCard, StanceByTopic, EmphasisCard, VoicesCard, PortrayalCard, Headlines, outletLink }
+  window.Mme = { presets, summary, ChipsCard, StoriesCard, AgendaCard, GovCard, TopicCard, PeopleListCard, ToneVoiceCard, PeopleTimeCard, MethodNote, outletFacts, WeeklyAgenda, CoverageCard, StanceByTopic, EmphasisCard, VoicesCard, PortrayalCard, Headlines, outletLink }
 })()
