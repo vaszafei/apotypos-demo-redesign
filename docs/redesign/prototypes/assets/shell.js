@@ -64,6 +64,22 @@
       ['greekturkish', '/war'], ['coverage', '/coverage'], ['france', '/france-riots'], ['rouvikonas', '/cases']] }
   ]
   const FOOTER = [['methodology', '/methodology'], ['about', '/about']]
+  // The icons of the sections and the tabs: Material Symbols Sharp, drawn with the straight, flat-ended strokes of the logo.
+  const NAV_ICONS = { home: 'home', media: 'tv', people: 'groups', politics: 'campaign', world: 'bar_chart', methodology: 'menu_book', about: 'info' }
+  const ROUTE_ICONS = {
+    '/media': 'grid_view', '/groups': 'account_balance', '/trends': 'sell', '/stories': 'sensors', '/media/writing': 'edit', '/similarity': 'content_copy',
+    '/fingerprints': 'fingerprint', '/fingerprints/spread': 'trending_up', '/track': 'chat',
+    '/contradictions': 'compare_arrows', '/contradictions/pairs': 'swap_horiz', '/contradictions/checks': 'verified',
+    '/elections': 'how_to_vote', '/elections/outlets': 'newspaper', '/elections/owners': 'account_balance', '/elections/topics': 'sell', '/elections/bylines': 'edit',
+    '/speeches': 'mic', '/un-israel-palestine': 'flag', '/narrative': 'space_dashboard', '/gaza': 'newspaper', '/israel': 'visibility', '/gaza-language': 'translate',
+    '/war': 'local_fire_department', '/coverage': 'find_in_page', '/france-riots': 'language', '/cases': 'search'
+  }
+  const NavIcon = (name) => {
+    const el = h('svg', { class: 'icon nav-icon', viewBox: '0 -960 960 960', fill: 'currentColor', 'aria-hidden': 'true', 'data-icon': name })
+    el.innerHTML = window.NAV_GLYPHS[name] || ''
+    return el
+  }
+  const withIcon = (name, label) => name ? [NavIcon(name), h('span', { class: 'nav-label' }, label)] : [label]
 
   const hasText = (key) => key in window.MESSAGES.el
   const under = (route, base) => route === base || (base !== '/' && route.startsWith(base + '/'))
@@ -406,6 +422,20 @@
     try { localStorage.setItem('proto-theme', key) } catch {}
   }
   setTheme(readTheme())
+
+  // Prototype only: where the nav icons show. off = none, all = top bar, tabs and the left bar, sidebar = the left bar only. ?icons= or the last choice sets it.
+  const ICON_MODES = ['off', 'all', 'sidebar']
+  function readIcons () {
+    const asked = new URLSearchParams(location.search).get('icons')
+    let saved = null
+    try { saved = localStorage.getItem('proto-icons') } catch {}
+    return [asked, saved].find((k) => ICON_MODES.includes(k)) || 'off'
+  }
+  function setIcons (key) {
+    document.documentElement.dataset.icons = key
+    try { localStorage.setItem('proto-icons', key) } catch {}
+  }
+  setIcons(readIcons())
 
   // The unified header (v2) is the default. ?header=v1 shows the old header for comparison; ?header= or the last choice sets it.
   // v2: the top bar holds only the back button and the search. The page head under it holds the tabs, the page actions and the sub-tabs.
@@ -828,7 +858,7 @@
       const exactTab = item && item.tabs.find(([, r, subs]) => r === route || (subs || []).some(([, s]) => s === route))
 
       const navLink = ({ key, href, current }) =>
-        h('li', {}, h('a', { class: 'nav-link', href, 'aria-current': current ? 'page' : null }, t(`nav.${key}`)))
+        h('li', {}, h('a', { class: 'nav-link', href, 'aria-current': current ? 'page' : null }, ...withIcon(NAV_ICONS[key], t(`nav.${key}`))))
       // The links are made twice: the top navbar (wide screens) and the drawer (tablet and phone). CSS shows one of them.
       const mainLinks = () => NAV.map((n) => navLink({ key: n.key, href: hrefOf(n.tabs[0][1]), current: n === item }))
       const footerLinks = () => FOOTER.map(([key, r]) => navLink({ key, href: hrefOf(r), current: key === id }))
@@ -843,6 +873,10 @@
       const fontSwitch = () => h('label', { class: 'font-switch' }, h('span', {}, t('shell.font')),
         h('select', { onChange: (e) => { setFont(e.target.value); document.querySelectorAll('.font-switch select').forEach((s) => { s.value = e.target.value }) } },
           FONTS.map(([key, label]) => h('option', { value: key, selected: document.documentElement.dataset.font === key }, label))))
+
+      const iconSwitch = () => h('label', { class: 'font-switch icon-switch' }, h('span', {}, t('shell.icons')),
+        h('select', { onChange: (e) => { setIcons(e.target.value); document.querySelectorAll('.icon-switch select').forEach((s) => { s.value = e.target.value }) } },
+          ICON_MODES.map((key) => h('option', { value: key, selected: document.documentElement.dataset.icons === key }, t(`icons.${key}`)))))
 
       // Some chart colors are computed from the tokens when a page draws (Dash.color), so a new theme draws the page again, as a log in does.
       // The scroll position and the focus on the swatch are kept.
@@ -923,7 +957,7 @@
         authLinks('auth-links drawer-auth', true),
         h('div', { class: 'nav-footer' },
           h('ul', { class: 'nav-list', 'aria-label': t('section.footer') }, footerLinks()),
-          h('div', { class: 'sidebar-tools' }, langSwitch(), themeSwitch(), fontSwitch())))
+          h('div', { class: 'sidebar-tools' }, langSwitch(), themeSwitch(), iconSwitch(), fontSwitch())))
 
       const menuButton = h('button', { type: 'button', class: 'icon-button menu-button', 'aria-label': t('shell.menu'), 'aria-controls': 'sidebar', 'aria-expanded': 'false', onClick: () => setDrawer(true) }, Icon('bars-3'))
 
@@ -950,7 +984,7 @@
       // The tabs show on the page of a tab. A detail page below a tab has none.
       const tabBar = exactTab && item.tabs.length > 1
         ? h('nav', { class: 'section-tabs', 'aria-label': t(`nav.${item.key}`) }, h('ul', {}, item.tabs.map(([key, r]) =>
-          h('li', {}, h('a', { href: hrefOf(r), 'aria-current': exactTab[1] === r ? (r === route ? 'page' : 'true') : null }, t(`tab.${item.key}.${key}`))))))
+          h('li', {}, h('a', { href: hrefOf(r), 'aria-current': exactTab[1] === r ? (r === route ? 'page' : 'true') : null }, ...withIcon(ROUTE_ICONS[r], t(`tab.${item.key}.${key}`)))))))
         : null
       // The sub-tabs of the tab: a second row of underlined tabs under the top bar.
       const subBar = exactTab && exactTab[2]
@@ -976,9 +1010,9 @@
             const nested = inTab && subs
             const current = inTab ? (!nested && (route === r || (subs || []).some(([, s]) => s === route)) ? 'page' : 'true') : null
             return h('li', {},
-              h('a', { class: `section-nav-link${nested ? ' is-parent' : ''}`, href: hrefOf(r), 'aria-current': current }, t(`tab.${item.key}.${key}`)),
+              h('a', { class: `section-nav-link${nested ? ' is-parent' : ''}`, href: hrefOf(r), 'aria-current': current }, ...withIcon(ROUTE_ICONS[r], t(`tab.${item.key}.${key}`))),
               nested ? h('ul', { class: 'section-nav-sub' }, subs.map(([subKey, s]) =>
-                h('li', {}, h('a', { class: 'section-nav-link', href: hrefOf(s), 'aria-current': s === route ? 'page' : null }, t(`tab.${item.key}.${subKey}`))))) : null)
+                h('li', {}, h('a', { class: 'section-nav-link', href: hrefOf(s), 'aria-current': s === route ? 'page' : null }, ...withIcon(ROUTE_ICONS[s], t(`tab.${item.key}.${subKey}`)))))) : null)
           }))))
         : null
       const content = h('main', { class: 'content', id: 'content' })
@@ -989,7 +1023,7 @@
           h('div', { class: 'page-body' }, sectionNav, h('div', { class: 'page-main' }, subBarTrail, content)),
           h('footer', { class: 'page-footer' }, h('span', { class: 'page-footer-text' }, t('site.footer')),
             h('ul', { class: 'nav-list page-footer-links', 'aria-label': t('section.footer') }, footerLinks()),
-            h('div', { class: 'page-footer-tools' }, themeSwitch(), fontSwitch()))))
+            h('div', { class: 'page-footer-tools' }, themeSwitch(), iconSwitch(), fontSwitch()))))
 
       // The open drawer keeps the focus: the rest of the page is inert until the drawer closes.
       const mainColumn = shell.querySelector('.main-column')

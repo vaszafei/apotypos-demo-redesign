@@ -933,3 +933,36 @@ svg.chart .bar-col { transform-origin: 50% 100%; }
 .token-item { display: flex; align-items: center; gap: var(--space-2); min-width: 0; font-size: var(--text-caption); }
 .token-item code { overflow-wrap: anywhere; color: var(--text-secondary); }
 .token-chip { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid var(--border); border-radius: var(--radius); font-size: var(--text-caption); font-weight: 600; }
+
+/* The icons of the sections and the tabs. The "/" of the current link goes before the label without icons, and after the label where an icon shows (data-icons). */
+.nav-link:has(.nav-icon), .section-nav-link:has(.nav-icon), .section-tabs a:has(.nav-icon), .sub-tabs a:has(.nav-icon) { display: flex; align-items: center; gap: 8px; }
+.nav-icon { flex: none; width: 16px; height: 16px; }
+.section-nav-sub .nav-icon { width: 14px; height: 14px; }
+.header-nav .nav-link[aria-current="page"]:has(.nav-label)::before, .section-nav .section-nav-link[aria-current]:has(.nav-label)::before { content: none; }
+@media (min-width: 1024px) {
+  .header-nav .nav-link[aria-current="page"] .nav-label::before { content: "/ "; white-space: pre; }
+  .section-nav .section-nav-link[aria-current]:not(.is-parent) .nav-label::before { content: "/ "; white-space: pre; }
+  :root[data-icons="all"] .header-nav .nav-link[aria-current="page"] .nav-label::before, :root[data-icons="all"] .section-nav .section-nav-link[aria-current] .nav-label::before,
+  :root[data-icons="sidebar"] .section-nav .section-nav-link[aria-current] .nav-label::before { content: none; }
+  :root[data-icons="all"] .header-nav .nav-link[aria-current="page"] .nav-label::after, :root[data-icons="all"] .section-nav .section-nav-link[aria-current]:not(.is-parent) .nav-label::after,
+  :root[data-icons="sidebar"] .section-nav .section-nav-link[aria-current]:not(.is-parent) .nav-label::after { content: " /"; white-space: pre; }
+}
+/* The tabs stay under the logo at any zoom: they start at the left of the sidebar, not at its right edge, so a wider window (zoom out) does not move them. */
+@media (min-width: 1024px) {
+  .section-nav-inner { justify-content: flex-start; padding-left: var(--space-3); }
+}
+/* The tabs of the section at 90 % (text, icons and spacing), like the browser zoom at 90 %. The icons stay under the logo. */
+@media (min-width: 1024px) {
+  .section-nav-inner { padding-left: 13px; }
+  .section-nav-list { width: 155px; }
+  .section-nav-link { padding: 8px 11px; font-size: 10.8px; }
+  .section-nav-sub .section-nav-link { font-size: 9.9px; }
+  .section-nav-sub { padding-left: 14px; }
+  .section-nav-link:has(.nav-icon) { gap: 7px; }
+  .section-nav-link .nav-icon { width: 14.4px; height: 14.4px; }
+  .section-nav-sub .section-nav-link .nav-icon { width: 12.6px; height: 12.6px; }
+}
+
+/* The footer switch (data-icons on <html>): off hides all nav icons, sidebar keeps only those of the left bar (.section-nav). */
+:root[data-icons="off"] .nav-icon, :root[data-icons="sidebar"] .nav-icon { display: none; }
+:root[data-icons="sidebar"] .section-nav .nav-icon { display: block; }
