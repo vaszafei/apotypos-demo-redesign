@@ -7,188 +7,126 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=18">
   <link rel="stylesheet" href="assets/app.css?v=62">
-  <link rel="stylesheet" href="assets/dash.css?v=103">
-  <link rel="stylesheet" href="assets/mme.css?v=63">
+  <link rel="stylesheet" href="assets/dash.css?v=104">
+  <link rel="stylesheet" href="assets/mme.css?v=67">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=14"></script>
-  <script src="assets/messages.js?v=48"></script>
-  <script src="assets/messages-v2.js?v=60"></script>
+  <script src="assets/messages.js?v=50"></script>
+  <script src="assets/messages-v2.js?v=62"></script>
   <script src="assets/components.js?v=21"></script>
   <script src="assets/motion.js?v=4"></script>
   <script src="assets/messages-mme.js?v=35"></script>
   <script src="assets/dash.js?v=30"></script>
-  <script src="assets/mme.js?v=35"></script>
-  <script src="assets/shell.js?v=71"></script>
-  <script src="data/fingerprints.js?v=2"></script>
+  <script src="assets/mme.js?v=36"></script>
+  <script src="assets/shell.js?v=72"></script>
   <script src="data/stanceRatings.js?v=2"></script>
-  <script src="data/groups.js?v=2"></script>
   <script src="data/mme.js?v=20"></script>
   <script>
     // Πρόσωπα › Επισκόπηση (formerly Μέσα › Αποτυπώματα): dashboard of APO-161.
     // First «Τα πρόσωπα» and «Πώς παρουσιάζει κάθε μέσο τα πρόσωπα» of the live page ΜΜΕ & πρόσωπα (data/mme.js, the Greek outlets over the whole window), with its own tone and voice control.
-    // Πρόσωπα › Έμφαση και στάση (?tab=spread, #62): the 15 persons of the API, the strongest cells in a list and the range chart. The measure control (emphasis or stance) is in the top bar, on the right.
+    // Πρόσωπα › Στάση (?tab=spread, #62): the 15 persons of the API and their stance in each outlet. A list of the most supportive cells, a table with a row for each person, and a scatter of the persons the press disagrees on.
     const { t, fmt, h, load, params } = App
     const tab = params.get('tab') === 'spread' ? 'spread' : 'overview'
-    const { fit, reset, NO_GROUP, card, cardHead, emptyText, TopBar } = Dash
-    const sources = {
-      persons: load('fingerprints', ['entities', 'sources', 'days', 'referenceDate'], (b) => b.sources),
-      stance: load('stanceRatings', ['persons', 'days', 'referenceDate', 'minN'], (b) => b.persons)
-    }
-    const groupsData = load('groups', ['groups'], (b) => b.groups)
-    const groupList = groupsData.kind === 'failed' ? [] : (groupsData.data.groups || [])
-    const colorOf = Dash.groupColors(groupList)
-    const groupOfOutlet = new Map(groupList.flatMap((g) => g.outlets.map((o) => [o.name, g.name])))
-    const groupRank = new Map(groupList.map((g, i) => [g.name, i]))
-    const state = { mode: 'attention' }
+    const { fit, reset, card, cardHead, emptyText, TopBar } = Dash
+    const stance = load('stanceRatings', ['persons', 'days', 'referenceDate', 'minN'], (b) => b.persons)
     const mme = load('mme', ['sets'], (b) => Object.keys(b.sets))
     const mmeSummary = mme.kind === 'data' ? Mme.summary(mme.data.sets.gr, 0, mme.data.sets.gr.dates.length - 1) : null
 
-    // Two palettes. Coverage (more or less attention) uses orange and teal, so it is not read as a party color. Stance uses the critical and supportive colors.
-    // The ends and the gray middle are tokens (tokens.css): emphasis less and more, stance critical and supportive, --div-mid.
-    const PALETTES = { cover: { low: '--emph-less', high: '--emph-more' }, stance: { low: '--stance-critical', high: '--stance-supportive' } }
-    const rgbOf = (name) => { const hex = Dash.color(name); return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)) }
-    const mix = (a, b, k) => a.map((v, i) => Math.round(v + (b[i] - v) * k))
-    const luminance = (rgb) => {
-      const [r, g, b] = rgb.map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4 })
-      return 0.2126 * r + 0.7152 * g + 0.0722 * b
-    }
-    const contrast = (a, b) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
-    const DARK_TEXT = luminance(rgbOf('--text-on-light'))
-    // A stepped scale: 4 steps on each side of a gray middle. A step that falls where neither dark nor white text reaches 4.5 to 1 gets a stronger tone.
-    const LIMITS = [0.5, 1, 1.5, 2]
-    const STRENGTH = [0, 0.3, 0.5, 0.7, 1]
-    const stepOf = (z) => { const level = LIMITS.filter((l) => Math.abs(z) >= l).length; return z < 0 ? -level : level }
-    function stepColors (step, palette) {
-      let k = STRENGTH[Math.abs(step)]
-      for (;;) {
-        const rgb = mix(rgbOf('--div-mid'), rgbOf(step < 0 ? PALETTES[palette].low : PALETTES[palette].high), k)
-        const l = luminance(rgb)
-        const dark = contrast(l, DARK_TEXT)
-        const light = contrast(l, 1)
-        if (dark >= 4.5 || light >= 4.5 || k >= 1) return { background: `rgb(${rgb.join(',')})`, color: dark >= light ? 'var(--text-on-light)' : 'var(--text-on-dark)' }
-        k = Math.min(1, k + 0.02)
-      }
-    }
-
-    const NET_LABELS = ['≤ −0,5', '−0,4', '−0,25', '−0,1', '0', '+0,1', '+0,25', '+0,4', '≥ +0,5']
-    const Z_LABELS = ['≤ −2', '−1,5', '−1', '−0,5', '0', '+0,5', '+1', '+1,5', '≥ +2']
-    const zOfNet = (net) => net * 4
+    // An outlet is named only from 20 mentions of the person (a stance from 1 or 2 mentions is not a finding). The stance of an outlet counts from 10 mentions (the API's own minimum).
+    const NAME_MIN = 20
+    const STANCE_MIN = 10
+    const pad2 = (min, max) => new Intl.NumberFormat('el-GR', { minimumFractionDigits: min, maximumFractionDigits: max })
+    const netText = (v) => (Math.abs(v) < 0.005 ? '0' : `${v > 0 ? '+' : '−'}${pad2(2, 2).format(Math.abs(v))}`)
 
     // The short name of a person is the last word. A name that two persons share stays whole.
     const shortNames = (names) => names.map((n) => { const last = n.split(' ').pop(); return names.filter((m) => m.split(' ').pop() === last).length > 1 ? n : last })
 
-    // Each model builder returns { failed }, { empty, line } or a model:
-    // { kind, palette, labels, line, period, note, titleKey, rows: [{ name, group, sub, weight }], cols: [{ title, short }], grid: cell | null }.
-    // A cell is { z, label, title, own }. The grid has the cells for each row and each column.
-    function buildGrid (rows, cols, cell) { return rows.map((_, ri) => cols.map((_, ci) => cell(ri, ci))) }
-    function sortRows (model) {
-      // A row without any value is a row of dashes. It is not shown, and the note gives the count.
-      const emptyRows = model.rows.filter((_, i) => model.grid[i].every((c) => !c)).length
-      const order = model.rows.map((_, i) => i).filter((i) => model.grid[i].some(Boolean)).sort((a, b) => {
-        const ra = groupRank.has(model.rows[a].group) ? groupRank.get(model.rows[a].group) : 99
-        const rb = groupRank.has(model.rows[b].group) ? groupRank.get(model.rows[b].group) : 99
-        return ra - rb || (model.rows[b].weight || 0) - (model.rows[a].weight || 0) || model.rows[a].name.localeCompare(model.rows[b].name, 'el')
-      })
-      return { ...model, rows: order.map((i) => model.rows[i]), grid: order.map((i) => model.grid[i]), note: emptyRows ? `${model.note} ${t('fp.note.noValue', { n: emptyRows })}` : model.note }
+    // One record for each person: the mean stance over the outlets weighted by mentions, the spread between the outlets (weighted standard deviation),
+    // the mentions, and the outlets with NAME_MIN mentions (the most supportive first). The persons are in the order of the mentions.
+    // Returns { failed }, { empty } or { people, days, date }.
+    function peopleModel () {
+      if (stance.kind === 'failed' || stance.kind === 'notFound') return { failed: true }
+      if (stance.kind === 'empty') return { empty: true }
+      const d = stance.data
+      const short = shortNames(d.persons.map((p) => p.name))
+      const people = d.persons.map((p, i) => {
+        const rated = Object.entries(p.outlets).map(([outlet, [v, n]]) => ({ outlet, n, v })).filter((x) => x.n >= STANCE_MIN)
+        const mentions = rated.reduce((a, x) => a + x.n, 0)
+        const mean = mentions ? rated.reduce((a, x) => a + x.v * x.n, 0) / mentions : 0
+        const spread = mentions ? Math.sqrt(rated.reduce((a, x) => a + x.n * (x.v - mean) ** 2, 0) / mentions) : 0
+        return { name: p.name, short: short[i], mean, spread, mentions, rated: rated.filter((x) => x.n >= NAME_MIN).sort((a, b) => b.v - a.v) }
+      }).filter((p) => p.mentions).sort((a, b) => b.mentions - a.mentions)
+      return { people, days: d.days, date: d.referenceDate }
     }
 
-    function personsModel () {
-      const attention = state.mode === 'attention'
-      const r = attention ? sources.persons : sources.stance
-      if (r.kind === 'failed' || r.kind === 'notFound') return { failed: true }
-      const d = r.data
-      // The API gives the 15 persons in another order for stance. The columns keep the order of the attention view.
-      const persons = sources.persons.kind === 'failed' ? d.persons.map((p) => p.name) : sources.persons.data.entities
-      const period = t('fp.period.days', { days: d.days, date: fmt.date(d.referenceDate) })
-      if (r.kind === 'empty') return { empty: true }
-      const short = shortNames(persons)
-      const cols = persons.map((p, i) => ({ title: p, short: short[i] }))
-      let rows
-      let grid
-      if (attention) {
-        rows = d.sources.map((s) => ({ name: s.name, group: groupOfOutlet.get(s.name) || null, sub: groupOfOutlet.get(s.name) || null, weight: s.total || 0 }))
-        grid = buildGrid(rows, cols, (ri, ci) => {
-          const [z, n] = d.sources[ri].cells[ci]
-          return { z, label: fmt.signed(z), n, title: t('fp.cell', { outlet: d.sources[ri].name, person: persons[ci], z: fmt.signed(z), n: fmt.int(n) }) }
-        })
-      } else {
-        const names = [...new Set(d.persons.flatMap((p) => Object.keys(p.outlets)))]
-        rows = names.map((name) => ({ name, group: groupOfOutlet.get(name) || null, sub: groupOfOutlet.get(name) || null, weight: 0 }))
-        grid = buildGrid(rows, cols, (ri, ci) => {
-          const found = d.persons.find((p) => p.name === persons[ci])?.outlets[rows[ri].name]
-          if (!found || found[1] < d.minN) return null
-          return { z: zOfNet(found[0]), label: fmt.signed(found[0]), n: found[1], title: t('fp.cell.stance', { outlet: rows[ri].name, person: persons[ci], net: fmt.signed(found[0]), n: fmt.int(found[1]) }) }
-        })
-      }
-      return sortRows({ kind: attention ? 'attention' : 'stance', palette: attention ? 'cover' : 'stance', labels: attention ? Z_LABELS : NET_LABELS, period, rows, cols, grid, note: t(attention ? 'fp.note.extended' : 'fp.note.extended.stance') })
-    }
-
-    // The strongest cells, as a list with a bar.
-    function CellList (m, direction) {
-      const cells = m.grid.flatMap((row, ri) => row.map((c, ci) => (c ? { ...c, ri, ci } : null))).filter(Boolean)
-      const sorted = cells.sort((a, b) => (direction === 'top' ? b.z - a.z : a.z - b.z)).filter((c) => (direction === 'top' ? c.z > 0 : c.z < 0)).slice(0, 12)
-      const max = Math.max(...sorted.map((c) => Math.abs(c.z)), 0.1)
-      const color = stepColors(direction === 'top' ? 3 : -3, m.palette).background
-      return card('card-side', cardHead(t(`f2.${direction}.${m.kind}`)),
+    // The most supportive outlet and person pairs, as a list with a bar.
+    function CellList (m) {
+      const sorted = m.people.flatMap((p) => p.rated.map((x) => ({ ...x, person: p.name }))).filter((c) => c.v > 0).sort((a, b) => b.v - a.v).slice(0, 12)
+      const color = Dash.color('--stance-supportive')
+      return card('card-side', cardHead(t('f2.top.stance')),
         sorted.length
-          ? UI.BarList(sorted.map((c) => ({ label: m.rows[c.ri].name, sub: m.cols[c.ci].title, text: c.label, value: Math.abs(c.z), color, tip: c.title })), { max })
+          ? UI.BarList(sorted.map((c) => ({ label: c.outlet, sub: c.person, text: netText(c.v), value: c.v, color, tip: t('fp.cell.stance', { outlet: c.outlet, person: c.person, net: netText(c.v), n: fmt.int(c.n) }) })), { max: sorted[0].v })
           : emptyText(t('f2.empty')))
     }
 
-    // Range chart: one row for each person. The bar is the middle half of the outlets (the 25th to the 75th percentile), the tick is the median,
-    // the thin line is the full range, and the two dots are the outlets with the highest and the lowest value. The row order is the order of the matrix.
-    function RangeChart (m) {
-      const unit = m.kind === 'stance' ? 0.25 : 1
-      const step = m.kind === 'stance' ? 0.25 : 1
-      const axisText = (v) => (Math.abs(v) < 1e-9 ? '0' : new Intl.NumberFormat('el-GR', { maximumFractionDigits: 2, signDisplay: 'always' }).format(v).replace('-', '−'))
-      const quantile = (sorted, q) => { const pos = (sorted.length - 1) * q; const lo = Math.floor(pos); return sorted[lo] + (sorted[Math.min(lo + 1, sorted.length - 1)] - sorted[lo]) * (pos - lo) }
-      const people = m.cols.map((c, ci) => {
-        const pts = m.rows.map((r, ri) => ({ r, cell: m.grid[ri][ci] })).filter((p) => p.cell).sort((a, b) => a.cell.z - b.cell.z)
-        return { c, pts }
-      })
-      const all = people.flatMap((p) => p.pts.map((x) => x.cell.z * unit))
-      const a = Math.floor(Math.min(...all, 0) / step) * step
-      const b = Math.ceil(Math.max(...all, 0) / step) * step
-      const rowH = 34
+    // The outlets of a cell of the table, each with its number. The tooltip gives the person, the number and the mentions.
+    const Outlets = (list, person, label) => h('span', { class: 'fps-outlets', 'data-label': label },
+      list.length ? list.map((x) => h('span', { class: 'fps-outlet', title: t('fp.cell.stance', { outlet: x.outlet, person, net: netText(x.v), n: fmt.int(x.n) }) }, `${x.outlet} `, h('strong', {}, netText(x.v)))) : h('span', { class: 'muted-text' }, '–'))
+
+    // The table: a row for each person. A bar of the mean stance (from the critical end to the supportive end), then the outlets at the two ends.
+    function PeopleTable (m) {
+      const heads = ['', t('fps.col.mean'), t('fps.col.positive'), t('fps.col.negative')]
+      return h('div', { class: 'fps-table', role: 'table', 'aria-label': t('fps.title') },
+        h('div', { class: 'fps-row fps-head', role: 'row' }, heads.map((x) => h('span', { role: 'columnheader' }, x))),
+        m.people.map((p) => h('div', { class: 'fps-row', role: 'row' },
+          h('strong', { class: 'fps-name', role: 'rowheader' }, p.name),
+          h('span', { class: 'fps-meter' }, h('span', { class: 'fps-track fps-track-center' }, h('span', { class: `fps-fill ${p.mean < 0 ? 'fps-fill-low' : 'fps-fill-high'}`, style: `width:${Math.abs(p.mean) * 50}%` })), h('span', { class: 'fps-num' }, netText(p.mean))),
+          Outlets(p.rated.filter((x) => x.v > 0).slice(0, 2), p.name, heads[2]),
+          Outlets(p.rated.filter((x) => x.v < 0).slice(-2).reverse(), p.name, heads[3]))))
+    }
+
+    // One circle for each person: the mean stance across, how much the outlets disagree up, the mentions are the size.
+    function SpreadScatter (m) {
+      const people = m.people
+      const nmax = Math.max(...people.map((p) => p.mentions), 1)
+      const xmax = Math.max(0.5, Math.ceil(Math.max(...people.map((p) => Math.abs(p.mean))) * 4) / 4)
+      const ymax = Math.max(0.2, Math.ceil(Math.max(...people.map((p) => p.spread)) * 20) / 20)
       return fit((holder, width) => {
-        const pad = { top: 4, right: 16, bottom: 26, left: 100 }
-        const height = pad.top + pad.bottom + rowH * people.length
-        const plotW = width - pad.left - pad.right
-        const sx = (z) => pad.left + ((z * unit - a) / (b - a)) * plotW
+        const pad = { l: 44, r: 16, t: 26, b: 44 }
+        const height = 400
+        const sx = (v) => pad.l + ((v + xmax) / (2 * xmax)) * (width - pad.l - pad.r)
+        const sy = (v) => height - pad.b - (v / ymax) * (height - pad.t - pad.b)
         const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
-        for (let v = a; v <= b + 1e-9; v += step) {
-          svg.append(h('line', { class: Math.abs(v) < 1e-9 ? 'zero-line' : 'grid-line', x1: sx(v / unit), x2: sx(v / unit), y1: pad.top, y2: height - pad.bottom }),
-            h('text', { x: sx(v / unit), y: height - 8, 'text-anchor': 'middle' }, axisText(v)))
-        }
-        const show = (text) => ({ pointerenter: (e) => UI.showTooltip(text, e.clientX, e.clientY), pointermove: (e) => UI.showTooltip(text, e.clientX, e.clientY), pointerleave: () => UI.hideTooltip() })
-        const listen = (el, text) => Object.entries(show(text)).forEach(([ev, fn]) => el.addEventListener(ev, fn))
-        people.forEach(({ c, pts }, i) => {
-          const cy = pad.top + i * rowH + rowH / 2
-          svg.append(h('text', { class: 'row-label', x: pad.left - 8, y: cy + 4, 'text-anchor': 'end' }, c.short))
-          if (!pts.length) return
-          const zs = pts.map((x) => x.cell.z)
-          const q1 = quantile(zs, 0.25)
-          const q2 = quantile(zs, 0.5)
-          const q3 = quantile(zs, 0.75)
-          svg.append(h('line', { class: 'range-line', x1: sx(zs[0]), x2: sx(zs[zs.length - 1]), y1: cy, y2: cy }))
-          const band = h('rect', { class: 'range-band', x: sx(q1), y: cy - 7, width: Math.max(2, sx(q3) - sx(q1)), height: 14, rx: 4 })
-          listen(band, t('f2.strip.band.tip', { person: c.title, from: axisText(q1 * unit), to: axisText(q3 * unit), median: axisText(q2 * unit), n: pts.length }))
-          svg.append(band, h('line', { class: 'range-median', x1: sx(q2), x2: sx(q2), y1: cy - 9, y2: cy + 9 }))
-          ;[[pts[pts.length - 1], 1], [pts[0], -1]].forEach(([p, dir]) => {
-            const x = sx(p.cell.z)
-            const dot = h('circle', { class: 'pt', cx: x, cy, r: 5.5, fill: colorOf.get(p.r.group) || NO_GROUP })
-            listen(dot, p.cell.title)
-            const label = `${p.r.name} ${p.cell.label}`
-            const w = label.length * 6.6
-            const right = dir > 0 ? x + 6 + w <= width - 4 : x - 6 - w < pad.left
-            svg.append(dot, h('text', { class: 'pt-label', x: right ? x + 9 : x - 9, y: cy + 4, 'text-anchor': right ? 'start' : 'end' }, label))
-          })
+        for (let v = -xmax; v <= xmax + 1e-9; v += 0.25) svg.append(h('line', { class: Math.abs(v) < 1e-9 ? 'zero-line' : 'grid-line', x1: sx(v), x2: sx(v), y1: pad.t, y2: height - pad.b }), h('text', { x: sx(v), y: height - pad.b + 16, 'text-anchor': 'middle' }, netText(v)))
+        for (let v = 0; v <= ymax + 1e-9; v += 0.05) svg.append(h('line', { class: 'grid-line', x1: pad.l, x2: width - pad.r, y1: sy(v), y2: sy(v) }), h('text', { x: pad.l - 6, y: sy(v) + 4, 'text-anchor': 'end' }, pad2(2, 2).format(v)))
+        svg.append(h('text', { class: 'pt-label', x: (pad.l + width - pad.r) / 2, y: height - 6, 'text-anchor': 'middle' }, t('fps.axis.mean')), h('text', { class: 'q-label', x: pad.l, y: 14 }, t('fps.axis.spread')))
+        const placed = people.map((p) => { const r = 5 + 9 * Math.sqrt(p.mentions / nmax); return { x0: sx(p.mean) - r, x1: sx(p.mean) + r, y0: sy(p.spread) - r, y1: sy(p.spread) + r } })
+        const free = (b) => b.x0 >= 0 && b.x1 <= width && b.y0 >= 0 && !placed.some((q) => b.x0 < q.x1 && b.x1 > q.x0 && b.y0 < q.y1 && b.y1 > q.y0)
+        people.slice().sort((a, b) => b.mentions - a.mentions).forEach((p) => {
+          const r = 5 + 9 * Math.sqrt(p.mentions / nmax)
+          const cx = sx(p.mean)
+          const cy = sy(p.spread)
+          const circle = h('circle', { class: 'pt', cx, cy, r, fill: p.mean < 0 ? 'var(--stance-critical)' : 'var(--stance-supportive)', 'fill-opacity': 0.55, style: 'stroke: var(--text-secondary); stroke-opacity: 0.55; stroke-width: 1' })
+          const tip = t('fps.scatter.tip', { person: p.name, mean: netText(p.mean), spread: pad2(2, 2).format(p.spread), n: fmt.int(p.mentions) })
+          ;['pointerenter', 'pointermove'].forEach((ev) => circle.addEventListener(ev, (e) => UI.showTooltip(tip, e.clientX, e.clientY)))
+          circle.addEventListener('pointerleave', () => UI.hideTooltip())
+          svg.append(circle)
+          const w = p.short.length * 6.4
+          const spots = [
+            { x: cx + r + 6, y: cy + 4, anchor: 'start', b: { x0: cx + r + 4, x1: cx + r + 8 + w, y0: cy - 8, y1: cy + 8 } },
+            { x: cx - r - 6, y: cy + 4, anchor: 'end', b: { x0: cx - r - 8 - w, x1: cx - r - 4, y0: cy - 8, y1: cy + 8 } },
+            { x: cx, y: cy - r - 6, anchor: 'middle', b: { x0: cx - w / 2, x1: cx + w / 2, y0: cy - r - 18, y1: cy - r - 4 } },
+            { x: cx, y: cy + r + 14, anchor: 'middle', b: { x0: cx - w / 2, x1: cx + w / 2, y0: cy + r + 2, y1: cy + r + 16 } }
+          ]
+          const spot = spots.find((q) => free(q.b)) || spots[0]
+          placed.push(spot.b)
+          svg.append(h('text', { class: 'pt-label', x: spot.x, y: spot.y, 'text-anchor': spot.anchor }, p.short))
         })
-        const table = h('div', { class: 'visually-hidden' }, h('table', {}, h('caption', {}, t('f2.strip.persons')),
-          h('tbody', {}, m.grid.flatMap((row) => row.filter(Boolean).map((cell) => h('tr', {}, h('td', {}, cell.title)))))))
+        const table = h('div', { class: 'visually-hidden' }, h('table', {}, h('caption', {}, t('fps.scatter.title')),
+          h('tbody', {}, people.map((p) => h('tr', {}, h('td', {}, t('fps.scatter.tip', { person: p.name, mean: netText(p.mean), spread: pad2(2, 2).format(p.spread), n: fmt.int(p.mentions) })))))))
         holder.replaceChildren(svg, table)
       })
     }
@@ -203,28 +141,23 @@
         content.classList.add('dash', 'minimal')
         const draw = () => {
           reset()
-          const focused = [...document.querySelectorAll('.dash-bar .segmented button')].indexOf(document.activeElement)
-          const m = personsModel()
-          const measure = UI.SegmentedControl({ label: t('fp.mode'), value: state.mode, onChange: (mode) => { state.mode = mode; draw() }, options: ['attention', 'stance'].map((mode) => ({ value: mode, label: t(`fp.mode.${mode}`) })) })
-          const bar = TopBar({ title: t('nav.people'), actions: tab === 'spread' ? [measure] : [], tabs, quiet: true })
-          if (m.failed || (tab === 'overview' && !mmeSummary)) { content.replaceChildren(bar, UI.ErrorState({ onRetry: () => location.reload() }), protoNote()); return }
-          if (m.empty && tab === 'spread') { content.replaceChildren(bar, h('div', { class: 'dash-grid' }, card('c-12', cardHead(t('fp.matrix.title')), UI.EmptyState({ text: t('fp.empty') }))), protoNote()); return }
+          const bar = TopBar({ title: t('nav.people'), actions: [], tabs, quiet: true })
 
-          // Επισκόπηση: all the people in a column on the left, and row 1: the articles about them over time (9 columns) and the list (3); row 2: tone and voice of all of them. Έμφαση και στάση: the strongest cells in a narrow column and the range chart.
+          // Επισκόπηση: row 1: the articles about the people over time (9 columns) and the list (3); row 2: tone and voice of the people.
           if (tab === 'overview') {
-            const list = Mme.PeopleListCard(mmeSummary)
-            content.replaceChildren(bar, h('div', { class: 'dash-grid fp-overview' }, Mme.PeopleTimeCard(mmeSummary), list, Mme.ToneVoiceCard(mmeSummary)), protoNote())
+            if (!mmeSummary) { content.replaceChildren(bar, UI.ErrorState({ onRetry: () => location.reload() }), protoNote()); return }
+            content.replaceChildren(bar, h('div', { class: 'dash-grid fp-overview' }, Mme.PeopleTimeCard(mmeSummary), Mme.PeopleListCard(mmeSummary), Mme.ToneVoiceCard(mmeSummary)), protoNote())
             return
           }
-          const strip = card('card-main', cardHead(t('f2.strip.persons'), h('span', { class: 'legend-inline' },
-              h('span', {}, h('span', { class: 'swatch swatch-band' }), t('f2.strip.key.band')),
-              h('span', {}, h('span', { class: 'swatch swatch-tick' }), t('f2.strip.key.median')),
-              h('span', {}, h('span', { class: 'dot', style: '--dot:var(--text-secondary)' }), t('f2.strip.key.extreme'))),
-            t('f2.strip.sub')), RangeChart(m))
-          strip.append(h('p', { class: 'dcard-sub' }, m.note))
 
-          content.replaceChildren(bar, h('div', { class: 'dash-grid dash-grid-side' }, CellList(m, 'top'), strip), protoNote())
-          if (focused >= 0) document.querySelectorAll('.dash-bar .segmented button')[focused]?.focus()
+          // Στάση: the list, the table and the scatter in one row (from 1600 px; below, the scatter goes under them).
+          const m = peopleModel()
+          if (m.failed) { content.replaceChildren(bar, UI.ErrorState({ onRetry: () => location.reload() }), protoNote()); return }
+          if (m.empty) { content.replaceChildren(bar, h('div', { class: 'dash-grid' }, card('c-12', cardHead(t('fps.title')), UI.EmptyState({ text: t('fp.empty') }))), protoNote()); return }
+          const table = card('fps-main', cardHead(t('fps.title.stance'), null, t('fps.info.stance')), PeopleTable(m))
+          table.append(h('p', { class: 'dcard-sub' }, t('fp.note.extended.stance', { days: m.days, date: fmt.date(m.date), min: NAME_MIN })))
+          const scatter = card('fps-scatter', cardHead(t('fps.scatter.title'), null, t('fps.scatter.info')), h('p', { class: 'dcard-sub fp-what' }, t('fps.scatter.what')), SpreadScatter(m))
+          content.replaceChildren(bar, h('div', { class: 'fps-layout' }, CellList(m), table, scatter), protoNote())
         }
         draw()
       }

@@ -189,3 +189,31 @@
 .chart .scatter-dot { opacity: 0.92; }
 @media (max-width: 1023px) { .fp-overview .c-3, .fp-overview .c-9 { grid-column: 1 / -1; } }
 .chart .dot-out { stroke: var(--text-secondary); stroke-opacity: 0.55; stroke-width: 1; }
+
+/* Πρόσωπα › Στάση: the list, the table with a row for each person (and the outlets at its two ends) and the scatter. */
+.fps-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
+.fps-scatter { align-self: start; }
+@media (min-width: 1024px) { .fps-layout { grid-template-columns: 232px minmax(0, 1fr); } .fps-scatter { grid-column: 1 / -1; max-width: 900px; } }
+@media (min-width: 1600px) { .fps-layout { grid-template-columns: 232px minmax(0, 1fr) minmax(400px, 480px); } .fps-scatter { grid-column: auto; max-width: none; } }
+.fps-table { display: grid; font-size: var(--text-caption); color: var(--text-primary); }
+.fps-row { display: grid; grid-template-columns: minmax(130px, 170px) minmax(150px, 220px) minmax(0, 1fr) minmax(0, 1fr); column-gap: var(--space-5); align-items: center; padding: var(--space-2) 0; border-bottom: 1px solid var(--border); }
+.fps-head { align-items: end; padding: 0 0 var(--space-1); font-size: var(--text-caption); letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-secondary); }
+.fps-name { font-size: var(--text-small); color: var(--ink); }
+.fps-meter { display: grid; grid-template-columns: minmax(0, 1fr) 48px; align-items: center; gap: var(--space-2); }
+.fps-track { position: relative; display: block; height: 10px; }
+.fps-fill { position: absolute; top: 0; left: 0; height: 100%; opacity: 0.75; }
+.fps-track-center::before { content: ''; position: absolute; left: 50%; top: -3px; bottom: -3px; border-left: 1px solid var(--text-secondary); }
+.fps-fill-high { left: 50%; background: var(--stance-supportive); }
+.fps-fill-low { left: auto; right: 50%; background: var(--stance-critical); }
+.fps-num { text-align: right; font-variant-numeric: tabular-nums; }
+.fps-outlets { display: flex; flex-wrap: wrap; gap: 2px var(--space-4); }
+.fps-outlet { white-space: nowrap; }
+@media (min-width: 1024px) and (max-width: 1399px) {
+  .fps-row { grid-template-columns: minmax(110px, 140px) minmax(100px, 130px) minmax(0, 1fr) minmax(0, 1fr); column-gap: var(--space-3); }
+  .fps-outlet { white-space: normal; }
+}
+@media (max-width: 1023px) {
+  .fps-head { display: none; }
+  .fps-row { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-1); padding: var(--space-3) 0; }
+  .fps-outlets::before { content: attr(data-label); flex-basis: 100%; font-size: var(--text-caption); color: var(--text-secondary); }
+}

@@ -120,13 +120,7 @@
 .dash .chart .avg-line { stroke: var(--rule); stroke-width: 1; stroke-dasharray: 4 4; }
 .dash .chart .zero-line { stroke: var(--text-secondary); stroke-width: 1; }
 .dash .chart .pt-label { fill: var(--text-primary); font-size: 12px; paint-order: stroke; stroke: var(--surface-page); stroke-width: 3px; stroke-linejoin: round; }
-.dash .chart .range-line { stroke: var(--rule); stroke-width: 2; stroke-linecap: round; }
-.dash .chart .range-band { fill: var(--bar-muted); }
-.dash .chart .range-band:hover { fill: var(--rule); }
-.dash .chart .range-median { stroke: var(--strong); stroke-width: 2.5; stroke-linecap: round; pointer-events: none; }
-.swatch-band { width: 18px; height: 10px; border-radius: 3px; background: var(--bar-muted); }
 .dash .chart .axis-title { fill: var(--text-secondary); font-size: 12px; }
-.dash .chart .row-label { fill: var(--text-primary); font-size: 12px; }
 .dash .chart .tile-label { font-size: 12px; pointer-events: none; }
 .dash .chart .tile-head { font-size: 12px; font-weight: 600; pointer-events: none; }
 .dash .chart .tile-share { font-size: 12px; opacity: 0.75; pointer-events: none; }
