@@ -41,7 +41,7 @@
   // Παλαιστίνη–Ισραήλ holds the Gaza and Israel pages.
   // Αναλύσεις & Ιδιοκτησία (/analyze) is not there: ownership is only Μέσα › Ιδιοκτησία, so /analyze opens that tab.
   // ΜΜΕ & πρόσωπα (/media) is not there: its content is Μέσα › Επισκόπηση. Θέματα (/trends) is a tab of Μέσα, not an item of its own.
-  // Πρόσωπα is an item: its overview (/fingerprints) and Έμφαση και στάση. The person page (/person/<slug>, the file of a person that left Αναλύσεις) is a detail page of the overview.
+  // Πρόσωπα is an item: its overview (/fingerprints) and Στάση. The person page (/person/<slug>, the file of a person that left Αναλύσεις) is a detail page of the overview.
   // Ιστορίες is a tab of Μέσα, under Θέματα, with no sub-tabs (Επισκόπηση and Ανά μέσο are gone). It was an item of the top bar. Μοτίβα διάδοσης is gone, and Υποθέσεις (/cases) is Αναλύσεις › Ρουβίκωνας.
   // #62: each tab answers one question (question.<item>.<tab>), listed in the table of pages. A new tab is a view of the file of its section (?tab=), so every old route opens the same file.
   // Θέματα is one page with no sub-tabs (Ένα θέμα, Ατζέντα μέσων and Μετατοπίσεις are gone; Μετατοπίσεις is a card of it). Πολιτική splits the elections page into 5 tabs.

@@ -8,117 +8,87 @@
   <link rel="stylesheet" href="assets/tokens.css?v=18">
   <link rel="stylesheet" href="assets/app.css?v=62">
   <link rel="stylesheet" href="assets/dash.css?v=104">
-  <link rel="stylesheet" href="assets/mme.css?v=65">
+  <link rel="stylesheet" href="assets/mme.css?v=67">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=14"></script>
-  <script src="assets/messages.js?v=49"></script>
-  <script src="assets/messages-v2.js?v=61"></script>
+  <script src="assets/messages.js?v=50"></script>
+  <script src="assets/messages-v2.js?v=62"></script>
   <script src="assets/components.js?v=21"></script>
   <script src="assets/motion.js?v=4"></script>
   <script src="assets/messages-mme.js?v=35"></script>
   <script src="assets/dash.js?v=30"></script>
   <script src="assets/mme.js?v=36"></script>
-  <script src="assets/shell.js?v=71"></script>
-  <script src="data/fingerprints.js?v=2"></script>
+  <script src="assets/shell.js?v=72"></script>
   <script src="data/stanceRatings.js?v=2"></script>
   <script src="data/mme.js?v=20"></script>
   <script>
     // Πρόσωπα › Επισκόπηση (formerly Μέσα › Αποτυπώματα): dashboard of APO-161.
     // First «Τα πρόσωπα» and «Πώς παρουσιάζει κάθε μέσο τα πρόσωπα» of the live page ΜΜΕ & πρόσωπα (data/mme.js, the Greek outlets over the whole window), with its own tone and voice control.
-    // Πρόσωπα › Έμφαση και στάση (?tab=spread, #62): the 15 persons of the API. The measure control (emphasis or stance) is in the top bar, on the right.
-    // Both measures have a list of the strongest cells and a table with a row for each person. Stance has a scatter of the persons the press disagrees on.
+    // Πρόσωπα › Στάση (?tab=spread, #62): the 15 persons of the API and their stance in each outlet. A list of the most supportive cells, a table with a row for each person, and a scatter of the persons the press disagrees on.
     const { t, fmt, h, load, params } = App
     const tab = params.get('tab') === 'spread' ? 'spread' : 'overview'
     const { fit, reset, card, cardHead, emptyText, TopBar } = Dash
-    const sources = {
-      persons: load('fingerprints', ['entities', 'sources', 'days', 'referenceDate'], (b) => b.sources),
-      stance: load('stanceRatings', ['persons', 'days', 'referenceDate', 'minN'], (b) => b.persons)
-    }
-    const state = { mode: 'attention' }
+    const stance = load('stanceRatings', ['persons', 'days', 'referenceDate', 'minN'], (b) => b.persons)
     const mme = load('mme', ['sets'], (b) => Object.keys(b.sets))
     const mmeSummary = mme.kind === 'data' ? Mme.summary(mme.data.sets.gr, 0, mme.data.sets.gr.dates.length - 1) : null
 
-    // An outlet is named only from 20 articles about the person (a share of 1 or 2 articles is not a finding). The stance of an outlet counts from 10 mentions (the API's own minimum).
+    // An outlet is named only from 20 mentions of the person (a stance from 1 or 2 mentions is not a finding). The stance of an outlet counts from 10 mentions (the API's own minimum).
     const NAME_MIN = 20
     const STANCE_MIN = 10
-    // A person is stressed or left out by an outlet from these ratios to the average of the outlets.
-    const MORE_FROM = 1.5
-    const LESS_UNTIL = 0.7
     const pad2 = (min, max) => new Intl.NumberFormat('el-GR', { minimumFractionDigits: min, maximumFractionDigits: max })
-    const ratioText = (v) => `×${pad2(1, 1).format(v)}`
     const netText = (v) => (Math.abs(v) < 0.005 ? '0' : `${v > 0 ? '+' : '−'}${pad2(2, 2).format(Math.abs(v))}`)
 
     // The short name of a person is the last word. A name that two persons share stays whole.
     const shortNames = (names) => names.map((n) => { const last = n.split(' ').pop(); return names.filter((m) => m.split(' ').pop() === last).length > 1 ? n : last })
 
-    // One record for each person, from the two answers of the API:
-    // - attention: the articles in the period, and for each outlet with NAME_MIN articles the ratio of its share of the person to the share over all outlets (`outlets`, the highest first);
-    // - stance: the mean over the outlets weighted by mentions, the spread between the outlets (weighted standard deviation), the mentions, and the outlets with NAME_MIN mentions (the most supportive first).
-    // The persons stay in the order of the articles, in both measures. Returns { failed }, { empty } or { people, days, date }.
+    // One record for each person: the mean stance over the outlets weighted by mentions, the spread between the outlets (weighted standard deviation),
+    // the mentions, and the outlets with NAME_MIN mentions (the most supportive first). The persons are in the order of the mentions.
+    // Returns { failed }, { empty } or { people, days, date }.
     function peopleModel () {
-      const r = state.mode === 'attention' ? sources.persons : sources.stance
-      if (r.kind === 'failed' || r.kind === 'notFound') return { failed: true }
-      if (r.kind === 'empty') return { empty: true }
-      const A = sources.persons.kind === 'data' ? sources.persons.data : null
-      const S = sources.stance.kind === 'data' ? sources.stance.data : null
-      const names = A ? A.entities : S.persons.map((p) => p.name)
-      const short = shortNames(names)
-      const total = A ? A.sources.reduce((a, s) => a + s.total, 0) : 0
-      const people = names.map((name, i) => {
-        const articles = A ? A.sources.reduce((a, s) => a + s.cells[i][1], 0) : 0
-        const base = articles / total
-        const outlets = A ? A.sources.map((s) => ({ outlet: s.name, n: s.cells[i][1], v: s.cells[i][1] / s.total / base })).filter((x) => x.n >= NAME_MIN).sort((a, b) => b.v - a.v) : []
-        const own = S && S.persons.find((p) => p.name === name)
-        const rated = own ? Object.entries(own.outlets).map(([outlet, [v, n]]) => ({ outlet, n, v })).filter((x) => x.n >= STANCE_MIN) : []
+      if (stance.kind === 'failed' || stance.kind === 'notFound') return { failed: true }
+      if (stance.kind === 'empty') return { empty: true }
+      const d = stance.data
+      const short = shortNames(d.persons.map((p) => p.name))
+      const people = d.persons.map((p, i) => {
+        const rated = Object.entries(p.outlets).map(([outlet, [v, n]]) => ({ outlet, n, v })).filter((x) => x.n >= STANCE_MIN)
         const mentions = rated.reduce((a, x) => a + x.n, 0)
         const mean = mentions ? rated.reduce((a, x) => a + x.v * x.n, 0) / mentions : 0
         const spread = mentions ? Math.sqrt(rated.reduce((a, x) => a + x.n * (x.v - mean) ** 2, 0) / mentions) : 0
-        return { name, short: short[i], articles, outlets, mean, spread, mentions, rated: rated.filter((x) => x.n >= NAME_MIN).sort((a, b) => b.v - a.v) }
-      })
-      const used = state.mode === 'attention' ? people : people.filter((p) => p.mentions)
-      used.sort((a, b) => (A ? b.articles - a.articles : b.mentions - a.mentions))
-      return { people: used, days: r.data.days, date: r.data.referenceDate }
+        return { name: p.name, short: short[i], mean, spread, mentions, rated: rated.filter((x) => x.n >= NAME_MIN).sort((a, b) => b.v - a.v) }
+      }).filter((p) => p.mentions).sort((a, b) => b.mentions - a.mentions)
+      return { people, days: d.days, date: d.referenceDate }
     }
 
-    // The strongest outlet and person pairs, as a list with a bar: the most stressed (attention) or the most supportive (stance).
+    // The most supportive outlet and person pairs, as a list with a bar.
     function CellList (m) {
-      const attention = state.mode === 'attention'
-      const cells = m.people.flatMap((p) => (attention ? p.outlets : p.rated).map((x) => ({ ...x, person: p.name })))
-      const sorted = cells.filter((c) => (attention ? c.v > 1 : c.v > 0)).sort((a, b) => b.v - a.v).slice(0, 12)
-      const color = Dash.color(attention ? '--emph-more' : '--stance-supportive')
-      return card('card-side', cardHead(t(attention ? 'f2.top.attention' : 'f2.top.stance')),
+      const sorted = m.people.flatMap((p) => p.rated.map((x) => ({ ...x, person: p.name }))).filter((c) => c.v > 0).sort((a, b) => b.v - a.v).slice(0, 12)
+      const color = Dash.color('--stance-supportive')
+      return card('card-side', cardHead(t('f2.top.stance')),
         sorted.length
-          ? UI.BarList(sorted.map((c) => ({ label: c.outlet, sub: c.person, text: attention ? ratioText(c.v) : netText(c.v), value: c.v, color, tip: t(attention ? 'fp.cell.people' : 'fp.cell.stance', { outlet: c.outlet, person: c.person, ratio: pad2(1, 1).format(c.v), net: netText(c.v), n: fmt.int(c.n) }) })), { max: sorted[0].v })
+          ? UI.BarList(sorted.map((c) => ({ label: c.outlet, sub: c.person, text: netText(c.v), value: c.v, color, tip: t('fp.cell.stance', { outlet: c.outlet, person: c.person, net: netText(c.v), n: fmt.int(c.n) }) })), { max: sorted[0].v })
           : emptyText(t('f2.empty')))
     }
 
-    // The outlets of a cell of the table, each with its number. The tooltip gives the person, the number and the articles.
+    // The outlets of a cell of the table, each with its number. The tooltip gives the person, the number and the mentions.
     const Outlets = (list, person, label) => h('span', { class: 'fps-outlets', 'data-label': label },
-      list.length ? list.map((x) => h('span', { class: 'fps-outlet', title: t(state.mode === 'attention' ? 'fp.cell.people' : 'fp.cell.stance', { outlet: x.outlet, person, ratio: pad2(1, 1).format(x.v), net: netText(x.v), n: fmt.int(x.n) }) }, `${x.outlet} `, h('strong', {}, state.mode === 'attention' ? ratioText(x.v) : netText(x.v)))) : h('span', { class: 'muted-text' }, '–'))
+      list.length ? list.map((x) => h('span', { class: 'fps-outlet', title: t('fp.cell.stance', { outlet: x.outlet, person, net: netText(x.v), n: fmt.int(x.n) }) }, `${x.outlet} `, h('strong', {}, netText(x.v)))) : h('span', { class: 'muted-text' }, '–'))
 
-    // The table: a row for each person. The first measure is a bar (the articles, or the mean stance from the critical end to the supportive end), then the outlets at the two ends.
+    // The table: a row for each person. A bar of the mean stance (from the critical end to the supportive end), then the outlets at the two ends.
     function PeopleTable (m) {
-      const attention = state.mode === 'attention'
-      const top = Math.max(...m.people.map((p) => p.articles), 1)
-      const heads = ['', t(attention ? 'fps.col.articles' : 'fps.col.mean'), t(attention ? 'fps.col.more' : 'fps.col.positive'), t(attention ? 'fps.col.less' : 'fps.col.negative')]
-      const meter = (p) => (attention
-        ? h('span', { class: 'fps-meter' }, h('span', { class: 'fps-track' }, h('span', { class: 'fps-fill', style: `width:${(p.articles / top) * 100}%` })), h('span', { class: 'fps-num' }, fmt.int(p.articles)))
-        : h('span', { class: 'fps-meter' }, h('span', { class: 'fps-track fps-track-center' }, h('span', { class: `fps-fill ${p.mean < 0 ? 'fps-fill-low' : 'fps-fill-high'}`, style: `width:${Math.abs(p.mean) * 50}%` })), h('span', { class: 'fps-num' }, netText(p.mean))))
-      const ends = (p) => (attention
-        ? [p.outlets.filter((x) => x.v >= MORE_FROM).slice(0, 3), p.outlets.filter((x) => x.v <= LESS_UNTIL).slice(-2).reverse()]
-        : [p.rated.filter((x) => x.v > 0).slice(0, 2), p.rated.filter((x) => x.v < 0).slice(-2).reverse()])
+      const heads = ['', t('fps.col.mean'), t('fps.col.positive'), t('fps.col.negative')]
       return h('div', { class: 'fps-table', role: 'table', 'aria-label': t('fps.title') },
         h('div', { class: 'fps-row fps-head', role: 'row' }, heads.map((x) => h('span', { role: 'columnheader' }, x))),
-        m.people.map((p) => {
-          const [first, second] = ends(p)
-          return h('div', { class: 'fps-row', role: 'row' }, h('strong', { class: 'fps-name', role: 'rowheader' }, p.name), meter(p), Outlets(first, p.name, heads[2]), Outlets(second, p.name, heads[3]))
-        }))
+        m.people.map((p) => h('div', { class: 'fps-row', role: 'row' },
+          h('strong', { class: 'fps-name', role: 'rowheader' }, p.name),
+          h('span', { class: 'fps-meter' }, h('span', { class: 'fps-track fps-track-center' }, h('span', { class: `fps-fill ${p.mean < 0 ? 'fps-fill-low' : 'fps-fill-high'}`, style: `width:${Math.abs(p.mean) * 50}%` })), h('span', { class: 'fps-num' }, netText(p.mean))),
+          Outlets(p.rated.filter((x) => x.v > 0).slice(0, 2), p.name, heads[2]),
+          Outlets(p.rated.filter((x) => x.v < 0).slice(-2).reverse(), p.name, heads[3]))))
     }
 
-    // Stance only. One circle for each person: the mean stance across, how much the outlets disagree up, the mentions are the size.
+    // One circle for each person: the mean stance across, how much the outlets disagree up, the mentions are the size.
     function SpreadScatter (m) {
       const people = m.people
       const nmax = Math.max(...people.map((p) => p.mentions), 1)
@@ -171,9 +141,7 @@
         content.classList.add('dash', 'minimal')
         const draw = () => {
           reset()
-          const focused = [...document.querySelectorAll('.dash-bar .segmented button')].indexOf(document.activeElement)
-          const measure = UI.SegmentedControl({ label: t('fp.mode'), value: state.mode, onChange: (mode) => { state.mode = mode; draw() }, options: ['attention', 'stance'].map((mode) => ({ value: mode, label: t(`fp.mode.${mode}`) })) })
-          const bar = TopBar({ title: t('nav.people'), actions: tab === 'spread' ? [measure] : [], tabs, quiet: true })
+          const bar = TopBar({ title: t('nav.people'), actions: [], tabs, quiet: true })
 
           // Επισκόπηση: row 1: the articles about the people over time (9 columns) and the list (3); row 2: tone and voice of the people.
           if (tab === 'overview') {
@@ -182,17 +150,14 @@
             return
           }
 
-          // Έμφαση και στάση: the strongest cells in a narrow column and the table. Stance has the scatter below.
+          // Στάση: the list, the table and the scatter in one row (from 1600 px; below, the scatter goes under them).
           const m = peopleModel()
           if (m.failed) { content.replaceChildren(bar, UI.ErrorState({ onRetry: () => location.reload() }), protoNote()); return }
           if (m.empty) { content.replaceChildren(bar, h('div', { class: 'dash-grid' }, card('c-12', cardHead(t('fps.title')), UI.EmptyState({ text: t('fp.empty') }))), protoNote()); return }
-          const attention = state.mode === 'attention'
-          const table = card('card-main', cardHead(t(attention ? 'fps.title.attention' : 'fps.title.stance'), null, t(attention ? 'fps.info.attention' : 'fps.info.stance')), PeopleTable(m))
-          table.append(h('p', { class: 'dcard-sub' }, t(attention ? 'fp.note.extended' : 'fp.note.extended.stance', { days: m.days, date: fmt.date(m.date), min: NAME_MIN })))
-          const rows = [h('div', { class: 'dash-grid dash-grid-side' }, CellList(m), table)]
-          if (!attention) rows.push(h('div', { class: 'dash-grid' }, card('c-8', cardHead(t('fps.scatter.title'), null, t('fps.scatter.info')), h('p', { class: 'dcard-sub fp-what' }, t('fps.scatter.what')), SpreadScatter(m))))
-          content.replaceChildren(bar, h('div', { class: 'fps-stack' }, ...rows), protoNote())
-          if (focused >= 0) document.querySelectorAll('.dash-bar .segmented button')[focused]?.focus()
+          const table = card('fps-main', cardHead(t('fps.title.stance'), null, t('fps.info.stance')), PeopleTable(m))
+          table.append(h('p', { class: 'dcard-sub' }, t('fp.note.extended.stance', { days: m.days, date: fmt.date(m.date), min: NAME_MIN })))
+          const scatter = card('fps-scatter', cardHead(t('fps.scatter.title'), null, t('fps.scatter.info')), h('p', { class: 'dcard-sub fp-what' }, t('fps.scatter.what')), SpreadScatter(m))
+          content.replaceChildren(bar, h('div', { class: 'fps-layout' }, CellList(m), table, scatter), protoNote())
         }
         draw()
       }
