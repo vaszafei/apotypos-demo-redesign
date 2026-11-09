@@ -167,3 +167,27 @@ Directions between the temporary pages: tab to /media up, section to /fingerprin
 
 - Nuxt's `NAV` is a partial copy (people has no "spread" tab, world has no sub-pages). A move from a static page that is not in it has no direction, but that is the arrival case, which is skipped anyway; it matters when the arrival is solved.
 - The test pages and the changed `ported-pages.json` were temporary and are not in the branch.
+
+## U7: global search (branch `claude/nuxt-search`)
+
+Ported `GlobalSearch` of `shell.js` as `components/GlobalSearch.vue` (same classes and markup, so `app.css` applies), the matching and the index as `utils/search.ts` (a pure file, so node can test it) and the state as `composables/useSearch.ts`. `search.json` is a plain `$fetch` on the first open. The panel is in `<ClientOnly><Teleport to="body">`, so the prerendered page has only the button. A ported route opens with `navigateTo`, an unported one with the static URL (`searchTarget` in `utils/links.ts`). Recent pages and searches use the key of the static pages (`proto-search-recent`), so both worlds share them.
+
+Measured (Chrome, `npm run dev` and the built site):
+
+- `npm test` 61 of 61 (9 new in `scripts/search.test.mjs`), typecheck clean.
+- Same five queries (`Ta Nea`, `τεμπη`, `Τσίπρας`, `ΔΕΘ`, `ιδιοκτησια`) on `/trends` and on `topics-v2.html`: the first two results and their places are identical.
+- `search.json` is requested 0 times before the open and once after, in both worlds.
+- Choosing Θέματα on `/trends` kept the document (marker in `window` survived); choosing Ιδιοκτησία loaded `groups-v2.html`.
+- Esc closes and returns the focus to the button; "show all", the no-results line, the recent groups and `?lang=en` ("ownership" finds "Ownership") work.
+- `npm run check:pixel -- /trends`: 0 pixels differ on all six screens (1440, 390, picker open, hover, night at both widths).
+- Built site: no console warnings with the search open; at 390 the panel is 374 px wide at x = 8.
+
+Looked at (screenshots): the panel with results at 1440, next to the static one. Not looked at: the open and close motion, 390 and the start view in the night theme.
+
+My calls:
+
+- `PAGE_TREE` in `utils/search.ts` is the full NAV of `shell.js`; Nuxt's `useNav` stays partial (it drives the slide). A test compares the routes of both.
+- The hero form of the search is left to U14.
+- Not checked: Safari, Firefox, Netlify.
+
+Found, not mine: a signed-in visitor gets Vue hydration mismatches in `AuthLinks` and `UserMenu` on `/trends` in dev (same on `main`). The signed-out page is clean.
