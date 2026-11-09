@@ -1,3 +1,4 @@
 [
-  { "html": "topics-v2.html", "route": "/trends" }
+  { "html": "topics-v2.html", "route": "/trends" },
+  { "html": "groups-v2.html", "route": "/groups" }
 ]
