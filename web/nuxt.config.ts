@@ -23,7 +23,8 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
-      htmlAttrs: { lang: 'el', 'data-theme': 'paper', 'data-icons': 'off', 'data-font': 'plex', 'data-header': 'v2' },
+      // data-theme, data-icons and data-font are set by stores/prefs.ts (plugins/prefs.client.ts), as the static shell does.
+      htmlAttrs: { lang: 'el', 'data-header': 'v2' },
       title: 'Απότυπος',
       meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }],
       link: [{ rel: 'icon', href: 'data:,' }, ...['tokens', 'app', 'dash', 'mme', 'date-range'].map(sheet)]

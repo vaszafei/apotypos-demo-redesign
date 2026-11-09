@@ -92,3 +92,36 @@ Differences from the plan and from the trial, my calls:
 - The error state of `/trends` now says "Τα δεδομένα δεν φόρτωσαν." (`state.failed`, the text of `UI.ErrorState`); the trial had "Δεν φορτώθηκαν τα δεδομένα.".
 - The nav, the footer, the theme and font names and the sign-in buttons of `layouts/default.vue`, `useNav.ts` and `links.ts` are still Greek in the code. They are the shell (U6); only the ΕΛ/EN switch now works. In English the shell stays Greek, as the screenshot shows.
 - The storage is `localStorage['apotypos-locale']` through the plugin, not the module's cookie, so the static pages and the Nuxt pages share one setting.
+
+## U6, first pull request: session, auth drawer and switches (branch `claude/nuxt-shell-session`)
+
+New: `stores/session.ts` (the three fixed accounts of `ACCOUNTS`, `localStorage['proto-user']`, `signIn`/`signOut`/`refresh`), `stores/prefs.ts` (font, theme, icons: `?font=`, `?theme=`, `?icons=`, then the last choice in `proto-font|theme|icons`, written to `<html data-*>`), `composables/useAuthDrawer.ts`, and the components `AuthDrawer` (login and the three-step sign-up, ported from `openAuth`), `AuthField`, `SignInGate`, `AuthLinks`, `UserMenu`, `LangSwitch`, `ShellSwitches`. Plugins `prefs.client.ts` (applies the choices before the first paint) and `session.client.ts` (a `storage` event from another tab refreshes the user). `layouts/default.vue` now has no hard-coded Greek: the sections, tabs and footer links are keys (`nav.*`, `tab.<section>.<tab>`), so the shell is English with the EN switch. The drawer of a phone has the language, theme, icon and font switches and the sign-in buttons, closes on Esc, and is inert while closed; the page is inert while it is open. Αναλύσεις (section `world`) shows `SignInGate` instead of the page when nobody is signed in. `data-theme`, `data-icons` and `data-font` are no longer in `nuxt.config.ts` (the head would overwrite the store's value after mount).
+
+Measured, in Chrome on the built app (a throwaway `/speeches` page for the gate, not committed):
+
+- Sign in with a wrong password: the error shows, the field is cleared, the focus is on it. The right password closes the drawer and shows the user menu; `proto-user` is `lolovios`; a reload keeps it; "Αποσύνδεση" clears it.
+- Drawer: opens with the focus on the user field; the page behind is inert; 12 Tab and 12 Shift+Tab stay inside; Esc closes it and the focus goes back to the button; on sign-up Esc with typed data asks first and a second Esc returns to the form.
+- Sign-up: step 1 shows 3 errors and focuses the first; a bad email and a short password stay on step 1; the eye shows the password; steps 2 and 3 validate (job, reasons, source, "other" text, terms); Back works; the done view closes without signing anyone in.
+- Gate: a signed-out visitor on Αναλύσεις sees the gate and not the page; logging in from it opens the page without leaving; a reload keeps it; a user stored by a static page (`proto-user`) opens it.
+- Switches: `?theme=night&font=inter&icons=all` set and store the three; the footer controls change them; they survive a reload without the query; an unknown value is ignored. On a phone the drawer holds the switches and the EN switch makes the buttons "Log in" and the nav "Home | Media | People | Analysis".
+- No console error or warning in the whole run. `npm test` 37 pass (7 new for the store and the switch rule), `npm run typecheck` clean, `check:parts` all pass.
+
+`check:pixel -- /trends` against the numbers of U2:
+
+| screen | U2 | now |
+|---|---|---|
+| 1440 full page | 4 782 | 517 |
+| 1440 date picker | 5 818 | 1 553 |
+| 1440 hover | 4 734 | 469 |
+| 1440 night | 8 217 | 530 |
+
+- The 4 265 px header band (rows 10-45) is gone: the check signs the static page in as `lolovios`, and the Nuxt shell now reads the same key and draws the same user menu.
+- The night band (rows 212-522, 3 869 px), open since U2, is explained and was a defect of the check, not of Nuxt: `check:pixel` set `data-theme` after the page had loaded, so the static page kept the hex colors its JS had read in the paper theme (`Dash.color`, categories 6 and 7 have their own values in night) while Nuxt, which uses `var(--cat-n)`, followed the theme. Measured: with `?theme=night` in the URL the strokes of both pages are the same hex values. The check now stores `proto-theme` before the load. After that, the night screen at 1440 is 530 px, the same as paper.
+- The 390 screens gave 2 327 and 2 381 this run: the known tab-bar race of the static page (band rows 93-104), still not handled.
+- What is left at 1440 (517 px) is the donut edges and line labels from the fixed `m-play` class of `DashCard`; that is the second pull request (motion).
+
+Differences from the plan, my calls:
+
+- `?header=v1` (the old header) is not ported; the Nuxt shell is v2 only.
+- The user menu's "Προφίλ" links to `/profile` through `NavLink`, so it opens the static page of the table of pages until a profile page is ported.
+- `LangSwitch` and `AuthLinks`/`UserMenu` are separate components (the plan lists `ShellSwitches` for the switches); the language switch is in the header and in the drawer, the three others in the footer and the drawer.
