@@ -112,5 +112,28 @@
   // A name from English data: the Greek message if one exists, else the name of the data.
   const dataName = (prefix, name) => (window.App.locale === 'el' ? window.MESSAGES.el[`${prefix}.${name}`] ?? name : name)
 
-  window.Politics = { weekLabel, LineChart, ToneBar, PairRows, signed, pctOf, dataName, tip }
+  // The minutes of the speeches by topic, from the main topics of each speech (a share of its seconds). One source for the pages of Ομιλίες ΟΗΕ.
+  // total: all the minutes of the rows; tagged: the minutes with a main topic; topics: [{ topic, minutes, leaders (one minute or more), speeches, top (three names) }], largest first.
+  function topicMinutes (rows) {
+    const by = new Map()
+    let seconds = 0
+    let tagged = 0
+    rows.forEach((r) => {
+      seconds += r.seconds
+      r.shares.forEach(([k, s]) => {
+        const m = (s * r.seconds) / 60
+        tagged += m
+        const e = by.get(k) || { topic: k, minutes: 0, leaders: 0, speeches: 0, list: [] }
+        e.minutes += m
+        e.leaders += m >= 1 ? 1 : 0
+        e.speeches++
+        e.list.push([m, r.speaker])
+        by.set(k, e)
+      })
+    })
+    const topics = [...by.values()].map(({ list, ...e }) => ({ ...e, top: list.sort((a, b) => b[0] - a[0]).slice(0, 3).map((x) => x[1]) })).sort((a, b) => b.minutes - a.minutes)
+    return { total: seconds / 60, tagged, topics }
+  }
+
+  window.Politics = { weekLabel, LineChart, ToneBar, PairRows, signed, pctOf, dataName, tip, topicMinutes }
 })()

@@ -328,5 +328,118 @@
     })
   }
 
-  window.Dash = { LinesChart, StoryFlow, stateContent, select, fit, reset, niceStep, pct0, get SLOTS () { return slots() }, get NO_GROUP () { return color('--cat-0') }, color, seq, groupColors, groupColor, textOn, tint, Spark, card, cardHead, Info, emptyText, cardState, cardFoot, Stat, TopBar }
+  // Donut: the parts of one whole, from the top, clockwise, with a legend. parts: [{ label, value, color, text }], text is the right column of the legend row.
+  // center: { num, cap } shown at rest. A slice or a legend row focuses its part: the center shows its share and name, the other parts dim. pick: the index of a part that stays focused at rest. stack: the value goes under the name (for a narrow card).
+  // A part can have tip (a tooltip on its legend row).
+  function Donut ({ parts, center, size = 220, aria, pick, stack }) {
+    const total = parts.reduce((a, p) => a + p.value, 0)
+    const c = size / 2
+    const r1 = c - 4
+    const r0 = r1 * 0.68
+    const arc = (a0, a1) => {
+      a0 += 0.006
+      a1 = Math.max(a0 + 0.002, a1 - 0.006)
+      const p = (a, r) => `${(c + r * Math.sin(a)).toFixed(2)} ${(c - r * Math.cos(a)).toFixed(2)}`
+      const large = a1 - a0 > Math.PI ? 1 : 0
+      return `M${p(a0, r1)}A${r1} ${r1} 0 ${large} 1 ${p(a1, r1)}L${p(a1, r0)}A${r0} ${r0} 0 ${large} 0 ${p(a0, r0)}Z`
+    }
+    const svg = h('svg', { class: 'chart donut dn', width: size, height: size, viewBox: `0 0 ${size} ${size}`, role: 'img', 'aria-label': aria || parts.map((p) => `${p.label} ${fmt.pct(p.value / total)}`).join(', ') })
+    const num = h('text', { class: 'donut-num', x: c, y: c + 2, 'text-anchor': 'middle' }, center.num)
+    const cap = h('text', { class: 'donut-cap', x: c, y: c + 20, 'text-anchor': 'middle' }, center.cap)
+    svg.append(num, cap)
+    const slices = []
+    const rows = []
+    const focus = (j) => {
+      const i = j ?? pick ?? null
+      const p = i == null ? null : parts[i]
+      slices.forEach((el, k) => el?.classList.toggle('is-dim', i != null && k !== i))
+      rows.forEach((el, k) => el.classList.toggle('is-on', k === i))
+      num.textContent = p ? fmt.pct(p.value / total) : center.num
+      cap.textContent = p ? (p.label.length > 22 ? `${p.label.slice(0, 21)}…` : p.label) : center.cap
+    }
+    let a = 0
+    parts.forEach((p, i) => {
+      const span = total ? (p.value / total) * 2 * Math.PI : 0
+      if (p.value > 0) {
+        const slice = h('path', { class: 'dn-slice', d: arc(a, a + span), fill: p.color, tabindex: 0, 'aria-label': `${p.label}: ${fmt.pct(p.value / total)}` })
+        slice.addEventListener('pointerenter', () => focus(i))
+        slice.addEventListener('pointerleave', () => focus(null))
+        slice.addEventListener('focus', () => focus(i))
+        slice.addEventListener('blur', () => focus(null))
+        slices[i] = slice
+        svg.insertBefore(slice, num)
+      }
+      a += span
+    })
+    const legend = h('ul', { class: 'rows dn-legend' }, parts.map((p, i) => {
+      const li = h('li', { class: 'dn-row' }, h('span', { class: 'dn-dot', style: `background:${p.color}`, 'aria-hidden': 'true' }), h('span', { class: 'row-name' }, p.label), h('span', { class: 'row-value' }, p.text))
+      li.addEventListener('pointerenter', () => focus(i))
+      li.addEventListener('pointerleave', () => focus(null))
+      rows[i] = li
+      return p.tip ? UI.withTip(li, p.tip) : li
+    }))
+    focus(null)
+    return h('div', { class: `donut-wrap dn-wrap${stack ? ' dn-stack' : ''}` }, svg, legend)
+  }
+
+  // Sunburst: two rings and a legend. rings: [{ label, value, color, tip, children: [{ key, label, value, color, tip }] }], the inner ring is the first level and its children are the outer ring,
+  // from the top, clockwise. A child key is a legend key: a legend row, or a slice of the outer ring, dims the outer slices with another key. legend: [{ key, label, color, text, tip }].
+  // The tooltips are white cards. center: { num, cap }.
+  function Sunburst ({ rings, legend, center, size = 260, aria }) {
+    const total = rings.reduce((a, r) => a + r.value, 0)
+    const c = size / 2
+    const R = c - 4
+    const inner = [R * 0.34, R * 0.6]
+    const outer = [R * 0.63, R]
+    const arc = (a0, a1, [r0, r1]) => {
+      a0 += 0.006
+      a1 = Math.max(a0 + 0.002, a1 - 0.006)
+      const p = (a, r) => `${(c + r * Math.sin(a)).toFixed(2)} ${(c - r * Math.cos(a)).toFixed(2)}`
+      const large = a1 - a0 > Math.PI ? 1 : 0
+      return `M${p(a0, r1)}A${r1} ${r1} 0 ${large} 1 ${p(a1, r1)}L${p(a1, r0)}A${r0} ${r0} 0 ${large} 0 ${p(a0, r0)}Z`
+    }
+    const svg = h('svg', { class: 'chart donut dn dn-sun', width: size, height: size, viewBox: `0 0 ${size} ${size}`, role: 'img', 'aria-label': aria || rings.map((r) => `${r.label} ${fmt.pct(r.value / total)}`).join(', ') })
+    const num = h('text', { class: 'donut-num', x: c, y: c + 2, 'text-anchor': 'middle' }, center.num)
+    const cap = h('text', { class: 'donut-cap', x: c, y: c + 18, 'text-anchor': 'middle' }, center.cap)
+    svg.append(num, cap)
+    const outers = []
+    const rows = new Map()
+    const dim = (keep) => {
+      outers.forEach((o) => o.el.classList.toggle('is-dim', keep != null && !keep(o)))
+      rows.forEach((li, k) => li.classList.toggle('is-on', keep != null && outers.some((o) => o.key === k && keep(o))))
+    }
+    const tip = (el, text, enter, leave) => {
+      const show = (e) => UI.showTooltip(text, e.clientX, e.clientY)
+      el.addEventListener('pointerenter', (e) => { show(e); enter() })
+      el.addEventListener('pointermove', show)
+      el.addEventListener('pointerleave', () => { UI.hideTooltip(); leave() })
+      return el
+    }
+    let a = 0
+    rings.forEach((r, ri) => {
+      const span = Math.min(total ? (r.value / total) * 2 * Math.PI : 0, 2 * Math.PI - 0.02)
+      svg.insertBefore(tip(h('path', { class: 'dn-slice', d: arc(a, a + span, inner), fill: r.color }), r.tip, () => dim((o) => o.ring === ri), () => dim(null)), num)
+      let b = a
+      r.children.forEach((ch) => {
+        const sp = total ? Math.min((ch.value / total) * 2 * Math.PI, 2 * Math.PI - 0.02) : 0
+        if (ch.value > 0) {
+          const el = h('path', { class: 'dn-slice', d: arc(b, b + sp, outer), fill: ch.color })
+          outers.push({ el, key: ch.key, ring: ri })
+          svg.insertBefore(tip(el, ch.tip, () => dim((o) => o.key === ch.key), () => dim(null)), num)
+        }
+        b += sp
+      })
+      a += span
+    })
+    const list = h('ul', { class: 'rows dn-legend' }, legend.map((l) => {
+      const li = h('li', { class: 'dn-row' }, h('span', { class: 'dn-dot', style: `background:${l.color}`, 'aria-hidden': 'true' }), h('span', { class: 'row-name' }, l.label), h('span', { class: 'row-value' }, l.text))
+      li.addEventListener('pointerenter', () => dim((o) => o.key === l.key))
+      li.addEventListener('pointerleave', () => dim(null))
+      rows.set(l.key, li)
+      return l.tip ? UI.withTip(li, l.tip) : li
+    }))
+    return h('div', { class: 'donut-wrap dn-wrap' }, svg, list)
+  }
+
+  window.Dash = { Donut, Sunburst, LinesChart, StoryFlow, stateContent, select, fit, reset, niceStep, pct0, get SLOTS () { return slots() }, get NO_GROUP () { return color('--cat-0') }, color, seq, groupColors, groupColor, textOn, tint, Spark, card, cardHead, Info, emptyText, cardState, cardFoot, Stat, TopBar }
 })()

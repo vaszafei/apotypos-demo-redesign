@@ -7,8 +7,8 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=18">
   <link rel="stylesheet" href="assets/app.css?v=62">
-  <link rel="stylesheet" href="assets/dash.css?v=104">
-  <link rel="stylesheet" href="assets/politics.css?v=8">
+  <link rel="stylesheet" href="assets/dash.css?v=107">
+  <link rel="stylesheet" href="assets/politics.css?v=12">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
@@ -16,11 +16,11 @@
   <script src="assets/icons.js?v=14"></script>
   <script src="assets/messages.js?v=51"></script>
   <script src="assets/messages-v2.js?v=62"></script>
-  <script src="assets/messages-politics.js?v=11"></script>
+  <script src="assets/messages-politics.js?v=16"></script>
   <script src="assets/components.js?v=21"></script>
   <script src="assets/motion.js?v=4"></script>
-  <script src="assets/dash.js?v=30"></script>
-  <script src="assets/politics.js?v=11"></script>
+  <script src="assets/dash.js?v=33"></script>
+  <script src="assets/politics.js?v=12"></script>
   <script src="assets/shell.js?v=73"></script>
   <script src="data/speeches.js?v=1"></script>
   <script>
@@ -29,7 +29,7 @@
     const { t, fmt, h, load } = App
     const { reset, card, cardHead, Stat, TopBar } = Dash
     const { dataName } = Politics
-    const result = load('speeches', ['rows', 'agenda'], (b) => b.rows)
+    const result = load('speeches', ['rows'], (b) => b.rows)
     const TOPIC = 'Israel–Palestine'
     const REGIONS = ['Middle East', 'Europe', 'Asia-Pacific', 'Africa', 'North America', 'Latin America & Caribbean']
 
@@ -50,8 +50,10 @@
         const d = result.data
         const bar = TopBar({ title, tabs, quiet: true })
 
-        const total = d.agenda.find((a) => a.topic === TOPIC)
-        const rank = d.agenda.findIndex((a) => a.topic === TOPIC) + 1
+        // The minutes of the topic and its place come from the same rows as the cards and the table: the main topics of each speech.
+        const mins = Politics.topicMinutes(d.rows)
+        const total = mins.topics.find((a) => a.topic === TOPIC)
+        const rank = mins.topics.findIndex((a) => a.topic === TOPIC) + 1
         const rows = d.rows.map((r) => {
           const share = (r.shares.find(([k]) => k === TOPIC) || [])[1] || 0
           return { ...r, share, minutes: (share * r.seconds) / 60, israel: attacksOn(r, 'Israel'), hamas: attacksOn(r, 'Hamas') }
@@ -63,8 +65,8 @@
 
         const wide = (stat) => { stat.classList.remove('c-4'); return stat }
         const stats = [
-          wide(Stat({ label: t('unpi.stat.minutes'), value: fmt.int(Math.round(total ? total.minutes : 0)), sub: t('unpi.stat.minutes.sub', { n: fmt.int(total ? total.leaders : 0) }) })),
-          wide(Stat({ label: t('unpi.stat.rank'), value: t('unpi.stat.rank.value', { n: rank }), sub: t('unpi.stat.rank.sub', { n: fmt.int(d.topics) }) })),
+          wide(Stat({ label: t('unpi.stat.minutes'), value: fmt.int(Math.round(total ? total.minutes : 0)), sub: t('unpi.stat.minutes.sub', { n: fmt.int(total ? total.speeches : 0) }) })),
+          wide(Stat({ label: t('unpi.stat.rank'), value: t('unpi.stat.rank.value', { n: rank }), sub: t('unpi.stat.rank.sub', { n: fmt.int(mins.topics.length) }) })),
           wide(Stat({ label: t('unpi.stat.israel'), value: fmt.int(sum(israel, 'israel')), sub: t('unpi.stat.israel.sub', { n: fmt.int(israel.length) }) })),
           wide(Stat({ label: t('unpi.stat.hamas'), value: fmt.int(sum(hamas, 'hamas')), sub: t('unpi.stat.hamas.sub', { n: fmt.int(hamas.length) }) }))
         ]
@@ -72,9 +74,17 @@
         const leadersCard = card('c-7', cardHead(t('unpi.leaders.title'), null, t('unpi.leaders.info')),
           UI.BarList(onTopic.slice(0, 15).map((r) => ({ label: r.speaker, sub: t('unpi.leaders.sub', { country: r.country, share: fmt.pct(r.share) }), value: r.minutes, text: t('unpi.leaders.value', { m: fmt.dec(r.minutes) }) }))))
 
-        const regions = REGIONS.map((k) => { const list = onTopic.filter((r) => r.region === k); return { k, m: sum(list, 'minutes'), n: list.length } }).filter((x) => x.n)
+        // The regions as a donut of the minutes on the topic, in one-hue tints, the largest first.
+        const TINTS = [7, 6, 5, 4, 3, 2].map((i) => `var(--seq-${i})`)
+        const regions = REGIONS.map((k) => { const list = onTopic.filter((r) => r.region === k); return { k, m: sum(list, 'minutes'), n: list.length } }).filter((x) => x.n).sort((a, b) => b.m - a.m)
+        const regionTotal = sum(regions, 'm')
         const regionCard = card('', cardHead(t('unpi.regions.title'), null, t('unpi.regions.info')),
-          UI.BarList(regions.map((x) => ({ label: t(`un.region.${x.k}`), value: x.m, text: t('unpi.regions.value', { m: fmt.int(Math.round(x.m)), n: fmt.int(x.n) }) }))))
+          Dash.Donut({
+            size: 140,
+            stack: true,
+            center: { num: fmt.int(Math.round(regionTotal)), cap: t('unpi.regions.center') },
+            parts: regions.map((x, i) => ({ label: t(`un.region.${x.k}`), value: x.m, color: TINTS[i], text: t('unpi.regions.value', { m: fmt.int(Math.round(x.m)), p: fmt.pct(x.m / regionTotal) }), tip: t('unpi.regions.tip', { n: fmt.int(x.n) }) }))
+          }))
         const attackCard = card('', cardHead(t('unpi.attacks.title'), null, t('unpi.attacks.info')),
           UI.BarList(israel.slice(0, 8).map((r) => ({ label: r.speaker, sub: r.country, value: r.israel, text: t('unpi.attacks.value', { n: fmt.int(r.israel) }), color: 'var(--stance-critical)' }))))
 

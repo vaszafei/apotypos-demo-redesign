@@ -1,0 +1,3 @@
+# Αναλύσεις › ΟΗΕ (2026-11-09)
+
+User: modify the ΟΗΕ pages (Όλες οι ομιλίες, Παλαιστίνη–Ισραήλ) like Μέσα and Πρόσωπα: look at the data, optimize charts and cards. Donuts (agenda with Domestic affairs, regions, time by continent), discover powerful readable minimal charts with insights, make the numbers correct, no translation work. Plan: docs/plans/2026-11-09-1900-feat-un-speeches-donuts-insights-plan.md (defaults accepted: rows as single source, heatmap in, attacks per hour out, tint colors, layout of KTD6). Work as plain HTML/CSS/JS edits on one open PR checked on Netlify; no compound-engineering review loop.

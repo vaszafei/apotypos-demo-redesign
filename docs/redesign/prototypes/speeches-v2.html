@@ -7,8 +7,8 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=18">
   <link rel="stylesheet" href="assets/app.css?v=62">
-  <link rel="stylesheet" href="assets/dash.css?v=104">
-  <link rel="stylesheet" href="assets/politics.css?v=8">
+  <link rel="stylesheet" href="assets/dash.css?v=107">
+  <link rel="stylesheet" href="assets/politics.css?v=12">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
@@ -16,24 +16,28 @@
   <script src="assets/icons.js?v=14"></script>
   <script src="assets/messages.js?v=51"></script>
   <script src="assets/messages-v2.js?v=62"></script>
-  <script src="assets/messages-politics.js?v=11"></script>
+  <script src="assets/messages-politics.js?v=16"></script>
   <script src="assets/components.js?v=21"></script>
   <script src="assets/motion.js?v=4"></script>
-  <script src="assets/dash.js?v=30"></script>
-  <script src="assets/politics.js?v=11"></script>
+  <script src="assets/dash.js?v=33"></script>
+  <script src="assets/politics.js?v=12"></script>
   <script src="assets/shell.js?v=73"></script>
   <script src="data/speeches.js?v=1"></script>
   <script>
     // Αναλύσεις, ΟΗΕ: the 192 speeches of the 81st General Assembly (K47 and 3 kept tiles). Words and countries move to the hints.
     // The region pills in the top bar filter every card.
     const { t, fmt, h, load } = App
-    const { reset, card, cardHead, Stat, TopBar, SLOTS } = Dash
+    const { reset, card, cardHead, TopBar, SLOTS } = Dash
     const { dataName } = Politics
-    const result = load('speeches', ['rows', 'agenda'], (b) => b.rows)
+    const result = load('speeches', ['rows'], (b) => b.rows)
     const REGIONS = ['Africa', 'Europe', 'Asia-Pacific', 'Latin America & Caribbean', 'Middle East', 'North America']
     const DOMESTIC = 'Domestic affairs'
     const TONES = ['hostile', 'critical', 'neutral', 'conciliatory', 'supportive']
     let region = ''
+    let measure = 'seconds'
+    let query = ''
+    // The measures of the list: key, the text key of the button, the value of a speech, the color of the bar.
+    const MEASURES = [['seconds', 'un.measure.minutes', (r) => r.seconds / 60, undefined], ['claims', 'un.measure.claims', (r) => r.counts.claims, undefined], ['promises', 'un.measure.promises', (r) => r.counts.promises, undefined], ['attacks', 'un.measure.attacks', (r) => r.counts.attacks, 'var(--stance-critical)']]
 
     Shell.start({
       id: 'speeches',
@@ -55,31 +59,58 @@
               h('button', { type: 'button', 'aria-pressed': String(region === value), onClick: () => { region = value; paint() } }, `${label} `, h('span', { class: 'muted-text' }, fmt.int(n)))))
           const bar = TopBar({ title, tabs, quiet: true, actions: [pills] })
 
-          const sum = (k) => rows.reduce((a, r) => a + r.counts[k], 0)
-          const wide = (stat) => { stat.classList.remove('c-4'); return stat }
-          const stats = [
-            wide(Stat({ label: t('un.stat.hours'), value: fmt.dec(rows.reduce((a, r) => a + r.seconds, 0) / 3600), sub: t('un.stat.hours.sub', { n: fmt.int(rows.length), w: fmt.int(rows.reduce((a, r) => a + r.words, 0)) }) })),
-            wide(Stat({ kpi: 'K47', label: t('un.stat.claims'), value: fmt.int(sum('claims')), sub: t('un.stat.claims.sub') })),
-            wide(Stat({ label: t('un.stat.promises'), value: fmt.int(sum('promises')), sub: t('un.stat.promises.sub') })),
-            wide(Stat({ label: t('un.stat.attacks'), value: fmt.int(sum('attacks')), sub: t('un.stat.attacks.sub') }))
-          ]
+          // The fingerprint colors: the 8 largest topics of all speeches have a fixed color, the domestic affairs are dark gray, every other topic is gray.
+          // The agenda donut, the table and its legend read the same map.
+          const everything = Politics.topicMinutes(d.rows)
+          const colorOf = new Map(everything.topics.filter((a) => a.topic !== DOMESTIC).slice(0, SLOTS.length).map((a, i) => [a.topic, SLOTS[i]]))
+          colorOf.set(DOMESTIC, 'var(--cat-strong)')
+          const segColor = (k) => colorOf.get(k) || 'var(--bar-muted)'
 
-          // The agenda of the region: from the full totals for all regions, from the top topics of each speech for one region.
-          const agenda = region
-            ? Object.values(rows.reduce((acc, r) => {
-              r.shares.forEach(([k, s]) => {
-                const m = (s * r.seconds) / 60
-                const e = acc[k] || (acc[k] = { topic: k, minutes: 0, leaders: 0, top: [] })
-                e.minutes += m
-                e.leaders += m >= 1
-                e.top.push([m, r.speaker])
-              })
-              return acc
-            }, {})).map((e) => ({ ...e, top: e.top.sort((a, b) => b[0] - a[0]).slice(0, 3).map((x) => x[1]) })).sort((a, b) => b.minutes - a.minutes)
-            : d.agenda
-          const shown = agenda.filter((a) => a.topic !== DOMESTIC).slice(0, 12)
-          const agendaCard = card('c-7', cardHead(t('un.agenda.title'), null, t('un.agenda.info', { n: fmt.int(d.topics) })),
-            UI.BarList(shown.map((a) => ({ label: topic(a.topic), sub: t('un.agenda.top', { names: a.top.join(', ') }), value: a.minutes, text: t('un.agenda.value', { m: fmt.int(Math.round(a.minutes)), n: fmt.int(a.leaders) }) }))))
+          // The agenda as a sunburst: the regions inside (the time of their speeches), the topics outside (the 9 largest topics of the picked speeches, and the rest).
+          // The legend lists the topics. With a region picked the inner ring is that region alone.
+          const mins = Politics.topicMinutes(rows)
+          const big = mins.topics.slice(0, 9)
+          const restMin = Math.max(0, mins.total - big.reduce((a, x) => a + x.minutes, 0))
+          const TINTS = [7, 6, 5, 4, 3, 2].map((i) => `var(--seq-${i})`)
+          const regionStats = REGIONS.map((g) => ({ g, rows: rows.filter((r) => r.region === g) })).filter((x) => x.rows.length).map((x) => ({ ...x, m: Politics.topicMinutes(x.rows), speeches: x.rows.length })).sort((a, b) => b.m.total - a.m.total)
+          const rings = regionStats.map((x, i) => {
+            const by = new Map(x.m.topics.map((e) => [e.topic, e.minutes]))
+            const name = t(`un.region.${x.g}`)
+            // A topic under 3% of the time of the region goes into the rest, so the outer ring has no slivers.
+            const kids = big.map((e) => ({ key: e.topic, label: topic(e.topic), value: (by.get(e.topic) || 0) / x.m.total >= 0.03 ? by.get(e.topic) : 0, color: segColor(e.topic) }))
+            kids.push({ key: '', label: t('un.other'), value: Math.max(0, x.m.total - kids.reduce((a, k) => a + k.value, 0)), color: 'var(--bar-track)' })
+            kids.forEach((k) => { k.tip = t('un.sun.tip', { region: name, topic: k.label, m: fmt.int(Math.round(k.value)), p: fmt.pct(k.value / x.m.total) }) })
+            return { label: name, value: x.m.total, color: TINTS[i], tip: t('un.sun.region', { region: name, h: fmt.dec(x.m.total / 60), n: fmt.int(x.speeches) }), children: kids }
+          })
+          const agendaCard = card('', cardHead(t('un.agenda.title'), null, t('un.agenda.info')),
+            Dash.Sunburst({
+              size: 250,
+              center: { num: fmt.dec(mins.total / 60), cap: t('un.donut.hours') },
+              rings,
+              legend: [...big.map((x) => ({ key: x.topic, label: topic(x.topic), color: segColor(x.topic), text: t('un.agenda.row', { m: fmt.int(Math.round(x.minutes)), p: fmt.pct(x.minutes / mins.total) }), tip: t('un.agenda.top', { names: x.top.join(', ') }) })),
+                { key: '', label: t('un.other'), color: 'var(--bar-track)', text: t('un.agenda.row', { m: fmt.int(Math.round(restMin)), p: fmt.pct(restMin / mins.total) }) }]
+            }),
+            UI.Legend(regionStats.map((x, i) => ({ label: `${t(`un.region.${x.g}`)} ${fmt.dec(x.m.total / 60)}`, color: TINTS[i] }))))
+
+          // What each region talks about: the share of the time of the region on each of the 9 largest topics, colored by how far it is above the share of all regions.
+          const heatTopics = everything.topics.slice(0, 9)
+          const FEW = 5
+          const heatRegions = REGIONS.map((g) => { const l = d.rows.filter((r) => r.region === g); return { g, rows: l, speeches: l.length, seconds: l.reduce((a, r) => a + r.seconds, 0) } }).sort((a, b) => b.seconds - a.seconds)
+          const share = heatRegions.map((x) => { const m = Politics.topicMinutes(x.rows); const by = new Map(m.topics.map((e) => [e.topic, e.minutes])); return { ...x, by, total: m.total } })
+          const heatRows = share.map((x) => ({ label: x.speeches < FEW ? `${t(`un.region.${x.g}`)} · ${t('un.heat.few', { n: x.speeches })}` : h('span', { class: x.g === region ? 'un-picked' : null }, t(`un.region.${x.g}`)) }))
+          const heatCard = card('un-heat', cardHead(t('un.heat.title'), null, t('un.heat.info')),
+            UI.MatrixChart({
+              caption: t('un.heat.title'), rowHeader: t('un.heat.region'), rows: heatRows, columns: heatTopics.map((x) => ({ label: topic(x.topic) })),
+              cell: (r, c) => {
+                const x = share[r]
+                if (x.speeches < FEW) return { className: 'cell-empty', text: '—' }
+                const mine = (x.by.get(heatTopics[c].topic) || 0) / x.total
+                const all = heatTopics[c].minutes / everything.total
+                return { ...Dash.seq(Math.min(1, mine / all / 4)), text: Dash.pct0(mine), title: t('un.heat.tip', { region: t(`un.region.${x.g}`), topic: topic(heatTopics[c].topic), p: fmt.pct(mine), m: fmt.int(Math.round(x.by.get(heatTopics[c].topic) || 0)) }) }
+              }
+            }),
+            h('p', { class: 'dcard-sub' }, t('un.heat.note', { n: FEW })))
+          heatCard.querySelector('table').classList.add('matrix-turned')
 
           const targets = {}
           // Two names of the data can have one Greek name (for example Western nations and Western countries). The shown name is the key.
@@ -97,33 +128,36 @@
                   r.greece.refers_to.map((x) => h('span', { class: 'pill' }, x))))))
               : h('p', { class: 'dcard-empty' }, t('un.greece.none')))
 
-          // The fingerprint of each speech. The 8 largest topics of all speeches have a fixed color, the domestic affairs are dark gray.
-          const colorOf = new Map(d.agenda.filter((a) => a.topic !== DOMESTIC).slice(0, SLOTS.length).map((a, i) => [a.topic, SLOTS[i]]))
-          colorOf.set(DOMESTIC, 'var(--cat-strong)')
-          const segColor = (k) => colorOf.get(k) || 'var(--bar-muted)'
-          const legend = UI.Legend([...[...colorOf.keys()].map((k) => ({ label: topic(k), color: colorOf.get(k) })), { label: t('un.other'), color: 'var(--bar-muted)' }])
+          // The fingerprint of each speech, with the colors of the agenda donut.
+          // «Όλες οι ομιλίες»: the speeches in one list, by the measure the visitor picks, with the fingerprint of the topics of each (the colors of the sunburst).
+          // The list scrolls inside the card and has every speech of the picked region.
           const Print = (r) => {
             const rest = Math.max(0, 1 - r.shares.reduce((a, [, s]) => a + s, 0))
             const label = r.shares.map(([k, s]) => `${topic(k)} ${fmt.pct(s)}`).join(', ')
             return UI.StackedBar([...r.shares.map(([k, s]) => ({ label: topic(k), value: s, color: segColor(k) })), { label: t('un.other'), value: rest > 0.01 ? rest : 0, color: 'var(--bar-track)' }], { legend: false, label })
           }
-          const sorted = rows.slice().sort((a, b) => b.seconds - a.seconds)
-          const tableCard = card('c-12', cardHead(t('un.table.title'), null, t('un.table.info')), legend,
-            UI.DataTable({
-              rows: sorted, rankColumn: true, pageSize: 25, moreStep: 25,
-              columns: [
-                { label: t('un.col.leader'), render: (r) => h('span', { class: 'leader-cell' }, h('a', { class: 'quiet-link', href: r.url, target: '_blank', rel: 'noopener' }, r.speaker), h('span', { class: 'row-sub' }, `${r.role} · ${r.country}`)) },
-                { label: t('un.col.minutes'), num: true, render: (r) => fmt.int(Math.round(r.seconds / 60)) },
-                { label: t('un.col.wpm'), num: true, phone: false, render: (r) => fmt.int(Math.round(r.words / (r.seconds / 60))) },
-                { label: t('un.col.print'), phone: false, render: Print },
-                { label: t('un.col.top'), phone: false, render: (r) => { const top = r.shares.find(([k]) => k !== DOMESTIC) || r.shares[0]; return top ? h('span', { class: 'nowrap' }, `${topic(top[0])} `, h('span', { class: 'muted-text' }, fmt.pct(top[1]))) : '–' } },
-                { label: t('un.col.claims'), num: true, render: (r) => fmt.int(r.counts.claims) },
-                { label: t('un.col.promises'), num: true, phone: false, render: (r) => fmt.int(r.counts.promises) },
-                { label: t('un.col.attacks'), num: true, phone: false, render: (r) => fmt.int(r.counts.attacks) }
-              ]
-            }))
+          const holder = h('ul', { class: 'un-list' })
+          const count = h('p', { class: 'dcard-sub' })
+          const buttons = MEASURES.map(([key, label]) => h('button', { type: 'button', 'aria-pressed': String(measure === key), onClick: () => { measure = key; buttons.forEach((x, i) => x.setAttribute('aria-pressed', String(MEASURES[i][0] === key))); fill() } }, t(label)))
+          const search = h('input', { class: 'un-search', type: 'search', value: query, placeholder: t('un.search'), 'aria-label': t('un.search') })
+          search.addEventListener('input', () => { query = search.value; fill() })
+          function fill () {
+            const [, , value, color] = MEASURES.find((m) => m[0] === measure)
+            const q = query.trim().toLowerCase()
+            const list = rows.filter((r) => !q || `${r.speaker} ${r.country}`.toLowerCase().includes(q)).sort((a, b) => value(b) - value(a) || b.seconds - a.seconds)
+            const max = Math.max(...list.map(value), 1)
+            holder.replaceChildren(...(list.length ? list.map((r, i) => h('li', { class: 'un-row' },
+              h('span', { class: 'un-rank' }, String(i + 1)),
+              h('span', { class: 'un-name' }, h('a', { class: 'quiet-link', href: r.url, target: '_blank', rel: 'noopener' }, r.speaker), h('span', { class: 'muted-text' }, r.country)),
+              UI.HBar(value(r), max, { color }),
+              h('strong', { class: 'un-val' }, fmt.int(Math.round(value(r)))),
+              h('span', { class: 'un-print' }, Print(r)))) : [h('li', { class: 'dcard-empty' }, t('un.list.none'))]))
+            count.textContent = t('un.list.count', { n: fmt.int(list.length) })
+          }
+          fill()
+          const tableCard = card('c-12', cardHead(t('un.table.title'), h('div', { class: 'un-tools' }, h('div', { class: 'region-pills', role: 'group', 'aria-label': t('un.table.title') }, ...buttons), search), t('un.table.info')), holder, count)
 
-          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, agendaCard, h('div', { class: 'c-5 card-col' }, h('div', { class: 'stats-2x2' }, ...stats), targetCard, greeceCard), tableCard), h('p', { class: 'proto-note' }, t('un.note')))
+          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, h('div', { class: 'c-7 card-col' }, agendaCard, heatCard), h('div', { class: 'c-5 card-col' }, targetCard, greeceCard), tableCard), h('p', { class: 'proto-note' }, t('un.note')))
         }
         paint()
       }
