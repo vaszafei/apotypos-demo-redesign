@@ -157,7 +157,7 @@
   const netOf = (tone) => { const n = sum(tone); return n ? (tone[2] - tone[0]) / n : 0 }
 
   // People × outlets: the tone of the articles about each person, or the statements of the person per 1,000 articles.
-  function PeopleCard (S, { mode, onMode }) {
+  function PeopleCard (S, { mode, onMode, extra, span = 'c-12' }) {
     const cols = columnsOf(S)
     const people = S.set.people.map((p, k) => ({ ...p, k, tone: [0, 1, 2].map((j) => sum(cols.map((o) => o.tone[k][j]))) }))
       .sort((a, b) => sum(b.tone) - sum(a.tone))
@@ -192,7 +192,7 @@
       : h('div', { class: 'scale-legend' }, h('span', {}, t('mme.people.key.neg')),
         h('ol', { class: 'scale-steps' }, [-0.5, -0.3, -0.1, 0, 0.1, 0.3, 0.5].map((v) => { const c = netColor(v); return h('li', { style: c }, signed(v)) })),
         h('span', {}, t('mme.people.key.pos')))
-    return card('c-12', cardHead(t('mme.people.title'), tools, t('mme.people.info')), people.length ? [matrixWrap(t('mme.people.title'), table), legend] : emptyText(t('media2.empty.list')))
+    return card(span, cardHead(t('mme.people.title'), extra ? h('div', { class: 'fp-tools' }, tools, extra) : tools, t('mme.people.info')), people.length ? [matrixWrap(t('mme.people.title'), table), legend] : emptyText(t('media2.empty.list')))
   }
 
   const STANCE_COLORS = ['var(--stance-critical)', 'var(--stance-neutral)', 'var(--stance-supportive)']
@@ -280,161 +280,161 @@
         : emptyText(t('media2.empty.list')))
   }
 
-  // ———— Πρόσωπα › Επισκόπηση: the people in a list, and how each outlet presents the one that is picked. ————
+  // ———— Πρόσωπα › Επισκόπηση: all the people in a column on the left, and one chart of all of them on the right. ————
 
   // The people of the set with statements, the most quoted first.
   const peopleOf = (S) => S.set.people.map((p, k) => ({ p, k, n: S.personQuotes[k] })).filter((r) => r.n > 0).sort((a, b) => b.n - a.n)
+  // A person over all the outlets: the articles by tone, the net balance, and the statements per 1,000 articles of all the outlets.
+  const overallOf = (S, k) => {
+    const tone = [0, 1, 2].map((j) => sum(S.active.map((o) => o.tone[k][j])))
+    return { tone, n: sum(tone), net: netOf(tone), quotes: S.personQuotes[k], rate: S.total ? (S.personQuotes[k] / S.total) * 1000 : 0 }
+  }
+  const dotStyle = 'stroke: var(--text-secondary); stroke-opacity: 0.55; stroke-width: 1'
+  const tipOn = (el, text) => {
+    el.addEventListener('pointerenter', (e) => UI.showTooltip(text, e.clientX, e.clientY))
+    el.addEventListener('pointermove', (e) => UI.showTooltip(text, e.clientX, e.clientY))
+    el.addEventListener('pointerleave', () => UI.hideTooltip())
+    return el
+  }
 
-  // The left column: one card, one row for each person. The row names the person, the statements, the tone over all the outlets and the two topics.
-  function PeopleListCard (S, { selected, onSelect }) {
+  // The left column: one card, one row for each person: the statements, the tone over all the outlets, and the two topics.
+  function PeopleListCard (S) {
     const people = peopleOf(S)
     return card('c-4 fp-list-card', cardHead(t('mme.who.title'), null, t('mme.who.info')),
       people.length
         ? h('ul', { class: 'fp-list' }, people.map((r) => {
-          const tone = [0, 1, 2].map((j) => sum(S.active.map((o) => o.tone[r.k][j])))
+          const o = overallOf(S, r.k)
           const tops = S.set.issues.map((x, i) => ({ x, n: S.quotesByIssue[i][r.k] })).filter((q) => q.n > 0).sort((a, b) => b.n - a.n).slice(0, 2)
           const all = sum(S.set.issues.map((_, i) => S.quotesByIssue[i][r.k])) || 1
-          const net = signed(netOf(tone))
-          return h('li', {}, h('button', { type: 'button', class: 'fp-person', 'aria-pressed': String(r.k === selected), onClick: () => onSelect(r.k) },
-            h('span', { class: 'fp-person-head' }, h('strong', {}, r.p.name), sum(tone) >= 5 ? h('span', { class: 'fp-net', style: netColor(netOf(tone)), title: t('mme.people.cell.tone', { outlet: t('mme.people.total'), person: r.p.name, n: fmt.int(sum(tone)), net }) }, t('mme.who.net', { net })) : null),
+          const net = signed(o.net)
+          return h('li', { class: 'fp-person' },
+            h('span', { class: 'fp-person-head' },
+              h('strong', {}, PERSON_KEYS[r.p.name] ? UI.EntityLink({ type: 'person', key: PERSON_KEYS[r.p.name], label: r.p.name }) : r.p.name),
+              o.n >= 5 ? h('span', { class: 'fp-net', style: netColor(o.net), title: t('mme.people.cell.tone', { outlet: t('mme.people.total'), person: r.p.name, n: fmt.int(o.n), net }) }, t('mme.who.net', { net })) : null),
             h('span', { class: 'muted-text' }, [r.p.role, r.p.party].filter(Boolean).join(' · ')),
             h('span', { class: 'fp-person-n' }, t('mme.persons.quotes', { n: fmt.int(r.n) })),
-            tops.map((q) => h('span', { class: 'fp-person-topic' }, `${name(q.x)} ${pctRound(q.n / all)}`))))
+            tops.map((q) => h('span', { class: 'fp-person-topic' }, `${name(q.x)} ${pctRound(q.n / all)}`)))
         }))
         : emptyText(t('media2.empty.list')))
   }
 
-  // One outlet on a horizontal axis: a dot each, stacked where they meet. The line is the median. Only the two ends have a name; the rest are in the tooltip.
-  function DotStrip (pts, { min, max, step, tickText, fill, median }) {
+  // One row for each person, one dot for each outlet on a shared axis, and a tick for the person over all the outlets.
+  function PeopleDots (S, mode) {
+    const cols = columnsOf(S)
+    const rows = peopleOf(S).map((r) => {
+      const o = overallOf(S, r.k)
+      const pts = cols.map((c) => {
+        const tone = c.tone[r.k]
+        const n = sum(tone)
+        const rate = c.n ? (c.quotes[r.k] / c.n) * 1000 : 0
+        if (mode === 'tone') return n >= 5 ? { x: netOf(tone) * 100, tip: t('mme.people.cell.tone', { outlet: c.name, person: r.p.name, n: fmt.int(n), net: signed(netOf(tone)) }), fill: netColor(netOf(tone)).background } : null
+        return c.quotes[r.k] > 0 ? { x: rate, tip: t('mme.people.cell.voice', { outlet: c.name, person: r.p.name, n: fmt.int(c.quotes[r.k]), rate: fmt.dec(rate) }), fill: 'var(--emph-more)' } : null
+      }).filter(Boolean)
+      return { r, mark: mode === 'tone' ? o.net * 100 : o.rate, pts }
+    })
+    const all = rows.flatMap((x) => x.pts.map((p) => p.x))
+    const min = mode === 'tone' ? Math.floor(Math.min(...all, 0) / 25) * 25 : 0
+    const max = mode === 'tone' ? Math.max(25, Math.ceil(Math.max(...all, 0) / 25) * 25) : Math.ceil(Math.max(...all, 10) / 20) * 20
+    const step = mode === 'tone' ? 25 : max / 4
+    const tickText = (v) => (mode === 'tone' ? (v === 0 ? '0' : signed(v / 100)) : fmt.int(v))
     return Dash.fit((holder, width) => {
-      const pad = { l: 14, r: 14, t: 26, b: 28 }
-      const r = 6
+      const pad = { l: 128, r: 14, t: 8, b: 30 }
+      const rowH = 40
+      const height = pad.t + pad.b + rowH * rows.length
       const sx = (v) => pad.l + ((v - min) / (max - min)) * (width - pad.l - pad.r)
-      const sorted = pts.slice().sort((a, b) => a.x - b.x).map((p) => ({ ...p, px: sx(p.x), lvl: 0 }))
-      sorted.forEach((p, i) => { while (sorted.slice(0, i).some((q) => q.lvl === p.lvl && Math.abs(q.px - p.px) < 2 * r + 1)) p.lvl++ })
-      const levels = Math.max(...sorted.map((p) => p.lvl), 0) + 1
-      const height = pad.t + levels * (2 * r + 2) + pad.b
-      const y0 = height - pad.b
       const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
-      for (let v = min; v <= max + 1e-9; v += step) svg.append(h('line', { class: Math.abs(v) < 1e-9 && min < 0 ? 'zero-line' : 'grid-line', x1: sx(v), x2: sx(v), y1: pad.t, y2: y0 }), h('text', { x: sx(v), y: height - 8, 'text-anchor': 'middle' }, tickText(v)))
-      svg.append(h('line', { class: 'range-line', x1: pad.l, x2: width - pad.r, y1: y0, y2: y0 }))
-      if (median !== undefined) svg.append(h('line', { class: 'range-median', x1: sx(median), x2: sx(median), y1: pad.t - 6, y2: y0 }), h('text', { class: 'pt-label', x: sx(median), y: pad.t - 10, 'text-anchor': 'middle' }, `${t('mme.panel.median')} ${tickText(median)}`))
-      sorted.forEach((p, i) => {
-        const cy = y0 - r - 1 - p.lvl * (2 * r + 2)
-        const dot = h('circle', { class: 'pt dot-out', cx: p.px, cy, r, fill: fill(p), style: 'stroke: var(--text-secondary); stroke-opacity: 0.55; stroke-width: 1' })
-        dot.addEventListener('pointerenter', (e) => UI.showTooltip(p.tip, e.clientX, e.clientY))
-        dot.addEventListener('pointermove', (e) => UI.showTooltip(p.tip, e.clientX, e.clientY))
-        dot.addEventListener('pointerleave', () => UI.hideTooltip())
-        svg.append(dot)
-        if (i === 0 || i === sorted.length - 1) svg.append(h('text', { class: 'pt-label', x: p.px + (i === 0 ? -r : r), y: cy - r - 4, 'text-anchor': i === 0 ? 'start' : 'end' }, `${p.name} ${tickText(p.x)}`))
+      for (let v = min; v <= max + 1e-9; v += step) svg.append(h('line', { class: Math.abs(v) < 1e-9 && min < 0 ? 'zero-line' : 'grid-line', x1: sx(v), x2: sx(v), y1: pad.t, y2: height - pad.b }), h('text', { x: sx(v), y: height - 10, 'text-anchor': 'middle' }, tickText(v)))
+      rows.forEach(({ r, mark, pts }, i) => {
+        const cy = pad.t + i * rowH + rowH / 2
+        svg.append(h('text', { class: 'row-label', x: pad.l - 10, y: cy + 4, 'text-anchor': 'end' }, r.p.name.split(' ').pop()))
+        pts.slice().sort((a, b) => a.x - b.x).forEach((p, j) => svg.append(tipOn(h('circle', { class: 'pt', cx: sx(p.x), cy: cy + ((j % 3) - 1) * 4, r: 4.5, fill: p.fill, 'fill-opacity': 0.85, style: dotStyle }), p.tip)))
+        svg.append(tipOn(h('line', { class: 'range-median', x1: sx(mark), x2: sx(mark), y1: cy - 14, y2: cy + 14 }), t(mode === 'tone' ? 'mme.panel.mark.tone' : 'mme.panel.mark.voice', { person: r.p.name, v: tickText(mark) })))
       })
       holder.replaceChildren(svg)
     })
   }
 
-  // Tone across and statements up: one dot for each outlet, the size is the articles about the person. The corners say what each corner means.
-  function ToneVoiceScatter (pts) {
-    const ymax = Math.max(10, Math.ceil(Math.max(...pts.map((p) => p.y)) / 10) * 10)
-    const nmax = Math.max(...pts.map((p) => p.n), 1)
+  // One dot for each person: the tone across, the statements up, the size is the articles about the person. Every dot has its name.
+  function PeopleScatter (S) {
+    const pts = peopleOf(S).map((r) => ({ r, o: overallOf(S, r.k) })).filter((x) => x.o.n >= 5)
+    const xmax = Math.max(25, Math.ceil(Math.max(...pts.map((x) => Math.abs(x.o.net * 100)), 0) / 25) * 25)
+    const ymax = Math.max(10, Math.ceil((Math.max(...pts.map((x) => x.o.rate), 0) * 1.2) / 10) * 10)
+    const nmax = Math.max(...pts.map((x) => x.o.n), 1)
     return Dash.fit((holder, width) => {
-      const pad = { l: 40, r: 14, t: 18, b: 40 }
-      const height = 360
-      const sx = (v) => pad.l + ((v + 100) / 200) * (width - pad.l - pad.r)
+      const pad = { l: 40, r: 14, t: 30, b: 40 }
+      const height = 392
+      const sx = (v) => pad.l + ((v + xmax) / (2 * xmax)) * (width - pad.l - pad.r)
       const sy = (v) => height - pad.b - (v / ymax) * (height - pad.t - pad.b)
       const svg = h('svg', { class: 'chart', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
-      ;[-100, -50, 0, 50, 100].forEach((v) => svg.append(h('line', { class: v === 0 ? 'zero-line' : 'grid-line', x1: sx(v), x2: sx(v), y1: pad.t, y2: height - pad.b }), h('text', { x: sx(v), y: height - pad.b + 16, 'text-anchor': 'middle' }, v === 0 ? '0' : signed(v / 100))))
-      ;[0, ymax / 2, ymax].forEach((v) => svg.append(h('line', { class: 'grid-line', x1: pad.l, x2: width - pad.r, y1: sy(v), y2: sy(v) }), h('text', { x: pad.l - 6, y: sy(v) + 4, 'text-anchor': 'end' }, fmt.int(v))))
+      ;[-xmax, -xmax / 2, 0, xmax / 2, xmax].forEach((v) => svg.append(h('line', { class: v === 0 ? 'zero-line' : 'grid-line', x1: sx(v), x2: sx(v), y1: pad.t, y2: height - pad.b }), h('text', { x: sx(v), y: height - pad.b + 16, 'text-anchor': 'middle' }, v === 0 ? '0' : signed(v / 100))))
+      ;[0, ymax / 2, ymax].forEach((v) => svg.append(h('line', { class: 'grid-line', x1: pad.l, x2: width - pad.r, y1: sy(v), y2: sy(v) }), h('text', { x: pad.l - 6, y: sy(v) + 4, 'text-anchor': 'end' }, fmt.dec(v))))
       svg.append(h('text', { class: 'pt-label', x: (pad.l + width - pad.r) / 2, y: height - 6, 'text-anchor': 'middle' }, t('mme.panel.axis.tone')))
+      svg.append(h('text', { class: 'q-label', x: pad.l, y: 14, 'text-anchor': 'start' }, t('mme.panel.axis.voice')))
       const corner = (text, x, y, anchor) => svg.append(h('text', { class: 'q-label', x, y, 'text-anchor': anchor }, text))
-      corner(t('mme.panel.q.hl'), pad.l + 6, pad.t + 12, 'start')
-      corner(t('mme.panel.q.hr'), width - pad.r - 6, pad.t + 12, 'end')
       corner(t('mme.panel.q.ll'), pad.l + 6, height - pad.b - 8, 'start')
       corner(t('mme.panel.q.lr'), width - pad.r - 6, height - pad.b - 8, 'end')
-      const sorted = pts.slice().sort((a, b) => b.n - a.n)
-      const named = new Set(sorted.slice().sort((a, b) => (Math.abs(b.x) / 100 + b.y / ymax) - (Math.abs(a.x) / 100 + a.y / ymax)).slice(0, 5))
-      sorted.forEach((p) => {
-        const r = 4 + 8 * Math.sqrt(p.n / nmax)
-        const dot = h('circle', { class: 'pt dot-out scatter-dot', cx: sx(p.x), cy: sy(p.y), r, fill: p.fill, style: 'stroke: var(--text-secondary); stroke-opacity: 0.55; stroke-width: 1' })
-        dot.addEventListener('pointerenter', (e) => UI.showTooltip(p.tip, e.clientX, e.clientY))
-        dot.addEventListener('pointermove', (e) => UI.showTooltip(p.tip, e.clientX, e.clientY))
-        dot.addEventListener('pointerleave', () => UI.hideTooltip())
-        svg.append(dot)
-        if (named.has(p)) { const left = sx(p.x) + r + 4 + p.name.length * 6.4 > width - pad.r; svg.append(h('text', { class: 'pt-label', x: sx(p.x) + (left ? -r - 4 : r + 4), y: sy(p.y) + 4, 'text-anchor': left ? 'end' : 'start' }, p.name)) }
+      pts.slice().sort((a, b) => b.o.n - a.o.n).forEach(({ r, o }) => {
+        const rad = 5 + 11 * Math.sqrt(o.n / nmax)
+        const cx = sx(o.net * 100)
+        svg.append(tipOn(h('circle', { class: 'pt', cx, cy: sy(o.rate), r: rad, fill: netColor(o.net).background, 'fill-opacity': 0.92, style: dotStyle }), t('mme.panel.both.row', { outlet: r.p.name, net: signed(o.net), rate: fmt.dec(o.rate), n: fmt.int(o.n) })))
+        const left = cx + rad + 6 + r.p.name.length * 6.4 > width - pad.r
+        svg.append(h('text', { class: 'pt-label', x: cx + (left ? -rad - 6 : rad + 6), y: sy(o.rate) + 4, 'text-anchor': left ? 'end' : 'start' }, r.p.name))
       })
       holder.replaceChildren(svg)
     })
   }
 
-  // The right column: how each outlet presents the person that is picked. mode: tone or voice. view: bars, axis or both (tone and voice together).
-  function PersonPanel (S, { k, mode, view, onMode, onView }) {
-    const person = S.set.people[k]
-    const cols = columnsOf(S).map((o) => {
-      const tone = o.tone[k]
-      const n = sum(tone)
-      return { o, name: o.name, tone, n, net: netOf(tone), quotes: o.quotes[k], rate: o.n ? (o.quotes[k] / o.n) * 1000 : 0 }
-    })
-    const withTone = cols.filter((c) => c.n >= 5)
-    const hidden = cols.length - withTone.length
-    const withVoice = cols.filter((c) => c.quotes > 0)
+  // The right column: all the people in one chart. view: table (the matrix of the people and the outlets), bars, dots or both (tone and voice together).
+  function PeoplePanel (S, { mode, view, onMode, onView }) {
+    const people = peopleOf(S).map((r) => ({ ...r, o: overallOf(S, r.k) }))
+    const withTone = people.filter((r) => r.o.n >= 5)
     const which = view === 'both' ? 'both' : mode
-    const toneTip = (c) => t('mme.panel.tone.row', { outlet: c.name, n: fmt.int(c.n), c: pctRound(c.tone[0] / c.n), u: pctRound(c.tone[1] / c.n), s: pctRound(c.tone[2] / c.n), net: signed(c.net) })
-    const voiceTip = (c) => t('mme.panel.voice.row', { outlet: c.name, n: fmt.int(c.quotes), rate: fmt.dec(c.rate) })
-    const bothTip = (c) => t('mme.panel.both.row', { outlet: c.name, net: signed(c.net), rate: fmt.dec(c.rate), n: fmt.int(c.n) })
-
-    const names = (list, f) => list.slice(0, 2).map((c) => `${c.name} (${f(c)})`).join(', ')
-    let finding = ''
-    if (which === 'tone' && withTone.length >= 4) {
-      const asc = withTone.slice().sort((a, b) => a.net - b.net)
-      finding = t('mme.panel.tone.finding', { a: names(asc, (c) => signed(c.net)), b: names(asc.slice().reverse(), (c) => signed(c.net)) })
-    } else if (which === 'voice' && withVoice.length >= 4) {
-      const desc = withVoice.slice().sort((a, b) => b.rate - a.rate)
-      finding = t('mme.panel.voice.finding', { a: names(desc, (c) => fmt.dec(c.rate)), b: names(desc.slice().reverse(), (c) => fmt.dec(c.rate)) })
-    }
-
-    let chart
-    let note = null
-    if (which === 'both') {
-      chart = withTone.length ? ToneVoiceScatter(withTone.map((c) => ({ x: c.net * 100, y: c.rate, n: c.n, name: c.name, tip: bothTip(c), fill: netColor(c.net).background }))) : null
-      note = hidden ? t('mme.panel.few', { n: hidden }) : null
-    } else if (which === 'tone') {
-      const rows = withTone.slice().sort((a, b) => a.net - b.net)
-      const scale = Math.max(0.2, ...rows.flatMap((c) => [c.tone[0] / c.n, c.tone[2] / c.n]))
-      chart = rows.length
-        ? (view === 'axis'
-          ? DotStrip(rows.map((c) => ({ x: c.net * 100, name: c.name, tip: toneTip(c), fill: netColor(c.net).background })), { min: -100, max: 100, step: 50, tickText: (v) => (v === 0 ? '0' : signed(v / 100)), fill: (p) => p.fill, median: rows.length ? rows.map((c) => c.net * 100).sort((a, b) => a - b)[Math.floor(rows.length / 2)] : undefined })
-          : h('ul', { class: 'fp-rows' }, h('li', { class: 'fp-rows-head' }, h('span', {}, t('mme.panel.col.outlet')), h('span', {}, t('mme.panel.col.share')), h('span', {}, t('mme.panel.col.net')), h('span', {}, t('mme.panel.col.articles'))), ...rows.map((c) => h('li', {},
-            h('span', { class: 'fp-row-name' }, outletLink(S, c.o)),
-            UI.DivergingBar({ left: c.tone[0] / c.n, middle: c.tone[1] / c.n, right: c.tone[2] / c.n, scale, label: toneTip(c) }),
-            h('span', { class: 'fp-row-net', style: netColor(c.net) }, signed(c.net)),
-            h('span', { class: 'fp-row-n muted-text' }, fmt.int(c.n))))))
-        : null
-      note = hidden ? t('mme.panel.few', { n: hidden }) : null
-    } else {
-      const rows = withVoice.slice().sort((a, b) => b.rate - a.rate)
-      const maxRate = Math.max(...rows.map((c) => c.rate), 0.0001)
-      chart = rows.length
-        ? (view === 'axis'
-          ? DotStrip(rows.map((c) => ({ x: c.rate, name: c.name, tip: voiceTip(c), fill: 'var(--emph-more)' })), { min: 0, max: Math.ceil(maxRate / 10) * 10, step: Math.ceil(maxRate / 40) * 10, tickText: (v) => fmt.dec(v), fill: (p) => p.fill, median: rows.map((c) => c.rate).sort((a, b) => a - b)[Math.floor(rows.length / 2)] })
-          : h('ul', { class: 'fp-rows fp-rows-voice' }, h('li', { class: 'fp-rows-head' }, h('span', {}, t('mme.panel.col.outlet')), h('span', {}, t('mme.panel.col.rate')), h('span', {}), h('span', {}, t('mme.panel.col.quotes'))), ...rows.map((c) => h('li', {},
-            h('span', { class: 'fp-row-name' }, outletLink(S, c.o)),
-            UI.HBar(c.rate, maxRate, { color: 'var(--emph-more)', label: voiceTip(c) }),
-            h('span', { class: 'fp-row-net' }, fmt.dec(c.rate)),
-            h('span', { class: 'fp-row-n muted-text' }, fmt.int(c.quotes))))))
-        : null
-    }
-
+    const viewControl = UI.SegmentedControl({ label: t('mme.panel.view'), value: view, onChange: onView, options: ['table', 'bars', 'dots', 'both'].map((v) => ({ value: v, label: t(`mme.panel.view.${v}`) })) })
     const modeControl = view === 'both' ? null : UI.SegmentedControl({ label: t('mme.people.mode'), value: mode, onChange: onMode, options: ['tone', 'voice'].map((m) => ({ value: m, label: t(`mme.people.mode.${m}`) })) })
-    const viewControl = UI.SegmentedControl({ label: t('mme.panel.view'), value: view, onChange: onView, options: ['bars', 'axis', 'both'].map((v) => ({ value: v, label: t(`mme.panel.view.${v}`) })) })
-    const fileKey = PERSON_KEYS[person.name]
-    const legend = which === 'tone' && view !== 'axis'
+    if (view === 'table') return PeopleCard(S, { mode, onMode, extra: viewControl, span: 'c-8 fp-panel' })
+
+    const short = (r) => `${r.p.name.split(' ').pop()} (${which === 'voice' ? fmt.dec(r.o.rate) : signed(r.o.net)})`
+    let finding = ''
+    if (which === 'tone' && withTone.length >= 3) {
+      const asc = withTone.slice().sort((a, b) => a.o.net - b.o.net)
+      finding = t('mme.panel.tone.finding', { a: asc.slice(0, 2).map(short).join(', '), b: asc.slice().reverse().slice(0, 2).map(short).join(', ') })
+    } else if (which === 'voice' && people.length >= 3) {
+      const desc = people.slice().sort((a, b) => b.o.rate - a.o.rate)
+      finding = t('mme.panel.voice.finding', { a: desc.slice(0, 2).map(short).join(', '), b: desc.slice().reverse().slice(0, 2).map(short).join(', ') })
+    }
+
+    const head = (cols) => h('li', { class: 'fp-rows-head' }, cols.map((c) => h('span', {}, c ? t(`mme.panel.col.${c}`) : '')))
+    let chart
+    if (view === 'both') chart = withTone.length ? PeopleScatter(S) : null
+    else if (view === 'dots') chart = people.length ? PeopleDots(S, mode) : null
+    else if (mode === 'tone') {
+      const rows = withTone.slice().sort((a, b) => a.o.net - b.o.net)
+      const scale = Math.max(0.2, ...rows.flatMap((r) => [r.o.tone[0] / r.o.n, r.o.tone[2] / r.o.n]))
+      chart = rows.length
+        ? h('ul', { class: 'fp-rows fp-rows-people' }, head(['person', 'share', 'net', 'articles']), ...rows.map((r) => h('li', {},
+          h('span', { class: 'fp-row-name' }, r.p.name),
+          UI.DivergingBar({ left: r.o.tone[0] / r.o.n, middle: r.o.tone[1] / r.o.n, right: r.o.tone[2] / r.o.n, scale, label: t('mme.panel.tone.row', { outlet: r.p.name, n: fmt.int(r.o.n), c: pctRound(r.o.tone[0] / r.o.n), u: pctRound(r.o.tone[1] / r.o.n), s: pctRound(r.o.tone[2] / r.o.n), net: signed(r.o.net) }) }),
+          h('span', { class: 'fp-row-net', style: netColor(r.o.net) }, signed(r.o.net)),
+          h('span', { class: 'fp-row-n muted-text' }, fmt.int(r.o.n)))))
+        : null
+    } else {
+      const rows = people.slice().sort((a, b) => b.o.rate - a.o.rate)
+      const maxRate = Math.max(...rows.map((r) => r.o.rate), 0.0001)
+      chart = rows.length
+        ? h('ul', { class: 'fp-rows fp-rows-people', }, head(['person', 'rate', null, 'quotes']), ...rows.map((r) => h('li', {},
+          h('span', { class: 'fp-row-name' }, r.p.name),
+          UI.HBar(r.o.rate, maxRate, { color: 'var(--emph-more)', label: t('mme.panel.voice.row', { outlet: r.p.name, n: fmt.int(r.o.quotes), rate: fmt.dec(r.o.rate) }) }),
+          h('span', { class: 'fp-row-net' }, fmt.dec(r.o.rate)),
+          h('span', { class: 'fp-row-n muted-text' }, fmt.int(r.o.quotes))))) 
+        : null
+    }
+    const legend = which === 'tone' && view === 'bars'
       ? UI.Legend([['crit', 0], ['neutral', 1], ['supp', 2]].map(([key, i]) => ({ label: t(`mme.panel.${key}`), color: STANCE_COLORS[i] })))
       : null
-    return card('c-8 fp-panel', cardHead(t('mme.panel.title', { name: person.name }), h('div', { class: 'fp-tools' }, modeControl, viewControl)),
-      fileKey ? h('p', { class: 'fp-file' }, UI.EntityLink({ type: 'person', key: fileKey, label: `${t('mme.panel.file')} →` })) : null,
-      h('p', { class: 'dcard-sub fp-what' }, t(`mme.panel.${which}.what`)),
+    return card('c-8 fp-panel', cardHead(t('mme.panel.title'), h('div', { class: 'fp-tools' }, modeControl, viewControl)),
+      h('p', { class: 'dcard-sub fp-what' }, t(`mme.panel.${which}.what${view === 'dots' ? '.dots' : ''}`)),
       finding ? h('p', { class: 'fp-finding' }, finding) : null,
-      chart ? [legend, chart] : emptyText(t('mme.panel.none')),
-      note ? h('p', { class: 'dcard-sub' }, note) : null)
+      chart ? [legend, chart] : emptyText(t('mme.panel.none')))
   }
 
   function MethodNote (S) {
@@ -621,5 +621,5 @@
       angle ? h('span', { class: 'mme-angle' }, angle) : null))
   }
 
-  window.Mme = { presets, summary, ChipsCard, StoriesCard, AgendaCard, PeopleCard, GovCard, TopicCard, PersonsCard, PeopleListCard, PersonPanel, MethodNote, outletFacts, WeeklyAgenda, CoverageCard, StanceByTopic, EmphasisCard, VoicesCard, PortrayalCard, Headlines, outletLink }
+  window.Mme = { presets, summary, ChipsCard, StoriesCard, AgendaCard, PeopleCard, GovCard, TopicCard, PersonsCard, PeopleListCard, PeoplePanel, MethodNote, outletFacts, WeeklyAgenda, CoverageCard, StanceByTopic, EmphasisCard, VoicesCard, PortrayalCard, Headlines, outletLink }
 })()
