@@ -313,13 +313,8 @@
   --sidebar-text: var(--text-primary); --sidebar-label: var(--text-secondary); --sidebar-hover-bg: #cdcdc9; --sidebar-active-text: var(--ink);
   --divider: 2px solid var(--ink);
   --series-1: #40403e; --series-other: #8e8e8a;
-  --seq-1: #cbcbc7; --seq-text-1: #0b0b0b; --seq-2: #b4b4b0; --seq-text-2: #0b0b0b; --seq-3: #9c9c98; --seq-text-3: #0b0b0b; --seq-4: #7f7f7b; --seq-text-4: #0b0b0b;
-  --seq-5: #5c5c59; --seq-text-5: #ffffff; --seq-6: #363634; --seq-text-6: #ffffff; --seq-7: #0b0b0b; --seq-text-7: #e8f23b;
-  /* As in the slides: black against, gray for. */
-  --stance-critical: #0b0b0b; --stance-critical-strong: #000000; --stance-neutral: #a8a8a4; --stance-supportive: #727270;
-  --emph-more: #0b0b0b; --emph-less: #636360; --side-a: #0b0b0b; --side-b: #636360;
-  --cat-0: #bdbdb9;
-  --cat-1: #0b0b0b; --cat-2: #e8f23b; --cat-3: #5a5a57; --cat-4: #a3a39f; --cat-5: #2e2e2c; --cat-6: #c3cc3a; --cat-7: #7d7d7a; --cat-8: #45452f; --cat-9: #d0d0cc; --cat-strong: #2e2e2c;
+  --emph-less: #a8480a; --side-a: #1f63b5; --side-b: #9e4f14;
+  /* The categorical, sequential and diverging colors of the charts stay those of "paper": a gray ramp did not tell groups, topics and stances apart. */
   --target-bg: #e8f23b; --notice-bg: #ecf59a; --notice-edge: #0b0b0b; --notice-text: #2b2b00;
   --skeleton: #cacac6; --skeleton-2: #d1d1cd; --skeleton-3: #d4d4d0;
   --radius: 0px; --radius-roomy: 0px;

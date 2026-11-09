@@ -21,7 +21,7 @@
 }
 :root[data-theme="press"] .hero-kicker::before { content: none; }
 :root[data-theme="press"] .dcard-title { font-family: var(--font-heading); font-size: 15px; font-weight: 700; letter-spacing: -0.01em; color: var(--ink); }
-:root[data-theme="press"] svg text { font-family: var(--font-mono); }
+/* Chart text stays in the text font: the mono was hard to read at 12px. */
 
 /* Figures: big, heavy and tight, with the neon marker of the slides under them. */
 :root[data-theme="press"] :is(.kpi-value, .dstat-value) {
