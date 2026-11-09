@@ -5,3 +5,11 @@ html[data-signed-in] .auth-register,
 html[data-signed-in] .gate { visibility: hidden; }
 /* A visitor who wants English does not see the Greek text while the page switches the language. */
 html[data-lang-pending] .shell { visibility: hidden; }
+/* The page head keeps an empty target for the controls a page teleports into it (#page-actions). The static page leaves the element out, so the rules of app.css
+   for a head with no controls have to count an empty target as no controls: on a phone the row is hidden, on a desktop the head is a block with no margin. */
+@media (max-width: 1023px) {
+  :root[data-header="v2"] .page-head-row:not(:has(.page-head-actions:not(:empty), .page-head-meta)) { display: none; }
+}
+@media (min-width: 1024px) {
+  :root[data-header="v2"] .page-head:not(:has(.page-head-actions:not(:empty), .page-filters, .dash-error)) { display: block; margin: 0; }
+}
