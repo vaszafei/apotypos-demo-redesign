@@ -55,3 +55,21 @@ Cause, measured: the tab bar's `scrollLeft` after load. In 12 fresh loads at 390
 Consequence for the checks: a 390 result in `check:pixel` is one of two values until the static race is dealt with. Not changed here; it is a decision for a later unit (U6 or a fix in `shell.js`).
 
 One more thing that did not change: Nuxt's own `error-404.*.css` and `error-500.*.css` still use UnoCSS-style classes, scoped by `data-v`; they were in the build before U3.
+
+## U4: fixtures converter and `useFixture` (branch `claude/nuxt-fixtures`)
+
+New: `web/scripts/build-fixtures.mjs` (runs every `docs/redesign/prototypes/data/*.js` in a `node:vm` context with a bare `window`, writes `public/data/<key>.json`; two files setting the same key is an error), run by `sync-prototype.mjs`. `web/app/utils/fixtureStatus.ts` (the rule of `App.load`: `loading`, `ready`, `empty`, `error`; `?state=empty|error|bad` force a state) and `web/app/composables/useFixture.ts` (fetches `/data/<key>.json`, gives `{ data, status, refresh }`). `useTopics` and the shifts card of `/trends` use it (keys `home` and `overton`). `web/fixtures/` is deleted.
+
+Measured:
+
+- `npm run generate`: 29 fixtures converted; `public/data/` has 61 files (29 `.js`, 29 `.json`, and the 3 `.json` that were already there), 13 MB. Every data script has its JSON file (a test checks this against the real folder).
+- The trial's hand-made files are what the converter gives: `shifts.json` equals `overton` exactly; `topics.json` equals the `dates`, `issues` and `issueDaily` of `home` (the `home` fixture has five more keys, the page does not read them).
+- `npm test`: 18 pass (the 4 pixel tests, 6 for the converter, 9 for `fixtureStatus`). `npm run typecheck` clean.
+- In Chrome on `/trends`: no query gives 4 cards; `?state=empty` shows "Δεν υπάρχουν άρθρα σε αυτή την περίοδο." (the text of `topics2.empty`) and one card; `?state=error` and `?state=bad` show the error state with the retry button. No console error in any. The page requests only `home.json` and `overton.json`, not `search.json` (915 KB).
+- `check:pixel -- /trends`: identical to the numbers before U3 on every screen, except the 390 full page, which is the known two-valued result (2 327 this run; see U3). `check:parts --root .output/public` all pass, `check:fixtures` pass, `check:visual --only topics --root .output/public` no findings.
+
+Differences from the plan, my calls:
+
+- The plan says vitest and `app/composables/useFixture.test.ts`. I used the existing `node --test` runner instead: Node 22.22 strips the types of a `.ts` file, so the pure rule (`fixtureStatus`) is a util that the test imports as it is. A test file inside `app/composables/` would also be picked up by Nuxt's auto-import. The composable itself (`useFetch` + route) is covered by the browser check above, not by a unit test.
+- `?state=notfound` of the prototype is not supported (the plan's four statuses have no `notFound`); no ported page needs it yet.
+- The shifts card still shows nothing when its fixture is not ready; the static page shows an empty or error card there. Not changed.

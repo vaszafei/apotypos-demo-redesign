@@ -9,7 +9,7 @@ const sumRange = (a: (number | null)[], i0: number, i1: number) => {
 
 // The data of Θέματα and what is computed from it (the same arithmetic as topics-v2.html).
 export const useTopics = async () => {
-  const { data, status, refresh } = await useFetch<TopicsData>('/data/topics.json', { key: 'topics' })
+  const { data, status, refresh } = await useFixture<TopicsData>('home', { required: ['dates', 'issues', 'issueDaily'], isEmpty: b => b.dates.length === 0 })
   const period = usePeriodStore()
 
   // The topics have no count after the coded days (null), so the period, lines and donut end on the last day that has one.

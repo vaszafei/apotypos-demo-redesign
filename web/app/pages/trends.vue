@@ -3,7 +3,7 @@
 useHead({ title: 'Θέματα · Απότυπος' })
 const period = usePeriodStore()
 const { status, refresh, dates, view, range, rows, total, colorOf, series, movers } = await useTopics()
-const { data: shifts } = await useFetch<{ window: [string, string], threshold: number, topics: { label: string, ratio: number, week: string }[] }>('/data/shifts.json', { key: 'shifts' })
+const { data: shifts, status: shiftsStatus } = await useFixture<{ window: [string, string], threshold: number, topics: { label: string, ratio: number, week: string }[], weeks: unknown[] }>('overton', { required: ['topics', 'weeks'], isEmpty: b => b.topics.length === 0 })
 
 const sliced = computed(() => dates.value.slice(range.value[0], range.value[1] + 1))
 const top3 = computed(() => rows.value.slice(0, 3).reduce((a, r) => a + r.count, 0) / (total.value || 1))
@@ -21,7 +21,7 @@ const moveInfo = computed(() => {
 const ratio = (v: number) => `${new Intl.NumberFormat('el-GR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(v)}×`
 const shiftModel = computed(() => {
   const sd = shifts.value
-  if (!sd) return null
+  if (!sd || shiftsStatus.value !== 'ready') return null
   const ranked = sd.topics.slice().sort((a, b) => b.ratio - a.ratio)
   const moved = ranked.filter(r => r.ratio >= sd.threshold)
   const finding = `${fmtInt(moved.length)} από ${fmtInt(ranked.length)} θέματα μετατοπίστηκαν, πιο πολύ η «${ranked[0]!.label}» (${ratio(ranked[0]!.ratio)})`
@@ -48,7 +48,7 @@ const widest = computed(() => Math.max(...bars.value.map(b => b.value), 0))
   <div v-if="status === 'error'" class="dash-grid">
     <div class="card-col c-12"><div class="empty-state" data-state="error"><p>Δεν φορτώθηκαν τα δεδομένα.</p><button type="button" class="button" @click="refresh()">Δοκιμάστε ξανά</button></div></div>
   </div>
-  <div v-else-if="status === 'success' && !rows.length" class="dash-grid">
+  <div v-else-if="status === 'empty' || (status === 'ready' && !rows.length)" class="dash-grid">
     <div class="card-col c-12"><section class="dcard"><div class="empty-state" data-state="empty"><p>Δεν υπάρχουν άρθρα σε αυτή την περίοδο.</p></div></section></div>
   </div>
   <div v-else class="dash-grid">
