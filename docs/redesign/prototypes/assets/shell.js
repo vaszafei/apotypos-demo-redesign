@@ -35,7 +35,7 @@
     '/methodology': 'methodology.html'
   }
 
-  // The sidebar has 6 items (APO-161: Media and Ownership are one item). The sub-pages of an item are tabs inside the page (shell-spec.md, "Navigation").
+  // The sidebar has 4 items: Αρχική, Μέσα, Πρόσωπα and Αναλύσεις (APO-161: Media and Ownership are one item). The sub-pages of an item are tabs inside the page (shell-spec.md, "Navigation").
   // The item "world" is Αναλύσεις. Πολεμική ρητορική is Αναλύσεις › Ελληνοτουρκικά (/war, it left Πολιτική) and Παράθυρο is Μέσα › Μετατοπίσεις.
   // A tab can have sub-tabs (a third item of the tab). Its first sub-tab is its page. Ομιλίες ΟΗΕ holds the Israel–Palestine part of the speeches,
   // Παλαιστίνη–Ισραήλ holds the Gaza and Israel pages.
@@ -44,7 +44,7 @@
   // Πρόσωπα is an item: its overview (/fingerprints) and Στάση. The person page (/person/<slug>, the file of a person that left Αναλύσεις) is a detail page of the overview.
   // Ιστορίες is a tab of Μέσα, under Θέματα, with no sub-tabs (Επισκόπηση and Ανά μέσο are gone). It was an item of the top bar. Μοτίβα διάδοσης is gone, and Υποθέσεις (/cases) is Αναλύσεις › Ρουβίκωνας.
   // #62: each tab answers one question (question.<item>.<tab>), listed in the table of pages. A new tab is a view of the file of its section (?tab=), so every old route opens the same file.
-  // Θέματα is one page with no sub-tabs (Ένα θέμα, Ατζέντα μέσων and Μετατοπίσεις are gone; Μετατοπίσεις is a card of it). Πολιτική splits the elections page into 5 tabs.
+  // Θέματα is one page with no sub-tabs (Ένα θέμα, Ατζέντα μέσων and Μετατοπίσεις are gone; Μετατοπίσεις is a card of it). Εκλογές (the old item Πολιτική, now the last tab of Αναλύσεις) splits the elections page into 5 sub-tabs.
   // A detail route names the tab that lists it: the back button and the trail of the page go there.
   const NAV = [
     { key: 'home', tabs: [['home', '/']] },
@@ -53,14 +53,14 @@
       ['stories', '/stories'],
       ['writing', '/media/writing'], ['similarity', '/similarity']], details: [['/outlet', '/media'], ['/group', '/groups'], ['/topic', '/trends'], ['/story', '/stories']] },
     { key: 'people', tabs: [['overview', '/fingerprints'], ['spread', '/fingerprints/spread']], details: [['/person', '/fingerprints']] },
-    { key: 'politics', tabs: [['reach', '/elections'], ['outlets', '/elections/outlets'], ['owners', '/elections/owners'], ['topics', '/elections/topics'], ['bylines', '/elections/bylines']] },
     { key: 'world', tabs: [['speeches', '/speeches', [['speeches.all', '/speeches'], ['speeches.pi', '/un-israel-palestine']]],
       ['pi', '/narrative', [['pi.overview', '/narrative'], ['gaza', '/gaza'], ['israel', '/israel'], ['language', '/gaza-language']]],
-      ['greekturkish', '/war'], ['coverage', '/coverage'], ['france', '/france-riots'], ['rouvikonas', '/cases']] }
+      ['greekturkish', '/war'], ['coverage', '/coverage'], ['france', '/france-riots'], ['rouvikonas', '/cases'],
+      ['elections', '/elections', [['elections.reach', '/elections'], ['elections.outlets', '/elections/outlets'], ['elections.owners', '/elections/owners'], ['elections.topics', '/elections/topics'], ['elections.bylines', '/elections/bylines']]]] }
   ]
   const FOOTER = [['methodology', '/methodology'], ['about', '/about']]
   // The icons of the sections and the tabs: Material Symbols Sharp, drawn with the straight, flat-ended strokes of the logo.
-  const NAV_ICONS = { home: 'home', media: 'tv', people: 'person', politics: 'campaign', world: 'bar_chart', methodology: 'menu_book', about: 'info' }
+  const NAV_ICONS = { home: 'home', media: 'tv', people: 'person', world: 'bar_chart', methodology: 'menu_book', about: 'info' }
   const ROUTE_ICONS = {
     '/media': 'grid_view', '/groups': 'account_balance', '/trends': 'sell', '/stories': 'sensors', '/media/writing': 'edit', '/similarity': 'content_copy',
     '/fingerprints': 'view_list', '/fingerprints/spread': 'tune',
