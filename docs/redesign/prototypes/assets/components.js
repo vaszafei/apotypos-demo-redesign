@@ -574,7 +574,9 @@
     group: (key) => `group-v2.html?g=${encodeURIComponent(key)}`,
     // The Story page opens for the ids of the data. The keys of the entities page are not ids.
     story: (key) => (/^\d+$/.test(key) ? `story-v2.html?id=${key}` : null),
-    topic: (key) => (/^\d+$/.test(key) ? `topic-v2.html?i=${key}` : null)
+    topic: (key) => (/^\d+$/.test(key) ? `topic-v2.html?i=${key}` : null),
+    // Only one person has a page today: the file of the data (data/personFile.js).
+    person: (key) => (key === 'adonis' ? 'persons-v2.html?slug=adonis' : null)
   }
   function EntityLink ({ type, key, label, count, color }) {
     if (!key) return h('span', { class: 'entity-text' }, label)

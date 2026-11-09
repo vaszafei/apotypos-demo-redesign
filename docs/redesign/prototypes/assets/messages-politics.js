@@ -1054,15 +1054,6 @@ Object.assign(window.MESSAGES.en, {
 
 // Πολιτική, Δηλώσεις and Υποθέσεις
 Object.assign(window.MESSAGES.el, {
-  'st.table.title': 'Ποιον παραθέτουν τα άρθρα',
-  'st.table.sub': '{total} δηλώσεις · {promises} υποσχέσεις · {predictions} προβλέψεις, από τα {n} πρόσωπα με τις περισσότερες',
-  'st.table.info': 'Τι έχει πει κάθε πρόσωπο, όπως το μεταφέρουν τα άρθρα: δηλώσεις, υποσχέσεις (δέσμευση για το μέλλον) και προβλέψεις (τι θα γίνει). Ένα πρόσωπο με δύο ονόματα στα δεδομένα είναι μία γραμμή. Το αρχείο δίνει τα 25 πρώτα ονόματα. Οι δηλώσεις της Επισκόπησης είναι άλλη μέτρηση (ΜΜΕ & πρόσωπα, ένα διάστημα δύο μηνών), γι\'αυτό οι αριθμοί διαφέρουν.',
-  'st.col.person': 'Πρόσωπο',
-  'st.col.total': 'Δηλώσεις',
-  'st.col.promises': 'Υποσχέσεις',
-  'st.col.predictions': 'Προβλέψεις',
-  'st.names': 'Και ως: {names}',
-  'st.note': 'Οι δηλώσεις είναι αποσπάσματα από άρθρα, με πηγή. Τα δεδομένα δεν έχουν περίοδο στο αρχείο.',
   'case.query': 'Υπόθεση',
   'case.run': 'Ανάλυση',
   'case.only': 'Το πρωτότυπο έχει μία αποθηκευμένη υπόθεση: «{q}».',
@@ -1092,15 +1083,6 @@ Object.assign(window.MESSAGES.el, {
   'case.note': 'Η ανάλυση βρίσκει τα άρθρα με τους όρους της υπόθεσης σε όλα τα μέσα του αρχείου. Το αρχείο αυτής της ανάλυσης έχει 6 μέσα και άρθρα έως τον Ιούλιο του 2026.'
 })
 Object.assign(window.MESSAGES.en, {
-  'st.table.title': 'Who the articles quote',
-  'st.table.sub': '{total} statements · {promises} promises · {predictions} predictions, from the {n} persons with the most',
-  'st.table.info': 'What each person said, as the articles report it: statements, promises (a commitment for the future) and predictions (what will happen). A person with two names in the data is one row. The file gives the first 25 names. The statements of the Overview are another measure (Media & people, a window of two months), so the numbers differ.',
-  'st.col.person': 'Person',
-  'st.col.total': 'Statements',
-  'st.col.promises': 'Promises',
-  'st.col.predictions': 'Predictions',
-  'st.names': 'Also as: {names}',
-  'st.note': 'The statements are extracts from articles, with a source. The file gives no period for the data.',
   'case.query': 'Case',
   'case.run': 'Analyse',
   'case.only': 'The prototype has one stored case: "{q}".',

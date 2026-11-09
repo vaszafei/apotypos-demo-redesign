@@ -6,22 +6,22 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=18">
-  <link rel="stylesheet" href="assets/app.css?v=61">
+  <link rel="stylesheet" href="assets/app.css?v=62">
   <link rel="stylesheet" href="assets/dash.css?v=103">
-  <link rel="stylesheet" href="assets/mme.css?v=54">
+  <link rel="stylesheet" href="assets/mme.css?v=63">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
   <div id="app"></div>
-  <script src="assets/icons.js?v=12"></script>
-  <script src="assets/messages.js?v=46"></script>
-  <script src="assets/messages-v2.js?v=59"></script>
-  <script src="assets/components.js?v=20"></script>
+  <script src="assets/icons.js?v=14"></script>
+  <script src="assets/messages.js?v=48"></script>
+  <script src="assets/messages-v2.js?v=60"></script>
+  <script src="assets/components.js?v=21"></script>
   <script src="assets/motion.js?v=4"></script>
-  <script src="assets/messages-mme.js?v=29"></script>
+  <script src="assets/messages-mme.js?v=35"></script>
   <script src="assets/dash.js?v=30"></script>
-  <script src="assets/mme.js?v=23"></script>
-  <script src="assets/shell.js?v=68"></script>
+  <script src="assets/mme.js?v=35"></script>
+  <script src="assets/shell.js?v=71"></script>
   <script src="data/fingerprints.js?v=2"></script>
   <script src="data/stanceRatings.js?v=2"></script>
   <script src="data/groups.js?v=2"></script>
@@ -42,7 +42,7 @@
     const colorOf = Dash.groupColors(groupList)
     const groupOfOutlet = new Map(groupList.flatMap((g) => g.outlets.map((o) => [o.name, g.name])))
     const groupRank = new Map(groupList.map((g, i) => [g.name, i]))
-    const state = { mode: 'attention', people: 'tone' }
+    const state = { mode: 'attention' }
     const mme = load('mme', ['sets'], (b) => Object.keys(b.sets))
     const mmeSummary = mme.kind === 'data' ? Mme.summary(mme.data.sets.gr, 0, mme.data.sets.gr.dates.length - 1) : null
 
@@ -210,12 +210,10 @@
           if (m.failed || (tab === 'overview' && !mmeSummary)) { content.replaceChildren(bar, UI.ErrorState({ onRetry: () => location.reload() }), protoNote()); return }
           if (m.empty && tab === 'spread') { content.replaceChildren(bar, h('div', { class: 'dash-grid' }, card('c-12', cardHead(t('fp.matrix.title')), UI.EmptyState({ text: t('fp.empty') }))), protoNote()); return }
 
-          // Επισκόπηση: the person cards and the people × outlets of the live page. Έμφαση και στάση: the strongest cells in a narrow column and the range chart.
-          const personCards = mmeSummary ? Mme.PersonsCard(mmeSummary) : null
-          const people = mmeSummary ? Mme.PeopleCard(mmeSummary, { mode: state.people, onMode: (mode) => { state.people = mode; draw() } }) : null
-          if (people) people.append(h('p', { class: 'dcard-sub' }, t('mme.topics.window', { from: fmt.date(mmeSummary.set.dates[0]), to: fmt.date(mmeSummary.set.dates[mmeSummary.set.dates.length - 1]) })))
+          // Επισκόπηση: all the people in a column on the left, and row 1: the articles about them over time (9 columns) and the list (3); row 2: tone and voice of all of them. Έμφαση και στάση: the strongest cells in a narrow column and the range chart.
           if (tab === 'overview') {
-            content.replaceChildren(bar, h('div', { class: 'dash-grid fp-people' }, personCards, people), protoNote())
+            const list = Mme.PeopleListCard(mmeSummary)
+            content.replaceChildren(bar, h('div', { class: 'dash-grid fp-overview' }, Mme.PeopleTimeCard(mmeSummary), list, Mme.ToneVoiceCard(mmeSummary)), protoNote())
             return
           }
           const strip = card('card-main', cardHead(t('f2.strip.persons'), h('span', { class: 'legend-inline' },
