@@ -64,11 +64,11 @@
   ]
   const FOOTER = [['methodology', '/methodology'], ['about', '/about']]
   // The icons of the sections and the tabs: Material Symbols Sharp, drawn with the straight, flat-ended strokes of the logo.
-  const NAV_ICONS = { home: 'home', media: 'tv', people: 'groups', politics: 'campaign', world: 'bar_chart', methodology: 'menu_book', about: 'info' }
+  const NAV_ICONS = { home: 'home', media: 'tv', people: 'person', politics: 'campaign', world: 'bar_chart', methodology: 'menu_book', about: 'info' }
   const ROUTE_ICONS = {
     '/media': 'grid_view', '/groups': 'account_balance', '/trends': 'sell', '/stories': 'sensors', '/media/writing': 'edit', '/similarity': 'content_copy',
-    '/fingerprints': 'fingerprint', '/fingerprints/spread': 'trending_up',
-    '/contradictions': 'compare_arrows', '/contradictions/pairs': 'swap_horiz', '/contradictions/checks': 'verified',
+    '/fingerprints': 'view_list', '/fingerprints/spread': 'tune',
+    '/contradictions': 'folder_shared', '/contradictions/pairs': 'swap_horiz', '/contradictions/checks': 'fact_check', 'sub:file.overview': 'account_box',
     '/elections': 'how_to_vote', '/elections/outlets': 'newspaper', '/elections/owners': 'account_balance', '/elections/topics': 'sell', '/elections/bylines': 'edit',
     '/speeches': 'mic', '/un-israel-palestine': 'flag', '/narrative': 'space_dashboard', '/gaza': 'newspaper', '/israel': 'visibility', '/gaza-language': 'translate',
     '/war': 'local_fire_department', '/coverage': 'find_in_page', '/france-riots': 'language', '/cases': 'search'
@@ -1011,7 +1011,7 @@
             return h('li', {},
               h('a', { class: `section-nav-link${nested ? ' is-parent' : ''}`, href: hrefOf(r), 'aria-current': current }, ...withIcon(ROUTE_ICONS[r], t(`tab.${item.key}.${key}`))),
               nested ? h('ul', { class: 'section-nav-sub' }, subs.map(([subKey, s]) =>
-                h('li', {}, h('a', { class: 'section-nav-link', href: hrefOf(s), 'aria-current': s === route ? 'page' : null }, ...withIcon(ROUTE_ICONS[s], t(`tab.${item.key}.${subKey}`)))))) : null)
+                h('li', {}, h('a', { class: 'section-nav-link', href: hrefOf(s), 'aria-current': s === route ? 'page' : null }, ...withIcon(ROUTE_ICONS[`sub:${subKey}`] || ROUTE_ICONS[s], t(`tab.${item.key}.${subKey}`)))))) : null)
           }))))
         : null
       const content = h('main', { class: 'content', id: 'content' })
