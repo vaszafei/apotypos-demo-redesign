@@ -1,5 +1,7 @@
 import type { NetGroup, NetOutlet } from './groups'
 
+export const round = (v: number) => Math.round(v * 10000) / 10000
+
 export interface HubNode { kind: 'hub', g: NetGroup, x: number, y: number, r: number }
 export interface OutletNode { kind: 'outlet', g: NetGroup, o: NetOutlet, x: number, y: number, r: number, vx: number, vy: number }
 export type NetNode = HubNode | OutletNode
@@ -77,12 +79,15 @@ export const netLayout = (groups: NetGroup[], width: number, height: number) => 
     if (!overlap) break
     k *= 0.92
   }
+  // Math.sin and Math.cos can differ in the last digit between the server and the browser, so the positions are rounded to 0.0001 px
+  // and the prerendered page and the hydrated one print the same numbers.
+  for (const c of clusters) { c.x = round(c.x); c.y = round(c.y); c.R = round(c.R) }
   const nodes: NetNode[] = []
   const links: { a: HubNode, b: OutletNode }[] = []
   for (const c of clusters) {
     const hub: HubNode = { ...c.hub, x: c.x, y: c.y }
     nodes.push(hub)
-    for (const n of c.outs) { const o: OutletNode = { ...n, x: c.x + n.x, y: c.y + n.y }; nodes.push(o); links.push({ a: hub, b: o }) }
+    for (const n of c.outs) { const o: OutletNode = { ...n, x: round(c.x + n.x), y: round(c.y + n.y) }; nodes.push(o); links.push({ a: hub, b: o }) }
   }
   return { nodes, links, clusters }
 }

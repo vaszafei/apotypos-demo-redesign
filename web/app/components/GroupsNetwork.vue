@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useElementSize } from '@vueuse/core'
 import type { NetGroup, NetOutlet } from '~/utils/groups'
-import type { OutletNode } from '~/utils/net-layout'
+import { round, type OutletNode } from '~/utils/net-layout'
 
 // OwnerBubbles of groups-v2.html: a network of owners and outlets. Nothing moves and nothing opens: a hover on a group or an outlet fades the other groups and its numbers are in the tooltip.
 // A click on a group opens its page and a click on an outlet opens its page. An outlet has its name inside its circle when it fits and beside it when there is room.
@@ -77,7 +77,7 @@ const labels = computed<Label[]>(() => {
       const x0 = anchor === 'middle' ? x - w / 2 : anchor === 'start' ? x : x - w
       if (x0 < 2 || x0 + w > w0 - 2 || y - 12 < 0 || y + 3 > h0 || hit(x0, x0 + w, y - 12, y + 3)) continue
       boxes.push({ x0, x1: x0 + w, y0: y - 12, y1: y + 3 })
-      out.push({ key: `g-${c.g.key ?? 'none'}`, g: c.g, text: name, x, y, anchor, kind: 'group' })
+      out.push({ key: `g-${c.g.key ?? 'none'}`, g: c.g, text: name, x: round(x), y: round(y), anchor, kind: 'group' })
       break
     }
   }
@@ -102,7 +102,7 @@ const labels = computed<Label[]>(() => {
     const x1 = right ? x + w : x
     if (x0 < 2 || x1 > w0 - 2 || hit(x0, x1, y - 12, y + 4)) continue
     boxes.push({ x0, x1, y0: y - 12, y1: y + 4 })
-    out.push({ key: `o-${n.o.slug}`, g: n.g, text: name, x, y, anchor: right ? 'start' : 'end', kind: 'outlet' })
+    out.push({ key: `o-${n.o.slug}`, g: n.g, text: name, x: round(x), y: round(y), anchor: right ? 'start' : 'end', kind: 'outlet' })
   }
   return out
 })
