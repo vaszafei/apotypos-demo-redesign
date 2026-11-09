@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="assets/tokens.css?v=18">
   <link rel="stylesheet" href="assets/app.css?v=62">
   <link rel="stylesheet" href="assets/dash.css?v=103">
-  <link rel="stylesheet" href="assets/mme.css?v=62">
+  <link rel="stylesheet" href="assets/mme.css?v=63">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
@@ -20,7 +20,7 @@
   <script src="assets/motion.js?v=4"></script>
   <script src="assets/messages-mme.js?v=35"></script>
   <script src="assets/dash.js?v=30"></script>
-  <script src="assets/mme.js?v=34"></script>
+  <script src="assets/mme.js?v=35"></script>
   <script src="assets/shell.js?v=71"></script>
   <script src="data/fingerprints.js?v=2"></script>
   <script src="data/stanceRatings.js?v=2"></script>
@@ -210,11 +210,10 @@
           if (m.failed || (tab === 'overview' && !mmeSummary)) { content.replaceChildren(bar, UI.ErrorState({ onRetry: () => location.reload() }), protoNote()); return }
           if (m.empty && tab === 'spread') { content.replaceChildren(bar, h('div', { class: 'dash-grid' }, card('c-12', cardHead(t('fp.matrix.title')), UI.EmptyState({ text: t('fp.empty') }))), protoNote()); return }
 
-          // Επισκόπηση: all the people in a column on the left, and tone and voice of all of them, and the articles about them over time, on the right. Έμφαση και στάση: the strongest cells in a narrow column and the range chart.
+          // Επισκόπηση: all the people in a column on the left, and row 1: the articles about them over time (9 columns) and the list (3); row 2: tone and voice of all of them. Έμφαση και στάση: the strongest cells in a narrow column and the range chart.
           if (tab === 'overview') {
             const list = Mme.PeopleListCard(mmeSummary)
-            const right = h('div', { class: 'c-8 fp-right' }, Mme.ToneVoiceCard(mmeSummary), Mme.PeopleTimeCard(mmeSummary))
-            content.replaceChildren(bar, h('div', { class: 'dash-grid fp-overview' }, list, right), protoNote())
+            content.replaceChildren(bar, h('div', { class: 'dash-grid fp-overview' }, Mme.PeopleTimeCard(mmeSummary), list, Mme.ToneVoiceCard(mmeSummary)), protoNote())
             return
           }
           const strip = card('card-main', cardHead(t('f2.strip.persons'), h('span', { class: 'legend-inline' },

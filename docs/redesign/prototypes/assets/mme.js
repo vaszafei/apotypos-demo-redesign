@@ -244,10 +244,10 @@
     return el
   }
 
-  // The left column: one card, one row for each person: the role, the statements and the tone over all the outlets.
+  // The list of the people: one compact row for each person, with the tone over all the outlets, the role and the statements.
   function PeopleListCard (S) {
     const people = peopleOf(S)
-    return card('c-4 fp-list-card', cardHead(t('mme.who.title'), null, t('mme.who.info')),
+    return card('c-3 fp-list-card', cardHead(t('mme.who.title'), null, t('mme.who.info')),
       people.length
         ? h('ul', { class: 'fp-list' }, people.map((r) => {
           const o = overallOf(S, r.k)
@@ -256,8 +256,7 @@
             h('span', { class: 'fp-person-head' },
               h('strong', {}, PERSON_KEYS[r.p.name] ? UI.EntityLink({ type: 'person', key: PERSON_KEYS[r.p.name], label: r.p.name }) : r.p.name),
               o.n >= 5 ? h('span', { class: 'fp-net', style: netColor(o.net), title: t('mme.people.cell.tone', { outlet: t('mme.people.total'), person: r.p.name, n: fmt.int(o.n), net }) }, t('mme.who.net', { net })) : null),
-            h('span', { class: 'muted-text' }, [r.p.role, r.p.party].filter(Boolean).join(' · ')),
-            h('span', { class: 'fp-person-n' }, t('mme.persons.quotes', { n: fmt.int(r.n) })))
+            h('span', { class: 'muted-text' }, [[r.p.role, r.p.party].filter(Boolean).join(' · '), t('mme.persons.quotes', { n: fmt.int(r.n) })].filter(Boolean).join(' · ')))
         }))
         : emptyText(t('media2.empty.list')))
   }
@@ -318,14 +317,14 @@
       key: PERSON_KEYS[r.p.name] || String(r.k), name: r.p.name, color: Dash.SLOTS[i],
       values: daily.map((_, j) => { const from = Math.max(0, j - ROLL + 1); return sum(daily.slice(from, j + 1)) / (j - from + 1) })
     }))
-    return card('', cardHead(t('mme.time.title'), null, `${t('mme.time.title')}. ${t('mme.time.info')}`),
+    return card('c-9', cardHead(t('mme.time.title'), null, `${t('mme.time.title')}. ${t('mme.time.info')}`),
       series.length ? Dash.LinesChart({ dates, series, caption: t('mme.time.title'), href: (s) => UI.EntityLink({ type: 'person', key: s.key, label: '' }).getAttribute('href') }) : emptyText(t('media2.empty.list')))
   }
 
-  // The right column: tone and voice of all the people in one chart, and the articles about them over time.
+  // Tone and voice of all the people in one chart, the full width of the second row.
   function ToneVoiceCard (S) {
     const withTone = peopleOf(S).filter((r) => overallOf(S, r.k).n >= 5)
-    return card('', cardHead(t('mme.both.title')),
+    return card('c-12', cardHead(t('mme.both.title')),
       h('p', { class: 'dcard-sub fp-what' }, t('mme.panel.both.what')),
       withTone.length ? PeopleScatter(S) : emptyText(t('mme.panel.none')))
   }
