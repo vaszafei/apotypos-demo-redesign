@@ -1,4 +1,4 @@
-// The day checks of the fixtures that make-db-fixtures.py extends. Usage: pnpm check:fixtures (in web/) or node docs/redesign/prototypes/scripts/fixtures-check.mjs
+// The day checks of the fixtures that make-db-fixtures.py extends. Usage: npm run check:fixtures (in web/) or node docs/redesign/prototypes/scripts/fixtures-check.mjs
 // For media, stories, storyDetail and home: the dates are consecutive days, the window is the first and last date, and every array
 // that is one value per day has as many values as there are dates. A cell with no data is null and keeps the shape of a cell with data.
 // Exit code 1 if a check fails.

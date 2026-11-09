@@ -1,4 +1,4 @@
-// The color and chart checks of the prototypes (#2). Usage: pnpm check (in web/) or node docs/redesign/prototypes/scripts/check.mjs
+// The color and chart checks of the prototypes (#2). Usage: npm run check (in web/) or node docs/redesign/prototypes/scripts/check.mjs
 // 1. No hex, rgb() or hsl() color literal outside assets/tokens.css.
 // 2. Contrast in every theme: text 4.5 to 1, marks 3 to 1, each on its surfaces.
 // 3. The accent, the data series and "supportive" are far apart (CIEDE2000).

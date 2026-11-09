@@ -1,27 +1,24 @@
 // The behavior of the shared parts on pages.html (#2): parts A-F, the report frame, a redraw of the route table, the keyboard focus.
-// Usage: pnpm check:parts (in web/) or node docs/redesign/prototypes/scripts/parts-check.mjs
+// Usage: npm run check:parts (in web/) [--root <dir> | --base <url>] or node docs/redesign/prototypes/scripts/parts-check.mjs
+// With --root (a built folder, for example .output/public) or --base (a running server), pages.html is checked in the Nuxt deploy.
 // Env: CHROME_PATH (default /usr/bin/google-chrome), PORT (default 8766). Exit code 1 if a test fails.
-import { createServer } from 'node:http'
-import { readFileSync, existsSync, statSync } from 'node:fs'
-import { extname, join, normalize } from 'node:path'
+import { existsSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
+import { startServer } from '../../../../web/scripts/lib/static-server.mjs'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
 const port = Number(process.env.PORT || 8766)
+const arg = (name) => { const i = process.argv.indexOf(`--${name}`); return i > -1 ? process.argv[i + 1] : '' }
+const baseArg = arg('base')
+const base = baseArg || `http://localhost:${port}`
 const chrome = process.env.CHROME_PATH || '/usr/bin/google-chrome'
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ico': 'image/x-icon' }
-const server = createServer((req, res) => {
-  const path = normalize(join(root, decodeURIComponent(new URL(req.url, 'http://x').pathname)))
-  if (!path.startsWith(root) || !existsSync(path) || !statSync(path).isFile()) { res.writeHead(404); res.end('not found'); return }
-  res.writeHead(200, { 'content-type': types[extname(path)] || 'application/octet-stream' })
-  res.end(req.method === 'HEAD' ? undefined : readFileSync(path))
-})
-await new Promise((resolve) => server.listen(port, resolve))
+const server = baseArg ? null : await startServer(arg('root') ? resolve(arg('root')) : root, port)
 
 let chromium
-try { ({ chromium } = createRequire(new URL('../../../../web/package.json', import.meta.url))('playwright-core')) } catch { console.error('playwright-core is missing. Run pnpm install in web/.'); server.close(); process.exit(2) }
-if (!existsSync(chrome)) { console.error(`Chrome not found at ${chrome}. Install Google Chrome or set CHROME_PATH.`); server.close(); process.exit(2) }
+try { ({ chromium } = createRequire(new URL('../../../../web/package.json', import.meta.url))('playwright-core')) } catch { console.error('playwright-core is missing. Run npm install in web/.'); server?.close(); process.exit(2) }
+if (!existsSync(chrome)) { console.error(`Chrome not found at ${chrome}. Install Google Chrome or set CHROME_PATH.`); server?.close(); process.exit(2) }
 const browser = await chromium.launch({ executablePath: chrome })
 let fails = 0
 const known = new Set()
@@ -39,7 +36,7 @@ async function open (theme, width, lang = 'el') {
   page.on('pageerror', (e) => problems.push(e.message.slice(0, 160)))
   page.on('request', (r) => { if (r.method() === 'HEAD') heads.push(short(r.url())) })
   page.on('response', (r) => { if (r.status() >= 400 && r.url().includes('/cdn-cgi/rum')) { known.add(short(r.url())); return } if (r.status() >= 400) problems.push(`HTTP ${r.status()} ${short(r.url())}`) })
-  await page.goto(`http://localhost:${port}/pages.html`, { waitUntil: 'networkidle' })
+  await page.goto(`${base}/pages.html`, { waitUntil: 'networkidle' })
   await page.waitForTimeout(800)
   return { context, page, problems, heads }
 }
@@ -232,7 +229,7 @@ for (const [theme, width] of [['paper', 1440], ['night', 1440], ['paper', 390], 
 }
 
 await browser.close()
-server.close()
+server?.close()
 console.log(`Known 4xx, not ours: ${[...known].join(', ') || 'none'}`)
 console.log(fails ? `${fails} failed` : 'All parts checks pass.')
 process.exit(fails ? 1 : 0)

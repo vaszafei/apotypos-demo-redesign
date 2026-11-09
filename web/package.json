@@ -11,7 +11,9 @@
     "check": "node ../docs/redesign/prototypes/scripts/check.mjs",
     "check:visual": "node ../docs/redesign/prototypes/scripts/visual-check.mjs",
     "check:parts": "node ../docs/redesign/prototypes/scripts/parts-check.mjs",
-    "check:fixtures": "node ../docs/redesign/prototypes/scripts/fixtures-check.mjs"
+    "check:fixtures": "node ../docs/redesign/prototypes/scripts/fixtures-check.mjs",
+    "test": "node --test scripts/*.test.mjs",
+    "check:pixel": "node scripts/pixel-diff.mjs"
   },
   "dependencies": {
     "@pinia/nuxt": "^1.0.3",
@@ -23,6 +25,7 @@
   },
   "devDependencies": {
     "playwright-core": "^1.64.1",
+    "pngjs": "^7.0.0",
     "typescript": "^6.0.3",
     "vue-tsc": "^3.3.14"
   }
