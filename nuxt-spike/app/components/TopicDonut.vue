@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { TopicRow } from '~/types/topics'
 
+// TopicDonut of topics-v2.html: one ring, a slice for each topic from the top, clockwise, the largest first; the list on its side has every topic and scrolls.
 const props = defineProps<{ rows: TopicRow[], total: number, colorOf: Map<number, string> }>()
 const tooltip = useTooltipStore()
 
@@ -8,7 +9,6 @@ const size = 176
 const c = size / 2
 const [r0, r1] = [57, 87]
 const pad = 0.008
-
 const point = (a: number, r: number) => `${(c + r * Math.sin(a)).toFixed(2)} ${(c - r * Math.cos(a)).toFixed(2)}`
 const arc = (a0: number, a1: number) => {
   a0 += pad / 2
@@ -16,36 +16,37 @@ const arc = (a0: number, a1: number) => {
   const large = a1 - a0 > Math.PI ? 1 : 0
   return `M${point(a0, r1)}A${r1} ${r1} 0 ${large} 1 ${point(a1, r1)}L${point(a1, r0)}A${r0} ${r0} 0 ${large} 0 ${point(a0, r0)}Z`
 }
-
 const slices = computed(() => {
   let a = 0
-  return props.rows.map((r) => {
+  return props.rows.map((r, i) => {
     const span = (r.count / props.total) * 2 * Math.PI
     const d = arc(a, a + span)
     a += span
-    return { r, d, color: props.colorOf.get(r.k) ?? 'var(--bar-muted)', ranked: props.colorOf.has(r.k) }
+    return { r, i, d, color: props.colorOf.get(r.k) ?? 'var(--bar-muted)', ranked: props.colorOf.has(r.k) }
   })
 })
-const tipOf = (r: TopicRow) => ({ text: `${r.issue.el}: ${fmtInt(r.count)} άρθρα (${fmtPct(r.count / props.total)})` })
+const tip = (r: TopicRow) => `${r.issue.el}: ${fmtInt(r.count)} άρθρα (${fmtPct(r.count / props.total)})`
+const show = (r: TopicRow, e: PointerEvent) => tooltip.show({ title: tip(r) }, e)
 </script>
 
 <template>
-  <div class="flex min-h-0 flex-1 flex-col items-center gap-3">
-    <svg :width="size" :height="size" :viewBox="`0 0 ${size} ${size}`" class="shrink-0" role="img" aria-label="Όλα τα θέματα">
+  <div class="donut-wrap sun-wrap mme-topic-wrap">
+    <div class="mme-topic-box">
+      <ul class="rows rows-groups rows-owners mme-topic-list">
+        <li v-for="s in slices" :key="s.r.k" :title="tip(s.r)">
+          <span class="dot" :style="`--dot:${s.color}`" aria-hidden="true" />
+          <span class="row-name"><NuxtLink class="entity-link" :to="`/topic/${s.r.k}`">{{ s.r.issue.el }}</NuxtLink></span>
+          <span class="row-value">{{ fmtPct(s.r.count / total) }}</span>
+        </li>
+      </ul>
+    </div>
+    <svg class="chart donut topic-donut" :width="size" :height="size" :viewBox="`0 0 ${size} ${size}`" role="img" aria-label="Όλα τα θέματα">
       <path
-        v-for="s in slices" :key="s.r.k" :d="s.d" :style="{ fill: s.color }"
-        :opacity="s.ranked ? 1 : 0.7"
-        @pointerenter="tooltip.show(tipOf(s.r), $event)" @pointermove="tooltip.show(tipOf(s.r), $event)" @pointerleave="tooltip.hide()"
+        v-for="s in slices" :key="s.r.k" :class="s.ranked ? 'slice' : 'slice slice-rest'" :d="s.d" :fill="s.color" :style="`--m-i: ${s.i};`"
+        @pointerenter="show(s.r, $event)" @pointermove="show(s.r, $event)" @pointerleave="tooltip.hide()"
       />
-      <text :x="c" :y="c + 3" text-anchor="middle" class="fill-current text-lg font-semibold">{{ fmtInt(total) }}</text>
-      <text :x="c" :y="c + 19" text-anchor="middle" class="fill-[var(--text-secondary)] text-xs">άρθρα</text>
+      <text class="donut-num" :x="c" :y="c + 3" text-anchor="middle">{{ fmtInt(total) }}</text>
+      <text :x="c" :y="c + 19" text-anchor="middle">άρθρα</text>
     </svg>
-    <ul class="max-h-96 min-h-0 w-full flex-1 overflow-y-auto pr-1 text-sm lg:max-h-none">
-      <li v-for="s in slices" :key="s.r.k" class="flex items-center gap-2 py-0.5" :title="tipOf(s.r).text">
-        <span class="size-2 shrink-0 rounded-full" :style="{ background: s.color }" aria-hidden="true" />
-        <NuxtLink :to="`/topic/${s.r.k}`" class="min-w-0 flex-1 truncate hover:underline">{{ s.r.issue.el }}</NuxtLink>
-        <span class="tabular-nums text-[var(--text-secondary)]">{{ fmtPct(s.r.count / total) }}</span>
-      </li>
-    </ul>
   </div>
 </template>

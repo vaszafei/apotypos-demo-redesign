@@ -7,27 +7,28 @@ const sumRange = (a: (number | null)[], i0: number, i1: number) => {
   return s
 }
 
+// The data of Θέματα and what is computed from it (the same arithmetic as topics-v2.html).
 export const useTopics = async () => {
-  const { data, status, error, refresh } = await useFetch<TopicsData>('/data/topics.json', { key: 'topics' })
+  const { data, status, refresh } = await useFetch<TopicsData>('/data/topics.json', { key: 'topics' })
   const period = usePeriodStore()
 
-  // The data has no count after the coded days (null), so every view ends on the last day that has one.
+  // The topics have no count after the coded days (null), so the period, lines and donut end on the last day that has one.
   const dates = computed(() => {
     const d = data.value
     if (!d) return []
     const last = d.issueDaily.reduce((m, row) => Math.max(m, row.findLastIndex(v => v !== null)), 0)
     return d.dates.slice(0, last + 1)
   })
-  const range = computed(() => {
+  const view = computed(() => {
     const ds = dates.value
-    const a = period.from && ds.includes(period.from) ? ds.indexOf(period.from) : 0
-    const b = period.to && ds.includes(period.to) ? ds.indexOf(period.to) : ds.length - 1
-    return [a, b] as const
+    const ok = period.from && period.to && ds.includes(period.from) && ds.includes(period.to)
+    return { from: ok ? period.from! : ds[0] ?? '', to: ok ? period.to! : ds[ds.length - 1] ?? '' }
   })
+  const range = computed(() => [dates.value.indexOf(view.value.from), dates.value.indexOf(view.value.to)] as const)
 
   const rows = computed<TopicRow[]>(() => {
     const d = data.value
-    if (!d) return []
+    if (!d || !dates.value.length) return []
     const last = dates.value.length - 1
     const [i0, i1] = range.value
     return d.issues.map((issue, k) => {
@@ -39,10 +40,9 @@ export const useTopics = async () => {
   })
   const total = computed(() => rows.value.reduce((s, r) => s + r.count, 0))
 
-  // The 8 largest topics (not the catch-all) have a color slot, the same in the lines and in the donut.
+  // The 8 largest topics of the period (not the catch-all) have a color slot, the same in the lines and in the donut. The others are neutral.
   const offered = computed(() => rows.value.filter(r => !r.issue.catchAll).slice(0, 8))
   const colorOf = computed(() => new Map(offered.value.map((r, i) => [r.k, `var(--cat-${i + 1})`])))
-
   const series = computed<Series[]>(() => {
     const [i0, i1] = range.value
     return offered.value.map((r, i) => ({
@@ -56,10 +56,11 @@ export const useTopics = async () => {
     }))
   })
 
+  // The 5 that rise most and the 5 that fall most; the largest fall is the last row.
   const movers = computed(() => {
     const m = rows.value.filter(r => r.change !== null && !r.issue.catchAll).sort((a, b) => b.change! - a.change!)
     return [...m.filter(r => r.change! > 0).slice(0, 5), ...m.filter(r => r.change! < 0).slice(-5)]
   })
 
-  return { status, error, refresh, dates, range, rows, total, colorOf, series, movers }
+  return { status, refresh, dates, view, range, rows, total, colorOf, series, movers }
 }

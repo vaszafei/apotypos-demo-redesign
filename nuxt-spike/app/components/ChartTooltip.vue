@@ -1,27 +1,27 @@
 <script setup lang="ts">
+// The white tooltip of UI.showTooltip (assets/components.js): above the pointer, under it when the top of the window is too near.
 const store = useTooltipStore()
-const style = computed(() => {
-  const w = typeof window === 'undefined' ? 1200 : window.innerWidth
-  const left = Math.min(store.x + 14, w - 260)
-  return { left: `${left}px`, top: `${store.y + 14}px` }
+const box = ref<HTMLElement | null>(null)
+const pos = reactive({ left: 0, top: 0 })
+watch(() => [store.tip, store.x, store.y], async () => {
+  if (!store.tip) return
+  await nextTick()
+  const b = box.value?.getBoundingClientRect()
+  if (!b) return
+  pos.left = Math.min(window.innerWidth - b.width - 8, Math.max(8, store.x - b.width / 2))
+  pos.top = store.y - b.height - 12 >= 8 ? store.y - b.height - 12 : Math.min(window.innerHeight - b.height - 8, store.y + 18)
 })
 </script>
 
 <template>
   <Teleport to="body">
-    <div
-      v-if="store.tip"
-      class="pointer-events-none fixed z-50 max-w-60 rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm shadow-lg"
-      :style="style"
-      role="tooltip"
-    >
-      <p v-if="store.tip.title" class="font-medium">{{ store.tip.title }}</p>
-      <p v-if="store.tip.text">{{ store.tip.text }}</p>
-      <p v-for="r in store.tip.rows" :key="r.label" class="flex items-center gap-2">
-        <span class="size-2 shrink-0 rounded-full" :style="{ background: r.color }" />
-        <span class="flex-1 truncate">{{ r.label }}</span>
-        <span class="tabular-nums">{{ r.value }}</span>
-      </p>
+    <div v-if="store.tip" ref="box" class="tooltip" :class="{ 'is-rich': store.tip.rows?.length }" role="status" :style="{ left: `${pos.left}px`, top: `${pos.top}px` }">
+      <div class="tooltip-title">{{ store.tip.title }}</div>
+      <div v-for="r in store.tip.rows" :key="r.label" class="tooltip-row">
+        <span v-if="r.color" class="swatch" :style="{ background: r.color }" />
+        <span class="tooltip-label">{{ r.label }}</span>
+        <b class="tooltip-value">{{ r.value }}</b>
+      </div>
     </div>
   </Teleport>
 </template>
