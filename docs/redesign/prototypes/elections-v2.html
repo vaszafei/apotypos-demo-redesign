@@ -15,17 +15,17 @@
 <body>
   <div id="app"></div>
   <script src="assets/icons.js?v=14"></script>
-  <script src="assets/messages.js?v=50"></script>
+  <script src="assets/messages.js?v=51"></script>
   <script src="assets/messages-v2.js?v=62"></script>
   <script src="assets/messages-politics.js?v=11"></script>
   <script src="assets/components.js?v=21"></script>
   <script src="assets/motion.js?v=4"></script>
   <script src="assets/dash.js?v=30"></script>
   <script src="assets/politics.js?v=11"></script>
-  <script src="assets/shell.js?v=72"></script>
+  <script src="assets/shell.js?v=73"></script>
   <script src="data/elections.js?v=2"></script>
   <script>
-    // Πολιτική, Εκλογές (#19): the cards of the live /elections page (Παρατηρητήριο Εκλογών) for the 10 parties.
+    // Αναλύσεις, Εκλογές (#19; it was the section Πολιτική): the cards of the live /elections page (Παρατηρητήριο Εκλογών) for the 10 parties.
     // It reads the snapshot of that page (365 days to 12 Jul 2026, 10 outlets). The live API gives the same data for each period
     // and for parties and leaders, so the page has no period control and no switch.
     // Five tabs (#62): Προβολή (/elections), Μέσα (?tab=outlets), Ιδιοκτησία (?tab=owners), Θέματα (?tab=topics) and Συντάκτες (?tab=bylines).
@@ -86,11 +86,11 @@
       id: 'elections',
       route: TABS[tab],
       dash: true,
-      title: () => t('nav.politics'),
-      breadcrumbs: () => [{ label: t('nav.politics') }, { label: t('tab.politics.elections') }],
+      title: () => t('nav.world'),
+      breadcrumbs: () => [{ label: t('nav.world') }, { label: t('tab.world.elections') }, { label: t(`tab.world.elections.${tab}`) }],
       render (content, { tabs }) {
         content.classList.add('dash', 'minimal')
-        const title = t('tab.politics.elections')
+        const title = t('tab.world.elections')
         const problem = Dash.stateContent([result], { title, tabs, quiet: true })
         if (problem) { content.replaceChildren(...problem); return }
         const d = result.data

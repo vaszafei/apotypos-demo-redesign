@@ -293,7 +293,7 @@
   }
 
   // The quick access: four buttons in a 2×2 grid, each with the name of the page, a short line (not every page has one) and an arrow. The card ends where the buttons end.
-  const QUICK = [['speeches', '/speeches', 'tab.world.speeches', true], ['pi', '/narrative', 'tab.world.pi', true], ['politics', '/elections', 'nav.politics', false], ['file', '/contradictions', 'tab.people.file', true]]
+  const QUICK = [['speeches', '/speeches', 'tab.world.speeches', true], ['pi', '/narrative', 'tab.world.pi', true], ['elections', '/elections', 'tab.world.elections', false], ['file', '/contradictions', 'tab.people.file', true]]
   function QuickCard () {
     return card('c-5 home-quick', cardHead(t('home.quick.title')),
       h('ul', { class: 'home-links' }, QUICK.map(([key, route, label, line]) => h('li', {},

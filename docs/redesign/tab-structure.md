@@ -125,3 +125,7 @@ Page height at 1440 × 900 px after the change, with the site footer (1800 px = 
 - «Πώς γράφουν για την κυβέρνηση» was 1894 px on its own (one row for each of the 36 outlets). Since 2026-11-06 it is a map of about 610 px on Μέσα › Στάση; the heights in the table above are from before that change.
 - Μετατοπίσεις kept its cards (1768 → 1809 px); the sub-tab row of Θέματα adds the extra height.
 - The question of each tab is not shown on the tab page (decision after review); it stays in the list of tabs in `pages.html`.
+
+## Update 2026-11-09: Πολιτική is Αναλύσεις › Εκλογές
+
+The top-bar item Πολιτική is gone. Its five tabs are the sub-tabs of the new last tab of Αναλύσεις, Εκλογές: Προβολή (`/elections`), Μέσα, Ιδιοκτησία, Θέματα, Συντάκτες. The routes and the page file (`elections-v2.html`) did not change. The pages of Αναλύσεις need a sign-in, so these five do now.

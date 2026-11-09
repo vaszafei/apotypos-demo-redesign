@@ -5,7 +5,7 @@ The redesign prototypes of apotypos: pages that show how Greek media cover the n
 ## Navigation
 
 **Section**:
-An entry of the top bar (Αρχική, Μέσα, Ιστορίες, Πρόσωπα, Πολιτική, Αναλύσεις). Each section is a group of pages.
+An entry of the top bar (Αρχική, Μέσα, Πρόσωπα, Αναλύσεις). Each section is a group of pages.
 _Avoid_: top bar tab, item
 
 **Sub-tab**:
