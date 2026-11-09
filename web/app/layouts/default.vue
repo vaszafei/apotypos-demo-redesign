@@ -1,20 +1,29 @@
 <script setup lang="ts">
+import { useMediaQuery, useEventListener } from '@vueuse/core'
 // The shell of assets/shell.js as Vue: the drawer (sidebar), the header bar, the section nav, the page and the footer. Same markup and classes, so the prototype CSS applies as it is.
+const { t } = useI18n()
 const { sections, section } = useNav()
+const session = useSessionStore()
 const route = useRoute()
-const { locale, setLocale } = useI18n()
 const drawer = ref(false)
+const menuButton = ref<HTMLButtonElement>()
+const closeButton = ref<HTMLButtonElement>()
+const smallScreen = useMediaQuery('(max-width: 1023px)')
+// A phone or tablet: the open drawer keeps the focus and the rest of the page is inert until it closes (setDrawer of assets/shell.js).
+const setDrawer = async (open: boolean, moveFocus = true) => {
+  drawer.value = open
+  if (!moveFocus) return
+  await nextTick()
+  if (open) closeButton.value?.focus()
+  else if (smallScreen.value) menuButton.value?.focus()
+}
 watch(() => route.path, () => { drawer.value = false })
+watch(smallScreen, () => { drawer.value = false })
+useEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Escape' && drawer.value) setDrawer(false) })
 
-const themes = [['paper', 'Χαρτί'], ['fog', 'Ομίχλη'], ['terra', 'Κεραμίδι'], ['night', 'Νύχτα'], ['midnight', 'Μεσάνυχτα']] as const
-const theme = ref('paper')
-const icons = ref('off')
-const font = ref('plex')
-const fonts = [['plex', 'IBM Plex Sans'], ['manrope', 'Manrope'], ['commissioner', 'Commissioner'], ['inter', 'Inter + Source Serif 4'], ['dejavu', 'DejaVu Sans (λογότυπο)'], ['ubuntu', 'Ubuntu'], ['noto', 'Noto Sans'], ['sourcesans', 'Source Sans 3'], ['geologica', 'Geologica'], ['sofia', 'Sofia Sans'], ['literata', 'Source Sans 3 + Literata']]
-const setAttr = (name: string, value: string) => document.documentElement.setAttribute(name, value)
-watch(theme, v => setAttr('data-theme', v))
-watch(icons, v => setAttr('data-icons', v))
-watch(font, v => setAttr('data-font', v))
+// Αναλύσεις needs a log in: its pages show the page head and the gate, as in the static shell.
+const gated = computed(() => section.value.key === 'world' && !session.signedIn)
+
 // A tab bar that scrolls sideways (phones) shows the current tab (centerTabs in assets/shell.js).
 const centerTabs = async () => {
   await nextTick()
@@ -29,96 +38,86 @@ const current = (to: string) => (route.path === to ? 'page' : undefined)
 
 <template>
   <div class="shell" :class="{ 'drawer-open': drawer }">
-    <nav id="sidebar" class="sidebar" aria-label="Κύρια πλοήγηση">
+    <nav id="sidebar" class="sidebar" :aria-label="t('shell.nav')" :inert="smallScreen && !drawer">
       <div class="sidebar-logo">
-        <NavLink class="logo-link" to="/"><img class="logo-img" src="/assets/logo.svg" alt="Απότυπος" width="335" height="141"></NavLink>
-        <button type="button" class="icon-button sidebar-close" aria-label="Κλείσιμο μενού" @click="drawer = false"><AppIcon name="x-mark" /></button>
+        <NavLink class="logo-link" to="/"><img class="logo-img" src="/assets/logo.svg" :alt="t('site.name')" width="335" height="141"></NavLink>
+        <button ref="closeButton" type="button" class="icon-button sidebar-close" :aria-label="t('shell.close')" @click="setDrawer(false)"><AppIcon name="x-mark" /></button>
       </div>
       <ul class="nav-list nav-main">
         <li v-for="s in sections" :key="s.key">
-          <NavLink class="nav-link" :to="s.to" :aria-current="s.key === section.key ? 'page' : undefined"><AppIcon :name="s.icon" glyph /><span class="nav-label">{{ s.label }}</span></NavLink>
+          <NavLink class="nav-link" :to="s.to" :aria-current="s.key === section.key ? 'page' : undefined"><AppIcon :name="s.icon" glyph /><span class="nav-label">{{ t(`nav.${s.key}`) }}</span></NavLink>
         </li>
       </ul>
-      <div class="auth-links drawer-auth"><button type="button" class="button auth-login">Σύνδεση</button><button type="button" class="button button-primary auth-register">Εγγραφή</button></div>
+      <AuthLinks cls="auth-links drawer-auth" in-drawer @opened="setDrawer(false, false)" />
       <div class="nav-footer">
-        <ul class="nav-list" aria-label="Για το έργο">
-          <li v-for="l in FOOTER_LINKS" :key="l.to"><NavLink class="nav-link" :to="l.to"><AppIcon :name="l.icon" glyph /><span class="nav-label">{{ l.label }}</span></NavLink></li>
+        <ul class="nav-list" :aria-label="t('section.footer')">
+          <li v-for="l in FOOTER_LINKS" :key="l.to"><NavLink class="nav-link" :to="l.to"><AppIcon :name="l.icon" glyph /><span class="nav-label">{{ t(`nav.${l.key}`) }}</span></NavLink></li>
         </ul>
+        <div class="sidebar-tools"><LangSwitch /><ShellSwitches /></div>
       </div>
     </nav>
-    <div class="drawer-scrim" @click="drawer = false" />
-    <div class="main-column">
+    <div class="drawer-scrim" @click="setDrawer(false)" />
+    <div class="main-column" :inert="drawer">
       <header class="header-bar appbar">
         <div class="header-left">
-          <button type="button" class="icon-button menu-button" aria-label="Άνοιγμα μενού" aria-controls="sidebar" :aria-expanded="tf(drawer)" @click="drawer = true"><AppIcon name="bars-3" /></button>
-          <span class="appbar-title">{{ section.label }}</span>
+          <button ref="menuButton" type="button" class="icon-button menu-button" :aria-label="t('shell.menu')" aria-controls="sidebar" :aria-expanded="tf(drawer)" @click="setDrawer(true)"><AppIcon name="bars-3" /></button>
+          <span class="appbar-title">{{ t(`nav.${section.key}`) }}</span>
         </div>
-        <NavLink class="logo-link header-logo" to="/"><img class="logo-img" src="/assets/logo.svg" alt="Απότυπος" width="335" height="141"></NavLink>
-        <nav class="header-nav" aria-label="Κύρια πλοήγηση">
+        <NavLink class="logo-link header-logo" to="/"><img class="logo-img" src="/assets/logo.svg" :alt="t('site.name')" width="335" height="141"></NavLink>
+        <nav class="header-nav" :aria-label="t('shell.nav')">
           <ul class="nav-list nav-main">
             <li v-for="s in sections" :key="s.key">
-              <NavLink class="nav-link" :to="s.to" :aria-current="s.key === section.key ? 'page' : undefined"><AppIcon :name="s.icon" glyph /><span class="nav-label">{{ s.label }}</span></NavLink>
+              <NavLink class="nav-link" :to="s.to" :aria-current="s.key === section.key ? 'page' : undefined"><AppIcon :name="s.icon" glyph /><span class="nav-label">{{ t(`nav.${s.key}`) }}</span></NavLink>
             </li>
           </ul>
         </nav>
         <div class="global-search">
-          <button type="button" class="search-button" aria-label="Αναζήτηση" title="Αναζήτηση" aria-haspopup="dialog" aria-expanded="false" aria-keyshortcuts="/">
-            <AppIcon name="magnifying-glass" class="icon search-button-icon" /><span class="search-button-label" aria-hidden="true">Αναζήτηση</span><kbd class="global-search-key" aria-hidden="true">/</kbd>
+          <button type="button" class="search-button" :aria-label="t('shell.search')" :title="t('shell.search')" aria-haspopup="dialog" aria-expanded="false" aria-keyshortcuts="/">
+            <AppIcon name="magnifying-glass" class="icon search-button-icon" /><span class="search-button-label" aria-hidden="true">{{ t('shell.search') }}</span><kbd class="global-search-key" aria-hidden="true">/</kbd>
           </button>
         </div>
         <div class="header-actions">
-          <div class="auth-links"><button type="button" class="button auth-login">Σύνδεση</button><button type="button" class="button button-primary auth-register">Εγγραφή</button></div>
-          <div class="lang-switch" role="group" aria-label="Γλώσσα"><button type="button" lang="el" :aria-pressed="tf(locale === 'el')" @click="setLocale('el')">ΕΛ</button><button type="button" lang="en" :aria-pressed="tf(locale === 'en')" @click="setLocale('en')">EN</button></div>
+          <AuthLinks cls="auth-links" />
+          <LangSwitch />
         </div>
       </header>
       <div class="page-body">
-        <nav v-if="section.tabs.length" class="section-nav" :aria-label="section.label">
+        <nav v-if="section.tabs.length" class="section-nav" :aria-label="t(`nav.${section.key}`)">
           <div class="section-nav-inner">
             <ul class="section-nav-list">
-              <li v-for="t in section.tabs" :key="t.to">
-                <NavLink class="section-nav-link" :to="t.to" :aria-current="current(t.to)"><AppIcon :name="t.icon" glyph /><span class="nav-label">{{ t.label }}</span></NavLink>
+              <li v-for="tab in section.tabs" :key="tab.to">
+                <NavLink class="section-nav-link" :to="tab.to" :aria-current="current(tab.to)"><AppIcon :name="tab.icon" glyph /><span class="nav-label">{{ t(`tab.${section.key}.${tab.key}`) }}</span></NavLink>
               </li>
             </ul>
           </div>
         </nav>
         <div class="page-main">
-          <main id="content" class="content dash minimal filters-right">
+          <main id="content" class="content dash minimal filters-right" :class="{ 'is-gated': gated }">
             <header class="page-head">
               <div class="page-head-row">
-                <div class="page-head-titles"><h1 class="page-head-title">{{ section.label }}</h1></div>
+                <div class="page-head-titles"><h1 class="page-head-title">{{ t(`nav.${section.key}`) }}</h1></div>
                 <div id="page-actions" class="page-head-actions" />
               </div>
-              <div v-if="section.tabs.length" class="page-tabs">
-                <nav class="section-tabs" :aria-label="section.label">
-                  <ul><li v-for="t in section.tabs" :key="t.to"><NavLink :to="t.to" :aria-current="current(t.to)"><AppIcon :name="t.icon" glyph /><span class="nav-label">{{ t.label }}</span></NavLink></li></ul>
+              <div v-if="section.tabs.length && !gated" class="page-tabs">
+                <nav class="section-tabs" :aria-label="t(`nav.${section.key}`)">
+                  <ul><li v-for="tab in section.tabs" :key="tab.to"><NavLink :to="tab.to" :aria-current="current(tab.to)"><AppIcon :name="tab.icon" glyph /><span class="nav-label">{{ t(`tab.${section.key}.${tab.key}`) }}</span></NavLink></li></ul>
                 </nav>
               </div>
             </header>
-            <slot />
+            <SignInGate v-if="gated" />
+            <slot v-else />
           </main>
         </div>
       </div>
       <footer class="page-footer">
-        <span class="page-footer-text">Απότυπος · Παρακολούθηση και ανάλυση των ελληνικών ΜΜΕ</span>
-        <ul class="nav-list page-footer-links" aria-label="Για το έργο">
-          <li v-for="l in FOOTER_LINKS" :key="l.to"><NavLink class="nav-link" :to="l.to"><AppIcon :name="l.icon" glyph /><span class="nav-label">{{ l.label }}</span></NavLink></li>
+        <span class="page-footer-text">{{ t('site.footer') }}</span>
+        <ul class="nav-list page-footer-links" :aria-label="t('section.footer')">
+          <li v-for="l in FOOTER_LINKS" :key="l.to"><NavLink class="nav-link" :to="l.to"><AppIcon :name="l.icon" glyph /><span class="nav-label">{{ t(`nav.${l.key}`) }}</span></NavLink></li>
         </ul>
-        <div class="page-footer-tools">
-          <div class="theme-switch">
-            <span id="theme-label-1">Θέμα (πρωτότυπο)</span>
-            <div class="theme-swatches" role="group" aria-labelledby="theme-label-1">
-              <button v-for="[k, name] in themes" :key="k" type="button" class="theme-swatch" :data-theme="k" :title="name" :aria-label="name" :aria-pressed="tf(theme === k)" @click="theme = k" />
-            </div>
-          </div>
-          <label class="font-switch icon-switch"><span>Εικονίδια (πρωτότυπο)</span>
-            <select v-model="icons"><option value="off">Χωρίς εικονίδια</option><option value="all">Εικονίδια παντού</option><option value="sidebar">Μόνο στην πλευρική στήλη</option></select>
-          </label>
-          <label class="font-switch"><span>Γραμματοσειρά (πρωτότυπο)</span>
-            <select v-model="font"><option v-for="[k, name] in fonts" :key="k" :value="k">{{ name }}</option></select>
-          </label>
-        </div>
+        <div class="page-footer-tools"><ShellSwitches /></div>
       </footer>
     </div>
     <ChartTooltip />
+    <AuthDrawer />
   </div>
 </template>

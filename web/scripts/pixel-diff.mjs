@@ -74,12 +74,12 @@ const SCREENS = [
 
 const shoot = async (browser, url, screen) => {
   const context = await browser.newContext({ viewport: { width: screen.width, height: screen.height }, reducedMotion: 'reduce' })
-  await context.addInitScript(() => { try { localStorage.setItem('proto-user', 'lolovios') } catch {} })
+  // The theme is stored before the page loads (both shells read 'proto-theme'), so the page draws in it; setting data-theme afterwards leaves the colors a page computed in JS in the old theme.
+  await context.addInitScript((theme) => { try { localStorage.setItem('proto-user', 'lolovios'); if (theme) localStorage.setItem('proto-theme', theme) } catch {} }, screen.theme)
   const page = await context.newPage()
   try {
     await page.goto(url, { waitUntil: 'networkidle' })
     await settle(page)
-    if (screen.theme) { await page.evaluate((theme) => document.documentElement.setAttribute('data-theme', theme), screen.theme); await page.waitForTimeout(300) }
     if (screen.picker) {
       const trigger = page.locator('.dr-trigger').first()
       if (!(await trigger.count())) return { skipped: 'no date picker on the page' }

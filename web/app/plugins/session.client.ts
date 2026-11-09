@@ -1,0 +1,7 @@
+import { useEventListener } from '@vueuse/core'
+
+// A sign-in or sign-out in another tab or on a static page shows here at once (localStorage['proto-user']).
+export default defineNuxtPlugin(() => {
+  const session = useSessionStore()
+  useEventListener(window, 'storage', (e: StorageEvent) => { if (e.key === USER_KEY || e.key === null) session.refresh() })
+})
