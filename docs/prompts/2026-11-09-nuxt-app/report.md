@@ -36,3 +36,22 @@ Measured:
 - `check:fixtures` passes; `check:parts` passes 43 checks on the static pages and on the Nuxt build (`--root .output/public`); `check:visual --only topics` has no findings in both.
 
 Looked at: crops of the label, the donut and the bar end (Nuxt above, static below) before and after the animation fix.
+
+## U3: Tailwind 4 without reset (branch `claude/nuxt-tailwind`)
+
+New: `tailwindcss` and `@tailwindcss/vite` in `web/`, `web/app/assets/css/tailwind.css` (the layer order, `theme.css` and `utilities.css`, both `prefix(tw)`, no preflight), registered in `nuxt.config.ts` (`css` and the Vite plugin). No token is mapped.
+
+Measured:
+
+- Built CSS without a `tw:` class anywhere: `entry.*.css` is 106 bytes (the licence line and the layer order). No reset rule, no utility. With a probe file containing `tw:p-4 tw:bg-red-500 tw:flex` it adds only `:root{--tw-color-red-500, --tw-spacing}` and those three classes; the probe was removed before commit. The variables are prefixed, so no prototype token is touched.
+- In Chrome on the built `/trends`: an element with `tw:p-4 tw:bg-red-500 tw:flex` gets `padding 16px`, `oklch(0.637 0.237 25.331)` and `display:flex`; one with `p-4 flex` gets `0px` and `block` (the prototype owns the unprefixed names).
+- `check:pixel -- /trends`, before and after: the four 1440 screens are identical, band by band. The two 390 screens are not stable, before or after (below).
+- `npm run typecheck` exit 0, `npm test` 4 pass, `check:parts --root .output/public` all pass.
+
+**The 390 numbers flip between two values on the same build.** 390 full page is 254 or 2 327 px; 390 night is 2 747 or 4 884 px. The difference is one band, rows 93-104 (the tab bar), 2 073 / 2 137 px. The same unchanged build gave 254 twice and 2 327 four times in six runs; the first runs of this session (before any change) gave 254 and 2 747.
+
+Cause, measured: the tab bar's `scrollLeft` after load. In 12 fresh loads at 390, the Nuxt page was 77 every time; the static `topics-v2.html` was 77 seven times and 56 five times. The static page runs `centerTabs` (`assets/shell.js:1039`) sometimes before the font has loaded, and the tab ends up 21 px off. So it is a race in the static reference page, not something Nuxt or Tailwind changed. This also explains two open items from U2: the U2 report's 4 884 for 390 night (the other mode), and the 2 073 px band at 390 that looked like a U6 problem.
+
+Consequence for the checks: a 390 result in `check:pixel` is one of two values until the static race is dealt with. Not changed here; it is a decision for a later unit (U6 or a fix in `shell.js`).
+
+One more thing that did not change: Nuxt's own `error-404.*.css` and `error-500.*.css` still use UnoCSS-style classes, scoped by `data-v`; they were in the build before U3.
