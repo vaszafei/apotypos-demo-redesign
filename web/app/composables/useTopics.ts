@@ -9,8 +9,9 @@ const sumRange = (a: (number | null)[], i0: number, i1: number) => {
 
 // The data of Θέματα and what is computed from it (the same arithmetic as topics-v2.html).
 export const useTopics = async () => {
-  const { data, status, refresh } = await useFixture<TopicsData>('home', { required: ['dates', 'issues', 'issueDaily'], isEmpty: b => b.dates.length === 0 })
+  // The store before the await: after it the Nuxt context is gone on the server.
   const period = usePeriodStore()
+  const { data, status, refresh } = await useFixture<TopicsData>('home', { required: ['dates', 'issues', 'issueDaily'], isEmpty: b => b.dates.length === 0 })
 
   // The topics have no count after the coded days (null), so the period, lines and donut end on the last day that has one.
   const dates = computed(() => {

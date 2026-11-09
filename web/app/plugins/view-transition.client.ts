@@ -41,11 +41,5 @@ export default defineNuxtPlugin((nuxtApp) => {
     const kept = readMove()
     keepMove({ ...(kept?.nav ? kept : { from: here() }), top: pageTop() })
   })
-  // Vue draws the page after the first frame (ssr: false). assets/page-move.js holds the first frame for this, but only a pending request can do
-  // that, and a static host has none to release when the page is drawn (tried with render-blocking elements, see the report). Without a drawn
-  // page there is nothing to slide in, so a move into a Nuxt page from a static page is skipped; a move out of it slides.
-  useEventListener(window, 'pagereveal', (e: Event & { viewTransition?: ViewTransition | null }) => {
-    dropMove()
-    if (e.viewTransition) skip(e.viewTransition)
-  })
+  // The arrival (pagereveal) is handled by the script in the <head> (utils/arrival.ts): the browser reveals the page before this plugin has run.
 })
