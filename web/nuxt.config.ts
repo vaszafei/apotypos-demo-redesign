@@ -1,3 +1,5 @@
+import tailwindcss from '@tailwindcss/vite'
+
 const sheet = (name: string) => ({ rel: 'stylesheet' as const, href: `/assets/${name}.css` })
 
 export default defineNuxtConfig({
@@ -7,7 +9,9 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   // The design is the prototype's own CSS, copied from docs/redesign/prototypes/assets by scripts/sync-prototype.mjs. No Nuxt UI.
   modules: ['@pinia/nuxt'],
-  css: [],
+  css: ['~/assets/css/tailwind.css'],
+  // Tailwind 4 with no reset (preflight) and the tw: prefix, so no class of the prototype CSS changes (KTD6).
+  vite: { plugins: [tailwindcss()] },
   app: {
     head: {
       htmlAttrs: { lang: 'el', 'data-theme': 'paper', 'data-icons': 'off', 'data-font': 'plex', 'data-header': 'v2' },
