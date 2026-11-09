@@ -34,8 +34,8 @@ Each tab answers one question. Heights are the page height at 1440 × 900 px on 
 | | | Πώς παρουσιάζει κάθε μέσο τα πρόσωπα | How does each outlet present each person? | keep |
 | | | Μεγαλύτερη έμφαση | Which outlet–person pairs stand out most? | move to Πρόσωπα › Έμφαση και στάση |
 | | | Κατανομή ανά πρόσωπο | How far apart are the outlets on each person? | move to Πρόσωπα › Έμφαση και στάση |
-| | Δηλώσεις (`/track`, `statements-v2.html`), 900 px, 1 card | Ποιον παραθέτουν τα άρθρα | Whom do the articles quote? | keep |
-| | Φάκελος προσώπου (`/contradictions`, `persons-v2.html`), 3700 px, 10 cards | person card · 4 stat cards · Δηλώσεις ανά μήνα · Πόσο ακριβή είναι τα στοιχεία του · Θέσεις ανά θέμα | Who is the person, what do they say, and how accurate are they overall? | keep (Φάκελος › Επισκόπηση) |
+| | Δηλώσεις (`/track`, `statements-v2.html`), 900 px, 1 card | Ποιον παραθέτουν τα άρθρα | Whom do the articles quote? | **removed 2026-11-09** |
+| | Φάκελος προσώπου (`/contradictions`, `persons-v2.html`), 3700 px, 10 cards | person card · 4 stat cards · Δηλώσεις ανά μήνα · Πόσο ακριβή είναι τα στοιχεία του · Θέσεις ανά θέμα | Who is the person, what do they say, and how accurate are they overall? | **now the person page** (`/person/<slug>`), no longer a tab |
 | | | Ενδείξεις αντίφασης | Where do the person's statements contradict each other? | move to Φάκελος › Αντιφάσεις |
 | | | Έλεγχος στοιχείων | Which of the person's figures hold up? | move to Φάκελος › Έλεγχος στοιχείων |
 | Πολιτική | Εκλογές (`/elections`, `elections-v2.html`), 4906 px, 15 cards, the only tab | Αναφορές σε κόμματα · Η ΝΔ στην κάλυψη · Πιο πάνω από τις δημοσκοπήσεις (3 stat cards) | How much coverage do the parties get in total? | keep (Προβολή) |
@@ -78,10 +78,8 @@ Each tab answers one question. Heights are the page height at 1440 × 900 px on 
 | | Μοτίβα διάδοσης (`/campaigns`) | Ποια μοτίβα κάλυψης μοιάζουν συντονισμένα; | as today |
 | Πρόσωπα | Επισκόπηση (`/fingerprints`) | Ποιοι μιλούν στα μέσα, και πώς τους παρουσιάζει κάθε μέσο; | Τα πρόσωπα, Πώς παρουσιάζει κάθε μέσο τα πρόσωπα |
 | | Έμφαση και στάση (`/fingerprints/spread`, new) | Πόσο διαφέρουν τα μέσα για κάθε πρόσωπο; | Μεγαλύτερη έμφαση, Κατανομή ανά πρόσωπο (with the measure switch) |
-| | Δηλώσεις (`/track`) | Ποιον παραθέτουν τα άρθρα; | as today |
-| | Φάκελος › Επισκόπηση (`/contradictions`) | Τι λέει το πρόσωπο, και πόσο ακριβή είναι τα στοιχεία του; | person card, 4 stat cards, Δηλώσεις ανά μήνα, Πόσο ακριβή είναι τα στοιχεία του, Θέσεις ανά θέμα |
-| | Φάκελος › Αντιφάσεις (`/contradictions/pairs`, new) | Πού αντιφάσκουν οι δηλώσεις του προσώπου; | Ενδείξεις αντίφασης |
-| | Φάκελος › Έλεγχος στοιχείων (`/contradictions/checks`, new) | Ποια στοιχεία του προσώπου στέκουν; | Έλεγχος στοιχείων |
+| | Δηλώσεις: removed (2026-11-09, one table the overview already covers) | | |
+| | Person page (`/person/<slug>`, `persons-v2.html`, not a tab: a detail page of Επισκόπηση, opened from a person) | Τι λέει το πρόσωπο, και πόσο ακριβή είναι τα στοιχεία του; | tabs of its own: Επισκόπηση (person card, 4 stat cards, Δηλώσεις ανά μήνα, Πόσο ακριβή είναι τα στοιχεία του, Θέσεις ανά θέμα), Αντιφάσεις (Ενδείξεις αντίφασης), Έλεγχος στοιχείων. Only Άδωνις Γεωργιάδης has data today |
 | Πολιτική | Προβολή (`/elections`) | Πόση προβολή παίρνει κάθε κόμμα, και πώς συγκρίνεται με τη δύναμή του; | 3 stat cards, Προβολή στον χρόνο, Προβολή και εκλογική δύναμη, Προβολή και δημοσκοπήσεις, Momentum |
 | | Μέσα (`/elections/outlets`, new) | Ποιο κόμμα προβάλλει κάθε μέσο, και προς τα πού γέρνει; | Ποιο κόμμα προβάλλει κάθε μέσο, Κυβέρνηση ή αντιπολίτευση |
 | | Ιδιοκτησία (`/elections/owners`, new) | Αλλάζει η ιδιοκτησία την κάλυψη των κομμάτων; | Προβολή ανά πολιτική κλίση ιδιοκτησίας, Ποιος ελέγχει την κάλυψη κάθε κόμματος |

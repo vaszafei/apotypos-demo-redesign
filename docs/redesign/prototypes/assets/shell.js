@@ -23,9 +23,6 @@
     '/elections/topics': 'elections-v2.html?tab=topics',
     '/elections/bylines': 'elections-v2.html?tab=bylines',
     '/speeches': 'speeches-v2.html',
-    '/contradictions': 'persons-v2.html',
-    '/contradictions/pairs': 'persons-v2.html?tab=pairs',
-    '/contradictions/checks': 'persons-v2.html?tab=checks',
     '/cases': 'cases-v2.html',
     '/war': 'war-v2.html',
     '/narrative': 'narrative-v2.html',
@@ -44,7 +41,7 @@
   // Παλαιστίνη–Ισραήλ holds the Gaza and Israel pages.
   // Αναλύσεις & Ιδιοκτησία (/analyze) is not there: ownership is only Μέσα › Ιδιοκτησία, so /analyze opens that tab.
   // ΜΜΕ & πρόσωπα (/media) is not there: its content is Μέσα › Επισκόπηση. Θέματα (/trends) is a tab of Μέσα, not an item of its own.
-  // Πρόσωπα is an item: its overview (/fingerprints), Έμφαση και στάση and Φάκελος προσώπου (/contradictions), which left Αναλύσεις.
+  // Πρόσωπα is an item: its overview (/fingerprints) and Έμφαση και στάση. The person page (/person/<slug>, the file of a person that left Αναλύσεις) is a detail page of the overview.
   // Ιστορίες is a tab of Μέσα, under Θέματα, with no sub-tabs (Επισκόπηση and Ανά μέσο are gone). It was an item of the top bar. Μοτίβα διάδοσης is gone, and Υποθέσεις (/cases) is Αναλύσεις › Ρουβίκωνας.
   // #62: each tab answers one question (question.<item>.<tab>), listed in the table of pages. A new tab is a view of the file of its section (?tab=), so every old route opens the same file.
   // Θέματα is one page with no sub-tabs (Ένα θέμα, Ατζέντα μέσων and Μετατοπίσεις are gone; Μετατοπίσεις is a card of it). Πολιτική splits the elections page into 5 tabs.
@@ -55,8 +52,7 @@
       ['topics', '/trends'],
       ['stories', '/stories'],
       ['writing', '/media/writing'], ['similarity', '/similarity']], details: [['/outlet', '/media'], ['/group', '/groups'], ['/topic', '/trends'], ['/story', '/stories']] },
-    { key: 'people', tabs: [['overview', '/fingerprints'], ['spread', '/fingerprints/spread'],
-      ['file', '/contradictions', [['file.overview', '/contradictions'], ['file.pairs', '/contradictions/pairs'], ['file.checks', '/contradictions/checks']]]] },
+    { key: 'people', tabs: [['overview', '/fingerprints'], ['spread', '/fingerprints/spread']], details: [['/person', '/fingerprints']] },
     { key: 'politics', tabs: [['reach', '/elections'], ['outlets', '/elections/outlets'], ['owners', '/elections/owners'], ['topics', '/elections/topics'], ['bylines', '/elections/bylines']] },
     { key: 'world', tabs: [['speeches', '/speeches', [['speeches.all', '/speeches'], ['speeches.pi', '/un-israel-palestine']]],
       ['pi', '/narrative', [['pi.overview', '/narrative'], ['gaza', '/gaza'], ['israel', '/israel'], ['language', '/gaza-language']]],
@@ -68,7 +64,6 @@
   const ROUTE_ICONS = {
     '/media': 'grid_view', '/groups': 'account_balance', '/trends': 'sell', '/stories': 'sensors', '/media/writing': 'edit', '/similarity': 'content_copy',
     '/fingerprints': 'view_list', '/fingerprints/spread': 'tune',
-    '/contradictions': 'folder_shared', '/contradictions/pairs': 'swap_horiz', '/contradictions/checks': 'fact_check', 'sub:file.overview': 'account_box',
     '/elections': 'how_to_vote', '/elections/outlets': 'newspaper', '/elections/owners': 'account_balance', '/elections/topics': 'sell', '/elections/bylines': 'edit',
     '/speeches': 'mic', '/un-israel-palestine': 'flag', '/narrative': 'space_dashboard', '/gaza': 'newspaper', '/israel': 'visibility', '/gaza-language': 'translate',
     '/war': 'local_fire_department', '/coverage': 'find_in_page', '/france-riots': 'language', '/cases': 'search'
@@ -1011,7 +1006,7 @@
             return h('li', {},
               h('a', { class: `section-nav-link${nested ? ' is-parent' : ''}`, href: hrefOf(r), 'aria-current': current }, ...withIcon(ROUTE_ICONS[r], t(`tab.${item.key}.${key}`))),
               nested ? h('ul', { class: 'section-nav-sub' }, subs.map(([subKey, s]) =>
-                h('li', {}, h('a', { class: 'section-nav-link', href: hrefOf(s), 'aria-current': s === route ? 'page' : null }, ...withIcon(ROUTE_ICONS[`sub:${subKey}`] || ROUTE_ICONS[s], t(`tab.${item.key}.${subKey}`)))))) : null)
+                h('li', {}, h('a', { class: 'section-nav-link', href: hrefOf(s), 'aria-current': s === route ? 'page' : null }, ...withIcon(ROUTE_ICONS[s], t(`tab.${item.key}.${subKey}`)))))) : null)
           }))))
         : null
       const content = h('main', { class: 'content', id: 'content' })

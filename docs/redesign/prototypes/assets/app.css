@@ -966,3 +966,7 @@ svg.chart .bar-col { transform-origin: 50% 100%; }
 /* The footer switch (data-icons on <html>): off hides all nav icons, sidebar keeps only those of the left bar (.section-nav). */
 :root[data-icons="off"] .nav-icon, :root[data-icons="sidebar"] .nav-icon { display: none; }
 :root[data-icons="sidebar"] .section-nav .nav-icon { display: block; }
+
+/* The tabs of the page of a person (Επισκόπηση, Αντιφάσεις, Έλεγχος στοιχείων): in the page at every width, left-aligned, because the sidebar lists only the tabs of the section. */
+.person-tabs { padding: 0 0 var(--space-4); }
+.person-tabs ul { justify-content: flex-start; margin: 0; }

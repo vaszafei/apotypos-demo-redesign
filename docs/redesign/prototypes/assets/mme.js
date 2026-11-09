@@ -262,6 +262,8 @@
   }
 
   // The people with the most quoted statements, and their two largest topics.
+  // The people who have a page of their own (the key of the entity /person/<slug>).
+  const PERSON_KEYS = { 'Άδωνις Γεωργιάδης': 'adonis' }
   function PersonsCard (S) {
     const people = S.set.people.map((p, k) => ({ p, k, n: S.personQuotes[k] })).filter((r) => r.n > 0).sort((a, b) => b.n - a.n)
     return card('c-12', cardHead(t('mme.persons.title'), null, t('mme.persons.info')),
@@ -270,7 +272,7 @@
           const tops = S.set.issues.map((x, i) => ({ x, n: S.quotesByIssue[i][r.k] })).filter((q) => q.n > 0).sort((a, b) => b.n - a.n).slice(0, 2)
           const all = sum(S.set.issues.map((_, i) => S.quotesByIssue[i][r.k])) || 1
           return h('li', { class: 'mme-person' },
-            h('p', { class: 'mme-person-name' }, r.p.name),
+            h('p', { class: 'mme-person-name' }, PERSON_KEYS[r.p.name] ? UI.EntityLink({ type: 'person', key: PERSON_KEYS[r.p.name], label: r.p.name }) : r.p.name),
             h('p', { class: 'mme-person-n' }, t('mme.persons.quotes', { n: fmt.int(r.n) })),
             h('p', { class: 'muted-text' }, [r.p.role, r.p.party].filter(Boolean).join(' · ')),
             h('p', { class: 'mme-person-topics' }, tops.map((q) => h('span', {}, `${name(q.x)} ${pctRound(q.n / all)}`))))

@@ -6,30 +6,32 @@
   <title>Απότυπος</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=18">
-  <link rel="stylesheet" href="assets/app.css?v=61">
+  <link rel="stylesheet" href="assets/app.css?v=62">
   <link rel="stylesheet" href="assets/dash.css?v=103">
   <link rel="stylesheet" href="assets/politics.css?v=8">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
   <div id="app"></div>
-  <script src="assets/icons.js?v=13"></script>
-  <script src="assets/messages.js?v=47"></script>
+  <script src="assets/icons.js?v=14"></script>
+  <script src="assets/messages.js?v=48"></script>
   <script src="assets/messages-v2.js?v=60"></script>
   <script src="assets/messages-politics.js?v=11"></script>
-  <script src="assets/components.js?v=20"></script>
+  <script src="assets/components.js?v=21"></script>
   <script src="assets/motion.js?v=4"></script>
   <script src="assets/dash.js?v=30"></script>
   <script src="assets/politics.js?v=11"></script>
-  <script src="assets/shell.js?v=70"></script>
+  <script src="assets/shell.js?v=71"></script>
   <script src="data/personFile.js?v=1"></script>
   <script>
     // Πολιτική, Πρόσωπα: the person file. One person, a fixed page (the data has one person today).
     // The statements are verbatim from interviews. The pairs and the verdicts are proposals of models to review.
-    // Three sub-tabs (#62): Επισκόπηση (/contradictions), Αντιφάσεις (?tab=pairs) and Έλεγχος στοιχείων (?tab=checks). Each list fills its sub-tab.
+    // The page of a person (/person/<slug>, a detail page of Πρόσωπα › Επισκόπηση), no longer a tab of Πρόσωπα. It has three tabs of its own:
+    // Επισκόπηση, Αντιφάσεις (?tab=pairs) and Έλεγχος στοιχείων (?tab=checks). Each list fills its tab.
     const { t, fmt, h, load, safeUrl, params } = App
-    const TABS = { overview: '/contradictions', pairs: '/contradictions/pairs', checks: '/contradictions/checks' }
-    const tab = TABS[params.get('tab')] ? params.get('tab') : 'overview'
+    const TABS = ['overview', 'pairs', 'checks']
+    const tab = TABS.includes(params.get('tab')) ? params.get('tab') : 'overview'
+    const slug = 'adonis'
     const { reset, card, cardHead, Stat, TopBar } = Dash
     const result = load('personFile', ['summary', 'themes', 'pairs', 'checked'], (b) => b.themes)
     const VERDICTS = ['accurate', 'mostly_accurate', 'inaccurate', 'unverifiable']
@@ -42,21 +44,23 @@
 
     Shell.start({
       id: 'persons',
-      route: TABS[tab],
+      route: `/person/${slug}`,
       dash: true,
-      title: () => t('nav.people'),
-      breadcrumbs: () => [{ label: t('nav.people') }, { label: t('tab.people.file') }],
+      title: () => (App.locale === 'en' ? 'Adonis Georgiadis' : 'Άδωνις Γεωργιάδης'),
+      breadcrumbs: () => null,
       render (content, { tabs }) {
         content.classList.add('dash', 'minimal')
         const paint = () => {
-          const title = t('tab.people.file')
-          const problem = Dash.stateContent([result], { title, tabs, quiet: true })
+          const title = App.locale === 'en' ? 'Adonis Georgiadis' : 'Άδωνις Γεωργιάδης'
+          const problem = Dash.stateContent([result], { title, quiet: true })
           if (problem) { content.replaceChildren(...problem); return }
           const d = result.data
           const s = d.summary
           const name = App.locale === 'en' ? s.person_en : s.person
-          // The sub-tabs without the person card name the person in the page head.
-          const bar = TopBar({ title, meta: name, tabs, quiet: tab === 'overview' })
+          const tabHref = (key) => { const q = new URLSearchParams(location.search); q.set('slug', slug); if (key === 'overview') q.delete('tab'); else q.set('tab', key); return `?${q}` }
+          const tabNav = h('nav', { class: 'sub-tabs person-tabs', 'aria-label': name }, h('ul', {},
+            TABS.map((key) => h('li', {}, h('a', { href: tabHref(key), 'aria-current': key === tab ? 'page' : null }, t(`tab.people.file.${key}`))))))
+          const bar = TopBar({ title: name, quiet: true })
 
           const hero = card('c-6 hero dossier-hero',
             h('div', { class: 'hero-main' },
@@ -127,7 +131,7 @@
               c.summary_el ? h('span', { class: 'muted-text' }, c.summary_el) : h('span', { class: 'quote-text' }, `«${c.quote}»`)))))
 
           const cards = { overview: [hero, statGrid, monthCard, verdictCard, themeCard], pairs: [pairCard], checks: [checkCard] }[tab]
-          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, ...cards), h('p', { class: 'proto-note' }, t('pf.note')))
+          content.replaceChildren(bar, tabNav, h('div', { class: 'dash-grid' }, ...cards), h('p', { class: 'proto-note' }, t('pf.note')))
         }
         paint()
       }
