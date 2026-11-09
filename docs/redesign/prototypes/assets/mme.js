@@ -324,7 +324,7 @@
   // Tone and voice of all the people in one chart, the full width of the second row.
   function ToneVoiceCard (S) {
     const withTone = peopleOf(S).filter((r) => overallOf(S, r.k).n >= 5)
-    return card('c-12', cardHead(t('mme.both.title')),
+    return card('c-6', cardHead(t('mme.both.title')),
       h('p', { class: 'dcard-sub fp-what' }, t('mme.panel.both.what')),
       withTone.length ? PeopleScatter(S) : emptyText(t('mme.panel.none')))
   }
