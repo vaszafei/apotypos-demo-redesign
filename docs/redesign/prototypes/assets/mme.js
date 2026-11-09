@@ -228,7 +228,9 @@
   // ———— Πρόσωπα › Επισκόπηση: all the people in a column on the left, and one chart of all of them on the right. ————
 
   // The people of the set with statements, the most quoted first.
-  const peopleOf = (S) => S.set.people.map((p, k) => ({ p, k, n: S.personQuotes[k] })).filter((r) => r.n > 0).sort((a, b) => b.n - a.n)
+  // Βενιαμίν Νετανιάχου, Μαρία Καρυστιανού and Ζωή Κωνσταντοπούλου are not on the page (decision of 2026-11-09).
+  const HIDDEN_PEOPLE = ['Βενιαμίν Νετανιάχου', 'Μαρία Καρυστιανού', 'Ζωή Κωνσταντοπούλου']
+  const peopleOf = (S) => S.set.people.map((p, k) => ({ p, k, n: S.personQuotes[k] })).filter((r) => r.n > 0 && !HIDDEN_PEOPLE.includes(r.p.name)).sort((a, b) => b.n - a.n)
   // A person over all the outlets: the articles by tone, the net balance, and the statements per 1,000 articles of all the outlets.
   const overallOf = (S, k) => {
     const tone = [0, 1, 2].map((j) => sum(S.active.map((o) => o.tone[k][j])))
