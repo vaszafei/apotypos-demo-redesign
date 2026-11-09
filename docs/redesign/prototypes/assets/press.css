@@ -31,10 +31,7 @@
 }
 
 /* Cards: no box, a black rule on top, as the slides divide their parts. */
-/* Cards: a light paper on the gray page, so each panel reads on its own; a black rule on top, as the slides divide their parts. */
-:root[data-theme="press"] :is(.dcard, .kpi-tile) { border: 0; border-top: 2px solid var(--ink); border-radius: 0; background: var(--surface-raised); box-shadow: none; }
-/* Things that were raised on the page sit flat on the card now. */
-:root[data-theme="press"] .dcard :is(.home-day-btn, .chip, .segmented) { background: transparent; }
+:root[data-theme="press"] :is(.dcard, .kpi-tile) { border: 0; border-top: 1px solid var(--ink); border-radius: 0; background: transparent; box-shadow: none; }
 :root[data-theme="press"] :is(.dcard, .kpi-tile):hover { border-top-color: var(--ink); box-shadow: inset 0 2px 0 var(--ink); }
 :root[data-theme="press"] .page-footer { border-top: 1px solid var(--ink); }
 

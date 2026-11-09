@@ -305,7 +305,7 @@
 /* "press": the look of the Apotypos slides (Γαλλία, 1–30 Οκτ). Light gray paper, black ink, gray for the second series, one neon highlight.
    The neon is a fill only (the current tab, the marker under a figure), never text, so every text stays 4.5 to 1. press.css sets the type and the shapes. */
 :root[data-theme="press"], [data-theme="press"] {
-  --surface-page: #d9d9d6; --surface-card: #cfcfcc; --surface-raised: #f1f1ee; --surface-sidebar: #d9d9d6; --surface-sunken: #cfcfcc;
+  --surface-page: #d9d9d6; --surface-card: #cfcfcc; --surface-raised: #e6e6e3; --surface-sidebar: #d9d9d6; --surface-sunken: #cfcfcc;
   --ink: #0b0b0b; --strong: #0b0b0b; --on-ink: #e8f23b;
   --text-primary: #161616; --text-secondary: #464644;
   --accent: #0b0b0b; --focus: #0b0b0b; --highlight: #e8f23b; --on-highlight: #0b0b0b;
