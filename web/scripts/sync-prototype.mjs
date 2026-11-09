@@ -1,9 +1,10 @@
 // Prepare web/public/ and web/app/generated/ from the static prototype in docs/redesign/prototypes.
 // The docs folder stays the one source of the CSS, the fonts, the data and the pages that are not ported yet.
 // A page listed in ported-pages.json is not copied: its old URL redirects to the Nuxt route (public/_redirects).
-import { cpSync, rmSync, mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs'
+import { cpSync, rmSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { runInNewContext } from 'node:vm'
+import { buildFixtures } from './build-fixtures.mjs'
 
 const here = (path) => fileURLToPath(new URL(path, import.meta.url))
 const from = here('../../docs/redesign/prototypes/')
@@ -24,12 +25,8 @@ cpSync(from, to, {
   }
 })
 
-// Fixtures that are not converted from the prototype yet (replaced by build-fixtures.mjs in U4).
-const fixtures = here('../fixtures/')
-if (existsSync(fixtures)) {
-  mkdirSync(`${to}data/`, { recursive: true })
-  for (const name of readdirSync(fixtures)) cpSync(`${fixtures}${name}`, `${to}data/${name}`)
-}
+// Every data/*.js of the prototype also as data/<key>.json, for the Nuxt pages (useFixture).
+const fixtureCount = buildFixtures(`${from}data/`, `${to}data/`).length
 
 // One 301 per ported page; the rules with a query come first, because a rule without one matches any query.
 // The last rule sends every other path to the Nuxt shell. It is not forced, so a static file wins over it.
@@ -45,4 +42,4 @@ if (!source) throw new Error('PROTOTYPES not found in assets/shell.js')
 mkdirSync(generated, { recursive: true })
 writeFileSync(`${generated}prototypes.json`, `${JSON.stringify(runInNewContext(`(${source[1]})`), null, 2)}\n`)
 
-console.log(`Prototype copied to public/ (${ported.length} ported page${ported.length === 1 ? '' : 's'} skipped)`)
+console.log(`Prototype copied to public/ (${ported.length} ported page${ported.length === 1 ? '' : 's'} skipped, ${fixtureCount} fixtures converted)`)
