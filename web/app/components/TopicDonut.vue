@@ -25,7 +25,8 @@ const slices = computed(() => {
     return { r, i, d, color: props.colorOf.get(r.k) ?? 'var(--bar-muted)', ranked: props.colorOf.has(r.k) }
   })
 })
-const tip = (r: TopicRow) => `${r.issue.el}: ${fmtInt(r.count)} άρθρα (${fmtPct(r.count / props.total)})`
+const { t } = useI18n()
+const tip = (r: TopicRow) => t('media2.topic.tip', { topic: topicName(r.issue), n: fmtInt(r.count), share: fmtPct(r.count / props.total) })
 const show = (r: TopicRow, e: PointerEvent) => tooltip.show({ title: tip(r) }, e)
 </script>
 
@@ -35,18 +36,18 @@ const show = (r: TopicRow, e: PointerEvent) => tooltip.show({ title: tip(r) }, e
       <ul class="rows rows-groups rows-owners mme-topic-list">
         <li v-for="s in slices" :key="s.r.k" :title="tip(s.r)">
           <span class="dot" :style="`--dot:${s.color}`" aria-hidden="true" />
-          <span class="row-name"><a class="entity-link" :href="topicHref(s.r.k)">{{ s.r.issue.el }}</a></span>
+          <span class="row-name"><a class="entity-link" :href="topicHref(s.r.k)">{{ topicName(s.r.issue) }}</a></span>
           <span class="row-value">{{ fmtPct(s.r.count / total) }}</span>
         </li>
       </ul>
     </div>
-    <svg class="chart donut topic-donut" :width="size" :height="size" :viewBox="`0 0 ${size} ${size}`" role="img" aria-label="Όλα τα θέματα">
+    <svg class="chart donut topic-donut" :width="size" :height="size" :viewBox="`0 0 ${size} ${size}`" role="img" :aria-label="t('topics2.all.title')">
       <path
         v-for="s in slices" :key="s.r.k" :class="s.ranked ? 'slice' : 'slice slice-rest'" :d="s.d" :fill="s.color" :style="`--m-i: ${s.i};`"
         @pointerenter="show(s.r, $event)" @pointermove="show(s.r, $event)" @pointerleave="tooltip.hide()"
       />
       <text class="donut-num" :x="c" :y="c + 3" text-anchor="middle">{{ fmtInt(total) }}</text>
-      <text :x="c" :y="c + 19" text-anchor="middle">άρθρα</text>
+      <text :x="c" :y="c + 19" text-anchor="middle">{{ t('topics2.all.center') }}</text>
     </svg>
   </div>
 </template>

@@ -5,6 +5,7 @@ interface Preset { key: string, label: string, from: string, to: string }
 const props = defineProps<{ dates: string[], from: string, to: string }>()
 const emit = defineEmits<{ change: [range: { from: string, to: string }] }>()
 
+const { t } = useI18n()
 const iso = (d: Date) => d.toISOString().slice(0, 10)
 const utc = (s: string) => new Date(`${s}T00:00:00Z`)
 const addMonths = (d: Date, n: number) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n, 1))
@@ -24,10 +25,10 @@ const presets = computed<Preset[]>(() => {
     return { key: m, label: cap(fmtMonth(days[0]!, { month: 'long', year: 'numeric' })), from: days[0]!, to: days[days.length - 1]! }
   })
   return [
-    { key: 'all', label: 'Όλη η περίοδος', from: d[0]!, to: last.value },
+    { key: 'all', label: t('range.all'), from: d[0]!, to: last.value },
     ...months,
-    { key: 'last14', label: 'Τελευταίες 2 εβδομάδες', from: d[Math.max(0, d.length - 14)]!, to: last.value },
-    { key: 'last7', label: 'Τελευταία εβδομάδα', from: d[Math.max(0, d.length - 7)]!, to: last.value }
+    { key: 'last14', label: t('range.last14'), from: d[Math.max(0, d.length - 14)]!, to: last.value },
+    { key: 'last7', label: t('mme.range.last7'), from: d[Math.max(0, d.length - 7)]!, to: last.value }
   ]
 })
 
@@ -56,7 +57,7 @@ const month = (m: Date) => {
   return { title: fmtMonth(iso(m), { month: 'long', year: 'numeric' }), lead, days: Array.from({ length: days }, (_, i) => iso(new Date(Date.UTC(y, mo, i + 1)))) }
 }
 const months = computed(() => [month(view.value), month(addMonths(view.value, 1))])
-const week = [0, 1, 2, 3, 4, 5, 6].map(i => fmtMonth(iso(new Date(Date.UTC(2026, 7, 3 + i))), { weekday: 'narrow' }))
+const week = computed(() => [0, 1, 2, 3, 4, 5, 6].map(i => fmtMonth(iso(new Date(Date.UTC(2026, 7, 3 + i))), { weekday: 'narrow' })))
 const canPrev = computed(() => iso(view.value) > iso(monthStart(first.value)))
 const canNext = computed(() => iso(addMonths(view.value, 2)) <= last.value)
 const current = computed(() => presets.value.find(p => !start.value && p.from === draft.value.from && p.to === draft.value.to))
@@ -88,15 +89,15 @@ onMounted(() => {
     <button type="button" class="dr-trigger" aria-haspopup="dialog" :aria-expanded="tf(open)" @click="toggle">
       <AppIcon name="calendar" class="icon dr-icon" /><span class="dr-text">{{ label(from, to) }}</span><AppIcon name="chevron-down" class="icon icon-sm dr-chev" />
     </button>
-    <div class="dr-pop" role="dialog" aria-label="Περίοδος" :hidden="!open">
+    <div class="dr-pop" role="dialog" :aria-label="t('dr.title')" :hidden="!open">
       <template v-if="open">
-        <ul class="dr-presets" aria-label="Έτοιμες περίοδοι">
+        <ul class="dr-presets" :aria-label="t('dr.presets')">
           <li v-for="p in presets" :key="p.key"><button type="button" class="dr-preset" :aria-pressed="tf(current === p)" @click="usePreset(p)">{{ p.label }}</button></li>
         </ul>
         <div class="dr-main">
           <div class="dr-nav">
-            <button type="button" class="icon-button dr-step" :disabled="!canPrev" aria-label="Προηγούμενος μήνας" @click="view = addMonths(view, -1)"><AppIcon name="chevron-left" class="icon icon-sm" /></button>
-            <button type="button" class="icon-button dr-step" :disabled="!canNext" aria-label="Επόμενος μήνας" @click="view = addMonths(view, 1)"><AppIcon name="chevron-right" class="icon icon-sm" /></button>
+            <button type="button" class="icon-button dr-step" :disabled="!canPrev" :aria-label="t('dr.prev')" @click="view = addMonths(view, -1)"><AppIcon name="chevron-left" class="icon icon-sm" /></button>
+            <button type="button" class="icon-button dr-step" :disabled="!canNext" :aria-label="t('dr.next')" @click="view = addMonths(view, 1)"><AppIcon name="chevron-right" class="icon icon-sm" /></button>
           </div>
           <div class="dr-months">
             <div v-for="m in months" :key="m.title" class="dr-month">
@@ -113,9 +114,9 @@ onMounted(() => {
             </div>
           </div>
           <div class="dr-foot">
-            <p class="dr-summary" aria-live="polite">{{ start ? 'Διαλέξτε την τελευταία ημέρα' : `${label(edges[0], edges[1])} · ${dayCount(edges[0], edges[1])} ημέρες` }}</p>
-            <button type="button" class="button" @click="open = false">Ακύρωση</button>
-            <button type="button" class="button button-primary" :disabled="Boolean(start)" @click="apply">Εφαρμογή</button>
+            <p class="dr-summary" aria-live="polite">{{ start ? t('dr.pick.end') : `${label(edges[0], edges[1])} · ${t('dr.days', { n: dayCount(edges[0], edges[1]) })}` }}</p>
+            <button type="button" class="button" @click="open = false">{{ t('dr.cancel') }}</button>
+            <button type="button" class="button button-primary" :disabled="Boolean(start)" @click="apply">{{ t('dr.apply') }}</button>
           </div>
         </div>
       </template>
