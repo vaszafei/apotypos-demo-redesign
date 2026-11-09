@@ -934,7 +934,7 @@ svg.chart .bar-col { transform-origin: 50% 100%; }
 .token-item code { overflow-wrap: anywhere; color: var(--text-secondary); }
 .token-chip { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid var(--border); border-radius: var(--radius); font-size: var(--text-caption); font-weight: 600; }
 
-/* The icons of the sections and the tabs (the Heroicons of apotypos.org). The "/" of the current link goes before the label, after the icon. */
+/* The icons of the sections and the tabs. The "/" of the current link goes before the label without icons, and after the label where an icon shows (data-icons). */
 .nav-link:has(.nav-icon), .section-nav-link:has(.nav-icon), .section-tabs a:has(.nav-icon), .sub-tabs a:has(.nav-icon) { display: flex; align-items: center; gap: 8px; }
 .nav-icon { flex: none; width: 16px; height: 16px; }
 .section-nav-sub .nav-icon { width: 14px; height: 14px; }
@@ -942,6 +942,10 @@ svg.chart .bar-col { transform-origin: 50% 100%; }
 @media (min-width: 1024px) {
   .header-nav .nav-link[aria-current="page"] .nav-label::before { content: "/ "; white-space: pre; }
   .section-nav .section-nav-link[aria-current]:not(.is-parent) .nav-label::before { content: "/ "; white-space: pre; }
+  :root[data-icons="all"] .header-nav .nav-link[aria-current="page"] .nav-label::before, :root[data-icons="all"] .section-nav .section-nav-link[aria-current] .nav-label::before,
+  :root[data-icons="sidebar"] .section-nav .section-nav-link[aria-current] .nav-label::before { content: none; }
+  :root[data-icons="all"] .header-nav .nav-link[aria-current="page"] .nav-label::after, :root[data-icons="all"] .section-nav .section-nav-link[aria-current]:not(.is-parent) .nav-label::after,
+  :root[data-icons="sidebar"] .section-nav .section-nav-link[aria-current]:not(.is-parent) .nav-label::after { content: " /"; white-space: pre; }
 }
 /* The tabs stay under the logo at any zoom: they start at the left of the sidebar, not at its right edge, so a wider window (zoom out) does not move them. */
 @media (min-width: 1024px) {

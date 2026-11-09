@@ -64,17 +64,22 @@
       ['greekturkish', '/war'], ['coverage', '/coverage'], ['france', '/france-riots'], ['rouvikonas', '/cases']] }
   ]
   const FOOTER = [['methodology', '/methodology'], ['about', '/about']]
-  // The icons of the sections and the tabs: the Heroicons of the sidebar of apotypos.org, so the redesign keeps our icons.
-  const NAV_ICONS = { home: 'home', media: 'tv', people: 'user-group', politics: 'megaphone', world: 'chart-bar', methodology: 'book-open', about: 'information-circle' }
+  // The icons of the sections and the tabs: Material Symbols Sharp, drawn with the straight, flat-ended strokes of the logo.
+  const NAV_ICONS = { home: 'home', media: 'tv', people: 'groups', politics: 'campaign', world: 'bar_chart', methodology: 'menu_book', about: 'info' }
   const ROUTE_ICONS = {
-    '/media': 'squares-2x2', '/groups': 'banknotes', '/trends': 'tag', '/stories': 'signal', '/media/writing': 'pencil-square', '/similarity': 'document-duplicate',
-    '/fingerprints': 'user-group', '/fingerprints/spread': 'arrow-trending-up', '/track': 'chat-bubble-bottom-center-text',
-    '/contradictions': 'identification', '/contradictions/pairs': 'arrows-right-left', '/contradictions/checks': 'check-badge',
-    '/elections': 'megaphone', '/elections/outlets': 'newspaper', '/elections/owners': 'banknotes', '/elections/topics': 'tag', '/elections/bylines': 'pencil-square',
-    '/speeches': 'microphone', '/un-israel-palestine': 'flag', '/narrative': 'squares-2x2', '/gaza': 'newspaper', '/israel': 'eye', '/gaza-language': 'language',
-    '/war': 'fire', '/coverage': 'document-magnifying-glass', '/france-riots': 'globe-europe-africa', '/cases': 'magnifying-glass-circle'
+    '/media': 'grid_view', '/groups': 'account_balance', '/trends': 'sell', '/stories': 'sensors', '/media/writing': 'edit', '/similarity': 'content_copy',
+    '/fingerprints': 'fingerprint', '/fingerprints/spread': 'trending_up', '/track': 'chat',
+    '/contradictions': 'compare_arrows', '/contradictions/pairs': 'swap_horiz', '/contradictions/checks': 'verified',
+    '/elections': 'how_to_vote', '/elections/outlets': 'newspaper', '/elections/owners': 'account_balance', '/elections/topics': 'sell', '/elections/bylines': 'edit',
+    '/speeches': 'mic', '/un-israel-palestine': 'flag', '/narrative': 'space_dashboard', '/gaza': 'newspaper', '/israel': 'visibility', '/gaza-language': 'translate',
+    '/war': 'local_fire_department', '/coverage': 'find_in_page', '/france-riots': 'language', '/cases': 'search'
   }
-  const withIcon = (name, label) => name ? [Icon(name, 'icon nav-icon'), h('span', { class: 'nav-label' }, label)] : [label]
+  const NavIcon = (name) => {
+    const el = h('svg', { class: 'icon nav-icon', viewBox: '0 -960 960 960', fill: 'currentColor', 'aria-hidden': 'true', 'data-icon': name })
+    el.innerHTML = window.NAV_GLYPHS[name] || ''
+    return el
+  }
+  const withIcon = (name, label) => name ? [NavIcon(name), h('span', { class: 'nav-label' }, label)] : [label]
 
   const hasText = (key) => key in window.MESSAGES.el
   const under = (route, base) => route === base || (base !== '/' && route.startsWith(base + '/'))
