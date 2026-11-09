@@ -47,7 +47,7 @@ export const useTopics = async () => {
     const [i0, i1] = range.value
     return offered.value.map((r, i) => ({
       key: String(r.k),
-      name: r.issue.el,
+      name: topicName(r.issue),
       color: `var(--cat-${i + 1})`,
       values: r.daily.map((_, j) => {
         const from = Math.max(0, j - ROLL + 1)

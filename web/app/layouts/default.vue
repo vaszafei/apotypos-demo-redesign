@@ -2,6 +2,7 @@
 // The shell of assets/shell.js as Vue: the drawer (sidebar), the header bar, the section nav, the page and the footer. Same markup and classes, so the prototype CSS applies as it is.
 const { sections, section } = useNav()
 const route = useRoute()
+const { locale, setLocale } = useI18n()
 const drawer = ref(false)
 watch(() => route.path, () => { drawer.value = false })
 
@@ -67,7 +68,7 @@ const current = (to: string) => (route.path === to ? 'page' : undefined)
         </div>
         <div class="header-actions">
           <div class="auth-links"><button type="button" class="button auth-login">Σύνδεση</button><button type="button" class="button button-primary auth-register">Εγγραφή</button></div>
-          <div class="lang-switch" role="group" aria-label="Γλώσσα"><button type="button" lang="el" aria-pressed="true">ΕΛ</button><button type="button" lang="en" aria-pressed="false">EN</button></div>
+          <div class="lang-switch" role="group" aria-label="Γλώσσα"><button type="button" lang="el" :aria-pressed="tf(locale === 'el')" @click="setLocale('el')">ΕΛ</button><button type="button" lang="en" :aria-pressed="tf(locale === 'en')" @click="setLocale('en')">EN</button></div>
         </div>
       </header>
       <div class="page-body">

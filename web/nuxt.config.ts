@@ -8,10 +8,19 @@ export default defineNuxtConfig({
   ssr: false,
   devtools: { enabled: false },
   // The design is the prototype's own CSS, copied from docs/redesign/prototypes/assets by scripts/sync-prototype.mjs. No Nuxt UI.
-  modules: ['@pinia/nuxt'],
+  modules: ['@pinia/nuxt', '@nuxtjs/i18n'],
   css: ['~/assets/css/tailwind.css'],
   // Tailwind 4 with no reset (preflight) and the tw: prefix, so no class of the prototype CSS changes (KTD6).
   vite: { plugins: [tailwindcss()] },
+  // The text is the message files of the prototype, converted by scripts/build-messages.mjs to i18n/locales (KTD4). One URL for both languages; the locale
+  // comes from ?lang= and localStorage['apotypos-locale'] like the static pages (plugins/locale.client.ts).
+  i18n: {
+    strategy: 'no_prefix',
+    defaultLocale: 'el',
+    locales: [{ code: 'el', language: 'el-GR', name: 'Ελληνικά', file: 'el.json' }, { code: 'en', language: 'en-GB', name: 'English', file: 'en.json' }],
+    detectBrowserLanguage: false,
+    vueI18n: './i18n.config.ts'
+  },
   app: {
     head: {
       htmlAttrs: { lang: 'el', 'data-theme': 'paper', 'data-icons': 'off', 'data-font': 'plex', 'data-header': 'v2' },

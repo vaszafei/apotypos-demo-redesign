@@ -4,3 +4,4 @@ node_modules
 public
 dist
 app/generated
+i18n/locales
