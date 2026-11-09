@@ -67,7 +67,7 @@ How to read it:
 
 - The static page change is bimodal at normal CPU (167 to 183 ms in 3 runs, 370 to 461 ms in 3 others), so a 86 ms gap between the medians is inside its own spread. At 4× the Nuxt page changes faster, as in the trial.
 - The prerendered page paints about twice as early (FCP), and 2.5 times as early at 4×. The charts are drawn at a fallback width of 640 px first and at the measured width after hydration; at 1440 the lines card is about that wide, so nothing moves, at other widths it will.
-- At 4× the Nuxt page takes longer to reach the final layout than the static one (1 875 against 1 069 ms): hydration of the network (layout of 300 steps for each of 9 groups, run twice, on the server and in the browser) and the rest of the app. The first run of the layout is a `computed` on the measured width, so it runs again when the width is known.
+- At 4× the Nuxt page takes longer to reach the final layout than the static one (1 875 against 1 069 ms). The cause was not profiled. A likely part: the layout of the network (300 steps for each of 9 groups) is a `computed` on the measured width, so it runs on the server, then in the browser at the fallback width, then again at the measured width.
 - The first load moves 1.9 times the bytes (two JSON fixtures, the message file, the Nuxt chunks) in twice the requests. Not investigated further.
 - The 4× static run of the first load hit a `networkidle` timeout once in a first attempt, so it was run again without waiting for network idle; the numbers above are the second run.
 - The spike report's numbers (Nuxt 250 ms and static 238 ms, normal) were from a stub; this is the first like-for-like page change.
