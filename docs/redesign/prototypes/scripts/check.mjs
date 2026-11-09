@@ -11,7 +11,7 @@ import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
-const THEMES = ['paper', 'fog', 'terra', 'night', 'midnight']
+const THEMES = ['press', 'paper', 'fog', 'terra', 'night', 'midnight']
 const DARK = new Set(['night', 'midnight'])
 const MIN_DISTINCT = 15
 const MIN_CVD = 8

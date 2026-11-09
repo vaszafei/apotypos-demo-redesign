@@ -1,0 +1,60 @@
+/* The "press" theme (tokens.css): the type and the shapes of the Apotypos slides. Only the look changes; every element keeps its place.
+   Bold tight grotesk for titles and figures, a mono in capitals for labels and sources, square corners, black hairline rules, one neon marker. */
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter+Tight:wght@600;700;800&display=swap");
+
+:root[data-theme="press"] {
+  --pill: 0px;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-text: "Inter", system-ui, sans-serif;
+  --font-heading: "Inter Tight", "Inter", system-ui, sans-serif;
+}
+:root[data-theme="press"] body { font-family: var(--font-text); }
+
+/* Titles: bold and tight, black. */
+:root[data-theme="press"] :is(.page-title, .page-head-title, .appbar-title, .dash-title, .hero-title, .text-column h2, .home-mast, .home-day-story,
+  .story-lead-title, .case-title, .research-verdict, .auth-title, .gate-title) { font-family: var(--font-heading); font-weight: 700; letter-spacing: -0.02em; color: var(--ink); }
+:root[data-theme="press"] .home-mast { letter-spacing: -0.01em; }
+
+/* Labels, kickers, captions and sources: the mono of the slide headers, in capitals. */
+:root[data-theme="press"] :is(.page-kicker, .hero-kicker, .dstat-label, .kpi-label, .rows-caption, .dcard-sub, .page-meta, .page-footer, .tooltip-label, .global-search-label, .home-topic-label, .flow-label, .ecard-meta, .quote-meta, .home-day-meta) {
+  font-family: var(--font-mono); font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; font-size: 11.5px; color: var(--text-secondary);
+}
+:root[data-theme="press"] .hero-kicker::before { content: none; }
+:root[data-theme="press"] .dcard-title { font-family: var(--font-heading); font-size: 15px; font-weight: 700; letter-spacing: -0.01em; color: var(--ink); }
+:root[data-theme="press"] svg text { font-family: var(--font-mono); }
+
+/* Figures: big, heavy and tight, with the neon marker of the slides under them. */
+:root[data-theme="press"] :is(.kpi-value, .dstat-value) {
+  font-family: var(--font-heading); font-weight: 800; letter-spacing: -0.03em; color: var(--ink);
+  background: linear-gradient(transparent 58%, var(--highlight) 58%, var(--highlight) 92%, transparent 92%);
+  width: fit-content; padding: 0 2px;
+}
+
+/* Cards: no box, a black rule on top, as the slides divide their parts. */
+:root[data-theme="press"] :is(.dcard, .kpi-tile) { border: 0; border-top: 1px solid var(--ink); border-radius: 0; background: transparent; box-shadow: none; }
+:root[data-theme="press"] :is(.dcard, .kpi-tile):hover { border-top-color: var(--ink); box-shadow: inset 0 2px 0 var(--ink); }
+:root[data-theme="press"] .page-footer { border-top: 1px solid var(--ink); }
+
+/* Tabs: square, the current one in neon. */
+:root[data-theme="press"] .section-tabs a, :root[data-theme="press"] .sub-tabs a { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.03em; text-transform: uppercase; }
+:root[data-theme="press"] .section-tabs a[aria-current="page"], :root[data-theme="press"] .section-tabs a[aria-current="true"],
+:root[data-theme="press"] .page-tabs .sub-tabs a[aria-current="page"] { background: var(--highlight); color: var(--on-highlight); border-color: var(--ink); box-shadow: none; }
+:root[data-theme="press"] .sub-tabs a[aria-current="page"] { border-bottom-color: var(--ink); }
+:root[data-theme="press"] .section-nav-link { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.03em; }
+:root[data-theme="press"] .section-nav .section-nav-link[aria-current]:not(.is-parent) { background: var(--highlight); color: var(--on-highlight); }
+:root[data-theme="press"] .nav-link[aria-current="page"] { box-shadow: inset 0 -3px 0 var(--highlight); border-radius: 0; }
+
+/* Controls: square, black outline when pressed. */
+:root[data-theme="press"] :is(.segmented, .button, .chip, .search-button, .back-button, .info-pop, .search-panel, select, input) { border-radius: 0; }
+:root[data-theme="press"] .segmented button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+
+/* Tables: mono numbers, black head rule. */
+:root[data-theme="press"] .data-table th { font-family: var(--font-mono); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; font-size: 11px; border-bottom: 1px solid var(--ink); }
+:root[data-theme="press"] .data-table td.num { font-family: var(--font-mono); }
+
+/* Links: black with an underline; the hover is the neon marker. */
+:root[data-theme="press"] a:hover { background: var(--highlight); color: var(--on-highlight); text-decoration: none; }
+:root[data-theme="press"] :is(.section-nav-link, .nav-link, .section-tabs a, .sub-tabs a, .logo-link):hover { background: var(--highlight); }
+
+/* Square corners everywhere, as in the slides. The swatches of the theme switch stay round. */
+:root[data-theme="press"] :where(body *:not(svg, svg *, .theme-swatch, .spinner)) { border-radius: 0 !important; }

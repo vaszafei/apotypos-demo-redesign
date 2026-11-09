@@ -405,12 +405,12 @@
   setFont(readFont())
 
   // Prototype only: the themes for the decision of the project lead (tokens.css). ?theme= or the last choice sets it.
-  const THEMES = ['paper', 'fog', 'terra', 'night', 'midnight']
+  const THEMES = ['press', 'paper', 'fog', 'terra', 'night', 'midnight']
   function readTheme () {
     const asked = new URLSearchParams(location.search).get('theme')
     let saved = null
     try { saved = localStorage.getItem('proto-theme') } catch {}
-    return [asked, saved].find((k) => THEMES.includes(k)) || 'paper'
+    return [asked, saved].find((k) => THEMES.includes(k)) || 'press'
   }
   function setTheme (key) {
     document.documentElement.dataset.theme = key
