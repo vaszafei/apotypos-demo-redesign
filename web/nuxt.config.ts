@@ -4,12 +4,12 @@ const sheet = (name: string) => ({ rel: 'stylesheet' as const, href: `/assets/${
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-10-22',
-  // A single-page app like the static prototype, so the comparison is fair (KTD11 of the migration plan).
-  ssr: false,
+  // Prerendered (ssr: true) so the first frame is already drawn and the page slide into a Nuxt page works (KTD11, changed 2026-11-09).
+  ssr: true,
   devtools: { enabled: false },
   // The design is the prototype's own CSS, copied from docs/redesign/prototypes/assets by scripts/sync-prototype.mjs. No Nuxt UI.
   modules: ['@pinia/nuxt', '@nuxtjs/i18n'],
-  css: ['~/assets/css/tailwind.css'],
+  css: ['~/assets/css/tailwind.css', '~/assets/css/ssr.css'],
   // Tailwind 4 with no reset (preflight) and the tw: prefix, so no class of the prototype CSS changes (KTD6).
   vite: { plugins: [tailwindcss()] },
   // The text is the message files of the prototype, converted by scripts/build-messages.mjs to i18n/locales (KTD4). One URL for both languages; the locale
@@ -34,5 +34,5 @@ export default defineNuxtConfig({
   },
   experimental: { viewTransition: true },
   // Netlify selects its own preset, which writes to dist. Keep .output/public.
-  nitro: { preset: 'static' }
+  nitro: { preset: 'static', serverAssets: [{ baseName: 'fixtures', dir: '../public/data' }] }
 })

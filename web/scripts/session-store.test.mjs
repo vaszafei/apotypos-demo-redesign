@@ -22,7 +22,10 @@ test('the right name and password sign in, and the user stays in localStorage fo
   assert.equal(session.user, 'lolovios')
   assert.equal(storage.getItem(USER_KEY), 'lolovios')
   setActivePinia(createPinia())
-  assert.equal(useSessionStore().user, 'lolovios')
+  const reloaded = useSessionStore()
+  assert.equal(reloaded.user, null, 'the page is prerendered signed out, so the store starts that way')
+  reloaded.hydrate()
+  assert.equal(reloaded.user, 'lolovios')
 })
 
 test('a wrong password or an unknown name keeps the gate and stores nothing', () => {
@@ -36,12 +39,16 @@ test('a wrong password or an unknown name keeps the gate and stores nothing', ()
 
 test('a user signed in on a static page is signed in here (same key, same accounts)', () => {
   storage.setItem(USER_KEY, 'odpein')
-  assert.equal(useSessionStore().user, 'odpein')
+  const session = useSessionStore()
+  session.hydrate()
+  assert.equal(session.user, 'odpein')
 })
 
 test('a stored name that is not an account is ignored', () => {
   storage.setItem(USER_KEY, 'intruder')
-  assert.equal(useSessionStore().user, null)
+  const session = useSessionStore()
+  session.hydrate()
+  assert.equal(session.user, null)
 })
 
 test('sign out clears the user and the key; refresh reads a change made elsewhere', () => {

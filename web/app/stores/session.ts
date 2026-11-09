@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 
 // Prototype only: the accounts are fixed (ACCOUNTS in assets/shell.js, KTD9). The check runs in the browser and keeps nobody out of the files.
 // The user is in localStorage['proto-user'], the key the static pages use, so a user signed in on a static page is signed in here.
@@ -11,7 +11,8 @@ const read = () => {
 }
 
 export const useSessionStore = defineStore('session', () => {
-  const user = ref<string | null>(read())
+  // Prerendered signed out; hydrate() (plugins/session.client.ts) reads the visitor after the page is hydrated.
+  const user = ref<string | null>(null)
   const signedIn = computed(() => user.value !== null)
   // A wrong name or password, or storage that cannot be written, gives false and signs nobody in.
   const signIn = (name: string, password: string) => {
@@ -27,5 +28,8 @@ export const useSessionStore = defineStore('session', () => {
   }
   // A sign-in or sign-out on another tab or a static page.
   const refresh = () => { user.value = read() }
-  return { user, signedIn, signIn, signOut, refresh }
+  // html[data-signed-in] hides what the prerendered page shows to a signed-out visitor (assets/css/ssr.css) until the page knows the visitor.
+  const mark = () => { if (typeof document === 'undefined') return; if (user.value) document.documentElement.dataset.signedIn = ''; else delete document.documentElement.dataset.signedIn }
+  watch(user, mark)
+  return { user, signedIn, signIn, signOut, refresh, hydrate: refresh }
 })

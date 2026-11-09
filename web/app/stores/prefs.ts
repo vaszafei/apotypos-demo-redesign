@@ -9,23 +9,36 @@ export const ICON_MODES = ['off', 'all', 'sidebar'] as const
 
 export const pickPref = (asked: string | null, saved: string | null, allowed: readonly string[], fallback: string) => [asked, saved].find(v => v && allowed.includes(v)) ?? fallback
 
-const choose = (name: string, allowed: readonly string[], fallback: string) => {
+export const PREF_DEFAULTS = { font: 'plex', theme: 'paper', icons: 'off' } as const
+export const PREF_CHOICES: Record<keyof typeof PREF_DEFAULTS, readonly string[]> = { font: FONTS.map(([k]) => k), theme: THEMES, icons: ICON_MODES }
+
+const choose = (name: keyof typeof PREF_DEFAULTS, search: string) => {
   let saved: string | null = null
   try { saved = localStorage.getItem(`proto-${name}`) } catch { /* storage is not available */ }
-  return pickPref(new URLSearchParams(location.search).get(name), saved, allowed, fallback)
+  return pickPref(new URLSearchParams(search).get(name), saved, PREF_CHOICES[name], PREF_DEFAULTS[name])
 }
 
+// The page is prerendered with the defaults, so the store starts with them and hydrate() (plugins/prefs.client.ts) reads the visitor's choice
+// after the page is hydrated. Before that the inline script of utils/visitorScript.ts has already set the data-* attributes.
 export const usePrefsStore = defineStore('prefs', () => {
-  const font = ref(choose('font', FONTS.map(([k]) => k), 'plex'))
-  const theme = ref(choose('theme', THEMES, 'paper'))
-  const icons = ref(choose('icons', ICON_MODES, 'off'))
-  const apply = (name: string, value: string) => {
+  const font = ref<string>(PREF_DEFAULTS.font)
+  const theme = ref<string>(PREF_DEFAULTS.theme)
+  const icons = ref<string>(PREF_DEFAULTS.icons)
+  const apply = (name: keyof typeof PREF_DEFAULTS, value: string) => {
     document.documentElement.dataset[name] = value
     try { localStorage.setItem(`proto-${name}`, value) } catch { /* storage is not available */ }
   }
-  // immediate: a choice that came from the query string is stored too, as the static shell does.
-  watch(font, v => apply('font', v), { immediate: true })
-  watch(theme, v => apply('theme', v), { immediate: true })
-  watch(icons, v => apply('icons', v), { immediate: true })
-  return { font, theme, icons }
+  watch(font, v => apply('font', v))
+  watch(theme, v => apply('theme', v))
+  watch(icons, v => apply('icons', v))
+  // A choice that came from the query string is stored too, as the static shell does.
+  const hydrate = (search = location.search) => {
+    font.value = choose('font', search)
+    theme.value = choose('theme', search)
+    icons.value = choose('icons', search)
+    apply('font', font.value)
+    apply('theme', theme.value)
+    apply('icons', icons.value)
+  }
+  return { font, theme, icons, hydrate }
 })

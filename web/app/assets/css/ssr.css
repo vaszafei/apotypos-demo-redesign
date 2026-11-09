@@ -1,0 +1,7 @@
+/* The page is prerendered for nobody in particular (utils/visitorScript.ts sets these attributes on <html> before the first paint). */
+/* A signed-in visitor does not see the signed-out parts while the page learns who they are. */
+html[data-signed-in] .auth-login,
+html[data-signed-in] .auth-register,
+html[data-signed-in] .gate { visibility: hidden; }
+/* A visitor who wants English does not see the Greek text while the page switches the language. */
+html[data-lang-pending] .shell { visibility: hidden; }
