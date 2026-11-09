@@ -7,8 +7,8 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=18">
   <link rel="stylesheet" href="assets/app.css?v=62">
-  <link rel="stylesheet" href="assets/dash.css?v=104">
-  <link rel="stylesheet" href="assets/politics.css?v=8">
+  <link rel="stylesheet" href="assets/dash.css?v=105">
+  <link rel="stylesheet" href="assets/politics.css?v=9">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
@@ -16,11 +16,11 @@
   <script src="assets/icons.js?v=14"></script>
   <script src="assets/messages.js?v=51"></script>
   <script src="assets/messages-v2.js?v=62"></script>
-  <script src="assets/messages-politics.js?v=11"></script>
+  <script src="assets/messages-politics.js?v=13"></script>
   <script src="assets/components.js?v=21"></script>
   <script src="assets/motion.js?v=4"></script>
-  <script src="assets/dash.js?v=30"></script>
-  <script src="assets/politics.js?v=11"></script>
+  <script src="assets/dash.js?v=31"></script>
+  <script src="assets/politics.js?v=12"></script>
   <script src="assets/shell.js?v=73"></script>
   <script src="data/speeches.js?v=1"></script>
   <script>
@@ -29,7 +29,7 @@
     const { t, fmt, h, load } = App
     const { reset, card, cardHead, Stat, TopBar, SLOTS } = Dash
     const { dataName } = Politics
-    const result = load('speeches', ['rows', 'agenda'], (b) => b.rows)
+    const result = load('speeches', ['rows'], (b) => b.rows)
     const REGIONS = ['Africa', 'Europe', 'Asia-Pacific', 'Latin America & Caribbean', 'Middle East', 'North America']
     const DOMESTIC = 'Domestic affairs'
     const TONES = ['hostile', 'critical', 'neutral', 'conciliatory', 'supportive']
@@ -64,22 +64,55 @@
             wide(Stat({ label: t('un.stat.attacks'), value: fmt.int(sum('attacks')), sub: t('un.stat.attacks.sub') }))
           ]
 
-          // The agenda of the region: from the full totals for all regions, from the top topics of each speech for one region.
-          const agenda = region
-            ? Object.values(rows.reduce((acc, r) => {
-              r.shares.forEach(([k, s]) => {
-                const m = (s * r.seconds) / 60
-                const e = acc[k] || (acc[k] = { topic: k, minutes: 0, leaders: 0, top: [] })
-                e.minutes += m
-                e.leaders += m >= 1
-                e.top.push([m, r.speaker])
-              })
-              return acc
-            }, {})).map((e) => ({ ...e, top: e.top.sort((a, b) => b[0] - a[0]).slice(0, 3).map((x) => x[1]) })).sort((a, b) => b.minutes - a.minutes)
-            : d.agenda
-          const shown = agenda.filter((a) => a.topic !== DOMESTIC).slice(0, 12)
-          const agendaCard = card('c-7', cardHead(t('un.agenda.title'), null, t('un.agenda.info', { n: fmt.int(d.topics) })),
-            UI.BarList(shown.map((a) => ({ label: topic(a.topic), sub: t('un.agenda.top', { names: a.top.join(', ') }), value: a.minutes, text: t('un.agenda.value', { m: fmt.int(Math.round(a.minutes)), n: fmt.int(a.leaders) }) }))))
+          // The fingerprint colors: the 8 largest topics of all speeches have a fixed color, the domestic affairs are dark gray, every other topic is gray.
+          // The agenda donut, the table and its legend read the same map.
+          const everything = Politics.topicMinutes(d.rows)
+          const colorOf = new Map(everything.topics.filter((a) => a.topic !== DOMESTIC).slice(0, SLOTS.length).map((a, i) => [a.topic, SLOTS[i]]))
+          colorOf.set(DOMESTIC, 'var(--cat-strong)')
+          const segColor = (k) => colorOf.get(k) || 'var(--bar-muted)'
+
+          // The agenda of the region as a donut: the 9 largest topics, and one part for the rest of the topics and the minutes with no main topic, so the whole is all the time of the region.
+          const mins = Politics.topicMinutes(rows)
+          const big = mins.topics.slice(0, 9)
+          const restMin = Math.max(0, mins.total - big.reduce((a, x) => a + x.minutes, 0))
+          const agendaCard = card('', cardHead(t('un.agenda.title'), null, t('un.agenda.info')),
+            Dash.Donut({
+              size: 240,
+              center: { num: fmt.dec(mins.total / 60), cap: t('un.donut.hours') },
+              parts: [...big.map((x) => ({ label: topic(x.topic), value: x.minutes, color: segColor(x.topic), text: t('un.agenda.row', { m: fmt.int(Math.round(x.minutes)), p: fmt.pct(x.minutes / mins.total) }), tip: t('un.agenda.top', { names: x.top.join(', ') }) })),
+                { label: t('un.other'), value: restMin, color: 'var(--bar-track)', text: t('un.agenda.row', { m: fmt.int(Math.round(restMin)), p: fmt.pct(restMin / mins.total) }) }]
+            }))
+
+          // The hours of the six regions, always of all the speeches. The picked region stays marked. One-hue tints: the colors of the slots mean topics on this page.
+          const TINTS = [7, 6, 5, 4, 3, 2].map((i) => `var(--seq-${i})`)
+          const regionStats = REGIONS.map((g) => { const l = d.rows.filter((r) => r.region === g); return { g, speeches: l.length, seconds: l.reduce((a, r) => a + r.seconds, 0), rows: l } }).sort((a, b) => b.seconds - a.seconds)
+          const allSeconds = d.rows.reduce((a, r) => a + r.seconds, 0)
+          const continentCard = card('', cardHead(t('un.continent.title'), null, t('un.continent.info')),
+            Dash.Donut({
+              size: 200,
+              stack: true,
+              pick: region ? regionStats.findIndex((x) => x.g === region) : undefined,
+              center: { num: fmt.dec(allSeconds / 3600), cap: t('un.donut.hours') },
+              parts: regionStats.map((x, i) => ({ label: t(`un.region.${x.g}`), value: x.seconds, color: TINTS[i], text: t('un.continent.row', { h: fmt.dec(x.seconds / 3600), n: fmt.int(x.speeches) }) }))
+            }))
+
+          // What each region talks about: the share of the time of the region on each of the 9 largest topics, colored by how far it is above the share of all regions.
+          const heatTopics = everything.topics.slice(0, 9)
+          const FEW = 5
+          const share = regionStats.map((x) => { const m = Politics.topicMinutes(x.rows); const by = new Map(m.topics.map((e) => [e.topic, e.minutes])); return { ...x, by, total: m.total } })
+          const heatRows = share.map((x) => ({ label: x.speeches < FEW ? `${t(`un.region.${x.g}`)} · ${t('un.heat.few', { n: x.speeches })}` : h('span', { class: x.g === region ? 'un-picked' : null }, t(`un.region.${x.g}`)) }))
+          const heatCard = card('c-12', cardHead(t('un.heat.title'), null, t('un.heat.info')),
+            UI.MatrixChart({
+              caption: t('un.heat.title'), rowHeader: t('un.heat.region'), rows: heatRows, columns: heatTopics.map((x) => ({ label: topic(x.topic) })),
+              cell: (r, c) => {
+                const x = share[r]
+                if (x.speeches < FEW) return { className: 'cell-empty', text: '—' }
+                const mine = (x.by.get(heatTopics[c].topic) || 0) / x.total
+                const all = heatTopics[c].minutes / everything.total
+                return { ...Dash.seq(Math.min(1, mine / all / 4)), text: Dash.pct0(mine), title: t('un.heat.tip', { region: t(`un.region.${x.g}`), topic: topic(heatTopics[c].topic), p: fmt.pct(mine), m: fmt.int(Math.round(x.by.get(heatTopics[c].topic) || 0)) }) }
+              }
+            }),
+            h('p', { class: 'dcard-sub' }, t('un.heat.note', { n: FEW })))
 
           const targets = {}
           // Two names of the data can have one Greek name (for example Western nations and Western countries). The shown name is the key.
@@ -97,10 +130,7 @@
                   r.greece.refers_to.map((x) => h('span', { class: 'pill' }, x))))))
               : h('p', { class: 'dcard-empty' }, t('un.greece.none')))
 
-          // The fingerprint of each speech. The 8 largest topics of all speeches have a fixed color, the domestic affairs are dark gray.
-          const colorOf = new Map(d.agenda.filter((a) => a.topic !== DOMESTIC).slice(0, SLOTS.length).map((a, i) => [a.topic, SLOTS[i]]))
-          colorOf.set(DOMESTIC, 'var(--cat-strong)')
-          const segColor = (k) => colorOf.get(k) || 'var(--bar-muted)'
+          // The fingerprint of each speech, with the colors of the agenda donut.
           const legend = UI.Legend([...[...colorOf.keys()].map((k) => ({ label: topic(k), color: colorOf.get(k) })), { label: t('un.other'), color: 'var(--bar-muted)' }])
           const Print = (r) => {
             const rest = Math.max(0, 1 - r.shares.reduce((a, [, s]) => a + s, 0))
@@ -123,7 +153,7 @@
               ]
             }))
 
-          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, agendaCard, h('div', { class: 'c-5 card-col' }, h('div', { class: 'stats-2x2' }, ...stats), targetCard, greeceCard), tableCard), h('p', { class: 'proto-note' }, t('un.note')))
+          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, h('div', { class: 'c-7 card-col' }, agendaCard, continentCard), h('div', { class: 'c-5 card-col' }, h('div', { class: 'stats-2x2' }, ...stats), targetCard, greeceCard), heatCard, tableCard), h('p', { class: 'proto-note' }, t('un.note')))
         }
         paint()
       }

@@ -128,6 +128,23 @@
 .dash .chart .slice:hover { stroke-width: 22; }
 .donut-wrap { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-4); align-items: center; }
 .donut-wrap .donut { display: block; }
+.dn-wrap { grid-template-columns: auto minmax(0, 1fr); gap: var(--space-6); padding: var(--space-2) 0; }
+.dn { width: 220px; height: 220px; }
+.dn .dn-slice { cursor: default; outline: none; transition: opacity var(--motion-base) var(--ease-out); }
+.dn .dn-slice.is-dim { opacity: 0.3; }
+.dn .dn-slice:focus-visible { stroke: var(--ink); stroke-width: 2; }
+.dash .chart.dn .donut-cap { fill: var(--text-secondary); font-size: 12px; }
+.dn-legend { gap: 0; min-width: 0; }
+.dn-legend .dn-row { padding: 6px 8px; border-radius: 6px; grid-template-columns: 10px minmax(0, 1fr) auto; column-gap: var(--space-3); }
+.dn-row.is-on { background: var(--card-tint); }
+.dn-dot { width: 10px; height: 10px; border-radius: 3px; }
+.dn-row .row-value { white-space: nowrap; }
+.dn-stack .dn-legend .dn-row { grid-template-columns: 10px minmax(0, 1fr); row-gap: 0; }
+.dn-stack .dn-row .row-name { white-space: normal; }
+.dn-stack .dn-row .row-value { grid-column: 2; text-align: left; white-space: normal; }
+.dn-stack .dn-dot { align-self: start; margin-top: 4px; }
+@media (min-width: 1750px) { .dn-stack .dn-legend .dn-row { grid-template-columns: 10px minmax(0, 1fr) auto; } .dn-stack .dn-row .row-name { white-space: nowrap; } .dn-stack .dn-row .row-value { grid-column: auto; text-align: right; white-space: nowrap; } .dn-stack .dn-dot { align-self: center; margin-top: 0; } }
+@media (max-width: 719px) { .dn-wrap { grid-template-columns: minmax(0, 1fr); } .dn { justify-self: center; } }
 .dash .chart .bubble-group { cursor: default; }
 .dash .chart.bubbles { display: block; overflow: hidden; touch-action: manipulation; }
 .dash .chart .net-hub, .dash .chart .net-outlet { cursor: pointer; }

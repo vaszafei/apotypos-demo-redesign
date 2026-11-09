@@ -84,3 +84,5 @@
 .case-form .button { border-radius: var(--pill); }
 .case-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chart .line-gap-text { font-size: 12px; fill: var(--text-secondary); }
+
+.dash .matrix .un-picked { font-weight: 700; }
