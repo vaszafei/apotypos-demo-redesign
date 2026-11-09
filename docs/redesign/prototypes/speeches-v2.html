@@ -7,8 +7,8 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="assets/tokens.css?v=18">
   <link rel="stylesheet" href="assets/app.css?v=62">
-  <link rel="stylesheet" href="assets/dash.css?v=105">
-  <link rel="stylesheet" href="assets/politics.css?v=9">
+  <link rel="stylesheet" href="assets/dash.css?v=106">
+  <link rel="stylesheet" href="assets/politics.css?v=10">
   <script src="assets/page-move.js?v=1"></script>
 </head>
 <body>
@@ -16,10 +16,10 @@
   <script src="assets/icons.js?v=14"></script>
   <script src="assets/messages.js?v=51"></script>
   <script src="assets/messages-v2.js?v=62"></script>
-  <script src="assets/messages-politics.js?v=13"></script>
+  <script src="assets/messages-politics.js?v=14"></script>
   <script src="assets/components.js?v=21"></script>
   <script src="assets/motion.js?v=4"></script>
-  <script src="assets/dash.js?v=31"></script>
+  <script src="assets/dash.js?v=32"></script>
   <script src="assets/politics.js?v=12"></script>
   <script src="assets/shell.js?v=73"></script>
   <script src="data/speeches.js?v=1"></script>
@@ -77,7 +77,7 @@
           const restMin = Math.max(0, mins.total - big.reduce((a, x) => a + x.minutes, 0))
           const agendaCard = card('', cardHead(t('un.agenda.title'), null, t('un.agenda.info')),
             Dash.Donut({
-              size: 240,
+              size: 180,
               center: { num: fmt.dec(mins.total / 60), cap: t('un.donut.hours') },
               parts: [...big.map((x) => ({ label: topic(x.topic), value: x.minutes, color: segColor(x.topic), text: t('un.agenda.row', { m: fmt.int(Math.round(x.minutes)), p: fmt.pct(x.minutes / mins.total) }), tip: t('un.agenda.top', { names: x.top.join(', ') }) })),
                 { label: t('un.other'), value: restMin, color: 'var(--bar-track)', text: t('un.agenda.row', { m: fmt.int(Math.round(restMin)), p: fmt.pct(restMin / mins.total) }) }]
@@ -89,11 +89,10 @@
           const allSeconds = d.rows.reduce((a, r) => a + r.seconds, 0)
           const continentCard = card('', cardHead(t('un.continent.title'), null, t('un.continent.info')),
             Dash.Donut({
-              size: 200,
-              stack: true,
+              size: 150,
               pick: region ? regionStats.findIndex((x) => x.g === region) : undefined,
               center: { num: fmt.dec(allSeconds / 3600), cap: t('un.donut.hours') },
-              parts: regionStats.map((x, i) => ({ label: t(`un.region.${x.g}`), value: x.seconds, color: TINTS[i], text: t('un.continent.row', { h: fmt.dec(x.seconds / 3600), n: fmt.int(x.speeches) }) }))
+              parts: regionStats.map((x, i) => ({ label: t(`un.region.${x.g}`), value: x.seconds, color: TINTS[i], text: t('un.continent.row', { h: fmt.dec(x.seconds / 3600), p: fmt.pct(x.seconds / allSeconds) }), tip: t('un.continent.tip', { n: fmt.int(x.speeches) }) }))
             }))
 
           // What each region talks about: the share of the time of the region on each of the 9 largest topics, colored by how far it is above the share of all regions.
@@ -101,7 +100,7 @@
           const FEW = 5
           const share = regionStats.map((x) => { const m = Politics.topicMinutes(x.rows); const by = new Map(m.topics.map((e) => [e.topic, e.minutes])); return { ...x, by, total: m.total } })
           const heatRows = share.map((x) => ({ label: x.speeches < FEW ? `${t(`un.region.${x.g}`)} · ${t('un.heat.few', { n: x.speeches })}` : h('span', { class: x.g === region ? 'un-picked' : null }, t(`un.region.${x.g}`)) }))
-          const heatCard = card('c-12', cardHead(t('un.heat.title'), null, t('un.heat.info')),
+          const heatCard = card('un-heat', cardHead(t('un.heat.title'), null, t('un.heat.info')),
             UI.MatrixChart({
               caption: t('un.heat.title'), rowHeader: t('un.heat.region'), rows: heatRows, columns: heatTopics.map((x) => ({ label: topic(x.topic) })),
               cell: (r, c) => {
@@ -113,6 +112,7 @@
               }
             }),
             h('p', { class: 'dcard-sub' }, t('un.heat.note', { n: FEW })))
+          heatCard.querySelector('table').classList.add('matrix-turned')
 
           const targets = {}
           // Two names of the data can have one Greek name (for example Western nations and Western countries). The shown name is the key.
@@ -153,7 +153,7 @@
               ]
             }))
 
-          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, h('div', { class: 'c-7 card-col' }, agendaCard, continentCard), h('div', { class: 'c-5 card-col' }, h('div', { class: 'stats-2x2' }, ...stats), targetCard, greeceCard), heatCard, tableCard), h('p', { class: 'proto-note' }, t('un.note')))
+          content.replaceChildren(bar, h('div', { class: 'dash-grid' }, h('div', { class: 'c-7 card-col' }, agendaCard, continentCard, heatCard), h('div', { class: 'c-5 card-col' }, h('div', { class: 'stats-2x2' }, ...stats), targetCard, greeceCard), tableCard), h('p', { class: 'proto-note' }, t('un.note')))
         }
         paint()
       }
