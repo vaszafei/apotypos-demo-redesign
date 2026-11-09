@@ -16,7 +16,7 @@
 :root[data-theme="press"] .home-mast { letter-spacing: -0.01em; }
 
 /* Labels, kickers, captions and sources: the mono of the slide headers, in capitals. */
-:root[data-theme="press"] :is(.page-kicker, .hero-kicker, .dstat-label, .kpi-label, .rows-caption, .dcard-sub, .page-meta, .page-footer, .tooltip-label, .global-search-label, .home-topic-label, .flow-label, .ecard-meta, .quote-meta, .home-day-meta) {
+:root[data-theme="press"] :is(.page-kicker, .hero-kicker, .dstat-label, .kpi-label, .page-footer, .tooltip-label, .global-search-label, .home-topic-label, .flow-label) {
   font-family: var(--font-mono); font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; font-size: 11.5px; color: var(--text-secondary);
 }
 :root[data-theme="press"] .hero-kicker::before { content: none; }
@@ -58,3 +58,10 @@
 
 /* Square corners everywhere, as in the slides. The swatches of the theme switch stay round. */
 :root[data-theme="press"] :where(body *:not(svg, svg *, .theme-swatch, .spinner)) { border-radius: 0 !important; }
+
+/* Sentences (card subtitles, captions, meta lines) stay in the text font: mono capitals are hard to read as a sentence. */
+:root[data-theme="press"] :is(.rows-caption, .dcard-sub, .page-meta, .ecard-meta, .quote-meta, .home-day-meta) { color: var(--text-secondary); }
+
+/* Lines a little heavier, so each topic holds on the gray paper. */
+:root[data-theme="press"] .line-series { stroke-width: 2.25px; }
+:root[data-theme="press"] .line-series[stroke-width="2.5"] { stroke-width: 3px; }

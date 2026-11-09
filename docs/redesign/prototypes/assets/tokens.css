@@ -314,7 +314,10 @@
   --divider: 2px solid var(--ink);
   --series-1: #40403e; --series-other: #8e8e8a;
   --emph-less: #a8480a; --side-a: #1f63b5; --side-b: #9e4f14;
-  /* The categorical, sequential and diverging colors of the charts stay those of "paper": a gray ramp did not tell groups, topics and stances apart. */
+  /* The charts keep the hues of "paper" (a gray ramp did not tell groups, topics and stances apart), a step darker so the light ones hold on the gray paper. */
+  --cat-0: #6e6c66;
+  --cat-1: #1d5fb0; --cat-2: #b8461a; --cat-3: #0e7a52; --cat-4: #8a6100;
+  --cat-5: #b0346d; --cat-6: #1f6b1f; --cat-7: #5040b8; --cat-8: #b32625; --cat-9: #3e4d60;
   --target-bg: #e8f23b; --notice-bg: #ecf59a; --notice-edge: #0b0b0b; --notice-text: #2b2b00;
   --skeleton: #cacac6; --skeleton-2: #d1d1cd; --skeleton-3: #d4d4d0;
   --radius: 0px; --radius-roomy: 0px;
