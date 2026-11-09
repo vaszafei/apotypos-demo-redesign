@@ -71,11 +71,7 @@ const current = (to: string) => (route.path === to ? 'page' : undefined)
             </li>
           </ul>
         </nav>
-        <div class="global-search">
-          <button type="button" class="search-button" :aria-label="t('shell.search')" :title="t('shell.search')" aria-haspopup="dialog" aria-expanded="false" aria-keyshortcuts="/">
-            <AppIcon name="magnifying-glass" class="icon search-button-icon" /><span class="search-button-label" aria-hidden="true">{{ t('shell.search') }}</span><kbd class="global-search-key" aria-hidden="true">/</kbd>
-          </button>
-        </div>
+        <GlobalSearch />
         <div class="header-actions">
           <AuthLinks cls="auth-links" />
           <LangSwitch />
