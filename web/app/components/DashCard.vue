@@ -1,11 +1,11 @@
 <script setup lang="ts">
 // Dash.card + Dash.cardHead: a card with its title and the info popover.
-defineProps<{ title: string, info?: string, delay?: number, card?: string }>()
+defineProps<{ title: string, info?: string, card?: string }>()
 const { t } = useI18n()
 </script>
 
 <template>
-  <section class="dcard m-play" :data-card="card" :style="{ '--m-delay': `${delay ?? 100}ms` }">
+  <section class="dcard" :data-card="card">
     <div class="dcard-head">
       <h2 class="dcard-title">{{ title }}</h2>
       <div class="dcard-tools">
