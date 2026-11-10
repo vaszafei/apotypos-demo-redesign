@@ -60,9 +60,11 @@ export const WEEK_DAYS = 7
 export const HOME_WEBS = 9
 export const HOME_WEBS_PHONE = 4
 
-// The best stories of the latest week: the most articles in the last seven days, generic stories left out, in the order of Home.rangeInfo.
-export const bestOfWeek = (ix: HomeIndex, count = HOME_WEBS): Story[] => {
-  const last = ix.dates.length - 1
+// The best stories of the latest week: the most articles in the last seven days up to `last`, generic stories left out, in the order of Home.rangeInfo.
+// `last` is the last day that has topics (the coded data ends before the volume does), as in the static hero, so the webs have their topic colours;
+// without it it is the last day of the data.
+export const bestOfWeek = (ix: HomeIndex, count = HOME_WEBS, lastDay = ix.dates.length - 1): Story[] => {
+  const last = Math.min(Math.max(0, lastDay), ix.dates.length - 1)
   const info = homeRange(ix, Math.max(0, last - WEEK_DAYS + 1), last)
   return info ? info.list.slice(0, count).map(r => r.s) : []
 }

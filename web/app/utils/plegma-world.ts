@@ -160,9 +160,15 @@ export const arcsOf = (world: PlegmaWorld, issue: number): PlegmaArc[] => {
 export const themeFrameSet = (world: PlegmaWorld, issue: number, count = PLEGMA_THEME_ARCS) =>
   themeStories(world, issue).slice().sort((a, b) => b.n - a.n || a.id - b.id).slice(0, count)
 
-// The stories of the best of the latest week, with their places.
-export const homeWebs = (world: PlegmaWorld, ix: HomeIndex, count?: number) =>
-  bestOfWeek(ix, count).map(s => world.byId.get(s.id)).filter((s): s is PlegmaStory => !!s)
+// The stories of the best of the latest week, with their places. A story that began long before the week sits far from the others on the time axis and would
+// pull the framing out to a zoom where no web can be read, so the webs are the best stories that began in the week (or all of the best, if fewer than three did).
+export const homeWebs = (world: PlegmaWorld, ix: HomeIndex, count = 9, lastDay = ix.dates.length - 1) => {
+  const last = Math.min(Math.max(0, lastDay), ix.dates.length - 1)
+  const first = Math.max(0, last - 6)
+  const best = bestOfWeek(ix, 80, lastDay).map(s => world.byId.get(s.id)).filter((s): s is PlegmaStory => !!s)
+  const fresh = best.filter(s => s.d0 >= first)
+  return (fresh.length >= 3 ? fresh : best).slice(0, count)
+}
 
 // How a story is drawn at a zoom: 0 a soft dot, 1 a web of dots without lines, 2 a web with its lines.
 // Far away only the strong stories (picked, compared, of the theme, on Home) are webs; nearer the larger ones; nearest every story of 20 articles or more.

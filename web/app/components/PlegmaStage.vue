@@ -51,6 +51,15 @@ const name = (s: PlegmaStory) => (locale.value === 'en' && s.en) || s.el
 const colourOf = (s: PlegmaStory) => (s.slot > 0 ? cats[s.slot - 1] ?? ink : ink)
 const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x))
 
+// On Home the map is alive: every story drifts slowly on its own path, and the dots of a web wander on slow waves, so the webs breathe (the static hero's motion).
+// It is drawn only, a story keeps its place in the world; with reduced motion there is none.
+const driftSpot = { x: 0, y: 0 }
+const drift = (s: PlegmaStory, sec: number) => {
+  driftSpot.x = Math.sin(sec * 0.13 + s.id * 0.7) * 14 + Math.sin(sec * 0.31 + s.id * 1.9) * 5
+  driftSpot.y = Math.cos(sec * 0.11 + s.id * 1.1) * 11 + Math.cos(sec * 0.27 + s.id * 0.6) * 4
+  return driftSpot
+}
+
 // A story or a theme in view keeps a clear space around its web: the other stories near it are pushed out a little (a place on the screen, not in the world),
 // so the web does not sit in a crowd. Inside the radius R they are moved to between R and 1.4 R; outside it the push dies away.
 const CLEAR_PAD = 30
@@ -104,9 +113,11 @@ const fly = () => {
 }
 
 // ---- drawing ----
-const arcOf = (ctx2: CanvasRenderingContext2D, a: PlegmaStory, b: PlegmaStory, sign: number) => {
+const arcOf = (ctx2: CanvasRenderingContext2D, a: PlegmaStory, b: PlegmaStory, sign: number, sec = 0) => {
   const p = { ...toScreen(cam, width, height, placed(a)) }
-  const q = toScreen(cam, width, height, placed(b))
+  if (sec) { const d = drift(a, sec); p.x += d.x; p.y += d.y }
+  const q = { ...toScreen(cam, width, height, placed(b)) }
+  if (sec) { const d = drift(b, sec); q.x += d.x; q.y += d.y }
   const dx = q.x - p.x
   const dy = q.y - p.y
   ctx2.moveTo(p.x, p.y)
@@ -157,7 +168,9 @@ const draw = (now: number) => {
     const alpha = strong ? 1 : sameTheme ? 0.6 : dim
     // In a view the story, its pair, the stories of the theme and the one under the pointer are crisp; the rest is a blurred background of dots with no lines.
     const crisp = !onHome && (isFocus || core.has(s) || s === hover)
-    const level = onHome || crisp ? drawLevel(s, z, strong, isFocus) : (Math.min(drawLevel(s, z, strong, isFocus), 1) as 0 | 1 | 2)
+    const base = drawLevel(s, z, strong, isFocus)
+    // On Home the webs of the week have their lines at the zoom that frames them all, and are drawn no smaller than at zoom 1.1 so that each one reads.
+    const level = onHome ? (base > 0 && homeSet.has(s) ? 2 : base) : crisp ? base : (Math.min(base, 1) as 0 | 1 | 2)
     // Zoomed far out, the smallest stories are faint specks that only cost drawing time: leave them out until the camera is nearer.
     if (level === 0 && z < 0.3 && !strong && !sameTheme && s.n < PLEGMA_FAR_MIN) continue
     if (level === 0) {
@@ -166,8 +179,9 @@ const draw = (now: number) => {
       let bucket = dotBuckets[key]
       if (!bucket) { bucket = { colour: colourOf(s), alpha, path: new Path2D() }; dotBuckets[key] = bucket }
       const where = placed(s)
-      const px = (where.x - cam.x) * z + width / 2
-      const py = (where.y - cam.y) * z + height / 2
+      const dd = onHome && sec ? drift(s, sec) : null
+      const px = (where.x - cam.x) * z + width / 2 + (dd ? dd.x : 0)
+      const py = (where.y - cam.y) * z + height / 2 + (dd ? dd.y : 0)
       bucket.path.moveTo(px + r, py)
       bucket.path.arc(px, py, r, 0, TAU)
     } else drawn.push({ s, level, alpha, focus: isFocus, crisp })
@@ -182,7 +196,13 @@ const draw = (now: number) => {
     const w = webOf(world, s, focus ? PLEGMA_FOCUS_DOTS : 0)
     const p = toScreen(cam, width, height, placed(s))
     const col = colourOf(s)
-    const at = w.offs.map((o, i) => [p.x + o.x * z + Math.sin(sec * 0.55 + i * 1.7 + s.id) * 1.6, p.y + o.y * z + Math.cos(sec * 0.47 + i * 2.3 + s.id) * 1.6] as const)
+    // A web breathes a little in a view, and more on Home, where it also drifts.
+    const amp = onHome ? 4 : 1.6
+    const dd = onHome && sec ? drift(s, sec) : null
+    const ox = p.x + (dd ? dd.x : 0)
+    const oy = p.y + (dd ? dd.y : 0)
+    const zw = onHome ? Math.max(z, 1.1) : z
+    const at = w.offs.map((o, i) => [ox + o.x * zw + Math.sin(sec * 0.55 + i * 1.7 + s.id) * amp + (onHome ? Math.sin(sec * 0.9 + i * 3.1 + s.id) * 2.5 : 0), oy + o.y * zw + Math.cos(sec * 0.47 + i * 2.3 + s.id) * amp + (onHome ? Math.cos(sec * 0.8 + i * 2.7 + s.id) * 2.5 : 0)] as const)
     c.fillStyle = col
     c.strokeStyle = col
     if (level === 2) {
@@ -222,7 +242,7 @@ const draw = (now: number) => {
     a.strokeStyle = slot ? cats[slot - 1] ?? ink : ink
     a.globalAlpha = onHome ? 0.5 : 0.55
     a.beginPath()
-    for (const arc of arcs) arcOf(a, arc.a, arc.b, arc.sign)
+    for (const arc of arcs) arcOf(a, arc.a, arc.b, arc.sign, onHome ? sec : 0)
     a.stroke()
   }
   a.setLineDash([])
@@ -277,7 +297,9 @@ const pickAt = (x: number, y: number, reach: number) => {
   let bestDistance = reach
   for (const s of visible(reach / cam.z + 20)) {
     if (s.n < PLEGMA_WEB_MIN && s !== focusStory()) continue
-    const p = toScreen(cam, width, height, placed(s))
+    const p = { ...toScreen(cam, width, height, placed(s)) }
+    // On Home the stories drift (draw), so the pointer finds them where they are drawn.
+    if (!plegma.focus && !reduced.value) { const o = drift(s, performance.now() / 1000); p.x += o.x; p.y += o.y }
     const d = Math.hypot(p.x - x, p.y - y)
     if (d < bestDistance) { bestDistance = d; best = s }
   }
@@ -327,7 +349,9 @@ const start = () => {
   world = buildWorld(stories.data.value!, home.data.value!, file.data.value!)
   const ix = homeIndex({ stories: stories.data.value!, detail: null })
   byX = world.stories.slice().sort((a, b) => a.x - b.x)
-  webs = homeWebs(world, ix, phone.value ? HOME_WEBS_PHONE : HOME_WEBS)
+  // The latest week that has topics, so the webs have their colours (the October stories have no topic): the last day with a count in the topics' days.
+  const lastCoded = home.data.value!.issueDaily.reduce((m, row) => Math.max(m, row.findLastIndex(v => v !== null)), 0)
+  webs = homeWebs(world, ix, phone.value ? HOME_WEBS_PHONE : HOME_WEBS, lastCoded)
   readTokens()
   // A cold open lands settled: no flight (R14).
   const to = targetCamera()
