@@ -17,7 +17,7 @@ Branch `claude/nuxt-outlet`. The outlet page (`outlet-v2.html`, four tabs) is a 
   - Proto Thema (a Greek-set outlet): overview 0, topics 0, stories 0, people 15 px of 1.9 million (0.001%).
   - Rosa.gr (not in the Greek set): overview 0, topics 0, stories 0, people 14 px (0.001%). No `slug`: 0.
   - The 14 to 24 px of the people tab are one glyph of a name in the portrayal list (x 975 to 980); not found why (text node split in the static `[name, ' ', span]`).
-  - Unknown slug `zzzz`: 498 px (0.038%) before the last fix, in the trail's last item (the static page shows the section name there); fixed with the same title, not run again as a pixel diff.
+  - Unknown slug `zzzz` (the 404): 498 px (0.038%) at first, in the trail's last item (the static page shows the section name there); after giving the page the same title, 0 on all screens.
   - After the shared pieces changed: `/groups`, `/media`, `/story?id=100`, `/topic?i=3`, `/group?g=skai` all 0 on all screens.
 - Tooltips: every hover target (`.dbar`, `.hbar`, `.spark`, `.stacked`, rose slices, line charts) of 5 outlets x 4 tabs (Proto Thema, Rosa.gr, 10ccbbf6b4, 57ad7f4ef5): 14 / 11 / 0 / up to 74 targets, same count and same text as the static page.
 - Client navigation (built site): a tile on `/media`, an outlet link on `/story`, on `/topic`, a related outlet and its group on the outlet page, and the search (`Kathimerini` + Enter) all go to `/outlet?slug=` with no document load; the trail and the document title show the outlet name; the tabs change the URL with no document load; English shows the English tabs. No console warnings or errors.
