@@ -7,10 +7,12 @@ export interface PlegmaPoint { x: number, y: number }
 export interface PlegmaBox { cx: number, cy: number, w: number, h: number }
 export interface PlegmaFlight { a: PlegmaCamera, b: PlegmaCamera, t0: number, dur: number }
 
-// The part of the screen the cards leave free, as fractions of its width and height: the top-left area.
-export const PLEGMA_REGION = { x0: 0.02, y0: 0.22, x1: 0.58, y1: 0.64 }
+// The part of the screen the cards leave free, as fractions of its width and height: the top-left area. It is the default: a story view measures the free
+// area it really has (PlegmaStoryView.vue, stores/plegma.ts `region`) and the camera frames that.
+export interface PlegmaRegion { x0: number, y0: number, x1: number, y1: number }
+export const PLEGMA_REGION: PlegmaRegion = { x0: 0.02, y0: 0.22, x1: 0.40, y1: 0.64 }
 // The nearest zoom, the zoom of a story's web, and the farthest zoom of a framing.
-export const PLEGMA_Z_FOCUS = 3
+export const PLEGMA_Z_FOCUS = 2.4
 export const PLEGMA_Z_THEME = 1.6
 export const PLEGMA_Z_MIN = 0.1
 // Two compared stories are framed together only while the zoom stays above this; farther apart the focused story keeps its framing and the other is a marker.
@@ -22,11 +24,11 @@ export const PLEGMA_FLIGHT_MAX = 3600
 const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x))
 const easeInOut = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 
-export const regionBox = (w: number, h: number): PlegmaBox => ({
-  cx: (PLEGMA_REGION.x0 + PLEGMA_REGION.x1) / 2 * w,
-  cy: (PLEGMA_REGION.y0 + PLEGMA_REGION.y1) / 2 * h,
-  w: (PLEGMA_REGION.x1 - PLEGMA_REGION.x0) * w,
-  h: (PLEGMA_REGION.y1 - PLEGMA_REGION.y0) * h
+export const regionBox = (w: number, h: number, region: PlegmaRegion = PLEGMA_REGION): PlegmaBox => ({
+  cx: (region.x0 + region.x1) / 2 * w,
+  cy: (region.y0 + region.y1) / 2 * h,
+  w: (region.x1 - region.x0) * w,
+  h: (region.y1 - region.y0) * h
 })
 export const screenBox = (w: number, h: number): PlegmaBox => ({ cx: w / 2, cy: h / 2, w, h })
 
@@ -49,15 +51,15 @@ export const fitCamera = (points: PlegmaPoint[], box: PlegmaBox, w: number, h: n
 }
 
 // One story at the center of the map region, at the zoom of a web.
-export const frameStory = (s: PlegmaPoint, w: number, h: number) => fitCamera([s], regionBox(w, h), w, h, PLEGMA_Z_FOCUS)
+export const frameStory = (s: PlegmaPoint, w: number, h: number, region?: PlegmaRegion) => fitCamera([s], regionBox(w, h, region), w, h, PLEGMA_Z_FOCUS)
 // The stories of a theme (its largest ones) inside the map region.
-export const frameTheme = (stories: PlegmaPoint[], w: number, h: number) => fitCamera(stories, regionBox(w, h), w, h, PLEGMA_Z_THEME)
+export const frameTheme = (stories: PlegmaPoint[], w: number, h: number, region?: PlegmaRegion) => fitCamera(stories, regionBox(w, h, region), w, h, PLEGMA_Z_THEME)
 // The best stories of the week across the whole screen.
 export const frameHome = (stories: PlegmaPoint[], w: number, h: number) => fitCamera(stories, screenBox(w, h), w, h, 1, 0.8)
 // A pair in the map region. Far apart, the zoom to hold both is too small to read, so the camera keeps the first story and `together` is false.
-export const framePair = (a: PlegmaPoint, b: PlegmaPoint, w: number, h: number): { camera: PlegmaCamera, together: boolean } => {
-  const both = fitCamera([a, b], regionBox(w, h), w, h, PLEGMA_Z_FOCUS, 0.7)
-  return both.z >= PLEGMA_PAIR_Z ? { camera: both, together: true } : { camera: frameStory(a, w, h), together: false }
+export const framePair = (a: PlegmaPoint, b: PlegmaPoint, w: number, h: number, region?: PlegmaRegion): { camera: PlegmaCamera, together: boolean } => {
+  const both = fitCamera([a, b], regionBox(w, h, region), w, h, PLEGMA_Z_FOCUS, 0.7)
+  return both.z >= PLEGMA_PAIR_Z ? { camera: both, together: true } : { camera: frameStory(a, w, h, region), together: false }
 }
 
 // A world point on the screen, and a screen point in the world.

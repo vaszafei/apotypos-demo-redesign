@@ -86,10 +86,11 @@ const targetCamera = (): PlegmaCamera | null => {
   const story = focusStory()
   if (story) {
     const other = plegma.compare !== null ? world.byId.get(plegma.compare) : null
-    return other ? framePair(story, other, width, height).camera : frameStory(story, width, height)
+    const region = plegma.region ?? undefined
+    return other ? framePair(story, other, width, height, region).camera : frameStory(story, width, height, region)
   }
   const issue = focusIssue()
-  if (issue !== null) return frameTheme(themeFrameSet(world, issue), width, height)
+  if (issue !== null) return frameTheme(themeFrameSet(world, issue), width, height, plegma.region ?? undefined)
   return webs.length ? frameHome(webs, width, height) : null
 }
 
@@ -345,6 +346,14 @@ onMounted(() => {
 useEventListener(document, 'visibilitychange', () => { if (document.hidden) halt(); else kick() })
 // The route puts something else in focus: fly there. From a page with no map the flight starts from where the camera was left.
 watch(() => [plegma.focus, plegma.compare], () => fly(), { deep: true })
+// The view measured the free area again (its title grew, the window changed): the camera frames the new area, inside a flight from where it is.
+watch(() => plegma.region, () => {
+  const to = targetCamera()
+  if (!to || plegma.focus === null) return
+  if (flight) flight = redirectFlight(flight, cam, to, performance.now(), width, reduced.value)
+  else Object.assign(cam, to)
+  kick()
+}, { deep: true })
 watch(() => plegma.active, (active) => {
   if (!active) { halt(); leave(); return }
   const to = targetCamera()

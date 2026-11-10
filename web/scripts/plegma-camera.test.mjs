@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { regionBox, frameStory, frameTheme, frameHome, framePair, toScreen, poseAt, startFlight, cameraAt, redirectFlight, flightDone, PLEGMA_REGION } from '../app/utils/plegma-camera.ts'
+import { regionBox, frameStory, frameTheme, frameHome, framePair, toScreen, poseAt, startFlight, cameraAt, redirectFlight, flightDone, PLEGMA_REGION, PLEGMA_Z_FOCUS } from '../app/utils/plegma-camera.ts'
 
 const W = 1440
 const H = 900
@@ -14,7 +14,7 @@ test('a story is framed at the center of the top-left map region', () => {
   near(at.x, box.cx)
   near(at.y, box.cy)
   assert.ok(box.cx < W / 2 && box.cy < H / 2)
-  assert.equal(cam.z, 3)
+  assert.equal(cam.z, PLEGMA_Z_FOCUS)
 })
 
 test('a theme is framed with all its stories inside the map region', () => {

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import type { PlegmaRegion } from '../utils/plegma-camera.ts'
 import { plegmaFocusOf, samePlegmaFocus } from '../utils/plegma-route.ts'
 import type { PlegmaFocus } from '../utils/plegma-route.ts'
 
@@ -18,6 +19,8 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const compare = ref<number | null>(null)
   // The camera has arrived at the focus (no flight under way): the cards of a view arrive after it lands. A new focus clears it until the stage says it landed.
   const landed = ref(true)
+  // The free area of the screen the view of a story leaves for the map (fractions of the stage), measured by the view; null until it is: the camera uses its default.
+  const region = ref<PlegmaRegion | null>(null)
 
   const syncRoute = (route: { path: string, query: Record<string, unknown>, meta: { plegma?: boolean } }) => {
     active.value = route.meta.plegma === true
@@ -32,7 +35,8 @@ export const usePlegmaStore = defineStore('plegma', () => {
   }
   const stepTo = (index: number | null) => { day.value = index }
   const compareWith = (id: number | null) => { compare.value = id }
+  const setRegion = (value: PlegmaRegion | null) => { region.value = value }
   const setLanded = (value: boolean) => { landed.value = value }
 
-  return { active, focus, day, compare, landed, syncRoute, stepTo, compareWith, setLanded }
+  return { active, focus, day, compare, landed, region, syncRoute, stepTo, compareWith, setLanded, setRegion }
 })
