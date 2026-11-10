@@ -8,7 +8,7 @@ export interface PlegmaBox { cx: number, cy: number, w: number, h: number }
 export interface PlegmaFlight { a: PlegmaCamera, b: PlegmaCamera, t0: number, dur: number }
 
 // The part of the screen the cards leave free, as fractions of its width and height: the top-left area.
-export const PLEGMA_REGION = { x0: 0.02, y0: 0.20, x1: 0.50, y1: 0.60 }
+export const PLEGMA_REGION = { x0: 0.02, y0: 0.22, x1: 0.58, y1: 0.64 }
 // The nearest zoom, the zoom of a story's web, and the farthest zoom of a framing.
 export const PLEGMA_Z_FOCUS = 3
 export const PLEGMA_Z_THEME = 1.6

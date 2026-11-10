@@ -9,7 +9,7 @@ const v = props.view
 
 <template>
   <DashCard :title="t('story.daily.title')" :info="t('story.daily.info')">
-    <DayBars :dates="v.shown.value" :series="v.series.value" :height="200" :caption="t('outlet2.daily.aria')" :tip-of="v.dailyTip" :selectable="false" />
+    <DayBars :dates="v.shown.value" :series="v.series.value" :height="130" :caption="t('outlet2.daily.aria')" :tip-of="v.dailyTip" :selectable="false" />
     <ChartLegend :items="v.series.value.map(x => ({ label: x.name, color: x.color }))" />
   </DashCard>
 </template>

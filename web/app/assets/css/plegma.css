@@ -1,30 +1,40 @@
 /* The Plegma behind the pages (components/PlegmaStage.vue): fixed under the header, behind the page, so the page stays above it. */
 .plegma-stage { position: fixed; inset: 64px 0 0 0; z-index: -1; pointer-events: none; }
 .plegma-stage[hidden] { display: none; }
-.plegma-canvas { display: block; width: 100%; height: 100%; }
+.plegma-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+/* In a view of a story or a theme the background of the map is a little out of focus, so the web in view stands out; Home stays sharp. */
+.plegma-canvas-back { transition: filter 500ms var(--ease-out); }
+.plegma-stage.is-view .plegma-canvas-back { filter: blur(1.4px); }
 
 /* The story view, an Orbit (components/plegma/PlegmaStoryView.vue): the title above the map region at the top left, two cards on the right, two below the map.
-   The layer takes no pointer; only a card, the title and the chips do, so the map region and the gaps pass the pointer to the stage (KTD8). */
-.plegma-orbit { position: fixed; inset: 64px 0 0 0; z-index: 2; display: flex; gap: var(--space-3); padding: 48px var(--space-5) var(--space-4); pointer-events: none; }
-.orbit-left { flex: 0 0 calc(50% - var(--space-5)); min-width: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto minmax(0, 1fr) minmax(220px, 36%); gap: var(--space-3); }
-.orbit-right { flex: 1; min-width: 0; display: grid; grid-template-rows: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+   The layer takes no pointer; only a card, the title and the chips do, so the map region and the gaps pass the pointer to the stage (KTD8).
+   The cards are small and flat, with the page's own surface and border, and they size to their content up to a limit; what does not fit scrolls inside. */
+.plegma-orbit { position: fixed; inset: 64px 0 0 0; z-index: 2; display: flex; justify-content: space-between; gap: var(--space-3); padding: 48px var(--space-5) var(--space-4); pointer-events: none; }
+.orbit-left { flex: 0 0 auto; min-width: 0; width: min(620px, 46%); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto minmax(0, 1fr) minmax(0, 30%); gap: var(--space-2); }
+.orbit-right { flex: 0 0 clamp(320px, 30vw, 440px); min-width: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.orbit-right .plegma-card { flex: 0 1 auto; max-height: calc(50% - var(--space-1)); }
 .plegma-title { grid-column: 1 / -1; margin: 0; justify-self: start; max-width: 100%; pointer-events: auto; }
 .plegma-title.entity-grid { margin-top: 0; }
-.plegma-title .ecard { background: var(--surface-raised); border-color: var(--border); box-shadow: 0 2px 10px color-mix(in srgb, var(--shade-black) 8%, transparent); }
+.plegma-title .ecard { background: var(--surface-page); border-color: var(--border); }
 .orbit-map { grid-column: 1 / -1; display: flex; align-items: flex-end; min-height: 0; }
 .plegma-dock { display: flex; flex-wrap: wrap; gap: var(--space-2); pointer-events: auto; }
-.plegma-chip { padding: 4px 12px; font: inherit; font-size: var(--text-caption); color: var(--text-primary); background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; }
+.plegma-chip { padding: 2px 10px; font: inherit; font-size: var(--text-caption); color: var(--text-primary); background: var(--surface-page); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; }
 .plegma-chip:hover { border-color: var(--ink); }
-.plegma-chip[aria-pressed="true"] { color: var(--surface-raised); background: var(--ink); border-color: var(--ink); }
+.plegma-chip[aria-pressed="true"] { color: var(--surface-page); background: var(--ink); border-color: var(--ink); }
 
-.plegma-card { min-width: 0; min-height: 0; overflow: auto; pointer-events: auto; background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 2px 10px color-mix(in srgb, var(--shade-black) 8%, transparent); opacity: 0; transform: translate(var(--from-x, 0), var(--from-y, 0)); transition: opacity var(--motion-slow, 380ms) var(--ease-out) calc(var(--i) * 120ms), transform var(--motion-slow, 380ms) var(--ease-out) calc(var(--i) * 120ms); }
+.plegma-card { --card-pad: var(--space-2) var(--space-3); --card-gap: 4px; min-width: 0; min-height: 0; overflow: auto; pointer-events: auto; background: var(--surface-page); border: 1px solid var(--border); border-radius: var(--radius); opacity: 0; transform: translate(var(--from-x, 0), var(--from-y, 0)); transition: opacity var(--motion-slow, 360ms) var(--ease-out) calc(var(--i) * 120ms), transform var(--motion-slow, 360ms) var(--ease-out) calc(var(--i) * 120ms); }
 .plegma-card > .dcard { border-color: transparent; }
+.plegma-card .dcard-head { min-height: 20px; }
+.plegma-card .rows-related li { padding: 3px 0; }
+.plegma-card .how-panel .rows-caption { margin-top: var(--space-2); }
 .plegma-card.at-0, .plegma-card.at-1 { --from-x: 60px; }
 .plegma-card.at-2, .plegma-card.at-3 { --from-y: 50px; grid-row: 3; }
 .plegma-card.at-2 { grid-column: 1; }
 .plegma-card.at-3 { grid-column: 2; }
 .plegma-card.is-open { z-index: 1; }
 .plegma-orbit.is-in .plegma-card { opacity: 1; transform: none; }
+.plegma-card .sun-wrap { grid-template-columns: minmax(0, 1fr); }
+.plegma-card .sun-wrap .donut { justify-self: center; grid-row: 1; }
 .plegma-card .how-grid-2 { grid-template-columns: minmax(0, 1fr); }
 @media (prefers-reduced-motion: reduce) { .plegma-card { transition: none; transform: none; } }
 
@@ -62,3 +72,7 @@ html[data-search-fly] .home-hero-search .search-button { visibility: hidden; }
 .plegma-orbit .plegma-title, .plegma-orbit .plegma-dock { opacity: 0; transition: opacity var(--motion-slow, 360ms) var(--ease-out); }
 .plegma-orbit.is-in .plegma-title, .plegma-orbit.is-in .plegma-dock { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { .plegma-orbit .plegma-title, .plegma-orbit .plegma-dock { transition: none; } }
+
+/* A small card lists the related stories by name and articles; the picture of each would leave the name no room. */
+.plegma-card .rows-related li { grid-template-columns: minmax(0, 1fr) auto; }
+.plegma-card .rows-related li > svg { display: none; }

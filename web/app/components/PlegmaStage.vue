@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useEventListener, useMediaQuery } from '@vueuse/core'
+import type { PlegmaPoint } from '~/utils/plegma-camera'
 import { cameraAt, flightDone, frameHome, framePair, frameStory, frameTheme, redirectFlight, toScreen } from '~/utils/plegma-camera'
 import type { PlegmaCamera, PlegmaFlight } from '~/utils/plegma-camera'
 import { arcsOf, buildWorld, drawLevel, homeWebs, PLEGMA_FAR_MIN, PLEGMA_FOCUS_DOTS, PLEGMA_WEB_MIN, themeFrameSet, webOf } from '~/utils/plegma-world'
@@ -18,6 +19,7 @@ const reduced = useMediaQuery('(prefers-reduced-motion: reduce)')
 const pointerFine = useMediaQuery('(hover: hover) and (pointer: fine)')
 const phone = useMediaQuery('(max-width: 759px)')
 const canvas = ref<HTMLCanvasElement>()
+const canvasFocus = ref<HTMLCanvasElement>()
 
 const stories = useFixtureLazy<PlegmaStoriesFile>('stories', { required: ['dates', 'issues', 'stories'] })
 const home = useFixtureLazy<PlegmaHomeFile>('home', { required: ['issues', 'issueDaily'] })
@@ -26,6 +28,7 @@ const file = useFixtureLazy<PlegmaFile>('plegma', { required: ['places', 'world'
 let world: PlegmaWorld | null = null
 let byX: PlegmaStory[] = []
 let ctx: CanvasRenderingContext2D | null = null
+let ctxFocus: CanvasRenderingContext2D | null = null
 let width = 0
 let height = 0
 let dpr = 1
@@ -47,6 +50,25 @@ const coreOf = (issue: number) => {
 const name = (s: PlegmaStory) => (locale.value === 'en' && s.en) || s.el
 const colourOf = (s: PlegmaStory) => (s.slot > 0 ? cats[s.slot - 1] ?? ink : ink)
 const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x))
+
+// A story or a theme in view keeps a clear space around its web: the other stories near it are pushed out a little (a place on the screen, not in the world),
+// so the web does not sit in a crowd. Inside the radius R they are moved to between R and 1.4 R; outside it the push dies away.
+const CLEAR_PAD = 30
+const CLEAR_PUSH = 0.4
+let push: { s: PlegmaStory, r: number } | null = null
+const spot = { x: 0, y: 0 }
+const placed = (s: PlegmaStory): PlegmaPoint => {
+  if (!push || s === push.s) return s
+  const dx = s.x - push.s.x
+  const dy = s.y - push.s.y
+  const d = Math.hypot(dx, dy)
+  const r = push.r
+  if (d >= r * 5 || d === 0) return s
+  const moved = d < r ? r + (d / r) * r * CLEAR_PUSH : d + r * CLEAR_PUSH * Math.exp(-(d - r) / r)
+  spot.x = push.s.x + (dx / d) * moved
+  spot.y = push.s.y + (dy / d) * moved
+  return spot
+}
 
 // The colors are tokens, read when the theme changes (they depend on it).
 const readTokens = () => {
@@ -82,8 +104,8 @@ const fly = () => {
 
 // ---- drawing ----
 const arcOf = (ctx2: CanvasRenderingContext2D, a: PlegmaStory, b: PlegmaStory, sign: number) => {
-  const p = toScreen(cam, width, height, a)
-  const q = toScreen(cam, width, height, b)
+  const p = { ...toScreen(cam, width, height, placed(a)) }
+  const q = toScreen(cam, width, height, placed(b))
   const dx = q.x - p.x
   const dy = q.y - p.y
   ctx2.moveTo(p.x, p.y)
@@ -106,10 +128,10 @@ const visible = (margin: number) => {
 }
 
 const draw = (now: number) => {
-  if (!ctx || !world) return
+  if (!ctx || !ctxFocus || !world) return
   const c = ctx
-  c.setTransform(dpr, 0, 0, dpr, 0, 0)
-  c.clearRect(0, 0, width, height)
+  const f = ctxFocus
+  for (const g of [c, f]) { g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, width, height) }
   const z = cam.z
   const sec = reduced.value ? 0 : now / 1000
   const story = focusStory()
@@ -121,16 +143,20 @@ const draw = (now: number) => {
   const litCoded = lit !== null && !world.issues[lit]!.catchAll
   const core = issue !== null ? coreOf(issue) : EMPTY
   const homeSet = new Set(webs)
-  const dim = onHome ? 0.38 : 0.24
+  const dim = onHome ? 0.38 : 0.2
+  const focusWeb = story ? webOf(world, story, PLEGMA_FOCUS_DOTS) : null
+  push = story && focusWeb ? { s: story, r: focusWeb.r * 1.25 + CLEAR_PAD } : null
   const dotBuckets: ({ colour: string, alpha: number, path: Path2D } | undefined)[] = []
-  const drawn: { s: PlegmaStory, level: 1 | 2, alpha: number, focus: boolean }[] = []
+  const drawn: { s: PlegmaStory, level: 1 | 2, alpha: number, focus: boolean, crisp: boolean }[] = []
 
   for (const s of visible(80)) {
     const isFocus = s === story || s === other
     const strong = isFocus || homeSet.has(s) || core.has(s) || s === hover
     const sameTheme = litCoded && s.issue === lit && s.coded
-    const alpha = strong ? 1 : sameTheme ? 0.8 : dim
-    const level = drawLevel(s, z, strong, isFocus)
+    const alpha = strong ? 1 : sameTheme ? 0.6 : dim
+    // In a view the story, its pair, the stories of the theme and the one under the pointer are crisp; the rest is a blurred background of dots with no lines.
+    const crisp = !onHome && (isFocus || core.has(s) || s === hover)
+    const level = onHome || crisp ? drawLevel(s, z, strong, isFocus) : (Math.min(drawLevel(s, z, strong, isFocus), 1) as 0 | 1 | 2)
     // Zoomed far out, the smallest stories are faint specks that only cost drawing time: leave them out until the camera is nearer.
     if (level === 0 && z < 0.3 && !strong && !sameTheme && s.n < PLEGMA_FAR_MIN) continue
     if (level === 0) {
@@ -138,20 +164,22 @@ const draw = (now: number) => {
       const key = s.slot * 3 + (strong ? 2 : sameTheme ? 1 : 0)
       let bucket = dotBuckets[key]
       if (!bucket) { bucket = { colour: colourOf(s), alpha, path: new Path2D() }; dotBuckets[key] = bucket }
-      const px = (s.x - cam.x) * z + width / 2
-      const py = (s.y - cam.y) * z + height / 2
+      const where = placed(s)
+      const px = (where.x - cam.x) * z + width / 2
+      const py = (where.y - cam.y) * z + height / 2
       bucket.path.moveTo(px + r, py)
       bucket.path.arc(px, py, r, 0, TAU)
-    } else drawn.push({ s, level, alpha, focus: isFocus })
+    } else drawn.push({ s, level, alpha, focus: isFocus, crisp })
   }
   for (const bucket of dotBuckets) { if (!bucket) continue; c.globalAlpha = bucket.alpha; c.fillStyle = bucket.colour; c.fill(bucket.path) }
 
   // The webs: each dot wanders a few pixels on slow waves, so a web breathes.
   const rd = clamp(1.3 * Math.sqrt(z) + 0.9, 1.6, 4.4)
   c.lineWidth = 1
-  for (const { s, level, alpha, focus } of drawn) {
+  for (const { s, level, alpha, focus, crisp } of drawn) {
+    const c = crisp ? f : ctx!
     const w = webOf(world, s, focus ? PLEGMA_FOCUS_DOTS : 0)
-    const p = toScreen(cam, width, height, s)
+    const p = toScreen(cam, width, height, placed(s))
     const col = colourOf(s)
     const at = w.offs.map((o, i) => [p.x + o.x * z + Math.sin(sec * 0.55 + i * 1.7 + s.id) * 1.6, p.y + o.y * z + Math.cos(sec * 0.47 + i * 2.3 + s.id) * 1.6] as const)
     c.fillStyle = col
@@ -183,20 +211,22 @@ const draw = (now: number) => {
   if (issue !== null) issues.add(issue)
   if (hover) issues.add(hover.issue)
   if (onHome) for (const s of webs) issues.add(s.issue)
-  c.lineWidth = 1.2
-  c.setLineDash([2, 5])
+  const a = onHome ? c : f
+  a.lineWidth = 1.2
+  a.setLineDash([2, 5])
   for (const k of issues) {
     const arcs = arcsOf(world, k)
     if (!arcs.length) continue
     const slot = world.slotOf.get(k)
-    c.strokeStyle = slot ? cats[slot - 1] ?? ink : ink
-    c.globalAlpha = onHome ? 0.5 : 0.75
-    c.beginPath()
-    for (const a of arcs) arcOf(c, a.a, a.b, a.sign)
-    c.stroke()
+    a.strokeStyle = slot ? cats[slot - 1] ?? ink : ink
+    a.globalAlpha = onHome ? 0.5 : 0.55
+    a.beginPath()
+    for (const arc of arcs) arcOf(a, arc.a, arc.b, arc.sign)
+    a.stroke()
   }
-  c.setLineDash([])
+  a.setLineDash([])
   c.globalAlpha = 1
+  f.globalAlpha = 1
 }
 
 // ---- the loop ----
@@ -217,7 +247,8 @@ const halt = () => { if (raf) cancelAnimationFrame(raf); raf = 0 }
 
 const resize = () => {
   const el = canvas.value
-  if (!el) return
+  const elFocus = canvasFocus.value
+  if (!el || !elFocus) return
   const box = el.getBoundingClientRect()
   if (!box.width || !box.height || (box.width === width && box.height === height && dpr === Math.min(window.devicePixelRatio || 1, 2))) return
   dpr = Math.min(window.devicePixelRatio || 1, 2)
@@ -226,6 +257,9 @@ const resize = () => {
   el.width = Math.round(width * dpr)
   el.height = Math.round(height * dpr)
   ctx = el.getContext('2d')
+  elFocus.width = el.width
+  elFocus.height = el.height
+  ctxFocus = elFocus.getContext('2d')
   if (!world) return
   // A new size changes the framing: the camera cuts to it, unless a flight is under way (it flies on to the new target).
   const to = targetCamera()
@@ -242,7 +276,7 @@ const pickAt = (x: number, y: number, reach: number) => {
   let bestDistance = reach
   for (const s of visible(reach / cam.z + 20)) {
     if (s.n < PLEGMA_WEB_MIN && s !== focusStory()) continue
-    const p = toScreen(cam, width, height, s)
+    const p = toScreen(cam, width, height, placed(s))
     const d = Math.hypot(p.x - x, p.y - y)
     if (d < bestDistance) { bestDistance = d; best = s }
   }
@@ -323,7 +357,8 @@ onBeforeUnmount(halt)
 </script>
 
 <template>
-  <div class="plegma-stage" :hidden="!plegma.active" aria-hidden="true">
-    <canvas ref="canvas" class="plegma-canvas" />
+  <div class="plegma-stage" :class="{ 'is-view': plegma.focus !== null }" :hidden="!plegma.active" aria-hidden="true">
+    <canvas ref="canvas" class="plegma-canvas plegma-canvas-back" />
+    <canvas ref="canvasFocus" class="plegma-canvas plegma-canvas-focus" />
   </div>
 </template>
