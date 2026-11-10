@@ -105,7 +105,10 @@ const main = async () => {
   const option = (name, fallback) => { const i = args.indexOf(`--${name}`); return i > -1 ? args[i + 1] : fallback }
   const route = args.find((a, i) => !a.startsWith('--') && !args[i - 1]?.startsWith('--'))
   if (!route) { console.error('Usage: npm run check:pixel -- <route> (for example /trends)'); process.exit(2) }
-  const staticPage = staticUrlOf(route)
+  // A detail page has its id in the query (/story?id=100): the query goes to both pages.
+  const [path, query] = route.split('?')
+  const staticFile = staticUrlOf(path)
+  const staticPage = staticFile && query ? `${staticFile}${staticFile.includes('?') ? '&' : '?'}${query}` : staticFile
   if (!staticPage) { console.error(`${route} is not in ported-pages.json, so there is no static page to compare with.`); process.exit(2) }
   const limit = Number(option('limit', 0.05))
   const out = resolve(option('out', join(tmpdir(), 'apotypos-pixel-diff')))

@@ -1,9 +1,12 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="G extends SunGroup">
 import type { NetGroup } from '~/utils/groups'
 
 // Sunburst of groups-v2.html: the inner ring is the groups, the outer ring their outlets. The rings are in the order of the legend, from the top, clockwise.
-// The list on its side has the group, its share and the owner in the title of its row.
-const props = defineProps<{ groups: NetGroup[], total: number }>()
+// The list on its side has the group, its share and the owner in the title of its row. The story page (Entity.GroupsCard) has no title on the row and gives
+// the name of the group (slot name) and a line of its outlets (slot sub) of its own.
+export type SunGroup = Pick<NetGroup, 'key' | 'label' | 'color' | 'value'> & Partial<Pick<NetGroup, 'owner' | 'slug'>> & { outlets: { name: string, slug: string, value: number }[] }
+const props = defineProps<{ groups: G[], total: number }>()
+defineSlots<{ name?: (p: { group: G }) => unknown, sub?: (p: { group: G }) => unknown }>()
 const { t } = useI18n()
 const tooltip = useTooltipStore()
 
@@ -35,20 +38,23 @@ const slices = computed(() => {
   return out
 })
 const label = computed(() => props.groups.map(g => `${g.label} ${fmtPct(g.value / props.total)}`).join(', '))
-const rowTitle = (g: NetGroup) => (g.key === null ? t('g2.bubble.none', { n: fmtInt(g.outlets.length) }) : `${g.owner} · ${t('g2.bubble.outlets', { n: fmtInt(g.outlets.length) })}`)
+const rowTitle = (g: SunGroup) => (g.key === null ? t('g2.bubble.none', { n: fmtInt(g.outlets.length) }) : `${g.owner} · ${t('g2.bubble.outlets', { n: fmtInt(g.outlets.length) })}`)
 const show = (tip: string, e: PointerEvent) => tooltip.show({ title: tip }, e)
 </script>
 
 <template>
   <div class="donut-wrap sun-wrap">
     <ul class="rows rows-groups rows-owners">
-      <li v-for="g in groups" :key="g.key ?? 'none'" :title="rowTitle(g)">
+      <li v-for="g in groups" :key="g.key ?? 'none'" :title="$slots.name ? undefined : rowTitle(g)">
         <span :class="g.key === null ? 'dot dot-none' : 'dot'" :style="`--dot:${g.color}`" aria-hidden="true" />
-        <span class="row-name" :title="g.label">
-          <template v-if="g.key === null">{{ g.label }}</template>
-          <a v-else class="quiet-link" :href="`/group-v2.html?g=${g.slug}`">{{ g.label }}</a>
+        <span class="row-name" :title="$slots.name ? undefined : g.label">
+          <slot name="name" :group="g">
+            <template v-if="g.key === null">{{ g.label }}</template>
+            <a v-else class="quiet-link" :href="`/group-v2.html?g=${g.slug}`">{{ g.label }}</a>
+          </slot>
         </span>
         <span class="row-value">{{ fmtPct(g.value / total) }}</span>
+        <span v-if="$slots.sub" class="row-sub"><slot name="sub" :group="g" /></span>
       </li>
     </ul>
     <svg class="chart donut sunburst" :width="size" :height="size" :viewBox="`0 0 ${size} ${size}`" role="img" :aria-label="label">
