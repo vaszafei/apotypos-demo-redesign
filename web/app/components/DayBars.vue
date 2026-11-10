@@ -3,7 +3,7 @@ import { useElementSize } from '@vueuse/core'
 
 // UI.BarChart of assets/components.js for one column a day: the series are stacked from the bottom, the highest day has its value above it,
 // and a drag over the days selects a period (not with selectable false). Only the options that Μέσα › Επισκόπηση uses are here.
-interface Bars { name: string, color: string, values: number[] }
+interface Bars { name: string, color: string, values: (number | null)[] }
 const props = withDefaults(defineProps<{ dates: string[], series: Bars[], caption: string, height?: number, tipOf: (i: number) => string, selectable?: boolean }>(), { height: 170, selectable: true })
 const emit = defineEmits<{ select: [range: { from: string, to: string }] }>()
 const tooltip = useTooltipStore()

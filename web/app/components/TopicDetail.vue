@@ -137,7 +137,7 @@ const dailyTip = (i: number) => {
 
     <DashCard class="c-4" :title="t('topic2.stories.title')" :info="t('topic2.stories.info')">
       <ul v-if="model.mine.length" class="rows-related">
-        <li v-for="s in model.mine.slice(0, STORIES)" :key="s.id">
+        <li v-for="s in model.mine.slice(0, TOPIC_STORIES)" :key="s.id">
           <span class="related-main">
             <EntityLink type="story" :to="storyHref(s.id)">{{ storyName(s) }}</EntityLink>
             <span class="muted-text">{{ t('topic2.stories.outlets', { n: s.outlets }) }}</span>

@@ -50,7 +50,7 @@ const show = (tip: string, e: PointerEvent) => tooltip.show({ title: tip }, e)
         <span class="row-name" :title="$slots.name ? undefined : g.label">
           <slot name="name" :group="g">
             <template v-if="g.key === null">{{ g.label }}</template>
-            <a v-else class="quiet-link" :href="`/group-v2.html?g=${g.slug}`">{{ g.label }}</a>
+            <NuxtLink v-else class="quiet-link" :to="groupPageHref(g.slug!)">{{ g.label }}</NuxtLink>
           </slot>
         </span>
         <span class="row-value">{{ fmtPct(g.value / total) }}</span>

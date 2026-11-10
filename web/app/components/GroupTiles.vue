@@ -66,7 +66,7 @@ const tipOf = (b: (typeof blocks.value)[number], o: TileGroup['outlets'][number]
       </div>
       <div class="gt-row gt-labels">
         <div v-for="b in blocks" :key="b.g.name ?? 'none'" class="gt-axis" :style="{ width: `${b.w}px`, borderColor: b.g.color }">
-          <span class="gt-gname"><a v-if="b.g.slug" class="entity-link" data-entity="group" :href="groupPageHref(b.g.slug)">{{ b.label }}</a><template v-else>{{ b.label }}</template></span>
+          <span class="gt-gname"><EntityLink v-if="b.g.slug" type="group" :to="groupPageHref(b.g.slug)">{{ b.label }}</EntityLink><template v-else>{{ b.label }}</template></span>
           <span class="gt-gval">{{ fmtInt(b.g.n) }} · {{ fmtPct(b.g.n / total) }}</span>
         </div>
       </div>

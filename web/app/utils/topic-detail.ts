@@ -9,7 +9,7 @@ export const MIN_ROWS = 200
 // Two topics are alike when their daily lines have at least this correlation.
 export const MIN_LINK = 0.3
 export const OUTLETS = 6
-export const STORIES = 5
+export const TOPIC_STORIES = 5
 export const SIMILAR = 5
 
 const sum = (a: number[]) => a.reduce((x, y) => x + y, 0)
