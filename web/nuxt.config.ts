@@ -9,7 +9,7 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   // The design is the prototype's own CSS, copied from docs/redesign/prototypes/assets by scripts/sync-prototype.mjs. No Nuxt UI.
   modules: ['@pinia/nuxt', '@nuxtjs/i18n'],
-  css: ['~/assets/css/tailwind.css', '~/assets/css/ssr.css'],
+  css: ['~/assets/css/tailwind.css', '~/assets/css/ssr.css', '~/assets/css/plegma.css'],
   // Tailwind 4 with no reset (preflight) and the tw: prefix, so no class of the prototype CSS changes (KTD6).
   vite: { plugins: [tailwindcss()] },
   // The text is the message files of the prototype, converted by scripts/build-messages.mjs to i18n/locales (KTD4). One URL for both languages; the locale

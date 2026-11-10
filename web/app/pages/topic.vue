@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Θέματα › one topic (topic-v2.html?i=): the daily articles, the stance, the outlets and groups that write it more or less than usual, its stories. A detail page of the tab Θέματα.
-definePageMeta({ detail: '/trends' })
+definePageMeta({ detail: '/trends', plegma: true })
 const { t } = useI18n()
 useHead({ title: () => `${t('nav.topics')} · ${t('site.name')}` })
 const route = useRoute()

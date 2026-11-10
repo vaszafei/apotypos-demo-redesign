@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 
 export interface TipRow { label: string, value: string, color?: string }
-export interface Tip { title: string, rows?: TipRow[], note?: string | null }
+export interface Tip { title: string, rows?: TipRow[], note?: string | null, field?: boolean }
 
 export const useTooltipStore = defineStore('tooltip', () => {
   const tip = ref<Tip | null>(null)

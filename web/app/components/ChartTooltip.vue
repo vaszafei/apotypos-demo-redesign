@@ -15,7 +15,7 @@ watch(() => [store.tip, store.x, store.y], async () => {
 
 <template>
   <Teleport to="body">
-    <div v-if="store.tip" ref="box" class="tooltip" :class="{ 'is-rich': store.tip.rows?.length || store.tip.note }" role="status" :style="{ left: `${pos.left}px`, top: `${pos.top}px` }">
+    <div v-if="store.tip" ref="box" class="tooltip" :class="{ 'is-rich': store.tip.rows?.length || store.tip.note, 'is-field': store.tip.field }" role="status" :style="{ left: `${pos.left}px`, top: `${pos.top}px` }">
       <div class="tooltip-title">{{ store.tip.title }}</div>
       <div v-for="r in store.tip.rows" :key="r.label" class="tooltip-row">
         <span v-if="r.color" class="swatch" :style="{ background: r.color }" />

@@ -4,6 +4,9 @@ import type { Entry, Kind, Recent } from '~/utils/search'
 
 // The global search of the top bar (GlobalSearch in assets/shell.js): a compact button that grows into a panel over the page, with a light scrim.
 // The panel finds the pages and tabs at once and the rest (search.json) once it has loaded. The classes are the ones of app.css.
+// `hero` is the large search of Αρχική, in the page instead of the top bar; it opens the same panel at the width of its field, and a pick of a story or a theme
+// leaves the page the way the Plegma shows it (utils/home-leave.ts). `disabled` is the search of the top bar while Αρχική shows the large one.
+const props = defineProps<{ hero?: boolean, disabled?: boolean }>()
 const { t } = useI18n()
 const route = useRoute()
 const { status, pages, entities, load, rememberPage } = useSearch()
@@ -11,8 +14,8 @@ const { status, pages, entities, load, rememberPage } = useSearch()
 interface Row { i: number, id: string, type: 'entry' | 'more' | 'query', e?: Entry, kind?: string, total?: number, q?: string }
 interface Group { key: string, label: string, count?: number, rows: Row[], limit?: number, note?: string }
 
-const panelId = 'global-search-panel'
-const listId = 'global-search-list'
+const panelId = props.hero ? 'global-search-panel-hero' : 'global-search-panel'
+const listId = props.hero ? 'global-search-list-hero' : 'global-search-list'
 const button = ref<HTMLButtonElement>()
 const panel = ref<HTMLElement>()
 const scrim = ref<HTMLElement>()
@@ -91,7 +94,8 @@ const place = () => {
   el.style.maxHeight = ''
   if (smallScreen.value) { el.style.left = el.style.top = el.style.width = ''; return }
   const b = button.value!.getBoundingClientRect()
-  const width = Math.min(640, window.innerWidth - 32)
+  if (props.hero) el.style.maxHeight = `${window.innerHeight - Math.max(8, b.top - 4) - 16}px`
+  const width = Math.min(props.hero ? Math.max(640, b.width + 8) : 640, window.innerWidth - 32)
   el.style.width = `${width}px`
   el.style.left = `${Math.max(16, Math.min(b.left + b.width / 2 - width / 2, window.innerWidth - 16 - width))}px`
   el.style.top = `${Math.max(8, b.top - 4)}px`
@@ -155,8 +159,16 @@ const choose = async (r: Row) => {
   if (r.type === 'query') { query.value = r.q!; input.value?.focus(); return }
   const text = query.value.trim()
   if (text) remember('queries', text, q => fold(q) === fold(text))
-  close({ focus: false })
   const target = searchTarget(r.e!)
+  // A story or a theme picked in the large search: the page fades, the field moves up to the top bar and the map flies to the pick.
+  if (props.hero && 'to' in target && PLEGMA_VIEW.test(target.to)) {
+    isOpen.value = false
+    shown.value = false
+    motion.forEach(a => a.cancel())
+    await leaveHome(button.value!, () => navigateTo(target.to), reduceMotion.value)
+    return
+  }
+  close({ focus: false })
   await ('to' in target ? navigateTo(target.to) : navigateTo(target.href, { external: true }))
 }
 const onListClick = (e: MouseEvent) => {
@@ -179,27 +191,29 @@ const onPanelKey = (e: KeyboardEvent) => {
 
 // The "/" key opens the search from anywhere on the page.
 useEventListener('keydown', (e: KeyboardEvent) => {
-  if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey || (e.target as Element).closest?.('input, textarea, select, [contenteditable]')) return
+  if (props.disabled || e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey || (e.target as Element).closest?.('input, textarea, select, [contenteditable]')) return
   e.preventDefault()
   open()
 })
 useEventListener('resize', () => { if (isOpen.value) place() })
 
 // The search lists the last pages of the visitor.
-onMounted(() => rememberPage(route.path))
-watch(() => route.path, p => rememberPage(p))
+onMounted(() => { if (!props.hero) rememberPage(route.path) })
+watch(() => route.path, (p) => { if (!props.hero) rememberPage(p) })
+defineExpose({ open })
 </script>
 
 <template>
-  <div class="global-search" :class="{ 'is-open': isOpen }">
-    <button ref="button" type="button" class="search-button" :aria-label="t('shell.search')" :title="t('shell.search')" aria-haspopup="dialog" :aria-expanded="tf(isOpen)" :aria-controls="panelId" aria-keyshortcuts="/" @click="open()">
-      <AppIcon name="magnifying-glass" class="icon search-button-icon" /><span class="search-button-label" aria-hidden="true">{{ t('shell.search') }}</span><kbd class="global-search-key" aria-hidden="true">/</kbd>
+  <div class="global-search" :class="{ 'is-open': isOpen, 'is-hero': hero }" :inert="disabled">
+    <button ref="button" type="button" class="search-button" :class="{ 'search-hero': hero }" :tabindex="disabled ? -1 : undefined" :aria-label="t('shell.search')" :title="t('shell.search')" aria-haspopup="dialog" :aria-expanded="tf(isOpen)" :aria-controls="panelId" aria-keyshortcuts="/" @click="open()">
+      <AppIcon name="magnifying-glass" class="icon search-button-icon" /><span class="search-button-label" aria-hidden="true">{{ hero ? t('shell.search.placeholder') : t('shell.search') }}</span><kbd class="global-search-key" aria-hidden="true">/</kbd>
+      <span v-if="hero" class="search-hero-go" aria-hidden="true">{{ t('shell.search') }}</span>
     </button>
   </div>
   <ClientOnly>
     <Teleport to="body">
       <div ref="scrim" class="search-scrim" :hidden="!shown" @click="close({ focus: false })" />
-      <div :id="panelId" ref="panel" class="search-panel" role="dialog" :aria-label="t('shell.search')" :hidden="!shown" @keydown="onPanelKey">
+      <div :id="panelId" ref="panel" class="search-panel" :class="{ 'is-hero': hero }" role="dialog" :aria-label="t('shell.search')" :hidden="!shown" @keydown="onPanelKey">
         <div class="search-field">
           <AppIcon name="magnifying-glass" class="icon global-search-icon" />
           <input
