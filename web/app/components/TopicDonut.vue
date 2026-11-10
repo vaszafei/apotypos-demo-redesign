@@ -36,7 +36,7 @@ const show = (r: TopicRow, e: PointerEvent) => tooltip.show({ title: tip(r) }, e
       <ul class="rows rows-groups rows-owners mme-topic-list">
         <li v-for="s in slices" :key="s.r.k" :title="tip(s.r)">
           <span class="dot" :style="`--dot:${s.color}`" aria-hidden="true" />
-          <span class="row-name"><a class="entity-link" :href="topicHref(s.r.k)">{{ topicName(s.r.issue) }}</a></span>
+          <span class="row-name"><EntityLink type="topic" :to="topicHref(s.r.k)">{{ topicName(s.r.issue) }}</EntityLink></span>
           <span class="row-value">{{ fmtPct(s.r.count / total) }}</span>
         </li>
       </ul>

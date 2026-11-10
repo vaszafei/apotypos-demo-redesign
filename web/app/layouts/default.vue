@@ -3,6 +3,7 @@ import { useMediaQuery, useEventListener } from '@vueuse/core'
 // The shell of assets/shell.js as Vue: the drawer (sidebar), the header bar, the section nav, the page and the footer. Same markup and classes, so the prototype CSS applies as it is.
 const { t } = useI18n()
 const { sections, section, detail, parent } = useNav()
+const detailTitle = useDetailTitle()
 const session = useSessionStore()
 const route = useRoute()
 const drawer = ref(false)
@@ -102,7 +103,7 @@ const back = () => {
             <nav class="appbar-trail" :aria-label="t('shell.breadcrumbs')">
               <ol>
                 <li><NavLink :to="detail">{{ t(`nav.${section.key}`) }}</NavLink></li>
-                <li><AppIcon name="chevron-right" class="icon icon-sm" /><span aria-current="page">{{ t(`tab.${section.key}.${parent.key}`) }}</span></li>
+                <li><AppIcon name="chevron-right" class="icon icon-sm" /><span aria-current="page">{{ detailTitle ?? t(`tab.${section.key}.${parent.key}`) }}</span></li>
               </ol>
             </nav>
           </div>

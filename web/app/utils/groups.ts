@@ -1,10 +1,11 @@
 // The data of Ιδιοκτησία (groups-v2.html) and the small rules the page keeps: colors of the groups, short names, the gap of the crawler.
 export interface GroupOutlet { name: string, slug: string, collected: number, analysed: number, news: number, stance: [number, number, number] }
-export interface GroupRecord { slug: string, name: string, owner: string, lean: string | null, collected: number, analysed: number, outlets: GroupOutlet[] }
+export interface GroupRecord { slug: string, name: string, owner: string, lean: string | null, collected: number, analysed: number, topics: number[], outlets: GroupOutlet[] }
 export interface GroupsData {
   window: [string, string]
   record: { source: string, exportedAt: string }
   totalCollected: number
+  topicsAll: number[]
   groups: GroupRecord[]
   ungrouped: GroupOutlet[]
 }

@@ -113,3 +113,5 @@ export const diffRows = (rows: DiffRowData[], count: number) => {
   return [...present, ...missing]
 }
 export const totalOf = sum
+// The scale of the bars of one card: the largest difference, at least 0.05 (Entity.scaleOf). The rows of the card share it, so the bars compare.
+export const diffScale = (rows: DiffRowData[]) => Math.max(0.05, ...rows.map(r => Math.abs(r.value - r.usual)))

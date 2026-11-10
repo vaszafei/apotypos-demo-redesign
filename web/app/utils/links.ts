@@ -28,8 +28,8 @@ export const searchTarget = (e: { h: string, route?: string }): { to: string } |
 // A link to a page of the site as a path with its query: the Nuxt route when the page is ported (a router link), null for a static page.
 export const portedPath = (href: string) => (isPorted(href.split('?')[0]!) ? href : null)
 
-// The static page of a topic (ENTITY_PAGES.topic in assets/components.js). A topic page is not ported yet.
-export const topicHref = (key: string | number) => `/topic-v2.html?i=${key}`
+// The page of a topic (ENTITY_PAGES.topic): the Nuxt route /topic, which keeps the ?i= of the static page.
+export const topicHref = (key: string | number) => `/topic?i=${key}`
 
 // The page of a story (ENTITY_PAGES.story): the Nuxt route /story, which keeps the ?id= of the static page.
 export const storyHref = (id: string | number) => `/story?id=${id}`

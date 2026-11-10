@@ -62,20 +62,11 @@ const tree = computed(() => {
   })
 })
 
-// The stance of the story against all articles: a row needs 30 articles with a stance.
+// The stance of the story against all articles (StanceCard): the total of the story is in the note under it.
 const stance = computed(() => {
   const m = model.value
-  if (!m?.labelled) return null
-  const rows = [{ label: t('entity.stance.story'), color: 'var(--series-news)', counts: m.det.s!.slice(1) }, { label: t('entity.stance.all'), color: NO_GROUP, counts: m.dd.base.s.slice(1) }]
-    .map((r) => {
-      const n = totalOf(r.counts)
-      return { ...r, n, crit: n ? r.counts[0]! / n : 0, neu: n ? r.counts[1]! / n : 0, sup: n ? r.counts[2]! / n : 0 }
-    }).filter(r => r.n >= 30)
-  const scale = Math.max(...rows.map(r => Math.max(r.crit + r.neu / 2, r.sup + r.neu / 2)))
-  return { rows, scale, total: totalOf(m.det.s!.slice(1)) }
+  return m?.labelled ? { total: totalOf(m.det.s!.slice(1)) } : null
 })
-type StanceRow = BarRow & { row: NonNullable<typeof stance.value>['rows'][number] }
-const stanceRows = computed<StanceRow[]>(() => (stance.value?.rows ?? []).map(r => ({ key: r.label, label: '', text: `${fmtPct(r.crit)} · ${fmtPct(r.sup)}`, value: 0, color: '', row: r })))
 
 // How the story was written: for each measure, how far the story is from all articles. The rows share one scale, so the bars compare.
 type DiffRow = BarRow & { diff: number, tipText: string }
@@ -154,22 +145,11 @@ const peopleColumns = computed(() => [
       <ChartLegend :items="series.map(x => ({ label: x.name, color: x.color }))" />
     </DashCard>
 
-    <DashCard v-if="model.labelled && stance" class="c-4" :title="t('entity.stance.title')" :info="t('entity.stance.info')">
-      <p v-if="stance.rows.length < 2" class="dcard-empty">{{ t('entity.stance.none') }}</p>
-      <template v-else>
-        <ChartLegend :items="STANCES.map((nm, i) => ({ label: t(`stance.${nm}`), color: `var(--stance-${nm})` }))" />
-        <BarList :rows="stanceRows">
-          <template #label="{ row }"><span class="dot" :style="`--dot:${row.row.color}`" aria-hidden="true" />{{ row.row.label }}</template>
-          <template #bar="{ row }">
-            <DivergingBar
-              :left="row.row.crit" :middle="row.row.neu" :right="row.row.sup" :scale="stance.scale"
-              :label="t('g2.stance.row', { group: row.row.label, critical: fmtPct(row.row.crit), neutral: fmtPct(row.row.neu), supportive: fmtPct(row.row.sup), n: fmtInt(row.row.n) })"
-            />
-          </template>
-        </BarList>
-      </template>
-      <p v-if="stance.total" class="dcard-sub">{{ t('story.how.stance.n', { n: fmtInt(stance.total), total: fmtInt(model.articles) }) }}</p>
-    </DashCard>
+    <StanceCard
+      v-if="model.labelled && stance" class="c-4"
+      :rows="[{ label: t('entity.stance.story'), color: 'var(--series-news)', counts: model.det.s!.slice(1) }, { label: t('entity.stance.all'), color: NO_GROUP, counts: model.dd.base.s.slice(1) }]"
+      :foot="stance.total ? t('story.how.stance.n', { n: fmtInt(stance.total), total: fmtInt(model.articles) }) : null"
+    />
 
     <DashCard class="c-6" :title="t('entity.groups.title')" :info="t('story.outlets.info')">
       <GroupSunburst :groups="tree" :total="model.articles">
