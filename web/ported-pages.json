@@ -1,4 +1,6 @@
 [
   { "html": "topics-v2.html", "route": "/trends" },
-  { "html": "groups-v2.html", "route": "/groups" }
+  { "html": "groups-v2.html", "route": "/groups" },
+  { "html": "media-v2.html", "route": "/media" },
+  { "html": "media-v2.html", "query": "tab=writing", "route": "/media/writing" }
 ]

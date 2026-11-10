@@ -5,6 +5,8 @@ const luminance = (hex: string) => {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b
 }
 export const tintHex = (hex: string, k: number) => `#${channels(hex).map(v => Math.round(v * (1 - k) + 255 * k).toString(16).padStart(2, '0')).join('')}`
+// A color mixed with another: k of the first, the rest of the second (the tile of a group at rest is 80% of its color on the page).
+export const blendHex = (a: string, b: string, k: number) => `#${channels(a).map((v, i) => Math.round(v * k + channels(b)[i]! * (1 - k)).toString(16).padStart(2, '0')).join('')}`
 export const inkOn = (fill: string, dark: string, light: string) => {
   const l = luminance(fill)
   return (l + 0.05) / (luminance(dark) + 0.05) >= (luminance(light) + 0.05) / (l + 0.05) ? dark : light
