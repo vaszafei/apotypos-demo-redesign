@@ -4,8 +4,7 @@ import type { StoryTrend } from '~/types/stories'
 
 // Μέσα › Ιστορίες (stories-v2.html): the list of every story of the period, the largest first, and beside it the stories that rise and fall against the period before and the lines of the first of them.
 const { t } = useI18n()
-// home.css is the sheet of Αρχική; only this page and Αρχική use it, so it is not in the sheets of every page.
-useHead({ title: () => `${t('nav.media')} · ${t('site.name')}`, link: [{ rel: 'stylesheet', href: '/assets/home.css' }] })
+useHead({ title: () => `${t('nav.media')} · ${t('site.name')}` })
 const period = usePeriodStore()
 const { status, refresh, dates, view, range, byDay, list } = await useStories()
 
@@ -38,7 +37,7 @@ watch(view, async () => { await nextTick(); $motion.replay(document.querySelecto
 </script>
 
 <template>
-  <Teleport v-if="dates.length" defer to="#page-actions">
+  <Teleport v-if="status === 'ready'" defer to="#page-actions">
     <DateRange :dates="dates" :from="view.from" :to="view.to" @change="r => period.set(r.from, r.to)" />
   </Teleport>
 
@@ -50,7 +49,7 @@ watch(view, async () => { await nextTick(); $motion.replay(document.querySelecto
     </div>
   </template>
   <div v-else-if="status === 'empty'" class="dash-grid">
-    <div class="card-col c-12"><section class="dcard"><div class="empty-state" data-state="empty"><p>{{ t('topics2.empty') }}</p></div></section></div>
+    <section class="dcard c-12"><div class="empty-state" data-state="empty"><AppIcon name="inbox" /><p style="margin: 0">{{ t('topics2.empty') }}</p></div></section>
   </div>
   <div v-else class="dash-grid story-split">
     <div class="c-4 card-col card-col-fill">

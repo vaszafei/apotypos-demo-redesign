@@ -27,7 +27,7 @@ export default defineNuxtConfig({
       htmlAttrs: { lang: 'el', 'data-header': 'v2' },
       title: 'Απότυπος',
       meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }],
-      link: [{ rel: 'icon', href: 'data:,' }, ...['tokens', 'app', 'dash', 'mme', 'date-range'].map(sheet)]
+      link: [{ rel: 'icon', href: 'data:,' }, ...['tokens', 'app', 'dash', 'mme', 'home', 'date-range'].map(sheet)]
     },
     // The page transition is a view transition (plugins/view-transition.client.ts), with the CSS of the prototype.
     pageTransition: false
