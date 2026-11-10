@@ -46,3 +46,12 @@ test('a bad id puts nothing in focus', () => {
   assert.deepEqual(plegmaFocusOf('/story', { id: ['7', '8'] }), { kind: 'story', id: 7 })
   assert.equal(plegmaFocusOf('/story', {}), null)
 })
+
+test('a path with a trailing slash, as Netlify serves it, has the same focus', () => {
+  assert.deepEqual(plegmaFocusOf('/story/', { id: '134' }), { kind: 'story', id: 134 })
+  assert.deepEqual(plegmaFocusOf('/topic/', { i: '3' }), { kind: 'theme', issue: 3 })
+  assert.equal(plegmaFocusOf('/', {}), null)
+  const plegma = usePlegmaStore()
+  plegma.syncRoute(route('/story/', { id: '134' }))
+  assert.deepEqual({ ...plegma.focus }, { kind: 'story', id: 134 })
+})
