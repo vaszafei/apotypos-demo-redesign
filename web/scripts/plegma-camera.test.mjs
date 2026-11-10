@@ -14,7 +14,7 @@ test('a story is framed at the center of the top-left map region', () => {
   near(at.x, box.cx)
   near(at.y, box.cy)
   assert.ok(box.cx < W / 2 && box.cy < H / 2)
-  assert.equal(cam.z, PLEGMA_Z_FOCUS)
+  assert.ok(cam.z <= PLEGMA_Z_FOCUS && cam.z > 2)
 })
 
 test('a theme is framed with all its stories inside the map region', () => {

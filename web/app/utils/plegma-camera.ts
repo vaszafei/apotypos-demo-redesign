@@ -12,7 +12,7 @@ export interface PlegmaFlight { a: PlegmaCamera, b: PlegmaCamera, t0: number, du
 export interface PlegmaRegion { x0: number, y0: number, x1: number, y1: number }
 export const PLEGMA_REGION: PlegmaRegion = { x0: 0.02, y0: 0.22, x1: 0.40, y1: 0.64 }
 // The nearest zoom, the zoom of a story's web, and the farthest zoom of a framing.
-export const PLEGMA_Z_FOCUS = 2.4
+export const PLEGMA_Z_FOCUS = 3.6
 export const PLEGMA_Z_THEME = 1.6
 export const PLEGMA_Z_MIN = 0.1
 // Two compared stories are framed together only while the zoom stays above this; farther apart the focused story keeps its framing and the other is a marker.
@@ -51,7 +51,7 @@ export const fitCamera = (points: PlegmaPoint[], box: PlegmaBox, w: number, h: n
 }
 
 // One story at the center of the map region, at the zoom of a web.
-export const frameStory = (s: PlegmaPoint, w: number, h: number, region?: PlegmaRegion) => fitCamera([s], regionBox(w, h, region), w, h, PLEGMA_Z_FOCUS)
+export const frameStory = (s: PlegmaPoint, w: number, h: number, region?: PlegmaRegion) => fitCamera([s], regionBox(w, h, region), w, h, PLEGMA_Z_FOCUS, 0.72)
 // The stories of a theme (its largest ones) inside the map region.
 export const frameTheme = (stories: PlegmaPoint[], w: number, h: number, region?: PlegmaRegion) => fitCamera(stories, regionBox(w, h, region), w, h, PLEGMA_Z_THEME)
 // The best stories of the week across the whole screen.

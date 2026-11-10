@@ -22,7 +22,7 @@ const dock = computed(() => cards.value.dock.map(key => ({ key, label: t(TITLE[k
 const open = ref<PlegmaStoryCard | null>(null)
 const toggle = (key: PlegmaStoryCard) => { open.value = open.value === key ? null : key }
 
-// The map region is what the title and the cards leave free: the middle row of the left column, in its left part (a story's web sits at the left). The camera frames it.
+// The map region is what the title and the cards leave free: a square at the top left of the middle row of the left column, right under the title (a story's web sits there). The camera frames it.
 const orbit = ref<HTMLElement>()
 const map = ref<HTMLElement>()
 const measure = () => {
@@ -32,10 +32,10 @@ const measure = () => {
   const stage = o.getBoundingClientRect()
   const box = m.getBoundingClientRect()
   if (!stage.width || !stage.height || box.height < 40) return
-  const x1 = Math.min(box.right, stage.width * REGION_MAX_X)
-  plegma.setRegion({ x0: box.left / stage.width, y0: (box.top - stage.top) / stage.height, x1: Math.max(x1, box.left + 80) / stage.width, y1: (box.bottom - stage.top) / stage.height })
+  const side = Math.min(box.height, REGION_SIDE)
+  plegma.setRegion({ x0: box.left / stage.width, y0: (box.top - stage.top) / stage.height, x1: (box.left + side) / stage.width, y1: (box.top - stage.top + side) / stage.height })
 }
-const REGION_MAX_X = 0.4
+const REGION_SIDE = 320
 let watcher: ResizeObserver | null = null
 watch(map, (el) => {
   watcher?.disconnect()
