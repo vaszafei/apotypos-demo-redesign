@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Μέσα › Ιστορίες › one story (story-v2.html?id=): how the story spread, when, in which outlets and groups, and how it was written. A detail page of the tab Ιστορίες.
+// Μέσα › Ιστορίες › one story (story-v2.html?id=): the story on the Plegma, with its cards around the map (components/plegma/PlegmaStoryView.vue). A detail page of the tab Ιστορίες.
 definePageMeta({ detail: '/stories', plegma: true })
 const { t } = useI18n()
 useHead({ title: () => `${t('tab.media.stories')} · ${t('site.name')}` })
@@ -11,5 +11,5 @@ watch(id, () => window.scrollTo(0, 0))
 </script>
 
 <template>
-  <ClientOnly><StoryDetail :key="String(id)" :id="id" /></ClientOnly>
+  <ClientOnly><PlegmaStoryView :key="String(id)" :id="id" /></ClientOnly>
 </template>

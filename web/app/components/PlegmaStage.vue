@@ -76,6 +76,7 @@ const fly = () => {
   if (!to) return
   flight = redirectFlight(flight, cam, to, performance.now(), width, reduced.value)
   if (flight.dur <= 0) { Object.assign(cam, to); flight = null }
+  plegma.setLanded(!flight)
   kick()
 }
 
@@ -206,7 +207,7 @@ const frame = (now: number) => {
   if (!running()) return
   if (flight) {
     Object.assign(cam, cameraAt(flight, now, width))
-    if (flightDone(flight, now)) flight = null
+    if (flightDone(flight, now)) { flight = null; plegma.setLanded(true) }
   }
   draw(now)
   if (!reduced.value || flight) raf = requestAnimationFrame(frame)
@@ -228,13 +229,13 @@ const resize = () => {
   if (!world) return
   // A new size changes the framing: the camera cuts to it, unless a flight is under way (it flies on to the new target).
   const to = targetCamera()
-  if (to) { if (flight) flight = redirectFlight(flight, cam, to, performance.now(), width, reduced.value); else Object.assign(cam, to) }
+  if (to) { if (flight) flight = redirectFlight(flight, cam, to, performance.now(), width, reduced.value); else { Object.assign(cam, to); plegma.setLanded(true) } }
   kick()
 }
 
 // ---- the pointer ----
 // The stage is behind the page, so the pointer is read on the window; a card, a link or a control under it is not the map.
-const CAPTURES = 'a, button, input, select, textarea, [role="dialog"], .dcard, .kpi-tile, .page-head, .section-nav, .trail-bar, .header-bar, .sidebar, .page-footer, .tooltip'
+const CAPTURES = 'a, button, input, select, textarea, [role="dialog"], .dcard, .plegma-card, .plegma-title, .plegma-dock, .kpi-tile, .page-head, .section-nav, .trail-bar, .header-bar, .sidebar, .page-footer, .tooltip'
 const pickAt = (x: number, y: number, reach: number) => {
   if (!world) return null
   let best: PlegmaStory | null = null
@@ -296,6 +297,7 @@ const start = () => {
   // A cold open lands settled: no flight (R14).
   const to = targetCamera()
   if (to) Object.assign(cam, to)
+  plegma.setLanded(true)
   kick()
 }
 watch(ready, start)
@@ -316,7 +318,7 @@ watch(() => plegma.active, (active) => {
   else kick()
 })
 watch(() => prefs.theme, async () => { await nextTick(); readTokens(); kick() })
-watch(reduced, (still) => { if (still) { flight = null; const to = targetCamera(); if (to) Object.assign(cam, to) } kick() })
+watch(reduced, (still) => { if (still) { flight = null; const to = targetCamera(); if (to) Object.assign(cam, to); plegma.setLanded(true) } kick() })
 onBeforeUnmount(halt)
 </script>
 

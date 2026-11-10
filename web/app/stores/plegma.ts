@@ -15,6 +15,8 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const day = ref<number | null>(null)
   // A second story picked for comparison.
   const compare = ref<number | null>(null)
+  // The camera has arrived at the focus (no flight under way): the cards of a view arrive after it lands. A new focus clears it until the stage says it landed.
+  const landed = ref(true)
 
   const syncRoute = (route: { path: string, query: Record<string, unknown>, meta: { plegma?: boolean } }) => {
     active.value = route.meta.plegma === true
@@ -22,12 +24,14 @@ export const usePlegmaStore = defineStore('plegma', () => {
     const next = plegmaFocusOf(route.path, route.query)
     if (!samePlegmaFocus(next, focus.value)) {
       focus.value = next
+      landed.value = false
       day.value = null
       compare.value = null
     }
   }
   const stepTo = (index: number | null) => { day.value = index }
   const compareWith = (id: number | null) => { compare.value = id }
+  const setLanded = (value: boolean) => { landed.value = value }
 
-  return { active, focus, day, compare, syncRoute, stepTo, compareWith }
+  return { active, focus, day, compare, landed, syncRoute, stepTo, compareWith, setLanded }
 })

@@ -55,3 +55,15 @@ test('a path with a trailing slash, as Netlify serves it, has the same focus', (
   plegma.syncRoute(route('/story/', { id: '134' }))
   assert.deepEqual({ ...plegma.focus }, { kind: 'story', id: 134 })
 })
+
+test('a new focus clears landed until the stage says it landed, and the same focus leaves it', () => {
+  const plegma = usePlegmaStore()
+  assert.equal(plegma.landed, true)
+  plegma.syncRoute(route('/story', { id: '5' }))
+  assert.equal(plegma.landed, false)
+  plegma.setLanded(true)
+  plegma.syncRoute(route('/story', { id: '5' }))
+  assert.equal(plegma.landed, true)
+  plegma.syncRoute(route('/story', { id: '6' }))
+  assert.equal(plegma.landed, false)
+})
