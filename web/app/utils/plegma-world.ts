@@ -50,6 +50,8 @@ export const PLEGMA_WEB_MIN = 20
 export const PLEGMA_FULL = 600
 export const PLEGMA_DOTS_MIN = 6
 export const PLEGMA_DOTS_MAX = 32
+// Below this zoom a story of fewer articles than this is not drawn at all unless it is lit.
+export const PLEGMA_FAR_MIN = 12
 // A picked or compared story always has at least this many dots.
 export const PLEGMA_FOCUS_DOTS = 8
 // A theme joins its largest stories by arcs, and a theme view frames them.

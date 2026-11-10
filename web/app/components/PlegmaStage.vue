@@ -2,7 +2,7 @@
 import { useEventListener, useMediaQuery } from '@vueuse/core'
 import { cameraAt, flightDone, frameHome, framePair, frameStory, frameTheme, redirectFlight, toScreen } from '~/utils/plegma-camera'
 import type { PlegmaCamera, PlegmaFlight } from '~/utils/plegma-camera'
-import { arcsOf, buildWorld, drawLevel, homeWebs, PLEGMA_FOCUS_DOTS, PLEGMA_WEB_MIN, themeFrameSet, themeStories, webOf } from '~/utils/plegma-world'
+import { arcsOf, buildWorld, drawLevel, homeWebs, PLEGMA_FAR_MIN, PLEGMA_FOCUS_DOTS, PLEGMA_WEB_MIN, themeFrameSet, webOf } from '~/utils/plegma-world'
 import type { PlegmaFile, PlegmaHomeFile, PlegmaStoriesFile, PlegmaStory, PlegmaWorld } from '~/utils/plegma-world'
 import { homeIndex, HOME_WEBS, HOME_WEBS_PHONE } from '~/utils/home'
 
@@ -37,6 +37,13 @@ let ink = '#111'
 let cats: string[] = []
 const cam: PlegmaCamera = { x: 0, y: 0, z: 0.5 }
 
+const EMPTY = new Set<PlegmaStory>()
+const cores = new Map<number, Set<PlegmaStory>>()
+const coreOf = (issue: number) => {
+  let set = cores.get(issue)
+  if (!set) { set = new Set(themeFrameSet(world!, issue)); cores.set(issue, set) }
+  return set
+}
 const name = (s: PlegmaStory) => (locale.value === 'en' && s.en) || s.el
 const colourOf = (s: PlegmaStory) => (s.slot > 0 ? cats[s.slot - 1] ?? ink : ink)
 const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x))
@@ -111,10 +118,10 @@ const draw = (now: number) => {
   // The theme that is lit: the one of the story or the theme in focus, or the one under the pointer.
   const lit = hover ? hover.issue : story ? story.issue : issue
   const litCoded = lit !== null && !world.issues[lit]!.catchAll
-  const core = new Set(issue !== null ? themeFrameSet(world, issue) : [])
+  const core = issue !== null ? coreOf(issue) : EMPTY
   const homeSet = new Set(webs)
   const dim = onHome ? 0.38 : 0.24
-  const dotBuckets = new Map<string, { colour: string, alpha: number, path: Path2D }>()
+  const dotBuckets: ({ colour: string, alpha: number, path: Path2D } | undefined)[] = []
   const drawn: { s: PlegmaStory, level: 1 | 2, alpha: number, focus: boolean }[] = []
 
   for (const s of visible(80)) {
@@ -123,17 +130,20 @@ const draw = (now: number) => {
     const sameTheme = litCoded && s.issue === lit && s.coded
     const alpha = strong ? 1 : sameTheme ? 0.8 : dim
     const level = drawLevel(s, z, strong, isFocus)
+    // Zoomed far out, the smallest stories are faint specks that only cost drawing time: leave them out until the camera is nearer.
+    if (level === 0 && z < 0.3 && !strong && !sameTheme && s.n < PLEGMA_FAR_MIN) continue
     if (level === 0) {
       const r = isFocus ? 4 : clamp(0.7 + 0.35 * Math.log10(s.n + 1) * (z < 0.22 ? 1.4 : 1.8) * Math.sqrt(Math.max(z, 0.5)), 0.8, 5)
-      const key = `${s.slot}:${alpha}`
-      let bucket = dotBuckets.get(key)
-      if (!bucket) { bucket = { colour: colourOf(s), alpha, path: new Path2D() }; dotBuckets.set(key, bucket) }
-      const p = toScreen(cam, width, height, s)
-      bucket.path.moveTo(p.x + r, p.y)
-      bucket.path.arc(p.x, p.y, r, 0, TAU)
+      const key = s.slot * 3 + (strong ? 2 : sameTheme ? 1 : 0)
+      let bucket = dotBuckets[key]
+      if (!bucket) { bucket = { colour: colourOf(s), alpha, path: new Path2D() }; dotBuckets[key] = bucket }
+      const px = (s.x - cam.x) * z + width / 2
+      const py = (s.y - cam.y) * z + height / 2
+      bucket.path.moveTo(px + r, py)
+      bucket.path.arc(px, py, r, 0, TAU)
     } else drawn.push({ s, level, alpha, focus: isFocus })
   }
-  for (const { colour, alpha, path } of dotBuckets.values()) { c.globalAlpha = alpha; c.fillStyle = colour; c.fill(path) }
+  for (const bucket of dotBuckets) { if (!bucket) continue; c.globalAlpha = bucket.alpha; c.fillStyle = bucket.colour; c.fill(bucket.path) }
 
   // The webs: each dot wanders a few pixels on slow waves, so a web breathes.
   const rd = clamp(1.3 * Math.sqrt(z) + 0.9, 1.6, 4.4)
