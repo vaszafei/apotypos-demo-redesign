@@ -21,7 +21,7 @@ A script against the static page (`stories-checks.mjs`, machine-local, not commi
 |---|---|
 | `?state=empty`, `?state=error`, `?state=bad` | 0 (390: 2 152 in the tab bar, see below) |
 | `?lang=en` | 0 (390: 2 055 in the tab bar) |
-| the whole window (3 428 stories at 100 rows), list scrolled to the end (700 rows drawn) | 0 |
+| the whole window (7 491 stories, 100 rows drawn first), list scrolled to the end (700 rows drawn) | 0 |
 | last 7 days; hover on a bar of Τάσεις | 0 |
 | the first day of the window (no period before: Τάσεις is the empty text) | 0 |
 | the whole window at 390 | 0 in the page; 2 152 in the tab bar |
