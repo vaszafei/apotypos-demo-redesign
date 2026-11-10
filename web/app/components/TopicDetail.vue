@@ -142,7 +142,7 @@ const dailyTip = (i: number) => {
             <EntityLink type="story" :to="storyHref(s.id)">{{ storyName(s) }}</EntityLink>
             <span class="muted-text">{{ t('topic2.stories.outlets', { n: s.outlets }) }}</span>
           </span>
-          <SparkLine :values="s.values" :from="0" :to="model.d.dates.length - 1" :label="t('outlet2.stories.spark')" :width="84" :height="20" />
+          <SparkLine :values="s.values" :from="0" :to="model.d.dates.length - 1" :label="t('media2.spark.articles')" :width="84" :height="20" />
           <span class="row-value">{{ fmtInt(s.articles) }}</span>
         </li>
       </ul>
