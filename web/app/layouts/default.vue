@@ -6,6 +6,9 @@ const { sections, section, detail, parent } = useNav()
 const detailTitle = useDetailTitle()
 const session = useSessionStore()
 const route = useRoute()
+// The Plegma behind the pages: a page with the `plegma` page meta shows it, and the route says what it is focused on (stores/plegma.ts).
+const plegma = usePlegmaStore()
+watch(() => route.fullPath, () => plegma.syncRoute(route), { immediate: true })
 const drawer = ref(false)
 const menuButton = ref<HTMLButtonElement>()
 const closeButton = ref<HTMLButtonElement>()
@@ -46,7 +49,8 @@ const back = () => {
 </script>
 
 <template>
-  <div class="shell" :class="{ 'drawer-open': drawer }">
+  <div class="shell" :class="{ 'drawer-open': drawer, 'is-plegma': plegma.active }">
+    <ClientOnly><PlegmaStage /></ClientOnly>
     <nav id="sidebar" class="sidebar" :aria-label="t('shell.nav')" :inert="smallScreen && !drawer">
       <div class="sidebar-logo">
         <NavLink class="logo-link" to="/"><img class="logo-img" src="/assets/logo.svg" :alt="t('site.name')" width="335" height="141"></NavLink>
@@ -88,7 +92,7 @@ const back = () => {
         </div>
       </header>
       <div class="page-body">
-        <nav v-if="section.tabs.length" class="section-nav" :aria-label="t(`nav.${section.key}`)">
+        <nav v-if="section.tabs.length && !plegma.active" class="section-nav" :aria-label="t(`nav.${section.key}`)">
           <div class="section-nav-inner">
             <ul class="section-nav-list">
               <li v-for="tab in section.tabs" :key="tab.to">

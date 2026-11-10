@@ -1,0 +1,4 @@
+/* The Plegma behind the pages (components/PlegmaStage.vue): fixed under the header, behind the page, so the page stays above it. */
+.plegma-stage { position: fixed; inset: 64px 0 0 0; z-index: -1; pointer-events: none; }
+.plegma-stage[hidden] { display: none; }
+.plegma-canvas { display: block; width: 100%; height: 100%; }

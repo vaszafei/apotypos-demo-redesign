@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Μέσα › Ιστορίες › one story (story-v2.html?id=): how the story spread, when, in which outlets and groups, and how it was written. A detail page of the tab Ιστορίες.
-definePageMeta({ detail: '/stories' })
+definePageMeta({ detail: '/stories', plegma: true })
 const { t } = useI18n()
 useHead({ title: () => `${t('tab.media.stories')} · ${t('site.name')}` })
 const route = useRoute()
