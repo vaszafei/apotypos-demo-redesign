@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { runInNewContext } from 'node:vm'
 import { buildFixtures } from './build-fixtures.mjs'
 import { buildMessages } from './build-messages.mjs'
+import { writePlegmaLayout } from './build-plegma-layout.mjs'
 
 const here = (path) => fileURLToPath(new URL(path, import.meta.url))
 const from = here('../../docs/redesign/prototypes/')
@@ -29,6 +30,9 @@ cpSync(from, to, {
 // Every data/*.js of the prototype also as data/<key>.json, for the Nuxt pages (useFixture).
 const fixtureCount = buildFixtures(`${from}data/`, `${to}data/`).length
 
+// The permanent place of every story on the Plegma, as data/plegma.json.
+const placeCount = writePlegmaLayout(`${to}data/stories.json`, `${to}data/plegma.json`)
+
 // The message files as i18n/locales/el.json and en.json, for @nuxt/i18n.
 const messageCount = buildMessages(from, here('../i18n/locales/')).counts
 
@@ -46,4 +50,4 @@ if (!source) throw new Error('PROTOTYPES not found in assets/shell.js')
 mkdirSync(generated, { recursive: true })
 writeFileSync(`${generated}prototypes.json`, `${JSON.stringify(runInNewContext(`(${source[1]})`), null, 2)}\n`)
 
-console.log(`Prototype copied to public/ (${ported.length} ported page${ported.length === 1 ? '' : 's'} skipped, ${fixtureCount} fixtures converted, ${messageCount.el} el and ${messageCount.en} en messages)`)
+console.log(`Prototype copied to public/ (${ported.length} ported page${ported.length === 1 ? '' : 's'} skipped, ${fixtureCount} fixtures converted, ${placeCount} Plegma places, ${messageCount.el} el and ${messageCount.en} en messages)`)
