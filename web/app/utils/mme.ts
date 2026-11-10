@@ -15,7 +15,7 @@ export const mmeSummary = (set: MmeSet, i0: number, i1: number): MmeSummary => {
     const c = [0, 0, 0, 0, 0, 0, 0]
     const row = set.od[k]!
     for (let d = i0; d <= i1; d++) for (let j = 0; j < 7; j++) c[j]! += row[d * 7 + j]!
-    return { ...o, k, n: c[0]!, news: c[1]!, issues: set.oi[k]!.map(p => sumPairs(p, i0, i1)), stance: [c[4]!, c[5]!, c[6]!] as [number, number, number] }
+    return { ...o, k, n: c[0]!, news: c[1]!, cbKnown: c[2]!, cbYes: c[3]!, issues: set.oi[k]!.map(p => sumPairs(p, i0, i1)), stance: [c[4]!, c[5]!, c[6]!] as [number, number, number] }
   })
   const issueN = set.issues.map((_, i) => sum(outlets.map(o => o.issues[i]!)))
   return {

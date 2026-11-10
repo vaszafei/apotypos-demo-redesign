@@ -1,6 +1,7 @@
 // The number and date formats of the prototype (App.fmt in assets/components.js).
 const int = new Intl.NumberFormat('el-GR')
 const pct = new Intl.NumberFormat('el-GR', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 })
+const dec = new Intl.NumberFormat('el-GR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 const signed = new Intl.NumberFormat('el-GR', { minimumFractionDigits: 1, maximumFractionDigits: 1, signDisplay: 'always' })
 // Numbers always use the Greek style (C12). Dates follow the active language (fmt.date: el-GR, or en-GB).
 const dates = (opts: Intl.DateTimeFormatOptions) => {
@@ -13,6 +14,8 @@ const utc = (s: string) => new Date(`${s}T00:00:00Z`)
 
 export const fmtInt = (v: number) => int.format(v)
 export const fmtPct = (v: number) => pct.format(v)
+export const fmtDec = (v: number) => dec.format(v)
+export const fmtPct0 = (v: number) => `${Math.round(v * 100)}%`
 export const fmtSigned = (v: number) => signed.format(v).replace('-', '−')
 export const fmtDay = (iso: string) => short(utc(iso))
 export const fmtDate = (iso: string) => long(utc(iso))
