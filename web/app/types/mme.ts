@@ -10,6 +10,9 @@ export interface MmeOutletSum extends MmeOutlet {
   k: number
   n: number
   news: number
+  // Articles with a clickbait score, and those scored as clickbait.
+  cbKnown: number
+  cbYes: number
   issues: number[]
   stance: [number, number, number]
 }

@@ -74,8 +74,8 @@ const labels = computed(() => {
 })
 const dots = computed(() => props.points.slice().sort((a, b) => b.n - a.n))
 
-const picked = ref<StancePoint | null>(null)
-const show = (p: StancePoint, e: PointerEvent) => { picked.value = p; tooltip.show({ title: text(p) }, e) }
+const picked = ref<string | null>(null)
+const show = (p: StancePoint, e: PointerEvent) => { picked.value = p.name; tooltip.show({ title: text(p) }, e) }
 const leave = () => { picked.value = null; tooltip.hide() }
 const clip = `stance-clip-${useId()}`
 </script>
@@ -113,7 +113,7 @@ const clip = `stance-clip-${useId()}`
         <line v-for="l in labels.filter(x => x.leader)" :key="l.name" :x1="l.leader!.x1" :y1="l.leader!.y1" :x2="l.leader!.x2" :y2="l.leader!.y2" style="stroke:var(--text-secondary);stroke-width:0.75;opacity:0.7" />
       </g>
       <circle
-        v-for="p in dots" :key="p.name" class="pt" :cx="sx(p.c)" :cy="sy(p.s)" :r="radius(p)" :fill="p.color" :style="picked && picked !== p ? 'opacity:0.3' : undefined"
+        v-for="p in dots" :key="p.name" class="pt" :cx="sx(p.c)" :cy="sy(p.s)" :r="radius(p)" :fill="p.color" :style="picked ? (picked === p.name ? 'opacity:1' : 'opacity:0.3') : undefined"
         @pointerenter="show(p, $event)" @pointermove="show(p, $event)" @pointerleave="leave"
       />
       <text v-for="l in labels" :key="l.name" class="pt-label" :x="l.x" :y="l.y" pointer-events="none">{{ l.name }}</text>

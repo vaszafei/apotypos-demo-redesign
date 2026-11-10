@@ -4,5 +4,6 @@
   { "html": "media-v2.html", "route": "/media" },
   { "html": "media-v2.html", "query": "tab=writing", "route": "/media/writing" },
   { "html": "stories-v2.html", "route": "/stories" },
-  { "html": "story-v2.html", "route": "/story" }
+  { "html": "story-v2.html", "route": "/story" },
+  { "html": "similarity-v2.html", "route": "/similarity" }
 ]
