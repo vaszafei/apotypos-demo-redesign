@@ -34,6 +34,7 @@ export const topicHref = (key: string | number) => `/topic?i=${key}`
 // The page of a story (ENTITY_PAGES.story): the Nuxt route /story, which keeps the ?id= of the static page.
 export const storyHref = (id: string | number) => `/story?id=${id}`
 
-// The static pages of an outlet and a group (ENTITY_PAGES in assets/components.js). An outlet key is a 10 digit hex slug; the pages are not ported yet.
+// The page of an outlet (ENTITY_PAGES in assets/components.js). An outlet key is a 10 digit hex slug; the page is not ported yet.
 export const outletHref = (slug: string) => (/^[0-9a-f]{10}$/.test(slug) ? `/outlet-v2.html?slug=${slug}` : '/404.html')
-export const groupPageHref = (slug: string) => `/group-v2.html?g=${encodeURIComponent(slug)}`
+// The page of a group: the Nuxt route /group, which keeps the ?g= of the static page.
+export const groupPageHref = (slug: string) => `/group?g=${encodeURIComponent(slug)}`

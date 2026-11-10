@@ -50,8 +50,9 @@ const outletTip = (o: NetOutlet, g: NetGroup) => ({
 })
 const plain = (tip: { title: string, rows: { label: string, value: string }[] }) => `${tip.title}: ${tip.rows.map(r => `${r.label} ${r.value}`).join(', ')}`
 
-const groupHref = (g: NetGroup) => `/group-v2.html?g=${g.slug}`
-const open = (href: string) => navigateTo(href, { external: true })
+const groupHref = (g: NetGroup) => groupPageHref(g.slug!)
+// A page that is ported is a route of the app, the others are static files.
+const open = (href: string) => navigateTo(href, { external: !portedPath(href) })
 
 interface Label { key: string, g: NetGroup, text: string, x: number, y: number, anchor: 'start' | 'middle' | 'end', kind: 'group' | 'outlet' | 'inner' | 'share', ink?: string }
 // The names. A name in a circle needs the circle to be wide enough; a name beside a circle goes away from its group and is left out where it would touch another name or a circle.
