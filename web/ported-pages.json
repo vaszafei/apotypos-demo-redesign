@@ -1,4 +1,5 @@
 [
+  { "html": "index.html", "route": "/" },
   { "html": "topics-v2.html", "route": "/trends" },
   { "html": "groups-v2.html", "route": "/groups" },
   { "html": "media-v2.html", "route": "/media" },

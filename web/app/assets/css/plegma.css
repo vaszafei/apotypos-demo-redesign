@@ -39,3 +39,26 @@
   .plegma-card { overflow: visible; opacity: 1; transform: none; }
   .plegma-title { order: -1; position: absolute; top: 56px; left: 0; }
 }
+
+/* Αρχική: the hero is a transparent window over the Plegma, which the static page drew as its own field. The page head has no title here: the masthead is the title. */
+.shell.is-plegma .home-hero { background: none; border-bottom: 0; }
+.shell.is-hero-page .page-head { display: none; }
+/* The search of the top bar waits while the large one is in the page, and appears when the large one has moved up into it. */
+.header-bar .global-search { transition: opacity var(--motion-base) var(--ease-out); }
+.shell.is-hero-page .header-bar .global-search, html[data-search-fly] .header-bar .global-search { opacity: 0; pointer-events: none; }
+html[data-search-fly] .home-hero-search .search-button { visibility: hidden; }
+/* The way out: the text and the figures fade while the field moves up. */
+.home-hero.is-leaving .home-hero-inner > :not(.home-hero-search), .home-hero.is-leaving .home-hero-more { opacity: 0; transition: opacity 200ms var(--ease-out); }
+/* The copy of the field that moves up (utils/home-leave.ts): the look of the large field, since it is in the body and not in the hero. */
+.search-fly {
+  position: fixed; z-index: 65; box-sizing: border-box; display: flex; align-items: center; gap: var(--space-3); margin: 0; padding: 0 6px 0 20px; overflow: hidden; pointer-events: none;
+  border: 1px solid var(--border); border-radius: var(--pill, 999px); background: var(--surface-raised); color: var(--text-secondary); font: 16px var(--font-text);
+  box-shadow: 0 18px 40px -22px color-mix(in srgb, var(--shade) 35%, transparent);
+}
+.search-fly .search-button-icon { width: 20px; height: 20px; flex: none; color: var(--ink); }
+.search-fly .search-button-label { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+/* The title and the chips of a story view arrive with the cards, after the camera lands. */
+.plegma-orbit .plegma-title, .plegma-orbit .plegma-dock { opacity: 0; transition: opacity var(--motion-slow, 360ms) var(--ease-out); }
+.plegma-orbit.is-in .plegma-title, .plegma-orbit.is-in .plegma-dock { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .plegma-orbit .plegma-title, .plegma-orbit .plegma-dock { transition: none; } }

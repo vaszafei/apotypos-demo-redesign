@@ -49,7 +49,7 @@ const back = () => {
 </script>
 
 <template>
-  <div class="shell" :class="{ 'drawer-open': drawer, 'is-plegma': plegma.active }">
+  <div class="shell" :class="{ 'drawer-open': drawer, 'is-plegma': plegma.active, 'is-hero-page': route.meta.hero === true }">
     <ClientOnly><PlegmaStage /></ClientOnly>
     <nav id="sidebar" class="sidebar" :aria-label="t('shell.nav')" :inert="smallScreen && !drawer">
       <div class="sidebar-logo">
@@ -85,7 +85,7 @@ const back = () => {
             </li>
           </ul>
         </nav>
-        <GlobalSearch />
+        <GlobalSearch :disabled="route.meta.hero === true" />
         <div class="header-actions">
           <AuthLinks cls="auth-links" />
           <LangSwitch />
@@ -111,7 +111,7 @@ const back = () => {
               </ol>
             </nav>
           </div>
-          <main id="content" class="content dash minimal filters-right" :class="{ 'is-gated': gated }">
+          <main id="content" class="content dash minimal filters-right" :class="{ 'is-gated': gated, 'is-home': route.meta.hero === true }">
             <!-- A detail page has no page head, but the head stays in the DOM: the page that is left for a tab teleports its controls to #page-actions before the layout learns the route changed. -->
             <header v-show="!detail" class="page-head">
               <div class="page-head-row">
