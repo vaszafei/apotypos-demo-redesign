@@ -54,14 +54,14 @@ const tipOf = (b: (typeof blocks.value)[number], o: TileGroup['outlets'][number]
     <div ref="holder" class="fit">
       <div class="gt-row" :style="{ height: `${HEIGHT}px` }">
         <div v-for="b in blocks" :key="b.g.name ?? 'none'" class="gt-box" :style="{ width: `${b.w}px`, height: `${b.h}px` }">
-          <a
-            v-for="tile in b.tiles" :key="tile.o.slug" class="entity-link gt-tile" :href="outletHref(tile.o.slug)" data-entity="outlet"
+          <EntityLink
+            v-for="tile in b.tiles" :key="tile.o.slug" class="gt-tile" type="outlet" :to="outletHref(tile.o.slug)"
             :style="`left:${tile.x}px;top:${tile.y}px;width:${tile.tw}px;height:${tile.th}px;--tile-rest:${tile.rest};--tile-full:${tile.full};--ink-rest:${ink(b.g.color, tile.k, 0.8)};--ink-full:${ink(b.g.color, tile.k)}`"
             @pointerenter="tooltip.show({ title: tipOf(b, tile.o) }, $event)" @pointermove="tooltip.show({ title: tipOf(b, tile.o) }, $event)" @pointerleave="tooltip.hide()"
           >
             <span v-if="tile.name" class="gt-name">{{ tile.o.name }}</span>
             <span v-if="tile.count" class="gt-n">{{ fmtInt(tile.o.n) }}</span>
-          </a>
+          </EntityLink>
         </div>
       </div>
       <div class="gt-row gt-labels">

@@ -32,3 +32,29 @@ export const storyProfiles = (dd: StoryDetailData) => {
   })
   return { groups, list }
 }
+
+// Pairs of outlets with at least one shared story (Spread.pairs of assets/spread.js). The score is the shared stories divided by the stories of either outlet.
+export interface OutletPair { a: number, b: number, shared: number, score: number, sameGroup: boolean, grouped: boolean }
+export const outletPairs = (dd: StoryDetailData) => {
+  const per = new Array<number>(dd.outlets.length).fill(0)
+  const shared = new Map<number, number>()
+  for (const s of dd.stories) {
+    const members = [...new Set(s.t.filter((_, i) => i % 3 === 0))].sort((a, b) => a - b)
+    members.forEach((o) => { per[o]!++ })
+    for (let i = 0; i < members.length; i++) {
+      for (let j = i + 1; j < members.length; j++) {
+        const key = members[i]! * 100 + members[j]!
+        shared.set(key, (shared.get(key) ?? 0) + 1)
+      }
+    }
+  }
+  const list: OutletPair[] = []
+  for (const [key, n] of shared) {
+    const a = Math.floor(key / 100)
+    const b = key % 100
+    const ga = dd.outlets[a]!.group
+    const gb = dd.outlets[b]!.group
+    list.push({ a, b, shared: n, score: n / (per[a]! + per[b]! - n), sameGroup: Boolean(ga) && ga === gb, grouped: Boolean(ga) && Boolean(gb) })
+  }
+  return { per, list }
+}
