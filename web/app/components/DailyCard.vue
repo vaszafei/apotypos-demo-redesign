@@ -2,8 +2,8 @@
 import type { StoryIssue } from '~/types/stories'
 
 // Entity.DailyCard of assets/entity-cards.js: the daily columns with a switch for the color of the columns: news (the analysed articles) or topics (the articles in stories).
-// daily[i] is [analysed, news] for day i. topicDays maps the index of a topic to its articles per day. The 8 largest topics have a color, the others are one gray part.
-const props = defineProps<{ dates: string[], daily: [number | null, number | null][], topicDays: Map<number, number[]>, issues: StoryIssue[], info?: string, height?: number }>()
+// topics: false leaves the switch out (the outlet page). daily[i] is [analysed, news] for day i. topicDays maps the index of a topic to its articles per day. The 8 largest topics have a color, the others are one gray part.
+const props = withDefaults(defineProps<{ dates: string[], daily: [number | null, number | null][], topicDays: Map<number, number[]>, issues: StoryIssue[], info?: string, height?: number, topics?: boolean }>(), { topics: true })
 const { t } = useI18n()
 const TOP_TOPICS = 8
 const mode = ref('news')
@@ -38,7 +38,7 @@ const tip = (i: number) => {
 
 <template>
   <DashCard :title="t('outlet2.daily.title')" :info="info">
-    <template #tools>
+    <template v-if="topics" #tools>
       <SegmentedControl v-model="mode" :label="t('outlet2.daily.mode')" :options="[{ value: 'news', label: t('outlet2.daily.mode.news') }, { value: 'topic', label: t('outlet2.daily.mode.topic') }]" />
     </template>
     <div>

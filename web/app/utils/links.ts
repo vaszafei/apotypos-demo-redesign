@@ -34,7 +34,12 @@ export const topicHref = (key: string | number) => `/topic?i=${key}`
 // The page of a story (ENTITY_PAGES.story): the Nuxt route /story, which keeps the ?id= of the static page.
 export const storyHref = (id: string | number) => `/story?id=${id}`
 
-// The page of an outlet (ENTITY_PAGES in assets/components.js). An outlet key is a 10 digit hex slug; the page is not ported yet.
-export const outletHref = (slug: string) => (/^[0-9a-f]{10}$/.test(slug) ? `/outlet-v2.html?slug=${slug}` : '/404.html')
+// The page of an outlet (ENTITY_PAGES in assets/components.js): the Nuxt route /outlet, which keeps the ?slug= of the static page. An outlet key is a 10 digit hex slug.
+export const outletHref = (slug: string) => (/^[0-9a-f]{10}$/.test(slug) ? `/outlet?slug=${slug}` : '/404.html')
+
+// Only http and https links from the data (App.safeUrl): a javascript: URL in the data never becomes a link.
+export const safeUrl = (url: string | null | undefined) => {
+  try { return url && ['http:', 'https:'].includes(new URL(url).protocol) ? url : null } catch { return null }
+}
 // The page of a group: the Nuxt route /group, which keeps the ?g= of the static page.
 export const groupPageHref = (slug: string) => `/group?g=${encodeURIComponent(slug)}`

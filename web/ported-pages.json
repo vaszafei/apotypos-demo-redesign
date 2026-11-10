@@ -7,5 +7,6 @@
   { "html": "story-v2.html", "route": "/story" },
   { "html": "similarity-v2.html", "route": "/similarity" },
   { "html": "topic-v2.html", "route": "/topic" },
-  { "html": "group-v2.html", "route": "/group" }
+  { "html": "group-v2.html", "route": "/group" },
+  { "html": "outlet-v2.html", "route": "/outlet" }
 ]

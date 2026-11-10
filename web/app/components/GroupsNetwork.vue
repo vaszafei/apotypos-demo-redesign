@@ -132,7 +132,7 @@ const showTip = (tip: { title: string, rows: { label: string, value: string, col
           <circle
             v-else :class="['net-outlet', cls(n.g)]" :cx="n.x" :cy="n.y" :r="n.r" :fill="tint(n.g)" :stroke="n.g.color" stroke-width="1.2"
             @pointerenter="enter(n.g); showTip(outletTip(n.o, n.g), $event)" @pointermove="showTip(outletTip(n.o, n.g), $event)" @pointerleave="leave(); tooltip.hide()"
-            @click="n.o.slug && open(`/outlet-v2.html?slug=${n.o.slug}`)"
+            @click="n.o.slug && open(outletHref(n.o.slug))"
           />
         </template>
       </g>
