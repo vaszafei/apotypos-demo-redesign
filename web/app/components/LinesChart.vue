@@ -3,13 +3,15 @@ import { useElementSize } from '@vueuse/core'
 import type { Series } from '~/types/topics'
 
 // Dash.LinesChart of assets/dash.js, same layout and arithmetic: the names sit at the line ends where there is room, else a legend names the lines.
-const props = defineProps<{ dates: string[], series: Series[], caption: string }>()
+// band: the indexes of a period that is tinted. tall: the height on a wide card. sparse: the lines are 0 most of the time (stories), so the tooltip leaves out the lines that are 0 on the day and cuts long names.
+// sqrt: the vertical axis is the square root of the value. hrefOf: the page of a line (the topic page by default).
+const props = defineProps<{ dates: string[], series: Series[], caption: string, band?: { from: number, to: number }, tall?: number, sparse?: boolean, sqrt?: boolean, hrefOf?: (s: Series) => string }>()
 const tooltip = useTooltipStore()
 
 const holder = ref<HTMLElement | null>(null)
 const { width: measured } = useElementSize(holder)
 const width = computed(() => Math.floor(measured.value) || 640)
-const height = computed(() => (width.value < 520 ? 190 : width.value < 640 ? 280 : 380))
+const height = computed(() => (width.value < 520 ? 190 : props.tall || (width.value < 640 ? 280 : 380)))
 const labelled = computed(() => width.value >= 520)
 const long = computed(() => width.value >= 700)
 const pad = computed(() => ({ top: 10, right: labelled.value ? (long.value ? 205 : 135) : 12, bottom: 24, left: 44 }))
@@ -21,9 +23,19 @@ const peak = computed(() => Math.max(...props.series.flatMap(s => s.values), 1))
 const tickStep = computed(() => niceStep(peak.value / (height.value < 300 ? 4 : 6)))
 const yMax = computed(() => Math.ceil(peak.value / tickStep.value) * tickStep.value)
 const X = (i: number) => pad.value.left + (i / Math.max(n.value - 1, 1)) * plotW.value
-const Y = (v: number) => pad.value.top + plotH.value - (v / yMax.value) * plotH.value
+const f = (v: number) => (props.sqrt ? Math.sqrt(v) : v)
+const Y = (v: number) => pad.value.top + plotH.value - (f(v) / f(yMax.value)) * plotH.value
 
-const ticks = computed(() => { const t: number[] = []; for (let v = 0; v <= yMax.value; v += tickStep.value) t.push(v); return t })
+// The lines of the grid: every tickStep on a linear axis; on a square root axis the round values that are at least 24 px apart, from the top down, with the top and 0 always there.
+const ticks = computed(() => {
+  const t: number[] = []
+  if (props.sqrt) {
+    const round = [10, 25, 50, 100, 150, 200, 300, 500, 750, 1000, 1500, 2000, 3000, 5000].filter(v => v < yMax.value).concat(yMax.value).reverse()
+    for (const v of round) if ((!t.length || Y(v) - Y(t[t.length - 1]!) >= 24) && Y(0) - Y(v) >= 24) t.push(v)
+    t.push(0)
+  } else for (let v = 0; v <= yMax.value; v += tickStep.value) t.push(v)
+  return t
+})
 const xTicks = computed(() => {
   const step = plotW.value / Math.max(n.value - 1, 1)
   const fit = Math.max(1, Math.ceil(72 / step))
@@ -31,6 +43,14 @@ const xTicks = computed(() => {
   const out: { d: string, i: number }[] = []
   for (let i = 0; i < n.value; i += every) out.push({ d: props.dates[i]!, i })
   return out
+})
+// A period inside the whole window: a tint behind the lines, at least 3 px wide, so a single day can be seen.
+const bandBox = computed(() => {
+  if (!props.band) return null
+  const step = plotW.value / Math.max(n.value - 1, 1)
+  const x0 = Math.max(pad.value.left, X(props.band.from) - step / 2)
+  const x1 = Math.min(width.value - pad.value.right, X(props.band.to) + step / 2)
+  return { x: x0, width: Math.max(3, x1 - x0) }
 })
 const paths = computed(() => props.series.slice().reverse().map(s => ({ s, d: smoothPath(s.values.map((v, i) => [X(i), Y(v)] as [number, number])) })))
 
@@ -61,7 +81,7 @@ const read = (e: PointerEvent) => {
   hover.value = i
   tooltip.show({
     title: fmtDate(props.dates[i]!),
-    rows: props.series.map(s => ({ label: s.name, value: fmtInt(Math.round(s.values[i] ?? 0)), color: s.color }))
+    rows: props.series.filter(s => !props.sparse || (s.values[i] ?? 0) > 0).map(s => ({ label: props.sparse && s.name.length > 44 ? `${s.name.slice(0, 43)}…` : s.name, value: fmtInt(Math.round(s.values[i] ?? 0)), color: s.color }))
       .sort((a, b) => Number(b.value.replace(/\D/g, '')) - Number(a.value.replace(/\D/g, '')))
   }, e)
 }
@@ -79,11 +99,12 @@ const leave = () => { hover.value = null; tooltip.hide() }
         <text :x="pad.left - 6" :y="Y(v) + 4" text-anchor="end">{{ fmtInt(v) }}</text>
       </template>
       <text v-for="t in xTicks" :key="t.d" :x="X(t.i)" :y="height - 6" text-anchor="middle">{{ fmtDay(t.d) }}</text>
+      <rect v-if="bandBox" class="line-band" :x="bandBox.x" :y="pad.top" :width="bandBox.width" :height="plotH" />
       <path v-for="p in paths" :key="p.s.key" class="line-series" :d="p.d" :stroke="p.s.color" stroke-width="1.5" pathLength="1" />
       <template v-for="m in ends" :key="m.s.key">
         <line v-if="Math.abs(m.y - m.at) > 6" class="line-leader" :x1="X(n - 1)" :y1="m.at" :x2="X(n - 1) + 8" :y2="m.y" :stroke="m.s.color" />
         <circle class="line-dot" :cx="X(n - 1)" :cy="m.at" r="3" :fill="m.s.color" :style="`--m-i: ${m.i};`" />
-        <a :href="topicHref(m.s.key)" class="line-end-link"><title>{{ m.s.name }}</title><text class="line-end" :x="X(n - 1) + 10" :y="m.y + 4">{{ cut(m.s.name) }}</text></a>
+        <a :href="hrefOf ? hrefOf(m.s) : topicHref(m.s.key)" class="line-end-link"><title>{{ m.s.name }}</title><text class="line-end" :x="X(n - 1) + 10" :y="m.y + 4">{{ cut(m.s.name) }}</text></a>
       </template>
       <line class="hover-rule" :y1="pad.top" :y2="pad.top + plotH" stroke="var(--rule)" stroke-width="1" :x1="hover !== null ? X(hover) : 0" :x2="hover !== null ? X(hover) : 0" :visibility="hover !== null ? 'visible' : 'hidden'" />
       <circle

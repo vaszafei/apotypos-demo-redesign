@@ -1,0 +1,87 @@
+<script setup lang="ts">
+import type { BarRow } from '~/components/BarList.vue'
+import type { StoryTrend } from '~/types/stories'
+
+// Μέσα › Ιστορίες (stories-v2.html): the list of every story of the period, the largest first, and beside it the stories that rise and fall against the period before and the lines of the first of them.
+const { t } = useI18n()
+// home.css is the sheet of Αρχική; only this page and Αρχική use it, so it is not in the sheets of every page.
+useHead({ title: () => `${t('nav.media')} · ${t('site.name')}`, link: [{ rel: 'stylesheet', href: '/assets/home.css' }] })
+const period = usePeriodStore()
+const { status, refresh, dates, view, range, byDay, list } = await useStories()
+
+const day = (iso: string) => fmtDate(iso)
+const dateText = computed(() => (view.value.from === view.value.to ? day(view.value.from) : `${day(view.value.from)} – ${day(view.value.to)}`))
+
+const lines = computed(() => {
+  if (!list.value.length) return null
+  const [i0, i1] = range.value
+  const l = storyLines(list.value, i0, i1)
+  const series = l.lines.map(({ s, values }, i) => ({ key: String(s.id), name: storyName(s), color: `var(--cat-${i + 1})`, values }))
+  return { dates: dates.value.slice(l.d0, l.d1 + 1), series, band: l.band }
+})
+
+const trends = computed(() => storyTrends(byDay.value, range.value[0], range.value[1]))
+const rowOf = (r: StoryTrend): BarRow => ({
+  key: r.s.id, label: storyName(r.s), to: storyHref(r.s.id), value: Math.abs(r.change), color: r.change > 0 ? 'var(--emph-more)' : 'var(--emph-less)',
+  arrow: r.change > 0 ? 'up' : 'down', text: `${fmtSigned(r.change * 100)}%`, tip: t('stories.trend.tip', { before: fmtInt(r.before), now: fmtInt(r.now) })
+})
+const trendRange = computed(() => {
+  const tr = trends.value
+  if (!tr) return null
+  const [i0] = range.value
+  return t('stories.trend.vs', { range: `${day(dates.value[tr.p0]!)}${tr.len > 1 ? ` – ${day(dates.value[i0 - 1]!)}` : ''}` })
+})
+
+// A new period draws the lines in again (assets/motion.js replay); the first view is played by plugins/motion.client.ts.
+const { $motion } = useNuxtApp()
+watch(view, async () => { await nextTick(); $motion.replay(document.querySelector('[data-card="lines"]')) })
+</script>
+
+<template>
+  <Teleport v-if="dates.length" defer to="#page-actions">
+    <DateRange :dates="dates" :from="view.from" :to="view.to" @change="r => period.set(r.from, r.to)" />
+  </Teleport>
+
+  <template v-if="status === 'error'">
+    <div class="error-state" role="alert" data-state="error">
+      <AppIcon name="exclamation-triangle" />
+      <p style="margin: 0">{{ t('state.failed') }}</p>
+      <button type="button" class="button" @click="refresh()"><AppIcon name="arrow-path" class="icon icon-sm" />{{ t('state.retry') }}</button>
+    </div>
+  </template>
+  <div v-else-if="status === 'empty'" class="dash-grid">
+    <div class="card-col c-12"><section class="dcard"><div class="empty-state" data-state="empty"><p>{{ t('topics2.empty') }}</p></div></section></div>
+  </div>
+  <div v-else class="dash-grid story-split">
+    <div class="c-4 card-col card-col-fill">
+      <DashCard class="home-list home-day" :title="t('topics2.stories.title')" :info="t('stories.period.info')">
+        <StoryList v-if="list.length" :key="`${view.from}:${view.to}`" :rows="list" />
+        <p v-else class="dcard-empty">{{ t('stories.period.empty') }}</p>
+      </DashCard>
+    </div>
+    <div class="c-8 card-col">
+      <DashCard :title="t('stories.trend.title')" :info="t('stories.trend.info', { n: TREND_MIN })">
+        <template v-if="trends" #tools><span class="home-date">{{ trendRange }}</span></template>
+        <p v-if="!trends" class="dcard-empty">{{ t('stories.trend.empty') }}</p>
+        <div v-else class="story-trend">
+          <div class="story-trend-col">
+            <p class="dcard-sub">{{ t('stories.trend.up') }}</p>
+            <BarList v-if="trends.up.length" :rows="trends.up.map(rowOf)" :max="trends.widest" />
+            <p v-else class="dcard-empty">{{ t('stories.trend.none') }}</p>
+          </div>
+          <div class="story-trend-col">
+            <p class="dcard-sub">{{ t('stories.trend.down') }}</p>
+            <BarList v-if="trends.down.length" :rows="trends.down.map(rowOf)" :max="trends.widest" />
+            <p v-else class="dcard-empty">{{ t('stories.trend.none') }}</p>
+          </div>
+        </div>
+      </DashCard>
+      <DashCard card="lines" :title="t('stories.time.title')" :info="t('stories.time.info')">
+        <template #tools><span class="home-date">{{ dateText }}</span></template>
+        <LinesChart v-if="lines" :dates="lines.dates" :series="lines.series" :band="lines.band" sparse sqrt :tall="300" :caption="t('stories.time.title')" :href-of="s => storyHref(s.key)" />
+        <p v-else class="dcard-empty">{{ t('stories.period.empty') }}</p>
+      </DashCard>
+    </div>
+  </div>
+  <p class="proto-note">{{ t('proto.states') }}</p>
+</template>
