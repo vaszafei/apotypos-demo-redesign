@@ -6,6 +6,7 @@ import type { Series } from '~/types/topics'
 // band: the indexes of a period that is tinted. tall: the height on a wide card. sparse: the lines are 0 most of the time (stories), so the tooltip leaves out the lines that are 0 on the day and cuts long names.
 // sqrt: the vertical axis is the square root of the value. hrefOf: the page of a line (the topic page by default).
 const props = defineProps<{ dates: string[], series: Series[], caption: string, band?: { from: number, to: number }, tall?: number, sparse?: boolean, sqrt?: boolean, hrefOf?: (s: Series) => string }>()
+const linkOf = (s: Series) => (props.hrefOf ? props.hrefOf(s) : topicHref(s.key))
 const tooltip = useTooltipStore()
 
 const holder = ref<HTMLElement | null>(null)
@@ -104,7 +105,8 @@ const leave = () => { hover.value = null; tooltip.hide() }
       <template v-for="m in ends" :key="m.s.key">
         <line v-if="Math.abs(m.y - m.at) > 6" class="line-leader" :x1="X(n - 1)" :y1="m.at" :x2="X(n - 1) + 8" :y2="m.y" :stroke="m.s.color" />
         <circle class="line-dot" :cx="X(n - 1)" :cy="m.at" r="3" :fill="m.s.color" :style="`--m-i: ${m.i};`" />
-        <a :href="hrefOf ? hrefOf(m.s) : topicHref(m.s.key)" class="line-end-link"><title>{{ m.s.name }}</title><text class="line-end" :x="X(n - 1) + 10" :y="m.y + 4">{{ cut(m.s.name) }}</text></a>
+        <NuxtLink v-if="portedPath(linkOf(m.s))" :to="linkOf(m.s)" class="line-end-link"><title>{{ m.s.name }}</title><text class="line-end" :x="X(n - 1) + 10" :y="m.y + 4">{{ cut(m.s.name) }}</text></NuxtLink>
+        <a v-else :href="linkOf(m.s)" class="line-end-link"><title>{{ m.s.name }}</title><text class="line-end" :x="X(n - 1) + 10" :y="m.y + 4">{{ cut(m.s.name) }}</text></a>
       </template>
       <line class="hover-rule" :y1="pad.top" :y2="pad.top + plotH" stroke="var(--rule)" stroke-width="1" :x1="hover !== null ? X(hover) : 0" :x2="hover !== null ? X(hover) : 0" :visibility="hover !== null ? 'visible' : 'hidden'" />
       <circle

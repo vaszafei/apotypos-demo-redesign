@@ -2,7 +2,7 @@
 import { useMediaQuery, useEventListener } from '@vueuse/core'
 // The shell of assets/shell.js as Vue: the drawer (sidebar), the header bar, the section nav, the page and the footer. Same markup and classes, so the prototype CSS applies as it is.
 const { t } = useI18n()
-const { sections, section } = useNav()
+const { sections, section, detail, parent } = useNav()
 const session = useSessionStore()
 const route = useRoute()
 const drawer = ref(false)
@@ -33,7 +33,15 @@ const centerTabs = async () => {
 }
 onMounted(centerTabs)
 watch(() => route.path, centerTabs)
-const current = (to: string) => (route.path === to ? 'page' : undefined)
+// A detail page marks the tab that lists it, not as the page itself ('true', as the static shell does).
+const current = (to: string) => (route.path === to ? 'page' : detail.value === to ? 'true' : undefined)
+// The back button of a detail page goes to the last page of the site. A visitor who came from outside goes to the parent page (BackButton in assets/shell.js).
+// The router remembers the page before in history.state; a visitor who came from a static page of the site has it in the referrer.
+const back = () => {
+  const cameFromSite = (history.state as { back?: string | null } | null)?.back || (document.referrer.startsWith(location.origin) && history.length > 1)
+  if (cameFromSite) history.back()
+  else navigateTo(detail.value ?? '/')
+}
 </script>
 
 <template>
@@ -61,6 +69,7 @@ const current = (to: string) => (route.path === to ? 'page' : undefined)
       <header class="header-bar appbar">
         <div class="header-left">
           <button ref="menuButton" type="button" class="icon-button menu-button" :aria-label="t('shell.menu')" aria-controls="sidebar" :aria-expanded="tf(drawer)" @click="setDrawer(true)"><AppIcon name="bars-3" /></button>
+          <button v-if="detail" type="button" class="back-button" :aria-label="t('shell.back')" :title="t('shell.back')" @click="back"><AppIcon name="arrow-left" class="icon icon-sm" /></button>
           <span class="appbar-title">{{ t(`nav.${section.key}`) }}</span>
         </div>
         <NavLink class="logo-link header-logo" to="/"><img class="logo-img" src="/assets/logo.svg" :alt="t('site.name')" width="335" height="141"></NavLink>
@@ -88,8 +97,18 @@ const current = (to: string) => (route.path === to ? 'page' : undefined)
           </div>
         </nav>
         <div class="page-main">
+          <div v-if="detail && parent" class="trail-bar">
+            <button type="button" class="back-button" :aria-label="t('shell.back')" :title="t('shell.back')" @click="back"><AppIcon name="arrow-left" class="icon icon-sm" /></button>
+            <nav class="appbar-trail" :aria-label="t('shell.breadcrumbs')">
+              <ol>
+                <li><NavLink :to="detail">{{ t(`nav.${section.key}`) }}</NavLink></li>
+                <li><AppIcon name="chevron-right" class="icon icon-sm" /><span aria-current="page">{{ t(`tab.${section.key}.${parent.key}`) }}</span></li>
+              </ol>
+            </nav>
+          </div>
           <main id="content" class="content dash minimal filters-right" :class="{ 'is-gated': gated }">
-            <header class="page-head">
+            <!-- A detail page has no page head, but the head stays in the DOM: the page that is left for a tab teleports its controls to #page-actions before the layout learns the route changed. -->
+            <header v-show="!detail" class="page-head">
               <div class="page-head-row">
                 <div class="page-head-titles"><h1 class="page-head-title">{{ t(`nav.${section.key}`) }}</h1></div>
                 <div id="page-actions" class="page-head-actions" />

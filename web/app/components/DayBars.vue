@@ -2,9 +2,9 @@
 import { useElementSize } from '@vueuse/core'
 
 // UI.BarChart of assets/components.js for one column a day: the series are stacked from the bottom, the highest day has its value above it,
-// and a drag over the days selects a period. Only the options that Μέσα › Επισκόπηση uses are here.
+// and a drag over the days selects a period (not with selectable false). Only the options that Μέσα › Επισκόπηση uses are here.
 interface Bars { name: string, color: string, values: number[] }
-const props = withDefaults(defineProps<{ dates: string[], series: Bars[], caption: string, height?: number, tipOf: (i: number) => string }>(), { height: 170 })
+const props = withDefaults(defineProps<{ dates: string[], series: Bars[], caption: string, height?: number, tipOf: (i: number) => string, selectable?: boolean }>(), { height: 170, selectable: true })
 const emit = defineEmits<{ select: [range: { from: string, to: string }] }>()
 const tooltip = useTooltipStore()
 
@@ -82,7 +82,7 @@ const up = (e: PointerEvent) => {
   const a = anchor.value
   anchor.value = null
   leave()
-  if (a !== null && a !== i) emit('select', { from: props.dates[Math.min(a, i)]!, to: props.dates[Math.max(a, i)]! })
+  if (props.selectable && a !== null && a !== i) emit('select', { from: props.dates[Math.min(a, i)]!, to: props.dates[Math.max(a, i)]! })
 }
 </script>
 
@@ -104,8 +104,8 @@ const up = (e: PointerEvent) => {
       <text v-for="p in peakLabels" :key="p.i" class="bar-top" :x="p.x" :y="p.y" :text-anchor="p.anchor">{{ fmtInt(totals[p.i]!) }}</text>
       <text v-for="l in labels" :key="l.d" :x="pad.left + l.i * slot + slot / 2" :y="pad.top + plotH + FRAME.labelGap" text-anchor="middle">{{ fmtDay(l.d) }}</text>
       <rect
-        class="bar-hit is-select" :x="pad.left" :y="pad.top" :width="plotW" :height="plotH"
-        @pointermove="showAt" @pointerleave="leave" @pointerdown="down" @pointerup="up" @pointercancel="anchor = null"
+        :class="selectable ? 'bar-hit is-select' : 'bar-hit'" :x="pad.left" :y="pad.top" :width="plotW" :height="plotH"
+        @pointermove="showAt" @pointerleave="leave" @pointerdown="selectable && down($event)" @pointerup="up" @pointercancel="anchor = null"
       />
     </svg>
     <div class="visually-hidden">

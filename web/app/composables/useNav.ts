@@ -21,8 +21,15 @@ export const FOOTER_LINKS = [
   { key: 'about', to: '/about', icon: 'info' }
 ]
 
+// A detail page (the page of a story) is a page of the section of its parent tab, definePageMeta({ detail: '/stories' }); the tab that lists it is marked in the nav
+// (the details of NAV in assets/shell.js).
+declare module '#app' { interface PageMeta { detail?: string } }
+
 export const useNav = () => {
   const route = useRoute()
-  const section = computed(() => NAV.find(s => s.to === route.path || s.tabs.some(t => t.to === route.path)) ?? NAV[1]!)
-  return { sections: NAV, section }
+  const detail = computed(() => route.meta.detail)
+  const path = computed(() => detail.value ?? route.path)
+  const section = computed(() => NAV.find(s => s.to === path.value || s.tabs.some(t => t.to === path.value)) ?? NAV[1]!)
+  const parent = computed(() => section.value.tabs.find(t => t.to === detail.value))
+  return { sections: NAV, section, detail, parent }
 }

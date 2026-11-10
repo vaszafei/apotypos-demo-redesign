@@ -16,7 +16,7 @@ const onScroll = (e: Event) => {
 <template>
   <ul class="home-stories" @scroll.passive="onScroll">
     <li v-for="o in visible" :key="o.s.id">
-      <a class="home-story-pick" :href="storyHref(o.s.id)"><span class="home-story-name">{{ storyName(o.s) }}</span><span class="muted-text">{{ fmtInt(o.n) }}</span></a>
+      <NuxtLink class="home-story-pick" :to="storyHref(o.s.id)"><span class="home-story-name">{{ storyName(o.s) }}</span><span class="muted-text">{{ fmtInt(o.n) }}</span></NuxtLink>
     </li>
   </ul>
 </template>
