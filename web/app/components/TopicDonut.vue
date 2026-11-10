@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { TopicRow } from '~/types/topics'
 
-// TopicDonut of topics-v2.html: one ring, a slice for each topic from the top, clockwise, the largest first; the list on its side has every topic and scrolls.
-const props = defineProps<{ rows: TopicRow[], total: number, colorOf: Map<number, string> }>()
+// TopicDonut of topics-v2.html, and of media-v2.html with its own center and caption: one ring, a slice for each topic from the top, clockwise, the largest first; the list on its side has every topic and scrolls.
+const props = defineProps<{ rows: TopicRow[], total: number, colorOf: Map<number, string>, center?: string, caption?: string }>()
 const tooltip = useTooltipStore()
 
 const size = 176
@@ -41,13 +41,13 @@ const show = (r: TopicRow, e: PointerEvent) => tooltip.show({ title: tip(r) }, e
         </li>
       </ul>
     </div>
-    <svg class="chart donut topic-donut" :width="size" :height="size" :viewBox="`0 0 ${size} ${size}`" role="img" :aria-label="t('topics2.all.title')">
+    <svg class="chart donut topic-donut" :width="size" :height="size" :viewBox="`0 0 ${size} ${size}`" role="img" :aria-label="caption ?? t('topics2.all.title')">
       <path
         v-for="s in slices" :key="s.r.k" :class="s.ranked ? 'slice' : 'slice slice-rest'" :d="s.d" :fill="s.color" :style="`--m-i: ${s.i};`"
         @pointerenter="show(s.r, $event)" @pointermove="show(s.r, $event)" @pointerleave="tooltip.hide()"
       />
       <text class="donut-num" :x="c" :y="c + 3" text-anchor="middle">{{ fmtInt(total) }}</text>
-      <text :x="c" :y="c + 19" text-anchor="middle">{{ t('topics2.all.center') }}</text>
+      <text :x="c" :y="c + 19" text-anchor="middle">{{ center ?? t('topics2.all.center') }}</text>
     </svg>
   </div>
 </template>

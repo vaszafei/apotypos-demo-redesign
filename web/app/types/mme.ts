@@ -24,3 +24,7 @@ export interface MmeSummary {
   total: number
   hard: boolean[]
 }
+
+// A block of the group tiles (a group and its outlets) and a dot of the stance map.
+export interface TileGroup { name: string | null, label: string, color: string, slug: string | null, n: number, outlets: { name: string, slug: string, n: number }[] }
+export interface StancePoint { name: string, c: number, u: number, s: number, n: number, color: string }

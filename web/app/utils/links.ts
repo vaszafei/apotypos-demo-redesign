@@ -23,3 +23,7 @@ export const searchTarget = (e: { h: string, route?: string }): { to: string } |
 
 // The static page of a topic (ENTITY_PAGES.topic in assets/components.js). A topic page is not ported yet.
 export const topicHref = (key: string | number) => `/topic-v2.html?i=${key}`
+
+// The static pages of an outlet and a group (ENTITY_PAGES in assets/components.js). An outlet key is a 10 digit hex slug; the pages are not ported yet.
+export const outletHref = (slug: string) => (/^[0-9a-f]{10}$/.test(slug) ? `/outlet-v2.html?slug=${slug}` : '/404.html')
+export const groupPageHref = (slug: string) => `/group-v2.html?g=${encodeURIComponent(slug)}`
