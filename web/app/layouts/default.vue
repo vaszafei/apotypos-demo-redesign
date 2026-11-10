@@ -35,10 +35,11 @@ onMounted(centerTabs)
 watch(() => route.path, centerTabs)
 // A detail page marks the tab that lists it, not as the page itself ('true', as the static shell does).
 const current = (to: string) => (route.path === to ? 'page' : detail.value === to ? 'true' : undefined)
-// The back button of a detail page goes to the last page of the site; a visitor who came from outside goes to the parent page (BackButton in assets/shell.js).
+// The back button of a detail page goes to the last page of the site. A visitor who came from outside goes to the parent page (BackButton in assets/shell.js).
+// The router remembers the page before in history.state; a visitor who came from a static page of the site has it in the referrer.
 const back = () => {
-  const inSite = document.referrer.startsWith(location.origin) && history.length > 1
-  if (inSite) history.back()
+  const cameFromSite = (history.state as { back?: string | null } | null)?.back || (document.referrer.startsWith(location.origin) && history.length > 1)
+  if (cameFromSite) history.back()
   else navigateTo(detail.value ?? '/')
 }
 </script>
@@ -106,7 +107,8 @@ const back = () => {
             </nav>
           </div>
           <main id="content" class="content dash minimal filters-right" :class="{ 'is-gated': gated }">
-            <header v-if="!detail" class="page-head">
+            <!-- A detail page has no page head, but the head stays in the DOM: the page that is left for a tab teleports its controls to #page-actions before the layout learns the route changed. -->
+            <header v-show="!detail" class="page-head">
               <div class="page-head-row">
                 <div class="page-head-titles"><h1 class="page-head-title">{{ t(`nav.${section.key}`) }}</h1></div>
                 <div id="page-actions" class="page-head-actions" />

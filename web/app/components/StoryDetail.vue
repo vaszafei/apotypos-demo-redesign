@@ -7,9 +7,10 @@ import type { BarRow } from '~/components/BarList.vue'
 // The body of the story page (story-v2.html): the title card, the days, the stance, the groups and outlets, how it was written, the people and the related stories.
 const props = defineProps<{ id: number }>()
 const { t } = useI18n()
-const list = await useFixture<StoriesData>('stories', { required: ['dates', 'issues', 'stories'], isEmpty: b => b.stories.length === 0 })
-const detail = await useFixture<StoryDetailData>('storyDetail', { required: ['outlets', 'stories', 'base', 'people'], isEmpty: b => b.stories.length === 0 })
-const groupsData = await useFixture<GroupsData>('groups', { required: ['groups'] })
+const list = useFixtureLazy<StoriesData>('stories', { required: ['dates', 'issues', 'stories'], isEmpty: b => b.stories.length === 0 })
+const detail = useFixtureLazy<StoryDetailData>('storyDetail', { required: ['outlets', 'stories', 'base', 'people'], isEmpty: b => b.stories.length === 0 })
+const groupsData = useFixtureLazy<GroupsData>('groups', { required: ['groups'] })
+const loading = computed(() => list.status.value === 'loading' || detail.status.value === 'loading')
 const problem = computed(() => [list.status.value, detail.status.value].find(s => s !== 'ready'))
 const retry = () => { list.refresh(); detail.refresh() }
 
@@ -120,7 +121,8 @@ const peopleColumns = computed(() => [
 </script>
 
 <template>
-  <div v-if="problem === 'error'" class="error-state" role="alert" data-state="error">
+  <template v-if="loading" />
+  <div v-else-if="problem === 'error'" class="error-state" role="alert" data-state="error">
     <AppIcon name="exclamation-triangle" />
     <p style="margin: 0">{{ t('state.failed') }}</p>
     <button type="button" class="button" @click="retry"><AppIcon name="arrow-path" class="icon icon-sm" />{{ t('state.retry') }}</button>

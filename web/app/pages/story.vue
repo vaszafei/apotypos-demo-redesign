@@ -11,5 +11,5 @@ watch(id, () => window.scrollTo(0, 0))
 </script>
 
 <template>
-  <ClientOnly><StoryDetail :key="id" :id="id" /></ClientOnly>
+  <ClientOnly><StoryDetail :key="String(id)" :id="id" /></ClientOnly>
 </template>
