@@ -115,8 +115,8 @@
   .plegma-title { order: -1; position: absolute; top: 56px; left: 0; }
 }
 
-/* Αρχική: the hero is a transparent window over the Plegma, which the static page drew as its own field. The page head has no title here: the masthead is the title. */
-.shell.is-plegma .home-hero { background: none; border-bottom: 0; }
+/* Αρχική: the hero is a transparent window over the Plegma, which the static page drew as its own field. The page head has no title here: the masthead is the title. The hero is its own block: its line at the bottom and the link to «Η επικαιρότητα» stay, over the Plegma. */
+.shell.is-plegma .home-hero { background: none; }
 .shell.is-hero-page .page-head { display: none; }
 /* The search of the top bar waits while the large one is in the page, and appears when the large one has moved up into it. */
 .header-bar .global-search { transition: opacity var(--motion-base) var(--ease-out); }
@@ -141,3 +141,31 @@ html[data-search-fly] .home-hero-search .search-button { visibility: hidden; }
 /* A small card lists the related stories by name and articles; the picture of each would leave the name no room. */
 .plegma-card .rows-related li { grid-template-columns: minmax(0, 1fr) auto; }
 .plegma-card .rows-related li > svg { display: none; }
+
+/* Αρχική › «Η επικαιρότητα» (components/HomeToday.vue): under the hero a screen. The calendar floats over the left half of the width at the top, from the left edge to the center, and the web is centered under it; under it the web of the picked day (components/PlegmaDayWeb.vue)
+   fills the free area, and the card of the story of the day is a glass card at its right. The Plegma stage is behind, as a dim map. */
+.home-today { --card-glass: color-mix(in srgb, var(--surface-page) 82%, transparent); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto minmax(0, 1fr); gap: var(--space-4); height: calc(100svh - 64px); min-height: 640px; padding: var(--space-5) 0 var(--space-4); }
+.home-today-days { grid-column: 1; grid-row: 1; min-width: 0; }
+.home-today-map { grid-column: 1; grid-row: 2; position: relative; min-width: 0; min-height: 0; }
+.home-today-side { grid-column: 2; grid-row: 2; justify-self: end; width: min(480px, 100%); margin-right: 48px; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: var(--space-3); }
+.home-today-side > .home-today-card { flex: none; }
+.home-day-list { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+.home-day-list .home-stories { flex: 1 1 0; min-height: 0; max-height: none; }
+.home-today .dcard { background: var(--card-glass); backdrop-filter: blur(10px); }
+.plegma-day { position: absolute; inset: 0; }
+.plegma-day-canvas { display: block; width: 100%; height: 100%; }
+/* The calendar: an arrow, the row of tiles that fills the width, an arrow. A month name is over the tile that starts it. */
+.home-calendar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: end; gap: var(--space-2); }
+.home-days-window { min-width: 0; }
+.home-calendar .home-days { overflow: visible; padding: 22px 0 0; scroll-snap-type: none; }
+.home-calendar .home-days > li { position: relative; flex: 1 1 0; min-width: 0; }
+.home-calendar .home-day-btn { width: 100%; }
+.home-day-month { position: absolute; left: 2px; top: -20px; font-size: var(--text-caption); font-weight: 600; text-transform: capitalize; white-space: nowrap; color: var(--text-primary); }
+.home-days-step { align-self: end; margin-bottom: 30px; }
+.home-days-step:disabled { opacity: 0.3; cursor: default; }
+@media (max-width: 1023px) {
+  .home-day-list .home-stories { max-height: 330px; }
+  .home-today-side { margin-right: 0; width: auto; }
+  .home-today { display: flex; flex-direction: column; height: auto; min-height: 0; }
+  .home-today-map { height: 70vw; min-height: 420px; }
+}

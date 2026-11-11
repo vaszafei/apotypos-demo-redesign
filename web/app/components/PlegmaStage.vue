@@ -40,6 +40,8 @@ let raf = 0
 let flight: PlegmaFlight | null = null
 let hover: PlegmaStory | null = null
 let webs: PlegmaStory[] = []
+// The best webs of the latest week, which Home frames under the hero. Under the hero, with a day picked (plegma.homeDay), the map is a dim background of dots for the web of the day.
+let weekWebs: PlegmaStory[] = []
 let ink = '#111'
 // The color of a story with no theme and of a node with no group: a soft gray, not the ink, so the map is not black.
 let mute = '#6b6f78'
@@ -159,6 +161,7 @@ const targetCamera = (): PlegmaCamera | null => {
   }
   return webs.length ? frameHome(webs, width, height) : null
 }
+
 
 const fly = () => {
   const to = targetCamera()
@@ -778,7 +781,7 @@ const draw = (now: number) => {
   const other = plegma.compare !== null ? world.byId.get(plegma.compare) ?? null : null
   const issue = focusIssue()
   const outletOn = focusOutlet() !== null
-  const onHome = !story && issue === null && !outletOn
+  const onHome = !story && issue === null && !outletOn && plegma.homeDay === null
   // The theme that is lit: the one of the story or the theme in focus, or the one under the pointer.
   const lit = hover ? hover.issue : story ? story.issue : issue
   const litCoded = lit !== null && !world.issues[lit]!.catchAll
@@ -1036,7 +1039,7 @@ const resize = () => {
 
 // ---- the pointer ----
 // The stage is behind the page, so the pointer is read on the window; a card, a link or a control under it is not the map.
-const CAPTURES = 'a, button, input, select, textarea, [role="dialog"], .dcard, .plegma-card, .plegma-title, .plegma-dock, .kpi-tile, .page-head, .section-nav, .trail-bar, .header-bar, .sidebar, .page-footer, .tooltip'
+const CAPTURES = 'a, button, input, select, textarea, [role="dialog"], .dcard, .plegma-card, .plegma-day, .plegma-title, .plegma-dock, .kpi-tile, .page-head, .section-nav, .trail-bar, .header-bar, .sidebar, .page-footer, .tooltip'
 const pickAt = (x: number, y: number, reach: number) => {
   if (!world) return null
   let best: PlegmaStory | null = null
@@ -1224,7 +1227,8 @@ const start = () => {
   byX = world.stories.slice().sort((a, b) => a.x - b.x)
   // The latest week that has topics, so the webs have their colours (the October stories have no topic): the last day with a count in the topics' days.
   const lastCoded = home.data.value!.issueDaily.reduce((m, row) => Math.max(m, row.findLastIndex(v => v !== null)), 0)
-  webs = homeWebs(world, ix, phone.value ? HOME_WEBS_PHONE : HOME_WEBS, lastCoded)
+  weekWebs = homeWebs(world, ix, phone.value ? HOME_WEBS_PHONE : HOME_WEBS, lastCoded)
+  webs = plegma.homeDay === null ? weekWebs : []
   readTokens()
   // A cold open lands settled: no flight (R14).
   const to = targetCamera()
@@ -1243,6 +1247,13 @@ onMounted(() => {
 useEventListener(document, 'visibilitychange', () => { if (document.hidden) halt(); else kick() })
 // The route puts something else in focus: fly there. From a page with no map the flight starts from where the camera was left.
 watch(() => [plegma.focus, plegma.compare], () => fly(), { deep: true })
+// Home under the hero picked a day (the map steps back to a dim background) or went back to the hero (the camera frames the best of the week again).
+watch(() => plegma.homeDay, (day, was) => {
+  if (!world) return
+  webs = day === null ? weekWebs : []
+  if (day === null && was !== null && plegma.active) fly()
+  kick()
+})
 // The view measured the free area again (its title grew, the window changed): the camera frames the new area, inside a flight from where it is.
 watch(() => plegma.region, () => {
   const to = targetCamera()
@@ -1264,7 +1275,7 @@ onBeforeUnmount(halt)
 </script>
 
 <template>
-  <div class="plegma-stage" :class="{ 'is-view': plegma.focus !== null }" :hidden="!plegma.active" aria-hidden="true">
+  <div class="plegma-stage" :class="{ 'is-view': plegma.focus !== null || plegma.homeDay !== null }" :hidden="!plegma.active" aria-hidden="true">
     <canvas ref="canvas" class="plegma-canvas plegma-canvas-back" />
     <canvas ref="canvasFocus" class="plegma-canvas plegma-canvas-focus" />
   </div>

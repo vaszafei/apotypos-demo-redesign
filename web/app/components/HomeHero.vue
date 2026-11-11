@@ -55,5 +55,6 @@ const tail = computed(() => t('home.hero.eyebrow').toLocaleUpperCase(useNuxtApp(
         <p class="home-hero-period">{{ period }}</p>
       </div>
     </div>
+    <a class="home-hero-more" href="#home-today">{{ t('home.hero.more') }}<AppIcon name="chevron-down" class="icon icon-sm" /></a>
   </section>
 </template>
