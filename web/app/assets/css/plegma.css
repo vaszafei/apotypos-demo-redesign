@@ -58,16 +58,14 @@
 .plegma-card .how-panel .bar-list > li > :nth-child(3) { grid-column: 2; grid-row: 1; }
 @media (prefers-reduced-motion: reduce) { .plegma-card { transition: none; transform: none; } }
 
-/* The theme view (components/plegma/PlegmaThemeView.vue): the map has the left column to itself (the web of the theme, and under it the strip of its days); in the middle
-   the stories the web shows and the outlets, on the right the stance, the groups, the themes like it and how the theme is written. */
-.plegma-orbit.is-theme { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr) minmax(0, 1.2fr); }
-.plegma-orbit.is-theme .orbit-map { min-height: 340px; }
-.plegma-orbit.is-theme .card-stories { flex: 1 1 0; }
-.plegma-orbit.is-theme .card-similar, .plegma-orbit.is-theme .card-stance, .plegma-orbit.is-theme .card-groups-diff { flex: none; }
-.plegma-orbit.is-theme .card-outlets-diff { flex: 0 1 auto; max-height: 40%; }
-.plegma-orbit.is-theme .card-how { flex: 1 1 0; }
+/* The theme view (components/plegma/PlegmaThemeView.vue) has the layout of the story view: the web in the free cell on the left with the stories it shows under it, in the
+   middle the outlets and groups that write the theme more or less than usual, on the right the theme over time and under it the stance with the themes like it, and how it is written. */
+.plegma-orbit.is-theme .orbit-left > .card-stories { flex: 1 1 0; max-height: none; }
+.plegma-orbit.is-theme .orbit-middle > .card-outlets-diff { flex: 0 1 auto; max-height: 50%; }
+.plegma-orbit.is-theme .orbit-middle > .card-groups-diff { flex: 1 1 0; }
+.plegma-orbit.is-theme .orbit-right > .card-days, .plegma-orbit.is-theme .card-stance { flex: none; }
+.plegma-orbit.is-theme .card-similar, .plegma-orbit.is-theme .card-how { flex: 1 1 auto; }
 .plegma-card .theme-diff-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px var(--space-5); }
-.plegma-orbit.is-theme .plegma-nodes-note { left: 28px; right: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .plegma-card .theme-foot { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 var(--space-4); }
 .plegma-card .theme-foot .dcard-sub { margin: 0; }
 .plegma-card .group-cell { display: flex; min-width: 0; max-width: 100%; }

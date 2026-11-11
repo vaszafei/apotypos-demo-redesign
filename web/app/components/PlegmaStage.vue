@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useEventListener, useMediaQuery } from '@vueuse/core'
 import type { PlegmaPoint } from '~/utils/plegma-camera'
-import { cameraAt, fitCamera, flightDone, frameHome, framePair, frameStory, frameTheme, PLEGMA_REGION, PLEGMA_STRIP, PLEGMA_Z_THEME, redirectFlight, regionBox, toScreen } from '~/utils/plegma-camera'
+import { cameraAt, flightDone, frameHome, framePair, frameStory, frameTheme, PLEGMA_REGION, redirectFlight, regionBox, toScreen } from '~/utils/plegma-camera'
 import type { PlegmaCamera, PlegmaFlight } from '~/utils/plegma-camera'
 import { arcsOf, buildWorld, drawLevel, homeWebs, PLEGMA_FAR_MIN, PLEGMA_FOCUS_DOTS, PLEGMA_WEB_MIN, themeCore, themeFrameSet, webOf } from '~/utils/plegma-world'
 import { articleOfNode, articleRadius, articlesPerNode, articleWebOf, matchesHighlight, nodeCount } from '~/utils/plegma-articles'
@@ -51,13 +51,6 @@ let groupInk: string[] = []
 // pointed at gets its full color.
 let softInk: string[] = []
 let fontText = 'system-ui, sans-serif'
-// The place across the world of each day of the dates (a story is placed on its first day), the width of a day, and the last day that has coded themes.
-let dayX: number[] = []
-let dayW = 60
-let codedLast = 0
-// The most stories of a theme view that have their name beside the web.
-const THEME_LABELS = 6
-let hoverDay = -1
 const cam: PlegmaCamera = { x: 0, y: 0, z: 0.5 }
 
 const EMPTY = new Set<PlegmaStory>()
@@ -143,11 +136,8 @@ const targetCamera = (): PlegmaCamera | null => {
   }
   const issue = focusIssue()
   if (issue !== null) {
-    // A theme is framed on all its coded days across (the strip of the days under the map shares that axis), and on its largest stories up and down.
-    const set = [...coreOf(issue)]
-    if (!set.length || !dayX.length) return frameTheme(set, width, height, plegma.region ?? undefined)
-    const ys = set.map(s => s.y)
-    return fitCamera([...set, { x: dayX[0]!, y: Math.min(...ys) }, { x: dayX[codedLast]! + dayW, y: Math.max(...ys) }], regionBox(width, height, plegma.region ?? undefined), width, height, PLEGMA_Z_THEME, 0.9)
+    // A theme is framed on its largest stories; its web lies over this background.
+    return frameTheme([...coreOf(issue)], width, height, plegma.region ?? undefined)
   }
   return webs.length ? frameHome(webs, width, height) : null
 }
@@ -403,17 +393,6 @@ const arcOf = (ctx2: CanvasRenderingContext2D, a: PlegmaStory, b: PlegmaStory, s
 }
 
 // ---- a theme in view ----
-// The days of the theme under the map region: a bar for each day on the same axis as the map (a story is on the day it began), the dates under them.
-const stripBox = () => {
-  if (!plegma.region) return null
-  const box = regionBox(width, height, plegma.region)
-  return { x0: box.cx - box.w / 2, x1: box.cx + box.w / 2, top: box.cy + box.h / 2 + 12, base: box.cy + box.h / 2 + 12 + PLEGMA_STRIP }
-}
-const dayAt = (x: number) => {
-  const wx = (x - width / 2) / cam.z + cam.x
-  for (let d = 0; d < dayX.length; d++) if (wx >= dayX[d]! && wx < dayX[d]! + dayW) return d
-  return -1
-}
 // The web of the theme (utils/plegma-theme.ts), in the middle of the map region: the theme at the center, its stories on the first circle, the outlets of each story
 // around it in the sector of the story. It has the look of the web of a story: solid nodes with a rim of the page's color, the calm colors of the groups, a ring of arcs.
 const themed = { key: '', web: null as PlegmaThemeWeb | null, index: new Map<number, number>() }
@@ -426,8 +405,9 @@ let themeLit: { story: number, outlet: string | null } = { story: -1, outlet: nu
 const themeDisc = () => {
   if (!plegma.region) return null
   const box = regionBox(width, height, plegma.region)
-  const r = Math.max(60, Math.min(box.h / 2 - 20, box.w / 2 - 120))
-  return { x: box.cx, y: box.cy, r: r + 16, R: r }
+  // The ring is as large as the ring of a story's web: the region is the same square on both pages.
+  const ring = Math.min(box.w, box.h) * 0.45
+  return { x: box.cx, y: box.cy, r: ring, R: ring - 16 }
 }
 const themeWebOf = (issue: number) => {
   const list = plegma.themeStories
@@ -466,67 +446,15 @@ const themeNodeAt = (issue: number, x: number, y: number) => {
 const drawTheme = (g: CanvasRenderingContext2D, issue: number, sec: number, dt: number) => {
   const slot = world!.slotOf.get(issue)
   const colour = slot ? cats[slot - 1] ?? mute : mute
-  const strip = stripBox()
-  const row = home.data.value?.issueDaily[issue]
   const web = themeWebOf(issue)
   g.font = `11px ${fontText}`
   g.textBaseline = 'alphabetic'
-  // The story pointed at, in the card or on the web, has its days marked on the strip.
+  // The story or the outlet pointed at, in the card or on the web.
   const node = web && hoverNode > 0 && hoverNode < web.n ? hoverNode : -1
   const cardStory = plegma.hoverStory !== null ? themed.index.get(plegma.hoverStory) ?? -1 : -1
   const lit = node > 0 ? (web!.outlet[node]! >= 0 ? { story: -1, outlet: web!.stories[web!.story[node]!]!.outlets[web!.outlet[node]!]!.name } : { story: web!.story[node]!, outlet: null }) : cardStory >= 0 ? { story: cardStory, outlet: null } : null
   if (lit) themeLit = lit
   themeMix = ease(themeMix, lit ? 1 : 0, dt)
-  const pointed = lit && lit.story >= 0 && web ? world!.byId.get(web.stories[lit.story]!.id) ?? null : null
-  if (strip && row) {
-    const w = dayW * cam.z
-    const most = Math.max(1, ...row.map(v => v ?? 0))
-    const bars = new Path2D()
-    let peak = -1
-    for (let d = 0; d < row.length && d < dayX.length; d++) {
-      const v = row[d]
-      if (v === null || v === undefined) continue
-      const px = (dayX[d]! - cam.x) * cam.z + width / 2
-      if (px < strip.x0 - 1 || px + w > strip.x1 + 1) continue
-      const h = Math.max(1, (v / most) * PLEGMA_STRIP)
-      bars.rect(px + 1, strip.base - h, Math.max(1, w - 2), h)
-      if (peak < 0 || v > (row[peak] ?? 0)) peak = d
-    }
-    g.fillStyle = colour
-    g.globalAlpha = 0.5
-    g.fill(bars)
-    const mark = (d: number, alpha: number) => {
-      const v = row[d]
-      if (v === null || v === undefined) return
-      const px = (dayX[d]! - cam.x) * cam.z + width / 2
-      const h = Math.max(1, (v / most) * PLEGMA_STRIP)
-      g.globalAlpha = alpha
-      g.fillStyle = colour
-      g.fillRect(px + 1, strip.base - h, Math.max(1, w - 2), h)
-    }
-    if (hoverDay >= 0) mark(hoverDay, 1)
-    if (pointed) for (let i = 0; i + 1 < pointed.days.length; i += 2) mark(pointed.days[i]!, 0.95)
-    g.globalAlpha = 0.5
-    g.strokeStyle = mute
-    g.lineWidth = 1
-    g.beginPath()
-    g.moveTo(strip.x0, strip.base + 0.5)
-    g.lineTo(strip.x1, strip.base + 0.5)
-    g.stroke()
-    g.fillStyle = mute
-    g.globalAlpha = 0.95
-    g.textAlign = 'left'
-    for (let d = 0; d < dayX.length && d <= codedLast; d += 7) {
-      const px = (dayX[d]! - cam.x) * cam.z + width / 2
-      if (px < strip.x0 - 1 || px > strip.x1 - 30) continue
-      g.fillText(fmtDay(world!.dates[d]!), px + 1, strip.base + 14)
-    }
-    if (peak >= 0 && hoverDay < 0) {
-      const px = (dayX[peak]! - cam.x) * cam.z + width / 2 + w / 2
-      g.textAlign = 'center'
-      g.fillText(fmtInt(row[peak] ?? 0), px, strip.base - PLEGMA_STRIP - 4)
-    }
-  }
   if (web && plegma.region) {
     const { disc, unit } = layoutTheme(web, sec)
     const k = web.stories.length
@@ -627,15 +555,15 @@ const drawTheme = (g: CanvasRenderingContext2D, issue: number, sec: number, dt: 
       g.arc(hx[node]!, hy[node]!, themeNodeRadius(web, node, unit) + rim + 2.5, 0, TAU)
       g.stroke()
     }
-    // The names of the stories outside the ring, the largest first; a name that would lie on another is left out, the one pointed at is always there.
+    // The name of the story pointed at, outside the ring.
     const order = web.stories.map((_, i) => i)
     if (themeLit.story >= 0 && mix > 0.5) { order.splice(order.indexOf(themeLit.story), 1); order.unshift(themeLit.story) }
     const taken: { x0: number, x1: number, y0: number, y1: number }[] = []
-    let shown = 0
     g.lineJoin = 'round'
     for (const i of order) {
       const first = themeLit.story === i && mix > 0.5
-      if (!first && shown >= THEME_LABELS) continue
+      // The web is the size of a story's, so there is no room for the names around it: only the story pointed at has its name.
+      if (!first) continue
       // The name is outside the ring, the way its story lies from the theme.
       const a = Math.atan2(web.y[1 + i]!, web.x[1 + i]!)
       const sx = Math.cos(a)
@@ -654,7 +582,6 @@ const drawTheme = (g: CanvasRenderingContext2D, issue: number, sec: number, dt: 
       const box = { x0: x0 - 4, x1: x0 + wide + 4, y0: ly - 12, y1: ly + 5 }
       if (!first && taken.some(o => box.x0 < o.x1 && box.x1 > o.x0 && box.y0 < o.y1 && box.y1 > o.y0)) continue
       taken.push(box)
-      shown++
       g.textAlign = align
       g.globalAlpha = 0.9
       g.strokeStyle = paper
@@ -971,10 +898,9 @@ const local = (e: PointerEvent) => {
   return { x: e.clientX - box.left, y: e.clientY - box.top }
 }
 const leave = () => {
-  if (!hover && hoverArticle < 0 && hoverDay < 0 && hoverNode < 0) return
+  if (!hover && hoverArticle < 0 && hoverNode < 0) return
   hover = null
   hoverArticle = -1
-  hoverDay = -1
   hoverNode = -1
   tooltip.hide()
   if (reduced.value) kick()
@@ -1006,21 +932,7 @@ useEventListener(window, 'pointermove', (e: PointerEvent) => {
     }
     if (hoverArticle >= 0) { hoverArticle = -1; if (reduced.value) kick() }
   }
-  // On a theme the pointer on the strip of the days finds a day: its date and the articles of the theme on it.
   const themed = focusIssue()
-  const strip = themed !== null ? stripBox() : null
-  if (strip && p.x >= strip.x0 && p.x <= strip.x1 && p.y >= strip.top - 6 && p.y <= strip.base + 4) {
-    const d = dayAt(p.x)
-    const v = d >= 0 ? home.data.value?.issueDaily[themed!]?.[d] : null
-    if (v !== null && v !== undefined) {
-      if (hoverDay !== d && reduced.value) kick()
-      hover = null
-      hoverDay = d
-      tooltip.show({ title: fmtDate(world.dates[d]!), rows: [{ label: t('home.field.articles'), value: fmtInt(v) }], field: true }, e)
-      return
-    }
-  }
-  hoverDay = -1
   // On the web of a theme the pointer finds a story or an outlet of a story.
   if (themed !== null) {
     const i = themeNodeAt(themed, p.x, p.y)
@@ -1081,9 +993,6 @@ const start = () => {
   // The latest week that has topics, so the webs have their colours (the October stories have no topic): the last day with a count in the topics' days.
   const lastCoded = home.data.value!.issueDaily.reduce((m, row) => Math.max(m, row.findLastIndex(v => v !== null)), 0)
   webs = homeWebs(world, ix, phone.value ? HOME_WEBS_PHONE : HOME_WEBS, lastCoded)
-  codedLast = lastCoded
-  dayW = file.data.value!.dx
-  dayX = world.dates.map(date => Math.round((Date.parse(date) - Date.parse(file.data.value!.epoch)) / 86400000) * dayW)
   readTokens()
   // A cold open lands settled: no flight (R14).
   const to = targetCamera()

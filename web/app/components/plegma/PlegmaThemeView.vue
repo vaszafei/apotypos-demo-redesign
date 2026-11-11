@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
+import { useWindowSize } from '@vueuse/core'
 import { PLEGMA_THEME_OUTLETS, PLEGMA_THEME_STORIES } from '~/utils/plegma-theme'
 import type { StoriesData } from '~/types/stories'
 import type { StoryDetailData } from '~/types/story-detail'
 import type { TopicsData } from '~/types/topics'
 import type { GroupsData } from '~/utils/groups'
+import { themeSlots } from '~/utils/plegma-world'
 
 // The theme view: the theme on the Plegma (a web with the theme at the center, its largest stories around it and the outlets that wrote each story around the story, and under
 // it the articles of the theme for each day: the stage draws both in the free cell) with the cards of the topic page around the map: its stories, the stance, the outlets and
@@ -96,32 +97,26 @@ const themeStories = computed(() => {
 watch(themeStories, list => plegma.setThemeStories(list), { immediate: true })
 onBeforeUnmount(() => { plegma.setHoverStory(null); plegma.setThemeStories(null) })
 
-// The map region is the free cell of the left column, less the strip of the days at its bottom (the stage draws the strip under the region).
+// The map region is the free cell of the left column, under the title: the same square as the story view has, so the two webs are the same size.
 const orbit = ref<HTMLElement>()
 const map = ref<HTMLElement>()
-const REGION_PAD = 28
-const measure = () => {
-  const o = orbit.value
-  const cell = map.value
-  if (!o || !cell || !window.matchMedia('(min-width: 1024px)').matches) { plegma.setRegion(null); return }
-  const stage = o.getBoundingClientRect()
-  const box = cell.getBoundingClientRect()
-  if (!stage.width || !stage.height || box.height < 160) return
-  const top = box.top - stage.top + REGION_PAD
-  // Under the region: the strip, the dates under it and the note.
-  const bottom = box.bottom - stage.top - PLEGMA_STRIP - 12 - 18 - 24
-  plegma.setRegion({ x0: (box.left + REGION_PAD) / stage.width, y0: top / stage.height, x1: (box.right - REGION_PAD) / stage.width, y1: bottom / stage.height })
-}
-let watcher: ResizeObserver | null = null
-watch(map, (el) => {
-  watcher?.disconnect()
-  if (!el) return
-  watcher = new ResizeObserver(measure)
-  watcher.observe(el)
-  measure()
-}, { flush: 'post' })
-useEventListener(window, 'resize', measure)
-onBeforeUnmount(() => watcher?.disconnect())
+usePlegmaRegion(orbit, map)
+
+// The theme over time, as the story view has its days (PlegmaDaysCard): the line of the theme, and under it a line for each story the web shows. The axis is the square
+// root, so the stories are not flat next to the theme.
+const { height: windowHeight } = useWindowSize()
+const tall = computed(() => Math.round(Math.min(300, Math.max(110, windowHeight.value * 0.12))))
+const timeLines = computed(() => {
+  const m = model.value
+  if (!m) return null
+  const slot = themeSlots(m.hd).get(props.index) ?? 0
+  const to = m.last + 1
+  const others = [1, 2, 3, 4, 5, 6, 7, 8].filter(c => c !== slot)
+  const stories = listed.value.map((s, i) => ({ key: `s${s.id}`, name: storyName(s), color: `var(--cat-${others[i % others.length]})`, values: s.values.slice(0, to) }))
+  const theme = { key: 'topic', name: topicName(m.issue), color: slot ? `var(--cat-${slot})` : 'var(--ink)', values: m.daily.slice(0, to).map(v => v ?? 0) }
+  return { dates: m.hd.dates.slice(0, to), series: [theme, ...stories] }
+})
+const lineHref = (key: string) => (key === 'topic' ? topicHref(String(props.index)) : storyHref(Number(key.slice(1))))
 </script>
 
 <template>
@@ -150,10 +145,7 @@ onBeforeUnmount(() => watcher?.disconnect())
 
     <div class="orbit-col orbit-left">
       <div ref="map" class="orbit-map"><p class="plegma-nodes-note">{{ t('topic.map.note') }}</p></div>
-    </div>
-
-    <div class="orbit-col orbit-middle">
-      <PlegmaCard :at="4" :order="1" class="card-stories">
+      <PlegmaCard :at="2" :order="3" class="card-stories">
         <DashCard :title="t('topic2.stories.title')" :info="t('topic2.stories.info')">
           <ul v-if="listed.length" class="rows-related">
             <li v-for="s in listed" :key="s.id" @pointerenter="plegma.setHoverStory(s.id)" @pointerleave="plegma.setHoverStory(null)" @focusin="plegma.setHoverStory(s.id)" @focusout="plegma.setHoverStory(null)">
@@ -167,6 +159,9 @@ onBeforeUnmount(() => watcher?.disconnect())
           <p v-else class="dcard-empty">{{ t('topic2.stories.empty') }}</p>
         </DashCard>
       </PlegmaCard>
+    </div>
+
+    <div class="orbit-col orbit-middle">
       <PlegmaCard :at="4" :order="2" class="card-outlets-diff">
         <DashCard :title="t('topic2.outlets.title')" :info="t('topic2.outlets.info')">
           <template v-if="model.outlets.rows.length">
@@ -183,17 +178,7 @@ onBeforeUnmount(() => watcher?.disconnect())
           <p v-else class="dcard-empty">{{ t('topic2.empty') }}</p>
         </DashCard>
       </PlegmaCard>
-    </div>
-
-    <div class="orbit-col orbit-right">
-      <PlegmaCard :at="0" :order="0" class="card-stance">
-
-        <StanceCard
-          :rows="[{ label: t('entity.stance.topic'), color: 'var(--series-news)', counts: model.det.s.slice(1) }, { label: t('entity.stance.all'), color: NO_GROUP, counts: model.dd.base.s.slice(1) }]"
-          :foot="model.stanceN ? t('topic2.how.stance.n', { n: fmtInt(model.stanceN) }) : null"
-        />
-      </PlegmaCard>
-      <PlegmaCard :at="0" :order="1" class="card-groups-diff">
+      <PlegmaCard :at="4" :order="3" class="card-groups-diff">
         <DashCard :title="t('topic2.groups.title')" :info="t('topic2.groups.info')">
           <div class="how-panel">
             <DiffList :rows="model.groups" :scale="model.outletScale" tip-key="topic2.how.tip">
@@ -203,6 +188,23 @@ onBeforeUnmount(() => watcher?.disconnect())
           <ChartLegend :items="diffKey" />
         </DashCard>
       </PlegmaCard>
+    </div>
+
+    <div class="orbit-col orbit-right">
+      <PlegmaCard :at="0" :order="0" class="card-days">
+        <DashCard :title="t('topic2.time.title')" :info="t('topic2.time.info')">
+          <LinesChart v-if="timeLines" :dates="timeLines.dates" :series="timeLines.series" plain sparse sqrt :opacity="0.9" :tall="tall" :caption="t('topic2.time.title')" :href-of="s => lineHref(s.key)" />
+        </DashCard>
+      </PlegmaCard>
+      <div class="orbit-subs">
+        <div class="orbit-sub">
+      <PlegmaCard :at="0" :order="1" class="card-stance">
+
+        <StanceCard
+          :rows="[{ label: t('entity.stance.topic'), color: 'var(--series-news)', counts: model.det.s.slice(1) }, { label: t('entity.stance.all'), color: NO_GROUP, counts: model.dd.base.s.slice(1) }]"
+          :foot="model.stanceN ? t('topic2.how.stance.n', { n: fmtInt(model.stanceN) }) : null"
+        />
+      </PlegmaCard>
       <PlegmaCard :at="0" :order="2" class="card-similar">
         <DashCard :title="t('topic2.similar.title')" :info="t('topic2.similar.info')">
           <BarList v-if="model.similar.length" :rows="model.similar.map(r => ({ key: r.k, label: topicName(r.issue), to: topicHref(r.k), text: twoDecimals.format(r.r), value: r.r, color: '' }))" :max="1">
@@ -211,6 +213,8 @@ onBeforeUnmount(() => watcher?.disconnect())
           <p v-else class="dcard-empty">{{ t('topic2.similar.empty') }}</p>
         </DashCard>
       </PlegmaCard>
+        </div>
+        <div class="orbit-sub">
       <PlegmaCard :at="0" :order="3" class="card-how">
         <DashCard :title="t('topic2.how.title')" :info="t('topic2.how.info')">
           <div class="how-grid how-grid-2">
@@ -232,6 +236,8 @@ onBeforeUnmount(() => watcher?.disconnect())
           </div>
         </DashCard>
       </PlegmaCard>
+        </div>
+      </div>
     </div>
   </div>
   <p v-if="problem" class="proto-note">{{ t('proto.states') }}</p>

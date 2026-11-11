@@ -11,8 +11,6 @@ export interface PlegmaFlight { a: PlegmaCamera, b: PlegmaCamera, t0: number, du
 // area it really has (PlegmaStoryView.vue, stores/plegma.ts `region`) and the camera frames that.
 export interface PlegmaRegion { x0: number, y0: number, x1: number, y1: number }
 export const PLEGMA_REGION: PlegmaRegion = { x0: 0.02, y0: 0.22, x1: 0.40, y1: 0.64 }
-// The height of the strip of the days under the map region of a theme view (the stage draws it, the view leaves it room).
-export const PLEGMA_STRIP = 56
 // The nearest zoom, the zoom of a story's web, and the farthest zoom of a framing.
 export const PLEGMA_Z_FOCUS = 3.6
 export const PLEGMA_Z_THEME = 1.6
