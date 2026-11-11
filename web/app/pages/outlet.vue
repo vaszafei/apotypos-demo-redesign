@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// Μέσα › one outlet (outlet-v2.html?slug=): its numbers, its daily articles and four tabs of cards. A detail page of the tab Επισκόπηση.
-definePageMeta({ detail: '/media' })
+// Μέσα › one outlet (outlet-v2.html?slug=): the outlet on the Plegma, with its cards around the map (components/OutletDetail.vue). A detail page of the tab Επισκόπηση.
+definePageMeta({ detail: '/media', plegma: true })
 const { t } = useI18n()
 useHead({ title: () => `${t('nav.media')} · ${t('site.name')}` })
 const route = useRoute()
