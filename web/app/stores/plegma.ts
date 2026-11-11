@@ -40,6 +40,10 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const themeGroups = ref<{ name: string, slot: number, n: number }[] | null>(null)
   // The color slot of the focused outlet's group, for the center of its web (themeStories then holds the stories of the outlet); 0 for an outlet with no group.
   const outletSlot = ref(0)
+  // Home under the hero («Η επικαιρότητα»): the day (an index of the dates) whose best stories are the webs, and the story picked among them. null while the hero is in view:
+  // the webs are then the best of the latest week. The section sets and clears them, so no route change has to.
+  const homeDay = ref<number | null>(null)
+  const homePick = ref<number | null>(null)
 
   const syncRoute = (route: { path: string, query: Record<string, unknown>, meta: { plegma?: boolean } }) => {
     active.value = route.meta.plegma === true
@@ -74,6 +78,8 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const setThemeGroups = (value: { name: string, slot: number, n: number }[] | null) => { themeGroups.value = value }
   const setOutletSlot = (value: number) => { outletSlot.value = value }
   const setThemeStories = (value: PlegmaThemeStory[] | null) => { themeStories.value = value }
+  const setHomeDay = (value: number | null) => { homeDay.value = value }
+  const pickHome = (id: number | null) => { homePick.value = id }
 
-  return { active, focus, day, compare, landed, region, articles, highlight, hoverStory, related, ring, stance, themeStories, themeGroups, outletSlot, syncRoute, stepTo, compareWith, setLanded, setRegion, setArticles, setHighlight, setHoverStory, setRelated, setRing, setStance, setThemeStories, setThemeGroups, setOutletSlot }
+  return { active, focus, day, compare, landed, region, articles, highlight, hoverStory, related, ring, stance, themeStories, themeGroups, outletSlot, homeDay, homePick, syncRoute, stepTo, compareWith, setLanded, setRegion, setArticles, setHighlight, setHoverStory, setRelated, setRing, setStance, setThemeStories, setThemeGroups, setOutletSlot, setHomeDay, pickHome }
 })
