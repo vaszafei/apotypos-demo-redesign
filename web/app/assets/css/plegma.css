@@ -141,3 +141,11 @@ html[data-search-fly] .home-hero-search .search-button { visibility: hidden; }
 /* A small card lists the related stories by name and articles; the picture of each would leave the name no room. */
 .plegma-card .rows-related li { grid-template-columns: minmax(0, 1fr) auto; }
 .plegma-card .rows-related li > svg { display: none; }
+
+/* Αρχική › «Η επικαιρότητα» (components/HomeToday.vue): under the hero a screen with the calendar on the left and the story of the day on the right, as glass cards like the Plegma pages have.
+   The screen under the cards is free, and the stage behind frames the webs of the picked day there (PLEGMA_HOME_REGION in utils/plegma-camera.ts). */
+.home-today { --card-glass: color-mix(in srgb, var(--surface-page) 82%, transparent); display: grid; grid-template-columns: minmax(0, 34fr) minmax(0, 32fr) minmax(0, 34fr); gap: var(--space-4); align-items: start; min-height: calc(100svh - 64px); padding: var(--space-5) 0 var(--space-5); }
+.home-today-left { grid-column: 1; min-width: 0; }
+.home-today-right { grid-column: 3; min-width: 0; }
+.home-today .dcard { background: var(--card-glass); backdrop-filter: blur(10px); }
+@media (max-width: 1023px) { .home-today { display: flex; flex-direction: column; min-height: 0; } }
