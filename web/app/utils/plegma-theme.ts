@@ -5,8 +5,9 @@ import { mulberry } from './plegma-world.ts'
 // chart: the places are loose on purpose, the numbers are in the cards and the tooltips.
 
 export interface PlegmaThemeOutlet { name: string, group: string | null, slot: number, n: number }
-// `media` is every outlet that wrote the story; `outlets` are the ones the web shows.
-export interface PlegmaThemeStory { id: number, name: string, n: number, media: number, outlets: PlegmaThemeOutlet[] }
+// `media` is every outlet that wrote the story; `outlets` are the ones the web shows. On the web of an outlet `outlets` are the days the outlet wrote the story (a node for each,
+// as large as its articles that day, `name` the day), `slot` is the color slot of the theme of the story and `theme` its name.
+export interface PlegmaThemeStory { id: number, name: string, n: number, media: number, outlets: PlegmaThemeOutlet[], slot?: number, theme?: string }
 
 export interface PlegmaThemeWeb {
   stories: PlegmaThemeStory[]

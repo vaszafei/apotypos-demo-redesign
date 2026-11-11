@@ -134,6 +134,14 @@ const readTokens = () => {
 
 const focusStory = () => (world && plegma.focus?.kind === 'story' ? world.byId.get(plegma.focus.id) ?? null : null)
 const focusIssue = () => (plegma.focus?.kind === 'theme' ? plegma.focus.issue : null)
+const focusOutlet = () => (plegma.focus?.kind === 'outlet' ? plegma.focus.slug : null)
+// The web in the middle of the map: a theme's or an outlet's (both are built by utils/plegma-theme.ts); `seed` shapes it and `kind` keeps the two apart.
+const webFocus = () => {
+  const f = plegma.focus
+  if (f?.kind === 'theme') return { kind: 'theme' as const, seed: f.issue + 1 }
+  if (f?.kind === 'outlet') return { kind: 'outlet' as const, seed: [...f.slug].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 9973, 7) }
+  return null
+}
 
 // The camera that shows the focus: Home's best webs, a story in the map region, or a theme's largest stories.
 const targetCamera = (): PlegmaCamera | null => {
@@ -492,11 +500,12 @@ const themeDisc = () => {
   const ring = Math.min(box.w, box.h) * 0.45
   return { x: box.cx, y: box.cy, r: ring, R: ring - 16 }
 }
-const themeWebOf = (issue: number) => {
+const themeWebOf = () => {
+  const focus = webFocus()
   const list = plegma.themeStories
-  if (!list || !list.length) return null
-  const key = `${issue}|${list.length}|${list[0]!.id}`
-  if (themed.key !== key) Object.assign(themed, { key, web: buildThemeWeb(list, issue + 1), index: new Map(list.map((s, i) => [s.id, i])) })
+  if (!focus || !list || !list.length) return null
+  const key = `${focus.kind}|${focus.seed}|${list.length}|${list[0]!.id}`
+  if (themed.key !== key) Object.assign(themed, { key, web: buildThemeWeb(list, focus.seed), index: new Map(list.map((s, i) => [s.id, i])) })
   return themed.web
 }
 const themeNodeRadius = (web: PlegmaThemeWeb, i: number, unit: number) =>
@@ -514,8 +523,8 @@ const layoutTheme = (web: PlegmaThemeWeb, sec: number) => {
   }
   return { disc, unit }
 }
-const themeNodeAt = (issue: number, x: number, y: number) => {
-  const web = themeWebOf(issue)
+const themeNodeAt = (x: number, y: number) => {
+  const web = themeWebOf()
   if (!web || !plegma.region) return -1
   const { unit } = layoutTheme(web, reduced.value ? 0 : performance.now() / 1000)
   let best = -1
@@ -526,10 +535,19 @@ const themeNodeAt = (issue: number, x: number, y: number) => {
   }
   return best
 }
-const drawTheme = (g: CanvasRenderingContext2D, issue: number, sec: number, dt: number) => {
-  const slot = world!.slotOf.get(issue)
-  const colour = slot ? cats[slot - 1] ?? mute : mute
-  const web = themeWebOf(issue)
+const drawTheme = (g: CanvasRenderingContext2D, sec: number, dt: number) => {
+  // On the web of an outlet the center is the group of the outlet and each story has the color of its theme; on a theme's the center and the stories have the theme's.
+  const outlet = focusOutlet() !== null
+  const issue = focusIssue()
+  const slotColour = (sl: number) => (sl > 0 ? cats[sl - 1] ?? mute : mute)
+  const slot = outlet ? plegma.outletSlot : issue !== null ? world!.slotOf.get(issue) ?? 0 : 0
+  const colour = slot > 0 ? slotColour(slot) : outlet ? ink : mute
+  const web = themeWebOf()
+  const nodeSlot = (i: number) => {
+    const s = web!.stories[web!.story[i]!]!
+    return outlet ? s.slot ?? 0 : s.outlets[web!.outlet[i]!]!.slot
+  }
+  const storyColour = (i: number) => (outlet ? slotColour(web!.stories[i]!.slot ?? 0) : colour)
   g.font = `11px ${fontText}`
   g.textBaseline = 'alphabetic'
   // The story or the outlet pointed at, in the card or on the web.
@@ -552,23 +570,28 @@ const drawTheme = (g: CanvasRenderingContext2D, issue: number, sec: number, dt: 
     }
     // The lines: the theme to each story in the color of the theme, and the small web of each story in the calm color of the group of the outlet it reaches.
     g.lineCap = 'round'
-    const spokes = new Path2D()
+    const spokes = new Map<number, Path2D>()
     const lines = new Map<number, Path2D>()
     const litLines = new Path2D()
     for (let e = 0; e < web.bow.length; e++) {
       const i = web.edges[e * 2]!
       const j = web.edges[e * 2 + 1]!
-      if (web.outlet[i]! < 0) { curve(spokes, j, i, web.bow[e]!); continue }
+      if (web.outlet[i]! < 0) {
+        const key = outlet ? web.stories[web.story[i]!]!.slot ?? 0 : 0
+        let path = spokes.get(key)
+        if (!path) { path = new Path2D(); spokes.set(key, path) }
+        curve(path, j, i, web.bow[e]!)
+        continue
+      }
       if (mix > 0.01 && on(i)) { curve(litLines, j, i, web.bow[e]!); continue }
-      const group = web.stories[web.story[i]!]!.outlets[web.outlet[i]!]!.slot
+      const group = nodeSlot(i)
       let path = lines.get(group)
       if (!path) { path = new Path2D(); lines.set(group, path) }
       curve(path, j, i, web.bow[e]!)
     }
-    g.strokeStyle = colour
     g.lineWidth = 1
     g.globalAlpha = 0.4 * back
-    g.stroke(spokes)
+    for (const [key, path] of spokes) { g.strokeStyle = outlet ? slotColour(key) : colour; g.stroke(path) }
     for (const [group, path] of lines) { g.strokeStyle = softInk[group] ?? mute; g.globalAlpha = 0.6 * back; g.stroke(path) }
     if (mix > 0.01) { g.strokeStyle = ink; g.globalAlpha = 0.45 * mix; g.stroke(litLines) }
     // The nodes: a rim of the page's color under each, then its color.
@@ -580,7 +603,7 @@ const drawTheme = (g: CanvasRenderingContext2D, issue: number, sec: number, dt: 
       const r = themeNodeRadius(web, i, unit)
       circle(rims, i, r + rim)
       if (mix > 0.01 && on(i)) continue
-      const group = web.stories[web.story[i]!]!.outlets[web.outlet[i]!]!.slot
+      const group = nodeSlot(i)
       let path = fills.get(group)
       if (!path) { path = new Path2D(); fills.set(group, path) }
       circle(path, i, r)
@@ -593,7 +616,7 @@ const drawTheme = (g: CanvasRenderingContext2D, issue: number, sec: number, dt: 
     if (mix > 0.01) {
       for (let i = 1 + k; i < web.n; i++) {
         if (!on(i)) continue
-        const group = web.stories[web.story[i]!]!.outlets[web.outlet[i]!]!.slot
+        const group = nodeSlot(i)
         const r = themeNodeRadius(web, i, unit) * (1 + 0.25 * mix)
         g.fillStyle = group > 0 ? groupInk[group] ?? ink : mute
         g.globalAlpha = 0.7 + 0.3 * mix
@@ -605,7 +628,7 @@ const drawTheme = (g: CanvasRenderingContext2D, issue: number, sec: number, dt: 
     // The stories and the theme: the color of the theme. A story that is pointed at, or that has the outlet pointed at, keeps its strength.
     for (let i = 1; i <= k; i++) {
       const strong = mix < 0.01 || (themeLit.outlet !== null ? web.stories[i - 1]!.outlets.some(o => o.name === themeLit.outlet) : themeLit.story === i - 1)
-      g.fillStyle = colour
+      g.fillStyle = storyColour(i - 1)
       g.globalAlpha = strong ? 1 : back
       g.beginPath()
       g.arc(hx[i]!, hy[i]!, themeNodeRadius(web, i, unit), 0, TAU)
@@ -754,13 +777,14 @@ const draw = (now: number) => {
   const story = focusStory()
   const other = plegma.compare !== null ? world.byId.get(plegma.compare) ?? null : null
   const issue = focusIssue()
-  const onHome = !story && issue === null
+  const outletOn = focusOutlet() !== null
+  const onHome = !story && issue === null && !outletOn
   // The theme that is lit: the one of the story or the theme in focus, or the one under the pointer.
   const lit = hover ? hover.issue : story ? story.issue : issue
   const litCoded = lit !== null && !world.issues[lit]!.catchAll
   const core = issue !== null ? coreOf(issue) : story?.coded ? spokeSet(story.issue) : EMPTY
   const homeSet = new Set(webs)
-  const dim = onHome ? 0.38 : issue !== null ? 0.13 : 0.2
+  const dim = onHome ? 0.38 : issue !== null || outletOn ? 0.13 : 0.2
   push = story ? { s: story, r: articleWorldRadius(story) * 1.25 + CLEAR_PAD } : null
   const bz = onHome ? z : BACK_Z
   // The background is seen from the web: the world point at the middle of the map region stays there, and the world around it is drawn at the far zoom.
@@ -774,7 +798,7 @@ const draw = (now: number) => {
     const isFocus = s === story || s === other
     const strong = isFocus || homeSet.has(s) || core.has(s) || s === hover
     // In a theme view the web is the theme: the map behind it is all background.
-    const sameTheme = issue === null && litCoded && s.issue === lit && s.coded
+    const sameTheme = issue === null && !outletOn && litCoded && s.issue === lit && s.coded
     const alpha = strong ? 1 : onHome ? dim : sameTheme ? 0.7 : 0.55
     // In a view the story, its pair, the stories of the theme and the one under the pointer are crisp; the rest is a blurred background of dots with no lines.
     const crisp = !onHome && (isFocus || core.has(s) || s === hover)
@@ -783,7 +807,7 @@ const draw = (now: number) => {
     const zz = back ? bz : z
     const base = back ? 0 : drawLevel(s, z, strong, isFocus)
     // On Home the webs of the week have their lines at the zoom that frames them all, and are drawn no smaller than at zoom 1.1 so that each one reads.
-    const level = back ? 0 : onHome ? (base > 0 && homeSet.has(s) ? 2 : base) : issue !== null ? 0 : crisp ? base : (Math.min(base, 1) as 0 | 1 | 2)
+    const level = back ? 0 : onHome ? (base > 0 && homeSet.has(s) ? 2 : base) : issue !== null || outletOn ? 0 : crisp ? base : (Math.min(base, 1) as 0 | 1 | 2)
     // Zoomed far out, the smallest stories are faint specks that only cost drawing time: leave them out until the camera is nearer.
     if (level === 0 && zz < 0.3 && !strong && !sameTheme && s.n < PLEGMA_FAR_MIN) continue
     if (level === 0) {
@@ -882,7 +906,7 @@ const draw = (now: number) => {
     a.stroke()
   }
   a.setLineDash([])
-  if (issue !== null) drawTheme(f, issue, sec, dt)
+  if (issue !== null || outletOn) drawTheme(f, sec, dt)
   // A story with a theme of its own is joined, by curved lines, to the largest stories of that theme and to the stories its card lists; they leave from the edge of its web,
   // spread around it by the direction they go in, and fade toward the other story. The story a card of other stories points at has its line lit: solid, glowing, flowing.
   const pointed = lineLast !== null && lineMix > 0.01 ? world.byId.get(lineLast) ?? null : null
@@ -1111,20 +1135,24 @@ useEventListener(window, 'pointermove', (e: PointerEvent) => {
     }
     if (hoverRing) { hoverRing = ''; tooltip.hide(); if (reduced.value) kick() }
   }
-  const themed = focusIssue()
-  // On the web of a theme the pointer finds a story or an outlet of a story.
-  if (themed !== null) {
-    const i = themeNodeAt(themed, p.x, p.y)
-    const web = themeWebOf(themed)
+  // On the web of a theme the pointer finds a story or an outlet of a story; on the web of an outlet, a story or a day of it.
+  if (webFocus()) {
+    const i = themeNodeAt(p.x, p.y)
+    const web = themeWebOf()
     if (i > 0 && web) {
       if (hoverNode !== i && reduced.value) kick()
       hover = null
       hoverNode = i
       const s = web.stories[web.story[i]!]!
       const o = web.outlet[i]! >= 0 ? s.outlets[web.outlet[i]!]! : null
-      tooltip.show(o
-        ? { title: o.name, rows: [{ label: o.group ?? t('story.nogroup'), value: '', color: `var(--cat-${o.slot})` }, { label: s.name, value: fmtInt(o.n) }], field: true }
-        : { title: s.name, rows: [{ label: t('home.field.articles'), value: fmtInt(s.n) }, { label: t('entity.fact.outlets'), value: fmtInt(s.media) }], field: true }, e)
+      const mineOutlet = focusOutlet() !== null
+      tooltip.show(mineOutlet
+        ? o
+          ? { title: s.name, rows: [{ label: o.name, value: fmtInt(o.n), color: `var(--cat-${s.slot ?? 0})` }], field: true }
+          : { title: s.name, rows: [{ label: t('home.field.topic'), value: s.theme ?? '', color: `var(--cat-${s.slot ?? 0})` }, { label: t('home.field.articles'), value: fmtInt(s.n) }], field: true }
+        : o
+          ? { title: o.name, rows: [{ label: o.group ?? t('story.nogroup'), value: '', color: `var(--cat-${o.slot})` }, { label: s.name, value: fmtInt(o.n) }], field: true }
+          : { title: s.name, rows: [{ label: t('home.field.articles'), value: fmtInt(s.n) }, { label: t('entity.fact.outlets'), value: fmtInt(s.media) }], field: true }, e)
       return
     }
     if (hoverNode >= 0) { hoverNode = -1; if (reduced.value) kick() }
@@ -1175,8 +1203,7 @@ useEventListener(window, 'click', (e: MouseEvent) => {
   if ((e.target as Element | null)?.closest?.(CAPTURES)) return
   const p = { x: e.clientX - canvas.value!.getBoundingClientRect().left, y: e.clientY - canvas.value!.getBoundingClientRect().top }
   // A story of the web of a theme opens that story.
-  const themeNow = focusIssue()
-  const web = themeNow !== null ? themeWebOf(themeNow) : null
+  const web = webFocus() ? themeWebOf() : null
   if (web && hoverNode > 0 && hoverNode < web.n) {
     const id = web.stories[web.story[hoverNode]!]!.id
     tooltip.hide()

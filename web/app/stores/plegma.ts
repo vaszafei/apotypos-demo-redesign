@@ -38,6 +38,8 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const themeStories = ref<PlegmaThemeStory[] | null>(null)
   // The groups that wrote the theme, with their articles, for the arcs of the ring of its web; null until the theme view has them.
   const themeGroups = ref<{ name: string, slot: number, n: number }[] | null>(null)
+  // The color slot of the focused outlet's group, for the center of its web (themeStories then holds the stories of the outlet); 0 for an outlet with no group.
+  const outletSlot = ref(0)
 
   const syncRoute = (route: { path: string, query: Record<string, unknown>, meta: { plegma?: boolean } }) => {
     active.value = route.meta.plegma === true
@@ -56,6 +58,7 @@ export const usePlegmaStore = defineStore('plegma', () => {
       stance.value = null
       themeStories.value = null
       themeGroups.value = null
+      outletSlot.value = 0
     }
   }
   const stepTo = (index: number | null) => { day.value = index }
@@ -69,7 +72,8 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const setStance = (value: number[] | null) => { stance.value = value }
   const setRelated = (ids: number[]) => { related.value = ids }
   const setThemeGroups = (value: { name: string, slot: number, n: number }[] | null) => { themeGroups.value = value }
+  const setOutletSlot = (value: number) => { outletSlot.value = value }
   const setThemeStories = (value: PlegmaThemeStory[] | null) => { themeStories.value = value }
 
-  return { active, focus, day, compare, landed, region, articles, highlight, hoverStory, related, ring, stance, themeStories, themeGroups, syncRoute, stepTo, compareWith, setLanded, setRegion, setArticles, setHighlight, setHoverStory, setRelated, setRing, setStance, setThemeStories, setThemeGroups }
+  return { active, focus, day, compare, landed, region, articles, highlight, hoverStory, related, ring, stance, themeStories, themeGroups, outletSlot, syncRoute, stepTo, compareWith, setLanded, setRegion, setArticles, setHighlight, setHoverStory, setRelated, setRing, setStance, setThemeStories, setThemeGroups, setOutletSlot }
 })

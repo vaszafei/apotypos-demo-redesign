@@ -25,20 +25,28 @@
 @media (max-width: 1279px) { .orbit-subs { grid-template-columns: minmax(0, 1fr); overflow: auto; } }
 /* The story and the theme view: the other stories of the theme (the stories of the theme) are a column of their own on the left (a narrow one, 2 of 12 parts), the map and the stance, people and how
    cards are a row, and the days of the story are a card under that row. */
-.plegma-orbit:is(.is-story, .is-theme) { grid-template-columns: minmax(0, 2fr) minmax(0, 4fr) minmax(0, 6fr); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "title title title" "left map right" "under under under"; }
+.plegma-orbit:is(.is-story, .is-theme, .is-outlet) { grid-template-columns: minmax(0, 2fr) minmax(0, 4fr) minmax(0, 6fr); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "title title title" "left map right" "under under under"; }
 /* From a wide screen the two columns of the right are columns of the page grid, so the days card under the row runs from the left edge to the end of the people card. */
 @media (min-width: 1280px) {
-  .plegma-orbit:is(.is-story, .is-theme) { grid-template-columns: minmax(0, 2fr) minmax(0, 4fr) minmax(0, 3fr) minmax(0, 3fr); grid-template-areas: "title title title title" "left map one two" "under under under ."; }
-  .plegma-orbit:is(.is-story, .is-theme) .orbit-right, .plegma-orbit:is(.is-story, .is-theme) .orbit-subs { display: contents; }
-  .plegma-orbit:is(.is-story, .is-theme) .orbit-sub:nth-child(1) { grid-area: one; }
-  .plegma-orbit:is(.is-story, .is-theme) .orbit-sub:nth-child(2) { grid-area: two; }
+  .plegma-orbit:is(.is-story, .is-theme, .is-outlet) { grid-template-columns: minmax(0, 2fr) minmax(0, 4fr) minmax(0, 3fr) minmax(0, 3fr); grid-template-areas: "title title title title" "left map one two" "under under under ."; }
+  .plegma-orbit:is(.is-story, .is-theme, .is-outlet) .orbit-right, .plegma-orbit:is(.is-story, .is-theme, .is-outlet) .orbit-subs { display: contents; }
+  .plegma-orbit:is(.is-story, .is-theme, .is-outlet) .orbit-sub:nth-child(1) { grid-area: one; }
+  .plegma-orbit:is(.is-story, .is-theme, .is-outlet) .orbit-sub:nth-child(2) { grid-area: two; }
 }
+/* The outlet view (components/OutletDetail.vue) has no narrow column: the web is in the first column, the cards of the outlet in two columns beside it and its articles over time under them.
+   A column of cards scrolls as a whole when its cards are taller than the screen; each card keeps its own height. */
+.plegma-orbit.is-outlet { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); grid-template-areas: "title title" "map right" "under under"; }
+@media (min-width: 1280px) {
+  .plegma-orbit.is-outlet { grid-template-columns: minmax(0, 5fr) minmax(0, 3.5fr) minmax(0, 3.5fr); grid-template-areas: "title title title" "map one two" "under under under"; }
+}
+.plegma-orbit.is-outlet .orbit-sub { overflow-y: auto; pointer-events: auto; scrollbar-width: thin; }
+.plegma-orbit.is-outlet .orbit-sub > .plegma-card { flex: none; max-height: 46%; }
 .plegma-orbit.is-story.no-right { grid-template-areas: "title title title" "left map map" "under under under"; }
 @media (min-width: 1280px) { .plegma-orbit.is-story.no-right { grid-template-columns: minmax(0, 2fr) minmax(0, 4fr) minmax(0, 6fr); grid-template-areas: "title title title" "left map map" "under under under"; } }
-.plegma-orbit:is(.is-story, .is-theme) .orbit-map { grid-area: map; }
-.plegma-orbit:is(.is-story, .is-theme) .orbit-left > :is(.card-related, .card-stories) { flex: 0 1 auto; max-height: none; }
-.plegma-orbit:is(.is-story, .is-theme) .orbit-under { grid-area: under; }
-.plegma-orbit:is(.is-story, .is-theme) .orbit-under > .card-days { flex: none; }
+.plegma-orbit:is(.is-story, .is-theme, .is-outlet) .orbit-map { grid-area: map; }
+.plegma-orbit:is(.is-story, .is-theme, .is-outlet) .orbit-left > :is(.card-related, .card-stories) { flex: 0 1 auto; max-height: none; }
+.plegma-orbit:is(.is-story, .is-theme, .is-outlet) .orbit-under { grid-area: under; }
+.plegma-orbit:is(.is-story, .is-theme, .is-outlet) .orbit-under > .card-days { flex: none; }
 /* The title has a row of its own over every column, and its card is as wide as the name needs (the name, the theme beside it, the facts under), so it does not break. */
 .plegma-title { grid-area: title; justify-self: start; align-self: start; min-width: 0; max-width: 100%; margin: 0; pointer-events: none; }
 .plegma-title.entity-grid { margin-top: 0; }

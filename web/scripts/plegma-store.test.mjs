@@ -67,3 +67,16 @@ test('a new focus clears landed until the stage says it landed, and the same foc
   plegma.syncRoute(route('/story', { id: '6' }))
   assert.equal(plegma.landed, false)
 })
+
+test('an outlet address puts that outlet in focus, the default outlet when it has no slug, and a new slug is a new focus', () => {
+  const plegma = usePlegmaStore()
+  plegma.syncRoute(route('/outlet', { slug: 'abc' }))
+  assert.deepEqual({ ...plegma.focus }, { kind: 'outlet', slug: 'abc' })
+  plegma.setOutletSlot(3)
+  plegma.syncRoute(route('/outlet', { slug: 'abc' }))
+  assert.equal(plegma.outletSlot, 3)
+  plegma.syncRoute(route('/outlet', { slug: 'def' }))
+  assert.equal(plegma.outletSlot, 0)
+  plegma.syncRoute(route('/outlet/', {}))
+  assert.deepEqual({ ...plegma.focus }, { kind: 'outlet', slug: '17661f5754' })
+})
