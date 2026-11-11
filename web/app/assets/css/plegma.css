@@ -144,14 +144,13 @@ html[data-search-fly] .home-hero-search .search-button { visibility: hidden; }
 
 /* Αρχική › «Η επικαιρότητα» (components/HomeToday.vue): under the hero a screen. The calendar floats over the left half of the width at the top, from the left edge to the center; under it the web of the picked day (components/PlegmaDayWeb.vue)
    fills the free area, and the card of the story of the day is a glass card at its right. The Plegma stage is behind, as a dim map. */
-.home-today { --card-glass: color-mix(in srgb, var(--surface-page) 82%, transparent); display: grid; grid-template-columns: minmax(240px, 300px) minmax(0, 1fr) minmax(300px, 400px); grid-template-rows: auto minmax(0, 1fr); gap: var(--space-4); height: calc(100svh - 64px); min-height: 640px; padding: var(--space-5) 0 var(--space-4); }
+.home-today { --card-glass: color-mix(in srgb, var(--surface-page) 82%, transparent); display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 400px); grid-template-rows: auto minmax(0, 1fr); gap: var(--space-4); height: calc(100svh - 64px); min-height: 640px; padding: var(--space-5) 0 var(--space-4); }
 .home-today-days { grid-column: 1 / -1; grid-row: 1; min-width: 0; width: 50%; }
-.home-today-themes { grid-column: 1; grid-row: 2; align-self: start; min-width: 0; max-height: 100%; display: flex; }
-.home-today-themes > .dcard { flex: 1 1 auto; min-height: 0; overflow: auto; }
-.home-today-map { grid-column: 2; grid-row: 2; position: relative; min-width: 0; min-height: 0; }
-.home-today-card { grid-column: 3; grid-row: 2; align-self: start; min-width: 0; }
-.home-themes .dn-row { cursor: default; }
-.home-themes .row-name { color: var(--text-primary); text-decoration: none; }
+.home-today-map { grid-column: 1; grid-row: 2; position: relative; min-width: 0; min-height: 0; }
+.home-today-side { grid-column: 2; grid-row: 2; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: var(--space-3); }
+.home-today-side > .home-today-card { flex: none; }
+.home-day-list { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+.home-day-list .home-stories { flex: 1 1 0; min-height: 0; max-height: none; }
 .home-today .dcard { background: var(--card-glass); backdrop-filter: blur(10px); }
 .plegma-day { position: absolute; inset: 0; }
 .plegma-day-canvas { display: block; width: 100%; height: 100%; }
@@ -166,7 +165,7 @@ html[data-search-fly] .home-hero-search .search-button { visibility: hidden; }
 .home-days-step:disabled { opacity: 0.3; cursor: default; }
 @media (max-width: 1023px) {
   .home-today-days { width: auto; }
-  .home-today-themes { max-height: none; }
+  .home-day-list .home-stories { max-height: 330px; }
   .home-today { display: flex; flex-direction: column; height: auto; min-height: 0; }
   .home-today-map { height: 70vw; min-height: 420px; }
 }

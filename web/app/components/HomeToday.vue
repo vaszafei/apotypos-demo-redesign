@@ -42,6 +42,14 @@ const dayThemes = computed(() => {
   return [...total].map(([issue, n]) => ({ issue, n, share: sum ? n / sum : 0, name: topicName(x.issues[issue]!), slot: slotOf.value.get(issue) ?? 0 })).sort((a, b) => b.n - a.n)
 })
 const litIssue = ref<number | null>(null)
+// The stories of the day, the largest first, in parts of 100 that come as the list scrolls (a day has up to some hundreds).
+const storyRows = computed(() => (ix.value && day.value !== null ? ix.value.byDay[day.value] ?? [] : []))
+const shown = ref(100)
+watch(day, () => { shown.value = 100 })
+const more = (e: Event) => {
+  const el = e.target as HTMLElement
+  if (el.scrollTop + el.clientHeight > el.scrollHeight - 300 && shown.value < storyRows.value.length) shown.value += 100
+}
 watch(day, () => { litIssue.value = null })
 const ring = computed<DayRing[]>(() => dayThemes.value.map(r => ({ issue: r.issue, name: r.name, slot: r.slot, n: r.n })))
 
@@ -104,20 +112,9 @@ onBeforeUnmount(() => { watcher?.disconnect(); plegma.setHomeDay(null); plegma.p
   <section id="home-today" ref="root" class="home-today" :aria-label="t('home.today.title')">
     <template v-if="home.data.value && day !== null">
       <div class="home-today-days"><HomeCalendar v-model="day" :dates="home.data.value.dates" :totals="totals" /></div>
-      <div class="home-today-themes">
-        <DashCard :title="t('home.themes.title')" :info="t('home.themes.info')" card="home-themes" class="home-themes">
-          <ul v-if="dayThemes.length" class="rows dn-legend" @pointerleave="litIssue = null">
-            <li v-for="r in dayThemes" :key="r.issue" :class="litIssue === r.issue ? 'dn-row is-on' : 'dn-row'" @pointerenter="litIssue = r.issue">
-              <span class="dn-dot" :style="{ background: r.slot > 0 ? `var(--cat-${r.slot})` : 'var(--cat-0)' }" />
-              <EntityLink class="row-name" type="topic" :to="topicHref(String(r.issue))">{{ r.name }}</EntityLink>
-              <span class="row-value">{{ fmtInt(r.n) }} · {{ fmtPct(r.share) }}</span>
-            </li>
-          </ul>
-          <p v-else-if="ix" class="dcard-empty">{{ t('home.day.empty') }}</p>
-        </DashCard>
-      </div>
       <div class="home-today-map"><PlegmaDayWeb v-model:lit="litIssue" :themes="themes" :ring="ring" :date="fmtDate(home.data.value.dates[day]!)" :picked="plegma.homePick" :active="inView" @pick="plegma.pickHome" /></div>
-      <div class="home-today-card">
+      <div class="home-today-side">
+        <div class="home-today-card">
         <DashCard :title="t('home.pick.title')" :info="t('home.pick.info')" card="home-day" class="home-day">
           <template #tools><span class="home-date">{{ fmtDate(home.data.value.dates[day]!) }}</span></template>
           <template v-if="story">
@@ -126,6 +123,17 @@ onBeforeUnmount(() => { watcher?.disconnect(); plegma.setHomeDay(null); plegma.p
             <div v-if="story.parts.length" class="home-block"><OutletStack :parts="story.parts" /></div>
             <NuxtLink class="button button-sm home-story-go" :to="storyHref(story.s.id)">{{ t('home.day.open') }}<AppIcon name="chevron-right" class="icon icon-sm" /></NuxtLink>
           </template>
+          <p v-else-if="ix" class="dcard-empty">{{ t('home.day.empty') }}</p>
+        </DashCard>
+      </div>
+        <DashCard :title="t('home.day.title')" :info="t('home.stories.info')" card="home-stories" class="home-day-list">
+          <ul v-if="storyRows.length" class="home-stories" @scroll="more">
+            <li v-for="r in storyRows.slice(0, shown)" :key="r.s.id" :class="story && story.s.id === r.s.id ? 'is-current' : undefined">
+              <button type="button" class="home-story-pick" :aria-pressed="story?.s.id === r.s.id" @click="plegma.pickHome(r.s.id)">
+                <span class="home-story-name">{{ storyName(r.s) }}</span><span class="muted-text">{{ fmtInt(r.n) }}</span>
+              </button>
+            </li>
+          </ul>
           <p v-else-if="ix" class="dcard-empty">{{ t('home.day.empty') }}</p>
         </DashCard>
       </div>
