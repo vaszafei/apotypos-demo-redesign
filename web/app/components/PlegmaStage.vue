@@ -4,7 +4,8 @@ import type { PlegmaPoint } from '~/utils/plegma-camera'
 import { cameraAt, flightDone, frameHome, framePair, frameStory, frameTheme, PLEGMA_REGION, redirectFlight, regionBox, toScreen } from '~/utils/plegma-camera'
 import type { PlegmaCamera, PlegmaFlight } from '~/utils/plegma-camera'
 import { arcsOf, buildWorld, drawLevel, homeWebs, PLEGMA_FAR_MIN, PLEGMA_FOCUS_DOTS, PLEGMA_WEB_MIN, themeCore, themeFrameSet, webOf } from '~/utils/plegma-world'
-import { articleOfNode, articleRadius, articlesPerNode, articleWebOf, nodeCount } from '~/utils/plegma-articles'
+import { articleOfNode, articleRadius, articlesPerNode, articleWebOf, matchesHighlight, nodeCount } from '~/utils/plegma-articles'
+import type { PlegmaHighlight } from '~/utils/plegma-articles'
 import type { PlegmaFile, PlegmaHomeFile, PlegmaStoriesFile, PlegmaStory, PlegmaWorld } from '~/utils/plegma-world'
 import { homeIndex, HOME_WEBS, HOME_WEBS_PHONE } from '~/utils/home'
 
@@ -134,10 +135,34 @@ const arts = { aw: null as ReturnType<typeof articleWebOf> | null, cx: 0, cy: 0,
 let ax = new Float32Array(0)
 let ay = new Float32Array(0)
 let hoverArticle = -1
+// What the cards point at (stores/plegma.ts): the articles of a group or an outlet come forward, a line to a story of the card of the other stories lights up. Each eases
+// in and out, so the map answers the pointer instead of jumping; with reduced motion it jumps.
+let hlMix = 0
+let hlLast: PlegmaHighlight | null = null
+let hlMatch = new Uint8Array(0)
+let hlKey = ''
+let lineMix = 0
+let lineLast: number | null = null
+let lastNow = 0
+const ease = (value: number, target: number, dt: number) => (reduced.value ? target : value + (target - value) * (1 - Math.exp(-dt * 9)))
+// The nodes whose articles are in the highlight: a node of a story of many articles stands for several, and comes forward if one of them does.
+const matchNodes = (s: PlegmaStory, h: PlegmaHighlight, list: NonNullable<typeof plegma.articles>) => {
+  const nodes = nodeCount(s.n)
+  const key = `${s.id}|${h.group}|${h.outlet ?? ''}|${list.length}`
+  if (key === hlKey) return hlMatch
+  hlKey = key
+  hlMatch = new Uint8Array(nodes)
+  for (let i = 0; i < nodes; i++) {
+    const from = Math.floor((i * s.n) / nodes)
+    const to = Math.max(from + 1, Math.floor(((i + 1) * s.n) / nodes))
+    for (let k = from; k < to; k++) if (matchesHighlight(list[k]!, h)) { hlMatch[i] = 1; break }
+  }
+  return hlMatch
+}
 const articleWorldRadius = (s: PlegmaStory) => {
   const region = plegma.region ?? undefined
   const box = regionBox(width, height, region ?? PLEGMA_REGION)
-  return articleRadius(s.n, Math.min(box.w, box.h) * 0.4) / frameStory(s, width, height, region).z
+  return articleRadius(s.n, Math.min(box.w, box.h) * 0.36) / frameStory(s, width, height, region).z
 }
 const layoutArticles = (s: PlegmaStory, sec: number) => {
   const aw = articleWebOf(s.id, nodeCount(s.n))
@@ -174,7 +199,7 @@ const drawArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2,
   if (level === 2) {
     const dense = a.spacing < 6
     g.strokeStyle = col
-    g.globalAlpha = dense ? 0.2 : 0.4
+    g.globalAlpha = (dense ? 0.2 : 0.4) * (1 - 0.4 * hlMix)
     g.lineWidth = dense ? 0.6 : 0.8
     g.beginPath()
     for (let e = 0; e < aw.bow.length; e++) {
@@ -187,17 +212,38 @@ const drawArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2,
     }
     g.stroke()
   }
-  const paths = new Map<string, Path2D>()
+  // The nodes are the color of the story's theme and grow stronger with the days (the first articles are the palest), so the web is calm; the articles of a group or an
+  // outlet that a card points at come forward in the color of their group, larger and pulsing, and the others step back.
+  const mix = hlMix
+  const lit = articles && hlLast && mix > 0.01 ? matchNodes(s, hlLast, articles) : null
+  const ALPHAS = [0.42, 0.6, 0.78, 0.95]
+  const paths: Path2D[] = ALPHAS.map(() => new Path2D())
   for (let i = 0; i < aw.n; i++) {
-    const colour = articles ? groupInk[articles[articleOfNode(i, articles.length)]!.slot] ?? mute : col
-    let path = paths.get(colour)
-    if (!path) { path = new Path2D(); paths.set(colour, path) }
+    if (lit && lit[i]) continue
     const r = i === 0 ? a.dr * 1.5 : a.dr
+    const path = paths[Math.min(3, Math.floor((i / aw.n) * 4))]!
     path.moveTo(ax[i]! + r, ay[i]!)
     path.arc(ax[i]!, ay[i]!, r, 0, TAU)
   }
-  g.globalAlpha = 1
-  for (const [colour, path] of paths) { g.fillStyle = colour; g.fill(path) }
+  g.fillStyle = col
+  ALPHAS.forEach((alpha, k) => { g.globalAlpha = alpha * (1 - 0.7 * mix); g.fill(paths[k]!) })
+  if (lit) {
+    for (let i = 0; i < aw.n; i++) {
+      if (!lit[i]) continue
+      const slot = articles![articleOfNode(i, articles!.length)]!.slot
+      const colour = slot > 0 ? groupInk[slot] ?? ink : ink
+      const r = a.dr * (1 + 0.8 * mix + 0.18 * mix * Math.sin(sec * 5 + i * 0.9))
+      g.fillStyle = colour
+      g.globalAlpha = 0.2 * mix
+      g.beginPath()
+      g.arc(ax[i]!, ay[i]!, r * 2.3, 0, TAU)
+      g.fill()
+      g.globalAlpha = 1
+      g.beginPath()
+      g.arc(ax[i]!, ay[i]!, r, 0, TAU)
+      g.fill()
+    }
+  }
   // The ring around the picked web: a thin line, nothing inside it.
   g.globalAlpha = 0.5
   g.strokeStyle = col
@@ -250,6 +296,12 @@ const draw = (now: number) => {
   for (const g of [c, f]) { g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, width, height) }
   const z = cam.z
   const sec = reduced.value ? 0 : now / 1000
+  const dt = Math.min(0.1, Math.max(0, (now - lastNow) / 1000))
+  lastNow = now
+  if (plegma.highlight) hlLast = plegma.highlight
+  hlMix = ease(hlMix, plegma.highlight ? 1 : 0, dt)
+  if (plegma.hoverStory !== null) lineLast = plegma.hoverStory
+  lineMix = ease(lineMix, plegma.hoverStory !== null ? 1 : 0, dt)
   const story = focusStory()
   const other = plegma.compare !== null ? world.byId.get(plegma.compare) ?? null : null
   const issue = focusIssue()
@@ -359,36 +411,77 @@ const draw = (now: number) => {
     a.stroke()
   }
   a.setLineDash([])
-  // A story with a theme of its own is joined, by lines that bow to alternate sides, to the largest stories of that theme; they leave from the edge of its web.
-  if (story?.coded && !onHome) {
+  // A story with a theme of its own is joined, by curved lines, to the largest stories of that theme and to the stories its card lists; they leave from the edge of its web,
+  // spread around it by the direction they go in, and fade toward the other story. The story a card of other stories points at has its line lit: solid, glowing, flowing.
+  const pointed = lineLast !== null && lineMix > 0.01 ? world.byId.get(lineLast) ?? null : null
+  if (story && !onHome && (story.coded || pointed)) {
     const here = toScreen(cam, width, height, placed(story))
     const edge = articleWorldRadius(story) * cam.z * 1.12
-    const colour = colourOf(story)
-    f.lineWidth = 1
-    f.globalAlpha = 1
-    let k = 0
-    for (const b of spokeSet(story.issue)) {
-      if (b === story) continue
+    const colour = story.slot > 0 ? colourOf(story) : cats[0] ?? mute
+    const targets: PlegmaStory[] = []
+    if (story.coded) {
+      for (const b of spokeSet(story.issue)) if (b !== story) targets.push(b)
+      for (const id of plegma.related) { const b = world.byId.get(id); if (b && b !== story && !targets.includes(b)) targets.push(b) }
+    }
+    if (pointed && pointed !== story && !targets.includes(pointed)) targets.push(pointed)
+    const lines = targets.map((b) => {
       const q = toScreen(cam, width, height, placed(b))
-      const dx = q.x - here.x
-      const dy = q.y - here.y
-      const len = Math.hypot(dx, dy)
-      if (len < edge * 1.5) continue
-      const ux = dx / len
-      const uy = dy / len
-      const sx = here.x + ux * edge
-      const sy = here.y + uy * edge
-      // Each bows its own way, so the lines to stories that lie in one direction do not run side by side; they are strongest at the web and fade toward the other story.
-      const side = k++ % 2 ? -1 : 1
-      const bend = clamp(len * (0.1 + ((b.id * 7) % 10) * 0.02), 20, 170) * side
-      const grad = f.createLinearGradient(sx, sy, q.x, q.y)
+      return { b, q: { x: q.x, y: q.y }, angle: Math.atan2(q.y - here.y, q.x - here.x), len: Math.hypot(q.x - here.x, q.y - here.y) }
+    }).filter(l => l.len >= edge * 1.5).sort((l1, l2) => l1.angle - l2.angle)
+    const dim = 1 - 0.65 * lineMix
+    let litLine: (typeof lines)[number] | null = null
+    f.lineWidth = 1
+    lines.forEach((l, k) => {
+      if (l.b === pointed) { litLine = l; return }
+      const start = l.angle + ((k + 0.5) / lines.length - 0.5) * 2.2
+      const sx = here.x + Math.cos(start) * edge
+      const sy = here.y + Math.sin(start) * edge
+      const ux = (l.q.x - sx) / (Math.hypot(l.q.x - sx, l.q.y - sy) || 1)
+      const uy = (l.q.y - sy) / (Math.hypot(l.q.x - sx, l.q.y - sy) || 1)
+      const bend = clamp(l.len * (0.12 + ((l.b.id * 7) % 10) * 0.025), 24, 190) * (k % 2 ? -1 : 1)
+      const grad = f.createLinearGradient(sx, sy, l.q.x, l.q.y)
       grad.addColorStop(0, withAlpha(colour, 0.7))
       grad.addColorStop(1, withAlpha(colour, 0.18))
+      f.globalAlpha = dim
       f.strokeStyle = grad
       f.beginPath()
       f.moveTo(sx, sy)
-      f.quadraticCurveTo((sx + q.x) / 2 - uy * bend, (sy + q.y) / 2 + ux * bend, q.x, q.y)
+      f.quadraticCurveTo((sx + l.q.x) / 2 - uy * bend, (sy + l.q.y) / 2 + ux * bend, l.q.x, l.q.y)
       f.stroke()
+    })
+    const on = litLine as (typeof lines)[number] | null
+    if (on) {
+      const sx = here.x + Math.cos(on.angle) * edge
+      const sy = here.y + Math.sin(on.angle) * edge
+      const ux = (on.q.x - sx) / (on.len || 1)
+      const uy = (on.q.y - sy) / (on.len || 1)
+      const bend = clamp(on.len * 0.14, 24, 160)
+      const path = () => { f.beginPath(); f.moveTo(sx, sy); f.quadraticCurveTo((sx + on.q.x) / 2 - uy * bend, (sy + on.q.y) / 2 + ux * bend, on.q.x, on.q.y) }
+      f.save()
+      f.strokeStyle = colour
+      f.shadowColor = colour
+      f.shadowBlur = 12 * lineMix
+      f.globalAlpha = lineMix
+      f.lineWidth = 1 + 1.6 * lineMix
+      path()
+      f.stroke()
+      f.shadowBlur = 0
+      f.strokeStyle = ink
+      f.globalAlpha = 0.55 * lineMix
+      f.lineWidth = 1
+      f.setLineDash([2, 12])
+      f.lineDashOffset = -sec * 36
+      path()
+      f.stroke()
+      // The other story is ringed where it is on the screen.
+      f.setLineDash([])
+      f.strokeStyle = colour
+      f.globalAlpha = lineMix
+      f.lineWidth = 1.5
+      f.beginPath()
+      f.arc(on.q.x, on.q.y, 9 + 2.5 * Math.sin(sec * 5), 0, TAU)
+      f.stroke()
+      f.restore()
     }
   }
   c.globalAlpha = 1
@@ -553,7 +646,7 @@ watch(() => plegma.active, (active) => {
   if (to && !flight && (Math.abs(to.x - cam.x) > 0.5 || Math.abs(to.y - cam.y) > 0.5 || Math.abs(to.z - cam.z) > 0.001)) fly()
   else kick()
 })
-watch(() => plegma.articles, () => kick())
+watch(() => [plegma.articles, plegma.highlight, plegma.hoverStory, plegma.related], () => kick())
 watch(() => prefs.theme, async () => { await nextTick(); readTokens(); kick() })
 watch(reduced, (still) => { if (still) { flight = null; const to = targetCamera(); if (to) Object.assign(cam, to); plegma.setLanded(true) } kick() })
 onBeforeUnmount(halt)

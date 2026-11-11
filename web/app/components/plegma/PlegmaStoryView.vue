@@ -16,7 +16,8 @@ const view = useStoryView(() => props.id)
 const { loading, problem, retry, model: m, dayLabel } = view
 // The map draws one node for each article of the story.
 watch(view.articles, list => plegma.setArticles(list.length ? list : null), { immediate: true })
-onBeforeUnmount(() => plegma.setArticles(null))
+watch(view.related, list => plegma.setRelated(list.map(r => r.s.id)), { immediate: true })
+onBeforeUnmount(() => { plegma.setArticles(null); plegma.setHighlight(null); plegma.setHoverStory(null); plegma.setRelated([]) })
 
 const BODY = { days: PlegmaDaysCard, outlets: PlegmaOutletsCard, how: PlegmaHowCard, related: PlegmaRelatedCard, stance: PlegmaStanceCard, people: PlegmaPeopleCard }
 const columns = computed(() => plegmaStoryColumns(!!m.value?.labelled))
@@ -25,6 +26,8 @@ const columns = computed(() => plegmaStoryColumns(!!m.value?.labelled))
 const orbit = ref<HTMLElement>()
 const map = ref<HTMLElement>()
 const REGION_SIDE = 380
+const REGION_GAP_TOP = 44
+const REGION_GAP_RIGHT = 44
 const measure = () => {
   const o = orbit.value
   const cell = map.value
@@ -32,9 +35,12 @@ const measure = () => {
   const stage = o.getBoundingClientRect()
   const box = cell.getBoundingClientRect()
   if (!stage.width || !stage.height || box.height < 40) return
-  const side = Math.min(box.width, box.height, REGION_SIDE)
-  const x = box.left + (box.width - side) / 2
-  const y = box.top - stage.top + (box.height - side) / 2
+  // The web keeps some room from the title above it and from the cards on its right.
+  const w = box.width - REGION_GAP_RIGHT
+  const h = box.height - REGION_GAP_TOP
+  const side = Math.min(w, h, REGION_SIDE)
+  const x = box.left + (w - side) / 2
+  const y = box.top - stage.top + REGION_GAP_TOP + (h - side) / 2
   plegma.setRegion({ x0: x / stage.width, y0: y / stage.height, x1: (x + side) / stage.width, y1: (y + side) / stage.height })
 }
 let watcher: ResizeObserver | null = null

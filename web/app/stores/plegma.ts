@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { PlegmaRegion } from '../utils/plegma-camera.ts'
-import type { PlegmaArticle } from '../utils/plegma-articles.ts'
+import type { PlegmaArticle, PlegmaHighlight } from '../utils/plegma-articles.ts'
 import { plegmaFocusOf, samePlegmaFocus } from '../utils/plegma-route.ts'
 import type { PlegmaFocus } from '../utils/plegma-route.ts'
 
@@ -24,6 +24,11 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const region = ref<PlegmaRegion | null>(null)
   // The articles of the focused story (day, outlet, group), first day first, which the story view reads from its detail; null until it has them. The stage draws one node for each.
   const articles = ref<PlegmaArticle[] | null>(null)
+  // What the pointer is on in the cards, so the map answers it: a group or an outlet (its articles come forward), and a story of the card of the other stories (its line lights up).
+  // `related` are the stories that card lists.
+  const highlight = ref<PlegmaHighlight | null>(null)
+  const hoverStory = ref<number | null>(null)
+  const related = ref<number[]>([])
 
   const syncRoute = (route: { path: string, query: Record<string, unknown>, meta: { plegma?: boolean } }) => {
     active.value = route.meta.plegma === true
@@ -35,6 +40,9 @@ export const usePlegmaStore = defineStore('plegma', () => {
       day.value = null
       compare.value = null
       articles.value = null
+      highlight.value = null
+      hoverStory.value = null
+      related.value = []
     }
   }
   const stepTo = (index: number | null) => { day.value = index }
@@ -42,6 +50,9 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const setRegion = (value: PlegmaRegion | null) => { region.value = value }
   const setLanded = (value: boolean) => { landed.value = value }
   const setArticles = (value: PlegmaArticle[] | null) => { articles.value = value }
+  const setHighlight = (value: PlegmaHighlight | null) => { highlight.value = value }
+  const setHoverStory = (id: number | null) => { hoverStory.value = id }
+  const setRelated = (ids: number[]) => { related.value = ids }
 
-  return { active, focus, day, compare, landed, region, articles, syncRoute, stepTo, compareWith, setLanded, setRegion, setArticles }
+  return { active, focus, day, compare, landed, region, articles, highlight, hoverStory, related, syncRoute, stepTo, compareWith, setLanded, setRegion, setArticles, setHighlight, setHoverStory, setRelated }
 })
