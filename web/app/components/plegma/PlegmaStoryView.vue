@@ -65,12 +65,7 @@ const perNode = computed(() => (m.value ? articlesPerNode(m.value.articles) : 1)
   <div v-else ref="orbit" class="plegma-orbit" :class="{ 'is-in': plegma.landed }">
     <div class="plegma-title entity-grid">
       <EntityTitle :kind="t('hero.kind.story')" :title="storyName(m.story)">
-        <template #meta>
-          <span>
-            <EntityLink type="topic" :to="topicHref(String(m.story.issue))">{{ topicName(m.issue) }}</EntityLink>
-            {{ ` · ${dayLabel(m.start)} → ${fmtDate(m.d.dates[m.end]!)} · ` }}{{ m.end === m.start ? t('story.hero.day.one') : t('entity.fact.days', { n: m.end - m.start + 1 }) }}
-          </span>
-        </template>
+        <template #meta><EntityLink type="topic" :to="topicHref(String(m.story.issue))">{{ topicName(m.issue) }}</EntityLink></template>
         <EntityFact :label="t('entity.fact.articles')" :value="fmtInt(m.articles)" />
         <EntityFact :label="t('entity.fact.outlets')" :value="fmtInt(m.outlets.length)" :sub="t('entity.fact.of', { n: m.dd.outlets.length })" />
         <EntityFact v-if="m.people.length" :label="t('entity.fact.people')" :value="fmtInt(m.people.length)" :sub="m.people[0]!.person.name" />

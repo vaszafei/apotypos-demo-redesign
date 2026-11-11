@@ -14,7 +14,7 @@ const series = computed(() => [{ key: String(m.value.story.id), name: storyName(
 </script>
 
 <template>
-  <DashCard :title="t('story.daily.title')" :info="t('story.daily.info')">
-    <LinesChart :dates="v.shown.value" :series="series" plain :tall="tall" :caption="t('story.daily.title')" :href-of="s => storyHref(s.key)" />
+  <DashCard :title="t('story.time.title')" :info="t('story.daily.info')">
+    <LinesChart :dates="v.shown.value" :series="series" plain :tall="tall" :caption="t('story.time.title')" :href-of="s => storyHref(s.key)" />
   </DashCard>
 </template>

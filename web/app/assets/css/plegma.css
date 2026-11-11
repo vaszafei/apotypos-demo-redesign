@@ -16,9 +16,9 @@
 .orbit-middle { grid-area: mid; }
 .orbit-right { grid-area: right; }
 .orbit-col > .plegma-card, .orbit-sub > .plegma-card { flex: 0 1 auto; }
-.orbit-right > .card-days, .orbit-middle .card-stance { flex: none; }
+.orbit-right > .card-days, .orbit-right > .card-stance { flex: none; }
 .orbit-left > .card-related { max-height: 50%; }
-.orbit-right > .card-outlets { flex: 1 1 auto; }
+.orbit-middle .card-outlets, .orbit-right > .card-people { flex: 1 1 auto; }
 /* On a narrower screen the cards of the middle stack in one column. On a wide one they are two columns of half the width, so each card has the height it needs. */
 .orbit-middle .orbit-sub { display: contents; }
 @media (min-width: 1600px) {
@@ -27,13 +27,11 @@
   .orbit-middle .orbit-sub { display: flex; }
   .orbit-middle .orbit-sub:nth-child(1) { grid-area: suba; }
   .orbit-middle .orbit-sub:nth-child(2) { grid-area: subb; }
-  .plegma-card .sun-wrap .donut { width: 170px; height: 170px; }
 }
 @media (min-width: 1700px) {
   .plegma-orbit { grid-template-columns: minmax(0, 0.85fr) minmax(0, 0.62fr) minmax(0, 0.62fr) minmax(0, 1.15fr); }
-  .plegma-card .sun-wrap .donut { width: 210px; height: 210px; }
 }
-/* The title has a row of its own over every column, and its card is as wide as the name needs (the name, the period beside it, the facts under), so it does not break. */
+/* The title has a row of its own over every column, and its card is as wide as the name needs (the name, the theme beside it, the facts under), so it does not break. */
 .plegma-title { grid-area: title; justify-self: start; align-self: start; min-width: 0; max-width: 100%; margin: 0; pointer-events: none; }
 .plegma-title.entity-grid { margin-top: 0; }
 .plegma-title .ecard { background: var(--card-glass); border-color: var(--border); backdrop-filter: blur(10px); pointer-events: auto; width: max-content; max-width: 100%; }
@@ -50,9 +48,9 @@
 .plegma-card.at-2, .plegma-card.at-3 { --from-y: 50px; }
 .plegma-card.at-4, .plegma-card.at-5 { --from-y: -30px; }
 .plegma-orbit.is-in .plegma-card { opacity: 1; transform: none; }
-/* The groups: the list of every group with its outlets beside the ring, at the width the right column has. */
-.plegma-card .sun-wrap { align-items: start; }
-.plegma-card .sun-wrap .donut { width: 210px; height: 210px; }
+/* The groups: the ring above the list of every group with its outlets, in a column of half the width. */
+.plegma-card .sun-wrap { grid-template-columns: minmax(0, 1fr); align-items: start; }
+.plegma-card .sun-wrap .donut { width: 190px; height: 190px; justify-self: center; grid-row: 1; }
 .plegma-card .sun-wrap .rows-owners { gap: 5px; }
 .plegma-card .sun-wrap .rows-owners li { line-height: 1.25; }
 .plegma-card .sun-wrap .rows-owners .row-sub { line-height: 1.2; white-space: normal; overflow: visible; text-overflow: clip; }
@@ -63,10 +61,6 @@
 .plegma-card .how-panel .bar-list > li { grid-column: 1 / -1; grid-template-columns: subgrid; }
 .plegma-card .how-panel .bar-list > li > .row-value { grid-column: 3; grid-row: 1; }
 .plegma-card .how-panel .bar-list > li > :nth-child(3) { grid-column: 2; grid-row: 1; }
-@media (max-width: 1279px) {
-  .plegma-card .sun-wrap { grid-template-columns: minmax(0, 1fr); }
-  .plegma-card .sun-wrap .donut { justify-self: center; grid-row: 1; }
-}
 @media (prefers-reduced-motion: reduce) { .plegma-card { transition: none; transform: none; } }
 
 /* The map pages fill the screen: the footer would sit under the cards. The back button and the path (Μέσα / Ιστορίες) of the row above are not shown on a story: the title takes its place. */
