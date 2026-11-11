@@ -51,9 +51,10 @@ export const useStoryView = (id: MaybeRefOrGetter<number>) => {
     const rows: { day: number, outlet: number, n: number }[] = []
     for (let i = 0; i < m.det.t.length; i += 3) rows.push({ outlet: m.det.t[i]!, day: m.det.t[i + 1]!, n: m.det.t[i + 2]! })
     rows.sort((a, b) => a.day - b.day || a.outlet - b.outlet)
+    const order = new Map(m.groups.map((g, i) => [g.group ?? null, i]))
     return rows.flatMap(({ day, outlet, n }) => {
       const o = m.dd.outlets[outlet]!
-      const article: PlegmaArticle = { day, outlet: o.name, group: o.group, slot: slotOfColor(groupColor(o.group)) }
+      const article: PlegmaArticle = { day, outlet: o.name, group: o.group, slot: slotOfColor(groupColor(o.group)), order: Math.max(0, order.get(o.group ?? null) ?? 0) }
       return Array.from({ length: n }, () => article)
     })
   })

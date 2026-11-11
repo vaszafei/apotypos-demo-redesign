@@ -72,3 +72,29 @@ test('a story of more than the most nodes has a node for several articles, evenl
   const picked = Array.from({ length: PLEGMA_NODES_MAX }, (_, i) => articleOfNode(i, 1000))
   assert.ok(picked.every((a, i) => a >= 0 && a < 1000 && (i === 0 || a > picked[i - 1])))
 })
+
+test('with the groups known each node is inside the sector of its group, in order of time from the center, and joined to an earlier node of its group', () => {
+  const n = 120
+  const sectors = Array.from({ length: n }, (_, i) => (i % 7 === 0 ? 2 : i % 3 === 0 ? 1 : 0))
+  const web = buildArticleWeb(n, 9, sectors)
+  assert.equal(web.arcs.length, 6)
+  assert.ok(Math.hypot(web.x[0], web.y[0]) < 1e-6)
+  const angle = i => { const a = Math.atan2(web.x[i], -web.y[i]); return a < 0 ? a + Math.PI * 2 : a }
+  for (let i = 1; i < n; i++) {
+    const g = sectors[i]
+    assert.ok(angle(i) >= web.arcs[g * 2] - 1e-3 && angle(i) <= web.arcs[g * 2] + web.arcs[g * 2 + 1] + 1e-3, `node ${i} in its sector`)
+    assert.ok(Math.hypot(web.x[i], web.y[i]) <= 1 + 1e-6)
+  }
+  // The last articles are farther out than the first ones.
+  const mean = (from, to) => { let s = 0; for (let i = from; i < to; i++) s += Math.hypot(web.x[i], web.y[i]); return s / (to - from) }
+  assert.ok(mean(90, 120) > mean(1, 30) + 0.3)
+  const seen = new Set()
+  for (let e = 0; e < web.bow.length; e++) {
+    const [i, j] = [web.edges[e * 2], web.edges[e * 2 + 1]]
+    assert.ok(j < i)
+    if (seen.has(sectors[i])) assert.equal(sectors[j], sectors[i])
+    seen.add(sectors[i])
+  }
+  assert.equal(web.bow.length, n - 1)
+  assert.deepEqual(buildArticleWeb(n, 9, sectors).x, web.x)
+})

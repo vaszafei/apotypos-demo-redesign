@@ -2,8 +2,9 @@ import { mulberry } from './plegma-world.ts'
 
 // The web of the picked story: one node for each article. The fixtures hold the articles of a story as counts for each day (stories.json) and for each outlet on
 // each day (storyDetail.json), so a node knows its day and, once the detail is read, its outlet and group; it has no headline of its own.
-// The nodes lie on a sunflower disc in the order of their days, so the first article is at the center and the story grows outward day by day; each node is joined to the
-// nearest one before it (a growth tree), and some to a second. The disc has a radius of 1: the stage scales it.
+// Until the outlets are read the nodes lie on a sunflower disc in the order of their days, so the first article is at the center and the story grows outward day by day;
+// each node is joined to the nearest one before it (a growth tree), and some to a second. With the groups known the disc is cut in a sector for each group
+// (buildSectorWeb). The disc has a radius of 1: the stage scales it.
 
 export interface PlegmaArticleWeb {
   n: number
@@ -19,11 +20,117 @@ export interface PlegmaArticleWeb {
   bow: Float32Array
   // The distance between two neighbours on the unit disc.
   gap: number
+  // With sectors: where the sector of each group begins and how wide it is (pairs of radians, from the top, clockwise), in the order of the groups.
+  arcs: Float32Array
 }
 
 const GOLDEN = Math.PI * (3 - Math.sqrt(5))
+const PHI = (Math.sqrt(5) - 1) / 2
+// The first article is alone at the center: the others begin this far out.
+const HUB = 0.17
+// The room between two sectors, and the most a node is moved from the radius its place in time gives it when the nodes are spread.
+const SECTOR_GAP = 0.09
+const RELAX_BAND = 0.07
 
-export const buildArticleWeb = (n: number, seed: number): PlegmaArticleWeb => {
+// The web by sectors: `sectors[i]` is the group of node i (0 is the first sector, at the top; they go clockwise, as the ring of the groups card). A node is as far from
+// the center as its place in time (the first article is the center, the last ones are at the rim) and inside the sector of its group, so the disc reads as the card's ring
+// taken apart into articles. Each node is joined to the nearest earlier one of its group, and the first of a group to the nearest earlier article of any group.
+const buildSectorWeb = (n: number, seed: number, sectors: ArrayLike<number>): PlegmaArticleWeb => {
+  const rand = mulberry(seed * 17 + 3)
+  const gap = Math.sqrt(Math.PI / Math.max(n, 1))
+  const count: number[] = []
+  for (let i = 0; i < n; i++) count[sectors[i]!] = (count[sectors[i]!] ?? 0) + 1
+  for (let g = 0; g < count.length; g++) count[g] ??= 0
+  const used = count.filter(c => c > 0).length
+  const room = used > 1 ? Math.min(SECTOR_GAP, (Math.PI * 0.5) / used) : 0
+  const arcs = new Float32Array(count.length * 2)
+  let at = 0
+  for (let g = 0; g < count.length; g++) {
+    const span = count[g]! ? (Math.PI * 2 - used * room) * (count[g]! / n) : 0
+    arcs[g * 2] = at + (count[g]! ? room / 2 : 0)
+    arcs[g * 2 + 1] = span
+    at += span + (count[g]! ? room : 0)
+  }
+  const x = new Float32Array(n)
+  const y = new Float32Array(n)
+  const rad = new Float32Array(n)
+  const phase = new Float32Array(n)
+  const speed = new Float32Array(n)
+  const reach = new Float32Array(n)
+  const seen: number[] = count.map(() => 0)
+  // An angle from the top, clockwise, as a place on the disc.
+  const put = (i: number, r: number, a: number) => { x[i] = Math.sin(a) * r; y[i] = -Math.cos(a) * r }
+  const angleOf = (i: number) => { const a = Math.atan2(x[i]!, -y[i]!); return a < 0 ? a + Math.PI * 2 : a }
+  for (let i = 0; i < n; i++) {
+    const g = sectors[i]!
+    const k = seen[g]!++
+    rad[i] = i === 0 ? 0 : Math.sqrt(HUB * HUB + (1 - HUB * HUB) * (i / Math.max(1, n - 1)))
+    const side = count[g]! === 1 ? 0.5 : 0.06 + 0.88 * (((k + 0.5) * PHI + (g * 0.37)) % 1)
+    put(i, rad[i]!, arcs[g * 2]! + arcs[g * 2 + 1]! * side)
+    phase[i] = rand() * Math.PI * 2
+    speed[i] = (0.22 + rand() * 0.55) * (rand() < 0.5 ? -1 : 1)
+    reach[i] = 0.55 + rand() * 0.9
+  }
+  // The nodes push each other apart until none is nearer than most of a gap; a node stays inside its sector and near its radius, so the order in time holds.
+  if (n <= 400) {
+    const want = gap * 0.92
+    const dx = new Float32Array(n)
+    const dy = new Float32Array(n)
+    for (let pass = 0; pass < 60; pass++) {
+      dx.fill(0)
+      dy.fill(0)
+      for (let i = 1; i < n; i++) {
+        for (let j = 0; j < i; j++) {
+          const ex = x[i]! - x[j]!
+          const ey = y[i]! - y[j]!
+          const d = Math.hypot(ex, ey)
+          if (d >= want) continue
+          const push = ((want - d) / 2) * 0.6
+          const ux = d > 1e-6 ? ex / d : Math.cos(i * 2.4)
+          const uy = d > 1e-6 ? ey / d : Math.sin(i * 2.4)
+          dx[i]! += ux * push; dy[i]! += uy * push
+          if (j > 0) { dx[j]! -= ux * push; dy[j]! -= uy * push }
+        }
+      }
+      for (let i = 1; i < n; i++) {
+        x[i]! += dx[i]!
+        y[i]! += dy[i]!
+        const g = sectors[i]!
+        const a0 = arcs[g * 2]!
+        const span = arcs[g * 2 + 1]!
+        const r = Math.min(1, Math.max(Math.max(HUB, rad[i]! - RELAX_BAND), Math.min(rad[i]! + RELAX_BAND, Math.hypot(x[i]!, y[i]!))))
+        let a = angleOf(i)
+        // The angle nearest to the node that is inside its sector (the sector may pass the top).
+        const mid = a0 + span / 2
+        let off = a - mid
+        if (off > Math.PI) off -= Math.PI * 2
+        if (off < -Math.PI) off += Math.PI * 2
+        const half = Math.max(0, span / 2 - Math.min(span / 2, (want * 0.35) / Math.max(r, HUB)))
+        a = mid + Math.min(half, Math.max(-half, off))
+        put(i, r, a)
+      }
+    }
+  }
+  const pairs: number[] = []
+  const bows: number[] = []
+  for (let i = 1; i < n; i++) {
+    let own = -1
+    let any = 0
+    let dOwn = Infinity
+    let dAny = Infinity
+    for (let j = 0; j < i; j++) {
+      const d = Math.hypot(x[j]! - x[i]!, y[j]! - y[i]!)
+      if (d < dAny) { dAny = d; any = j }
+      if (sectors[j] === sectors[i] && d < dOwn) { dOwn = d; own = j }
+    }
+    pairs.push(i, own >= 0 ? own : any)
+    bows.push((rand() - 0.5) * 0.5)
+  }
+  return { n, x, y, phase, speed, reach, edges: Uint32Array.from(pairs), bow: Float32Array.from(bows), gap, arcs }
+}
+
+export const buildArticleWeb = (n: number, seed: number, sectors?: ArrayLike<number>): PlegmaArticleWeb => {
+  if (sectors && sectors.length === n && n > 0) return buildSectorWeb(n, seed, sectors)
   const rand = mulberry(seed * 17 + 3)
   const gap = Math.sqrt(Math.PI / Math.max(n, 1))
   const x = new Float32Array(n)
@@ -73,14 +180,15 @@ export const buildArticleWeb = (n: number, seed: number): PlegmaArticleWeb => {
     const bucket = cells.get(k)
     if (bucket) bucket.push(i); else cells.set(k, [i])
   }
-  return { n, x, y, phase, speed, reach, edges: Uint32Array.from(pairs), bow: Float32Array.from(bows), gap }
+  return { n, x, y, phase, speed, reach, edges: Uint32Array.from(pairs), bow: Float32Array.from(bows), gap, arcs: new Float32Array(0) }
 }
 
 const cache = new Map<string, PlegmaArticleWeb>()
-export const articleWebOf = (id: number, n: number) => {
-  const k = `${id}:${n}`
+// `sectors` are the groups of the nodes of this story, once its articles are read: the same for a story on every call, so they are not in the key.
+export const articleWebOf = (id: number, n: number, sectors?: ArrayLike<number>) => {
+  const k = `${id}:${n}:${sectors ? 's' : ''}`
   let web = cache.get(k)
-  if (!web) { web = buildArticleWeb(n, id); cache.set(k, web) }
+  if (!web) { web = buildArticleWeb(n, id, sectors); cache.set(k, web) }
   return web
 }
 
@@ -108,4 +216,5 @@ export interface PlegmaHighlight { group: string | null, outlet?: string }
 export const matchesHighlight = (a: { group: string | null, outlet: string }, h: PlegmaHighlight) => a.group === h.group && (h.outlet === undefined || a.outlet === h.outlet)
 
 // An article as the stage keeps it for its tooltip and its color: the day, the outlet, and the slot of its group's color (0 is no group).
-export interface PlegmaArticle { day: number, outlet: string, group: string | null, slot: number }
+// `order` is the place of its group among the groups of the story, largest first, as the groups card lists them.
+export interface PlegmaArticle { day: number, outlet: string, group: string | null, slot: number, order: number }

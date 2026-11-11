@@ -41,14 +41,18 @@ let webs: PlegmaStory[] = []
 let ink = '#111'
 // The color of a story with no theme and of a node with no group: a soft gray, not the ink, so the map is not black.
 let mute = '#6b6f78'
+// The color of the page: the rim of a node.
+let paper = '#f6f4ef'
 let cats: string[] = []
 let groupInk: string[] = []
-// The colors of the nodes at rest: the group colors toned down to one saturation and one lightness, so the web is a family of colors, not confetti. A group that is
+// The colors of the nodes at rest: the group colors mixed with the gray of no group, so the web is a family of colors, not confetti. A group that is
 // pointed at gets its full color.
 let softInk: string[] = []
 const cam: PlegmaCamera = { x: 0, y: 0, z: 0.5 }
 
 const EMPTY = new Set<PlegmaStory>()
+// The most lines from a picked story to other stories.
+const SPOKES_MAX = 6
 const cores = new Map<number, Set<PlegmaStory>>()
 const coreOf = (issue: number) => {
   let set = cores.get(issue)
@@ -65,25 +69,12 @@ const spokeSet = (issue: number) => {
 const name = (s: PlegmaStory) => (locale.value === 'en' && s.en) || s.el
 const colourOf = (s: PlegmaStory) => (s.slot > 0 ? cats[s.slot - 1] ?? mute : mute)
 const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x))
-// The color (#rrggbb) with its saturation and its lightness pulled toward the middle: `calm` 0 is the color itself, 1 a gray of that lightness.
-const soften = (hex: string, calm: number, lightness: number) => {
+// The color (#rrggbb) mixed with another, `share` of the other: the group colors mixed with one gray are one calm family.
+const mixHex = (hex: string, other: string, share: number) => {
   const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex)
-  if (!m) return hex
-  const [r, g, b] = [1, 2, 3].map(i => parseInt(m[i]!, 16) / 255) as [number, number, number]
-  const max = Math.max(r, g, b)
-  const min = Math.min(r, g, b)
-  let h = 0
-  const d = max - min
-  if (d) h = max === r ? ((g - b) / d + (g < b ? 6 : 0)) : max === g ? (b - r) / d + 2 : (r - g) / d + 4
-  const l0 = (max + min) / 2
-  const s0 = d ? d / (1 - Math.abs(2 * l0 - 1)) : 0
-  const sat = s0 * (1 - calm)
-  const l = l0 + (lightness - l0) * 0.6
-  const c = (1 - Math.abs(2 * l - 1)) * sat
-  const x = c * (1 - Math.abs(((h) % 2) - 1))
-  const k = l - c / 2
-  const [r1, g1, b1] = h < 1 ? [c, x, 0] : h < 2 ? [x, c, 0] : h < 3 ? [0, c, x] : h < 4 ? [0, x, c] : h < 5 ? [x, 0, c] : [c, 0, x]
-  return `#${[r1, g1, b1].map(v => Math.round((v + k) * 255).toString(16).padStart(2, '0')).join('')}`
+  const o = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(other)
+  if (!m || !o) return hex
+  return `#${[1, 2, 3].map(i => Math.round(parseInt(m[i]!, 16) * (1 - share) + parseInt(o[i]!, 16) * share).toString(16).padStart(2, '0')).join('')}`
 }
 // A color of the tokens (#rrggbb) with an alpha, for a gradient.
 const withAlpha = (hex: string, alpha: number) => (/^#[0-9a-f]{6}$/i.test(hex) ? `${hex}${Math.round(alpha * 255).toString(16).padStart(2, '0')}` : hex)
@@ -121,10 +112,10 @@ const readTokens = () => {
   const style = getComputedStyle(document.documentElement)
   ink = style.getPropertyValue('--ink').trim() || '#111'
   mute = style.getPropertyValue('--text-secondary').trim() || mute
+  paper = style.getPropertyValue('--surface-page').trim() || paper
   cats = Array.from({ length: 8 }, (_, i) => style.getPropertyValue(`--cat-${i + 1}`).trim() || mute)
   groupInk = Array.from({ length: 10 }, (_, i) => style.getPropertyValue(`--cat-${i}`).trim() || mute)
-  const light = prefs.theme === 'night' || prefs.theme === 'midnight' ? 0.66 : 0.56
-  softInk = groupInk.map(c => soften(c, 0.5, light))
+  softInk = groupInk.map(c => mixHex(c, groupInk[0] ?? mute, 0.3))
 }
 
 const focusStory = () => (world && plegma.focus?.kind === 'story' ? world.byId.get(plegma.focus.id) ?? null : null)
@@ -156,7 +147,11 @@ const fly = () => {
 // ---- the picked story: one node for each article ----
 // The web is the story's articles (utils/plegma-articles.ts). Its size on the screen is that of the free map region, so it is the same at any window; in the world it is
 // a disc of `Rt / zt` where zt is the zoom of the framing, so it grows and shrinks with the camera in a flight. The nodes go round on small circles, each its own way.
-const arts = { aw: null as ReturnType<typeof articleWebOf> | null, cx: 0, cy: 0, R: 0, rWorld: 0, dr: 1, spacing: 0 }
+const arts = { aw: null as ReturnType<typeof articleWebOf> | null, id: -1, cx: 0, cy: 0, R: 0, ring: 0, rWorld: 0, dr: 1, spacing: 0 }
+// When the outlets of the story are read the web changes from the plain disc to the sectors of its groups: the nodes move there, they do not jump.
+const MORPH_MS = 900
+let morphFrom: ReturnType<typeof articleWebOf> | null = null
+let morphAt = 0
 let ax = new Float32Array(0)
 let ay = new Float32Array(0)
 let hoverArticle = -1
@@ -184,25 +179,64 @@ const matchNodes = (s: PlegmaStory, h: PlegmaHighlight, list: NonNullable<typeof
   }
   return hlMatch
 }
+// The group of each node, as its place among the groups of the story (the sectors of the web), once the articles are read.
+let sectorKey = ''
+let sectorList: Uint16Array | null = null
+let sectorSlot: number[] = []
+const sectorsOf = (s: PlegmaStory) => {
+  const list = plegma.articles
+  if (!list || list.length !== s.n) return null
+  const key = `${s.id}:${list.length}`
+  if (key !== sectorKey || !sectorList) {
+    const nodes = nodeCount(s.n)
+    sectorList = new Uint16Array(nodes)
+    sectorSlot = []
+    for (let i = 0; i < nodes; i++) {
+      const article = list[articleOfNode(i, list.length)]!
+      sectorList[i] = article.order
+      sectorSlot[article.order] = article.slot
+    }
+    sectorKey = key
+  }
+  return sectorList
+}
 const articleWorldRadius = (s: PlegmaStory) => {
   const region = plegma.region ?? undefined
   const box = regionBox(width, height, region ?? PLEGMA_REGION)
   return articleRadius(s.n, Math.min(box.w, box.h) * 0.36) / frameStory(s, width, height, region).z
 }
+// The ring around the picked web, from its radius on the screen.
+const ringOf = (R: number) => R * 1.2 + 6
 const layoutArticles = (s: PlegmaStory, sec: number) => {
-  const aw = articleWebOf(s.id, nodeCount(s.n))
+  const sectors = sectorsOf(s)
+  const aw = articleWebOf(s.id, nodeCount(s.n), sectors ?? undefined)
+  if (aw !== arts.aw) {
+    morphFrom = arts.aw && arts.id === s.id && arts.aw.n === aw.n && !reduced.value ? arts.aw : null
+    morphAt = performance.now()
+  }
+  let blend = 1
+  if (morphFrom) {
+    const k = (performance.now() - morphAt) / MORPH_MS
+    if (k >= 1) morphFrom = null
+    else blend = 1 - Math.pow(1 - k, 3)
+  }
+  const from = morphFrom
   const p = toScreen(cam, width, height, placed(s))
   const rWorld = articleWorldRadius(s)
   const R = rWorld * cam.z
   const spacing = aw.gap * R
-  const amp = clamp(spacing * 0.32, 1, 4.5)
+  const amp = clamp(spacing * 0.2, 0.8, 3.2)
   if (ax.length < aw.n) { ax = new Float32Array(aw.n); ay = new Float32Array(aw.n) }
   for (let i = 0; i < aw.n; i++) {
     const a = sec * aw.speed[i]! + aw.phase[i]!
-    ax[i] = p.x + aw.x[i]! * R + Math.cos(a) * amp * aw.reach[i]!
-    ay[i] = p.y + aw.y[i]! * R + Math.sin(a) * amp * aw.reach[i]!
+    const bx = from ? from.x[i]! + (aw.x[i]! - from.x[i]!) * blend : aw.x[i]!
+    const by = from ? from.y[i]! + (aw.y[i]! - from.y[i]!) * blend : aw.y[i]!
+    // The first article does not move: it is the center the others go round.
+    const reach = i === 0 && aw.arcs.length ? 0 : aw.reach[i]!
+    ax[i] = p.x + bx * R + Math.cos(a) * amp * reach
+    ay[i] = p.y + by * R + Math.sin(a) * amp * reach
   }
-  Object.assign(arts, { aw, cx: p.x, cy: p.y, R, rWorld, spacing, dr: clamp(spacing * 0.3, 1, 3.6) })
+  Object.assign(arts, { aw, id: s.id, cx: p.x, cy: p.y, R, ring: ringOf(R), rWorld, spacing, dr: clamp(spacing * 0.27, 1.2, 4.6) })
   return arts
 }
 const articleAt = (s: PlegmaStory, x: number, y: number) => {
@@ -216,79 +250,124 @@ const articleAt = (s: PlegmaStory, x: number, y: number) => {
   return best
 }
 
+// The picked web. Its nodes are solid and each has a rim of the page's color, so a line never muddies a node and two nodes that touch stay two; a node and the line
+// to the article before it have the calm color of their group, and the ring is the groups' ring: an arc for each group over its sector. The articles of a group or an
+// outlet that a card points at come forward in the full color, larger and pulsing, and the others step back.
 const drawArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2, sec: number) => {
   const a = layoutArticles(s, sec)
   const aw = a.aw!
   const col = colourOf(s)
   const articles = plegma.articles && plegma.articles.length === s.n ? plegma.articles : null
+  const slotOf = (i: number) => (articles ? articles[articleOfNode(i, articles.length)]!.slot : -1)
+  const inkOf = (slot: number) => (slot < 0 ? col : softInk[slot] ?? mute)
+  const mix = hlMix
+  const lit = articles && hlLast && mix > 0.01 ? matchNodes(s, hlLast, articles) : null
+  const rOf = (i: number) => (i === 0 ? a.dr * 1.7 : a.dr)
   if (level === 2) {
-    const dense = a.spacing < 6
-    g.strokeStyle = articles ? mute : col
-    g.globalAlpha = (dense ? 0.2 : 0.4) * (1 - 0.4 * hlMix)
-    g.lineWidth = dense ? 0.6 : 0.8
-    g.beginPath()
+    const lines = new Map<number, Path2D>()
     for (let e = 0; e < aw.bow.length; e++) {
       const i = aw.edges[e * 2]!
       const j = aw.edges[e * 2 + 1]!
+      const slot = slotOf(i)
+      let path = lines.get(slot)
+      if (!path) { path = new Path2D(); lines.set(slot, path) }
       const dx = ax[j]! - ax[i]!
       const dy = ay[j]! - ay[i]!
-      g.moveTo(ax[i]!, ay[i]!)
-      g.quadraticCurveTo((ax[i]! + ax[j]!) / 2 - dy * aw.bow[e]!, (ay[i]! + ay[j]!) / 2 + dx * aw.bow[e]!, ax[j]!, ay[j]!)
+      path.moveTo(ax[i]!, ay[i]!)
+      path.quadraticCurveTo((ax[i]! + ax[j]!) / 2 - dy * aw.bow[e]!, (ay[i]! + ay[j]!) / 2 + dx * aw.bow[e]!, ax[j]!, ay[j]!)
     }
-    g.stroke()
+    g.lineWidth = a.spacing < 7 ? 0.7 : 1
+    g.lineCap = 'round'
+    for (const [slot, path] of lines) {
+      g.strokeStyle = inkOf(slot)
+      g.globalAlpha = (a.spacing < 7 ? 0.4 : 0.55) * (1 - 0.6 * mix)
+      g.stroke(path)
+    }
   }
-  // The nodes at rest are the toned down colors of their groups and grow stronger with the days (the first articles are the palest), so the web is calm; the articles of a
-  // group or an outlet that a card points at come forward in the full color of their group, larger and pulsing, and the others step back.
-  const mix = hlMix
-  const lit = articles && hlLast && mix > 0.01 ? matchNodes(s, hlLast, articles) : null
-  const ALPHAS = [0.62, 0.74, 0.86, 0.96]
-  const paths = new Map<number, Path2D>()
+  const rim = clamp(a.dr * 0.4, 0.8, 1.6)
+  const rims = new Path2D()
+  const fills = new Map<number, Path2D>()
   for (let i = 0; i < aw.n; i++) {
     if (lit && lit[i]) continue
-    const slot = articles ? articles[articleOfNode(i, articles.length)]!.slot : -1
-    const key = (slot + 1) * 4 + Math.min(3, Math.floor((i / aw.n) * 4))
-    let path = paths.get(key)
-    if (!path) { path = new Path2D(); paths.set(key, path) }
-    const r = i === 0 ? a.dr * 1.5 : a.dr
+    const r = rOf(i)
+    rims.moveTo(ax[i]! + r + rim, ay[i]!)
+    rims.arc(ax[i]!, ay[i]!, r + rim, 0, TAU)
+    const slot = slotOf(i)
+    let path = fills.get(slot)
+    if (!path) { path = new Path2D(); fills.set(slot, path) }
     path.moveTo(ax[i]! + r, ay[i]!)
     path.arc(ax[i]!, ay[i]!, r, 0, TAU)
   }
-  for (const [key, path] of paths) {
-    const slot = Math.floor(key / 4) - 1
-    g.fillStyle = slot < 0 ? col : softInk[slot] ?? mute
-    g.globalAlpha = ALPHAS[key % 4]! * (1 - 0.7 * mix)
+  g.globalAlpha = 1
+  g.fillStyle = paper
+  g.fill(rims)
+  for (const [slot, path] of fills) {
+    g.fillStyle = inkOf(slot)
+    g.globalAlpha = 1 - 0.68 * mix
     g.fill(path)
   }
   if (lit) {
     for (let i = 0; i < aw.n; i++) {
       if (!lit[i]) continue
-      const slot = articles![articleOfNode(i, articles!.length)]!.slot
-      const colour = slot > 0 ? groupInk[slot] ?? ink : ink
-      const r = a.dr * (1 + 0.8 * mix + 0.18 * mix * Math.sin(sec * 5 + i * 0.9))
+      const slot = slotOf(i)
+      const colour = slot > 0 ? groupInk[slot] ?? ink : mute
+      const r = rOf(i) * (1 + 0.5 * mix + 0.12 * mix * Math.sin(sec * 5 + i * 0.9))
       g.fillStyle = colour
-      g.globalAlpha = 0.2 * mix
+      g.globalAlpha = 0.18 * mix
       g.beginPath()
-      g.arc(ax[i]!, ay[i]!, r * 2.3, 0, TAU)
+      g.arc(ax[i]!, ay[i]!, r * 2.1, 0, TAU)
       g.fill()
       g.globalAlpha = 1
+      g.fillStyle = paper
+      g.beginPath()
+      g.arc(ax[i]!, ay[i]!, r + rim, 0, TAU)
+      g.fill()
+      g.fillStyle = colour
       g.beginPath()
       g.arc(ax[i]!, ay[i]!, r, 0, TAU)
       g.fill()
     }
   }
-  // The ring around the picked web: a thin line, nothing inside it.
-  g.globalAlpha = 0.5
-  g.strokeStyle = col
-  g.lineWidth = 1.5
-  g.beginPath()
-  g.arc(a.cx, a.cy, a.R * 1.2 + 6, 0, TAU)
-  g.stroke()
+  // The first article: a thin circle around the center node.
+  if (aw.arcs.length) {
+    g.globalAlpha = 0.55 * (1 - 0.5 * mix)
+    g.strokeStyle = ink
+    g.lineWidth = 1
+    g.beginPath()
+    g.arc(ax[0]!, ay[0]!, rOf(0) + rim + 2.5, 0, TAU)
+    g.stroke()
+  }
+  // The ring: a thin line with nothing inside it. With the groups known it is an arc for each group, over the sector of its articles.
+  g.lineCap = 'round'
+  if (aw.arcs.length && !morphFrom) {
+    g.lineWidth = 2
+    for (let k = 0; k < aw.arcs.length / 2; k++) {
+      const span = aw.arcs[k * 2 + 1]!
+      if (span <= 0) continue
+      const slot = sectorSlot[k] ?? 0
+      const on = !!hlLast && mix > 0.01 && articles?.find(x => x.order === k)?.group === hlLast.group
+      const pad = Math.min(span / 2, 3 / a.ring)
+      g.strokeStyle = on ? (slot > 0 ? groupInk[slot] ?? ink : mute) : softInk[slot] ?? mute
+      g.globalAlpha = on ? 1 : 0.85 * (1 - 0.6 * mix)
+      g.beginPath()
+      g.arc(a.cx, a.cy, a.ring, aw.arcs[k * 2]! - Math.PI / 2 + pad, aw.arcs[k * 2]! + span - Math.PI / 2 - pad)
+      g.stroke()
+    }
+  } else {
+    g.globalAlpha = 0.45
+    g.strokeStyle = articles ? mute : col
+    g.lineWidth = 1.2
+    g.beginPath()
+    g.arc(a.cx, a.cy, a.ring, 0, TAU)
+    g.stroke()
+  }
+  g.lineCap = 'butt'
   if (hoverArticle >= 0 && hoverArticle < aw.n) {
     g.globalAlpha = 0.85
     g.strokeStyle = ink
     g.lineWidth = 1.2
     g.beginPath()
-    g.arc(ax[hoverArticle]!, ay[hoverArticle]!, a.dr + 3, 0, TAU)
+    g.arc(ax[hoverArticle]!, ay[hoverArticle]!, rOf(hoverArticle) + rim + 2, 0, TAU)
     g.stroke()
   }
   g.globalAlpha = 1
@@ -448,38 +527,50 @@ const draw = (now: number) => {
   const pointed = lineLast !== null && lineMix > 0.01 ? world.byId.get(lineLast) ?? null : null
   if (story && !onHome && (story.coded || pointed)) {
     const here = toScreen(cam, width, height, placed(story))
-    const edge = articleWorldRadius(story) * cam.z * 1.12
+    const ring = ringOf(articleWorldRadius(story) * cam.z)
+    const edge = ring + 9
     const colour = story.slot > 0 ? colourOf(story) : cats[0] ?? mute
-    const targets: PlegmaStory[] = []
-    if (story.coded) {
-      for (const b of spokeSet(story.issue)) if (b !== story) targets.push(b)
-      for (const id of plegma.related) { const b = world.byId.get(id); if (b && b !== story && !targets.includes(b)) targets.push(b) }
-    }
+    const listed: PlegmaStory[] = []
+    for (const id of plegma.related) { const b = world.byId.get(id); if (b && b !== story) listed.push(b) }
+    const rest: PlegmaStory[] = []
+    if (story.coded) for (const b of spokeSet(story.issue)) if (b !== story && !listed.includes(b)) rest.push(b)
+    // The stories its card lists, then the nearest of the largest of its theme: a few lines read, two dozen are a fan.
+    rest.sort((b1, b2) => Math.hypot(b1.x - story.x, b1.y - story.y) - Math.hypot(b2.x - story.x, b2.y - story.y))
+    const targets = story.coded ? [...listed, ...rest.slice(0, Math.max(0, SPOKES_MAX - listed.length))] : []
     if (pointed && pointed !== story && !targets.includes(pointed)) targets.push(pointed)
     const lines = targets.map((b) => {
       const q = toScreen(cam, width, height, placed(b))
       return { b, q: { x: q.x, y: q.y }, angle: Math.atan2(q.y - here.y, q.x - here.x), len: Math.hypot(q.x - here.x, q.y - here.y) }
-    }).filter(l => l.len >= edge * 1.5).sort((l1, l2) => l1.angle - l2.angle)
+    }).filter(l => l.len >= edge * 1.4).sort((l1, l2) => l1.angle - l2.angle)
+    // Two lines that leave the same way are moved apart a little on the ring, so each one has a start of its own.
+    const starts = lines.map(l => l.angle)
+    for (let pass = 0; pass < 4; pass++) for (let k = 1; k < starts.length; k++) if (starts[k]! - starts[k - 1]! < 0.11) { starts[k - 1]! -= 0.02; starts[k]! += 0.02 }
     const dim = 1 - 0.65 * lineMix
     let litLine: (typeof lines)[number] | null = null
     f.lineWidth = 1
     lines.forEach((l, k) => {
       if (l.b === pointed) { litLine = l; return }
-      const start = l.angle + ((k + 0.5) / lines.length - 0.5) * 2.2
-      const sx = here.x + Math.cos(start) * edge
-      const sy = here.y + Math.sin(start) * edge
-      const ux = (l.q.x - sx) / (Math.hypot(l.q.x - sx, l.q.y - sy) || 1)
-      const uy = (l.q.y - sy) / (Math.hypot(l.q.x - sx, l.q.y - sy) || 1)
-      const bend = clamp(l.len * (0.12 + ((l.b.id * 7) % 10) * 0.025), 24, 190) * (k % 2 ? -1 : 1)
+      const sx = here.x + Math.cos(starts[k]!) * edge
+      const sy = here.y + Math.sin(starts[k]!) * edge
+      const run = Math.hypot(l.q.x - sx, l.q.y - sy) || 1
+      const ux = (l.q.x - sx) / run
+      const uy = (l.q.y - sy) / run
+      const bend = clamp(run * (0.07 + ((l.b.id * 7) % 10) * 0.01), 8, 90) * (l.b.id % 2 ? -1 : 1)
       const grad = f.createLinearGradient(sx, sy, l.q.x, l.q.y)
-      grad.addColorStop(0, withAlpha(colour, 0.7))
-      grad.addColorStop(1, withAlpha(colour, 0.18))
+      grad.addColorStop(0, withAlpha(colour, 0.6))
+      grad.addColorStop(1, withAlpha(colour, 0.12))
       f.globalAlpha = dim
       f.strokeStyle = grad
       f.beginPath()
       f.moveTo(sx, sy)
       f.quadraticCurveTo((sx + l.q.x) / 2 - uy * bend, (sy + l.q.y) / 2 + ux * bend, l.q.x, l.q.y)
       f.stroke()
+      // Where a line leaves: a small dot outside the ring.
+      f.fillStyle = colour
+      f.globalAlpha = 0.75 * dim
+      f.beginPath()
+      f.arc(sx, sy, 1.8, 0, TAU)
+      f.fill()
     })
     const on = litLine as (typeof lines)[number] | null
     if (on) {
