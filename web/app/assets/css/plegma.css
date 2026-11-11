@@ -23,9 +23,9 @@
 .orbit-subs { flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
 .orbit-sub > .card-people { flex: 1 1 auto; }
 @media (max-width: 1279px) { .orbit-subs { grid-template-columns: minmax(0, 1fr); overflow: auto; } }
-/* The story view: the other stories of the theme are a column of their own on the left (twice the width of the cards beside the map), the map and the stance, people and how
+/* The story view: the other stories of the theme are a column of their own on the left (a narrow one, 3 of 13 parts), the map and the stance, people and how
    cards are a row, and the days of the story are a card under that row. */
-.plegma-orbit.is-story { grid-template-columns: minmax(0, 2fr) minmax(0, 1.6fr) minmax(0, 2.4fr); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "title title title" "left map right" "left under under"; }
+.plegma-orbit.is-story { grid-template-columns: minmax(0, 3fr) minmax(0, 4fr) minmax(0, 6fr); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "title title title" "left map right" "left under under"; }
 .plegma-orbit.is-story .orbit-map { grid-area: map; }
 .plegma-orbit.is-story .orbit-left > .card-related { flex: 1 1 0; max-height: none; }
 .plegma-orbit.is-story .orbit-under { grid-area: under; }
