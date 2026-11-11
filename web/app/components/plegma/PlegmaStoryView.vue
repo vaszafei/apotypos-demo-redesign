@@ -14,6 +14,9 @@ const { t } = useI18n()
 const plegma = usePlegmaStore()
 const view = useStoryView(() => props.id)
 const { loading, problem, retry, model: m, dayLabel } = view
+// The map draws one node for each article of the story.
+watch(view.articles, list => plegma.setArticles(list.length ? list : null), { immediate: true })
+onBeforeUnmount(() => plegma.setArticles(null))
 
 const BODY = { days: PlegmaDaysCard, outlets: PlegmaOutletsCard, how: PlegmaHowCard, related: PlegmaRelatedCard, stance: PlegmaStanceCard, people: PlegmaPeopleCard }
 const TITLE: Partial<Record<PlegmaStoryCard, string>> = { stance: 'entity.stance.title', people: 'story.people.title' }
@@ -81,13 +84,8 @@ const slots = computed(() => cards.value.headline.map((key, i) => ({ key, at: i 
               {{ ` · ${dayLabel(m.start)} → ${fmtDate(m.d.dates[m.end]!)} · ` }}{{ m.end === m.start ? t('story.hero.day.one') : t('entity.fact.days', { n: m.end - m.start + 1 }) }}
             </span>
           </template>
-          <EntityFact :label="t('entity.fact.articles')" :value="fmtInt(m.articles)" :sub="t('entity.fact.peak', { date: dayLabel(m.peak), n: fmtInt(m.perDay[m.peak]!) })">
-            <template #spark><SparkLine :values="m.perDay" :from="m.lo" :to="m.hi" :label="t('story.daily.title')" :width="56" :height="16" /></template>
-          </EntityFact>
+          <EntityFact :label="t('entity.fact.articles')" :value="fmtInt(m.articles)" />
           <EntityFact :label="t('entity.fact.outlets')" :value="fmtInt(m.outlets.length)" :sub="t('entity.fact.of', { n: m.dd.outlets.length })" />
-          <EntityFact :label="t('entity.fact.groups')" :value="fmtInt(m.groups.filter(g => g.group).length)">
-            <template #sub><NuxtLink v-if="m.echo" class="quiet-link" to="/stories">{{ t('entity.fact.echo', { n: m.echo }) }}</NuxtLink><template v-else>{{ t('entity.fact.noecho') }}</template></template>
-          </EntityFact>
           <EntityFact v-if="m.people.length" :label="t('entity.fact.people')" :value="fmtInt(m.people.length)" :sub="m.people[0]!.person.name" />
         </EntityTitle>
       </div>

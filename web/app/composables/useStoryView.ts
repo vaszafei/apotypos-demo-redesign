@@ -3,6 +3,7 @@ import type { StoriesData } from '~/types/stories'
 import type { StoryDetailData } from '~/types/story-detail'
 import type { GroupsData } from '~/utils/groups'
 import type { BarRow } from '~/components/BarList.vue'
+import type { PlegmaArticle } from '~/utils/plegma-articles'
 
 // The data of one story for its view (the cards of components/plegma/cards/ and the title): the fixtures, the story's rows, its days by group, the groups with
 // their outlets, how it was written and the related stories. It is the script of the old StoryDetail.vue, moved here so that every card reads one model.
@@ -42,6 +43,19 @@ export const useStoryView = (id: MaybeRefOrGetter<number>) => {
     const m = model.value
     if (!m) return []
     return m.groups.map(g => ({ name: groupName(g.group), color: groupColor(g.group), values: g.values.slice(m.lo, m.hi + 1) }))
+  })
+  // The articles of the story, first day first: the fixtures count them for each outlet and day, so each one has its day, outlet and group (the map draws one node for each).
+  const articles = computed<PlegmaArticle[]>(() => {
+    const m = model.value
+    if (!m) return []
+    const rows: { day: number, outlet: number, n: number }[] = []
+    for (let i = 0; i < m.det.t.length; i += 3) rows.push({ outlet: m.det.t[i]!, day: m.det.t[i + 1]!, n: m.det.t[i + 2]! })
+    rows.sort((a, b) => a.day - b.day || a.outlet - b.outlet)
+    return rows.flatMap(({ day, outlet, n }) => {
+      const o = m.dd.outlets[outlet]!
+      const article: PlegmaArticle = { day, outlet: o.name, group: o.group, slot: slotOfColor(groupColor(o.group)) }
+      return Array.from({ length: n }, () => article)
+    })
   })
   const shown = computed(() => (model.value ? model.value.d.dates.slice(model.value.lo, model.value.hi + 1) : []))
   const dailyTip = (i: number) => {
@@ -106,7 +120,7 @@ export const useStoryView = (id: MaybeRefOrGetter<number>) => {
     return relatedStories(m.d.stories.filter(s => !s.generic), m.story, s => dailyOf(s, days)).map(r => ({ ...r, articles: articlesOf(r.s), values: dailyOf(r.s, days) }))
   })
 
-  return { loading, problem, retry, model, series, shown, dailyTip, tree, stance, how, related, dayLabel }
+  return { loading, problem, retry, model, series, articles, shown, dailyTip, tree, stance, how, related, dayLabel }
 }
 
 export type StoryView = ReturnType<typeof useStoryView>

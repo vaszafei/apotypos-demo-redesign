@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { PlegmaRegion } from '../utils/plegma-camera.ts'
+import type { PlegmaArticle } from '../utils/plegma-articles.ts'
 import { plegmaFocusOf, samePlegmaFocus } from '../utils/plegma-route.ts'
 import type { PlegmaFocus } from '../utils/plegma-route.ts'
 
@@ -21,6 +22,8 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const landed = ref(true)
   // The free area of the screen the view of a story leaves for the map (fractions of the stage), measured by the view; null until it is: the camera uses its default.
   const region = ref<PlegmaRegion | null>(null)
+  // The articles of the focused story (day, outlet, group), first day first, which the story view reads from its detail; null until it has them. The stage draws one node for each.
+  const articles = ref<PlegmaArticle[] | null>(null)
 
   const syncRoute = (route: { path: string, query: Record<string, unknown>, meta: { plegma?: boolean } }) => {
     active.value = route.meta.plegma === true
@@ -31,12 +34,14 @@ export const usePlegmaStore = defineStore('plegma', () => {
       landed.value = false
       day.value = null
       compare.value = null
+      articles.value = null
     }
   }
   const stepTo = (index: number | null) => { day.value = index }
   const compareWith = (id: number | null) => { compare.value = id }
   const setRegion = (value: PlegmaRegion | null) => { region.value = value }
   const setLanded = (value: boolean) => { landed.value = value }
+  const setArticles = (value: PlegmaArticle[] | null) => { articles.value = value }
 
-  return { active, focus, day, compare, landed, region, syncRoute, stepTo, compareWith, setLanded, setRegion }
+  return { active, focus, day, compare, landed, region, articles, syncRoute, stepTo, compareWith, setLanded, setRegion, setArticles }
 })

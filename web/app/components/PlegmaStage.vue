@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { useEventListener, useMediaQuery } from '@vueuse/core'
 import type { PlegmaPoint } from '~/utils/plegma-camera'
-import { cameraAt, flightDone, frameHome, framePair, frameStory, frameTheme, redirectFlight, toScreen } from '~/utils/plegma-camera'
+import { cameraAt, flightDone, frameHome, framePair, frameStory, frameTheme, PLEGMA_REGION, redirectFlight, regionBox, toScreen } from '~/utils/plegma-camera'
 import type { PlegmaCamera, PlegmaFlight } from '~/utils/plegma-camera'
-import { arcsOf, buildWorld, drawLevel, homeWebs, PLEGMA_FAR_MIN, PLEGMA_FOCUS_DOTS, PLEGMA_WEB_MIN, themeFrameSet, webOf } from '~/utils/plegma-world'
+import { arcsOf, buildWorld, drawLevel, homeWebs, PLEGMA_FAR_MIN, PLEGMA_FOCUS_DOTS, PLEGMA_WEB_MIN, themeCore, themeFrameSet, webOf } from '~/utils/plegma-world'
+import { articleRadius, articleWebOf } from '~/utils/plegma-articles'
 import type { PlegmaFile, PlegmaHomeFile, PlegmaStoriesFile, PlegmaStory, PlegmaWorld } from '~/utils/plegma-world'
 import { homeIndex, HOME_WEBS, HOME_WEBS_PHONE } from '~/utils/home'
 
@@ -37,7 +38,10 @@ let flight: PlegmaFlight | null = null
 let hover: PlegmaStory | null = null
 let webs: PlegmaStory[] = []
 let ink = '#111'
+// The color of a story with no theme and of a node with no group: a soft gray, not the ink, so the map is not black.
+let mute = '#6b6f78'
 let cats: string[] = []
+let groupInk: string[] = []
 const cam: PlegmaCamera = { x: 0, y: 0, z: 0.5 }
 
 const EMPTY = new Set<PlegmaStory>()
@@ -47,9 +51,18 @@ const coreOf = (issue: number) => {
   if (!set) { set = new Set(themeFrameSet(world!, issue)); cores.set(issue, set) }
   return set
 }
+const spokes = new Map<number, Set<PlegmaStory>>()
+// The stories a coded story is joined to: the largest of its theme.
+const spokeSet = (issue: number) => {
+  let set = spokes.get(issue)
+  if (!set) { set = new Set(themeCore(world!, issue)); spokes.set(issue, set) }
+  return set
+}
 const name = (s: PlegmaStory) => (locale.value === 'en' && s.en) || s.el
-const colourOf = (s: PlegmaStory) => (s.slot > 0 ? cats[s.slot - 1] ?? ink : ink)
+const colourOf = (s: PlegmaStory) => (s.slot > 0 ? cats[s.slot - 1] ?? mute : mute)
 const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x))
+// A color of the tokens (#rrggbb) with an alpha, for a gradient.
+const withAlpha = (hex: string, alpha: number) => (/^#[0-9a-f]{6}$/i.test(hex) ? `${hex}${Math.round(alpha * 255).toString(16).padStart(2, '0')}` : hex)
 
 // On Home the map is alive: every story drifts slowly on its own path, and the dots of a web wander on slow waves, so the webs breathe (the static hero's motion).
 // It is drawn only, a story keeps its place in the world; with reduced motion there is none.
@@ -83,7 +96,9 @@ const placed = (s: PlegmaStory): PlegmaPoint => {
 const readTokens = () => {
   const style = getComputedStyle(document.documentElement)
   ink = style.getPropertyValue('--ink').trim() || '#111'
-  cats = Array.from({ length: 8 }, (_, i) => style.getPropertyValue(`--cat-${i + 1}`).trim() || ink)
+  mute = style.getPropertyValue('--text-secondary').trim() || mute
+  cats = Array.from({ length: 8 }, (_, i) => style.getPropertyValue(`--cat-${i + 1}`).trim() || mute)
+  groupInk = Array.from({ length: 10 }, (_, i) => style.getPropertyValue(`--cat-${i}`).trim() || mute)
 }
 
 const focusStory = () => (world && plegma.focus?.kind === 'story' ? world.byId.get(plegma.focus.id) ?? null : null)
@@ -110,6 +125,108 @@ const fly = () => {
   if (flight.dur <= 0) { Object.assign(cam, to); flight = null }
   plegma.setLanded(!flight)
   kick()
+}
+
+// ---- the picked story: one node for each article ----
+// The web is the story's articles (utils/plegma-articles.ts). Its size on the screen is that of the free map region, so it is the same at any window; in the world it is
+// a disc of `Rt / zt` where zt is the zoom of the framing, so it grows and shrinks with the camera in a flight. The nodes go round on small circles, each its own way.
+const arts = { aw: null as ReturnType<typeof articleWebOf> | null, cx: 0, cy: 0, R: 0, rWorld: 0, dr: 1, spacing: 0 }
+let ax = new Float32Array(0)
+let ay = new Float32Array(0)
+let hoverArticle = -1
+const articleWorldRadius = (s: PlegmaStory) => {
+  const region = plegma.region ?? undefined
+  const box = regionBox(width, height, region ?? PLEGMA_REGION)
+  return articleRadius(s.n, Math.min(box.w, box.h) * 0.4) / frameStory(s, width, height, region).z
+}
+const layoutArticles = (s: PlegmaStory, sec: number) => {
+  const aw = articleWebOf(s.id, s.n)
+  const p = toScreen(cam, width, height, placed(s))
+  const rWorld = articleWorldRadius(s)
+  const R = rWorld * cam.z
+  const spacing = aw.gap * R
+  const amp = clamp(spacing * 0.32, 1, 4.5)
+  if (ax.length < aw.n) { ax = new Float32Array(aw.n); ay = new Float32Array(aw.n) }
+  for (let i = 0; i < aw.n; i++) {
+    const a = sec * aw.speed[i]! + aw.phase[i]!
+    ax[i] = p.x + aw.x[i]! * R + Math.cos(a) * amp * aw.reach[i]!
+    ay[i] = p.y + aw.y[i]! * R + Math.sin(a) * amp * aw.reach[i]!
+  }
+  Object.assign(arts, { aw, cx: p.x, cy: p.y, R, rWorld, spacing, dr: clamp(spacing * 0.3, 1, 3.6) })
+  return arts
+}
+const articleAt = (s: PlegmaStory, x: number, y: number) => {
+  const a = layoutArticles(s, reduced.value ? 0 : performance.now() / 1000)
+  let best = -1
+  let bestD = a.dr + 5
+  for (let i = 0; i < a.aw!.n; i++) {
+    const d = Math.hypot(ax[i]! - x, ay[i]! - y)
+    if (d < bestD) { bestD = d; best = i }
+  }
+  return best
+}
+
+// A highlight behind a web, like a marker pass: a soft shape that is not quite round and slowly changes, in the color of the story.
+const wash = (g: CanvasRenderingContext2D, cx: number, cy: number, r: number, colour: string, sec: number, id: number, alpha: number) => {
+  const m = 9
+  const pts: [number, number][] = []
+  for (let k = 0; k < m; k++) {
+    const a = (k / m) * TAU + id
+    const rr = r * (1 + 0.09 * Math.sin(sec * 0.23 + k * 2.1 + id) + 0.06 * Math.cos(k * 3.7 + id * 1.3))
+    pts.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 0.9])
+  }
+  g.beginPath()
+  const mid = (i: number) => [(pts[i % m]![0] + pts[(i + 1) % m]![0]) / 2, (pts[i % m]![1] + pts[(i + 1) % m]![1]) / 2] as const
+  g.moveTo(...mid(m - 1))
+  for (let k = 0; k < m; k++) g.quadraticCurveTo(pts[k]![0], pts[k]![1], ...mid(k))
+  g.closePath()
+  g.fillStyle = colour
+  g.globalAlpha = alpha
+  g.fill()
+}
+
+const drawArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2, sec: number) => {
+  const a = layoutArticles(s, sec)
+  const aw = a.aw!
+  const col = colourOf(s)
+  const articles = plegma.articles && plegma.articles.length === aw.n ? plegma.articles : null
+  wash(g, a.cx, a.cy, a.R * 1.1, col, sec, s.id, 0.07)
+  if (level === 2) {
+    const dense = a.spacing < 6
+    g.strokeStyle = col
+    g.globalAlpha = dense ? 0.2 : 0.4
+    g.lineWidth = dense ? 0.6 : 0.8
+    g.beginPath()
+    for (let e = 0; e < aw.bow.length; e++) {
+      const i = aw.edges[e * 2]!
+      const j = aw.edges[e * 2 + 1]!
+      const dx = ax[j]! - ax[i]!
+      const dy = ay[j]! - ay[i]!
+      g.moveTo(ax[i]!, ay[i]!)
+      g.quadraticCurveTo((ax[i]! + ax[j]!) / 2 - dy * aw.bow[e]!, (ay[i]! + ay[j]!) / 2 + dx * aw.bow[e]!, ax[j]!, ay[j]!)
+    }
+    g.stroke()
+  }
+  const paths = new Map<string, Path2D>()
+  for (let i = 0; i < aw.n; i++) {
+    const colour = articles ? groupInk[articles[i]!.slot] ?? mute : col
+    let path = paths.get(colour)
+    if (!path) { path = new Path2D(); paths.set(colour, path) }
+    const r = i === 0 ? a.dr * 1.5 : a.dr
+    path.moveTo(ax[i]! + r, ay[i]!)
+    path.arc(ax[i]!, ay[i]!, r, 0, TAU)
+  }
+  g.globalAlpha = 1
+  for (const [colour, path] of paths) { g.fillStyle = colour; g.fill(path) }
+  if (hoverArticle >= 0 && hoverArticle < aw.n) {
+    g.globalAlpha = 0.85
+    g.strokeStyle = ink
+    g.lineWidth = 1.2
+    g.beginPath()
+    g.arc(ax[hoverArticle]!, ay[hoverArticle]!, a.dr + 3, 0, TAU)
+    g.stroke()
+  }
+  g.globalAlpha = 1
 }
 
 // ---- drawing ----
@@ -153,11 +270,10 @@ const draw = (now: number) => {
   // The theme that is lit: the one of the story or the theme in focus, or the one under the pointer.
   const lit = hover ? hover.issue : story ? story.issue : issue
   const litCoded = lit !== null && !world.issues[lit]!.catchAll
-  const core = issue !== null ? coreOf(issue) : EMPTY
+  const core = issue !== null ? coreOf(issue) : story?.coded ? spokeSet(story.issue) : EMPTY
   const homeSet = new Set(webs)
   const dim = onHome ? 0.38 : 0.2
-  const focusWeb = story ? webOf(world, story, PLEGMA_FOCUS_DOTS) : null
-  push = story && focusWeb ? { s: story, r: focusWeb.r * 1.25 + CLEAR_PAD } : null
+  push = story ? { s: story, r: articleWorldRadius(story) * 1.25 + CLEAR_PAD } : null
   const dotBuckets: ({ colour: string, alpha: number, path: Path2D } | undefined)[] = []
   const drawn: { s: PlegmaStory, level: 1 | 2, alpha: number, focus: boolean, crisp: boolean }[] = []
 
@@ -188,27 +304,39 @@ const draw = (now: number) => {
   }
   for (const bucket of dotBuckets) { if (!bucket) continue; c.globalAlpha = bucket.alpha; c.fillStyle = bucket.colour; c.fill(bucket.path) }
 
-  // The webs: each dot wanders a few pixels on slow waves, so a web breathes.
+  // The webs: each dot goes round on a small circle of its own, so a web breathes; the lines are not straight, each bows to one side.
   const rd = clamp(1.3 * Math.sqrt(z) + 0.9, 1.6, 4.4)
   c.lineWidth = 1
   for (const { s, level, alpha, focus, crisp } of drawn) {
     const c = crisp ? f : ctx!
+    if (s === story && level > 0) { drawArticles(c, s, level as 1 | 2, sec); continue }
     const w = webOf(world, s, focus ? PLEGMA_FOCUS_DOTS : 0)
     const p = toScreen(cam, width, height, placed(s))
     const col = colourOf(s)
     // A web breathes a little in a view, and more on Home, where it also drifts.
-    const amp = onHome ? 4 : 1.6
+    const amp = onHome ? 5 : 2.4
     const dd = onHome && sec ? drift(s, sec) : null
     const ox = p.x + (dd ? dd.x : 0)
     const oy = p.y + (dd ? dd.y : 0)
     const zw = onHome ? Math.max(z, 1.1) : z
-    const at = w.offs.map((o, i) => [ox + o.x * zw + Math.sin(sec * 0.55 + i * 1.7 + s.id) * amp + (onHome ? Math.sin(sec * 0.9 + i * 3.1 + s.id) * 2.5 : 0), oy + o.y * zw + Math.cos(sec * 0.47 + i * 2.3 + s.id) * amp + (onHome ? Math.cos(sec * 0.8 + i * 2.7 + s.id) * 2.5 : 0)] as const)
+    const at = w.offs.map((o, i) => {
+      const a = sec * (0.25 + ((i * 7 + s.id) % 11) * 0.05) * (i % 2 ? -1 : 1) + i * 1.9 + s.id
+      const k = amp * (0.6 + ((i * 5 + s.id) % 7) * 0.14)
+      return [ox + o.x * zw + Math.cos(a) * k, oy + o.y * zw + Math.sin(a) * k] as const
+    })
     c.fillStyle = col
     c.strokeStyle = col
+    if (focus) wash(c, p.x, p.y, w.r * z * 1.15, col, sec, s.id, 0.09)
     if (level === 2) {
       c.globalAlpha = alpha * 0.55
       c.beginPath()
-      for (const [i, j] of w.edges) { c.moveTo(at[i]![0], at[i]![1]); c.lineTo(at[j]![0], at[j]![1]) }
+      w.edges.forEach(([i, j], e) => {
+        const dx = at[j]![0] - at[i]![0]
+        const dy = at[j]![1] - at[i]![1]
+        const bow = (((e * 0.618 + s.id * 0.37) % 1) - 0.5) * 0.7
+        c.moveTo(at[i]![0], at[i]![1])
+        c.quadraticCurveTo((at[i]![0] + at[j]![0]) / 2 - dy * bow, (at[i]![1] + at[j]![1]) / 2 + dx * bow, at[j]![0], at[j]![1])
+      })
       c.stroke()
     }
     c.globalAlpha = alpha
@@ -216,21 +344,12 @@ const draw = (now: number) => {
     c.beginPath()
     at.forEach(([x, y], i) => { const r = i === 0 ? dr * 1.5 : dr; c.moveTo(x + r, y); c.arc(x, y, r, 0, TAU) })
     c.fill()
-    if (focus) {
-      c.globalAlpha = 0.5
-      c.lineWidth = 1.5
-      c.beginPath()
-      c.arc(p.x, p.y, w.r * z * 1.25 + 6, 0, TAU)
-      c.stroke()
-      c.lineWidth = 1
-    }
   }
 
   // The dashed arcs of the themes in view: the focus's theme, the theme in focus, the theme under the pointer, and the themes of the Home webs.
   const issues = new Set<number>()
-  if (story) issues.add(story.issue)
   if (issue !== null) issues.add(issue)
-  if (hover) issues.add(hover.issue)
+  if (hover && !(story && hover.issue === story.issue)) issues.add(hover.issue)
   if (onHome) for (const s of webs) issues.add(s.issue)
   const a = onHome ? c : f
   a.lineWidth = 1.2
@@ -239,13 +358,45 @@ const draw = (now: number) => {
     const arcs = arcsOf(world, k)
     if (!arcs.length) continue
     const slot = world.slotOf.get(k)
-    a.strokeStyle = slot ? cats[slot - 1] ?? ink : ink
+    a.strokeStyle = slot ? cats[slot - 1] ?? mute : mute
     a.globalAlpha = onHome ? 0.5 : 0.55
     a.beginPath()
     for (const arc of arcs) arcOf(a, arc.a, arc.b, arc.sign, onHome ? sec : 0)
     a.stroke()
   }
   a.setLineDash([])
+  // A story with a theme of its own is joined, by lines that bow to alternate sides, to the largest stories of that theme; they leave from the edge of its web.
+  if (story?.coded && !onHome) {
+    const here = toScreen(cam, width, height, placed(story))
+    const edge = articleWorldRadius(story) * cam.z * 1.12
+    const colour = colourOf(story)
+    f.lineWidth = 1
+    f.globalAlpha = 1
+    let k = 0
+    for (const b of spokeSet(story.issue)) {
+      if (b === story) continue
+      const q = toScreen(cam, width, height, placed(b))
+      const dx = q.x - here.x
+      const dy = q.y - here.y
+      const len = Math.hypot(dx, dy)
+      if (len < edge * 1.5) continue
+      const ux = dx / len
+      const uy = dy / len
+      const sx = here.x + ux * edge
+      const sy = here.y + uy * edge
+      // Each bows its own way, so the lines to stories that lie in one direction do not run side by side; they are strongest at the web and fade toward the other story.
+      const side = k++ % 2 ? -1 : 1
+      const bend = clamp(len * (0.1 + ((b.id * 7) % 10) * 0.02), 20, 170) * side
+      const grad = f.createLinearGradient(sx, sy, q.x, q.y)
+      grad.addColorStop(0, withAlpha(colour, 0.7))
+      grad.addColorStop(1, withAlpha(colour, 0.18))
+      f.strokeStyle = grad
+      f.beginPath()
+      f.moveTo(sx, sy)
+      f.quadraticCurveTo((sx + q.x) / 2 - uy * bend, (sy + q.y) / 2 + ux * bend, q.x, q.y)
+      f.stroke()
+    }
+  }
   c.globalAlpha = 1
   f.globalAlpha = 1
 }
@@ -310,8 +461,9 @@ const local = (e: PointerEvent) => {
   return { x: e.clientX - box.left, y: e.clientY - box.top }
 }
 const leave = () => {
-  if (!hover) return
+  if (!hover && hoverArticle < 0) return
   hover = null
+  hoverArticle = -1
   tooltip.hide()
   if (reduced.value) kick()
 }
@@ -319,6 +471,25 @@ useEventListener(window, 'pointermove', (e: PointerEvent) => {
   if (!plegma.active || !world || e.pointerType === 'touch' || !pointerFine.value || phone.value) return
   if ((e.target as Element | null)?.closest?.(CAPTURES)) return leave()
   const p = local(e)
+  // On the picked story the pointer finds an article first: its outlet and its day.
+  const story = focusStory()
+  const list = plegma.articles
+  if (story && list && list.length === story.n && plegma.landed) {
+    const i = articleAt(story, p.x, p.y)
+    if (i >= 0) {
+      const article = list[i]!
+      if (hoverArticle !== i && reduced.value) kick()
+      hover = null
+      hoverArticle = i
+      tooltip.show({
+        title: article.outlet,
+        rows: [{ label: article.group ?? t('story.nogroup'), value: fmtDate(world.dates[article.day]!), color: `var(--cat-${article.slot})` }],
+        field: true
+      }, e)
+      return
+    }
+    if (hoverArticle >= 0) { hoverArticle = -1; if (reduced.value) kick() }
+  }
   const best = pickAt(p.x, p.y, 14)
   if (!best) return leave()
   if (hover !== best && reduced.value) kick()
@@ -335,7 +506,7 @@ useEventListener(window, 'pointermove', (e: PointerEvent) => {
 })
 useEventListener(document, 'pointerleave', leave)
 useEventListener(window, 'click', (e: MouseEvent) => {
-  if (!plegma.active || !world || !pointerFine.value || phone.value || e.button !== 0 || e.defaultPrevented) return
+  if (!plegma.active || !world || !pointerFine.value || phone.value || e.button !== 0 || e.defaultPrevented || hoverArticle >= 0) return
   if ((e.target as Element | null)?.closest?.(CAPTURES)) return
   const p = { x: e.clientX - canvas.value!.getBoundingClientRect().left, y: e.clientY - canvas.value!.getBoundingClientRect().top }
   const best = pickAt(p.x, p.y, 18)
@@ -384,6 +555,7 @@ watch(() => plegma.active, (active) => {
   if (to && !flight && (Math.abs(to.x - cam.x) > 0.5 || Math.abs(to.y - cam.y) > 0.5 || Math.abs(to.z - cam.z) > 0.001)) fly()
   else kick()
 })
+watch(() => plegma.articles, () => kick())
 watch(() => prefs.theme, async () => { await nextTick(); readTokens(); kick() })
 watch(reduced, (still) => { if (still) { flight = null; const to = targetCamera(); if (to) Object.assign(cam, to); plegma.setLanded(true) } kick() })
 onBeforeUnmount(halt)
