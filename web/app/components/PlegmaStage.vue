@@ -198,6 +198,13 @@ const drawArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2,
   }
   g.globalAlpha = 1
   for (const [colour, path] of paths) { g.fillStyle = colour; g.fill(path) }
+  // The ring around the picked web: a thin line, nothing inside it.
+  g.globalAlpha = 0.5
+  g.strokeStyle = col
+  g.lineWidth = 1.5
+  g.beginPath()
+  g.arc(a.cx, a.cy, a.R * 1.2 + 6, 0, TAU)
+  g.stroke()
   if (hoverArticle >= 0 && hoverArticle < aw.n) {
     g.globalAlpha = 0.85
     g.strokeStyle = ink
@@ -323,6 +330,14 @@ const draw = (now: number) => {
     c.beginPath()
     at.forEach(([x, y], i) => { const r = i === 0 ? dr * 1.5 : dr; c.moveTo(x + r, y); c.arc(x, y, r, 0, TAU) })
     c.fill()
+    if (focus) {
+      c.globalAlpha = 0.5
+      c.lineWidth = 1.5
+      c.beginPath()
+      c.arc(p.x, p.y, w.r * z * 1.25 + 6, 0, TAU)
+      c.stroke()
+      c.lineWidth = 1
+    }
   }
 
   // The dashed arcs of the themes in view: the focus's theme, the theme in focus, the theme under the pointer, and the themes of the Home webs.

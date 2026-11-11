@@ -81,7 +81,9 @@ const perNode = computed(() => (m.value ? articlesPerNode(m.value.articles) : 1)
       <PlegmaCard v-for="(key, i) in columns.left" :key="key" :at="2" :order="3 + i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
     </div>
     <div class="orbit-col orbit-middle">
-      <PlegmaCard v-for="(key, i) in columns.middle" :key="key" :at="4" :order="2 + i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
+      <div v-for="(column, c) in columns.middle" :key="c" class="orbit-sub">
+        <PlegmaCard v-for="(key, i) in column" :key="key" :at="4" :order="2 + c + i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
+      </div>
     </div>
     <div class="orbit-col orbit-right">
       <PlegmaCard v-for="(key, i) in columns.right" :key="key" :at="0" :order="i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>

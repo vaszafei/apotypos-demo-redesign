@@ -1,10 +1,11 @@
-// Which cards a story view has and in which of the three columns each one goes (KTD8): the title, the map and the related stories on the left; the cards about how the
+// Which cards a story view has and in which of the three columns each one goes (KTD8): the title, the map and under it the other stories of the theme on the left; the cards about how the
 // story was taken in the middle; the charts of its days and its groups on the right. The map region is the free cell on the left, under the title.
 export type PlegmaStoryCard = 'days' | 'outlets' | 'how' | 'related' | 'stance' | 'people'
-export interface PlegmaStoryColumns { left: PlegmaStoryCard[], middle: PlegmaStoryCard[], right: PlegmaStoryCard[] }
+// `middle` is two narrow columns of cards (half the width each) on a wide screen; on a narrower one they stack in one.
+export interface PlegmaStoryColumns { left: PlegmaStoryCard[], middle: PlegmaStoryCard[][], right: PlegmaStoryCard[] }
 
-// A story with no profile (every story from 1 October on has no stance, framing or sections) has no stance, how or people card: the related stories take the middle column and the left one is the title and the map.
+// A story with no profile (every story from 1 October on has no stance, framing or sections) has no stance, how or people card: the middle is empty and the map shows through.
 export const plegmaStoryColumns = (labelled: boolean): PlegmaStoryColumns =>
   labelled
-    ? { left: ['related'], middle: ['stance', 'how', 'people'], right: ['days', 'outlets'] }
-    : { left: [], middle: ['related'], right: ['days', 'outlets'] }
+    ? { left: ['related'], middle: [['stance', 'people'], ['how']], right: ['days', 'outlets'] }
+    : { left: ['related'], middle: [], right: ['days', 'outlets'] }
