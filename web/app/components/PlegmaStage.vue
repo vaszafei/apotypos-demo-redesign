@@ -765,8 +765,10 @@ const visible = (margin: number, zz = cam.z) => {
 // With the hero in view the map is black, blurred nodes (the back canvas is blurred by the page's CSS, `is-fog`). A click starts a wave from the pointer: where it has passed the nodes
 // are in focus, in their colors, and each web draws itself up from loose nodes into its clusters and lines, on the crisp canvas. The camera takes a step toward the click, as in a game
 // that clears as you walk. Before the first click the pointer is a lantern (a small clear patch under it) and, if the pointer does not move, a ring goes out now and then. A click
-// opens no story here: the way into one is the search and the section under the hero.
+// opens no story here: the way into one is the search and the section under the hero, which the click walks to.
 const HERO_APPEAR = 1200
+// How far from its place a node lies while the ground is unexplored (1 is fully loose): the web still reads as a shape, only unsettled.
+const HERO_LOOSE = 0.5
 const LANTERN = 170
 const HERO_WALK_MAX = 3
 const HERO_WALK_ZOOM = 1.1
@@ -794,6 +796,13 @@ const explore = (x: number, y: number) => {
   }
   tooltip.hide()
   kick()
+  // The walk forward: a moment after the click, the page goes on to «Η επικαιρότητα», where the map comes into focus as the web of the day.
+  window.setTimeout(() => {
+    const next = document.getElementById('home-today')
+    if (!next) return
+    const bar = document.querySelector('.header-bar')?.getBoundingClientRect().bottom ?? 0
+    window.scrollTo({ top: Math.round(next.getBoundingClientRect().top + window.scrollY - bar), behavior: reduced.value ? 'auto' : 'smooth' })
+  }, reduced.value ? 0 : 320)
 }
 const drawHero = (now: number, sec: number, dt: number) => {
   const c = ctx!
@@ -828,7 +837,7 @@ const drawHero = (now: number, sec: number, dt: number) => {
     const px = bx + width / 2 + (dd ? dd.x : 0)
     const py = by + height / 2 + (dd ? dd.y : 0)
     const q = Math.round(clear(s.x, s.y, px, py, 0) * 4)
-    if (q < 4) { const p = fogBuckets[q]!; const rf = r * 1.7 + 1; p.moveTo(px + rf, py); p.arc(px, py, rf, 0, TAU) }
+    if (q < 4) { const p = fogBuckets[q]!; const rf = r * 1.2 + 0.8; p.moveTo(px + rf, py); p.arc(px, py, rf, 0, TAU) }
     if (q > 0) {
       const key = s.slot * 8 + q
       let b = dotBuckets.get(key)
@@ -838,14 +847,14 @@ const drawHero = (now: number, sec: number, dt: number) => {
     }
   }
   c.fillStyle = ink
-  fogBuckets.forEach((p, q) => { if (q < 4) { c.globalAlpha = 0.34 * appearAll * (1 - q / 4); c.fill(p) } })
+  fogBuckets.forEach((p, q) => { if (q < 4) { c.globalAlpha = 0.17 * appearAll * (1 - q / 4); c.fill(p) } })
   for (const b of dotBuckets.values()) { f.globalAlpha = b.alpha * appearAll; f.fillStyle = b.colour; f.fill(b.path) }
 
   // The webs: loose and black until the wave passes, then they gather into their clusters; the clusters sway as one, the nodes a little on their own.
   const rd = clamp(1.3 * Math.sqrt(z) + 0.9, 1.6, 4.4)
   const zw = Math.max(z, 1.1)
   let cleared = 0
-  for (const { s } of list) {
+  for (const { s, strong } of list) {
     const w = heroWebOf(world!, s)
     const p = toScreen(cam, width, height, s)
     const dd = sec ? drift(s, sec) : null
@@ -863,8 +872,9 @@ const drawHero = (now: number, sec: number, dt: number) => {
     for (let i = 0; i < w.offs.length; i++) {
       const o = w.offs[i]!
       const l = looseOf(s.id, i)
-      const gx = o.x * zw + (l.x * w.r * 0.95 * zw - o.x * zw) * (1 - e)
-      const gy = o.y * zw + (l.y * w.r * 0.95 * zw - o.y * zw) * (1 - e)
+      const lo = HERO_LOOSE * (1 - e)
+      const gx = o.x * zw + (l.x * w.r * 0.95 * zw - o.x * zw) * lo
+      const gy = o.y * zw + (l.y * w.r * 0.95 * zw - o.y * zw) * lo
       const cl = w.cluster[i]!
       const ph = (cl + 2) * 1.7 + s.id
       const sway = cl < 0 ? 2.5 : 7
@@ -876,14 +886,14 @@ const drawHero = (now: number, sec: number, dt: number) => {
     if (fa > 0.01) {
       c.strokeStyle = ink
       c.fillStyle = ink
-      c.lineWidth = 2.4
-      c.globalAlpha = 0.17 * fa
+      c.lineWidth = 1.8
+      c.globalAlpha = (strong ? 0.36 : 0.2) * fa
       c.beginPath()
       for (const [i, j] of w.edges) { c.moveTo(nodeAt[i * 2]!, nodeAt[i * 2 + 1]!); c.lineTo(nodeAt[j * 2]!, nodeAt[j * 2 + 1]!) }
       c.stroke()
-      c.globalAlpha = 0.72 * fa
+      c.globalAlpha = (strong ? 0.85 : 0.5) * fa
       c.beginPath()
-      for (let i = 0; i < w.offs.length; i++) { const r = (i === 0 ? 1.5 : 1) * (rd * 1.9 + 0.8); c.moveTo(nodeAt[i * 2]! + r, nodeAt[i * 2 + 1]!); c.arc(nodeAt[i * 2]!, nodeAt[i * 2 + 1]!, r, 0, TAU) }
+      for (let i = 0; i < w.offs.length; i++) { const r = (i === 0 ? 1.7 : 1) * (rd * 1.5 + 1.4); c.moveTo(nodeAt[i * 2]! + r, nodeAt[i * 2 + 1]!); c.arc(nodeAt[i * 2]!, nodeAt[i * 2 + 1]!, r, 0, TAU) }
       c.fill()
     }
     const ca = rev * appear

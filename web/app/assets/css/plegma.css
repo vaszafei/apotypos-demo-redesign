@@ -3,10 +3,10 @@
 .plegma-stage[hidden] { display: none; }
 .plegma-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
 /* In a view of a story or a theme the background of the map steps back, so the web in view stands out; it is blurred a little, as the user asked on 2026-11-11 (an earlier note said sharp). */
-.plegma-canvas-back { transition: opacity 500ms var(--ease-out); }
+.plegma-canvas-back { transition: opacity 500ms var(--ease-out), filter 800ms var(--ease-out); }
 .plegma-stage.is-view .plegma-canvas-back { opacity: 0.7; filter: blur(1px); }
 /* Αρχική before the ground is explored (PlegmaStage.vue, the hero): the black nodes are out of focus; what a click has cleared is drawn on the crisp canvas. */
-.plegma-stage.is-fog .plegma-canvas-back { filter: blur(5px); }
+.plegma-stage.is-fog .plegma-canvas-back { filter: blur(3.5px); }
 
 /* The story view (components/plegma/PlegmaStoryView.vue): three columns of cards that fill the screen. On the left the title, a free cell for the map (the stage draws the web in it)
    and the related stories; in the middle the cards about how the story was taken in; on the right the chart of its days and its groups.
@@ -155,6 +155,10 @@ html[data-search-fly] .home-hero-search .search-button { visibility: hidden; }
 .home-day-list .home-stories { flex: 1 1 0; min-height: 0; max-height: none; }
 .home-today .dcard { background: var(--card-glass); backdrop-filter: blur(10px); }
 .plegma-day { position: absolute; inset: 0; }
+/* The web of the day comes into focus when the section is reached (the walk forward from the hero): out of focus and faint before, sharp after. */
+.home-today-map .plegma-day { opacity: 0; filter: blur(10px); transition: opacity 900ms var(--ease-out) 150ms, filter 1100ms var(--ease-out) 150ms; }
+.home-today-map.is-here .plegma-day { opacity: 1; filter: none; }
+@media (prefers-reduced-motion: reduce) { .home-today-map .plegma-day { transition: none; } }
 .plegma-day-canvas { display: block; width: 100%; height: 100%; }
 /* The calendar: an arrow, the row of tiles that fills the width, an arrow. A month name is over the tile that starts it. */
 .home-calendar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: end; gap: var(--space-2); }
