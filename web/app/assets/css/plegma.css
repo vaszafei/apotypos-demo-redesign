@@ -58,6 +58,23 @@
 .plegma-card .how-panel .bar-list > li > :nth-child(3) { grid-column: 2; grid-row: 1; }
 @media (prefers-reduced-motion: reduce) { .plegma-card { transition: none; transform: none; } }
 
+/* The theme view (components/plegma/PlegmaThemeView.vue): the map has the left column to itself (the web of the theme, and under it the strip of its days); in the middle
+   the stories the web shows and the outlets, on the right the stance, the groups, the themes like it and how the theme is written. */
+.plegma-orbit.is-theme { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr) minmax(0, 1.2fr); }
+.plegma-orbit.is-theme .orbit-map { min-height: 340px; }
+.plegma-orbit.is-theme .card-stories { flex: 1 1 0; }
+.plegma-orbit.is-theme .card-similar, .plegma-orbit.is-theme .card-stance, .plegma-orbit.is-theme .card-groups-diff { flex: none; }
+.plegma-orbit.is-theme .card-outlets-diff { flex: 0 1 auto; max-height: 40%; }
+.plegma-orbit.is-theme .card-how { flex: 1 1 0; }
+.plegma-card .theme-diff-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px var(--space-5); }
+.plegma-orbit.is-theme .plegma-nodes-note { left: 28px; right: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.plegma-card .theme-foot { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 var(--space-4); }
+.plegma-card .theme-foot .dcard-sub { margin: 0; }
+.plegma-card .group-cell { display: flex; min-width: 0; max-width: 100%; }
+.plegma-card .group-cell .dot { flex: none; }
+.plegma-card .group-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plegma-card.card-groups-diff .how-panel .bar-list { grid-template-columns: fit-content(60%) minmax(48px, 1fr) auto; }
+
 /* The map pages fill the screen: the footer would sit under the cards. The back button and the path (Μέσα / Ιστορίες) of the row above are not shown on a story: the title takes its place. */
 @media (min-width: 1024px) {
   .shell:has(.plegma-orbit) .page-footer { display: none; }

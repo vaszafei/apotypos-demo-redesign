@@ -1,0 +1,238 @@
+<script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
+import { PLEGMA_THEME_OUTLETS, PLEGMA_THEME_STORIES } from '~/utils/plegma-theme'
+import type { StoriesData } from '~/types/stories'
+import type { StoryDetailData } from '~/types/story-detail'
+import type { TopicsData } from '~/types/topics'
+import type { GroupsData } from '~/utils/groups'
+
+// The theme view: the theme on the Plegma (a web with the theme at the center, its largest stories around it and the outlets that wrote each story around the story, and under
+// it the articles of the theme for each day: the stage draws both in the free cell) with the cards of the topic page around the map: its stories, the stance, the outlets and
+// groups that write it more or less than usual, how it is written, the themes like it.
+const props = defineProps<{ index: number }>()
+const { t } = useI18n()
+const plegma = usePlegmaStore()
+const home = useFixtureLazy<TopicsData>('home', { required: ['dates', 'issues', 'issueDaily'], isEmpty: b => b.issueDaily.length === 0 })
+const list = useFixtureLazy<StoriesData>('stories', { required: ['issues', 'stories'], isEmpty: b => b.stories.length === 0 })
+const detail = useFixtureLazy<StoryDetailData>('storyDetail', { required: ['outlets', 'stories', 'base'], isEmpty: b => b.stories.length === 0 })
+const groupsData = useFixtureLazy<GroupsData>('groups', { required: ['groups', 'topicsAll'], isEmpty: b => b.groups.length === 0 })
+const fixtures = [home, list, detail, groupsData]
+const loading = computed(() => fixtures.some(f => f.status.value === 'loading'))
+const problem = computed(() => fixtures.map(f => f.status.value).find(s => s !== 'ready'))
+const retry = () => fixtures.forEach(f => f.refresh())
+
+const twoDecimals = new Intl.NumberFormat('el-GR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const diffKey = computed(() => [{ label: t('story.how.more'), color: 'var(--emph-more)' }, { label: t('story.how.less'), color: 'var(--emph-less)' }])
+const colorOfGroup = computed(() => groupColors(groupsData.data.value?.groups ?? []))
+const part = (arr: number[], i: number, s = totalOf(arr)) => (s ? arr[i]! / s : 0)
+
+// null when the index is not one of the topics (the 404 page).
+const model = computed(() => {
+  const hd = home.data.value
+  const d = list.data.value
+  const dd = detail.data.value
+  const gd = groupsData.data.value
+  if (!hd || !d || !dd || !gd || problem.value) return null
+  if (!Number.isInteger(props.index) || props.index < 0 || props.index >= hd.issues.length) return null
+  const index = props.index
+  const issue = hd.issues[index]!
+  const stats = topicStats(hd, index)
+  const mine = storiesOfTopic(d, index)
+  const articles = topicArticles(d, dd, index)
+  const outlets = outletDiffs(dd, articles)
+  const { det } = articles
+
+  const usualTopic = totalOf(gd.topicsAll) ? gd.topicsAll[index]! / totalOf(gd.topicsAll) : 0
+  const groups = gd.groups.map((g) => {
+    const total = totalOf(g.topics)
+    return { key: g.name, label: g.name, value: total ? g.topics[index]! / total : 0, usual: usualTopic }
+  }).sort((a, b) => (b.value - b.usual) - (a.value - a.usual))
+
+  // How the topic is written: the frame, the section, the stance and the clickbait, each against all articles. The rows share one scale.
+  const framed = (key: 'f' | 'c', labels: string[], prefix: string, count: number) =>
+    det[key].map((_, i) => ({ key: `${key}${i}`, label: t(`story.${prefix}.${labels[i]}`), value: part(det[key], i), usual: part(dd.base[key], i) }))
+      .filter(r => r.value > 0).sort((a, b) => b.value - a.value).slice(0, count)
+  const stanceN = totalOf(det.s.slice(1))
+  const stanceRows = (['critical', 'neutral', 'supportive'] as const).map((code, i) => ({ key: code, label: t(`stance.${code}`), value: part(det.s.slice(1), i, stanceN), usual: part(dd.base.s.slice(1), i, totalOf(dd.base.s.slice(1))) }))
+  const [scored, baited] = det.k as [number, number]
+  const click = scored ? [{ key: 'clickbait', label: t('story.how.clickbait'), value: baited / scored, usual: dd.base.k[1]! / dd.base.k[0]! }] : []
+  const frames = framed('f', dd.frames, 'frame', 8)
+  const sections = framed('c', dd.sections, 'section', 6)
+
+  return {
+    hd, d, dd, issue, ...stats, mine, ...articles, outlets, groups, stanceN, scored, baited, frames, sections, click,
+    outletScale: diffScale([...outlets.more, ...outlets.less, ...groups]),
+    howScale: diffScale([...frames, ...sections, ...(stanceN ? stanceRows : []), ...click]),
+    similar: similarTopics(hd, index),
+    storiesPerDay: hd.dates.map((_, i) => mine.filter(x => x.values[i]! > 0).length)
+  }
+})
+
+// The name of the topic is in the trail and the title of the document as soon as the topics are there, also when another card has no data (the static title()).
+const named = computed(() => { const issue = home.data.value?.issues[props.index]; return issue ? topicName(issue) : null })
+provideDetailTitle(() => named.value)
+useHead({ title: () => (named.value ? `${named.value} · ${t('site.name')}` : undefined) })
+
+const dayLabel = (i: number) => fmtDay(home.data.value!.dates[i]!)
+
+// The stories the web shows are the largest of the theme: the card lists the same ones, so a row is the name of a sector of the web.
+const listed = computed(() => (model.value ? model.value.mine.slice(0, PLEGMA_THEME_STORIES) : []))
+// For the map: each of those stories with the outlets that wrote it most and the articles of each (storyDetail.json has them for each outlet and day).
+const themeStories = computed(() => {
+  const m = model.value
+  if (!m) return null
+  const rows = new Map(m.dd.stories.map(r => [r.id, r]))
+  return listed.value.map((s) => {
+    const count = new Map<number, number>()
+    const t = rows.get(s.id)?.t ?? []
+    for (let i = 0; i + 2 < t.length; i += 3) count.set(t[i]!, (count.get(t[i]!) ?? 0) + t[i + 2]!)
+    const outlets = [...count].map(([o, n]) => {
+      const outlet = m.dd.outlets[o]!
+      return { name: outlet.name, group: outlet.group, slot: slotOfColor((outlet.group && colorOfGroup.value.get(outlet.group)) || NO_GROUP), n }
+    })
+    return { id: s.id, name: storyName(s), n: s.articles, media: outlets.length, outlets: outlets.sort((a, b) => b.n - a.n).slice(0, PLEGMA_THEME_OUTLETS) }
+  })
+})
+watch(themeStories, list => plegma.setThemeStories(list), { immediate: true })
+onBeforeUnmount(() => { plegma.setHoverStory(null); plegma.setThemeStories(null) })
+
+// The map region is the free cell of the left column, less the strip of the days at its bottom (the stage draws the strip under the region).
+const orbit = ref<HTMLElement>()
+const map = ref<HTMLElement>()
+const REGION_PAD = 28
+const measure = () => {
+  const o = orbit.value
+  const cell = map.value
+  if (!o || !cell || !window.matchMedia('(min-width: 1024px)').matches) { plegma.setRegion(null); return }
+  const stage = o.getBoundingClientRect()
+  const box = cell.getBoundingClientRect()
+  if (!stage.width || !stage.height || box.height < 160) return
+  const top = box.top - stage.top + REGION_PAD
+  // Under the region: the strip, the dates under it and the note.
+  const bottom = box.bottom - stage.top - PLEGMA_STRIP - 12 - 18 - 24
+  plegma.setRegion({ x0: (box.left + REGION_PAD) / stage.width, y0: top / stage.height, x1: (box.right - REGION_PAD) / stage.width, y1: bottom / stage.height })
+}
+let watcher: ResizeObserver | null = null
+watch(map, (el) => {
+  watcher?.disconnect()
+  if (!el) return
+  watcher = new ResizeObserver(measure)
+  watcher.observe(el)
+  measure()
+}, { flush: 'post' })
+useEventListener(window, 'resize', measure)
+onBeforeUnmount(() => watcher?.disconnect())
+</script>
+
+<template>
+  <template v-if="loading" />
+  <div v-else-if="problem === 'error'" class="error-state" role="alert" data-state="error">
+    <AppIcon name="exclamation-triangle" />
+    <p style="margin: 0">{{ t('state.failed') }}</p>
+    <button type="button" class="button" @click="retry"><AppIcon name="arrow-path" class="icon icon-sm" />{{ t('state.retry') }}</button>
+  </div>
+  <div v-else-if="problem" class="dash-grid">
+    <section class="dcard c-12"><div class="empty-state" data-state="empty"><AppIcon name="inbox" /><p style="margin: 0">{{ t('topics2.empty') }}</p></div></section>
+  </div>
+  <ErrorPage v-else-if="!model" :status="404" />
+  <div v-else ref="orbit" class="plegma-orbit is-theme" :class="{ 'is-in': plegma.landed }">
+    <div class="plegma-title entity-grid">
+      <EntityTitle :kind="t('hero.kind.topic')" :title="topicName(model.issue)">
+        <template #meta>{{ `${dayLabel(0)} → ${fmtDate(model.hd.dates[model.last]!)} · ${t('entity.fact.days', { n: model.last + 1 })}` }}</template>
+        <EntityFact :label="t('entity.fact.articles')" :value="fmtInt(model.total)" :sub="t('entity.fact.peak', { date: dayLabel(model.peak), n: fmtInt(model.daily[model.peak] ?? 0) })" />
+        <EntityFact :label="t('entity.fact.stories')" :value="fmtInt(model.mine.length)">
+          <template #spark><SparkLine :values="model.storiesPerDay" :from="0" :to="model.hd.dates.length - 1" :label="t('entity.fact.stories')" :width="56" :height="16" /></template>
+        </EntityFact>
+        <EntityFact :label="t('entity.fact.share')" :value="fmtPct(model.share)" :sub="t('entity.fact.rank', { n: model.rank, total: model.hd.issues.length })" />
+        <EntityFact v-if="model.change !== null && !model.issue.catchAll" :label="t('entity.fact.change')" :value="`${model.change > 0 ? '▲' : '▼'} ${fmtSigned(model.change * 100)}%`" :sub="t('entity.fact.change.sub')" />
+      </EntityTitle>
+    </div>
+
+    <div class="orbit-col orbit-left">
+      <div ref="map" class="orbit-map"><p class="plegma-nodes-note">{{ t('topic.map.note') }}</p></div>
+    </div>
+
+    <div class="orbit-col orbit-middle">
+      <PlegmaCard :at="4" :order="1" class="card-stories">
+        <DashCard :title="t('topic2.stories.title')" :info="t('topic2.stories.info')">
+          <ul v-if="listed.length" class="rows-related">
+            <li v-for="s in listed" :key="s.id" @pointerenter="plegma.setHoverStory(s.id)" @pointerleave="plegma.setHoverStory(null)" @focusin="plegma.setHoverStory(s.id)" @focusout="plegma.setHoverStory(null)">
+              <span class="related-main">
+                <EntityLink type="story" :to="storyHref(s.id)">{{ storyName(s) }}</EntityLink>
+                <span class="muted-text">{{ `${dayLabel(s.days[0]!)} · ${t('topic2.stories.outlets', { n: s.outlets })}` }}</span>
+              </span>
+              <span class="row-value">{{ fmtInt(s.articles) }}</span>
+            </li>
+          </ul>
+          <p v-else class="dcard-empty">{{ t('topic2.stories.empty') }}</p>
+        </DashCard>
+      </PlegmaCard>
+      <PlegmaCard :at="4" :order="2" class="card-outlets-diff">
+        <DashCard :title="t('topic2.outlets.title')" :info="t('topic2.outlets.info')">
+          <template v-if="model.outlets.rows.length">
+            <div class="how-grid how-grid-2">
+              <div v-for="side in ['more', 'less'] as const" :key="side" class="how-panel">
+                <h3 class="rows-caption">{{ t(`topic2.outlets.${side}`) }}</h3>
+                <DiffList :rows="model.outlets[side]" :scale="model.outletScale" tip-key="topic2.how.tip">
+                  <template #label="{ row }"><EntityLink type="outlet" :to="outletHref(row.o.slug)">{{ row.label }}</EntityLink></template>
+                </DiffList>
+              </div>
+            </div>
+            <div class="theme-foot"><p class="dcard-sub">{{ t('topic2.outlets.n', { n: fmtInt(model.rowsTopic), total: fmtInt(model.rowsAll) }) }}</p><ChartLegend :items="diffKey" /></div>
+          </template>
+          <p v-else class="dcard-empty">{{ t('topic2.empty') }}</p>
+        </DashCard>
+      </PlegmaCard>
+    </div>
+
+    <div class="orbit-col orbit-right">
+      <PlegmaCard :at="0" :order="0" class="card-stance">
+
+        <StanceCard
+          :rows="[{ label: t('entity.stance.topic'), color: 'var(--series-news)', counts: model.det.s.slice(1) }, { label: t('entity.stance.all'), color: NO_GROUP, counts: model.dd.base.s.slice(1) }]"
+          :foot="model.stanceN ? t('topic2.how.stance.n', { n: fmtInt(model.stanceN) }) : null"
+        />
+      </PlegmaCard>
+      <PlegmaCard :at="0" :order="1" class="card-groups-diff">
+        <DashCard :title="t('topic2.groups.title')" :info="t('topic2.groups.info')">
+          <div class="how-panel">
+            <DiffList :rows="model.groups" :scale="model.outletScale" tip-key="topic2.how.tip">
+              <template #label="{ row }"><span class="group-cell"><span class="dot" :style="`--dot:${colorOfGroup.get(row.label)}`" /><span class="group-name">{{ row.label }}</span></span></template>
+            </DiffList>
+          </div>
+          <ChartLegend :items="diffKey" />
+        </DashCard>
+      </PlegmaCard>
+      <PlegmaCard :at="0" :order="2" class="card-similar">
+        <DashCard :title="t('topic2.similar.title')" :info="t('topic2.similar.info')">
+          <BarList v-if="model.similar.length" :rows="model.similar.map(r => ({ key: r.k, label: topicName(r.issue), to: topicHref(r.k), text: twoDecimals.format(r.r), value: r.r, color: '' }))" :max="1">
+            <template #label="{ row }"><EntityLink type="topic" :to="row.to!">{{ row.label }}</EntityLink></template>
+          </BarList>
+          <p v-else class="dcard-empty">{{ t('topic2.similar.empty') }}</p>
+        </DashCard>
+      </PlegmaCard>
+      <PlegmaCard :at="0" :order="3" class="card-how">
+        <DashCard :title="t('topic2.how.title')" :info="t('topic2.how.info')">
+          <div class="how-grid how-grid-2">
+            <div class="how-panel">
+              <h3 class="rows-caption">{{ t('story.how.frame') }}</h3>
+              <DiffList v-if="model.frames.length" :rows="model.frames" :scale="model.howScale" tip-key="topic2.how.tip" />
+            </div>
+            <div>
+              <div class="how-panel">
+                <h3 class="rows-caption">{{ t('story.how.section') }}</h3>
+                <DiffList v-if="model.sections.length" :rows="model.sections" :scale="model.howScale" tip-key="topic2.how.tip" />
+              </div>
+              <div class="how-panel">
+                <h3 class="rows-caption">{{ t('story.how.clickbait') }}</h3>
+                <DiffList v-if="model.click.length" :rows="model.click" :scale="model.howScale" tip-key="topic2.how.tip" />
+                <p class="dcard-sub">{{ model.scored ? t('story.how.clickbait.n', { n: fmtInt(model.baited), total: fmtInt(model.scored) }) : t('story.how.clickbait.none') }}</p>
+              </div>
+            </div>
+          </div>
+        </DashCard>
+      </PlegmaCard>
+    </div>
+  </div>
+  <p v-if="problem" class="proto-note">{{ t('proto.states') }}</p>
+</template>

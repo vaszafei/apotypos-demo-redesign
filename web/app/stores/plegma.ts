@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { PlegmaRegion } from '../utils/plegma-camera.ts'
 import type { PlegmaArticle, PlegmaHighlight } from '../utils/plegma-articles.ts'
+import type { PlegmaThemeStory } from '../utils/plegma-theme.ts'
 import { plegmaFocusOf, samePlegmaFocus } from '../utils/plegma-route.ts'
 import type { PlegmaFocus } from '../utils/plegma-route.ts'
 
@@ -29,6 +30,8 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const highlight = ref<PlegmaHighlight | null>(null)
   const hoverStory = ref<number | null>(null)
   const related = ref<number[]>([])
+  // The largest stories of the focused theme with the outlets that wrote each, which the theme view reads from the fixtures; null until it has them. The stage draws its web from them.
+  const themeStories = ref<PlegmaThemeStory[] | null>(null)
 
   const syncRoute = (route: { path: string, query: Record<string, unknown>, meta: { plegma?: boolean } }) => {
     active.value = route.meta.plegma === true
@@ -43,6 +46,7 @@ export const usePlegmaStore = defineStore('plegma', () => {
       highlight.value = null
       hoverStory.value = null
       related.value = []
+      themeStories.value = null
     }
   }
   const stepTo = (index: number | null) => { day.value = index }
@@ -53,6 +57,7 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const setHighlight = (value: PlegmaHighlight | null) => { highlight.value = value }
   const setHoverStory = (id: number | null) => { hoverStory.value = id }
   const setRelated = (ids: number[]) => { related.value = ids }
+  const setThemeStories = (value: PlegmaThemeStory[] | null) => { themeStories.value = value }
 
-  return { active, focus, day, compare, landed, region, articles, highlight, hoverStory, related, syncRoute, stepTo, compareWith, setLanded, setRegion, setArticles, setHighlight, setHoverStory, setRelated }
+  return { active, focus, day, compare, landed, region, articles, highlight, hoverStory, related, themeStories, syncRoute, stepTo, compareWith, setLanded, setRegion, setArticles, setHighlight, setHoverStory, setRelated, setThemeStories }
 })
