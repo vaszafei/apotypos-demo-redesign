@@ -44,3 +44,12 @@ test('a day with one theme keeps it near the date and spreads its stories', () =
   for (let i = 0; i < web.n; i++) if (web.kind[i] === DAY_STORY) far = Math.max(far, Math.abs(web.x[i]))
   assert.ok(far > 0.7, `the stories reach only ${far} from the center`)
 })
+
+test('a dot is as large as the articles it stands for', () => {
+  const mixed = [{ issue: 1, name: 'A', slot: 1, n: 330, stories: [story(1, 300, new Array(12).fill(1)), story(2, 3, [1, 1, 1])], rest: 0 }]
+  const web = buildDayWeb(mixed, 1.8, 5)
+  const sizes = { big: [], small: [] }
+  for (let i = 0; i < web.n; i++) if (web.kind[i] === DAY_DOT) sizes[web.story[i] === 0 ? 'big' : 'small'].push(web.size[i])
+  assert.ok(Math.min(...sizes.big) > Math.max(...sizes.small))
+  assert.equal(Math.max(...sizes.big), 1)
+})

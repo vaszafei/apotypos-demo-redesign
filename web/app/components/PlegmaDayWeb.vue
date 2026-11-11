@@ -60,7 +60,7 @@ const radius = (w: PlegmaDayWeb, i: number, R: number) => {
     case DAY_DATE: return 9
     case DAY_THEME: return 6.5 + 4 * w.size[i]!
     case DAY_STORY: return 3.6 + 3.4 * w.size[i]!
-    case DAY_DOT: return clamp(R * (0.0055 + 0.004 * w.size[i]!), 1.5, 3.4)
+    case DAY_DOT: return clamp(R * (0.004 + 0.0085 * w.size[i]!), 1.4, 5.2)
     default: return clamp(R * 0.004 * (0.6 + w.size[i]!), 1, 2.2)
   }
 }
@@ -280,7 +280,8 @@ const onMove = (e: PointerEvent) => {
     return
   }
   const s = theme.stories[w.story[i]!]!
-  tooltip.show({ title: s.name, rows: [{ label: t('home.field.topic'), value: theme.name, color: slotColour(theme.slot) }, { label: t('home.field.articles'), value: fmtInt(s.n) }, { label: t('entity.fact.outlets'), value: fmtInt(s.media) }], field: true }, e)
+  const per = s.n / s.dots.length
+  tooltip.show({ title: s.name, note: w.kind[i] === DAY_DOT ? t('home.web.dot', { n: fmtDec(per) }) : null, rows: [{ label: t('home.field.topic'), value: theme.name, color: slotColour(theme.slot) }, { label: t('home.field.articles'), value: fmtInt(s.n) }, { label: t('entity.fact.outlets'), value: fmtInt(s.media) }], field: true }, e)
 }
 const onLeave = () => { hover = -1; tooltip.hide() }
 const onClick = () => {

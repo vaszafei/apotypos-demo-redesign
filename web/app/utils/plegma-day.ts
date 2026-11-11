@@ -31,6 +31,7 @@ export interface PlegmaDayWeb {
   theme: Int16Array
   story: Int16Array
   dot: Int16Array
+  // How large a node is, 0 to 1 among the nodes of its kind; a dot's is the root of the articles it stands for, against the most of any dot of the day.
   size: Float32Array
   phase: Float32Array
   speed: Float32Array
@@ -151,7 +152,10 @@ export const buildDayWeb = (themes: PlegmaDayTheme[], aspect: number, seed: numb
   }
   // The dots of each story: each at the best of a few random spots around it (the farthest from the ones placed), joined to the nearest node placed before it.
   let node = 1 + T + stories.length
+  // A dot is as large as the articles it stands for: one in a small story, many in a large one, the same scale on every story of the day.
+  const mostPer = Math.max(1, ...stories.map(r => r.s.n / Math.max(1, r.s.dots.length)))
   stories.forEach((r, k) => {
+    const per = r.s.n / Math.max(1, r.s.dots.length)
     const placed = [storyAt(k)]
     const far = reachOf(r.s.dots.length)
     r.s.dots.forEach((_, j) => {
@@ -172,7 +176,7 @@ export const buildDayWeb = (themes: PlegmaDayTheme[], aspect: number, seed: numb
       theme[node] = r.ti
       story[node] = r.si
       dot[node] = j
-      size[node] = 0.5 + rand() * 0.5
+      size[node] = Math.sqrt(per / mostPer)
       let near = placed[0]!
       for (const q of placed) if (Math.hypot(x[q]! - bx, y[q]! - by) < Math.hypot(x[near]! - bx, y[near]! - by)) near = q
       pairs.push(node, near)
