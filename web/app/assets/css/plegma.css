@@ -142,11 +142,25 @@ html[data-search-fly] .home-hero-search .search-button { visibility: hidden; }
 .plegma-card .rows-related li { grid-template-columns: minmax(0, 1fr) auto; }
 .plegma-card .rows-related li > svg { display: none; }
 
-/* Αρχική › «Η επικαιρότητα» (components/HomeToday.vue): under the hero a screen with the calendar on the left and the story of the day on the right, as glass cards like the Plegma pages have.
-   The screen under the cards is free, and the stage behind frames the webs of the picked day there (PLEGMA_HOME_REGION in utils/plegma-camera.ts). */
-.home-today { --card-glass: color-mix(in srgb, var(--surface-page) 82%, transparent); display: grid; grid-template-columns: minmax(0, 34fr) minmax(0, 32fr) minmax(0, 34fr); gap: var(--space-4); align-items: start; min-height: calc(100svh - 64px); padding: var(--space-5) 0 var(--space-5); }
-.home-today-left { grid-column: 1; min-width: 0; }
-.home-today-right { grid-column: 3; min-width: 0; }
+/* Αρχική › «Η επικαιρότητα» (components/HomeToday.vue): under the hero a screen. The calendar floats over the whole width at the top; under it the web of the picked day (components/PlegmaDayWeb.vue)
+   fills the free area, and the card of the story of the day is a glass card at its right. The Plegma stage is behind, as a dim map. */
+.home-today { --card-glass: color-mix(in srgb, var(--surface-page) 82%, transparent); display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 400px); grid-template-rows: auto minmax(0, 1fr); gap: var(--space-4); height: calc(100svh - 64px); min-height: 640px; padding: var(--space-5) 0 var(--space-4); }
+.home-today-days { grid-column: 1 / -1; grid-row: 1; min-width: 0; }
+.home-today-map { grid-column: 1; grid-row: 2; position: relative; min-width: 0; min-height: 0; }
+.home-today-card { grid-column: 2; grid-row: 2; align-self: start; min-width: 0; }
 .home-today .dcard { background: var(--card-glass); backdrop-filter: blur(10px); }
-.home-calendar { display: grid; gap: var(--space-2); }
-@media (max-width: 1023px) { .home-today { display: flex; flex-direction: column; min-height: 0; } }
+.plegma-day { position: absolute; inset: 0; }
+.plegma-day-canvas { display: block; width: 100%; height: 100%; }
+/* The calendar: an arrow, the row of tiles that fills the width, an arrow. A month name is over the tile that starts it. */
+.home-calendar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: end; gap: var(--space-2); }
+.home-days-window { min-width: 0; }
+.home-calendar .home-days { overflow: visible; padding: 22px 0 0; scroll-snap-type: none; }
+.home-calendar .home-days > li { position: relative; flex: 1 1 0; min-width: 0; }
+.home-calendar .home-day-btn { width: 100%; }
+.home-day-month { position: absolute; left: 2px; top: -20px; font-size: var(--text-caption); font-weight: 600; text-transform: capitalize; white-space: nowrap; color: var(--text-primary); }
+.home-days-step { align-self: end; margin-bottom: 30px; }
+.home-days-step:disabled { opacity: 0.3; cursor: default; }
+@media (max-width: 1023px) {
+  .home-today { display: flex; flex-direction: column; height: auto; min-height: 0; }
+  .home-today-map { height: 70vw; min-height: 420px; }
+}

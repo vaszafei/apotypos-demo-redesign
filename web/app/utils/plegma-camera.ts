@@ -55,9 +55,7 @@ export const frameStory = (s: PlegmaPoint, w: number, h: number, region?: Plegma
 // The stories of a theme (its largest ones) inside the map region.
 export const frameTheme = (stories: PlegmaPoint[], w: number, h: number, region?: PlegmaRegion) => fitCamera(stories, regionBox(w, h, region), w, h, PLEGMA_Z_THEME)
 // The best stories of the week across the whole screen.
-export const frameHome = (stories: PlegmaPoint[], w: number, h: number, region?: PlegmaRegion) => fitCamera(stories, region ? regionBox(w, h, region) : screenBox(w, h), w, h, 1, 0.8)
-// The free part of Home under the hero: the screen under the two cards of components/HomeToday.vue, which sit at the top. The best stories of a day lie far apart, so the region is wide.
-export const PLEGMA_HOME_REGION: PlegmaRegion = { x0: 0.06, y0: 0.5, x1: 0.94, y1: 0.94 }
+export const frameHome = (stories: PlegmaPoint[], w: number, h: number) => fitCamera(stories, screenBox(w, h), w, h, 1, 0.8)
 // A pair in the map region. Far apart, the zoom to hold both is too small to read, so the camera keeps the first story and `together` is false.
 export const framePair = (a: PlegmaPoint, b: PlegmaPoint, w: number, h: number, region?: PlegmaRegion): { camera: PlegmaCamera, together: boolean } => {
   const both = fitCamera([a, b], regionBox(w, h, region), w, h, PLEGMA_Z_FOCUS, 0.7)

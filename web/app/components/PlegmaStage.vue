@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useEventListener, useMediaQuery } from '@vueuse/core'
 import type { PlegmaPoint } from '~/utils/plegma-camera'
-import { cameraAt, flightDone, frameHome, PLEGMA_HOME_REGION, framePair, frameStory, frameTheme, PLEGMA_REGION, redirectFlight, regionBox, toScreen } from '~/utils/plegma-camera'
+import { cameraAt, flightDone, frameHome, framePair, frameStory, frameTheme, PLEGMA_REGION, redirectFlight, regionBox, toScreen } from '~/utils/plegma-camera'
 import type { PlegmaCamera, PlegmaFlight } from '~/utils/plegma-camera'
 import { arcsOf, buildWorld, drawLevel, homeWebs, PLEGMA_FAR_MIN, PLEGMA_FOCUS_DOTS, PLEGMA_WEB_MIN, themeCore, themeFrameSet, webOf } from '~/utils/plegma-world'
 import { articleOfNode, articleRadius, articlesPerNode, articleWebOf, matchesHighlight, nodeCount } from '~/utils/plegma-articles'
@@ -10,7 +10,6 @@ import { buildThemeWeb } from '~/utils/plegma-theme'
 import type { PlegmaThemeWeb } from '~/utils/plegma-theme'
 import type { PlegmaFile, PlegmaHomeFile, PlegmaStoriesFile, PlegmaStory, PlegmaWorld } from '~/utils/plegma-world'
 import { homeIndex, HOME_WEBS, HOME_WEBS_PHONE } from '~/utils/home'
-import type { HomeIndex } from '~/utils/home'
 
 // The Plegma: one canvas behind the pages, in the layout, so it outlives a page change and a flight can end on another page (KTD1). It draws every story of the
 // fixtures at its permanent place (plegma.json), with the look of the home hero: a web for a story, a dot for the rest, dashed arcs along a theme. The route says what
@@ -41,9 +40,8 @@ let raf = 0
 let flight: PlegmaFlight | null = null
 let hover: PlegmaStory | null = null
 let webs: PlegmaStory[] = []
-// The best webs of the latest week (what Home frames under the hero) and the index the webs of a picked day come from (Home under the hero, plegma.homeDay).
+// The best webs of the latest week, which Home frames under the hero. Under the hero, with a day picked (plegma.homeDay), the map is a dim background of dots for the web of the day.
 let weekWebs: PlegmaStory[] = []
-let homeIx: HomeIndex | null = null
 let ink = '#111'
 // The color of a story with no theme and of a node with no group: a soft gray, not the ink, so the map is not black.
 let mute = '#6b6f78'
@@ -161,14 +159,9 @@ const targetCamera = (): PlegmaCamera | null => {
     // A theme is framed on its largest stories; its web lies over this background.
     return frameTheme([...coreOf(issue)], width, height, plegma.region ?? undefined)
   }
-  return webs.length ? frameHome(webs, width, height, plegma.homeDay !== null && !phone.value ? PLEGMA_HOME_REGION : undefined) : null
+  return webs.length ? frameHome(webs, width, height) : null
 }
 
-// The webs of a day: its stories with the most articles, as many as the hero shows.
-const websOfDay = (day: number) => {
-  if (!world || !homeIx) return []
-  return (homeIx.byDay[day] ?? []).map(r => world!.byId.get(r.s.id)).filter((s): s is PlegmaStory => !!s).slice(0, phone.value ? HOME_WEBS_PHONE : HOME_WEBS)
-}
 
 const fly = () => {
   const to = targetCamera()
@@ -788,14 +781,12 @@ const draw = (now: number) => {
   const other = plegma.compare !== null ? world.byId.get(plegma.compare) ?? null : null
   const issue = focusIssue()
   const outletOn = focusOutlet() !== null
-  const onHome = !story && issue === null && !outletOn
+  const onHome = !story && issue === null && !outletOn && plegma.homeDay === null
   // The theme that is lit: the one of the story or the theme in focus, or the one under the pointer.
   const lit = hover ? hover.issue : story ? story.issue : issue
   const litCoded = lit !== null && !world.issues[lit]!.catchAll
   const core = issue !== null ? coreOf(issue) : story?.coded ? spokeSet(story.issue) : EMPTY
   const homeSet = new Set(webs)
-  // On Home under the hero a picked story stays full and the other webs of the day step back.
-  const picked = onHome && plegma.homePick !== null ? world.byId.get(plegma.homePick) ?? null : null
   const dim = onHome ? 0.38 : issue !== null || outletOn ? 0.13 : 0.2
   push = story ? { s: story, r: articleWorldRadius(story) * 1.25 + CLEAR_PAD } : null
   const bz = onHome ? z : BACK_Z
@@ -811,16 +802,15 @@ const draw = (now: number) => {
     const strong = isFocus || homeSet.has(s) || core.has(s) || s === hover
     // In a theme view the web is the theme: the map behind it is all background.
     const sameTheme = issue === null && !outletOn && litCoded && s.issue === lit && s.coded
-    const alpha = strong ? (picked && s !== picked ? 0.5 : 1) : onHome ? dim : sameTheme ? 0.7 : 0.55
+    const alpha = strong ? 1 : onHome ? dim : sameTheme ? 0.7 : 0.55
     // In a view the story, its pair, the stories of the theme and the one under the pointer are crisp; the rest is a blurred background of dots with no lines.
     const crisp = !onHome && (isFocus || core.has(s) || s === hover)
     // Not in view, a story is the background: a dot of the world seen from far away, across the whole page, with no hole around the web.
     const back = !onHome && !strong
     const zz = back ? bz : z
     const base = back ? 0 : drawLevel(s, z, strong, isFocus)
-    // On Home the webs of the week have their lines at the zoom that frames them all, and are drawn no smaller than at zoom 1.1 so that each one reads. The stories of a day lie farther apart and
-    // are framed in the free middle, so their zoom is lower: under the hero they are webs at any zoom.
-    const level = back ? 0 : onHome ? ((base > 0 || plegma.homeDay !== null) && homeSet.has(s) ? 2 : base) : issue !== null || outletOn ? 0 : crisp ? base : (Math.min(base, 1) as 0 | 1 | 2)
+    // On Home the webs of the week have their lines at the zoom that frames them all, and are drawn no smaller than at zoom 1.1 so that each one reads.
+    const level = back ? 0 : onHome ? (base > 0 && homeSet.has(s) ? 2 : base) : issue !== null || outletOn ? 0 : crisp ? base : (Math.min(base, 1) as 0 | 1 | 2)
     // Zoomed far out, the smallest stories are faint specks that only cost drawing time: leave them out until the camera is nearer.
     if (level === 0 && zz < 0.3 && !strong && !sameTheme && s.n < PLEGMA_FAR_MIN) continue
     if (level === 0) {
@@ -1049,7 +1039,7 @@ const resize = () => {
 
 // ---- the pointer ----
 // The stage is behind the page, so the pointer is read on the window; a card, a link or a control under it is not the map.
-const CAPTURES = 'a, button, input, select, textarea, [role="dialog"], .dcard, .plegma-card, .plegma-title, .plegma-dock, .kpi-tile, .page-head, .section-nav, .trail-bar, .header-bar, .sidebar, .page-footer, .tooltip'
+const CAPTURES = 'a, button, input, select, textarea, [role="dialog"], .dcard, .plegma-card, .plegma-day, .plegma-title, .plegma-dock, .kpi-tile, .page-head, .section-nav, .trail-bar, .header-bar, .sidebar, .page-footer, .tooltip'
 const pickAt = (x: number, y: number, reach: number) => {
   if (!world) return null
   let best: PlegmaStory | null = null
@@ -1225,8 +1215,6 @@ useEventListener(window, 'click', (e: MouseEvent) => {
     return
   }
   const best = pickAt(p.x, p.y, 18)
-  // Under the hero a story of the web is picked and its card opens; the hero keeps the way into the story.
-  if (best && plegma.homeDay !== null) { tooltip.hide(); plegma.pickHome(best.id); return }
   if (best) { tooltip.hide(); hover = null; navigateTo(storyHref(best.id)) }
 })
 
@@ -1236,12 +1224,11 @@ const start = () => {
   if (world || !ready.value) return
   world = buildWorld(stories.data.value!, home.data.value!, file.data.value!)
   const ix = homeIndex({ stories: stories.data.value!, detail: null })
-  homeIx = ix
   byX = world.stories.slice().sort((a, b) => a.x - b.x)
   // The latest week that has topics, so the webs have their colours (the October stories have no topic): the last day with a count in the topics' days.
   const lastCoded = home.data.value!.issueDaily.reduce((m, row) => Math.max(m, row.findLastIndex(v => v !== null)), 0)
   weekWebs = homeWebs(world, ix, phone.value ? HOME_WEBS_PHONE : HOME_WEBS, lastCoded)
-  webs = plegma.homeDay === null ? weekWebs : websOfDay(plegma.homeDay)
+  webs = plegma.homeDay === null ? weekWebs : []
   readTokens()
   // A cold open lands settled: no flight (R14).
   const to = targetCamera()
@@ -1260,11 +1247,12 @@ onMounted(() => {
 useEventListener(document, 'visibilitychange', () => { if (document.hidden) halt(); else kick() })
 // The route puts something else in focus: fly there. From a page with no map the flight starts from where the camera was left.
 watch(() => [plegma.focus, plegma.compare], () => fly(), { deep: true })
-// Home under the hero picked a day (or went back to the hero): the webs are that day's best stories, and the camera flies to them.
-watch(() => plegma.homeDay, (day) => {
+// Home under the hero picked a day (the map steps back to a dim background) or went back to the hero (the camera frames the best of the week again).
+watch(() => plegma.homeDay, (day, was) => {
   if (!world) return
-  webs = day === null ? weekWebs : websOfDay(day)
-  if (plegma.active) fly()
+  webs = day === null ? weekWebs : []
+  if (day === null && was !== null && plegma.active) fly()
+  kick()
 })
 // The view measured the free area again (its title grew, the window changed): the camera frames the new area, inside a flight from where it is.
 watch(() => plegma.region, () => {
@@ -1280,14 +1268,14 @@ watch(() => plegma.active, (active) => {
   if (to && !flight && (Math.abs(to.x - cam.x) > 0.5 || Math.abs(to.y - cam.y) > 0.5 || Math.abs(to.z - cam.z) > 0.001)) fly()
   else kick()
 })
-watch(() => [plegma.articles, plegma.highlight, plegma.hoverStory, plegma.related, plegma.themeStories, plegma.homePick], () => kick())
+watch(() => [plegma.articles, plegma.highlight, plegma.hoverStory, plegma.related, plegma.themeStories], () => kick())
 watch(() => prefs.theme, async () => { await nextTick(); readTokens(); kick() })
 watch(reduced, (still) => { if (still) { flight = null; const to = targetCamera(); if (to) Object.assign(cam, to); plegma.setLanded(true) } kick() })
 onBeforeUnmount(halt)
 </script>
 
 <template>
-  <div class="plegma-stage" :class="{ 'is-view': plegma.focus !== null }" :hidden="!plegma.active" aria-hidden="true">
+  <div class="plegma-stage" :class="{ 'is-view': plegma.focus !== null || plegma.homeDay !== null }" :hidden="!plegma.active" aria-hidden="true">
     <canvas ref="canvas" class="plegma-canvas plegma-canvas-back" />
     <canvas ref="canvasFocus" class="plegma-canvas plegma-canvas-focus" />
   </div>
