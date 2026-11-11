@@ -280,7 +280,7 @@ const ringAt = (s: PlegmaStory, x: number, y: number) => {
   const at = (Math.atan2(y - a.cy, x - a.cx) + Math.PI / 2 + TAU) % TAU
   const inside = (start: number, span: number) => span > 0 && (at - start + TAU) % TAU <= span
   if (ringMix > 0.5) {
-    const arcs = stanceArcs(plegma.stance)
+    const arcs = shareArcs(plegma.stance)
     if (!arcs) return null
     for (let k = 0; k < 3; k++) if (inside(arcs[k * 2]!, arcs[k * 2 + 1]!)) return { kind: 's' as const, k }
     return null
@@ -289,15 +289,28 @@ const ringAt = (s: PlegmaStory, x: number, y: number) => {
   return null
 }
 
-// The arcs of the stance ring: [start, span] in radians from the top, clockwise, for critical, neutral and supportive, each as wide as its share of the rated articles.
-const stanceArcs = (counts: number[] | null) => {
+// The arc of the ring of a theme under the pointer: a group, or a stance once the ring has turned to it.
+const themeRingAt = (x: number, y: number) => {
+  const disc = themeDisc()
+  const groups = plegma.themeGroups
+  if (!disc || !groups?.length || Math.abs(Math.hypot(x - disc.x, y - disc.y) - disc.r) > 7) return null
+  const at = (Math.atan2(y - disc.y, x - disc.x) + Math.PI / 2 + TAU) % TAU
+  const inside = (start: number, span: number) => span > 0 && (at - start + TAU) % TAU <= span
+  const arcs = ringMix > 0.5 ? shareArcs(plegma.stance) : shareArcs(groups.map(g => g.n))
+  if (!arcs) return null
+  for (let k = 0; k < arcs.length / 2; k++) if (inside(arcs[k * 2]!, arcs[k * 2 + 1]!)) return { kind: ringMix > 0.5 ? 's' as const : 'g' as const, k }
+  return null
+}
+// The arcs of a ring from counts: [start, span] in radians from the top, clockwise, for each count, as wide as its share of the total (the stance: critical, neutral and supportive;
+// on a theme the groups too).
+const shareArcs = (counts: number[] | null) => {
   const total = counts ? counts.reduce((x, y) => x + y, 0) : 0
   if (!counts || !total) return null
   const used = counts.filter(c => c > 0).length
   const room = used > 1 ? Math.min(0.09, (Math.PI * 0.5) / used) : 0
-  const out = new Float32Array(6)
+  const out = new Float32Array(counts.length * 2)
   let at = 0
-  for (let k = 0; k < 3; k++) {
+  for (let k = 0; k < counts.length; k++) {
     const span = counts[k]! > 0 ? (TAU - used * room) * (counts[k]! / total) : 0
     out[k * 2] = at + (counts[k]! > 0 ? room / 2 : 0)
     out[k * 2 + 1] = span
@@ -397,7 +410,7 @@ const drawArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2,
   if (aw.arcs.length && !morphFrom) {
     g.lineWidth = 2
     // Turning to the stance the arcs of the groups go a quarter turn on and fade; the arcs of the stance come in from a quarter turn back.
-    const stanceAt = ringMix > 0.01 ? stanceArcs(plegma.stance) : null
+    const stanceAt = ringMix > 0.01 ? shareArcs(plegma.stance) : null
     const groupsOut = stanceAt ? ringMix : 0
     const turn = groupsOut * (Math.PI / 2)
     if (groupsOut < 0.99) for (let k = 0; k < aw.arcs.length / 2; k++) {
@@ -609,13 +622,50 @@ const drawTheme = (g: CanvasRenderingContext2D, issue: number, sec: number, dt: 
     g.beginPath()
     g.arc(hx[0]!, hy[0]!, themeNodeRadius(web, 0, unit) + 4, 0, TAU)
     g.stroke()
-    // The ring: a thin line with nothing inside it.
-    g.strokeStyle = colour
-    g.globalAlpha = 0.45
-    g.lineWidth = 1.2
-    g.beginPath()
-    g.arc(disc.x, disc.y, disc.r, 0, TAU)
-    g.stroke()
+    // The ring: a thin line, or, once the groups of the theme are known, an arc for each group (as wide as its share of the articles of the theme); it turns to the arcs of the
+    // stance the way the ring of a story does.
+    const groupAt = plegma.themeGroups?.length ? shareArcs(plegma.themeGroups.map(x => x.n)) : null
+    if (groupAt) {
+      const stanceAt = ringMix > 0.01 ? shareArcs(plegma.stance) : null
+      const groupsOut = stanceAt ? ringMix : 0
+      const turn = groupsOut * (Math.PI / 2)
+      g.lineCap = 'round'
+      if (groupsOut < 0.99) for (let k = 0; k < groupAt.length / 2; k++) {
+        const span = groupAt[k * 2 + 1]!
+        if (span <= 0) continue
+        const slot = plegma.themeGroups![k]!.slot
+        const hot = ringHot.get(`g${k}`) ?? 0
+        g.strokeStyle = hot > 0.01 ? (slot > 0 ? groupInk[slot] ?? ink : mute) : softInk[slot] ?? mute
+        g.lineWidth = 2 + 2.5 * hot
+        g.globalAlpha = (0.85 + 0.15 * hot) * (1 - groupsOut)
+        const pad = Math.min(span / 2, 3 / disc.r)
+        g.beginPath()
+        g.arc(disc.x, disc.y, disc.r, groupAt[k * 2]! - Math.PI / 2 + pad + turn, groupAt[k * 2]! + span - Math.PI / 2 - pad + turn)
+        g.stroke()
+      }
+      if (stanceAt) {
+        const back = (1 - ringMix) * (Math.PI / 2)
+        for (let k = 0; k < 3; k++) {
+          const span = stanceAt[k * 2 + 1]!
+          if (span <= 0) continue
+          const hot = ringHot.get(`s${k}`) ?? 0
+          g.strokeStyle = stanceInk[k] ?? mute
+          g.lineWidth = 2 + 2.5 * hot
+          g.globalAlpha = (0.9 + 0.1 * hot) * ringMix
+          const pad = Math.min(span / 2, 3 / disc.r)
+          g.beginPath()
+          g.arc(disc.x, disc.y, disc.r, stanceAt[k * 2]! - Math.PI / 2 + pad - back, stanceAt[k * 2]! + span - Math.PI / 2 - pad - back)
+          g.stroke()
+        }
+      }
+    } else {
+      g.strokeStyle = colour
+      g.globalAlpha = 0.45
+      g.lineWidth = 1.2
+      g.beginPath()
+      g.arc(disc.x, disc.y, disc.r, 0, TAU)
+      g.stroke()
+    }
     g.lineCap = 'butt'
     if (node > 0) {
       g.strokeStyle = ink
@@ -1078,6 +1128,32 @@ useEventListener(window, 'pointermove', (e: PointerEvent) => {
       return
     }
     if (hoverNode >= 0) { hoverNode = -1; if (reduced.value) kick() }
+    const arc = themeRingAt(p.x, p.y)
+    if (arc) {
+      const key = `${arc.kind}${arc.k}`
+      if (hoverRing !== key && reduced.value) kick()
+      hover = null
+      hoverRing = key
+      if (arc.kind === 'g') {
+        const groups = plegma.themeGroups!
+        const mine = groups[arc.k]!
+        tooltip.show({
+          title: mine.name,
+          rows: [{ label: t('home.field.articles'), value: `${fmtInt(mine.n)} · ${fmtPct(mine.n / groups.reduce((x, y) => x + y.n, 0))}`, color: `var(--cat-${mine.slot})` }],
+          field: true
+        }, e)
+      } else {
+        const counts = plegma.stance!
+        const total = counts.reduce((x, y) => x + y, 0)
+        tooltip.show({
+          title: t(`stance.${['critical', 'neutral', 'supportive'][arc.k]}`),
+          rows: [{ label: t('home.field.articles'), value: `${fmtInt(counts[arc.k]!)} · ${fmtPct(counts[arc.k]! / total)}`, color: `var(--stance-${['critical', 'neutral', 'supportive'][arc.k]})` }],
+          field: true
+        }, e)
+      }
+      return
+    }
+    if (hoverRing) { hoverRing = ''; tooltip.hide(); if (reduced.value) kick() }
   }
   const best = pickAt(p.x, p.y, 14)
   if (!best) return leave()
