@@ -82,14 +82,22 @@ const mixHex = (hex: string, other: string, share: number) => {
 // A color of the tokens (#rrggbb) with an alpha, for a gradient.
 const withAlpha = (hex: string, alpha: number) => (/^#[0-9a-f]{6}$/i.test(hex) ? `${hex}${Math.round(alpha * 255).toString(16).padStart(2, '0')}` : hex)
 
-// On Home the map is alive: every story drifts slowly on its own path, and the dots of a web wander on slow waves, so the webs breathe (the static hero's motion).
+// The map is alive like the nebyss hero: the whole field turns slowly about the middle of the page, each dot at its own steady pace (slower the farther out), no jitter.
 // It is drawn only, a story keeps its place in the world; with reduced motion there is none.
+const ORBIT = 0.025
+const ORBIT_REACH = 420
 const driftSpot = { x: 0, y: 0 }
-const drift = (s: PlegmaStory, sec: number) => {
-  driftSpot.x = Math.sin(sec * 0.13 + s.id * 0.7) * 14 + Math.sin(sec * 0.31 + s.id * 1.9) * 5
-  driftSpot.y = Math.cos(sec * 0.11 + s.id * 1.1) * 11 + Math.cos(sec * 0.27 + s.id * 0.6) * 4
+const orbit = (dx: number, dy: number, sec: number) => {
+  const a = sec * ORBIT / (1 + Math.hypot(dx, dy) / ORBIT_REACH)
+  const cos = Math.cos(a)
+  const sin = Math.sin(a)
+  driftSpot.x = dx * cos - dy * sin - dx
+  driftSpot.y = dx * sin + dy * cos - dy
   return driftSpot
 }
+const drift = (s: PlegmaStory, sec: number) => orbit((s.x - cam.x) * cam.z, (s.y - cam.y) * cam.z, sec)
+// The world behind a view is seen from far away (the page is its background); the web in view is drawn at the camera's own zoom in front of it.
+const BACK_Z = 0.66
 
 // A story or a theme in view keeps a clear space around its web: the other stories near it are pushed out a little (a place on the screen, not in the world),
 // so the web does not sit in a crowd. Inside the radius R they are moved to between R and 1.4 R; outside it the push dies away.
@@ -597,15 +605,15 @@ const drawTheme = (g: CanvasRenderingContext2D, issue: number, sec: number, dt: 
 }
 
 // The stories inside the screen: the list is sorted by x, so a zoomed camera looks at a small part of it.
-const visible = (margin: number) => {
-  const half = width / 2 / cam.z + margin
+const visible = (margin: number, zz = cam.z) => {
+  const half = width / 2 / zz + margin
   const x0 = cam.x - half
   const x1 = cam.x + half
   let lo = 0
   let hi = byX.length
   while (lo < hi) { const mid = (lo + hi) >> 1; if (byX[mid]!.x < x0) lo = mid + 1; else hi = mid }
-  const y0 = cam.y - height / 2 / cam.z - margin
-  const y1 = cam.y + height / 2 / cam.z + margin
+  const y0 = cam.y - height / 2 / zz - margin
+  const y1 = cam.y + height / 2 / zz + margin
   const out: PlegmaStory[] = []
   for (let i = lo; i < byX.length && byX[i]!.x <= x1; i++) if (byX[i]!.y >= y0 && byX[i]!.y <= y1) out.push(byX[i]!)
   return out
@@ -635,34 +643,41 @@ const draw = (now: number) => {
   const homeSet = new Set(webs)
   const dim = onHome ? 0.38 : issue !== null ? 0.13 : 0.2
   push = story ? { s: story, r: articleWorldRadius(story) * 1.25 + CLEAR_PAD } : null
-  const clear = issue !== null ? themeDisc() : null
+  const bz = onHome ? z : BACK_Z
+  // The background is seen from the web: the world point at the middle of the map region stays there, and the world around it is drawn at the far zoom.
+  const rb = regionBox(width, height, plegma.region ?? undefined)
+  const fx = cam.x + (rb.cx - width / 2) / z
+  const fy = cam.y + (rb.cy - height / 2) / z
   const dotBuckets: ({ colour: string, alpha: number, path: Path2D } | undefined)[] = []
   const drawn: { s: PlegmaStory, level: 1 | 2, alpha: number, focus: boolean, crisp: boolean }[] = []
 
-  for (const s of visible(80)) {
+  for (const s of visible(80, Math.min(z, bz))) {
     const isFocus = s === story || s === other
     const strong = isFocus || homeSet.has(s) || core.has(s) || s === hover
     // In a theme view the web is the theme: the map behind it is all background.
     const sameTheme = issue === null && litCoded && s.issue === lit && s.coded
-    const alpha = strong ? 1 : sameTheme ? 0.6 : dim
+    const alpha = strong ? 1 : onHome ? dim : sameTheme ? 0.7 : 0.55
     // In a view the story, its pair, the stories of the theme and the one under the pointer are crisp; the rest is a blurred background of dots with no lines.
     const crisp = !onHome && (isFocus || core.has(s) || s === hover)
-    const base = drawLevel(s, z, strong, isFocus)
+    // Not in view, a story is the background: a dot of the world seen from far away, across the whole page, with no hole around the web.
+    const back = !onHome && !strong
+    const zz = back ? bz : z
+    const base = back ? 0 : drawLevel(s, z, strong, isFocus)
     // On Home the webs of the week have their lines at the zoom that frames them all, and are drawn no smaller than at zoom 1.1 so that each one reads.
-    const level = onHome ? (base > 0 && homeSet.has(s) ? 2 : base) : issue !== null ? 0 : crisp ? base : (Math.min(base, 1) as 0 | 1 | 2)
+    const level = back ? 0 : onHome ? (base > 0 && homeSet.has(s) ? 2 : base) : issue !== null ? 0 : crisp ? base : (Math.min(base, 1) as 0 | 1 | 2)
     // Zoomed far out, the smallest stories are faint specks that only cost drawing time: leave them out until the camera is nearer.
-    if (level === 0 && z < 0.3 && !strong && !sameTheme && s.n < PLEGMA_FAR_MIN) continue
+    if (level === 0 && zz < 0.3 && !strong && !sameTheme && s.n < PLEGMA_FAR_MIN) continue
     if (level === 0) {
-      const r = isFocus ? 4 : clamp(0.7 + 0.35 * Math.log10(s.n + 1) * (z < 0.22 ? 1.4 : 1.8) * Math.sqrt(Math.max(z, 0.5)), 0.8, 5)
+      const r = isFocus ? 4 : clamp(0.7 + 0.35 * Math.log10(s.n + 1) * (zz < 0.22 ? 1.4 : 1.8) * Math.sqrt(Math.max(zz, 0.5)), 0.8, 5)
       const key = s.slot * 3 + (strong ? 2 : sameTheme ? 1 : 0)
       let bucket = dotBuckets[key]
       if (!bucket) { bucket = { colour: colourOf(s), alpha, path: new Path2D() }; dotBuckets[key] = bucket }
-      const where = placed(s)
-      const dd = onHome && sec ? drift(s, sec) : null
-      const px = (where.x - cam.x) * z + width / 2 + (dd ? dd.x : 0)
-      const py = (where.y - cam.y) * z + height / 2 + (dd ? dd.y : 0)
-      // Under the web of a theme in view there are no dots: the web is read on the page's own color.
-      if (clear && Math.hypot(px - clear.x, py - clear.y) < clear.r) continue
+      const where = back ? s : placed(s)
+      const bx = back ? (s.x - fx) * bz : (where.x - cam.x) * zz
+      const by = back ? (s.y - fy) * bz : (where.y - cam.y) * zz
+      const dd = (onHome || back) && sec ? orbit(bx, by, sec) : null
+      const px = bx + (back ? rb.cx : width / 2) + (dd ? dd.x : 0)
+      const py = by + (back ? rb.cy : height / 2) + (dd ? dd.y : 0)
       bucket.path.moveTo(px + r, py)
       bucket.path.arc(px, py, r, 0, TAU)
     } else drawn.push({ s, level, alpha, focus: isFocus, crisp })

@@ -2,9 +2,9 @@
 .plegma-stage { position: fixed; inset: 64px 0 0 0; z-index: -1; pointer-events: none; }
 .plegma-stage[hidden] { display: none; }
 .plegma-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
-/* In a view of a story or a theme the background of the map steps back, so the web in view stands out; it stays sharp (a blur read as a haze). */
+/* In a view of a story or a theme the background of the map steps back, so the web in view stands out; it is blurred a little, as the user asked on 2026-11-11 (an earlier note said sharp). */
 .plegma-canvas-back { transition: opacity 500ms var(--ease-out); }
-.plegma-stage.is-view .plegma-canvas-back { opacity: 0.7; }
+.plegma-stage.is-view .plegma-canvas-back { opacity: 0.7; filter: blur(1px); }
 
 /* The story view (components/plegma/PlegmaStoryView.vue): three columns of cards that fill the screen. On the left the title, a free cell for the map (the stage draws the web in it)
    and the related stories; in the middle the cards about how the story was taken in; on the right the chart of its days and its groups.
