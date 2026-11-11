@@ -9,14 +9,16 @@
 /* The story view, an Orbit (components/plegma/PlegmaStoryView.vue): the title above the map region at the top left, two cards on the right, two below the map.
    The layer takes no pointer; only a card, the title and the chips do, so the map region and the gaps pass the pointer to the stage (KTD8).
    The cards are small and flat, with the page's own surface and border, and they size to their content up to a limit; what does not fit scrolls inside. */
-.plegma-orbit { position: fixed; inset: 64px 0 0 0; z-index: 2; display: flex; justify-content: space-between; gap: var(--space-3); padding: 48px var(--space-5) var(--space-4); pointer-events: none; }
+.plegma-orbit { position: fixed; inset: 64px 0 0 0; z-index: 2; display: flex; justify-content: space-between; gap: var(--space-3); padding: 4px var(--space-5) var(--space-4); pointer-events: none; }
 .orbit-left { flex: 0 0 auto; min-width: 0; width: min(620px, 46%); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto minmax(0, 1fr) minmax(0, 30%); gap: var(--space-2); }
 .orbit-right { flex: 0 0 clamp(320px, 30vw, 440px); min-width: 0; display: flex; flex-direction: column; gap: var(--space-2); }
 .orbit-right .plegma-card { flex: 0 1 auto; max-height: calc(50% - var(--space-1)); }
 .orbit-mid { position: absolute; display: grid; grid-template-columns: minmax(0, 1fr); grid-auto-rows: minmax(0, 1fr); gap: var(--space-2); pointer-events: none; }
 .orbit-mid.is-wide { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: unset; grid-template-rows: minmax(0, 1fr); }
 .orbit-mid .plegma-card { align-self: start; max-height: 100%; }
-.plegma-title { grid-column: 1 / -1; margin: 0; justify-self: start; max-width: 100%; pointer-events: auto; }
+/* The title sits in the row of the back button, to its right; the path (Μέσα / Ιστορίες) is not shown, since the button goes back to it. */
+.plegma-title { grid-column: 1 / -1; margin: 0 0 0 34px; justify-self: start; max-width: calc(100% - 34px); pointer-events: auto; }
+@media (min-width: 1024px) { .shell:has(.plegma-orbit) .appbar-trail { display: none; } }
 .plegma-title.entity-grid { margin-top: 0; }
 .plegma-title .ecard { background: var(--surface-page); border-color: var(--border); }
 .orbit-map { grid-column: 1 / -1; display: flex; align-items: flex-end; min-height: 0; }

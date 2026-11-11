@@ -4,16 +4,16 @@ import type { Series } from '~/types/topics'
 
 // Dash.LinesChart of assets/dash.js, same layout and arithmetic: the names sit at the line ends where there is room, else a legend names the lines.
 // band: the indexes of a period that is tinted. tall: the height on a wide card. sparse: the lines are 0 most of the time (stories), so the tooltip leaves out the lines that are 0 on the day and cuts long names.
-// sqrt: the vertical axis is the square root of the value. hrefOf: the page of a line (the topic page by default).
-const props = defineProps<{ dates: string[], series: Series[], caption: string, band?: { from: number, to: number }, tall?: number, sparse?: boolean, sqrt?: boolean, hrefOf?: (s: Series) => string }>()
+// plain: one line that the title of the card already names, so no name at its end and no legend. sqrt: the vertical axis is the square root of the value. hrefOf: the page of a line (the topic page by default).
+const props = defineProps<{ dates: string[], series: Series[], caption: string, band?: { from: number, to: number }, tall?: number, sparse?: boolean, sqrt?: boolean, plain?: boolean, hrefOf?: (s: Series) => string }>()
 const linkOf = (s: Series) => (props.hrefOf ? props.hrefOf(s) : topicHref(s.key))
 const tooltip = useTooltipStore()
 
 const holder = ref<HTMLElement | null>(null)
 const { width: measured } = useElementSize(holder)
 const width = computed(() => Math.floor(measured.value) || 640)
-const height = computed(() => (width.value < 520 ? 190 : props.tall || (width.value < 640 ? 280 : 380)))
-const labelled = computed(() => width.value >= 520)
+const height = computed(() => (width.value < 520 ? (props.tall && props.plain ? props.tall : 190) : props.tall || (width.value < 640 ? 280 : 380)))
+const labelled = computed(() => width.value >= 520 && !props.plain)
 const long = computed(() => width.value >= 700)
 const pad = computed(() => ({ top: 10, right: labelled.value ? (long.value ? 205 : 135) : 12, bottom: 24, left: 44 }))
 const n = computed(() => props.dates.length)
@@ -91,7 +91,7 @@ const leave = () => { hover.value = null; tooltip.hide() }
 
 <template>
   <div ref="holder" class="fit">
-    <ul v-if="!labelled" class="legend">
+    <ul v-if="!labelled && !plain" class="legend">
       <li v-for="s in series" :key="s.key"><span class="swatch" :style="{ background: s.color }" />{{ s.name }}</li>
     </ul>
     <svg class="chart line-draw" :width="width" :height="height" :viewBox="`0 0 ${width} ${height}`" role="img" :aria-label="caption">
