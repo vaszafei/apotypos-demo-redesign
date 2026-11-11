@@ -115,8 +115,8 @@
   .plegma-title { order: -1; position: absolute; top: 56px; left: 0; }
 }
 
-/* Αρχική: the hero is a transparent window over the Plegma, which the static page drew as its own field. The page head has no title here: the masthead is the title. */
-.shell.is-plegma .home-hero { background: none; border-bottom: 0; }
+/* Αρχική: the hero is a transparent window over the Plegma, which the static page drew as its own field. The page head has no title here: the masthead is the title. The hero is its own block: its line at the bottom and the link to «Η επικαιρότητα» stay, over the Plegma. */
+.shell.is-plegma .home-hero { background: none; }
 .shell.is-hero-page .page-head { display: none; }
 /* The search of the top bar waits while the large one is in the page, and appears when the large one has moved up into it. */
 .header-bar .global-search { transition: opacity var(--motion-base) var(--ease-out); }
@@ -148,4 +148,5 @@ html[data-search-fly] .home-hero-search .search-button { visibility: hidden; }
 .home-today-left { grid-column: 1; min-width: 0; }
 .home-today-right { grid-column: 3; min-width: 0; }
 .home-today .dcard { background: var(--card-glass); backdrop-filter: blur(10px); }
+.home-calendar { display: grid; gap: var(--space-2); }
 @media (max-width: 1023px) { .home-today { display: flex; flex-direction: column; min-height: 0; } }

@@ -3,7 +3,7 @@ import { useMediaQuery } from '@vueuse/core'
 import { dayChange, monthsOf } from '~/utils/home-days'
 
 // Home.Calendar of assets/home.js: a strip of tiles, one for each day of a month, that scrolls sideways. A tile has the day, the articles of all the outlets and the change against
-// the day before. The arrows and the name of the month are at the top right of the card, and a tile picks the day.
+// the day before, and picks the day. It floats over the Plegma with no card and no title: only the month with its arrows and the tiles.
 const props = defineProps<{ dates: string[], totals: (number | null)[] }>()
 const selected = defineModel<number>({ required: true })
 const { t } = useI18n()
@@ -36,14 +36,12 @@ onMounted(() => center(false))
 </script>
 
 <template>
-  <DashCard :title="t('home.days.title')" :info="t('home.days.info')" card="home-calendar" class="home-calendar">
-    <template #tools>
-      <div class="home-month-nav">
-        <button type="button" class="icon-button" :disabled="monthAt <= 0" :aria-label="t('home.month.prev')" @click="month = months[monthAt - 1]!"><AppIcon name="chevron-left" class="icon" /></button>
-        <span class="home-month-name" aria-live="polite">{{ fmtMonth(`${month}-01`, { month: 'long', year: 'numeric' }) }}</span>
-        <button type="button" class="icon-button" :disabled="monthAt >= months.length - 1" :aria-label="t('home.month.next')" @click="month = months[monthAt + 1]!"><AppIcon name="chevron-right" class="icon" /></button>
-      </div>
-    </template>
+  <div class="home-calendar" role="group" :aria-label="t('home.days.title')">
+    <div class="home-month-nav">
+      <button type="button" class="icon-button" :disabled="monthAt <= 0" :aria-label="t('home.month.prev')" @click="month = months[monthAt - 1]!"><AppIcon name="chevron-left" class="icon" /></button>
+      <span class="home-month-name" aria-live="polite">{{ fmtMonth(`${month}-01`, { month: 'long', year: 'numeric' }) }}</span>
+      <button type="button" class="icon-button" :disabled="monthAt >= months.length - 1" :aria-label="t('home.month.next')" @click="month = months[monthAt + 1]!"><AppIcon name="chevron-right" class="icon" /></button>
+    </div>
     <ul ref="list" :key="month" class="home-days is-swap">
       <li v-for="d in tiles" :key="d.iso">
         <button type="button" :class="weekend(d.iso) ? 'home-day-btn is-weekend' : 'home-day-btn'" :aria-pressed="d.i === selected"
@@ -58,5 +56,5 @@ onMounted(() => center(false))
         </button>
       </li>
     </ul>
-  </DashCard>
+  </div>
 </template>
