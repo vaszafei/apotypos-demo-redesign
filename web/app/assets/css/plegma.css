@@ -36,6 +36,7 @@
 .plegma-title .ecard { background: var(--card-glass); border-color: var(--border); backdrop-filter: blur(10px); pointer-events: auto; width: max-content; max-width: 100%; }
 .plegma-title .ecard-name { white-space: nowrap; }
 .orbit-map { position: relative; flex: 1 1 0; min-height: 260px; }
+.orbit-ring-tabs { position: absolute; left: 0; top: 0; pointer-events: auto; }
 .plegma-nodes-note { position: absolute; left: 0; bottom: 0; margin: 0; font-size: var(--text-caption); color: var(--text-secondary); }
 
 .plegma-card { --card-pad: var(--space-2) var(--space-3); --card-gap: 4px; min-width: 0; min-height: 0; overflow: auto; pointer-events: auto; background: var(--card-glass); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: var(--radius); opacity: 0; transform: translate(var(--from-x, 0), var(--from-y, 0)); transition: opacity var(--motion-slow, 360ms) var(--ease-out) calc(var(--i) * 120ms), transform var(--motion-slow, 360ms) var(--ease-out) calc(var(--i) * 120ms); }

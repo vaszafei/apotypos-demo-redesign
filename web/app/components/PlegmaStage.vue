@@ -47,6 +47,7 @@ let mute = '#6b6f78'
 let paper = '#f6f4ef'
 let cats: string[] = []
 let groupInk: string[] = []
+let stanceInk: string[] = []
 // The colors of the nodes at rest: the group colors mixed with the gray of no group, so the web is a family of colors, not confetti. A group that is
 // pointed at gets its full color.
 let softInk: string[] = []
@@ -127,6 +128,7 @@ const readTokens = () => {
   fontText = style.getPropertyValue('--font-text').trim() || fontText
   cats = Array.from({ length: 8 }, (_, i) => style.getPropertyValue(`--cat-${i + 1}`).trim() || mute)
   groupInk = Array.from({ length: 10 }, (_, i) => style.getPropertyValue(`--cat-${i}`).trim() || mute)
+  stanceInk = ['critical', 'neutral', 'supportive'].map(k => style.getPropertyValue(`--stance-${k}`).trim() || mute)
   softInk = groupInk.map(c => mixHex(c, groupInk[0] ?? mute, 0.3))
 }
 
@@ -173,6 +175,8 @@ let hoverArticle = -1
 // What the cards point at (stores/plegma.ts): the articles of a group or an outlet come forward, a line to a story of the card of the other stories lights up. Each eases
 // in and out, so the map answers the pointer instead of jumping; with reduced motion it jumps.
 let hlMix = 0
+// The ring of the story web turns from the arcs of the groups to the arcs of the stance and back: 0 is the groups, 1 the stance.
+let ringMix = 0
 let hlLast: PlegmaHighlight | null = null
 let hlMatch = new Uint8Array(0)
 let hlKey = ''
@@ -265,6 +269,22 @@ const articleAt = (s: PlegmaStory, x: number, y: number) => {
   return best
 }
 
+// The arcs of the stance ring: [start, span] in radians from the top, clockwise, for critical, neutral and supportive, each as wide as its share of the rated articles.
+const stanceArcs = (counts: number[] | null) => {
+  const total = counts ? counts.reduce((x, y) => x + y, 0) : 0
+  if (!counts || !total) return null
+  const used = counts.filter(c => c > 0).length
+  const room = used > 1 ? Math.min(0.09, (Math.PI * 0.5) / used) : 0
+  const out = new Float32Array(6)
+  let at = 0
+  for (let k = 0; k < 3; k++) {
+    const span = counts[k]! > 0 ? (TAU - used * room) * (counts[k]! / total) : 0
+    out[k * 2] = at + (counts[k]! > 0 ? room / 2 : 0)
+    out[k * 2 + 1] = span
+    at += span + (counts[k]! > 0 ? room : 0)
+  }
+  return out
+}
 // The picked web. Its nodes are solid and each has a rim of the page's color, so a line never muddies a node and two nodes that touch stay two; a node and the line
 // to the article before it have the calm color of their group, and the ring is the groups' ring: an arc for each group over its sector. The articles of a group or an
 // outlet that a card points at come forward in the full color, larger and pulsing, and the others step back.
@@ -356,17 +376,34 @@ const drawArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2,
   g.lineCap = 'round'
   if (aw.arcs.length && !morphFrom) {
     g.lineWidth = 2
-    for (let k = 0; k < aw.arcs.length / 2; k++) {
+    // Turning to the stance the arcs of the groups go a quarter turn on and fade; the arcs of the stance come in from a quarter turn back.
+    const stanceAt = ringMix > 0.01 ? stanceArcs(plegma.stance) : null
+    const groupsOut = stanceAt ? ringMix : 0
+    const turn = groupsOut * (Math.PI / 2)
+    if (groupsOut < 0.99) for (let k = 0; k < aw.arcs.length / 2; k++) {
       const span = aw.arcs[k * 2 + 1]!
       if (span <= 0) continue
       const slot = sectorSlot[k] ?? 0
       const on = !!hlLast && mix > 0.01 && articles?.find(x => x.order === k)?.group === hlLast.group
       const pad = Math.min(span / 2, 3 / a.ring)
       g.strokeStyle = on ? (slot > 0 ? groupInk[slot] ?? ink : mute) : softInk[slot] ?? mute
-      g.globalAlpha = on ? 1 : 0.85 * (1 - 0.6 * mix)
+      g.globalAlpha = (on ? 1 : 0.85 * (1 - 0.6 * mix)) * (1 - groupsOut)
       g.beginPath()
-      g.arc(a.cx, a.cy, a.ring, aw.arcs[k * 2]! - Math.PI / 2 + pad, aw.arcs[k * 2]! + span - Math.PI / 2 - pad)
+      g.arc(a.cx, a.cy, a.ring, aw.arcs[k * 2]! - Math.PI / 2 + pad + turn, aw.arcs[k * 2]! + span - Math.PI / 2 - pad + turn)
       g.stroke()
+    }
+    if (stanceAt) {
+      const back = (1 - ringMix) * (Math.PI / 2)
+      for (let k = 0; k < 3; k++) {
+        const span = stanceAt[k * 2 + 1]!
+        if (span <= 0) continue
+        const pad = Math.min(span / 2, 3 / a.ring)
+        g.strokeStyle = stanceInk[k] ?? mute
+        g.globalAlpha = 0.9 * ringMix
+        g.beginPath()
+        g.arc(a.cx, a.cy, a.ring, stanceAt[k * 2]! - Math.PI / 2 + pad - back, stanceAt[k * 2]! + span - Math.PI / 2 - pad - back)
+        g.stroke()
+      }
     }
   } else {
     g.globalAlpha = 0.45
@@ -630,6 +667,7 @@ const draw = (now: number) => {
   lastNow = now
   if (plegma.highlight) hlLast = plegma.highlight
   hlMix = ease(hlMix, plegma.highlight ? 1 : 0, dt)
+  ringMix = reduced.value ? (plegma.ring === 'stance' ? 1 : 0) : ringMix + ((plegma.ring === 'stance' ? 1 : 0) - ringMix) * (1 - Math.exp(-dt * 4))
   if (plegma.hoverStory !== null) lineLast = plegma.hoverStory
   lineMix = ease(lineMix, plegma.hoverStory !== null ? 1 : 0, dt)
   const story = focusStory()

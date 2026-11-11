@@ -15,7 +15,9 @@ const { loading, problem, retry, model: m, dayLabel } = view
 // The map draws one node for each article of the story.
 watch(view.articles, list => plegma.setArticles(list.length ? list : null), { immediate: true })
 watch(view.related, list => plegma.setRelated(list.map(r => r.s.id)), { immediate: true })
-onBeforeUnmount(() => { plegma.setArticles(null); plegma.setHighlight(null); plegma.setHoverStory(null); plegma.setRelated([]) })
+const ring = computed({ get: () => plegma.ring, set: (v: string) => plegma.setRing(v === 'stance' ? 'stance' : 'groups') })
+watch(() => (m.value?.labelled ? m.value.det.s!.slice(1) : null), counts => plegma.setStance(counts), { immediate: true })
+onBeforeUnmount(() => { plegma.setStance(null); plegma.setRing('groups'); plegma.setArticles(null); plegma.setHighlight(null); plegma.setHoverStory(null); plegma.setRelated([]) })
 
 const BODY = { days: PlegmaDaysCard, how: PlegmaHowCard, related: PlegmaRelatedCard, stance: PlegmaStanceCard, people: PlegmaPeopleCard }
 const columns = computed(() => plegmaStoryColumns(!!m.value?.labelled))
@@ -51,7 +53,9 @@ const perNode = computed(() => (m.value ? articlesPerNode(m.value.articles) : 1)
     <div class="orbit-col orbit-left">
       <PlegmaCard v-for="(key, i) in columns.left" :key="key" :at="2" :order="3 + i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
     </div>
-    <div ref="map" class="orbit-map"><p class="plegma-nodes-note">{{ perNode > 1 ? t('story.nodes.many', { n: fmtInt(perNode) }) : t('story.nodes.one') }}</p></div>
+    <div ref="map" class="orbit-map">
+      <SegmentedControl v-if="m.labelled" v-model="ring" class="orbit-ring-tabs" :label="t('story.ring.label')" :options="[{ value: 'groups', label: t('story.groups.title') }, { value: 'stance', label: t('story.ring.stance') }]" />
+      <p class="plegma-nodes-note">{{ perNode > 1 ? t('story.nodes.many', { n: fmtInt(perNode) }) : t('story.nodes.one') }}</p></div>
     <div v-if="columns.right.length" class="orbit-col orbit-right">
       <div class="orbit-subs">
         <div v-for="(column, c) in columns.right" :key="c" class="orbit-sub">
