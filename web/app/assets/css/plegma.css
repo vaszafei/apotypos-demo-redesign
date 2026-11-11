@@ -23,6 +23,13 @@
 .orbit-subs { flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
 .orbit-sub > .card-people { flex: 1 1 auto; }
 @media (max-width: 1279px) { .orbit-subs { grid-template-columns: minmax(0, 1fr); overflow: auto; } }
+/* The story view: the other stories of the theme are a column of their own on the left (twice the width of the cards beside the map), the map and the stance, people and how
+   cards are a row, and the days of the story are a card under that row. */
+.plegma-orbit.is-story { grid-template-columns: minmax(0, 2fr) minmax(0, 1.6fr) minmax(0, 2.4fr); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "title title title" "left map right" "left under under"; }
+.plegma-orbit.is-story .orbit-map { grid-area: map; }
+.plegma-orbit.is-story .orbit-left > .card-related { flex: 1 1 0; max-height: none; }
+.plegma-orbit.is-story .orbit-under { grid-area: under; }
+.plegma-orbit.is-story .orbit-under > .card-days { flex: none; }
 /* The title has a row of its own over every column, and its card is as wide as the name needs (the name, the theme beside it, the facts under), so it does not break. */
 .plegma-title { grid-area: title; justify-self: start; align-self: start; min-width: 0; max-width: 100%; margin: 0; pointer-events: none; }
 .plegma-title.entity-grid { margin-top: 0; }
