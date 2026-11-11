@@ -64,7 +64,7 @@ const arcHot = new Map<number, number>()
 let last = 0
 const storyOf = (w: PlegmaDayWeb, i: number) => props.themes[w.theme[i]!]!.stories[w.story[i]!]!
 // The ring is as large as the area allows, and the web is a little smaller inside it.
-const ringOf = () => Math.min(width, height) / 2 - 10
+const ringOf = () => Math.min(width, height) / 2 * 0.9 - 10
 const scaleOf = () => ringOf() - 22
 const radius = (w: PlegmaDayWeb, i: number, R: number) => {
   switch (w.kind[i]) {
