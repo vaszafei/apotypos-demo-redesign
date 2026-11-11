@@ -155,10 +155,6 @@ html[data-search-fly] .home-hero-search .search-button { visibility: hidden; }
 .home-day-list .home-stories { flex: 1 1 0; min-height: 0; max-height: none; }
 .home-today .dcard { background: var(--card-glass); backdrop-filter: blur(10px); }
 .plegma-day { position: absolute; inset: 0; }
-/* The web of the day comes into focus when the section is reached (the walk forward from the hero): out of focus and faint before, sharp after. */
-.home-today-map .plegma-day { opacity: 0; filter: blur(10px); transition: opacity 900ms var(--ease-out) 150ms, filter 1100ms var(--ease-out) 150ms; }
-.home-today-map.is-here .plegma-day { opacity: 1; filter: none; }
-@media (prefers-reduced-motion: reduce) { .home-today-map .plegma-day { transition: none; } }
 .plegma-day-canvas { display: block; width: 100%; height: 100%; }
 /* The calendar: an arrow, the row of tiles that fills the width, an arrow. A month name is over the tile that starts it. */
 .home-calendar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: end; gap: var(--space-2); }

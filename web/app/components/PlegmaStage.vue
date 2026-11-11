@@ -765,10 +765,12 @@ const visible = (margin: number, zz = cam.z) => {
 // With the hero in view the map is black, blurred nodes (the back canvas is blurred by the page's CSS, `is-fog`). A click starts a wave from the pointer: where it has passed the nodes
 // are in focus, in their colors, and each web draws itself up from loose nodes into its clusters and lines, on the crisp canvas. The camera takes a step toward the click, as in a game
 // that clears as you walk. Before the first click the pointer is a lantern (a small clear patch under it) and, if the pointer does not move, a ring goes out now and then. A click
-// opens no story here: the way into one is the search and the section under the hero, which the click walks to.
+// opens no story here: the way into one is the search and the section under the hero.
 const HERO_APPEAR = 1200
 // How far from its place a node lies while the ground is unexplored (1 is fully loose): the web still reads as a shape, only unsettled.
-const HERO_LOOSE = 0.5
+const HERO_LOOSE = 0.7
+// The pixels a whole web lies from its place while the ground is unexplored.
+const HERO_AWAY = 70
 const LANTERN = 170
 const HERO_WALK_MAX = 3
 const HERO_WALK_ZOOM = 1.1
@@ -796,13 +798,6 @@ const explore = (x: number, y: number) => {
   }
   tooltip.hide()
   kick()
-  // The walk forward: a moment after the click, the page goes on to «Η επικαιρότητα», where the map comes into focus as the web of the day.
-  window.setTimeout(() => {
-    const next = document.getElementById('home-today')
-    if (!next) return
-    const bar = document.querySelector('.header-bar')?.getBoundingClientRect().bottom ?? 0
-    window.scrollTo({ top: Math.round(next.getBoundingClientRect().top + window.scrollY - bar), behavior: reduced.value ? 'auto' : 'smooth' })
-  }, reduced.value ? 0 : 320)
 }
 const drawHero = (now: number, sec: number, dt: number) => {
   const c = ctx!
@@ -867,6 +862,10 @@ const drawHero = (now: number, sec: number, dt: number) => {
     heroRev.set(s.id, rev > 0.995 ? 1 : rev)
     if (homeSet.has(s)) cleared += rev
     const e = 1 - Math.pow(1 - rev, 3)
+    // Unexplored, the web as a whole also lies away from its place; the click brings it home.
+    const away = looseOf(s.id, 99)
+    const ox = away.x * HERO_AWAY * (1 - e)
+    const oy = away.y * HERO_AWAY * (1 - e)
     const appear = reduced.value ? 1 : smooth(0, 1, (now - heroT0 - (cx / Math.max(width, 1)) * 700 - 150) / HERO_APPEAR)
     const hot = hover === s ? 1.25 : 1
     for (let i = 0; i < w.offs.length; i++) {
@@ -879,8 +878,8 @@ const drawHero = (now: number, sec: number, dt: number) => {
       const ph = (cl + 2) * 1.7 + s.id
       const sway = cl < 0 ? 2.5 : 7
       const k = 1 + (1 - e) * 1.2
-      nodeAt[i * 2] = cx + gx + (Math.sin(sec * 0.31 + ph) * sway + Math.sin(sec * 0.83 + ph * 2) * 2) * k + Math.cos(sec * (0.5 + (i % 5) * 0.11) + i * 1.9 + s.id) * 2.4 * k
-      nodeAt[i * 2 + 1] = cy + gy + (Math.cos(sec * 0.27 + ph * 1.3) * sway + Math.cos(sec * 0.71 + ph) * 2) * k + Math.sin(sec * (0.45 + (i % 4) * 0.13) + i * 2.3 + s.id) * 2.4 * k
+      nodeAt[i * 2] = cx + ox + gx + (Math.sin(sec * 0.31 + ph) * sway + Math.sin(sec * 0.83 + ph * 2) * 2) * k + Math.cos(sec * (0.5 + (i % 5) * 0.11) + i * 1.9 + s.id) * 2.4 * k
+      nodeAt[i * 2 + 1] = cy + oy + gy + (Math.cos(sec * 0.27 + ph * 1.3) * sway + Math.cos(sec * 0.71 + ph) * 2) * k + Math.sin(sec * (0.45 + (i % 4) * 0.13) + i * 2.3 + s.id) * 2.4 * k
     }
     const fa = (1 - rev) * appear
     if (fa > 0.01) {
