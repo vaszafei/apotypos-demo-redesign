@@ -43,6 +43,9 @@ let ink = '#111'
 let mute = '#6b6f78'
 let cats: string[] = []
 let groupInk: string[] = []
+// The colors of the nodes at rest: the group colors toned down to one saturation and one lightness, so the web is a family of colors, not confetti. A group that is
+// pointed at gets its full color.
+let softInk: string[] = []
 const cam: PlegmaCamera = { x: 0, y: 0, z: 0.5 }
 
 const EMPTY = new Set<PlegmaStory>()
@@ -62,6 +65,26 @@ const spokeSet = (issue: number) => {
 const name = (s: PlegmaStory) => (locale.value === 'en' && s.en) || s.el
 const colourOf = (s: PlegmaStory) => (s.slot > 0 ? cats[s.slot - 1] ?? mute : mute)
 const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x))
+// The color (#rrggbb) with its saturation and its lightness pulled toward the middle: `calm` 0 is the color itself, 1 a gray of that lightness.
+const soften = (hex: string, calm: number, lightness: number) => {
+  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex)
+  if (!m) return hex
+  const [r, g, b] = [1, 2, 3].map(i => parseInt(m[i]!, 16) / 255) as [number, number, number]
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  let h = 0
+  const d = max - min
+  if (d) h = max === r ? ((g - b) / d + (g < b ? 6 : 0)) : max === g ? (b - r) / d + 2 : (r - g) / d + 4
+  const l0 = (max + min) / 2
+  const s0 = d ? d / (1 - Math.abs(2 * l0 - 1)) : 0
+  const sat = s0 * (1 - calm)
+  const l = l0 + (lightness - l0) * 0.6
+  const c = (1 - Math.abs(2 * l - 1)) * sat
+  const x = c * (1 - Math.abs(((h) % 2) - 1))
+  const k = l - c / 2
+  const [r1, g1, b1] = h < 1 ? [c, x, 0] : h < 2 ? [x, c, 0] : h < 3 ? [0, c, x] : h < 4 ? [0, x, c] : h < 5 ? [x, 0, c] : [c, 0, x]
+  return `#${[r1, g1, b1].map(v => Math.round((v + k) * 255).toString(16).padStart(2, '0')).join('')}`
+}
 // A color of the tokens (#rrggbb) with an alpha, for a gradient.
 const withAlpha = (hex: string, alpha: number) => (/^#[0-9a-f]{6}$/i.test(hex) ? `${hex}${Math.round(alpha * 255).toString(16).padStart(2, '0')}` : hex)
 
@@ -100,6 +123,8 @@ const readTokens = () => {
   mute = style.getPropertyValue('--text-secondary').trim() || mute
   cats = Array.from({ length: 8 }, (_, i) => style.getPropertyValue(`--cat-${i + 1}`).trim() || mute)
   groupInk = Array.from({ length: 10 }, (_, i) => style.getPropertyValue(`--cat-${i}`).trim() || mute)
+  const light = prefs.theme === 'night' || prefs.theme === 'midnight' ? 0.66 : 0.56
+  softInk = groupInk.map(c => soften(c, 0.5, light))
 }
 
 const focusStory = () => (world && plegma.focus?.kind === 'story' ? world.byId.get(plegma.focus.id) ?? null : null)
@@ -198,7 +223,7 @@ const drawArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2,
   const articles = plegma.articles && plegma.articles.length === s.n ? plegma.articles : null
   if (level === 2) {
     const dense = a.spacing < 6
-    g.strokeStyle = col
+    g.strokeStyle = articles ? mute : col
     g.globalAlpha = (dense ? 0.2 : 0.4) * (1 - 0.4 * hlMix)
     g.lineWidth = dense ? 0.6 : 0.8
     g.beginPath()
@@ -212,21 +237,28 @@ const drawArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2,
     }
     g.stroke()
   }
-  // The nodes are the color of the story's theme and grow stronger with the days (the first articles are the palest), so the web is calm; the articles of a group or an
-  // outlet that a card points at come forward in the color of their group, larger and pulsing, and the others step back.
+  // The nodes at rest are the toned down colors of their groups and grow stronger with the days (the first articles are the palest), so the web is calm; the articles of a
+  // group or an outlet that a card points at come forward in the full color of their group, larger and pulsing, and the others step back.
   const mix = hlMix
   const lit = articles && hlLast && mix > 0.01 ? matchNodes(s, hlLast, articles) : null
-  const ALPHAS = [0.42, 0.6, 0.78, 0.95]
-  const paths: Path2D[] = ALPHAS.map(() => new Path2D())
+  const ALPHAS = [0.62, 0.74, 0.86, 0.96]
+  const paths = new Map<number, Path2D>()
   for (let i = 0; i < aw.n; i++) {
     if (lit && lit[i]) continue
+    const slot = articles ? articles[articleOfNode(i, articles.length)]!.slot : -1
+    const key = (slot + 1) * 4 + Math.min(3, Math.floor((i / aw.n) * 4))
+    let path = paths.get(key)
+    if (!path) { path = new Path2D(); paths.set(key, path) }
     const r = i === 0 ? a.dr * 1.5 : a.dr
-    const path = paths[Math.min(3, Math.floor((i / aw.n) * 4))]!
     path.moveTo(ax[i]! + r, ay[i]!)
     path.arc(ax[i]!, ay[i]!, r, 0, TAU)
   }
-  g.fillStyle = col
-  ALPHAS.forEach((alpha, k) => { g.globalAlpha = alpha * (1 - 0.7 * mix); g.fill(paths[k]!) })
+  for (const [key, path] of paths) {
+    const slot = Math.floor(key / 4) - 1
+    g.fillStyle = slot < 0 ? col : softInk[slot] ?? mute
+    g.globalAlpha = ALPHAS[key % 4]! * (1 - 0.7 * mix)
+    g.fill(path)
+  }
   if (lit) {
     for (let i = 0; i < aw.n; i++) {
       if (!lit[i]) continue
