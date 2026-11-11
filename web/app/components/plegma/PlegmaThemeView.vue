@@ -97,7 +97,7 @@ const themeStories = computed(() => {
 watch(themeStories, list => plegma.setThemeStories(list), { immediate: true })
 onBeforeUnmount(() => { plegma.setHoverStory(null); plegma.setThemeStories(null) })
 
-// The map region is the free cell of the left column, under the title: the same square as the story view has, so the two webs are the same size.
+// The map region is the free cell between the stories and the cards, under the title: the same square as the story view has, so the two webs are the same size.
 const orbit = ref<HTMLElement>()
 const map = ref<HTMLElement>()
 usePlegmaRegion(orbit, map)
@@ -144,7 +144,6 @@ const lineHref = (key: string) => (key === 'topic' ? topicHref(String(props.inde
     </div>
 
     <div class="orbit-col orbit-left">
-      <div ref="map" class="orbit-map"><p class="plegma-nodes-note">{{ t('topic.map.note') }}</p></div>
       <PlegmaCard :at="2" :order="3" class="card-stories">
         <DashCard :title="t('topic2.stories.title')" :info="t('topic2.stories.info')">
           <ul v-if="listed.length" class="rows-related">
@@ -161,83 +160,84 @@ const lineHref = (key: string) => (key === 'topic' ? topicHref(String(props.inde
       </PlegmaCard>
     </div>
 
-    <div class="orbit-col orbit-middle">
-      <PlegmaCard :at="4" :order="2" class="card-outlets-diff">
-        <DashCard :title="t('topic2.outlets.title')" :info="t('topic2.outlets.info')">
-          <template v-if="model.outlets.rows.length">
-            <div class="how-grid how-grid-2">
-              <div v-for="side in ['more', 'less'] as const" :key="side" class="how-panel">
-                <h3 class="rows-caption">{{ t(`topic2.outlets.${side}`) }}</h3>
-                <DiffList :rows="model.outlets[side]" :scale="model.outletScale" tip-key="topic2.how.tip">
-                  <template #label="{ row }"><EntityLink type="outlet" :to="outletHref(row.o.slug)">{{ row.label }}</EntityLink></template>
-                </DiffList>
-              </div>
-            </div>
-            <div class="theme-foot"><p class="dcard-sub">{{ t('topic2.outlets.n', { n: fmtInt(model.rowsTopic), total: fmtInt(model.rowsAll) }) }}</p><ChartLegend :items="diffKey" /></div>
-          </template>
-          <p v-else class="dcard-empty">{{ t('topic2.empty') }}</p>
-        </DashCard>
-      </PlegmaCard>
-      <PlegmaCard :at="4" :order="3" class="card-groups-diff">
-        <DashCard :title="t('topic2.groups.title')" :info="t('topic2.groups.info')">
-          <div class="how-panel">
-            <DiffList :rows="model.groups" :scale="model.outletScale" tip-key="topic2.how.tip">
-              <template #label="{ row }"><span class="group-cell"><span class="dot" :style="`--dot:${colorOfGroup.get(row.label)}`" /><span class="group-name">{{ row.label }}</span></span></template>
-            </DiffList>
-          </div>
-          <ChartLegend :items="diffKey" />
-        </DashCard>
-      </PlegmaCard>
-    </div>
+    <div ref="map" class="orbit-map"><p class="plegma-nodes-note">{{ t('topic.map.note') }}</p></div>
 
     <div class="orbit-col orbit-right">
-      <PlegmaCard :at="0" :order="0" class="card-days">
+      <div class="orbit-subs">
+        <div class="orbit-sub">
+          <PlegmaCard :at="0" :order="1" class="card-stance">
+            <StanceCard
+              :rows="[{ label: t('entity.stance.topic'), color: 'var(--series-news)', counts: model.det.s.slice(1) }, { label: t('entity.stance.all'), color: NO_GROUP, counts: model.dd.base.s.slice(1) }]"
+              :foot="model.stanceN ? t('topic2.how.stance.n', { n: fmtInt(model.stanceN) }) : null"
+            />
+          </PlegmaCard>
+          <PlegmaCard :at="4" :order="2" class="card-outlets-diff">
+            <DashCard :title="t('topic2.outlets.title')" :info="t('topic2.outlets.info')">
+              <template v-if="model.outlets.rows.length">
+                <div class="how-grid how-grid-2">
+                  <div v-for="side in ['more', 'less'] as const" :key="side" class="how-panel">
+                    <h3 class="rows-caption">{{ t(`topic2.outlets.${side}`) }}</h3>
+                    <DiffList :rows="model.outlets[side]" :scale="model.outletScale" tip-key="topic2.how.tip">
+                      <template #label="{ row }"><EntityLink type="outlet" :to="outletHref(row.o.slug)">{{ row.label }}</EntityLink></template>
+                    </DiffList>
+                  </div>
+                </div>
+                <div class="theme-foot"><p class="dcard-sub">{{ t('topic2.outlets.n', { n: fmtInt(model.rowsTopic), total: fmtInt(model.rowsAll) }) }}</p><ChartLegend :items="diffKey" /></div>
+              </template>
+              <p v-else class="dcard-empty">{{ t('topic2.empty') }}</p>
+            </DashCard>
+          </PlegmaCard>
+          <PlegmaCard :at="0" :order="2" class="card-similar">
+            <DashCard :title="t('topic2.similar.title')" :info="t('topic2.similar.info')">
+              <BarList v-if="model.similar.length" :rows="model.similar.map(r => ({ key: r.k, label: topicName(r.issue), to: topicHref(r.k), text: twoDecimals.format(r.r), value: r.r, color: '' }))" :max="1">
+                <template #label="{ row }"><EntityLink type="topic" :to="row.to!">{{ row.label }}</EntityLink></template>
+              </BarList>
+              <p v-else class="dcard-empty">{{ t('topic2.similar.empty') }}</p>
+            </DashCard>
+          </PlegmaCard>
+        </div>
+        <div class="orbit-sub">
+          <PlegmaCard :at="4" :order="3" class="card-groups-diff">
+            <DashCard :title="t('topic2.groups.title')" :info="t('topic2.groups.info')">
+              <div class="how-panel">
+                <DiffList :rows="model.groups" :scale="model.outletScale" tip-key="topic2.how.tip">
+                  <template #label="{ row }"><span class="group-cell"><span class="dot" :style="`--dot:${colorOfGroup.get(row.label)}`" /><span class="group-name">{{ row.label }}</span></span></template>
+                </DiffList>
+              </div>
+              <ChartLegend :items="diffKey" />
+            </DashCard>
+          </PlegmaCard>
+          <PlegmaCard :at="0" :order="3" class="card-how">
+            <DashCard :title="t('topic2.how.title')" :info="t('topic2.how.info')">
+              <div class="how-grid how-grid-2">
+                <div class="how-panel">
+                  <h3 class="rows-caption">{{ t('story.how.frame') }}</h3>
+                  <DiffList v-if="model.frames.length" :rows="model.frames" :scale="model.howScale" tip-key="topic2.how.tip" />
+                </div>
+                <div>
+                  <div class="how-panel">
+                    <h3 class="rows-caption">{{ t('story.how.section') }}</h3>
+                    <DiffList v-if="model.sections.length" :rows="model.sections" :scale="model.howScale" tip-key="topic2.how.tip" />
+                  </div>
+                  <div class="how-panel">
+                    <h3 class="rows-caption">{{ t('story.how.clickbait') }}</h3>
+                    <DiffList v-if="model.click.length" :rows="model.click" :scale="model.howScale" tip-key="topic2.how.tip" />
+                    <p class="dcard-sub">{{ model.scored ? t('story.how.clickbait.n', { n: fmtInt(model.baited), total: fmtInt(model.scored) }) : t('story.how.clickbait.none') }}</p>
+                  </div>
+                </div>
+              </div>
+            </DashCard>
+          </PlegmaCard>
+        </div>
+      </div>
+    </div>
+
+    <div class="orbit-col orbit-under">
+      <PlegmaCard :at="4" :order="2" class="card-days">
         <DashCard :title="t('topic2.time.title')" :info="t('topic2.time.info')">
           <LinesChart v-if="timeLines" :dates="timeLines.dates" :series="timeLines.series" plain sparse sqrt :opacity="0.9" :tall="tall" :caption="t('topic2.time.title')" :href-of="s => lineHref(s.key)" />
         </DashCard>
       </PlegmaCard>
-      <div class="orbit-subs">
-        <div class="orbit-sub">
-      <PlegmaCard :at="0" :order="1" class="card-stance">
-
-        <StanceCard
-          :rows="[{ label: t('entity.stance.topic'), color: 'var(--series-news)', counts: model.det.s.slice(1) }, { label: t('entity.stance.all'), color: NO_GROUP, counts: model.dd.base.s.slice(1) }]"
-          :foot="model.stanceN ? t('topic2.how.stance.n', { n: fmtInt(model.stanceN) }) : null"
-        />
-      </PlegmaCard>
-      <PlegmaCard :at="0" :order="2" class="card-similar">
-        <DashCard :title="t('topic2.similar.title')" :info="t('topic2.similar.info')">
-          <BarList v-if="model.similar.length" :rows="model.similar.map(r => ({ key: r.k, label: topicName(r.issue), to: topicHref(r.k), text: twoDecimals.format(r.r), value: r.r, color: '' }))" :max="1">
-            <template #label="{ row }"><EntityLink type="topic" :to="row.to!">{{ row.label }}</EntityLink></template>
-          </BarList>
-          <p v-else class="dcard-empty">{{ t('topic2.similar.empty') }}</p>
-        </DashCard>
-      </PlegmaCard>
-        </div>
-        <div class="orbit-sub">
-      <PlegmaCard :at="0" :order="3" class="card-how">
-        <DashCard :title="t('topic2.how.title')" :info="t('topic2.how.info')">
-          <div class="how-grid how-grid-2">
-            <div class="how-panel">
-              <h3 class="rows-caption">{{ t('story.how.frame') }}</h3>
-              <DiffList v-if="model.frames.length" :rows="model.frames" :scale="model.howScale" tip-key="topic2.how.tip" />
-            </div>
-            <div>
-              <div class="how-panel">
-                <h3 class="rows-caption">{{ t('story.how.section') }}</h3>
-                <DiffList v-if="model.sections.length" :rows="model.sections" :scale="model.howScale" tip-key="topic2.how.tip" />
-              </div>
-              <div class="how-panel">
-                <h3 class="rows-caption">{{ t('story.how.clickbait') }}</h3>
-                <DiffList v-if="model.click.length" :rows="model.click" :scale="model.howScale" tip-key="topic2.how.tip" />
-                <p class="dcard-sub">{{ model.scored ? t('story.how.clickbait.n', { n: fmtInt(model.baited), total: fmtInt(model.scored) }) : t('story.how.clickbait.none') }}</p>
-              </div>
-            </div>
-          </div>
-        </DashCard>
-      </PlegmaCard>
-        </div>
-      </div>
     </div>
   </div>
   <p v-if="problem" class="proto-note">{{ t('proto.states') }}</p>
