@@ -22,7 +22,6 @@ const loading = computed(() => fixtures.some(f => f.status.value === 'loading'))
 const problem = computed(() => fixtures.map(f => f.status.value).find(s => s !== 'ready'))
 const retry = () => fixtures.forEach(f => f.refresh())
 
-const twoDecimals = new Intl.NumberFormat('el-GR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const diffKey = computed(() => [{ label: t('story.how.more'), color: 'var(--emph-more)' }, { label: t('story.how.less'), color: 'var(--emph-less)' }])
 const colorOfGroup = computed(() => groupColors(groupsData.data.value?.groups ?? []))
 const part = (arr: number[], i: number, s = totalOf(arr)) => (s ? arr[i]! / s : 0)
@@ -63,9 +62,7 @@ const model = computed(() => {
   return {
     hd, d, dd, issue, ...stats, mine, ...articles, outlets, groups, stanceN, scored, baited, frames, sections, click,
     outletScale: diffScale([...outlets.more, ...outlets.less, ...groups]),
-    howScale: diffScale([...frames, ...sections, ...(stanceN ? stanceRows : []), ...click]),
-    similar: similarTopics(hd, index),
-    storiesPerDay: hd.dates.map((_, i) => mine.filter(x => x.values[i]! > 0).length)
+    howScale: diffScale([...frames, ...sections, ...(stanceN ? stanceRows : []), ...click])
   }
 })
 
@@ -95,7 +92,28 @@ const themeStories = computed(() => {
   })
 })
 watch(themeStories, list => plegma.setThemeStories(list), { immediate: true })
-onBeforeUnmount(() => { plegma.setHoverStory(null); plegma.setThemeStories(null) })
+// The stance card gives no row under 30 rated articles (StanceCard), so the ring has no stance under it either.
+const STANCE_MIN = 30
+// The ring of the web: an arc for each group that wrote the theme (as wide as its articles in all the stories of the theme), or the arcs of the stance; the tabs turn it.
+const ring = computed({ get: () => plegma.ring, set: (v: string) => plegma.setRing(v === 'stance' ? 'stance' : 'groups') })
+const themeGroups = computed(() => {
+  const m = model.value
+  if (!m) return null
+  const rows = new Map(m.dd.stories.map(r => [r.id, r]))
+  const count = new Map<string | null, number>()
+  for (const s of m.mine) {
+    const t = rows.get(s.id)?.t ?? []
+    for (let i = 0; i + 2 < t.length; i += 3) {
+      const group = m.dd.outlets[t[i]!]!.group ?? null
+      count.set(group, (count.get(group) ?? 0) + t[i + 2]!)
+    }
+  }
+  return [...count].filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1])
+    .map(([group, n]) => ({ name: group ?? t('story.nogroup'), slot: slotOfColor((group && colorOfGroup.value.get(group)) || NO_GROUP), n }))
+})
+watch(themeGroups, list => plegma.setThemeGroups(list), { immediate: true })
+watch(() => (model.value && model.value.stanceN >= STANCE_MIN ? model.value.det.s.slice(1) : null), counts => plegma.setStance(counts), { immediate: true })
+onBeforeUnmount(() => { plegma.setHoverStory(null); plegma.setThemeStories(null); plegma.setThemeGroups(null); plegma.setStance(null); plegma.setRing('groups') })
 
 // The map region is the free cell between the stories and the cards, under the title: the same square as the story view has, so the two webs are the same size.
 const orbit = ref<HTMLElement>()
@@ -134,10 +152,8 @@ const lineHref = (key: string) => (key === 'topic' ? topicHref(String(props.inde
     <div class="plegma-title entity-grid">
       <EntityTitle :kind="t('hero.kind.topic')" :title="topicName(model.issue)">
         <template #meta>{{ `${dayLabel(0)} → ${fmtDate(model.hd.dates[model.last]!)} · ${t('entity.fact.days', { n: model.last + 1 })}` }}</template>
-        <EntityFact :label="t('entity.fact.articles')" :value="fmtInt(model.total)" :sub="t('entity.fact.peak', { date: dayLabel(model.peak), n: fmtInt(model.daily[model.peak] ?? 0) })" />
-        <EntityFact :label="t('entity.fact.stories')" :value="fmtInt(model.mine.length)">
-          <template #spark><SparkLine :values="model.storiesPerDay" :from="0" :to="model.hd.dates.length - 1" :label="t('entity.fact.stories')" :width="56" :height="16" /></template>
-        </EntityFact>
+        <EntityFact :label="t('entity.fact.articles')" :value="fmtInt(model.total)" />
+        <EntityFact :label="t('entity.fact.stories')" :value="fmtInt(model.mine.length)" />
         <EntityFact :label="t('entity.fact.share')" :value="fmtPct(model.share)" :sub="t('entity.fact.rank', { n: model.rank, total: model.hd.issues.length })" />
         <EntityFact v-if="model.change !== null && !model.issue.catchAll" :label="t('entity.fact.change')" :value="`${model.change > 0 ? '▲' : '▼'} ${fmtSigned(model.change * 100)}%`" :sub="t('entity.fact.change.sub')" />
       </EntityTitle>
@@ -160,7 +176,10 @@ const lineHref = (key: string) => (key === 'topic' ? topicHref(String(props.inde
       </PlegmaCard>
     </div>
 
-    <div ref="map" class="orbit-map"><p class="plegma-nodes-note">{{ t('topic.map.note') }}</p></div>
+    <div ref="map" class="orbit-map">
+      <SegmentedControl v-if="model.stanceN >= STANCE_MIN" v-model="ring" class="orbit-ring-tabs" :label="t('story.ring.label')" :options="[{ value: 'groups', label: t('story.groups.title') }, { value: 'stance', label: t('story.ring.stance') }]" />
+      <p class="plegma-nodes-note">{{ t('topic.map.note') }}</p>
+    </div>
 
     <div class="orbit-col orbit-right">
       <div class="orbit-subs">
@@ -185,14 +204,6 @@ const lineHref = (key: string) => (key === 'topic' ? topicHref(String(props.inde
                 <div class="theme-foot"><p class="dcard-sub">{{ t('topic2.outlets.n', { n: fmtInt(model.rowsTopic), total: fmtInt(model.rowsAll) }) }}</p><ChartLegend :items="diffKey" /></div>
               </template>
               <p v-else class="dcard-empty">{{ t('topic2.empty') }}</p>
-            </DashCard>
-          </PlegmaCard>
-          <PlegmaCard :at="0" :order="2" class="card-similar">
-            <DashCard :title="t('topic2.similar.title')" :info="t('topic2.similar.info')">
-              <BarList v-if="model.similar.length" :rows="model.similar.map(r => ({ key: r.k, label: topicName(r.issue), to: topicHref(r.k), text: twoDecimals.format(r.r), value: r.r, color: '' }))" :max="1">
-                <template #label="{ row }"><EntityLink type="topic" :to="row.to!">{{ row.label }}</EntityLink></template>
-              </BarList>
-              <p v-else class="dcard-empty">{{ t('topic2.similar.empty') }}</p>
             </DashCard>
           </PlegmaCard>
         </div>
