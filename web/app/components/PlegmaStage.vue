@@ -4,7 +4,7 @@ import type { PlegmaPoint } from '~/utils/plegma-camera'
 import { cameraAt, flightDone, frameHome, framePair, frameStory, frameTheme, PLEGMA_REGION, redirectFlight, regionBox, toScreen } from '~/utils/plegma-camera'
 import type { PlegmaCamera, PlegmaFlight } from '~/utils/plegma-camera'
 import { arcsOf, buildWorld, drawLevel, homeWebs, PLEGMA_FAR_MIN, PLEGMA_FOCUS_DOTS, PLEGMA_WEB_MIN, themeCore, themeFrameSet, webOf } from '~/utils/plegma-world'
-import { articleRadius, articleWebOf } from '~/utils/plegma-articles'
+import { articleOfNode, articleRadius, articlesPerNode, articleWebOf, nodeCount } from '~/utils/plegma-articles'
 import type { PlegmaFile, PlegmaHomeFile, PlegmaStoriesFile, PlegmaStory, PlegmaWorld } from '~/utils/plegma-world'
 import { homeIndex, HOME_WEBS, HOME_WEBS_PHONE } from '~/utils/home'
 
@@ -140,7 +140,7 @@ const articleWorldRadius = (s: PlegmaStory) => {
   return articleRadius(s.n, Math.min(box.w, box.h) * 0.4) / frameStory(s, width, height, region).z
 }
 const layoutArticles = (s: PlegmaStory, sec: number) => {
-  const aw = articleWebOf(s.id, s.n)
+  const aw = articleWebOf(s.id, nodeCount(s.n))
   const p = toScreen(cam, width, height, placed(s))
   const rWorld = articleWorldRadius(s)
   const R = rWorld * cam.z
@@ -166,31 +166,11 @@ const articleAt = (s: PlegmaStory, x: number, y: number) => {
   return best
 }
 
-// A highlight behind a web, like a marker pass: a soft shape that is not quite round and slowly changes, in the color of the story.
-const wash = (g: CanvasRenderingContext2D, cx: number, cy: number, r: number, colour: string, sec: number, id: number, alpha: number) => {
-  const m = 9
-  const pts: [number, number][] = []
-  for (let k = 0; k < m; k++) {
-    const a = (k / m) * TAU + id
-    const rr = r * (1 + 0.09 * Math.sin(sec * 0.23 + k * 2.1 + id) + 0.06 * Math.cos(k * 3.7 + id * 1.3))
-    pts.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 0.9])
-  }
-  g.beginPath()
-  const mid = (i: number) => [(pts[i % m]![0] + pts[(i + 1) % m]![0]) / 2, (pts[i % m]![1] + pts[(i + 1) % m]![1]) / 2] as const
-  g.moveTo(...mid(m - 1))
-  for (let k = 0; k < m; k++) g.quadraticCurveTo(pts[k]![0], pts[k]![1], ...mid(k))
-  g.closePath()
-  g.fillStyle = colour
-  g.globalAlpha = alpha
-  g.fill()
-}
-
 const drawArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2, sec: number) => {
   const a = layoutArticles(s, sec)
   const aw = a.aw!
   const col = colourOf(s)
-  const articles = plegma.articles && plegma.articles.length === aw.n ? plegma.articles : null
-  wash(g, a.cx, a.cy, a.R * 1.1, col, sec, s.id, 0.07)
+  const articles = plegma.articles && plegma.articles.length === s.n ? plegma.articles : null
   if (level === 2) {
     const dense = a.spacing < 6
     g.strokeStyle = col
@@ -209,7 +189,7 @@ const drawArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2,
   }
   const paths = new Map<string, Path2D>()
   for (let i = 0; i < aw.n; i++) {
-    const colour = articles ? groupInk[articles[i]!.slot] ?? mute : col
+    const colour = articles ? groupInk[articles[articleOfNode(i, articles.length)]!.slot] ?? mute : col
     let path = paths.get(colour)
     if (!path) { path = new Path2D(); paths.set(colour, path) }
     const r = i === 0 ? a.dr * 1.5 : a.dr
@@ -326,7 +306,6 @@ const draw = (now: number) => {
     })
     c.fillStyle = col
     c.strokeStyle = col
-    if (focus) wash(c, p.x, p.y, w.r * z * 1.15, col, sec, s.id, 0.09)
     if (level === 2) {
       c.globalAlpha = alpha * 0.55
       c.beginPath()
@@ -477,13 +456,17 @@ useEventListener(window, 'pointermove', (e: PointerEvent) => {
   if (story && list && list.length === story.n && plegma.landed) {
     const i = articleAt(story, p.x, p.y)
     if (i >= 0) {
-      const article = list[i]!
+      const article = list[articleOfNode(i, list.length)]!
+      const per = articlesPerNode(story.n)
       if (hoverArticle !== i && reduced.value) kick()
       hover = null
       hoverArticle = i
       tooltip.show({
         title: article.outlet,
-        rows: [{ label: article.group ?? t('story.nogroup'), value: fmtDate(world.dates[article.day]!), color: `var(--cat-${article.slot})` }],
+        rows: [
+          { label: article.group ?? t('story.nogroup'), value: fmtDate(world.dates[article.day]!), color: `var(--cat-${article.slot})` },
+          ...(per > 1 ? [{ label: t('story.nodes.per'), value: fmtInt(per) }] : [])
+        ],
         field: true
       }, e)
       return

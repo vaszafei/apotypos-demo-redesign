@@ -84,6 +84,14 @@ export const articleWebOf = (id: number, n: number) => {
   return web
 }
 
+// A story of more articles than this shows a node for several of them, so the web stays readable: the nodes are evenly spaced through the articles in order of day,
+// each stands for `articlesPerNode` of them and has the outlet and group of the one at its middle.
+export const PLEGMA_NODES_MAX = 250
+export const nodeCount = (articles: number) => Math.min(articles, PLEGMA_NODES_MAX)
+export const articlesPerNode = (articles: number) => Math.ceil(articles / nodeCount(articles))
+// The article, of `articles` in order of day, that node i of the web stands for.
+export const articleOfNode = (i: number, articles: number) => Math.min(articles - 1, Math.floor(((i + 0.5) * articles) / nodeCount(articles)))
+
 // The day (an index of the dates) of each article of a story, first day first: `days` is the pairs [day, articles] of stories.json.
 export const articleDays = (days: number[]) => {
   const out: number[] = []
@@ -93,7 +101,7 @@ export const articleDays = (days: number[]) => {
 
 // The radius on the screen of the web of a story of n articles, in a free area whose largest web has the radius `max`: a small story is a web of about half
 // that radius and the largest ones fill it.
-export const articleRadius = (n: number, max: number) => max * Math.min(1, Math.max(0.5, 0.5 + 0.5 * Math.sqrt(n / 300)))
+export const articleRadius = (n: number, max: number) => max * Math.min(1, Math.max(0.5, 0.5 + 0.5 * Math.sqrt(nodeCount(n) / 250)))
 
 // An article as the stage keeps it for its tooltip and its color: the day, the outlet, and the slot of its group's color (0 is no group).
 export interface PlegmaArticle { day: number, outlet: string, group: string | null, slot: number }

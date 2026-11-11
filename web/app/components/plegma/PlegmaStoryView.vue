@@ -6,9 +6,9 @@ import PlegmaHowCard from './PlegmaHowCard.vue'
 import PlegmaRelatedCard from './PlegmaRelatedCard.vue'
 import PlegmaStanceCard from './PlegmaStanceCard.vue'
 import PlegmaPeopleCard from './PlegmaPeopleCard.vue'
-import type { PlegmaStoryCard } from '~/utils/plegma-story'
+import { articlesPerNode } from '~/utils/plegma-articles'
 
-// The story view: the title, four headline cards in the slots around the map region, and the rest behind chips. The web itself is the stage's (PlegmaStage.vue).
+// The story view: three columns of cards with the title and the free cell for the map at the top left. The web itself is the stage's (PlegmaStage.vue).
 const props = defineProps<{ id: number }>()
 const { t } = useI18n()
 const plegma = usePlegmaStore()
@@ -19,37 +19,24 @@ watch(view.articles, list => plegma.setArticles(list.length ? list : null), { im
 onBeforeUnmount(() => plegma.setArticles(null))
 
 const BODY = { days: PlegmaDaysCard, outlets: PlegmaOutletsCard, how: PlegmaHowCard, related: PlegmaRelatedCard, stance: PlegmaStanceCard, people: PlegmaPeopleCard }
-const TITLE: Partial<Record<PlegmaStoryCard, string>> = { stance: 'entity.stance.title', people: 'story.people.title' }
-const cards = computed(() => plegmaStoryCards(!!m.value?.labelled))
-const dock = computed(() => cards.value.dock.map(key => ({ key, label: t(TITLE[key]!) })))
-const open = ref<PlegmaStoryCard | null>(null)
-const toggle = (key: PlegmaStoryCard) => { open.value = open.value === key ? null : key }
+const columns = computed(() => plegmaStoryColumns(!!m.value?.labelled))
 
-// The map region is what the title and the cards leave free: a square at the top left of the middle row of the left column, right under the title (a story's web sits there); the rest of that row, to the right of the web, holds the cards that otherwise wait behind chips. The camera frames it.
+// The map region is the free cell of the left column, under the title: a square in the middle of it (a story's web sits there). The camera frames it.
 const orbit = ref<HTMLElement>()
 const map = ref<HTMLElement>()
+const REGION_SIDE = 380
 const measure = () => {
   const o = orbit.value
-  const m = map.value
-  if (!o || !m || !window.matchMedia('(min-width: 1024px)').matches) { plegma.setRegion(null); mid.value = null; return }
+  const cell = map.value
+  if (!o || !cell || !window.matchMedia('(min-width: 1024px)').matches) { plegma.setRegion(null); return }
   const stage = o.getBoundingClientRect()
-  const box = m.getBoundingClientRect()
+  const box = cell.getBoundingClientRect()
   if (!stage.width || !stage.height || box.height < 40) return
-  const side = Math.min(box.height, REGION_SIDE)
-  const right = o.querySelector('.orbit-right')?.getBoundingClientRect()
-  const x = box.left + side + MID_GAP
-  const w = right ? right.left - MID_GAP - x : 0
-  mid.value = cards.value.dock.length && w >= MID_MIN_W && box.height >= (w >= MID_WIDE_W ? MID_MIN_H : MID_MIN_H_ONE_COLUMN) ? { x: x - stage.left, y: box.top - stage.top, w, h: box.height } : null
-  plegma.setRegion({ x0: box.left / stage.width, y0: (box.top - stage.top) / stage.height, x1: (box.left + side) / stage.width, y1: (box.top - stage.top + side) / stage.height })
+  const side = Math.min(box.width, box.height, REGION_SIDE)
+  const x = box.left + (box.width - side) / 2
+  const y = box.top - stage.top + (box.height - side) / 2
+  plegma.setRegion({ x0: x / stage.width, y0: y / stage.height, x1: (x + side) / stage.width, y1: (y + side) / stage.height })
 }
-const REGION_SIDE = 320
-// The cards that wait behind chips take the free space to the right of the web when it is wide and high enough; else the chips stay.
-const MID_GAP = 12
-const MID_MIN_W = 280
-const MID_MIN_H = 160
-const MID_MIN_H_ONE_COLUMN = 340
-const MID_WIDE_W = 560
-const mid = ref<{ x: number, y: number, w: number, h: number } | null>(null)
 let watcher: ResizeObserver | null = null
 watch(map, (el) => {
   watcher?.disconnect()
@@ -60,7 +47,8 @@ watch(map, (el) => {
 }, { flush: 'post' })
 useEventListener(window, 'resize', measure)
 onBeforeUnmount(() => watcher?.disconnect())
-const slots = computed(() => cards.value.headline.map((key, i) => ({ key, at: i })))
+// How many articles a node of the map stands for: one while the story is small enough to show each article (utils/plegma-articles.ts).
+const perNode = computed(() => (m.value ? articlesPerNode(m.value.articles) : 1))
 </script>
 
 <template>
@@ -75,7 +63,7 @@ const slots = computed(() => cards.value.headline.map((key, i) => ({ key, at: i 
   </div>
   <ErrorPage v-else-if="!m" :status="404" />
   <div v-else ref="orbit" class="plegma-orbit" :class="{ 'is-in': plegma.landed }">
-    <div class="orbit-left">
+    <div class="orbit-col orbit-left">
       <div class="plegma-title entity-grid">
         <EntityTitle :kind="t('hero.kind.story')" :title="storyName(m.story)">
           <template #meta>
@@ -89,23 +77,14 @@ const slots = computed(() => cards.value.headline.map((key, i) => ({ key, at: i 
           <EntityFact v-if="m.people.length" :label="t('entity.fact.people')" :value="fmtInt(m.people.length)" :sub="m.people[0]!.person.name" />
         </EntityTitle>
       </div>
-      <div ref="map" class="orbit-map"><PlegmaDock v-if="dock.length && !mid" :items="dock" :open="open" @toggle="toggle" /></div>
-      <PlegmaCard v-for="s in slots.filter(x => x.at >= 2)" :key="s.key" :at="s.at" :order="s.at">
-        <component :is="BODY[s.key]" :view="view" />
-      </PlegmaCard>
-      <PlegmaCard v-if="open && !mid" :key="open" :at="3" :order="0" class="is-open">
-        <component :is="BODY[open]" :view="view" />
-      </PlegmaCard>
+      <div ref="map" class="orbit-map"><p class="plegma-nodes-note">{{ perNode > 1 ? t('story.nodes.many', { n: fmtInt(perNode) }) : t('story.nodes.one') }}</p></div>
+      <PlegmaCard v-for="(key, i) in columns.left" :key="key" :at="2" :order="3 + i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
     </div>
-    <div v-if="mid" class="orbit-mid" :class="{ 'is-wide': mid.w >= MID_WIDE_W }" :style="{ left: `${mid.x}px`, top: `${mid.y}px`, width: `${mid.w}px`, height: `${mid.h}px` }">
-      <PlegmaCard v-for="(key, i) in cards.dock" :key="key" :at="4 + i" :order="2 + i">
-        <component :is="BODY[key]" :view="view" />
-      </PlegmaCard>
+    <div class="orbit-col orbit-middle">
+      <PlegmaCard v-for="(key, i) in columns.middle" :key="key" :at="4" :order="2 + i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
     </div>
-    <div class="orbit-right">
-      <PlegmaCard v-for="s in slots.filter(x => x.at < 2)" :key="s.key" :at="s.at" :order="s.at">
-        <component :is="BODY[s.key]" :view="view" />
-      </PlegmaCard>
+    <div class="orbit-col orbit-right">
+      <PlegmaCard v-for="(key, i) in columns.right" :key="key" :at="0" :order="i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
     </div>
   </div>
   <p v-if="problem" class="proto-note">{{ t('proto.states') }}</p>

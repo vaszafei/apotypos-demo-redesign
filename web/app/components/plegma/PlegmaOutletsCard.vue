@@ -10,7 +10,7 @@ const m = computed(() => v.model.value!)
 
 <template>
   <DashCard :title="t('entity.groups.title')" :info="t('story.outlets.info')">
-    <GroupSunburst :groups="v.tree.value" :total="m.articles">
+    <GroupSunburst :groups="v.tree.value" :total="m.articles" rounded>
       <template #name="{ group }">
         <EntityLink v-if="group.slug" type="group" :to="groupPageHref(group.slug)">{{ group.key }}</EntityLink>
         <template v-else>{{ group.label }}</template>
