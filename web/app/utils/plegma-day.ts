@@ -85,7 +85,8 @@ export const buildDayWeb = (themes: PlegmaDayTheme[], aspect: number, seed: numb
   const themeAt = (ti: number) => 1 + ti
   themes.forEach((t, ti) => {
     const a = turn + ((ti + (rand() - 0.5) * 0.45) / Math.max(1, T)) * Math.PI * 2
-    const r = (ti % 2 ? 0.82 : 0.5) + (rand() - 0.5) * 0.14
+    // A day with one theme (the days with no coded themes have only the catch-all) has it near the date, and its stories spread over the whole box.
+    const r = T === 1 ? 0.12 : (ti % 2 ? 0.82 : 0.5) + (rand() - 0.5) * 0.14
     x[themeAt(ti)] = Math.cos(a) * r * aspect * 0.8
     y[themeAt(ti)] = Math.sin(a) * r * 0.82
     kind[themeAt(ti)] = DAY_THEME
@@ -100,9 +101,9 @@ export const buildDayWeb = (themes: PlegmaDayTheme[], aspect: number, seed: numb
   stories.forEach((r, k) => {
     const t = themeAt(r.ti)
     const away = Math.atan2(y[t]!, x[t]! / aspect)
-    const a = away + (rand() - 0.5) * 2.6
-    const d = 0.17 + rand() * 0.15
-    x[storyAt(k)] = x[t]! + Math.cos(a) * d * 1.2
+    const a = T === 1 ? turn + (k / Math.max(1, stories.length)) * Math.PI * 2 + (rand() - 0.5) * 0.5 : away + (rand() - 0.5) * 2.6
+    const d = T === 1 ? 0.35 + rand() * 0.45 : 0.17 + rand() * 0.15
+    x[storyAt(k)] = x[t]! + Math.cos(a) * d * (T === 1 ? aspect * 0.6 : 1.2)
     y[storyAt(k)] = y[t]! + Math.sin(a) * d
     kind[storyAt(k)] = DAY_STORY
     theme[storyAt(k)] = r.ti

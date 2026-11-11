@@ -21,10 +21,9 @@ const detail = useFixtureLazy<StoryDetailData>('storyDetail', { required: ['outl
 const groups = useFixtureLazy<GroupsData>('groups', { required: ['groups'], isEmpty: b => b.groups.length === 0 })
 
 const totals = computed(() => (home.data.value ? dayTotals(home.data.value.outlets, home.data.value.dates.length) : []))
-// The calendar starts on the last day the hero's webs have topics for, as the hero does; the days after it are still in the calendar.
-const lastCoded = computed(() => (home.data.value ? home.data.value.issueDaily.reduce((m, row) => Math.max(m, row.findLastIndex(v => v !== null)), 0) : 0))
+// The calendar starts on now: the last day that has articles, which is the last tile of the row.
 const day = ref<number | null>(null)
-watch(() => home.data.value, (d) => { if (d && day.value === null) day.value = Math.min(lastCoded.value || lastCounted(totals.value), d.dates.length - 1) }, { immediate: true })
+watch(() => home.data.value, (d) => { if (d && day.value === null) day.value = lastCounted(totals.value) }, { immediate: true })
 
 const ix = computed(() => (list.data.value ? homeIndex({ stories: list.data.value, detail: detail.data.value }) : null))
 const colorOf = computed(() => groupColors(groups.data.value?.groups ?? []))

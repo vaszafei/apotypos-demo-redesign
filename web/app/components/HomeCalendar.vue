@@ -27,12 +27,12 @@ const change = (i: number) => {
 const clampStart = (v: number) => Math.min(Math.max(0, v), last.value)
 // A page is the tiles in view less two, so the row keeps two days it showed.
 const page = (dir: number) => { start.value = clampStart(start.value + dir * Math.max(1, count.value - 2)) }
-// The row starts with the picked day in the middle; a day that is out of view brings the row to it.
+// The row ends with the last date (now) when the picked day is in the last page; a day that is out of view brings the row to it.
 useResizeObserver(win, ([entry]) => {
   const w = entry?.contentRect.width ?? 0
   if (!w) return
   count.value = Math.max(3, Math.floor((w + GAP) / (TILE + GAP)))
-  start.value = clampStart(placed ? start.value : selected.value - Math.floor(count.value / 2))
+  start.value = clampStart(placed ? start.value : last.value)
   placed = true
 })
 watch(selected, (i) => { if (i < start.value || i >= start.value + count.value) start.value = clampStart(i - Math.floor(count.value / 2)) })

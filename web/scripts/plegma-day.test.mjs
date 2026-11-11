@@ -35,3 +35,12 @@ test('a dot is an article up to the cap, then it stands for several, in the prop
   assert.equal(many.filter(s => s === 1).length, 9)
   assert.equal(many.filter(s => s === 2).length, 3)
 })
+
+test('a day with one theme keeps it near the date and spreads its stories', () => {
+  const one = [{ issue: 9, name: 'Άλλα', slot: 0, n: 300, stories: Array.from({ length: 14 }, (_, i) => story(i, 20 - i, [0, 0, 0])), rest: 5 }]
+  const web = buildDayWeb(one, 2, 3)
+  assert.ok(Math.hypot(web.x[1], web.y[1]) < 0.4)
+  let far = 0
+  for (let i = 0; i < web.n; i++) if (web.kind[i] === DAY_STORY) far = Math.max(far, Math.abs(web.x[i]))
+  assert.ok(far > 0.7, `the stories reach only ${far} from the center`)
+})
