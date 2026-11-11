@@ -13,6 +13,8 @@ const drawer = ref(false)
 const menuButton = ref<HTMLButtonElement>()
 const closeButton = ref<HTMLButtonElement>()
 const smallScreen = useMediaQuery('(max-width: 1023px)')
+// A story or a theme on the Plegma: the search leaves the top bar and stays at the middle of the top of the body, under the bar (a phone keeps it in the bar).
+const bodySearch = computed(() => route.meta.plegma === true && route.meta.hero !== true && !smallScreen.value)
 // A phone or tablet: the open drawer keeps the focus and the rest of the page is inert until it closes (setDrawer of assets/shell.js).
 const setDrawer = async (open: boolean, moveFocus = true) => {
   drawer.value = open
@@ -49,7 +51,7 @@ const back = () => {
 </script>
 
 <template>
-  <div class="shell" :class="{ 'drawer-open': drawer, 'is-plegma': plegma.active, 'is-hero-page': route.meta.hero === true }">
+  <div class="shell" :class="{ 'drawer-open': drawer, 'is-plegma': plegma.active, 'is-hero-page': route.meta.hero === true, 'is-body-search': bodySearch }">
     <ClientOnly><PlegmaStage /></ClientOnly>
     <nav id="sidebar" class="sidebar" :aria-label="t('shell.nav')" :inert="smallScreen && !drawer">
       <div class="sidebar-logo">
@@ -85,12 +87,13 @@ const back = () => {
             </li>
           </ul>
         </nav>
-        <GlobalSearch :disabled="route.meta.hero === true" />
+        <GlobalSearch v-if="!bodySearch" :disabled="route.meta.hero === true" />
         <div class="header-actions">
           <AuthLinks cls="auth-links" />
           <LangSwitch />
         </div>
       </header>
+      <div v-if="bodySearch" class="body-search"><GlobalSearch /></div>
       <div class="page-body">
         <nav v-if="section.tabs.length && !plegma.active" class="section-nav" :aria-label="t(`nav.${section.key}`)">
           <div class="section-nav-inner">
