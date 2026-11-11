@@ -7,9 +7,9 @@ const props = defineProps<{ view: StoryView }>()
 const { t } = useI18n()
 const v = props.view
 const m = computed(() => v.model.value!)
-// The chart takes about a quarter of the height of the screen: the card of the groups under it has to show every group.
+// The chart is wide, so it needs little height: the cards under it have to show all their data.
 const { height } = useWindowSize()
-const tall = computed(() => Math.round(Math.min(300, Math.max(150, height.value * 0.17))))
+const tall = computed(() => Math.round(Math.min(300, Math.max(110, height.value * 0.12))))
 const series = computed(() => [{ key: String(m.value.story.id), name: storyName(m.value.story), color: 'var(--cat-1)', values: m.value.perDay.slice(m.value.lo, m.value.hi + 1) }])
 </script>
 

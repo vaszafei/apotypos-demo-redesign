@@ -76,12 +76,15 @@ const perNode = computed(() => (m.value ? articlesPerNode(m.value.articles) : 1)
       <PlegmaCard v-for="(key, i) in columns.left" :key="key" :at="2" :order="3 + i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
     </div>
     <div class="orbit-col orbit-middle">
-      <div v-for="(column, c) in columns.middle" :key="c" class="orbit-sub">
-        <PlegmaCard v-for="(key, i) in column" :key="key" :at="4" :order="2 + c + i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
-      </div>
+      <PlegmaCard v-for="(key, i) in columns.middle" :key="key" :at="4" :order="2 + i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
     </div>
     <div class="orbit-col orbit-right">
-      <PlegmaCard v-for="(key, i) in columns.right" :key="key" :at="0" :order="i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
+      <PlegmaCard v-for="(key, i) in columns.right.top" :key="key" :at="0" :order="i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
+      <div v-if="columns.right.columns.length" class="orbit-subs">
+        <div v-for="(column, c) in columns.right.columns" :key="c" class="orbit-sub">
+          <PlegmaCard v-for="(key, i) in column" :key="key" :at="0" :order="1 + c + i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
+        </div>
+      </div>
     </div>
   </div>
   <p v-if="problem" class="proto-note">{{ t('proto.states') }}</p>

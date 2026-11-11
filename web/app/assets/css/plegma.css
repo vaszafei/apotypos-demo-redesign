@@ -10,27 +10,19 @@
    and the related stories; in the middle the cards about how the story was taken in; on the right the chart of its days and its groups.
    The layer takes no pointer; only a card and the title do, so the map passes the pointer to the stage (KTD8). The cards are flat, with the page's own surface and border,
    and they size to their content up to the room the column has; what does not fit scrolls inside. */
-.plegma-orbit { --card-glass: color-mix(in srgb, var(--surface-page) 82%, transparent); position: fixed; inset: 64px 0 0 0; z-index: 2; display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr) minmax(0, 1.25fr); grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "title title title" "left mid right"; gap: var(--space-3) var(--space-4); padding: 8px var(--space-5) var(--space-4); pointer-events: none; }
+.plegma-orbit { --card-glass: color-mix(in srgb, var(--surface-page) 82%, transparent); position: fixed; inset: 64px 0 0 0; z-index: 2; display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 0.85fr) minmax(0, 1.5fr); grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "title title title" "left mid right"; gap: var(--space-3) var(--space-4); padding: 8px var(--space-5) var(--space-4); pointer-events: none; }
 .orbit-col, .orbit-sub { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: var(--space-3); }
 .orbit-left { grid-area: left; }
 .orbit-middle { grid-area: mid; }
 .orbit-right { grid-area: right; }
 .orbit-col > .plegma-card, .orbit-sub > .plegma-card { flex: 0 1 auto; }
-.orbit-right > .card-days, .orbit-right > .card-stance { flex: none; }
 .orbit-left > .card-related { max-height: 50%; }
-.orbit-middle .card-outlets, .orbit-right > .card-people { flex: 1 1 auto; }
-/* On a narrower screen the cards of the middle stack in one column. On a wide one they are two columns of half the width, so each card has the height it needs. */
-.orbit-middle .orbit-sub { display: contents; }
-@media (min-width: 1600px) {
-  .plegma-orbit { grid-template-columns: minmax(0, 0.68fr) minmax(0, 0.66fr) minmax(0, 0.66fr) minmax(0, 1.15fr); grid-template-areas: "title title title title" "left suba subb right"; }
-  .orbit-middle { display: contents; }
-  .orbit-middle .orbit-sub { display: flex; }
-  .orbit-middle .orbit-sub:nth-child(1) { grid-area: suba; }
-  .orbit-middle .orbit-sub:nth-child(2) { grid-area: subb; }
-}
-@media (min-width: 1700px) {
-  .plegma-orbit { grid-template-columns: minmax(0, 0.85fr) minmax(0, 0.62fr) minmax(0, 0.62fr) minmax(0, 1.15fr); }
-}
+.orbit-middle > .card-outlets { flex: 1 1 auto; }
+/* On the right the days card is on top; under it a row of two columns, the stance with the people and how the story was written, each as high as it needs. */
+.orbit-right > .card-days, .orbit-sub > .card-stance { flex: none; }
+.orbit-subs { flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+.orbit-sub > .card-people { flex: 1 1 auto; }
+@media (max-width: 1279px) { .orbit-subs { grid-template-columns: minmax(0, 1fr); overflow: auto; } }
 /* The title has a row of its own over every column, and its card is as wide as the name needs (the name, the theme beside it, the facts under), so it does not break. */
 .plegma-title { grid-area: title; justify-self: start; align-self: start; min-width: 0; max-width: 100%; margin: 0; pointer-events: none; }
 .plegma-title.entity-grid { margin-top: 0; }
@@ -57,7 +49,10 @@
 @media (max-height: 980px) { .plegma-card .sun-wrap .rows-owners { gap: 0; } }
 .plegma-card .how-grid-2 { grid-template-columns: minmax(0, 1fr); }
 /* The bars of how the story was written: label, bar and value on one line, as a wide list has them, so all the rows fit in the half-width column. */
-.plegma-card .how-panel .bar-list { grid-template-columns: fit-content(46%) minmax(56px, 1fr) auto; column-gap: var(--space-2); row-gap: 4px; }
+.plegma-card .how-panel .bar-list { grid-template-columns: fit-content(46%) minmax(56px, 1fr) auto; column-gap: var(--space-2); row-gap: 1px; }
+.plegma-card .how-panel .rows-caption { margin: 4px 0 2px; }
+.plegma-card .how-grid-2 { gap: 2px; }
+.plegma-card .legend { display: flex; flex-wrap: wrap; gap: 0 var(--space-3); margin-top: 2px; }
 .plegma-card .how-panel .bar-list > li { grid-column: 1 / -1; grid-template-columns: subgrid; }
 .plegma-card .how-panel .bar-list > li > .row-value { grid-column: 3; grid-row: 1; }
 .plegma-card .how-panel .bar-list > li > :nth-child(3) { grid-column: 2; grid-row: 1; }
@@ -73,6 +68,8 @@
 @media (max-width: 1023px) {
   .plegma-orbit { position: relative; inset: auto; display: block; padding: 46vh 0 var(--space-4); pointer-events: none; }
   .orbit-col { margin-bottom: var(--space-3); gap: var(--space-3); }
+  .orbit-subs { display: flex; flex-direction: column; gap: var(--space-3); }
+  .orbit-sub { display: contents; }
   .orbit-map { flex: none; min-height: 0; height: 0; }
   .plegma-nodes-note { display: none; }
   .plegma-card { overflow: visible; opacity: 1; transform: none; }
