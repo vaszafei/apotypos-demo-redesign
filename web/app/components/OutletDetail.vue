@@ -58,10 +58,9 @@ const model = computed(() => {
   const topics = stories.topicShares.map(r => ({ ...r, label: topicName(r.issue) }))
   return {
     m, l, dd, g, k, kd, last, outlet, group, record, collected, start, end, collectedTotal: sum(collected), writes, howRows: rows, howScale: diffScale(rows), topics,
-    ...stories, ...relatedOutlets(dd, kd, props.slug, group, record)
+    ...stories
   }
 })
-const groupSlugs = computed(() => new Map((groupsData.data.value?.groups ?? []).map(g => [g.name, g.slug])))
 
 // The profile of ΜΜΕ & πρόσωπα, for an outlet of its Greek set. The sums are for its whole window.
 const mset = computed(() => mme.data.value?.sets.gr ?? null)
@@ -91,10 +90,10 @@ const facts = computed(() => {
   ].filter((x): x is NonNullable<typeof x> => !!x)
 })
 
-// The cards of the old four tabs, now all on the page: the outlets like it, the stories and the headlines beside the web, then how it writes. The cards of the profile
+// The cards of the old four tabs, now all on the page: the stories and the headlines beside the web, then how it writes. The cards of the profile
 // are for the outlets of ΜΜΕ & πρόσωπα only.
-type CardId = 'related' | 'latest' | 'weekly' | 'emphasis' | 'stories' | 'coverage' | 'stance' | 'how' | 'stanceTopic' | 'portrayal' | 'voices'
-const COLUMNS: CardId[][] = [['stories', 'related', 'latest', 'coverage'], ['stance', 'how', 'emphasis', 'weekly', 'stanceTopic', 'portrayal', 'voices']]
+type CardId = 'latest' | 'weekly' | 'emphasis' | 'stories' | 'coverage' | 'stance' | 'how' | 'stanceTopic' | 'portrayal' | 'voices'
+const COLUMNS: CardId[][] = [['stories', 'latest', 'coverage'], ['stance', 'how', 'emphasis', 'weekly', 'stanceTopic', 'portrayal', 'voices']]
 const LIVE_ONLY: CardId[] = ['weekly', 'coverage', 'stanceTopic', 'portrayal', 'voices']
 const columns = computed(() => COLUMNS.map(ids => ids.filter(id => live.value || !LIVE_ONLY.includes(id))))
 
@@ -169,8 +168,7 @@ const lineHref = (key: string) => (key === 'outlet' ? outletHref(props.slug) : s
       <div class="orbit-subs">
         <div v-for="(ids, c) in columns" :key="c" class="orbit-sub">
           <PlegmaCard v-for="(id, r) in ids" :key="id" :at="c === 0 ? 2 : 0" :order="r + 1" :class="`card-${id}`">
-          <OutletRelated v-if="id === 'related'" :slices="model.slices" :unscored="model.unscored" :empty="model.related.length === 0" :color-of="groupColor" :group-slugs="groupSlugs" />
-            <DashCard v-else-if="id === 'latest'" class="c-6 outlet-latest" :title="t('outlet2.latest.title')" :info="liveHeadlines.length ? t('mme.o.headlines.info') : t('outlet2.headlines.info')">
+            <DashCard v-if="id === 'latest'" class="c-6 outlet-latest" :title="t('outlet2.latest.title')" :info="liveHeadlines.length ? t('mme.o.headlines.info') : t('outlet2.headlines.info')">
               <div v-if="liveHeadlines.length" class="latest-scroll">
                 <ul class="plain-list">
                   <li v-for="(x, i) in liveHeadlines" :key="i" class="mme-headline">

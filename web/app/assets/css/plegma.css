@@ -33,11 +33,11 @@
   .plegma-orbit:is(.is-story, .is-theme, .is-outlet) .orbit-sub:nth-child(1) { grid-area: one; }
   .plegma-orbit:is(.is-story, .is-theme, .is-outlet) .orbit-sub:nth-child(2) { grid-area: two; }
 }
-/* The outlet view (components/OutletDetail.vue) has no narrow column: the web is in the first column, the cards of the outlet in two columns beside it and its articles over time under them.
+/* The outlet view (components/OutletDetail.vue) has no narrow column: the web is in the first column, the cards of the outlet in two columns beside it and its articles over time under them, as far as the first of the two columns.
    A column of cards scrolls as a whole when its cards are taller than the screen; each card keeps its own height. */
 .plegma-orbit.is-outlet { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); grid-template-areas: "title title" "map right" "under under"; }
 @media (min-width: 1280px) {
-  .plegma-orbit.is-outlet { grid-template-columns: minmax(0, 5fr) minmax(0, 3.5fr) minmax(0, 3.5fr); grid-template-areas: "title title title" "map one two" "under under under"; }
+  .plegma-orbit.is-outlet { grid-template-columns: minmax(0, 5fr) minmax(0, 3.5fr) minmax(0, 3.5fr); grid-template-areas: "title title title" "map one two" "under under ."; }
 }
 .plegma-orbit.is-outlet .orbit-sub { overflow-y: auto; pointer-events: auto; scrollbar-width: thin; }
 .plegma-orbit.is-outlet .orbit-sub > .plegma-card { flex: none; max-height: 46%; }
