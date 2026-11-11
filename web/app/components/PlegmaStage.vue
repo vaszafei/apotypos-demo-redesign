@@ -47,6 +47,7 @@ let mute = '#6b6f78'
 let paper = '#f6f4ef'
 let cats: string[] = []
 let groupInk: string[] = []
+let stanceInk: string[] = []
 // The colors of the nodes at rest: the group colors mixed with the gray of no group, so the web is a family of colors, not confetti. A group that is
 // pointed at gets its full color.
 let softInk: string[] = []
@@ -82,14 +83,22 @@ const mixHex = (hex: string, other: string, share: number) => {
 // A color of the tokens (#rrggbb) with an alpha, for a gradient.
 const withAlpha = (hex: string, alpha: number) => (/^#[0-9a-f]{6}$/i.test(hex) ? `${hex}${Math.round(alpha * 255).toString(16).padStart(2, '0')}` : hex)
 
-// On Home the map is alive: every story drifts slowly on its own path, and the dots of a web wander on slow waves, so the webs breathe (the static hero's motion).
+// The map is alive like the nebyss hero: the whole field turns slowly about the middle of the page, each dot at its own steady pace (slower the farther out), no jitter.
 // It is drawn only, a story keeps its place in the world; with reduced motion there is none.
+const ORBIT = 0.025
+const ORBIT_REACH = 420
 const driftSpot = { x: 0, y: 0 }
-const drift = (s: PlegmaStory, sec: number) => {
-  driftSpot.x = Math.sin(sec * 0.13 + s.id * 0.7) * 14 + Math.sin(sec * 0.31 + s.id * 1.9) * 5
-  driftSpot.y = Math.cos(sec * 0.11 + s.id * 1.1) * 11 + Math.cos(sec * 0.27 + s.id * 0.6) * 4
+const orbit = (dx: number, dy: number, sec: number) => {
+  const a = sec * ORBIT / (1 + Math.hypot(dx, dy) / ORBIT_REACH)
+  const cos = Math.cos(a)
+  const sin = Math.sin(a)
+  driftSpot.x = dx * cos - dy * sin - dx
+  driftSpot.y = dx * sin + dy * cos - dy
   return driftSpot
 }
+const drift = (s: PlegmaStory, sec: number) => orbit((s.x - cam.x) * cam.z, (s.y - cam.y) * cam.z, sec)
+// The world behind a view is seen from far away (the page is its background); the web in view is drawn at the camera's own zoom in front of it.
+const BACK_Z = 0.66
 
 // A story or a theme in view keeps a clear space around its web: the other stories near it are pushed out a little (a place on the screen, not in the world),
 // so the web does not sit in a crowd. Inside the radius R they are moved to between R and 1.4 R; outside it the push dies away.
@@ -119,6 +128,7 @@ const readTokens = () => {
   fontText = style.getPropertyValue('--font-text').trim() || fontText
   cats = Array.from({ length: 8 }, (_, i) => style.getPropertyValue(`--cat-${i + 1}`).trim() || mute)
   groupInk = Array.from({ length: 10 }, (_, i) => style.getPropertyValue(`--cat-${i}`).trim() || mute)
+  stanceInk = ['critical', 'neutral', 'supportive'].map(k => style.getPropertyValue(`--stance-${k}`).trim() || mute)
   softInk = groupInk.map(c => mixHex(c, groupInk[0] ?? mute, 0.3))
 }
 
@@ -162,9 +172,14 @@ let morphAt = 0
 let ax = new Float32Array(0)
 let ay = new Float32Array(0)
 let hoverArticle = -1
+// The arc of the ring under the pointer ('g3' the fourth group, 's1' the neutral arc of the stance) and, for each arc, how far it has come forward (0 to 1): it grows and brightens as it eases.
+let hoverRing = ''
+const ringHot = new Map<string, number>()
 // What the cards point at (stores/plegma.ts): the articles of a group or an outlet come forward, a line to a story of the card of the other stories lights up. Each eases
 // in and out, so the map answers the pointer instead of jumping; with reduced motion it jumps.
 let hlMix = 0
+// The ring of the story web turns from the arcs of the groups to the arcs of the stance and back: 0 is the groups, 1 the stance.
+let ringMix = 0
 let hlLast: PlegmaHighlight | null = null
 let hlMatch = new Uint8Array(0)
 let hlKey = ''
@@ -257,6 +272,39 @@ const articleAt = (s: PlegmaStory, x: number, y: number) => {
   return best
 }
 
+// The arc of the ring under the pointer: a group of the sectors, or a stance once the ring has turned to it. A few pixels either side of the line count as on it.
+const ringAt = (s: PlegmaStory, x: number, y: number) => {
+  const a = layoutArticles(s, reduced.value ? 0 : performance.now() / 1000)
+  const aw = a.aw!
+  if (!aw.arcs.length || morphFrom || Math.abs(Math.hypot(x - a.cx, y - a.cy) - a.ring) > 7) return null
+  const at = (Math.atan2(y - a.cy, x - a.cx) + Math.PI / 2 + TAU) % TAU
+  const inside = (start: number, span: number) => span > 0 && (at - start + TAU) % TAU <= span
+  if (ringMix > 0.5) {
+    const arcs = stanceArcs(plegma.stance)
+    if (!arcs) return null
+    for (let k = 0; k < 3; k++) if (inside(arcs[k * 2]!, arcs[k * 2 + 1]!)) return { kind: 's' as const, k }
+    return null
+  }
+  for (let k = 0; k < aw.arcs.length / 2; k++) if (inside(aw.arcs[k * 2]!, aw.arcs[k * 2 + 1]!)) return { kind: 'g' as const, k }
+  return null
+}
+
+// The arcs of the stance ring: [start, span] in radians from the top, clockwise, for critical, neutral and supportive, each as wide as its share of the rated articles.
+const stanceArcs = (counts: number[] | null) => {
+  const total = counts ? counts.reduce((x, y) => x + y, 0) : 0
+  if (!counts || !total) return null
+  const used = counts.filter(c => c > 0).length
+  const room = used > 1 ? Math.min(0.09, (Math.PI * 0.5) / used) : 0
+  const out = new Float32Array(6)
+  let at = 0
+  for (let k = 0; k < 3; k++) {
+    const span = counts[k]! > 0 ? (TAU - used * room) * (counts[k]! / total) : 0
+    out[k * 2] = at + (counts[k]! > 0 ? room / 2 : 0)
+    out[k * 2 + 1] = span
+    at += span + (counts[k]! > 0 ? room : 0)
+  }
+  return out
+}
 // The picked web. Its nodes are solid and each has a rim of the page's color, so a line never muddies a node and two nodes that touch stay two; a node and the line
 // to the article before it have the calm color of their group, and the ring is the groups' ring: an arc for each group over its sector. The articles of a group or an
 // outlet that a card points at come forward in the full color, larger and pulsing, and the others step back.
@@ -348,17 +396,39 @@ const drawArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2,
   g.lineCap = 'round'
   if (aw.arcs.length && !morphFrom) {
     g.lineWidth = 2
-    for (let k = 0; k < aw.arcs.length / 2; k++) {
+    // Turning to the stance the arcs of the groups go a quarter turn on and fade; the arcs of the stance come in from a quarter turn back.
+    const stanceAt = ringMix > 0.01 ? stanceArcs(plegma.stance) : null
+    const groupsOut = stanceAt ? ringMix : 0
+    const turn = groupsOut * (Math.PI / 2)
+    if (groupsOut < 0.99) for (let k = 0; k < aw.arcs.length / 2; k++) {
       const span = aw.arcs[k * 2 + 1]!
       if (span <= 0) continue
       const slot = sectorSlot[k] ?? 0
       const on = !!hlLast && mix > 0.01 && articles?.find(x => x.order === k)?.group === hlLast.group
       const pad = Math.min(span / 2, 3 / a.ring)
-      g.strokeStyle = on ? (slot > 0 ? groupInk[slot] ?? ink : mute) : softInk[slot] ?? mute
-      g.globalAlpha = on ? 1 : 0.85 * (1 - 0.6 * mix)
+      const hot = ringHot.get(`g${k}`) ?? 0
+      const rest = on ? 1 : 0.85 * (1 - 0.6 * mix)
+      g.strokeStyle = on || hot > 0.01 ? (slot > 0 ? groupInk[slot] ?? ink : mute) : softInk[slot] ?? mute
+      g.lineWidth = 2 + 2.5 * hot
+      g.globalAlpha = (rest + (1 - rest) * hot) * (1 - groupsOut)
       g.beginPath()
-      g.arc(a.cx, a.cy, a.ring, aw.arcs[k * 2]! - Math.PI / 2 + pad, aw.arcs[k * 2]! + span - Math.PI / 2 - pad)
+      g.arc(a.cx, a.cy, a.ring, aw.arcs[k * 2]! - Math.PI / 2 + pad + turn, aw.arcs[k * 2]! + span - Math.PI / 2 - pad + turn)
       g.stroke()
+    }
+    if (stanceAt) {
+      const back = (1 - ringMix) * (Math.PI / 2)
+      for (let k = 0; k < 3; k++) {
+        const span = stanceAt[k * 2 + 1]!
+        if (span <= 0) continue
+        const pad = Math.min(span / 2, 3 / a.ring)
+        const hot = ringHot.get(`s${k}`) ?? 0
+        g.strokeStyle = stanceInk[k] ?? mute
+        g.lineWidth = 2 + 2.5 * hot
+        g.globalAlpha = (0.9 + 0.1 * hot) * ringMix
+        g.beginPath()
+        g.arc(a.cx, a.cy, a.ring, stanceAt[k * 2]! - Math.PI / 2 + pad - back, stanceAt[k * 2]! + span - Math.PI / 2 - pad - back)
+        g.stroke()
+      }
     }
   } else {
     g.globalAlpha = 0.45
@@ -597,15 +667,15 @@ const drawTheme = (g: CanvasRenderingContext2D, issue: number, sec: number, dt: 
 }
 
 // The stories inside the screen: the list is sorted by x, so a zoomed camera looks at a small part of it.
-const visible = (margin: number) => {
-  const half = width / 2 / cam.z + margin
+const visible = (margin: number, zz = cam.z) => {
+  const half = width / 2 / zz + margin
   const x0 = cam.x - half
   const x1 = cam.x + half
   let lo = 0
   let hi = byX.length
   while (lo < hi) { const mid = (lo + hi) >> 1; if (byX[mid]!.x < x0) lo = mid + 1; else hi = mid }
-  const y0 = cam.y - height / 2 / cam.z - margin
-  const y1 = cam.y + height / 2 / cam.z + margin
+  const y0 = cam.y - height / 2 / zz - margin
+  const y1 = cam.y + height / 2 / zz + margin
   const out: PlegmaStory[] = []
   for (let i = lo; i < byX.length && byX[i]!.x <= x1; i++) if (byX[i]!.y >= y0 && byX[i]!.y <= y1) out.push(byX[i]!)
   return out
@@ -622,6 +692,13 @@ const draw = (now: number) => {
   lastNow = now
   if (plegma.highlight) hlLast = plegma.highlight
   hlMix = ease(hlMix, plegma.highlight ? 1 : 0, dt)
+  ringMix = reduced.value ? (plegma.ring === 'stance' ? 1 : 0) : ringMix + ((plegma.ring === 'stance' ? 1 : 0) - ringMix) * (1 - Math.exp(-dt * 4))
+  for (const [key, v] of ringHot) {
+    const next = ease(v, key === hoverRing ? 1 : 0, dt)
+    if (next < 0.005 && key !== hoverRing) ringHot.delete(key)
+    else ringHot.set(key, next)
+  }
+  if (hoverRing && !ringHot.has(hoverRing)) ringHot.set(hoverRing, 0)
   if (plegma.hoverStory !== null) lineLast = plegma.hoverStory
   lineMix = ease(lineMix, plegma.hoverStory !== null ? 1 : 0, dt)
   const story = focusStory()
@@ -635,34 +712,41 @@ const draw = (now: number) => {
   const homeSet = new Set(webs)
   const dim = onHome ? 0.38 : issue !== null ? 0.13 : 0.2
   push = story ? { s: story, r: articleWorldRadius(story) * 1.25 + CLEAR_PAD } : null
-  const clear = issue !== null ? themeDisc() : null
+  const bz = onHome ? z : BACK_Z
+  // The background is seen from the web: the world point at the middle of the map region stays there, and the world around it is drawn at the far zoom.
+  const rb = regionBox(width, height, plegma.region ?? undefined)
+  const fx = cam.x + (rb.cx - width / 2) / z
+  const fy = cam.y + (rb.cy - height / 2) / z
   const dotBuckets: ({ colour: string, alpha: number, path: Path2D } | undefined)[] = []
   const drawn: { s: PlegmaStory, level: 1 | 2, alpha: number, focus: boolean, crisp: boolean }[] = []
 
-  for (const s of visible(80)) {
+  for (const s of visible(80, Math.min(z, bz))) {
     const isFocus = s === story || s === other
     const strong = isFocus || homeSet.has(s) || core.has(s) || s === hover
     // In a theme view the web is the theme: the map behind it is all background.
     const sameTheme = issue === null && litCoded && s.issue === lit && s.coded
-    const alpha = strong ? 1 : sameTheme ? 0.6 : dim
+    const alpha = strong ? 1 : onHome ? dim : sameTheme ? 0.7 : 0.55
     // In a view the story, its pair, the stories of the theme and the one under the pointer are crisp; the rest is a blurred background of dots with no lines.
     const crisp = !onHome && (isFocus || core.has(s) || s === hover)
-    const base = drawLevel(s, z, strong, isFocus)
+    // Not in view, a story is the background: a dot of the world seen from far away, across the whole page, with no hole around the web.
+    const back = !onHome && !strong
+    const zz = back ? bz : z
+    const base = back ? 0 : drawLevel(s, z, strong, isFocus)
     // On Home the webs of the week have their lines at the zoom that frames them all, and are drawn no smaller than at zoom 1.1 so that each one reads.
-    const level = onHome ? (base > 0 && homeSet.has(s) ? 2 : base) : issue !== null ? 0 : crisp ? base : (Math.min(base, 1) as 0 | 1 | 2)
+    const level = back ? 0 : onHome ? (base > 0 && homeSet.has(s) ? 2 : base) : issue !== null ? 0 : crisp ? base : (Math.min(base, 1) as 0 | 1 | 2)
     // Zoomed far out, the smallest stories are faint specks that only cost drawing time: leave them out until the camera is nearer.
-    if (level === 0 && z < 0.3 && !strong && !sameTheme && s.n < PLEGMA_FAR_MIN) continue
+    if (level === 0 && zz < 0.3 && !strong && !sameTheme && s.n < PLEGMA_FAR_MIN) continue
     if (level === 0) {
-      const r = isFocus ? 4 : clamp(0.7 + 0.35 * Math.log10(s.n + 1) * (z < 0.22 ? 1.4 : 1.8) * Math.sqrt(Math.max(z, 0.5)), 0.8, 5)
+      const r = isFocus ? 4 : clamp(0.7 + 0.35 * Math.log10(s.n + 1) * (zz < 0.22 ? 1.4 : 1.8) * Math.sqrt(Math.max(zz, 0.5)), 0.8, 5)
       const key = s.slot * 3 + (strong ? 2 : sameTheme ? 1 : 0)
       let bucket = dotBuckets[key]
       if (!bucket) { bucket = { colour: colourOf(s), alpha, path: new Path2D() }; dotBuckets[key] = bucket }
-      const where = placed(s)
-      const dd = onHome && sec ? drift(s, sec) : null
-      const px = (where.x - cam.x) * z + width / 2 + (dd ? dd.x : 0)
-      const py = (where.y - cam.y) * z + height / 2 + (dd ? dd.y : 0)
-      // Under the web of a theme in view there are no dots: the web is read on the page's own color.
-      if (clear && Math.hypot(px - clear.x, py - clear.y) < clear.r) continue
+      const where = back ? s : placed(s)
+      const bx = back ? (s.x - fx) * bz : (where.x - cam.x) * zz
+      const by = back ? (s.y - fy) * bz : (where.y - cam.y) * zz
+      const dd = (onHome || back) && sec ? orbit(bx, by, sec) : null
+      const px = bx + (back ? rb.cx : width / 2) + (dd ? dd.x : 0)
+      const py = by + (back ? rb.cy : height / 2) + (dd ? dd.y : 0)
       bucket.path.moveTo(px + r, py)
       bucket.path.arc(px, py, r, 0, TAU)
     } else drawn.push({ s, level, alpha, focus: isFocus, crisp })
@@ -898,10 +982,11 @@ const local = (e: PointerEvent) => {
   return { x: e.clientX - box.left, y: e.clientY - box.top }
 }
 const leave = () => {
-  if (!hover && hoverArticle < 0 && hoverNode < 0) return
+  if (!hover && hoverArticle < 0 && hoverNode < 0 && !hoverRing) return
   hover = null
   hoverArticle = -1
   hoverNode = -1
+  hoverRing = ''
   tooltip.hide()
   if (reduced.value) kick()
 }
@@ -920,17 +1005,61 @@ useEventListener(window, 'pointermove', (e: PointerEvent) => {
       if (hoverArticle !== i && reduced.value) kick()
       hover = null
       hoverArticle = i
-      tooltip.show({
-        title: article.outlet,
-        rows: [
-          { label: article.group ?? t('story.nogroup'), value: fmtDate(world.dates[article.day]!), color: `var(--cat-${article.slot})` },
-          ...(per > 1 ? [{ label: t('story.nodes.per'), value: fmtInt(per) }] : [])
-        ],
-        field: true
-      }, e)
+      // A node that stands for an article of the sample of headlines (or for several, one of which is in it) has the title of that article, with its outlet and day under it.
+      const nodes = nodeCount(story.n)
+      const from = Math.floor((i * story.n) / nodes)
+      const to = Math.max(from + 1, Math.floor(((i + 1) * story.n) / nodes))
+      let titled: typeof article | undefined
+      for (let k = from; k < to && !titled; k++) if (list[k]!.title) titled = list[k]
+      const group = article.group ?? t('story.nogroup')
+      const date = fmtDate(world.dates[(titled ?? article).day]!)
+      tooltip.show(titled
+        ? {
+            title: titled.title!,
+            rows: [
+              { label: titled.outlet, value: date, color: `var(--cat-${titled.slot})` },
+              { label: titled.group ?? t('story.nogroup'), value: '' },
+              ...(per > 1 ? [{ label: t('story.nodes.per'), value: fmtInt(per) }] : [])
+            ],
+            field: true
+          }
+        : {
+            title: article.outlet,
+            rows: [
+              { label: group, value: date, color: `var(--cat-${article.slot})` },
+              ...(per > 1 ? [{ label: t('story.nodes.per'), value: fmtInt(per) }] : [])
+            ],
+            field: true
+          }, e)
       return
     }
     if (hoverArticle >= 0) { hoverArticle = -1; if (reduced.value) kick() }
+    const arc = ringAt(story, p.x, p.y)
+    if (arc) {
+      const key = `${arc.kind}${arc.k}`
+      if (hoverRing !== key && reduced.value) kick()
+      hover = null
+      hoverRing = key
+      if (arc.kind === 'g') {
+        const mine = list.filter(x => x.order === arc.k)
+        const first = mine[0]
+        tooltip.show({
+          title: first?.group ?? t('story.nogroup'),
+          rows: [{ label: t('home.field.articles'), value: `${fmtInt(mine.length)} · ${fmtPct(mine.length / list.length)}`, color: `var(--cat-${first?.slot ?? 0})` }],
+          field: true
+        }, e)
+      } else {
+        const counts = plegma.stance!
+        const total = counts.reduce((x, y) => x + y, 0)
+        tooltip.show({
+          title: t(`stance.${['critical', 'neutral', 'supportive'][arc.k]}`),
+          rows: [{ label: t('home.field.articles'), value: `${fmtInt(counts[arc.k]!)} · ${fmtPct(counts[arc.k]! / total)}`, color: `var(--stance-${['critical', 'neutral', 'supportive'][arc.k]})` }],
+          field: true
+        }, e)
+      }
+      return
+    }
+    if (hoverRing) { hoverRing = ''; tooltip.hide(); if (reduced.value) kick() }
   }
   const themed = focusIssue()
   // On the web of a theme the pointer finds a story or an outlet of a story.
@@ -966,7 +1095,7 @@ useEventListener(window, 'pointermove', (e: PointerEvent) => {
 })
 useEventListener(document, 'pointerleave', leave)
 useEventListener(window, 'click', (e: MouseEvent) => {
-  if (!plegma.active || !world || !pointerFine.value || phone.value || e.button !== 0 || e.defaultPrevented || hoverArticle >= 0) return
+  if (!plegma.active || !world || !pointerFine.value || phone.value || e.button !== 0 || e.defaultPrevented || hoverArticle >= 0 || hoverRing) return
   if ((e.target as Element | null)?.closest?.(CAPTURES)) return
   const p = { x: e.clientX - canvas.value!.getBoundingClientRect().left, y: e.clientY - canvas.value!.getBoundingClientRect().top }
   // A story of the web of a theme opens that story.

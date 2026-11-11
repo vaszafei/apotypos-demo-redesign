@@ -4,6 +4,7 @@ import type { StoryDetailData } from '~/types/story-detail'
 import type { GroupsData } from '~/utils/groups'
 import type { BarRow } from '~/components/BarList.vue'
 import type { PlegmaArticle } from '~/utils/plegma-articles'
+import type { MmeData } from '~/types/mme'
 
 // The data of one story for its view (the cards of components/plegma/cards/ and the title): the fixtures, the story's rows, its days by group, the groups with
 // their outlets, how it was written and the related stories. It is the script of the old StoryDetail.vue, moved here so that every card reads one model.
@@ -14,6 +15,8 @@ export const useStoryView = (id: MaybeRefOrGetter<number>) => {
   const list = useFixtureLazy<StoriesData>('stories', { required: ['dates', 'issues', 'stories'], isEmpty: b => b.stories.length === 0 })
   const detail = useFixtureLazy<StoryDetailData>('storyDetail', { required: ['outlets', 'stories', 'base', 'people'], isEmpty: b => b.stories.length === 0 })
   const groupsData = useFixtureLazy<GroupsData>('groups', { required: ['groups'] })
+  // The sample of headlines of the snapshot (mme.json): a few articles of a story with their title and link. It is not needed to show the story, so it is not part of loading.
+  const mme = useFixtureLazy<MmeData>('mme', { required: ['sets'], isEmpty: b => Object.keys(b.sets).length === 0 })
   const loading = computed(() => list.status.value === 'loading' || detail.status.value === 'loading')
   const problem = computed(() => [list.status.value, detail.status.value].find(s => s !== 'ready'))
   const retry = () => { list.refresh(); detail.refresh() }
@@ -52,10 +55,20 @@ export const useStoryView = (id: MaybeRefOrGetter<number>) => {
     for (let i = 0; i < m.det.t.length; i += 3) rows.push({ outlet: m.det.t[i]!, day: m.det.t[i + 1]!, n: m.det.t[i + 2]! })
     rows.sort((a, b) => a.day - b.day || a.outlet - b.outlet)
     const order = new Map(m.groups.map((g, i) => [g.group ?? null, i]))
+    // The sampled headlines of this story, for each outlet and day: the first articles of that outlet and day carry them.
+    const dates = m.d.dates
+    const titles = new Map<string, { title: string, url: string | null }[]>()
+    const set = mme.data.value?.sets.gr
+    set?.headlines.forEach((rows, k) => rows.forEach(([date, title, url, , , story]) => {
+      if (story !== m.story.el) return
+      const key = `${set.outlets[k]!.name}|${dates.indexOf(date)}`
+      titles.set(key, [...(titles.get(key) ?? []), { title, url }])
+    }))
     return rows.flatMap(({ day, outlet, n }) => {
       const o = m.dd.outlets[outlet]!
-      const article: PlegmaArticle = { day, outlet: o.name, group: o.group, slot: slotOfColor(groupColor(o.group)), order: Math.max(0, order.get(o.group ?? null) ?? 0) }
-      return Array.from({ length: n }, () => article)
+      const base: PlegmaArticle = { day, outlet: o.name, group: o.group, slot: slotOfColor(groupColor(o.group)), order: Math.max(0, order.get(o.group ?? null) ?? 0) }
+      const known = titles.get(`${o.name}|${day}`)
+      return Array.from({ length: n }, (_, i) => (known?.[i] ? { ...base, ...known[i]! } : base))
     })
   })
   const shown = computed(() => (model.value ? model.value.d.dates.slice(model.value.lo, model.value.hi + 1) : []))

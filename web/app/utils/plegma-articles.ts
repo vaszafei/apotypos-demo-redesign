@@ -216,5 +216,5 @@ export interface PlegmaHighlight { group: string | null, outlet?: string }
 export const matchesHighlight = (a: { group: string | null, outlet: string }, h: PlegmaHighlight) => a.group === h.group && (h.outlet === undefined || a.outlet === h.outlet)
 
 // An article as the stage keeps it for its tooltip and its color: the day, the outlet, and the slot of its group's color (0 is no group).
-// `order` is the place of its group among the groups of the story, largest first, as the groups card lists them.
-export interface PlegmaArticle { day: number, outlet: string, group: string | null, slot: number, order: number }
+// `title` and `url` are there only for the articles of the sample of headlines of the snapshot (mme.json). `order` is the place of its group among the groups of the story, largest first, as the groups card lists them.
+export interface PlegmaArticle { day: number, outlet: string, group: string | null, slot: number, order: number, title?: string, url?: string | null }

@@ -30,6 +30,10 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const highlight = ref<PlegmaHighlight | null>(null)
   const hoverStory = ref<number | null>(null)
   const related = ref<number[]>([])
+  // What the ring of the story web shows: the groups (an arc for each) or the stance towards the government (an arc each for critical, neutral and supportive, wide as their share).
+  // The stance is a count for the whole story, not for each article, so it is a ring and the nodes keep their sectors. `stance` holds [critical, neutral, supportive].
+  const ring = ref<'groups' | 'stance'>('groups')
+  const stance = ref<number[] | null>(null)
   // The largest stories of the focused theme with the outlets that wrote each, which the theme view reads from the fixtures; null until it has them. The stage draws its web from them.
   const themeStories = ref<PlegmaThemeStory[] | null>(null)
 
@@ -46,6 +50,8 @@ export const usePlegmaStore = defineStore('plegma', () => {
       highlight.value = null
       hoverStory.value = null
       related.value = []
+      ring.value = 'groups'
+      stance.value = null
       themeStories.value = null
     }
   }
@@ -56,8 +62,10 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const setArticles = (value: PlegmaArticle[] | null) => { articles.value = value }
   const setHighlight = (value: PlegmaHighlight | null) => { highlight.value = value }
   const setHoverStory = (id: number | null) => { hoverStory.value = id }
+  const setRing = (value: 'groups' | 'stance') => { ring.value = value }
+  const setStance = (value: number[] | null) => { stance.value = value }
   const setRelated = (ids: number[]) => { related.value = ids }
   const setThemeStories = (value: PlegmaThemeStory[] | null) => { themeStories.value = value }
 
-  return { active, focus, day, compare, landed, region, articles, highlight, hoverStory, related, themeStories, syncRoute, stepTo, compareWith, setLanded, setRegion, setArticles, setHighlight, setHoverStory, setRelated, setThemeStories }
+  return { active, focus, day, compare, landed, region, articles, highlight, hoverStory, related, ring, stance, themeStories, syncRoute, stepTo, compareWith, setLanded, setRegion, setArticles, setHighlight, setHoverStory, setRelated, setRing, setStance, setThemeStories }
 })
