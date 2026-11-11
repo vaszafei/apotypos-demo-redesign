@@ -63,20 +63,20 @@ const perNode = computed(() => (m.value ? articlesPerNode(m.value.articles) : 1)
   </div>
   <ErrorPage v-else-if="!m" :status="404" />
   <div v-else ref="orbit" class="plegma-orbit" :class="{ 'is-in': plegma.landed }">
+    <div class="plegma-title entity-grid">
+      <EntityTitle :kind="t('hero.kind.story')" :title="storyName(m.story)">
+        <template #meta>
+          <span>
+            <EntityLink type="topic" :to="topicHref(String(m.story.issue))">{{ topicName(m.issue) }}</EntityLink>
+            {{ ` · ${dayLabel(m.start)} → ${fmtDate(m.d.dates[m.end]!)} · ` }}{{ m.end === m.start ? t('story.hero.day.one') : t('entity.fact.days', { n: m.end - m.start + 1 }) }}
+          </span>
+        </template>
+        <EntityFact :label="t('entity.fact.articles')" :value="fmtInt(m.articles)" />
+        <EntityFact :label="t('entity.fact.outlets')" :value="fmtInt(m.outlets.length)" :sub="t('entity.fact.of', { n: m.dd.outlets.length })" />
+        <EntityFact v-if="m.people.length" :label="t('entity.fact.people')" :value="fmtInt(m.people.length)" :sub="m.people[0]!.person.name" />
+      </EntityTitle>
+    </div>
     <div class="orbit-col orbit-left">
-      <div class="plegma-title entity-grid">
-        <EntityTitle :kind="t('hero.kind.story')" :title="storyName(m.story)">
-          <template #meta>
-            <span>
-              <EntityLink type="topic" :to="topicHref(String(m.story.issue))">{{ topicName(m.issue) }}</EntityLink>
-              {{ ` · ${dayLabel(m.start)} → ${fmtDate(m.d.dates[m.end]!)} · ` }}{{ m.end === m.start ? t('story.hero.day.one') : t('entity.fact.days', { n: m.end - m.start + 1 }) }}
-            </span>
-          </template>
-          <EntityFact :label="t('entity.fact.articles')" :value="fmtInt(m.articles)" />
-          <EntityFact :label="t('entity.fact.outlets')" :value="fmtInt(m.outlets.length)" :sub="t('entity.fact.of', { n: m.dd.outlets.length })" />
-          <EntityFact v-if="m.people.length" :label="t('entity.fact.people')" :value="fmtInt(m.people.length)" :sub="m.people[0]!.person.name" />
-        </EntityTitle>
-      </div>
       <div ref="map" class="orbit-map"><p class="plegma-nodes-note">{{ perNode > 1 ? t('story.nodes.many', { n: fmtInt(perNode) }) : t('story.nodes.one') }}</p></div>
       <PlegmaCard v-for="(key, i) in columns.left" :key="key" :at="2" :order="3 + i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
     </div>

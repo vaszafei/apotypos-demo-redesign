@@ -9,7 +9,7 @@ const v = props.view
 const m = computed(() => v.model.value!)
 // The chart takes about a quarter of the height of the screen: the card of the groups under it has to show every group.
 const { height } = useWindowSize()
-const tall = computed(() => Math.round(Math.min(300, Math.max(180, height.value * 0.24))))
+const tall = computed(() => Math.round(Math.min(300, Math.max(150, height.value * 0.17))))
 const series = computed(() => [{ key: String(m.value.story.id), name: storyName(m.value.story), color: 'var(--cat-1)', values: m.value.perDay.slice(m.value.lo, m.value.hi + 1) }])
 </script>
 
