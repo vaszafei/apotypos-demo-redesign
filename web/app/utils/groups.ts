@@ -28,6 +28,8 @@ export const NO_GROUP = 'var(--cat-0)'
 // The fixed group to slot map (Dash.groupColors): a group has the same color on every page. Antenna Group is only in the live data, so it has a 9th slot.
 const GROUP_SLOT = new Map([['Alter Ego Media', 1], ['DPG Digital Media', 2], ['Συμφέροντα Μπάκου-Καϋμενάκη', 3], ['Politis Group', 4],
   ['Συμφέροντα Μελισσανίδη', 5], ['Όμιλος ΣΚΑΪ', 6], ['Συμφέροντα Σαββίδη', 7], ['Όμιλος Βαρδινογιάννη', 8], ['Antenna Group', 9]])
+// The slot of a color that groupColors gave (1 to 9, 0 for no group): the canvas of the Plegma reads the colors of the slots itself.
+export const slotOfColor = (color: string) => Number(/--cat-(\d+)/.exec(color)?.[1] ?? 0)
 export const groupColors = (groups: { name: string }[]) => new Map(groups.map((g, i) => [g.name, `var(--cat-${GROUP_SLOT.get(g.name) ?? (i % 8) + 1})`]))
 
 // The name of a group without the word that most of them start with, for the legends and the labels of the charts.

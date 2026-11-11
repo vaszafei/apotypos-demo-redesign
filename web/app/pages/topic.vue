@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Θέματα › one topic (topic-v2.html?i=): the daily articles, the stance, the outlets and groups that write it more or less than usual, its stories. A detail page of the tab Θέματα.
+// Θέματα › one topic (topic-v2.html?i=): the theme on the Plegma, with its cards around the map (components/plegma/PlegmaThemeView.vue). A detail page of the tab Θέματα.
 definePageMeta({ detail: '/trends', plegma: true })
 const { t } = useI18n()
 useHead({ title: () => `${t('nav.topics')} · ${t('site.name')}` })
@@ -11,5 +11,5 @@ watch(index, () => window.scrollTo(0, 0))
 </script>
 
 <template>
-  <ClientOnly><TopicDetail :key="String(index)" :index="index" /></ClientOnly>
+  <ClientOnly><PlegmaThemeView :key="String(index)" :index="index" /></ClientOnly>
 </template>

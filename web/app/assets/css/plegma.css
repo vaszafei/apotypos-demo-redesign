@@ -2,54 +2,91 @@
 .plegma-stage { position: fixed; inset: 64px 0 0 0; z-index: -1; pointer-events: none; }
 .plegma-stage[hidden] { display: none; }
 .plegma-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
-/* In a view of a story or a theme the background of the map is a little out of focus, so the web in view stands out; Home stays sharp. */
-.plegma-canvas-back { transition: filter 500ms var(--ease-out); }
-.plegma-stage.is-view .plegma-canvas-back { filter: blur(1.4px); }
+/* In a view of a story or a theme the background of the map steps back, so the web in view stands out; it stays sharp (a blur read as a haze). */
+.plegma-canvas-back { transition: opacity 500ms var(--ease-out); }
+.plegma-stage.is-view .plegma-canvas-back { opacity: 0.7; }
 
-/* The story view, an Orbit (components/plegma/PlegmaStoryView.vue): the title above the map region at the top left, two cards on the right, two below the map.
-   The layer takes no pointer; only a card, the title and the chips do, so the map region and the gaps pass the pointer to the stage (KTD8).
-   The cards are small and flat, with the page's own surface and border, and they size to their content up to a limit; what does not fit scrolls inside. */
-.plegma-orbit { position: fixed; inset: 64px 0 0 0; z-index: 2; display: flex; justify-content: space-between; gap: var(--space-3); padding: 48px var(--space-5) var(--space-4); pointer-events: none; }
-.orbit-left { flex: 0 0 auto; min-width: 0; width: min(620px, 46%); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto minmax(0, 1fr) minmax(0, 30%); gap: var(--space-2); }
-.orbit-right { flex: 0 0 clamp(320px, 30vw, 440px); min-width: 0; display: flex; flex-direction: column; gap: var(--space-2); }
-.orbit-right .plegma-card { flex: 0 1 auto; max-height: calc(50% - var(--space-1)); }
-.orbit-mid { position: absolute; display: grid; grid-template-columns: minmax(0, 1fr); grid-auto-rows: minmax(0, 1fr); gap: var(--space-2); pointer-events: none; }
-.orbit-mid.is-wide { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: unset; grid-template-rows: minmax(0, 1fr); }
-.orbit-mid .plegma-card { align-self: start; max-height: 100%; }
-.plegma-title { grid-column: 1 / -1; margin: 0; justify-self: start; max-width: 100%; pointer-events: auto; }
+/* The story view (components/plegma/PlegmaStoryView.vue): three columns of cards that fill the screen. On the left the title, a free cell for the map (the stage draws the web in it)
+   and the related stories; in the middle the cards about how the story was taken in; on the right the chart of its days and its groups.
+   The layer takes no pointer; only a card and the title do, so the map passes the pointer to the stage (KTD8). The cards are flat, with the page's own surface and border,
+   and they size to their content up to the room the column has; what does not fit scrolls inside. */
+.plegma-orbit { --card-glass: color-mix(in srgb, var(--surface-page) 82%, transparent); position: fixed; inset: 64px 0 0 0; z-index: 2; display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 0.85fr) minmax(0, 1.5fr); grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "title title title" "left mid right"; gap: var(--space-3) var(--space-4); padding: 8px var(--space-5) var(--space-4); pointer-events: none; }
+.orbit-col, .orbit-sub { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: var(--space-3); }
+.orbit-left { grid-area: left; }
+.orbit-middle { grid-area: mid; }
+.orbit-right { grid-area: right; }
+.orbit-col > .plegma-card, .orbit-sub > .plegma-card { flex: 0 1 auto; }
+.orbit-left > .card-related { max-height: 50%; }
+.orbit-middle > .card-outlets { flex: 1 1 auto; }
+/* On the right the days card is on top; under it a row of two columns, the stance with the people and how the story was written, each as high as it needs. */
+.orbit-right > .card-days, .orbit-sub > .card-stance { flex: none; }
+.orbit-subs { flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+.orbit-sub > .card-people { flex: 1 1 auto; }
+@media (max-width: 1279px) { .orbit-subs { grid-template-columns: minmax(0, 1fr); overflow: auto; } }
+/* The title has a row of its own over every column, and its card is as wide as the name needs (the name, the theme beside it, the facts under), so it does not break. */
+.plegma-title { grid-area: title; justify-self: start; align-self: start; min-width: 0; max-width: 100%; margin: 0; pointer-events: none; }
 .plegma-title.entity-grid { margin-top: 0; }
-.plegma-title .ecard { background: var(--surface-page); border-color: var(--border); }
-.orbit-map { grid-column: 1 / -1; display: flex; align-items: flex-end; min-height: 0; }
-.plegma-dock { display: flex; flex-wrap: wrap; gap: var(--space-2); pointer-events: auto; }
-.plegma-chip { padding: 2px 10px; font: inherit; font-size: var(--text-caption); color: var(--text-primary); background: var(--surface-page); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; }
-.plegma-chip:hover { border-color: var(--ink); }
-.plegma-chip[aria-pressed="true"] { color: var(--surface-page); background: var(--ink); border-color: var(--ink); }
+.plegma-title .ecard { background: var(--card-glass); border-color: var(--border); backdrop-filter: blur(10px); pointer-events: auto; width: max-content; max-width: 100%; }
+.plegma-title .ecard-name { white-space: nowrap; }
+.orbit-map { position: relative; flex: 1 1 0; min-height: 260px; }
+.plegma-nodes-note { position: absolute; left: 0; bottom: 0; margin: 0; font-size: var(--text-caption); color: var(--text-secondary); }
 
-.plegma-card { --card-pad: var(--space-2) var(--space-3); --card-gap: 4px; min-width: 0; min-height: 0; overflow: auto; pointer-events: auto; background: var(--surface-page); border: 1px solid var(--border); border-radius: var(--radius); opacity: 0; transform: translate(var(--from-x, 0), var(--from-y, 0)); transition: opacity var(--motion-slow, 360ms) var(--ease-out) calc(var(--i) * 120ms), transform var(--motion-slow, 360ms) var(--ease-out) calc(var(--i) * 120ms); }
+.plegma-card { --card-pad: var(--space-2) var(--space-3); --card-gap: 4px; min-width: 0; min-height: 0; overflow: auto; pointer-events: auto; background: var(--card-glass); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: var(--radius); opacity: 0; transform: translate(var(--from-x, 0), var(--from-y, 0)); transition: opacity var(--motion-slow, 360ms) var(--ease-out) calc(var(--i) * 120ms), transform var(--motion-slow, 360ms) var(--ease-out) calc(var(--i) * 120ms); }
 .plegma-card > .dcard { border-color: transparent; }
 .plegma-card .dcard-head { min-height: 20px; }
 .plegma-card .rows-related li { padding: 3px 0; }
 .plegma-card .how-panel .rows-caption { margin-top: var(--space-2); }
 .plegma-card.at-0, .plegma-card.at-1 { --from-x: 60px; }
-.plegma-card.at-2, .plegma-card.at-3 { --from-y: 50px; grid-row: 3; }
+.plegma-card.at-2, .plegma-card.at-3 { --from-y: 50px; }
 .plegma-card.at-4, .plegma-card.at-5 { --from-y: -30px; }
-.plegma-card.at-2 { grid-column: 1; }
-.plegma-card.at-3 { grid-column: 2; }
-.plegma-card.is-open { z-index: 1; }
 .plegma-orbit.is-in .plegma-card { opacity: 1; transform: none; }
-.plegma-card .sun-wrap { grid-template-columns: minmax(0, 1fr); }
-.plegma-card .sun-wrap .donut { justify-self: center; grid-row: 1; }
+/* The groups: the ring above the list of every group with its outlets, in a column of half the width. */
+.plegma-card .sun-wrap { grid-template-columns: minmax(0, 1fr); align-items: start; }
+.plegma-card .sun-wrap .donut { width: 190px; height: 190px; justify-self: center; grid-row: 1; }
+.plegma-card .sun-wrap .rows-owners { gap: 5px; }
+.plegma-card .sun-wrap .rows-owners li { line-height: 1.25; }
+.plegma-card .sun-wrap .rows-owners .row-sub { line-height: 1.2; white-space: normal; overflow: visible; text-overflow: clip; }
+@media (max-height: 980px) { .plegma-card .sun-wrap .rows-owners { gap: 0; } }
 .plegma-card .how-grid-2 { grid-template-columns: minmax(0, 1fr); }
+/* The bars of how the story was written: label, bar and value on one line, as a wide list has them, so all the rows fit in the half-width column. */
+.plegma-card .how-panel .bar-list { grid-template-columns: fit-content(46%) minmax(56px, 1fr) auto; column-gap: var(--space-2); row-gap: 1px; }
+.plegma-card .how-panel .rows-caption { margin: 4px 0 2px; }
+.plegma-card .how-grid-2 { gap: 2px; }
+.plegma-card .legend { display: flex; flex-wrap: wrap; gap: 0 var(--space-3); margin-top: 2px; }
+.plegma-card .how-panel .bar-list > li { grid-column: 1 / -1; grid-template-columns: subgrid; }
+.plegma-card .how-panel .bar-list > li > .row-value { grid-column: 3; grid-row: 1; }
+.plegma-card .how-panel .bar-list > li > :nth-child(3) { grid-column: 2; grid-row: 1; }
 @media (prefers-reduced-motion: reduce) { .plegma-card { transition: none; transform: none; } }
 
-/* The map pages fill the screen: the footer would sit under the cards. */
-@media (min-width: 1024px) { .shell:has(.plegma-orbit) .page-footer { display: none; } }
+/* The theme view (components/plegma/PlegmaThemeView.vue) has the layout of the story view: the web in the free cell on the left with the stories it shows under it, in the
+   middle the outlets and groups that write the theme more or less than usual, on the right the theme over time and under it the stance with the themes like it, and how it is written. */
+.plegma-orbit.is-theme .orbit-left > .card-stories { flex: 1 1 0; max-height: none; }
+.plegma-orbit.is-theme .orbit-middle > .card-outlets-diff { flex: 0 1 auto; max-height: 50%; }
+.plegma-orbit.is-theme .orbit-middle > .card-groups-diff { flex: 1 1 0; }
+.plegma-orbit.is-theme .orbit-right > .card-days, .plegma-orbit.is-theme .card-stance { flex: none; }
+.plegma-orbit.is-theme .card-similar, .plegma-orbit.is-theme .card-how { flex: 1 1 auto; }
+.plegma-card .theme-diff-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px var(--space-5); }
+.plegma-card .theme-foot { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 var(--space-4); }
+.plegma-card .theme-foot .dcard-sub { margin: 0; }
+.plegma-card .group-cell { display: flex; min-width: 0; max-width: 100%; }
+.plegma-card .group-cell .dot { flex: none; }
+.plegma-card .group-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plegma-card.card-groups-diff .how-panel .bar-list { grid-template-columns: fit-content(60%) minmax(48px, 1fr) auto; }
+
+/* The map pages fill the screen: the footer would sit under the cards. The back button and the path (Μέσα / Ιστορίες) of the row above are not shown on a story: the title takes its place. */
+@media (min-width: 1024px) {
+  .shell:has(.plegma-orbit) .page-footer { display: none; }
+  .shell:has(.plegma-orbit) .trail-bar { display: none; }
+}
 
 /* A narrow screen has no room around the map: the cards stack under it and the page scrolls (phones and touch are deferred, KTD scope). */
 @media (max-width: 1023px) {
   .plegma-orbit { position: relative; inset: auto; display: block; padding: 46vh 0 var(--space-4); pointer-events: none; }
-  .orbit-left, .orbit-right { display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-3); }
-  .orbit-map { order: 2; }
+  .orbit-col { margin-bottom: var(--space-3); gap: var(--space-3); }
+  .orbit-subs { display: flex; flex-direction: column; gap: var(--space-3); }
+  .orbit-sub { display: contents; }
+  .orbit-map { flex: none; min-height: 0; height: 0; }
+  .plegma-nodes-note { display: none; }
   .plegma-card { overflow: visible; opacity: 1; transform: none; }
   .plegma-title { order: -1; position: absolute; top: 56px; left: 0; }
 }
@@ -72,10 +109,10 @@ html[data-search-fly] .home-hero-search .search-button { visibility: hidden; }
 .search-fly .search-button-icon { width: 20px; height: 20px; flex: none; color: var(--ink); }
 .search-fly .search-button-label { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
-/* The title and the chips of a story view arrive with the cards, after the camera lands. */
-.plegma-orbit .plegma-title, .plegma-orbit .plegma-dock { opacity: 0; transition: opacity var(--motion-slow, 360ms) var(--ease-out); }
-.plegma-orbit.is-in .plegma-title, .plegma-orbit.is-in .plegma-dock { opacity: 1; }
-@media (prefers-reduced-motion: reduce) { .plegma-orbit .plegma-title, .plegma-orbit .plegma-dock { transition: none; } }
+/* The title of a story view arrives with the cards, after the camera lands. */
+.plegma-orbit .plegma-title { opacity: 0; transition: opacity var(--motion-slow, 360ms) var(--ease-out); }
+.plegma-orbit.is-in .plegma-title { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .plegma-orbit .plegma-title { transition: none; } }
 
 /* A small card lists the related stories by name and articles; the picture of each would leave the name no room. */
 .plegma-card .rows-related li { grid-template-columns: minmax(0, 1fr) auto; }
