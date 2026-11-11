@@ -7,6 +7,7 @@ import { groupColors, NO_GROUP, slotOfColor } from '~/utils/groups'
 import type { GroupsData } from '~/utils/groups'
 import { dayDots, PLEGMA_DAY_STORIES, PLEGMA_DAY_THEMES } from '~/utils/plegma-day'
 import type { PlegmaDayTheme } from '~/utils/plegma-day'
+import type { DayRing } from '~/components/PlegmaDayWeb.vue'
 import { themeSlots } from '~/utils/plegma-world'
 
 // «Η επικαιρότητα» under the hero (the section #home-today of index.html): the calendar of the days floating over the Plegma, under it the web of the picked day (the date, its themes, the stories
@@ -29,6 +30,20 @@ const ix = computed(() => (list.data.value ? homeIndex({ stories: list.data.valu
 const colorOf = computed(() => groupColors(groups.data.value?.groups ?? []))
 const slotOf = computed(() => (home.data.value ? themeSlots(home.data.value) : new Map<number, number>()))
 const groupSlot = (g: string | null) => slotOfColor((g && colorOf.value.get(g)) || NO_GROUP)
+
+// Every theme of the day with its articles, the largest first: the list beside the web, and the arcs of its ring. Only the largest themes have a web.
+const dayThemes = computed(() => {
+  const x = ix.value
+  const d = day.value
+  if (!x || d === null) return []
+  const total = new Map<number, number>()
+  for (const r of x.byDay[d] ?? []) total.set(r.s.issue, (total.get(r.s.issue) ?? 0) + r.n)
+  const sum = [...total.values()].reduce((a, b) => a + b, 0)
+  return [...total].map(([issue, n]) => ({ issue, n, share: sum ? n / sum : 0, name: topicName(x.issues[issue]!), slot: slotOf.value.get(issue) ?? 0 })).sort((a, b) => b.n - a.n)
+})
+const litIssue = ref<number | null>(null)
+watch(day, () => { litIssue.value = null })
+const ring = computed<DayRing[]>(() => dayThemes.value.map(r => ({ issue: r.issue, name: r.name, slot: r.slot, n: r.n })))
 
 // The themes of the day for the web: the largest stories of the day (the most articles) grouped by theme; the other stories of the day are only counted, for the faint dots.
 const themes = computed<PlegmaDayTheme[]>(() => {
@@ -89,7 +104,19 @@ onBeforeUnmount(() => { watcher?.disconnect(); plegma.setHomeDay(null); plegma.p
   <section id="home-today" ref="root" class="home-today" :aria-label="t('home.today.title')">
     <template v-if="home.data.value && day !== null">
       <div class="home-today-days"><HomeCalendar v-model="day" :dates="home.data.value.dates" :totals="totals" /></div>
-      <div class="home-today-map"><PlegmaDayWeb :themes="themes" :date="fmtDate(home.data.value.dates[day]!)" :picked="plegma.homePick" :active="inView" @pick="plegma.pickHome" /></div>
+      <div class="home-today-themes">
+        <DashCard :title="t('home.themes.title')" :info="t('home.themes.info')" card="home-themes" class="home-themes">
+          <ul v-if="dayThemes.length" class="rows dn-legend" @pointerleave="litIssue = null">
+            <li v-for="r in dayThemes" :key="r.issue" :class="litIssue === r.issue ? 'dn-row is-on' : 'dn-row'" @pointerenter="litIssue = r.issue">
+              <span class="dn-dot" :style="{ background: r.slot > 0 ? `var(--cat-${r.slot})` : 'var(--cat-0)' }" />
+              <EntityLink class="row-name" type="topic" :to="topicHref(String(r.issue))">{{ r.name }}</EntityLink>
+              <span class="row-value">{{ fmtInt(r.n) }} · {{ fmtPct(r.share) }}</span>
+            </li>
+          </ul>
+          <p v-else-if="ix" class="dcard-empty">{{ t('home.day.empty') }}</p>
+        </DashCard>
+      </div>
+      <div class="home-today-map"><PlegmaDayWeb v-model:lit="litIssue" :themes="themes" :ring="ring" :date="fmtDate(home.data.value.dates[day]!)" :picked="plegma.homePick" :active="inView" @pick="plegma.pickHome" /></div>
       <div class="home-today-card">
         <DashCard :title="t('home.pick.title')" :info="t('home.pick.info')" card="home-day" class="home-day">
           <template #tools><span class="home-date">{{ fmtDate(home.data.value.dates[day]!) }}</span></template>
