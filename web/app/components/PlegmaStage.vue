@@ -1005,14 +1005,32 @@ useEventListener(window, 'pointermove', (e: PointerEvent) => {
       if (hoverArticle !== i && reduced.value) kick()
       hover = null
       hoverArticle = i
-      tooltip.show({
-        title: article.outlet,
-        rows: [
-          { label: article.group ?? t('story.nogroup'), value: fmtDate(world.dates[article.day]!), color: `var(--cat-${article.slot})` },
-          ...(per > 1 ? [{ label: t('story.nodes.per'), value: fmtInt(per) }] : [])
-        ],
-        field: true
-      }, e)
+      // A node that stands for an article of the sample of headlines (or for several, one of which is in it) has the title of that article, with its outlet and day under it.
+      const nodes = nodeCount(story.n)
+      const from = Math.floor((i * story.n) / nodes)
+      const to = Math.max(from + 1, Math.floor(((i + 1) * story.n) / nodes))
+      let titled: typeof article | undefined
+      for (let k = from; k < to && !titled; k++) if (list[k]!.title) titled = list[k]
+      const group = article.group ?? t('story.nogroup')
+      const date = fmtDate(world.dates[(titled ?? article).day]!)
+      tooltip.show(titled
+        ? {
+            title: titled.title!,
+            rows: [
+              { label: titled.outlet, value: date, color: `var(--cat-${titled.slot})` },
+              { label: titled.group ?? t('story.nogroup'), value: '' },
+              ...(per > 1 ? [{ label: t('story.nodes.per'), value: fmtInt(per) }] : [])
+            ],
+            field: true
+          }
+        : {
+            title: article.outlet,
+            rows: [
+              { label: group, value: date, color: `var(--cat-${article.slot})` },
+              ...(per > 1 ? [{ label: t('story.nodes.per'), value: fmtInt(per) }] : [])
+            ],
+            field: true
+          }, e)
       return
     }
     if (hoverArticle >= 0) { hoverArticle = -1; if (reduced.value) kick() }
