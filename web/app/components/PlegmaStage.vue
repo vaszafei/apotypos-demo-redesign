@@ -172,6 +172,9 @@ let morphAt = 0
 let ax = new Float32Array(0)
 let ay = new Float32Array(0)
 let hoverArticle = -1
+// The arc of the ring under the pointer ('g3' the fourth group, 's1' the neutral arc of the stance) and, for each arc, how far it has come forward (0 to 1): it grows and brightens as it eases.
+let hoverRing = ''
+const ringHot = new Map<string, number>()
 // What the cards point at (stores/plegma.ts): the articles of a group or an outlet come forward, a line to a story of the card of the other stories lights up. Each eases
 // in and out, so the map answers the pointer instead of jumping; with reduced motion it jumps.
 let hlMix = 0
@@ -267,6 +270,23 @@ const articleAt = (s: PlegmaStory, x: number, y: number) => {
     if (d < bestD) { bestD = d; best = i }
   }
   return best
+}
+
+// The arc of the ring under the pointer: a group of the sectors, or a stance once the ring has turned to it. A few pixels either side of the line count as on it.
+const ringAt = (s: PlegmaStory, x: number, y: number) => {
+  const a = layoutArticles(s, reduced.value ? 0 : performance.now() / 1000)
+  const aw = a.aw!
+  if (!aw.arcs.length || morphFrom || Math.abs(Math.hypot(x - a.cx, y - a.cy) - a.ring) > 7) return null
+  const at = (Math.atan2(y - a.cy, x - a.cx) + Math.PI / 2 + TAU) % TAU
+  const inside = (start: number, span: number) => span > 0 && (at - start + TAU) % TAU <= span
+  if (ringMix > 0.5) {
+    const arcs = stanceArcs(plegma.stance)
+    if (!arcs) return null
+    for (let k = 0; k < 3; k++) if (inside(arcs[k * 2]!, arcs[k * 2 + 1]!)) return { kind: 's' as const, k }
+    return null
+  }
+  for (let k = 0; k < aw.arcs.length / 2; k++) if (inside(aw.arcs[k * 2]!, aw.arcs[k * 2 + 1]!)) return { kind: 'g' as const, k }
+  return null
 }
 
 // The arcs of the stance ring: [start, span] in radians from the top, clockwise, for critical, neutral and supportive, each as wide as its share of the rated articles.
@@ -386,8 +406,11 @@ const drawArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2,
       const slot = sectorSlot[k] ?? 0
       const on = !!hlLast && mix > 0.01 && articles?.find(x => x.order === k)?.group === hlLast.group
       const pad = Math.min(span / 2, 3 / a.ring)
-      g.strokeStyle = on ? (slot > 0 ? groupInk[slot] ?? ink : mute) : softInk[slot] ?? mute
-      g.globalAlpha = (on ? 1 : 0.85 * (1 - 0.6 * mix)) * (1 - groupsOut)
+      const hot = ringHot.get(`g${k}`) ?? 0
+      const rest = on ? 1 : 0.85 * (1 - 0.6 * mix)
+      g.strokeStyle = on || hot > 0.01 ? (slot > 0 ? groupInk[slot] ?? ink : mute) : softInk[slot] ?? mute
+      g.lineWidth = 2 + 2.5 * hot
+      g.globalAlpha = (rest + (1 - rest) * hot) * (1 - groupsOut)
       g.beginPath()
       g.arc(a.cx, a.cy, a.ring, aw.arcs[k * 2]! - Math.PI / 2 + pad + turn, aw.arcs[k * 2]! + span - Math.PI / 2 - pad + turn)
       g.stroke()
@@ -398,8 +421,10 @@ const drawArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2,
         const span = stanceAt[k * 2 + 1]!
         if (span <= 0) continue
         const pad = Math.min(span / 2, 3 / a.ring)
+        const hot = ringHot.get(`s${k}`) ?? 0
         g.strokeStyle = stanceInk[k] ?? mute
-        g.globalAlpha = 0.9 * ringMix
+        g.lineWidth = 2 + 2.5 * hot
+        g.globalAlpha = (0.9 + 0.1 * hot) * ringMix
         g.beginPath()
         g.arc(a.cx, a.cy, a.ring, stanceAt[k * 2]! - Math.PI / 2 + pad - back, stanceAt[k * 2]! + span - Math.PI / 2 - pad - back)
         g.stroke()
@@ -668,6 +693,12 @@ const draw = (now: number) => {
   if (plegma.highlight) hlLast = plegma.highlight
   hlMix = ease(hlMix, plegma.highlight ? 1 : 0, dt)
   ringMix = reduced.value ? (plegma.ring === 'stance' ? 1 : 0) : ringMix + ((plegma.ring === 'stance' ? 1 : 0) - ringMix) * (1 - Math.exp(-dt * 4))
+  for (const [key, v] of ringHot) {
+    const next = ease(v, key === hoverRing ? 1 : 0, dt)
+    if (next < 0.005 && key !== hoverRing) ringHot.delete(key)
+    else ringHot.set(key, next)
+  }
+  if (hoverRing && !ringHot.has(hoverRing)) ringHot.set(hoverRing, 0)
   if (plegma.hoverStory !== null) lineLast = plegma.hoverStory
   lineMix = ease(lineMix, plegma.hoverStory !== null ? 1 : 0, dt)
   const story = focusStory()
@@ -951,10 +982,11 @@ const local = (e: PointerEvent) => {
   return { x: e.clientX - box.left, y: e.clientY - box.top }
 }
 const leave = () => {
-  if (!hover && hoverArticle < 0 && hoverNode < 0) return
+  if (!hover && hoverArticle < 0 && hoverNode < 0 && !hoverRing) return
   hover = null
   hoverArticle = -1
   hoverNode = -1
+  hoverRing = ''
   tooltip.hide()
   if (reduced.value) kick()
 }
@@ -984,6 +1016,32 @@ useEventListener(window, 'pointermove', (e: PointerEvent) => {
       return
     }
     if (hoverArticle >= 0) { hoverArticle = -1; if (reduced.value) kick() }
+    const arc = ringAt(story, p.x, p.y)
+    if (arc) {
+      const key = `${arc.kind}${arc.k}`
+      if (hoverRing !== key && reduced.value) kick()
+      hover = null
+      hoverRing = key
+      if (arc.kind === 'g') {
+        const mine = list.filter(x => x.order === arc.k)
+        const first = mine[0]
+        tooltip.show({
+          title: first?.group ?? t('story.nogroup'),
+          rows: [{ label: t('home.field.articles'), value: `${fmtInt(mine.length)} · ${fmtPct(mine.length / list.length)}`, color: `var(--cat-${first?.slot ?? 0})` }],
+          field: true
+        }, e)
+      } else {
+        const counts = plegma.stance!
+        const total = counts.reduce((x, y) => x + y, 0)
+        tooltip.show({
+          title: t(`stance.${['critical', 'neutral', 'supportive'][arc.k]}`),
+          rows: [{ label: t('home.field.articles'), value: `${fmtInt(counts[arc.k]!)} · ${fmtPct(counts[arc.k]! / total)}`, color: `var(--stance-${['critical', 'neutral', 'supportive'][arc.k]})` }],
+          field: true
+        }, e)
+      }
+      return
+    }
+    if (hoverRing) { hoverRing = ''; tooltip.hide(); if (reduced.value) kick() }
   }
   const themed = focusIssue()
   // On the web of a theme the pointer finds a story or an outlet of a story.
@@ -1019,7 +1077,7 @@ useEventListener(window, 'pointermove', (e: PointerEvent) => {
 })
 useEventListener(document, 'pointerleave', leave)
 useEventListener(window, 'click', (e: MouseEvent) => {
-  if (!plegma.active || !world || !pointerFine.value || phone.value || e.button !== 0 || e.defaultPrevented || hoverArticle >= 0) return
+  if (!plegma.active || !world || !pointerFine.value || phone.value || e.button !== 0 || e.defaultPrevented || hoverArticle >= 0 || hoverRing) return
   if ((e.target as Element | null)?.closest?.(CAPTURES)) return
   const p = { x: e.clientX - canvas.value!.getBoundingClientRect().left, y: e.clientY - canvas.value!.getBoundingClientRect().top }
   // A story of the web of a theme opens that story.

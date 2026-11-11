@@ -25,7 +25,16 @@
 @media (max-width: 1279px) { .orbit-subs { grid-template-columns: minmax(0, 1fr); overflow: auto; } }
 /* The story view: the other stories of the theme are a column of their own on the left (a narrow one, 2 of 12 parts), the map and the stance, people and how
    cards are a row, and the days of the story are a card under that row. */
-.plegma-orbit.is-story { grid-template-columns: minmax(0, 2fr) minmax(0, 4fr) minmax(0, 6fr); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "title title title" "left map right" "left under under"; }
+.plegma-orbit.is-story { grid-template-columns: minmax(0, 2fr) minmax(0, 4fr) minmax(0, 6fr); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "title title title" "left map right" "under under under"; }
+/* From a wide screen the two columns of the right are columns of the page grid, so the days card under the row runs from the left edge to the end of the people card. */
+@media (min-width: 1280px) {
+  .plegma-orbit.is-story { grid-template-columns: minmax(0, 2fr) minmax(0, 4fr) minmax(0, 3fr) minmax(0, 3fr); grid-template-areas: "title title title title" "left map one two" "under under under ."; }
+  .plegma-orbit.is-story .orbit-right, .plegma-orbit.is-story .orbit-subs { display: contents; }
+  .plegma-orbit.is-story .orbit-sub:nth-child(1) { grid-area: one; }
+  .plegma-orbit.is-story .orbit-sub:nth-child(2) { grid-area: two; }
+}
+.plegma-orbit.is-story.no-right { grid-template-areas: "title title title" "left map map" "under under under"; }
+@media (min-width: 1280px) { .plegma-orbit.is-story.no-right { grid-template-columns: minmax(0, 2fr) minmax(0, 4fr) minmax(0, 6fr); grid-template-areas: "title title title" "left map map" "under under under"; } }
 .plegma-orbit.is-story .orbit-map { grid-area: map; }
 .plegma-orbit.is-story .orbit-left > .card-related { flex: 0 1 auto; max-height: none; }
 .plegma-orbit.is-story .orbit-under { grid-area: under; }

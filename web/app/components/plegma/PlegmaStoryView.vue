@@ -41,7 +41,7 @@ const perNode = computed(() => (m.value ? articlesPerNode(m.value.articles) : 1)
     <section class="dcard c-12"><div class="empty-state" data-state="empty"><AppIcon name="inbox" /><p style="margin: 0">{{ t('topics2.empty') }}</p></div></section>
   </div>
   <ErrorPage v-else-if="!m" :status="404" />
-  <div v-else ref="orbit" class="plegma-orbit is-story" :class="{ 'is-in': plegma.landed }">
+  <div v-else ref="orbit" class="plegma-orbit is-story" :class="{ 'is-in': plegma.landed, 'no-right': !columns.right.length }">
     <div class="plegma-title entity-grid">
       <EntityTitle :kind="t('hero.kind.story')" :title="storyName(m.story)">
         <template #meta><EntityLink type="topic" :to="topicHref(String(m.story.issue))">{{ topicName(m.issue) }}</EntityLink></template>
