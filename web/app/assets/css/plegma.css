@@ -186,7 +186,7 @@ html[data-search-fly] .body-search { opacity: 0; }
 .home-today { --card-glass: color-mix(in srgb, var(--surface-page) 82%, transparent); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto minmax(0, 1fr); gap: var(--space-4); height: calc(100svh - 64px); min-height: 640px; padding: var(--space-5) 0 var(--space-4); }
 .home-today-days { grid-column: 1; grid-row: 1; min-width: 0; }
 .home-today-map { grid-column: 1; grid-row: 2; position: relative; min-width: 0; min-height: 0; }
-.home-today-side { grid-column: 2; grid-row: 2; justify-self: end; width: min(480px, 100%); margin-right: 48px; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: var(--space-3); }
+.home-today-side { grid-column: 2; grid-row: 1 / 3; justify-self: end; width: min(480px, 100%); margin-right: 48px; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: var(--space-3); }
 .home-today-side > .home-today-card { flex: none; }
 .home-day-list { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
 .home-day-list .home-stories { flex: 1 1 0; min-height: 0; max-height: none; }
