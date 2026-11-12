@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { useEventListener, useMediaQuery, useRafFn } from '@vueuse/core'
 import { blendHex } from '~/utils/ink'
-import { buildDayWeb, DAY_DATE, DAY_DOT, DAY_REST, DAY_STORY, DAY_THEME } from '~/utils/plegma-day'
+import { buildDayWeb, DAY_DATE, DAY_DOT, DAY_REST, DAY_STORY, DAY_THEME, matchWebs, storiesAsThemes } from '~/utils/plegma-day'
 import type { PlegmaDayTheme, PlegmaDayWeb } from '~/utils/plegma-day'
 
 // The web of a day on Home, drawn in the free area under the calendar (utils/plegma-day.ts has the layout): the date at the center, the themes of the day around it, the largest stories of each
 // theme, and a dot for each article of a story. It has the look of the web of a theme (components/PlegmaStage.vue drawTheme): solid nodes with a rim of the page's color, the calm colors of the
 // groups, thin curved lines, a slow drift. A story on it is picked with a click and takes the card. The Plegma stage is behind it, as a dim map.
-// The ring around it has an arc for each theme of the day, as wide as its share of the articles of the day (a theme with no color of its own is gray). A theme pointed at, on the
-// ring, on the web or in the list beside it (`lit`), comes forward.
+// The web has two forms, `mode`: the stories of the day around the date (the ring around it has an arc for each outlet, as wide as its share of the articles of the day, in the color of its
+// group), and the themes of the day, each with its stories (the ring has an arc for each theme; a theme with no color of its own is gray). The nodes of a story and its dots are the same
+// in both, so a change of `mode` moves them from one place to the other, the themes and the faint dots fade in or out, and the ring turns into the other ring. In the form of the themes a
+// theme pointed at, on the ring, on the web or in the list beside it (`lit`), comes forward.
 export interface DayRing { issue: number, name: string, slot: number, n: number }
-const props = defineProps<{ themes: PlegmaDayTheme[], ring: DayRing[], lit: number | null, date: string, picked: number | null, active: boolean }>()
-const emit = defineEmits<{ pick: [id: number], 'update:lit': [issue: number | null] }>()
+export interface DayOutlet { name: string, slot: number, n: number }
+const props = defineProps<{ themes: PlegmaDayTheme[], ring: DayRing[], outlets: DayOutlet[], mode: 'stories' | 'themes', lit: number | null, date: string, picked: number | null, active: boolean }>()
+const emit = defineEmits<{ pick: [id: number], pickTheme: [issue: number], 'update:lit': [issue: number | null] }>()
 const { t } = useI18n()
 const tooltip = useTooltipStore()
 const prefs = usePrefsStore()
@@ -51,6 +54,14 @@ const slotColour = (slot: number) => (slot > 0 ? cats[slot - 1] ?? mute : mute)
 const aspect = computed(() => (size.value.h ? 1 : 0))
 const seed = computed(() => [...props.date].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 9973, 7))
 const web = computed<PlegmaDayWeb | null>(() => (props.themes.length && aspect.value ? buildDayWeb(props.themes, aspect.value, seed.value) : null))
+// The same stories with no themes between them, and which node of it each node of `web` is.
+const flat = computed(() => {
+  const w = web.value
+  if (!w || !aspect.value) return null
+  const themes = storiesAsThemes(props.themes)
+  const b = buildDayWeb(themes, aspect.value, seed.value)
+  return { b, match: matchWebs(props.themes, w, themes, b) }
+})
 
 let hx = new Float32Array(0)
 let hy = new Float32Array(0)
@@ -59,8 +70,11 @@ let hoverRing = -2
 let mix = 0
 let litStory = -1
 let tmix = 0
+// 0 for the form of the stories, 1 for the form of the themes; `form` is the same eased, for the places and the fades.
+let themed = props.mode === 'themes' ? 1 : 0
+let form = themed
 let litTheme = -1
-const arcHot = new Map<number, number>()
+const arcHot = new Map<string, number>()
 let last = 0
 const storyOf = (w: PlegmaDayWeb, i: number) => props.themes[w.theme[i]!]!.stories[w.story[i]!]!
 // The ring is as large as the area allows, and the web is a little smaller inside it.
@@ -79,11 +93,15 @@ const layout = (w: PlegmaDayWeb, sec: number) => {
   if (hx.length < w.n) { hx = new Float32Array(w.n); hy = new Float32Array(w.n) }
   const R = scaleOf()
   const amp = clamp(R * 0.014, 1.5, 6)
+  const f = flat.value
   for (let i = 0; i < w.n; i++) {
     const a = sec * w.speed[i]! + w.phase[i]!
     const k = w.kind[i] === DAY_DATE ? 0 : w.kind[i] === DAY_THEME ? 0.5 : w.kind[i] === DAY_STORY ? 0.7 : w.reach[i]!
-    hx[i] = width / 2 + w.x[i]! * R + Math.cos(a) * amp * k
-    hy[i] = height / 2 + w.y[i]! * R + Math.sin(a) * amp * k
+    const j = f ? f.match[i]! : -1
+    const px = j >= 0 ? f!.b.x[j]! + (w.x[i]! - f!.b.x[j]!) * form : w.x[i]!
+    const py = j >= 0 ? f!.b.y[j]! + (w.y[i]! - f!.b.y[j]!) * form : w.y[i]!
+    hx[i] = width / 2 + px * R + Math.cos(a) * amp * k
+    hy[i] = height / 2 + py * R + Math.sin(a) * amp * k
   }
   return R
 }
@@ -95,6 +113,10 @@ const draw = (sec: number, dt: number) => {
   const dpr = Math.min(window.devicePixelRatio || 1, 2)
   g.setTransform(dpr, 0, 0, dpr, 0, 0)
   g.clearRect(0, 0, width, height)
+  const goal = props.mode === 'themes' ? 1 : 0
+  themed = reduced.value ? goal : themed + (goal - themed) * (1 - Math.exp(-dt * 3))
+  if (Math.abs(goal - themed) < 0.002) themed = goal
+  form = themed * themed * (3 - 2 * themed)
   const R = layout(w, reduced.value ? 0 : sec)
   // What is lit: the story pointed at, or the one picked; the others step back.
   const pointedStory = hover > 0 && (w.kind[hover] === DAY_STORY || w.kind[hover] === DAY_DOT) ? w.theme[hover]! * 100 + w.story[hover]! : null
@@ -103,7 +125,7 @@ const draw = (sec: number, dt: number) => {
   if (lit !== null) litStory = lit
   mix = reduced.value ? (lit !== null ? 1 : 0) : mix + ((lit !== null ? 1 : 0) - mix) * (1 - Math.exp(-dt * 9))
   // A theme that is pointed at comes forward: the rest steps back, and the theme is drawn again at the end.
-  const litIssue = props.lit
+  const litIssue = form > 0.5 ? props.lit : null
   const themeAt = litIssue === null ? -1 : props.themes.findIndex(x => x.issue === litIssue)
   if (themeAt >= 0) litTheme = themeAt
   tmix = reduced.value ? (themeAt >= 0 ? 1 : 0) : tmix + ((themeAt >= 0 ? 1 : 0) - tmix) * (1 - Math.exp(-dt * 9))
@@ -120,6 +142,7 @@ const draw = (sec: number, dt: number) => {
   g.lineWidth = 1
   const spokes = new Path2D()
   const themeLines = new Map<number, Path2D>()
+  const directLines = new Map<number, Path2D>()
   const lines = new Map<number, Path2D>()
   const litLines = new Path2D()
   for (let e = 0; e < w.bow.length; e++) {
@@ -131,6 +154,9 @@ const draw = (sec: number, dt: number) => {
       let path = themeLines.get(slot)
       if (!path) { path = new Path2D(); themeLines.set(slot, path) }
       curve(path, j, i, w.bow[e]!)
+      let direct = directLines.get(slot)
+      if (!direct) { direct = new Path2D(); directLines.set(slot, direct) }
+      curve(direct, 0, i, w.bow[e]!)
       continue
     }
     if (mix > 0.01 && isLit(i)) { curve(litLines, j, i, w.bow[e]!); continue }
@@ -140,9 +166,10 @@ const draw = (sec: number, dt: number) => {
     curve(path, j, i, w.bow[e]!)
   }
   g.strokeStyle = ink
-  g.globalAlpha = 0.3 * (1 - 0.6 * tmix)
+  g.globalAlpha = 0.3 * (1 - 0.6 * tmix) * form
   g.stroke(spokes)
-  for (const [slot, path] of themeLines) { g.strokeStyle = slotColour(slot); g.globalAlpha = 0.45 * back; g.stroke(path) }
+  if (form > 0.01) for (const [slot, path] of themeLines) { g.strokeStyle = slotColour(slot); g.globalAlpha = 0.45 * back * form; g.stroke(path) }
+  if (form < 0.99) for (const [slot, path] of directLines) { g.strokeStyle = slotColour(slot); g.globalAlpha = 0.45 * back * (1 - form); g.stroke(path) }
   for (const [slot, path] of lines) { g.strokeStyle = softInk[slot] ?? mute; g.globalAlpha = 0.6 * back; g.stroke(path) }
   if (mix > 0.01) { g.strokeStyle = ink; g.globalAlpha = 0.45 * mix; g.stroke(litLines) }
   // The faint dots of the stories that are not shown: the color of their theme.
@@ -155,7 +182,7 @@ const draw = (sec: number, dt: number) => {
     if (!path) { path = new Path2D(); rest.set(slot, path) }
     circle(path, i, radius(w, i, R))
   }
-  for (const [slot, path] of rest) { g.fillStyle = slotColour(slot); g.globalAlpha = 0.4 * back; g.fill(path) }
+  for (const [slot, path] of rest) { g.fillStyle = slotColour(slot); g.globalAlpha = 0.4 * back * form; g.fill(path) }
   // The dots of the stories: a rim of the page's color under each, then the color of the group.
   const rims = new Path2D()
   const fills = new Map<number, Path2D>()
@@ -185,14 +212,16 @@ const draw = (sec: number, dt: number) => {
   // The stories, the themes and the date.
   for (let i = 0; i < w.n; i++) {
     if (w.kind[i] !== DAY_STORY && w.kind[i] !== DAY_THEME && w.kind[i] !== DAY_DATE) continue
+    const fade = w.kind[i] === DAY_THEME ? form : 1
+    if (fade < 0.01) continue
     const r = radius(w, i, R)
-    g.globalAlpha = 1
+    g.globalAlpha = fade
     g.fillStyle = paper
     g.beginPath()
     g.arc(hx[i]!, hy[i]!, r + 1.6, 0, TAU)
     g.fill()
     g.fillStyle = w.kind[i] === DAY_DATE ? ink : slotColour(props.themes[w.theme[i]!]!.slot)
-    g.globalAlpha = w.kind[i] === DAY_STORY && !isLit(i) ? back : 1
+    g.globalAlpha = w.kind[i] === DAY_STORY && !isLit(i) ? back : fade
     g.beginPath()
     g.arc(hx[i]!, hy[i]!, r, 0, TAU)
     g.fill()
@@ -223,7 +252,7 @@ const draw = (sec: number, dt: number) => {
       if (mine(i)) curve(emLines, w.edges[e * 2 + 1]!, i, w.bow[e]!)
     }
     g.strokeStyle = slotColour(th.slot)
-    g.globalAlpha = 0.6 * tmix
+    g.globalAlpha = 0.6 * tmix * form
     g.stroke(emLines)
     for (let i = 0; i < w.n; i++) {
       if (!mine(i) || w.kind[i] === DAY_DATE) continue
@@ -238,21 +267,22 @@ const draw = (sec: number, dt: number) => {
     }
     g.globalAlpha = 1
   }
-  // The ring: an arc for each theme of the day, as wide as its share of the articles; the one pointed at is thicker.
-  const total = props.ring.reduce((sum, r) => sum + r.n, 0)
-  if (total > 0) {
-    const ringR = ringOf()
+  // The ring: an arc for each outlet of the day (the stories) or each theme (the themes), as wide as its share of the articles; the one pointed at is thicker. The two rings fade into each other.
+  const ringR = ringOf()
+  const arcs = (items: { slot: number, n: number }[], tag: string, alpha: number, hotOf: (k: number) => boolean) => {
+    const total = items.reduce((sum, r) => sum + r.n, 0)
+    if (total <= 0 || alpha < 0.01) return
     let from = 0
     g.lineCap = 'round'
-    props.ring.forEach((r, k) => {
+    items.forEach((r, k) => {
       const span = (r.n / total) * TAU
-      const key = r.issue
+      const key = `${tag}${k}`
       const hot = arcHot.get(key) ?? 0
-      const goal = props.lit === r.issue || hoverRing === k ? 1 : 0
+      const goal = hotOf(k) ? 1 : 0
       arcHot.set(key, reduced.value ? goal : hot + (goal - hot) * (1 - Math.exp(-dt * 9)))
       const pad = Math.min(span / 2, 3 / ringR)
       g.strokeStyle = slotColour(r.slot)
-      g.globalAlpha = 0.85 + 0.15 * (arcHot.get(key) ?? 0)
+      g.globalAlpha = (0.85 + 0.15 * (arcHot.get(key) ?? 0)) * alpha
       g.lineWidth = 2 + 2.5 * (arcHot.get(key) ?? 0)
       g.beginPath()
       g.arc(width / 2, height / 2, ringR, from - Math.PI / 2 + pad, from + span - Math.PI / 2 - pad)
@@ -262,6 +292,8 @@ const draw = (sec: number, dt: number) => {
     g.lineCap = 'butt'
     g.globalAlpha = 1
   }
+  arcs(props.outlets, 'o', 1 - form, k => form < 0.5 && hoverRing === k)
+  arcs(props.ring, 't', form, k => form >= 0.5 && (props.lit === props.ring[k]!.issue || hoverRing === k))
   // The date at the center and the name of each theme beside its node: the only words on the web.
   g.font = `600 14px ${fontText}`
   g.textBaseline = 'alphabetic'
@@ -277,6 +309,7 @@ const draw = (sec: number, dt: number) => {
   g.font = `11px ${fontText}`
   for (let i = 0; i < w.n; i++) {
     if (w.kind[i] !== DAY_THEME) continue
+    if (form < 0.01) continue
     const name = props.themes[w.theme[i]!]!.name
     const text = name.length > 28 ? `${name.slice(0, 27).trimEnd()}…` : name
     const right = hx[i]! >= width / 2
@@ -284,10 +317,10 @@ const draw = (sec: number, dt: number) => {
     const lx = hx[i]! + (right ? 1 : -1) * (radius(w, i, R) + 7)
     g.lineWidth = 3.5
     g.strokeStyle = paper
-    g.globalAlpha = 0.9
+    g.globalAlpha = 0.9 * form
     g.strokeText(text, lx, hy[i]! + 4)
     g.fillStyle = mute
-    g.globalAlpha = 1
+    g.globalAlpha = form
     g.fillText(text, lx, hy[i]! + 4)
   }
   g.textAlign = 'start'
@@ -327,26 +360,29 @@ const nodeAt = (x: number, y: number) => {
   let best = -1
   let bestD = Infinity
   for (let i = 1; i < w.n; i++) {
-    if (w.kind[i] === DAY_REST) continue
+    if (w.kind[i] === DAY_REST || (w.kind[i] === DAY_THEME && form < 0.5)) continue
     const d = Math.hypot(hx[i]! - x, hy[i]! - y) - radius(w, i, R)
     if (d < 6 && d < bestD) { bestD = d; best = i }
   }
   return best
 }
+// The ring in use: the outlets in the form of the stories, the themes in the form of the themes.
+const ringItems = (): { name: string, slot: number, n: number, issue?: number }[] => (props.mode === 'themes' ? props.ring : props.outlets)
 // The arc of the ring under the pointer, or -2.
 const arcAt = (x: number, y: number) => {
-  const total = props.ring.reduce((sum, r) => sum + r.n, 0)
+  const items = ringItems()
+  const total = items.reduce((sum, r) => sum + r.n, 0)
   if (!total) return -2
   const dx = x - width / 2
   const dy = y - height / 2
   if (Math.abs(Math.hypot(dx, dy) - ringOf()) > 9) return -2
   const angle = (((Math.atan2(dy, dx) + Math.PI / 2) % TAU) + TAU) % TAU
   let from = 0
-  for (let k = 0; k < props.ring.length; k++) {
-    from += (props.ring[k]!.n / total) * TAU
+  for (let k = 0; k < items.length; k++) {
+    from += (items[k]!.n / total) * TAU
     if (angle <= from) return k
   }
-  return props.ring.length - 1
+  return items.length - 1
 }
 const onMove = (e: PointerEvent) => {
   const w = web.value
@@ -357,11 +393,12 @@ const onMove = (e: PointerEvent) => {
   if (i !== hover) hover = i
   const arc = i < 0 ? arcAt(px, py) : -2
   hoverRing = arc
-  const issue = arc >= 0 ? props.ring[arc]!.issue : i > 0 && w ? props.themes[w.theme[i]!]!.issue : null
+  const items = ringItems()
+  const issue = props.mode !== 'themes' ? null : arc >= 0 ? items[arc]!.issue ?? null : i > 0 && w ? props.themes[w.theme[i]!]!.issue : null
   if (issue !== props.lit) emit('update:lit', issue)
   if (arc >= 0) {
-    const r = props.ring[arc]!
-    const total = props.ring.reduce((sum, x) => sum + x.n, 0)
+    const r = items[arc]!
+    const total = items.reduce((sum, x) => sum + x.n, 0)
     tooltip.show({ title: r.name, rows: [{ label: t('home.field.articles'), value: `${fmtInt(r.n)} · ${fmtPct(r.n / total)}`, color: slotColour(r.slot) }], field: true }, e)
     return
   }
@@ -378,8 +415,10 @@ const onMove = (e: PointerEvent) => {
 const onLeave = () => { hover = -1; hoverRing = -2; emit('update:lit', null); tooltip.hide() }
 const onClick = () => {
   const w = web.value
+  if (props.mode === 'themes' && hoverRing >= 0 && hover < 0) { emit('pickTheme', props.ring[hoverRing]!.issue); return }
   if (!w || hover <= 0) return
   if (w.kind[hover] === DAY_STORY || w.kind[hover] === DAY_DOT) { tooltip.hide(); emit('pick', storyOf(w, hover).id) }
+  else if (w.kind[hover] === DAY_THEME) emit('pickTheme', props.themes[w.theme[hover]!]!.issue)
 }
 
 onMounted(() => {
@@ -400,7 +439,8 @@ watch(() => [props.active, reduced.value] as const, ([on, still]) => {
   if (on && !still) loop.resume()
   else { loop.pause(); draw(performance.now() / 1000, 0.016) }
 }, { immediate: true })
-watch([web, () => props.picked, () => props.lit, () => props.ring], () => { if (!loop.isActive.value) draw(performance.now() / 1000, 0.016) })
+watch([web, () => props.picked, () => props.lit, () => props.ring, () => props.outlets], () => { if (!loop.isActive.value) draw(performance.now() / 1000, 0.016) })
+watch(() => props.mode, () => { if (loop.isActive.value) return; themed = props.mode === 'themes' ? 1 : 0; draw(performance.now() / 1000, 0.016) })
 useEventListener(document, 'visibilitychange', () => { if (document.hidden) loop.pause(); else if (props.active && !reduced.value) loop.resume() })
 onBeforeUnmount(() => loop.pause())
 </script>

@@ -7,11 +7,12 @@ import { groupColors, NO_GROUP, slotOfColor } from '~/utils/groups'
 import type { GroupsData } from '~/utils/groups'
 import { dayDots, PLEGMA_DAY_STORIES, PLEGMA_DAY_THEMES } from '~/utils/plegma-day'
 import type { PlegmaDayTheme } from '~/utils/plegma-day'
-import type { DayRing } from '~/components/PlegmaDayWeb.vue'
+import type { DayOutlet, DayRing } from '~/components/PlegmaDayWeb.vue'
 import { themeSlots } from '~/utils/plegma-world'
 
 // «Η επικαιρότητα» under the hero (the section #home-today of index.html): the calendar of the days floating over the Plegma, under it the web of the picked day (the date, its themes, the stories
 // of each and a dot for each article: components/PlegmaDayWeb.vue), and beside it the card of the story of the day with the bar of the outlets that ran it. A story picked on the web takes the card.
+// A switch over the cards turns the web (and the cards) from the stories of the day, whose ring is the outlets, to the themes of the day, whose ring is the themes.
 // The section is drawn in the browser (the data of the stories is 2.8 MB that the prerendered page should not carry).
 type HomeData = { dates: string[], outlets: { name: string, daily: (number | null)[] }[], issues: StoriesData['issues'], issueDaily: (number | null)[][] }
 const { t } = useI18n()
@@ -51,6 +52,35 @@ const more = (e: Event) => {
   if (el.scrollTop + el.clientHeight > el.scrollHeight - 300 && shown.value < storyRows.value.length) shown.value += 100
 }
 watch(day, () => { litIssue.value = null })
+// The outlets of the day, the largest first: the arcs of the ring of the stories, each in the color of its group.
+const dayOutlets = computed<DayOutlet[]>(() => {
+  const h = home.data.value
+  const d = day.value
+  if (!h || d === null) return []
+  const groupOf = new Map((detail.data.value?.outlets ?? []).map(o => [o.name, o.group]))
+  return h.outlets.map(o => ({ name: o.name, n: o.daily[d] ?? 0, slot: groupSlot(groupOf.get(o.name) ?? null) })).filter(o => o.n > 0).sort((a, b) => b.n - a.n)
+})
+const mode = ref<'stories' | 'themes'>('stories')
+const modes = computed(() => [{ value: 'stories', label: t('home.mode.stories') }, { value: 'themes', label: t('home.mode.themes') }])
+const pickedTheme = ref<number | null>(null)
+watch(day, () => { pickedTheme.value = null })
+watch(mode, () => { litIssue.value = null })
+// The theme in its card: the one picked, or the day's largest; with its stories of the day and the bar of the outlets that ran them.
+const theme = computed(() => {
+  const x = ix.value
+  const d = day.value
+  const row = (pickedTheme.value !== null ? dayThemes.value.find(r => r.issue === pickedTheme.value) : null) ?? dayThemes.value[0]
+  if (!x || d === null || !row) return null
+  const rows = (x.byDay[d] ?? []).filter(r => r.s.issue === row.issue)
+  const perOutlet = new Map<string, { name: string, group: string | null, n: number, slug: string }>()
+  for (const r of rows) for (const o of homeOutletsOf(x, r.s, d, d)) {
+    const have = perOutlet.get(o.slug)
+    if (have) have.n += o.n
+    else perOutlet.set(o.slug, { name: o.name, group: o.group, n: o.n, slug: o.slug })
+  }
+  const parts = [...perOutlet.values()].sort((a, b) => b.n - a.n).map(o => ({ ...o, color: (o.group && colorOf.value.get(o.group)) || NO_GROUP }))
+  return { ...row, stories: rows.length, parts }
+})
 const ring = computed<DayRing[]>(() => dayThemes.value.map(r => ({ issue: r.issue, name: r.name, slot: r.slot, n: r.n })))
 
 // The themes of the day for the web: the largest stories of the day (the most articles) grouped by theme; the other stories of the day are only counted, for the faint dots.
@@ -112,30 +142,59 @@ onBeforeUnmount(() => { watcher?.disconnect(); plegma.setHomeDay(null); plegma.p
   <section id="home-today" ref="root" class="home-today" :aria-label="t('home.today.title')">
     <template v-if="home.data.value && day !== null">
       <div class="home-today-days"><HomeCalendar v-model="day" :dates="home.data.value.dates" :totals="totals" /></div>
-      <div class="home-today-map"><PlegmaDayWeb v-model:lit="litIssue" :themes="themes" :ring="ring" :date="fmtDate(home.data.value.dates[day]!)" :picked="plegma.homePick" :active="inView" @pick="plegma.pickHome" /></div>
+      <div class="home-today-map"><PlegmaDayWeb v-model:lit="litIssue" :themes="themes" :ring="ring" :outlets="dayOutlets" :mode="mode" :date="fmtDate(home.data.value.dates[day]!)" :picked="plegma.homePick" :active="inView" @pick="plegma.pickHome" @pick-theme="pickedTheme = $event" /></div>
       <div class="home-today-side">
-        <div class="home-today-card">
-        <DashCard :title="t('home.pick.title')" :info="t('home.pick.info')" card="home-day" class="home-day">
-          <template #tools><span class="home-date">{{ fmtDate(home.data.value.dates[day]!) }}</span></template>
-          <template v-if="story">
-            <h3 class="home-day-story">{{ storyName(story.s) }}</h3>
-            <p class="home-day-meta"><span class="home-topic-label">{{ t('home.day.topic') }}</span> <EntityLink type="topic" :to="topicHref(String(story.s.issue))">{{ topicName(story.topic) }}</EntityLink></p>
-            <div v-if="story.parts.length" class="home-block"><OutletStack :parts="story.parts" /></div>
-            <NuxtLink class="button button-sm home-story-go" :to="storyHref(story.s.id)">{{ t('home.day.open') }}<AppIcon name="chevron-right" class="icon icon-sm" /></NuxtLink>
-          </template>
-          <p v-else-if="ix" class="dcard-empty">{{ t('home.day.empty') }}</p>
-        </DashCard>
-      </div>
-        <DashCard :title="t('home.day.title')" :info="t('home.stories.info')" card="home-stories" class="home-day-list">
-          <ul v-if="storyRows.length" class="home-stories" @scroll="more">
-            <li v-for="r in storyRows.slice(0, shown)" :key="r.s.id" :class="story && story.s.id === r.s.id ? 'is-current' : undefined">
-              <button type="button" class="home-story-pick" :aria-pressed="story?.s.id === r.s.id" @click="plegma.pickHome(r.s.id)">
-                <span class="home-story-name">{{ storyName(r.s) }}</span><span class="muted-text">{{ fmtInt(r.n) }}</span>
-              </button>
-            </li>
-          </ul>
-          <p v-else-if="ix" class="dcard-empty">{{ t('home.day.empty') }}</p>
-        </DashCard>
+        <SegmentedControl v-model="mode" class="home-mode-tabs" :label="t('home.mode.label')" :options="modes" />
+        <Transition name="home-cards" mode="out-in">
+          <div v-if="mode === 'stories'" key="stories" class="home-today-cards">
+            <div class="home-today-card">
+              <DashCard :title="t('home.pick.title')" :info="t('home.pick.info')" card="home-day" class="home-day">
+                <template #tools><span class="home-date">{{ fmtDate(home.data.value.dates[day]!) }}</span></template>
+                <template v-if="story">
+                  <h3 class="home-day-story">{{ storyName(story.s) }}</h3>
+                  <p class="home-day-meta"><span class="home-topic-label">{{ t('home.day.topic') }}</span> <EntityLink type="topic" :to="topicHref(String(story.s.issue))">{{ topicName(story.topic) }}</EntityLink></p>
+                  <div v-if="story.parts.length" class="home-block"><OutletStack :parts="story.parts" /></div>
+                  <NuxtLink class="button button-sm home-story-go" :to="storyHref(story.s.id)">{{ t('home.day.open') }}<AppIcon name="chevron-right" class="icon icon-sm" /></NuxtLink>
+                </template>
+                <p v-else-if="ix" class="dcard-empty">{{ t('home.day.empty') }}</p>
+              </DashCard>
+            </div>
+            <DashCard :title="t('home.day.title')" :info="t('home.stories.info')" card="home-stories" class="home-day-list">
+              <ul v-if="storyRows.length" class="home-stories" @scroll="more">
+                <li v-for="r in storyRows.slice(0, shown)" :key="r.s.id" :class="story && story.s.id === r.s.id ? 'is-current' : undefined">
+                  <button type="button" class="home-story-pick" :aria-pressed="story?.s.id === r.s.id" @click="plegma.pickHome(r.s.id)">
+                    <span class="home-story-name">{{ storyName(r.s) }}</span><span class="muted-text">{{ fmtInt(r.n) }}</span>
+                  </button>
+                </li>
+              </ul>
+              <p v-else-if="ix" class="dcard-empty">{{ t('home.day.empty') }}</p>
+            </DashCard>
+          </div>
+          <div v-else key="themes" class="home-today-cards">
+            <div class="home-today-card">
+              <DashCard :title="t('home.theme.title')" :info="t('home.theme.info')" card="home-day-theme" class="home-day">
+                <template #tools><span class="home-date">{{ fmtDate(home.data.value.dates[day]!) }}</span></template>
+                <template v-if="theme">
+                  <h3 class="home-day-story">{{ theme.name }}</h3>
+                  <p class="home-day-meta">{{ t('home.theme.meta', { n: fmtInt(theme.n), stories: fmtInt(theme.stories), share: fmtPct(theme.share) }) }}</p>
+                  <div v-if="theme.parts.length" class="home-block"><OutletStack :parts="theme.parts" /></div>
+                  <NuxtLink class="button button-sm home-story-go" :to="topicHref(String(theme.issue))">{{ t('home.theme.open') }}<AppIcon name="chevron-right" class="icon icon-sm" /></NuxtLink>
+                </template>
+                <p v-else-if="ix" class="dcard-empty">{{ t('home.day.empty') }}</p>
+              </DashCard>
+            </div>
+            <DashCard :title="t('home.themes.title')" :info="t('home.themes.info')" card="home-themes" class="home-day-list">
+              <ul v-if="dayThemes.length" class="home-stories">
+                <li v-for="r in dayThemes" :key="r.issue" :class="theme && theme.issue === r.issue ? 'is-current' : undefined" @pointerenter="litIssue = r.issue" @pointerleave="litIssue = null">
+                  <button type="button" class="home-story-pick" :aria-pressed="theme?.issue === r.issue" @click="pickedTheme = r.issue">
+                    <span class="home-story-name">{{ r.name }}</span><span class="muted-text">{{ fmtInt(r.n) }}</span>
+                  </button>
+                </li>
+              </ul>
+              <p v-else-if="ix" class="dcard-empty">{{ t('home.day.empty') }}</p>
+            </DashCard>
+          </div>
+        </Transition>
       </div>
     </template>
   </section>

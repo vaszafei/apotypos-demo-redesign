@@ -201,3 +201,29 @@ export const buildDayWeb = (themes: PlegmaDayTheme[], aspect: number, seed: numb
   })
   return { n: total, x, y, kind, theme, story, dot, size, phase, speed, reach, edges: Uint32Array.from(pairs), bow: Float32Array.from(bows) }
 }
+
+// The web of the stories of the day, with no themes between: each story is its own "theme" of one story, so buildDayWeb lays the stories out around the date by themselves.
+// The nodes of the two webs are matched by `matchWebs`, which is how the web of the themes turns into the web of the stories (and back) without a jump.
+export const storiesAsThemes = (themes: PlegmaDayTheme[]): PlegmaDayTheme[] => themes
+  .flatMap(t => t.stories.map(s => ({ issue: t.issue, name: s.name, slot: t.slot, n: s.n, stories: [s], rest: 0 })))
+  .sort((a, b) => b.n - a.n)
+
+// For each node of `a`, the node of `b` that is the same story or the same dot of a story, or -1 (the themes and the faint dots have none).
+export const matchWebs = (aThemes: PlegmaDayTheme[], a: PlegmaDayWeb, bThemes: PlegmaDayTheme[], b: PlegmaDayWeb): Int32Array => {
+  const key = (themes: PlegmaDayTheme[], w: PlegmaDayWeb, i: number) => {
+    const s = themes[w.theme[i]!]?.stories[w.story[i]!]
+    return s ? `${s.id}:${w.kind[i]}:${w.dot[i]}` : null
+  }
+  const at = new Map<string, number>()
+  for (let j = 1; j < b.n; j++) {
+    if (b.kind[j] !== DAY_STORY && b.kind[j] !== DAY_DOT) continue
+    at.set(key(bThemes, b, j)!, j)
+  }
+  const out = new Int32Array(a.n).fill(-1)
+  out[0] = 0
+  for (let i = 1; i < a.n; i++) {
+    if (a.kind[i] !== DAY_STORY && a.kind[i] !== DAY_DOT) continue
+    out[i] = at.get(key(aThemes, a, i)!) ?? -1
+  }
+  return out
+}
