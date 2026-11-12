@@ -5,9 +5,9 @@
 export const HOME_LEAVE_FADE = 240
 export const HOME_LEAVE_FLY = 520
 // Where the field lands, as the body search is placed: under the top bar, this far from it, at most this wide, this high.
-const LAND_GAP = 16
-const LAND_WIDTH = 480
-const LAND_HEIGHT = 38
+const LAND_GAP = 8
+const LAND_WIDTH = 420
+const LAND_HEIGHT = 32
 
 // `pill` is the field of the hero, `go` changes the route. With reduced motion, or with no field in the top bar to move to, the route changes at once.
 export const leaveHome = async (pill: HTMLElement, go: () => unknown, reduced: boolean) => {
@@ -27,10 +27,12 @@ export const leaveHome = async (pill: HTMLElement, go: () => unknown, reduced: b
   document.body.append(ghost)
   html.dataset.searchFly = ''
   hero.classList.add('is-leaving')
+  // It ends in the look of the field of the body (assets/css/plegma.css, ".body-search .search-button"): the size, the text and the padding change on the way, so there is no swap at the end.
   const fly = ghost.animate([
-    { left: `${from.left}px`, top: `${from.top}px`, width: `${from.width}px`, height: `${from.height}px` },
-    { left: `${to.left}px`, top: `${to.top}px`, width: `${to.width}px`, height: `${to.height}px` }
+    { left: `${from.left}px`, top: `${from.top}px`, width: `${from.width}px`, height: `${from.height}px`, fontSize: '16px', paddingLeft: '20px', paddingRight: '6px' },
+    { left: `${to.left}px`, top: `${to.top}px`, width: `${to.width}px`, height: `${to.height}px`, fontSize: '13px', paddingLeft: '14px', paddingRight: '6px' }
   ], { duration: HOME_LEAVE_FLY, easing: 'cubic-bezier(0.65, 0, 0.35, 1)', fill: 'forwards' })
+  ghost.querySelector<HTMLElement>('.search-button-icon')?.animate([{ width: '20px', height: '20px' }, { width: '16px', height: '16px' }], { duration: HOME_LEAVE_FLY, easing: 'cubic-bezier(0.65, 0, 0.35, 1)', fill: 'forwards' })
   // The words of the field go first, so a squeezed line of text is never seen.
   ghost.querySelectorAll<HTMLElement>('.search-button-label, .global-search-key, .search-hero-go').forEach((el) => {
     el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: HOME_LEAVE_FLY * 0.4, fill: 'forwards' })

@@ -93,7 +93,7 @@ const back = () => {
           <LangSwitch />
         </div>
       </header>
-      <div v-if="bodySearch" class="body-search"><GlobalSearch /></div>
+      <Transition name="search-swap"><div v-if="bodySearch" class="body-search"><GlobalSearch /></div></Transition>
       <div class="page-body">
         <nav v-if="section.tabs.length && !plegma.active" class="section-nav" :aria-label="t(`nav.${section.key}`)">
           <div class="section-nav-inner">
