@@ -151,7 +151,6 @@ const lineHref = (key: string) => (key === 'topic' ? topicHref(String(props.inde
   <div v-else ref="orbit" class="plegma-orbit is-theme" :class="{ 'is-in': plegma.landed }">
     <div class="plegma-title entity-grid">
       <EntityTitle :kind="t('hero.kind.topic')" :title="topicName(model.issue)">
-        <template #meta>{{ `${dayLabel(0)} → ${fmtDate(model.hd.dates[model.last]!)} · ${t('entity.fact.days', { n: model.last + 1 })}` }}</template>
         <EntityFact :label="t('entity.fact.articles')" :value="fmtInt(model.total)" />
         <EntityFact :label="t('entity.fact.stories')" :value="fmtInt(model.mine.length)" />
         <EntityFact :label="t('entity.fact.share')" :value="fmtPct(model.share)" :sub="t('entity.fact.rank', { n: model.rank, total: model.hd.issues.length })" />
@@ -251,5 +250,5 @@ const lineHref = (key: string) => (key === 'topic' ? topicHref(String(props.inde
       </PlegmaCard>
     </div>
   </div>
-  <p v-if="problem" class="proto-note">{{ t('proto.states') }}</p>
+  <p v-if="problem && problem !== 'loading'" class="proto-note">{{ t('proto.states') }}</p>
 </template>

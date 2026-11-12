@@ -104,6 +104,34 @@ const drift = (s: PlegmaStory, sec: number) => orbit((s.x - cam.x) * cam.z, (s.y
 // The world behind a view is seen from far away (the page is its background); the web in view is drawn at the camera's own zoom in front of it.
 const BACK_Z = 0.66
 
+// A web that comes into view (a story, a theme, an outlet) is not there at once: it grows. Its nodes leave the center and go to their places, the nearer ones first, then its lines
+// and its ring come in. It starts when the camera is half way through its flight (the web would be drawn on a moving map before), and only when the view has measured its
+// free area, so it never grows unseen. With reduced motion it is all at once.
+const INTRO_MS = 1100
+const INTRO_AT = 0.3
+let introKey = ''
+let introAt = -1
+let introP = 1
+let nodeIn = 1
+let lineIn = 1
+let ringIn = 1
+let ge = new Float32Array(0)
+const gatherSpot = { x: 0, y: 0 }
+// Node `i` of a web whose center is (cx, cy) with radius R and whose place is (tx, ty): how far along it is now (ge[i]) and where it is.
+const gatherTo = (i: number, n: number, tx: number, ty: number, cx: number, cy: number, R: number) => {
+  if (ge.length < n) ge = new Float32Array(n)
+  const reach = Math.min(1, Math.hypot(tx - cx, ty - cy) / Math.max(R, 1))
+  const delay = reach * 0.42 + ((i * 0.618034) % 1) * 0.12
+  const t = clamp((introP - delay) / 0.46, 0, 1)
+  const e = 1 - Math.pow(1 - t, 3)
+  ge[i] = e
+  gatherSpot.x = cx + (tx - cx) * e
+  gatherSpot.y = cy + (ty - cy) * e
+  return gatherSpot
+}
+// A node's radius on its way: a small dot at first, then its own.
+const gatherR = (i: number, r: number) => (introP < 1 ? r * (0.3 + 0.7 * (ge[i] ?? 1)) : r)
+
 // A story or a theme in view keeps a clear space around its web: the other stories near it are pushed out a little (a place on the screen, not in the world),
 // so the web does not sit in a crowd. Inside the radius R they are moved to between R and 1.4 R; outside it the push dies away.
 const CLEAR_PAD = 30
@@ -271,6 +299,7 @@ const layoutArticles = (s: PlegmaStory, sec: number) => {
     const reach = i === 0 && aw.arcs.length ? 0 : aw.reach[i]!
     ax[i] = p.x + bx * R + Math.cos(a) * amp * reach
     ay[i] = p.y + by * R + Math.sin(a) * amp * reach
+    if (introP < 1) { const at = gatherTo(i, aw.n, ax[i]!, ay[i]!, p.x, p.y, ringOf(R)); ax[i] = at.x; ay[i] = at.y }
   }
   Object.assign(arts, { aw, id: s.id, cx: p.x, cy: p.y, R, ring: ringOf(R), rWorld, spacing, dr: clamp(spacing * 0.27, 1.2, 4.6) })
   return arts
@@ -344,7 +373,7 @@ const drawArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2,
   const inkOf = (slot: number) => (slot < 0 ? col : softInk[slot] ?? mute)
   const mix = hlMix
   const lit = articles && hlLast && mix > 0.01 ? matchNodes(s, hlLast, articles) : null
-  const rOf = (i: number) => (i === 0 ? a.dr * 1.7 : a.dr)
+  const rOf = (i: number) => gatherR(i, i === 0 ? a.dr * 1.7 : a.dr)
   if (level === 2) {
     const lines = new Map<number, Path2D>()
     for (let e = 0; e < aw.bow.length; e++) {
@@ -362,7 +391,7 @@ const drawArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2,
     g.lineCap = 'round'
     for (const [slot, path] of lines) {
       g.strokeStyle = inkOf(slot)
-      g.globalAlpha = (a.spacing < 7 ? 0.4 : 0.55) * (1 - 0.6 * mix)
+      g.globalAlpha = (a.spacing < 7 ? 0.4 : 0.55) * (1 - 0.6 * mix) * lineIn
       g.stroke(path)
     }
   }
@@ -380,12 +409,12 @@ const drawArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2,
     path.moveTo(ax[i]! + r, ay[i]!)
     path.arc(ax[i]!, ay[i]!, r, 0, TAU)
   }
-  g.globalAlpha = 1
+  g.globalAlpha = nodeIn
   g.fillStyle = paper
   g.fill(rims)
   for (const [slot, path] of fills) {
     g.fillStyle = inkOf(slot)
-    g.globalAlpha = 1 - 0.68 * mix
+    g.globalAlpha = (1 - 0.68 * mix) * nodeIn
     g.fill(path)
   }
   if (lit) {
@@ -395,7 +424,7 @@ const drawArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2,
       const colour = slot > 0 ? groupInk[slot] ?? ink : mute
       const r = rOf(i) * (1 + 0.5 * mix + 0.12 * mix * Math.sin(sec * 5 + i * 0.9))
       g.fillStyle = colour
-      g.globalAlpha = 0.18 * mix
+      g.globalAlpha = 0.18 * mix * nodeIn
       g.beginPath()
       g.arc(ax[i]!, ay[i]!, r * 2.1, 0, TAU)
       g.fill()
@@ -412,7 +441,7 @@ const drawArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2,
   }
   // The first article: a thin circle around the center node.
   if (aw.arcs.length) {
-    g.globalAlpha = 0.55 * (1 - 0.5 * mix)
+    g.globalAlpha = 0.55 * (1 - 0.5 * mix) * ringIn
     g.strokeStyle = ink
     g.lineWidth = 1
     g.beginPath()
@@ -437,7 +466,7 @@ const drawArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2,
       const rest = on ? 1 : 0.85 * (1 - 0.6 * mix)
       g.strokeStyle = on || hot > 0.01 ? (slot > 0 ? groupInk[slot] ?? ink : mute) : softInk[slot] ?? mute
       g.lineWidth = 2 + 2.5 * hot
-      g.globalAlpha = (rest + (1 - rest) * hot) * (1 - groupsOut)
+      g.globalAlpha = (rest + (1 - rest) * hot) * (1 - groupsOut) * ringIn
       g.beginPath()
       g.arc(a.cx, a.cy, a.ring, aw.arcs[k * 2]! - Math.PI / 2 + pad + turn, aw.arcs[k * 2]! + span - Math.PI / 2 - pad + turn)
       g.stroke()
@@ -451,14 +480,14 @@ const drawArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2,
         const hot = ringHot.get(`s${k}`) ?? 0
         g.strokeStyle = stanceInk[k] ?? mute
         g.lineWidth = 2 + 2.5 * hot
-        g.globalAlpha = (0.9 + 0.1 * hot) * ringMix
+        g.globalAlpha = (0.9 + 0.1 * hot) * ringMix * ringIn
         g.beginPath()
         g.arc(a.cx, a.cy, a.ring, stanceAt[k * 2]! - Math.PI / 2 + pad - back, stanceAt[k * 2]! + span - Math.PI / 2 - pad - back)
         g.stroke()
       }
     }
   } else {
-    g.globalAlpha = 0.45
+    g.globalAlpha = 0.45 * ringIn
     g.strokeStyle = articles ? mute : col
     g.lineWidth = 1.2
     g.beginPath()
@@ -515,7 +544,7 @@ const themeWebOf = () => {
   return themed.web
 }
 const themeNodeRadius = (web: PlegmaThemeWeb, i: number, unit: number) =>
-  i === 0 ? 8 : web.outlet[i]! < 0 ? 4.2 + 3.2 * web.size[i]! : clamp(unit * (0.13 + 0.12 * web.size[i]!), 1.6, 5)
+  gatherR(i, i === 0 ? 8 : web.outlet[i]! < 0 ? 4.2 + 3.2 * web.size[i]! : clamp(unit * (0.13 + 0.12 * web.size[i]!), 1.6, 5))
 const layoutTheme = (web: PlegmaThemeWeb, sec: number) => {
   const disc = themeDisc()!
   if (hx.length < web.n) { hx = new Float32Array(web.n); hy = new Float32Array(web.n) }
@@ -526,6 +555,7 @@ const layoutTheme = (web: PlegmaThemeWeb, sec: number) => {
     const k = i === 0 ? 0 : web.outlet[i]! < 0 ? 0.7 : web.reach[i]!
     hx[i] = disc.x + web.x[i]! * disc.R + Math.cos(a) * amp * k
     hy[i] = disc.y + web.y[i]! * disc.R + Math.sin(a) * amp * k
+    if (introP < 1) { const at = gatherTo(i, web.n, hx[i]!, hy[i]!, disc.x, disc.y, disc.r); hx[i] = at.x; hy[i] = at.y }
   }
   return { disc, unit }
 }
@@ -566,6 +596,9 @@ const drawTheme = (g: CanvasRenderingContext2D, sec: number, dt: number) => {
     const { disc, unit } = layoutTheme(web, sec)
     const k = web.stories.length
     const mix = themeMix
+    wasTheme = true
+    diveSpot.clear()
+    for (let i = 0; i < k; i++) diveSpot.set(web.stories[i]!.id, { x: hx[1 + i]!, y: hy[1 + i]! })
     const on = (i: number) => (i === 0 ? false : themeLit.outlet !== null ? web.outlet[i]! >= 0 && web.stories[web.story[i]!]!.outlets[web.outlet[i]!]!.name === themeLit.outlet : web.story[i] === themeLit.story)
     const back = 1 - 0.7 * mix
     const curve = (path: Path2D, i: number, j: number, bow: number) => {
@@ -596,10 +629,10 @@ const drawTheme = (g: CanvasRenderingContext2D, sec: number, dt: number) => {
       curve(path, j, i, web.bow[e]!)
     }
     g.lineWidth = 1
-    g.globalAlpha = 0.4 * back
+    g.globalAlpha = 0.4 * back * lineIn
     for (const [key, path] of spokes) { g.strokeStyle = outlet ? slotColour(key) : colour; g.stroke(path) }
-    for (const [group, path] of lines) { g.strokeStyle = softInk[group] ?? mute; g.globalAlpha = 0.6 * back; g.stroke(path) }
-    if (mix > 0.01) { g.strokeStyle = ink; g.globalAlpha = 0.45 * mix; g.stroke(litLines) }
+    for (const [group, path] of lines) { g.strokeStyle = softInk[group] ?? mute; g.globalAlpha = 0.6 * back * lineIn; g.stroke(path) }
+    if (mix > 0.01) { g.strokeStyle = ink; g.globalAlpha = 0.45 * mix * lineIn; g.stroke(litLines) }
     // The nodes: a rim of the page's color under each, then its color.
     const rims = new Path2D()
     const fills = new Map<number, Path2D>()
@@ -615,17 +648,17 @@ const drawTheme = (g: CanvasRenderingContext2D, sec: number, dt: number) => {
       circle(path, i, r)
     }
     for (let i = 0; i <= k; i++) circle(rims, i, themeNodeRadius(web, i, unit) + 1.6)
-    g.globalAlpha = 1
+    g.globalAlpha = nodeIn
     g.fillStyle = paper
     g.fill(rims)
-    for (const [group, path] of fills) { g.fillStyle = softInk[group] ?? mute; g.globalAlpha = back; g.fill(path) }
+    for (const [group, path] of fills) { g.fillStyle = softInk[group] ?? mute; g.globalAlpha = back * nodeIn; g.fill(path) }
     if (mix > 0.01) {
       for (let i = 1 + k; i < web.n; i++) {
         if (!on(i)) continue
         const group = nodeSlot(i)
         const r = themeNodeRadius(web, i, unit) * (1 + 0.25 * mix)
         g.fillStyle = group > 0 ? groupInk[group] ?? ink : mute
-        g.globalAlpha = 0.7 + 0.3 * mix
+        g.globalAlpha = (0.7 + 0.3 * mix) * nodeIn
         g.beginPath()
         g.arc(hx[i]!, hy[i]!, r, 0, TAU)
         g.fill()
@@ -635,18 +668,18 @@ const drawTheme = (g: CanvasRenderingContext2D, sec: number, dt: number) => {
     for (let i = 1; i <= k; i++) {
       const strong = mix < 0.01 || (themeLit.outlet !== null ? web.stories[i - 1]!.outlets.some(o => o.name === themeLit.outlet) : themeLit.story === i - 1)
       g.fillStyle = storyColour(i - 1)
-      g.globalAlpha = strong ? 1 : back
+      g.globalAlpha = (strong ? 1 : back) * nodeIn
       g.beginPath()
       g.arc(hx[i]!, hy[i]!, themeNodeRadius(web, i, unit), 0, TAU)
       g.fill()
     }
-    g.globalAlpha = 1
+    g.globalAlpha = nodeIn
     g.fillStyle = colour
     g.beginPath()
     g.arc(hx[0]!, hy[0]!, themeNodeRadius(web, 0, unit), 0, TAU)
     g.fill()
     g.strokeStyle = ink
-    g.globalAlpha = 0.5
+    g.globalAlpha = 0.5 * ringIn
     g.lineWidth = 1
     g.beginPath()
     g.arc(hx[0]!, hy[0]!, themeNodeRadius(web, 0, unit) + 4, 0, TAU)
@@ -666,7 +699,7 @@ const drawTheme = (g: CanvasRenderingContext2D, sec: number, dt: number) => {
         const hot = ringHot.get(`g${k}`) ?? 0
         g.strokeStyle = hot > 0.01 ? (slot > 0 ? groupInk[slot] ?? ink : mute) : softInk[slot] ?? mute
         g.lineWidth = 2 + 2.5 * hot
-        g.globalAlpha = (0.85 + 0.15 * hot) * (1 - groupsOut)
+        g.globalAlpha = (0.85 + 0.15 * hot) * (1 - groupsOut) * ringIn
         const pad = Math.min(span / 2, 3 / disc.r)
         g.beginPath()
         g.arc(disc.x, disc.y, disc.r, groupAt[k * 2]! - Math.PI / 2 + pad + turn, groupAt[k * 2]! + span - Math.PI / 2 - pad + turn)
@@ -680,7 +713,7 @@ const drawTheme = (g: CanvasRenderingContext2D, sec: number, dt: number) => {
           const hot = ringHot.get(`s${k}`) ?? 0
           g.strokeStyle = stanceInk[k] ?? mute
           g.lineWidth = 2 + 2.5 * hot
-          g.globalAlpha = (0.9 + 0.1 * hot) * ringMix
+          g.globalAlpha = (0.9 + 0.1 * hot) * ringMix * ringIn
           const pad = Math.min(span / 2, 3 / disc.r)
           g.beginPath()
           g.arc(disc.x, disc.y, disc.r, stanceAt[k * 2]! - Math.PI / 2 + pad - back, stanceAt[k * 2]! + span - Math.PI / 2 - pad - back)
@@ -689,7 +722,7 @@ const drawTheme = (g: CanvasRenderingContext2D, sec: number, dt: number) => {
       }
     } else {
       g.strokeStyle = colour
-      g.globalAlpha = 0.45
+      g.globalAlpha = 0.45 * ringIn
       g.lineWidth = 1.2
       g.beginPath()
       g.arc(disc.x, disc.y, disc.r, 0, TAU)
@@ -988,10 +1021,69 @@ const drawHero = (now: number, sec: number, dt: number) => {
   f.globalAlpha = 1
 }
 
+// Leaving Home for a view, the last frame of the hero is not cut: a copy of the two canvases stays where it was, as blurred as it was, and fades out while the camera flies.
+let wasHome = false
+const HERO_SNAP_MS = 800
+const keepHeroFrame = () => {
+  const stage = canvas.value?.parentElement
+  if (!stage || !canvas.value || !canvasFocus.value || reduced.value) return
+  const copies = [canvas.value, canvasFocus.value].map((source, i) => {
+    const copy = document.createElement('canvas')
+    copy.width = source.width
+    copy.height = source.height
+    copy.getContext('2d')?.drawImage(source, 0, 0)
+    copy.className = `plegma-canvas plegma-hero-snap${i === 0 ? ' is-fog' : ''}`
+    stage.append(copy)
+    return copy
+  })
+  requestAnimationFrame(() => requestAnimationFrame(() => copies.forEach(copy => copy.classList.add('is-out'))))
+  window.setTimeout(() => copies.forEach(copy => copy.remove()), HERO_SNAP_MS + 100)
+}
+// Picking a story on a theme (its card or its node), the web of the theme is not cut: a copy of the last frame dives into the story's node, which comes to the middle of the map
+// region and grows, and fades out as the web of the story grows in its place. `wasTheme` is the theme in view in the last frame; `diveSpot` is its story nodes' places.
+let wasTheme = false
+const diveSpot = new Map<number, PlegmaPoint>()
+const DIVE_MS = 900
+const DIVE_SCALE = 3.4
+const diveInto = (at: PlegmaPoint) => {
+  const stage = canvas.value?.parentElement
+  if (!stage || !canvas.value || !canvasFocus.value || reduced.value || !plegma.region) return
+  const rb = regionBox(width, height, plegma.region)
+  ;[canvas.value, canvasFocus.value].forEach((source, i) => {
+    const copy = document.createElement('canvas')
+    copy.width = source.width
+    copy.height = source.height
+    copy.getContext('2d')?.drawImage(source, 0, 0)
+    copy.className = `plegma-canvas plegma-dive-snap${i === 0 ? ' is-back' : ''}`
+    copy.style.transformOrigin = `${at.x}px ${at.y}px`
+    stage.append(copy)
+    copy.animate([
+      { transform: 'translate(0, 0) scale(1)', opacity: i === 0 ? 0.7 : 1 },
+      { transform: `translate(${(rb.cx - at.x) * 0.7}px, ${(rb.cy - at.y) * 0.7}px) scale(${1 + (DIVE_SCALE - 1) * 0.6})`, opacity: i === 0 ? 0.7 : 1, offset: 0.55 },
+      { transform: `translate(${rb.cx - at.x}px, ${rb.cy - at.y}px) scale(${DIVE_SCALE})`, opacity: 0, offset: 1 }
+    ], { duration: DIVE_MS, easing: 'cubic-bezier(0.55, 0, 0.25, 1)', fill: 'forwards' }).finished.then(() => copy.remove(), () => copy.remove())
+  })
+}
 const draw = (now: number) => {
   if (!ctx || !ctxFocus || !world) return
   const c = ctx
   const f = ctxFocus
+  const homeNow = !focusStory() && focusIssue() === null && focusOutlet() === null && plegma.homeDay === null
+  if (wasHome && !homeNow && plegma.active) keepHeroFrame()
+  wasHome = homeNow
+  const picked = focusStory()
+  if (wasTheme && picked && plegma.active) {
+    const at = diveSpot.get(picked.id)
+    const to = at && !reduced.value && plegma.region ? targetCamera() : null
+    if (at && to) {
+      // The copy covers the cut: the camera is at the story at once, so its web grows under the dive, and the cards wait for the dive to be half done.
+      diveInto(at)
+      Object.assign(cam, to)
+      flight = null
+      window.setTimeout(() => plegma.setLanded(true), DIVE_MS * 0.5)
+    }
+  }
+  wasTheme = false
   for (const g of [c, f]) { g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, width, height) }
   const z = cam.z
   const sec = reduced.value ? 0 : now / 1000
@@ -1013,7 +1105,15 @@ const draw = (now: number) => {
   const issue = focusIssue()
   const outletOn = focusOutlet() !== null
   const onHome = !story && issue === null && !outletOn && plegma.homeDay === null
-  if (onHome) { push = null; drawHero(now, sec, dt); return }
+  if (onHome) { push = null; introKey = ''; introAt = -1; drawHero(now, sec, dt); return }
+  // The intro of the web in view: it waits for the camera and for the view's free area, then grows (see INTRO_MS).
+  const key = story ? `s${story.id}` : outletOn ? `o${focusOutlet()}` : issue !== null ? `t${issue}` : ''
+  if (key !== introKey) { introKey = key; introAt = -1 }
+  if (introAt < 0 && key && plegma.region && (!flight || (now - flight.t0) / Math.max(flight.dur, 1) >= INTRO_AT)) introAt = now
+  introP = !key || reduced.value ? 1 : introAt < 0 ? 0 : clamp((now - introAt) / INTRO_MS, 0, 1)
+  nodeIn = smooth(0, 0.18, introP)
+  lineIn = smooth(0.3, 0.85, introP)
+  ringIn = smooth(0.55, 1, introP)
   // The theme that is lit: the one of the story or the theme in focus, or the one under the pointer.
   const lit = hover ? hover.issue : story ? story.issue : issue
   const litCoded = lit !== null && !world.issues[lit]!.catchAll
@@ -1529,7 +1629,7 @@ onBeforeUnmount(halt)
 </script>
 
 <template>
-  <div class="plegma-stage" :class="{ 'is-view': plegma.focus !== null || plegma.homeDay !== null, 'is-fog': fogged && plegma.focus === null && plegma.homeDay === null }" :hidden="!plegma.active" aria-hidden="true">
+  <div class="plegma-stage" :class="{ 'is-view': plegma.focus !== null || plegma.homeDay !== null, 'is-fog': fogged && plegma.focus === null && plegma.homeDay === null, 'is-off': !plegma.active }" aria-hidden="true">
     <canvas ref="canvas" class="plegma-canvas plegma-canvas-back" />
     <canvas ref="canvasFocus" class="plegma-canvas plegma-canvas-focus" />
   </div>
