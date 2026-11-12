@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { regionBox, frameStory, frameTheme, frameHome, framePair, toScreen, poseAt, startFlight, cameraAt, redirectFlight, flightDone, PLEGMA_REGION, PLEGMA_Z_FOCUS } from '../app/utils/plegma-camera.ts'
+import { regionBox, frameStory, frameTheme, frameHome, framePair, toScreen, poseAt, startFlight, cameraAt, redirectFlight, flightDone, PLEGMA_REGION, PLEGMA_Z_FOCUS, PLEGMA_FLIGHT_MIN, PLEGMA_FLIGHT_MAX } from '../app/utils/plegma-camera.ts'
 
 const W = 1440
 const H = 900
@@ -68,7 +68,7 @@ test('a longer distance gives a longer flight, and a longer flight dips deeper',
   const long = startFlight(from, { x: 6000, y: 0, z: 1 }, 0, W)
   assert.ok(long.dur > short.dur)
   assert.ok(poseAt(from, long.b, 0.5, W).z < poseAt(from, short.b, 0.5, W).z)
-  assert.ok(long.dur <= 3600 && short.dur >= 900)
+  assert.ok(long.dur <= PLEGMA_FLIGHT_MAX && short.dur >= PLEGMA_FLIGHT_MIN)
 })
 
 test('a flight asked during a flight starts from where the camera is', () => {

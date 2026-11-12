@@ -18,8 +18,8 @@ export const PLEGMA_Z_MIN = 0.1
 // Two compared stories are framed together only while the zoom stays above this; farther apart the focused story keeps its framing and the other is a marker.
 export const PLEGMA_PAIR_Z = 0.35
 // The flight lasts at least this long and at most that.
-export const PLEGMA_FLIGHT_MIN = 900
-export const PLEGMA_FLIGHT_MAX = 3600
+export const PLEGMA_FLIGHT_MIN = 800
+export const PLEGMA_FLIGHT_MAX = 2200
 
 const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x))
 const easeInOut = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
@@ -78,7 +78,7 @@ export const poseAt = (a: PlegmaCamera, b: PlegmaCamera, t: number, w: number): 
 // How long a flight takes: it grows with the distance on the screen and with the change of zoom.
 export const flightDuration = (a: PlegmaCamera, b: PlegmaCamera, w: number) => {
   const screen = Math.hypot(b.x - a.x, b.y - a.y) * Math.min(a.z, b.z)
-  return clamp(900 + 520 * Math.log2(1 + screen / (w * 0.5)) + 250 * Math.abs(Math.log(b.z / a.z)), PLEGMA_FLIGHT_MIN, PLEGMA_FLIGHT_MAX)
+  return Math.round(clamp(700 + 380 * Math.log2(1 + screen / (w * 0.5)) + 200 * Math.abs(Math.log(b.z / a.z)), PLEGMA_FLIGHT_MIN, PLEGMA_FLIGHT_MAX))
 }
 
 // A flight from `from` to `to`. With reduced motion the flight has no length: the camera cuts to the target.
