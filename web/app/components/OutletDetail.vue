@@ -231,5 +231,5 @@ const lineHref = (key: string) => (key === 'outlet' ? outletHref(props.slug) : s
       </PlegmaCard>
     </div>
   </div>
-  <p v-if="problem" class="proto-note">{{ t('proto.states') }}</p>
+  <p v-if="problem && problem !== 'loading'" class="proto-note">{{ t('proto.states') }}</p>
 </template>

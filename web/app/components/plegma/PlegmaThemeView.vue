@@ -251,5 +251,5 @@ const lineHref = (key: string) => (key === 'topic' ? topicHref(String(props.inde
       </PlegmaCard>
     </div>
   </div>
-  <p v-if="problem" class="proto-note">{{ t('proto.states') }}</p>
+  <p v-if="problem && problem !== 'loading'" class="proto-note">{{ t('proto.states') }}</p>
 </template>

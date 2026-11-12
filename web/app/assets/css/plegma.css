@@ -1,12 +1,18 @@
 /* The Plegma behind the pages (components/PlegmaStage.vue): fixed under the header, behind the page, so the page stays above it. */
 .plegma-stage { position: fixed; inset: 64px 0 0 0; z-index: -1; pointer-events: none; }
-.plegma-stage[hidden] { display: none; }
+/* On a page with no map the stage fades out, and on a page with one it fades in, instead of cutting. */
+.plegma-stage { opacity: 1; transition: opacity 520ms var(--ease-out); }
+.plegma-stage.is-off { opacity: 0; visibility: hidden; transition: opacity 260ms var(--ease-out), visibility 0s linear 260ms; }
 .plegma-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
 /* In a view of a story or a theme the background of the map steps back, so the web in view stands out; it is blurred a little, as the user asked on 2026-11-11 (an earlier note said sharp). */
 .plegma-canvas-back { transition: opacity 500ms var(--ease-out), filter 800ms var(--ease-out); }
 .plegma-stage.is-view .plegma-canvas-back { opacity: 0.7; filter: blur(1px); }
 /* Αρχική before the ground is explored (PlegmaStage.vue, the hero): the black nodes are out of focus; what a click has cleared is drawn on the crisp canvas. */
 .plegma-stage.is-fog .plegma-canvas-back { filter: blur(3.5px); }
+/* The last frame of the hero, kept when Home is left for a view (PlegmaStage.vue keepHeroFrame): it fades out over the flight. */
+.plegma-hero-snap { opacity: 1; transition: opacity 800ms var(--ease-out); }
+.plegma-hero-snap.is-fog { filter: blur(3.5px); }
+.plegma-hero-snap.is-out { opacity: 0; }
 
 /* The story view (components/plegma/PlegmaStoryView.vue): three columns of cards that fill the screen. On the left the title, a free cell for the map (the stage draws the web in it)
    and the related stories; in the middle the cards about how the story was taken in; on the right the chart of its days and its groups.
@@ -56,17 +62,25 @@
 .plegma-title .ecard-name { white-space: nowrap; }
 .orbit-map { position: relative; flex: 1 1 0; min-height: 260px; }
 .orbit-ring-tabs { position: absolute; left: 0; top: 0; pointer-events: auto; }
+/* The switch of the ring is two rectangular buttons, the look of Σύνδεση and Εγγραφή (6px corners), not a pill with tabs: the pressed one is filled like Εγγραφή. */
+.plegma-orbit .orbit-ring-tabs.segmented { gap: 6px; padding: 0; border: 0; border-radius: 0; background: none; }
+.plegma-orbit .orbit-ring-tabs.segmented button { min-height: 30px; padding: 0 var(--space-3); border: 1px solid var(--border); border-radius: 6px; background: var(--surface-raised); color: var(--text-primary); font-size: var(--text-small); }
+.plegma-orbit .orbit-ring-tabs.segmented button[aria-pressed="true"] { border-color: var(--text-primary); background: var(--text-primary); color: var(--on-ink); font-weight: 600; }
 .plegma-nodes-note { position: absolute; left: 0; bottom: 0; margin: 0; font-size: var(--text-caption); color: var(--text-secondary); }
 
-.plegma-card { --card-pad: var(--space-2) var(--space-3); --card-gap: 4px; min-width: 0; min-height: 0; overflow: auto; pointer-events: auto; background: var(--card-glass); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: var(--radius); opacity: 0; transform: translate(var(--from-x, 0), var(--from-y, 0)); transition: opacity var(--motion-slow, 360ms) var(--ease-out) calc(var(--i) * 120ms), transform var(--motion-slow, 360ms) var(--ease-out) calc(var(--i) * 120ms); }
-.plegma-card > .dcard { border-color: transparent; }
+/* A card arrives after the camera lands: its box first, then a grid of blocks that grow and shrink in a sweep from the top left corner (the "blocks" loading spinner), and its content
+   shows as they shrink. The card does not scroll; its body does, so the blocks stay over the card. */
+.plegma-card { --card-pad: var(--space-2) var(--space-3); --card-gap: 4px; --card-at: calc(var(--i) * 110ms); --block-ink: color-mix(in srgb, var(--ink) 30%, var(--surface-page)); position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; pointer-events: auto; background: var(--card-glass); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: var(--radius); opacity: 0; transition: opacity 140ms var(--ease-out) var(--card-at); }
+.plegma-card-body { flex: 1 1 auto; min-width: 0; min-height: 0; overflow: auto; opacity: 0; transition: opacity 300ms var(--ease-out) calc(var(--card-at) + 240ms); }
+.plegma-blocks { position: absolute; inset: 0; z-index: 2; display: grid; grid-template: repeat(5, minmax(0, 1fr)) / repeat(8, minmax(0, 1fr)); gap: 2px; padding: 2px; pointer-events: none; }
+.plegma-blocks > i { border-radius: 2px; background: var(--block-ink); transform: scale(0); }
+.plegma-orbit.is-in .plegma-blocks > i { animation: plegma-block 420ms cubic-bezier(0.4, 0, 0.2, 1) calc(var(--card-at) + var(--d) * 34ms) both; }
+@keyframes plegma-block { 0% { transform: scale(0); } 42% { transform: scale(1); } 100% { transform: scale(0); } }
+.plegma-card-body > .dcard { border-color: transparent; }
 .plegma-card .dcard-head { min-height: 20px; }
 .plegma-card .rows-related li { padding: 3px 0; }
 .plegma-card .how-panel .rows-caption { margin-top: var(--space-2); }
-.plegma-card.at-0, .plegma-card.at-1 { --from-x: 60px; }
-.plegma-card.at-2, .plegma-card.at-3 { --from-y: 50px; }
-.plegma-card.at-4, .plegma-card.at-5 { --from-y: -30px; }
-.plegma-orbit.is-in .plegma-card { opacity: 1; transform: none; }
+.plegma-orbit.is-in .plegma-card, .plegma-orbit.is-in .plegma-card-body { opacity: 1; }
 /* The groups: the ring above the list of every group with its outlets, in a column of half the width. */
 .plegma-card .sun-wrap { grid-template-columns: minmax(0, 1fr); align-items: start; }
 .plegma-card .sun-wrap .donut { width: 190px; height: 190px; justify-self: center; grid-row: 1; }
@@ -83,7 +97,7 @@
 .plegma-card .how-panel .bar-list > li { grid-column: 1 / -1; grid-template-columns: subgrid; }
 .plegma-card .how-panel .bar-list > li > .row-value { grid-column: 3; grid-row: 1; }
 .plegma-card .how-panel .bar-list > li > :nth-child(3) { grid-column: 2; grid-row: 1; }
-@media (prefers-reduced-motion: reduce) { .plegma-card { transition: none; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .plegma-card, .plegma-card-body { transition: none; opacity: 1; } .plegma-blocks { display: none; } }
 
 /* The theme view (components/plegma/PlegmaThemeView.vue) has the layout of the story view (the rules above): a narrow column with the stories of the theme, the web in the free cell,
    two columns of cards beside it (the stance, the outlets and the themes like it; the groups and how it is written) and the theme over time under them. */
@@ -101,8 +115,8 @@
 
 /* The map pages fill the screen: the footer would sit under the cards. The back button and the path (Μέσα / Ιστορίες) of the row above are not shown on a story: the title takes its place. */
 @media (min-width: 1024px) {
-  .shell:has(.plegma-orbit) .page-footer { display: none; }
-  .shell:has(.plegma-orbit) .trail-bar { display: none; }
+  .shell:has(.plegma-orbit) .page-footer, .shell.is-plegma:not(.is-hero-page) .page-footer { display: none; }
+  .shell:has(.plegma-orbit) .trail-bar, .shell.is-plegma:not(.is-hero-page) .trail-bar { display: none; }
 }
 
 /* A narrow screen has no room around the map: the cards stack under it and the page scrolls (phones and touch are deferred, KTD scope). */
@@ -113,7 +127,9 @@
   .orbit-sub { display: contents; }
   .orbit-map { flex: none; min-height: 0; height: 0; }
   .plegma-nodes-note { display: none; }
-  .plegma-card { overflow: visible; opacity: 1; transform: none; }
+  .plegma-card { overflow: visible; opacity: 1; }
+  .plegma-card-body { overflow: visible; opacity: 1; }
+  .plegma-blocks { display: none; }
   .plegma-title { order: -1; position: absolute; top: 56px; left: 0; }
 }
 
@@ -150,10 +166,10 @@ html[data-search-fly] .body-search { opacity: 0; }
 .search-fly .search-button-icon { width: 20px; height: 20px; flex: none; color: var(--ink); }
 .search-fly .search-button-label { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
-/* The title of a story view arrives with the cards, after the camera lands. */
-.plegma-orbit .plegma-title { opacity: 0; transition: opacity var(--motion-slow, 360ms) var(--ease-out); }
-.plegma-orbit.is-in .plegma-title { opacity: 1; }
-@media (prefers-reduced-motion: reduce) { .plegma-orbit .plegma-title { transition: none; } }
+/* The title of a story view arrives with the cards, after the camera lands, and so do the switch of the ring and the note under the web. */
+.plegma-orbit .plegma-title, .plegma-orbit .orbit-ring-tabs, .plegma-orbit .plegma-nodes-note { opacity: 0; transition: opacity var(--motion-slow, 360ms) var(--ease-out); }
+.plegma-orbit.is-in .plegma-title, .plegma-orbit.is-in .orbit-ring-tabs, .plegma-orbit.is-in .plegma-nodes-note { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .plegma-orbit .plegma-title, .plegma-orbit .orbit-ring-tabs, .plegma-orbit .plegma-nodes-note, .plegma-stage { transition: none; } }
 
 /* A small card lists the related stories by name and articles; the picture of each would leave the name no room. */
 .plegma-card .rows-related li { grid-template-columns: minmax(0, 1fr) auto; }

@@ -67,5 +67,5 @@ const perNode = computed(() => (m.value ? articlesPerNode(m.value.articles) : 1)
       <PlegmaCard v-for="(key, i) in columns.under" :key="key" :at="4" :order="2 + i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
     </div>
   </div>
-  <p v-if="problem" class="proto-note">{{ t('proto.states') }}</p>
+  <p v-if="problem && problem !== 'loading'" class="proto-note">{{ t('proto.states') }}</p>
 </template>
