@@ -4,8 +4,8 @@ import { plegmaStoryColumns } from '../app/utils/plegma-story.ts'
 
 const plain = value => JSON.parse(JSON.stringify(value))
 
-test('a story with a profile has the other stories on the left, the stance with the people and how it was written beside the map, and the days under them', () => {
-  assert.deepEqual(plain(plegmaStoryColumns(true)), { left: ['related'], right: [['stance', 'people'], ['how']], under: ['days'] })
+test('a story with a profile has the other stories on the left, the stance and how it was written beside the map, and the days with the people under them', () => {
+  assert.deepEqual(plain(plegmaStoryColumns(true)), { left: ['related'], right: [['stance'], ['how']], under: ['days', 'people'] })
 })
 
 test('a story with no profile (October) has no how, stance or people card: the map has its row alone', () => {

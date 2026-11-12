@@ -81,6 +81,8 @@ Object.assign(window.MESSAGES.el, {
   'story.nodes.many': 'Κάθε κόμβος είναι {n} άρθρα: τα πρώτα στο κέντρο, τα νεότερα προς τα έξω, ένας τομέας για κάθε όμιλο',
   'story.nodes.per': 'Άρθρα ανά κόμβο',
   'story.ring.stance': 'Στάση',
+  'story.ring.outlets': 'Μέσα',
+  'story.strip.groups': 'άρθρα σε {n} ομίλους',
   'story.ring.label': 'Τι δείχνει ο δακτύλιος',
   'topic.map.note': 'Στο κέντρο το θέμα, γύρω του οι μεγαλύτερες ιστορίες του, καθεμιά με τα μέσα που την έγραψαν περισσότερο',
   'outlet.map.note': 'Στο κέντρο το μέσο, γύρω του οι μεγαλύτερες ιστορίες του στο χρώμα του θέματός τους, καθεμιά με τις ημέρες που το μέσο την έγραψε',
@@ -95,7 +97,7 @@ Object.assign(window.MESSAGES.el, {
   'story.portrayal.negative': 'Αρνητική',
   'story.portrayal.neutral': 'Ουδέτερη',
   'story.portrayal.positive': 'Θετική',
-  'story.related.title': 'Άλλες ιστορίες του θέματος',
+  'story.related.title': 'Ιστορίες του θέματος',
   'story.related.row': '{n} άρθρα'
 })
 Object.assign(window.MESSAGES.en, {
@@ -180,6 +182,8 @@ Object.assign(window.MESSAGES.en, {
   'story.nodes.many': 'Each node is {n} articles: the first at the center, later ones outward, a sector for each group',
   'story.nodes.per': 'Articles per node',
   'story.ring.stance': 'Stance',
+  'story.ring.outlets': 'Outlets',
+  'story.strip.groups': 'articles in {n} groups',
   'story.ring.label': 'What the ring shows',
   'topic.map.note': 'The topic at the center, its largest stories around it, each with the outlets that wrote it most',
   'outlet.map.note': 'The outlet at the center, its largest stories around it in the color of their topic, each with the days the outlet wrote it',

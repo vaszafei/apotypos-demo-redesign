@@ -184,9 +184,9 @@ export const buildArticleWeb = (n: number, seed: number, sectors?: ArrayLike<num
 }
 
 const cache = new Map<string, PlegmaArticleWeb>()
-// `sectors` are the groups of the nodes of this story, once its articles are read: the same for a story on every call, so they are not in the key.
-export const articleWebOf = (id: number, n: number, sectors?: ArrayLike<number>) => {
-  const k = `${id}:${n}:${sectors ? 's' : ''}`
+// `sectors` are the groups (or the outlets, `by`) of the nodes of this story, once its articles are read: the same for a story and a `by` on every call, so they are not in the key.
+export const articleWebOf = (id: number, n: number, sectors?: ArrayLike<number>, by = 'group') => {
+  const k = `${id}:${n}:${sectors ? `s-${by}` : ''}`
   let web = cache.get(k)
   if (!web) { web = buildArticleWeb(n, id, sectors); cache.set(k, web) }
   return web
@@ -217,4 +217,4 @@ export const matchesHighlight = (a: { group: string | null, outlet: string }, h:
 
 // An article as the stage keeps it for its tooltip and its color: the day, the outlet, and the slot of its group's color (0 is no group).
 // `title` and `url` are there only for the articles of the sample of headlines of the snapshot (mme.json). `order` is the place of its group among the groups of the story, largest first, as the groups card lists them.
-export interface PlegmaArticle { day: number, outlet: string, group: string | null, slot: number, order: number, title?: string, url?: string | null }
+export interface PlegmaArticle { day: number, outlet: string, group: string | null, slot: number, order: number, outletOrder: number, title?: string, url?: string | null }

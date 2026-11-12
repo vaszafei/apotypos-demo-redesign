@@ -30,9 +30,9 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const highlight = ref<PlegmaHighlight | null>(null)
   const hoverStory = ref<number | null>(null)
   const related = ref<number[]>([])
-  // What the ring of the story web shows: the groups (an arc for each) or the stance towards the government (an arc each for critical, neutral and supportive, wide as their share).
+  // What the ring of the story web shows: the outlets or the groups (an arc for each) or the stance towards the government (an arc each for critical, neutral and supportive, wide as their share).
   // The stance is a count for the whole story, not for each article, so it is a ring and the nodes keep their sectors. `stance` holds [critical, neutral, supportive].
-  const ring = ref<'groups' | 'stance'>('groups')
+  const ring = ref<'outlets' | 'groups' | 'stance'>('groups')
   const stance = ref<number[] | null>(null)
   // The largest stories of the focused theme with the outlets that wrote each, which the theme view reads from the fixtures; null until it has them. The stage draws its web from them.
   const themeStories = ref<PlegmaThemeStory[] | null>(null)
@@ -72,7 +72,7 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const setArticles = (value: PlegmaArticle[] | null) => { articles.value = value }
   const setHighlight = (value: PlegmaHighlight | null) => { highlight.value = value }
   const setHoverStory = (id: number | null) => { hoverStory.value = id }
-  const setRing = (value: 'groups' | 'stance') => { ring.value = value }
+  const setRing = (value: 'outlets' | 'groups' | 'stance') => { ring.value = value }
   const setStance = (value: number[] | null) => { stance.value = value }
   const setRelated = (ids: number[]) => { related.value = ids }
   const setThemeGroups = (value: { name: string, slot: number, n: number }[] | null) => { themeGroups.value = value }

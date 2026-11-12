@@ -55,6 +55,8 @@ export const useStoryView = (id: MaybeRefOrGetter<number>) => {
     for (let i = 0; i < m.det.t.length; i += 3) rows.push({ outlet: m.det.t[i]!, day: m.det.t[i + 1]!, n: m.det.t[i + 2]! })
     rows.sort((a, b) => a.day - b.day || a.outlet - b.outlet)
     const order = new Map(m.groups.map((g, i) => [g.group ?? null, i]))
+    // The outlets in the order of the ring of the outlets: group by group (as the groups' ring), the largest outlet of a group first.
+    const outletOrder = new Map(m.outlets.map(r => ({ name: m.dd.outlets[r.outlet]!.name, g: order.get(m.dd.outlets[r.outlet]!.group ?? null) ?? 0, n: r.n })).sort((a, b) => a.g - b.g || b.n - a.n).map((o, i) => [o.name, i]))
     // The sampled headlines of this story, for each outlet and day: the first articles of that outlet and day carry them.
     const dates = m.d.dates
     const titles = new Map<string, { title: string, url: string | null }[]>()
@@ -66,7 +68,7 @@ export const useStoryView = (id: MaybeRefOrGetter<number>) => {
     }))
     return rows.flatMap(({ day, outlet, n }) => {
       const o = m.dd.outlets[outlet]!
-      const base: PlegmaArticle = { day, outlet: o.name, group: o.group, slot: slotOfColor(groupColor(o.group)), order: Math.max(0, order.get(o.group ?? null) ?? 0) }
+      const base: PlegmaArticle = { day, outlet: o.name, group: o.group, slot: slotOfColor(groupColor(o.group)), order: Math.max(0, order.get(o.group ?? null) ?? 0), outletOrder: outletOrder.get(o.name) ?? 0 }
       const known = titles.get(`${o.name}|${day}`)
       return Array.from({ length: n }, (_, i) => (known?.[i] ? { ...base, ...known[i]! } : base))
     })
@@ -91,6 +93,15 @@ export const useStoryView = (id: MaybeRefOrGetter<number>) => {
       }
     })
   })
+
+  // The outlets of the story as the parts of a strip (OutletStack), the largest first, each in the color of its group.
+  const outletParts = computed(() => {
+    const m = model.value
+    return m ? m.outlets.map((r) => { const o = m.dd.outlets[r.outlet]!; return { name: o.name, slug: o.slug, group: o.group, n: r.n, color: groupColor(o.group) } }) : []
+  })
+
+  // The groups of the story as the parts of a strip, the largest first.
+  const groupParts = computed(() => (model.value ? tree.value.map(g => ({ name: g.label, group: g.key, n: g.value, color: g.color, to: g.slug ? groupPageHref(g.slug) : undefined })).sort((a, b) => b.n - a.n) : []))
 
   // The stance of the story against all articles (StanceCard): the total of the story is in the note under it.
   const stance = computed(() => {
@@ -122,9 +133,11 @@ export const useStoryView = (id: MaybeRefOrGetter<number>) => {
       { title: '', rows: stanceN ? stanceRaw : [], note: null },
       { title: t('story.how.clickbait'), rows: clickRaw, note: scored ? t('story.how.clickbait.n', { n: fmtInt(baited!), total: fmtInt(scored) }) : t('story.how.clickbait.none') }
     ]
-    const scale = Math.max(0.05, ...panels.flatMap(p => p.rows.map(r => Math.abs(r.value - r.usual))))
+    // The section is not shown: the card is the frame and the clickbait, on one scale.
+    const shownPanels = [panels[0]!, panels[3]!]
+    const scale = Math.max(0.05, ...shownPanels.flatMap(p => p.rows.map(r => Math.abs(r.value - r.usual))))
     const column = (items: typeof panels) => items.map(p => ({ title: p.title, rows: p.rows.map(diffRow), note: p.note }))
-    return { scale, columns: [column([panels[0]!]), column([panels[1]!, panels[3]!])] }
+    return { scale, columns: [column([panels[0]!]), column([panels[3]!])] }
   })
 
   const related = computed(() => {
@@ -134,7 +147,7 @@ export const useStoryView = (id: MaybeRefOrGetter<number>) => {
     return relatedStories(m.d.stories.filter(s => !s.generic), m.story, s => dailyOf(s, days)).map(r => ({ ...r, articles: articlesOf(r.s), values: dailyOf(r.s, days) }))
   })
 
-  return { loading, problem, retry, model, series, articles, shown, dailyTip, tree, stance, how, related, dayLabel }
+  return { loading, problem, retry, model, series, articles, shown, dailyTip, tree, outletParts, groupParts, stance, how, related, dayLabel }
 }
 
 export type StoryView = ReturnType<typeof useStoryView>

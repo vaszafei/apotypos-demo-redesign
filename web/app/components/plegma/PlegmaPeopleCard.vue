@@ -16,7 +16,7 @@ const columns = computed(() => [
 <template>
   <DashCard :title="t('story.people.title')" :info="t('story.people.info')">
     <DataTable :rows="m.people" :columns="columns" rank-column :page-size="7" :empty-text="t('story.people.empty')">
-      <template #cell-person="{ row }"><div><div>{{ row.person.name }}</div><span class="muted-text">{{ [row.person.role, row.person.party].filter(Boolean).join(' · ') }}</span></div></template>
+      <template #cell-person="{ row }">{{ row.person.name }}</template>
       <template #cell-mentions="{ row }">{{ fmtInt(totalOf(row.counts)) }}</template>
       <template #cell-portrayal="{ row }"><StackedBar :segments="row.counts.map((n, i) => ({ label: t(`story.portrayal.${m.dd.portrayals[i]}`), value: n, color: PORTRAYAL[i]! }))" /></template>
     </DataTable>

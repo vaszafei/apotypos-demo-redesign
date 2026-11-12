@@ -216,6 +216,8 @@ let ay = new Float32Array(0)
 let hoverArticle = -1
 // The arc of the ring under the pointer ('g3' the fourth group, 's1' the neutral arc of the stance) and, for each arc, how far it has come forward (0 to 1): it grows and brightens as it eases.
 let hoverRing = ''
+// Set while the pointer is on an arc of the ring of a story and that arc has lit its nodes (the highlight of the cards is not touched).
+let ringLit = false
 const ringHot = new Map<string, number>()
 // What the cards point at (stores/plegma.ts): the articles of a group or an outlet come forward, a line to a story of the card of the other stories lights up. Each eases
 // in and out, so the map answers the pointer instead of jumping; with reduced motion it jumps.
@@ -247,18 +249,21 @@ const matchNodes = (s: PlegmaStory, h: PlegmaHighlight, list: NonNullable<typeof
 let sectorKey = ''
 let sectorList: Uint16Array | null = null
 let sectorSlot: number[] = []
+// The ring of the outlets has a sector for each outlet; the ring of the groups, and the stance (which keeps the groups), a sector for each group.
+const byOutlet = () => plegma.ring === 'outlets'
+const sectorOf = (x: { order: number, outletOrder: number }) => (byOutlet() ? x.outletOrder : x.order)
 const sectorsOf = (s: PlegmaStory) => {
   const list = plegma.articles
   if (!list || list.length !== s.n) return null
-  const key = `${s.id}:${list.length}`
+  const key = `${s.id}:${list.length}:${byOutlet()}`
   if (key !== sectorKey || !sectorList) {
     const nodes = nodeCount(s.n)
     sectorList = new Uint16Array(nodes)
     sectorSlot = []
     for (let i = 0; i < nodes; i++) {
       const article = list[articleOfNode(i, list.length)]!
-      sectorList[i] = article.order
-      sectorSlot[article.order] = article.slot
+      sectorList[i] = sectorOf(article)
+      sectorSlot[sectorOf(article)] = article.slot
     }
     sectorKey = key
   }
@@ -273,7 +278,7 @@ const articleWorldRadius = (s: PlegmaStory) => {
 const ringOf = (R: number) => R * 1.2 + 6
 const layoutArticles = (s: PlegmaStory, sec: number) => {
   const sectors = sectorsOf(s)
-  const aw = articleWebOf(s.id, nodeCount(s.n), sectors ?? undefined)
+  const aw = articleWebOf(s.id, nodeCount(s.n), sectors ?? undefined, byOutlet() ? 'outlet' : 'group')
   if (aw !== arts.aw) {
     morphFrom = arts.aw && arts.id === s.id && arts.aw.n === aw.n && !reduced.value ? arts.aw : null
     morphAt = performance.now()
@@ -391,7 +396,7 @@ const drawArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2,
     g.lineCap = 'round'
     for (const [slot, path] of lines) {
       g.strokeStyle = inkOf(slot)
-      g.globalAlpha = (a.spacing < 7 ? 0.4 : 0.55) * (1 - 0.6 * mix) * lineIn
+      g.globalAlpha = (a.spacing < 7 ? 0.4 : 0.55) * (1 - 0.35 * mix) * lineIn
       g.stroke(path)
     }
   }
@@ -414,7 +419,7 @@ const drawArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2,
   g.fill(rims)
   for (const [slot, path] of fills) {
     g.fillStyle = inkOf(slot)
-    g.globalAlpha = (1 - 0.68 * mix) * nodeIn
+    g.globalAlpha = (1 - 0.5 * mix) * nodeIn
     g.fill(path)
   }
   if (lit) {
@@ -422,11 +427,11 @@ const drawArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2,
       if (!lit[i]) continue
       const slot = slotOf(i)
       const colour = slot > 0 ? groupInk[slot] ?? ink : mute
-      const r = rOf(i) * (1 + 0.5 * mix + 0.12 * mix * Math.sin(sec * 5 + i * 0.9))
+      const r = rOf(i) * (1 + 0.22 * mix)
       g.fillStyle = colour
-      g.globalAlpha = 0.18 * mix * nodeIn
+      g.globalAlpha = 0.1 * mix * nodeIn
       g.beginPath()
-      g.arc(ax[i]!, ay[i]!, r * 2.1, 0, TAU)
+      g.arc(ax[i]!, ay[i]!, r * 1.8, 0, TAU)
       g.fill()
       g.globalAlpha = 1
       g.fillStyle = paper
@@ -460,12 +465,12 @@ const drawArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2,
       const span = aw.arcs[k * 2 + 1]!
       if (span <= 0) continue
       const slot = sectorSlot[k] ?? 0
-      const on = !!hlLast && mix > 0.01 && articles?.find(x => x.order === k)?.group === hlLast.group
+      const on = !!hlLast && mix > 0.01 && (() => { const first = articles?.find(x => sectorOf(x) === k); return !!first && matchesHighlight(first, hlLast) })()
       const pad = Math.min(span / 2, 3 / a.ring)
       const hot = ringHot.get(`g${k}`) ?? 0
-      const rest = on ? 1 : 0.85 * (1 - 0.6 * mix)
+      const rest = on ? 1 : 0.85 * (1 - 0.35 * mix)
       g.strokeStyle = on || hot > 0.01 ? (slot > 0 ? groupInk[slot] ?? ink : mute) : softInk[slot] ?? mute
-      g.lineWidth = 2 + 2.5 * hot
+      g.lineWidth = 2 + 1.2 * hot
       g.globalAlpha = (rest + (1 - rest) * hot) * (1 - groupsOut) * ringIn
       g.beginPath()
       g.arc(a.cx, a.cy, a.ring, aw.arcs[k * 2]! - Math.PI / 2 + pad + turn, aw.arcs[k * 2]! + span - Math.PI / 2 - pad + turn)
@@ -1408,6 +1413,7 @@ const leave = () => {
   hoverArticle = -1
   hoverNode = -1
   hoverRing = ''
+  if (ringLit) { ringLit = false; plegma.setHighlight(null) }
   tooltip.hide()
   if (reduced.value) kick()
 }
@@ -1430,6 +1436,7 @@ useEventListener(window, 'pointermove', (e: PointerEvent) => {
       if (hoverArticle !== i && reduced.value) kick()
       hover = null
       hoverArticle = i
+      if (ringLit) { ringLit = false; plegma.setHighlight(null) }
       // A node that stands for an article of the sample of headlines (or for several, one of which is in it) has the title of that article, with its outlet and day under it.
       const nodes = nodeCount(story.n)
       const from = Math.floor((i * story.n) / nodes)
@@ -1463,13 +1470,15 @@ useEventListener(window, 'pointermove', (e: PointerEvent) => {
     if (arc) {
       const key = `${arc.kind}${arc.k}`
       if (hoverRing !== key && reduced.value) kick()
+      const changed = hoverRing !== key
       hover = null
       hoverRing = key
       if (arc.kind === 'g') {
-        const mine = list.filter(x => x.order === arc.k)
+        const mine = list.filter(x => sectorOf(x) === arc.k)
         const first = mine[0]
+        if (changed && first) { plegma.setHighlight(byOutlet() ? { group: first.group, outlet: first.outlet } : { group: first.group }); ringLit = true }
         tooltip.show({
-          title: first?.group ?? t('story.nogroup'),
+          title: byOutlet() ? first?.outlet ?? '' : first?.group ?? t('story.nogroup'),
           rows: [{ label: t('home.field.articles'), value: `${fmtInt(mine.length)} · ${fmtPct(mine.length / list.length)}`, color: `var(--cat-${first?.slot ?? 0})` }],
           field: true
         }, e)
@@ -1485,6 +1494,7 @@ useEventListener(window, 'pointermove', (e: PointerEvent) => {
       return
     }
     if (hoverRing) { hoverRing = ''; tooltip.hide(); if (reduced.value) kick() }
+    if (ringLit) { ringLit = false; plegma.setHighlight(null) }
   }
   // On the web of a theme the pointer finds a story or an outlet of a story; on the web of an outlet, a story or a day of it.
   if (webFocus()) {

@@ -41,6 +41,18 @@
   .plegma-orbit:is(.is-story, .is-theme, .is-outlet) .orbit-sub:nth-child(1) { grid-area: one; }
   .plegma-orbit:is(.is-story, .is-theme, .is-outlet) .orbit-sub:nth-child(2) { grid-area: two; }
 }
+/* The bar of the outlets or the groups that ran the story is the top of the two columns of the right: a row of its own over the stance and how the story was written; the people are under it, beside the days. */
+.orbit-right > .card-strip { flex: none; padding: var(--space-2) var(--space-3); }
+.card-strip .home-stack { height: 38px; gap: 3px; }
+.card-strip .home-stack-part { border-radius: 5px; min-width: 6px; }
+@media (min-width: 1280px) {
+  .plegma-orbit.is-story.has-strip { grid-template-rows: auto auto minmax(0, 1fr) auto; grid-template-areas: "title title title title" "left map strip strip" "left map one two" "under under under people"; }
+  .plegma-orbit.is-story.has-strip .orbit-right > .card-strip { grid-area: strip; }
+  .plegma-orbit.is-story.has-strip .orbit-under { display: contents; }
+  .plegma-orbit.is-story.has-strip .orbit-under > .card-days { grid-area: under; }
+  .plegma-orbit.is-story.has-strip .orbit-under > .card-people { grid-area: people; max-height: 200px; }
+  .plegma-orbit.is-story.has-strip .card-people .data-table :is(th, td) { padding-block: 2px; }
+}
 /* The outlet view (components/OutletDetail.vue) has no narrow column: the web is in the first column, the cards of the outlet in two columns beside it and its articles over time under them, as far as the first of the two columns.
    A column of cards scrolls as a whole when its cards are taller than the screen; each card keeps its own height. */
 .plegma-orbit.is-outlet { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); grid-template-areas: "title title" "map right" "under under"; }
