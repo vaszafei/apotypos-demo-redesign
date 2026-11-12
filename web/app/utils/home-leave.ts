@@ -6,8 +6,8 @@ export const HOME_LEAVE_FADE = 240
 export const HOME_LEAVE_FLY = 520
 // Where the field lands, as the body search is placed: under the top bar, this far from it, at most this wide, this high.
 const LAND_GAP = 16
-const LAND_WIDTH = 560
-const LAND_HEIGHT = 44
+const LAND_WIDTH = 480
+const LAND_HEIGHT = 38
 
 // `pill` is the field of the hero, `go` changes the route. With reduced motion, or with no field in the top bar to move to, the route changes at once.
 export const leaveHome = async (pill: HTMLElement, go: () => unknown, reduced: boolean) => {

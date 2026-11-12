@@ -59,7 +59,9 @@
 .plegma-title { grid-area: title; justify-self: start; align-self: start; min-width: 0; max-width: 100%; margin: 0; pointer-events: none; }
 .plegma-title.entity-grid { margin-top: 0; }
 .plegma-title .ecard { background: var(--card-glass); border-color: var(--border); backdrop-filter: blur(10px); pointer-events: auto; width: max-content; max-width: 100%; }
-.plegma-title .ecard-name { white-space: nowrap; }
+.plegma-title .ecard-name { white-space: nowrap; flex-direction: column; align-items: flex-start; gap: 2px; }
+/* The kind (Θέμα, Ιστορία, Μέσο) is the title of the card, as the other cards have theirs: the ink, not the grey. The name of the entity is on its own row under it. */
+.plegma-title .hero-kicker { color: var(--ink); }
 .orbit-map { position: relative; flex: 1 1 0; min-height: 260px; }
 .orbit-ring-tabs { position: absolute; left: 0; top: 0; pointer-events: auto; }
 /* The switch of the ring is two rectangular buttons, the look of Σύνδεση and Εγγραφή (6px corners), not a pill with tabs: the pressed one is filled like Εγγραφή. */
@@ -144,18 +146,18 @@ html[data-search-fly] .home-hero-search .search-button { visibility: hidden; }
 /* A story or a theme: the search is not in the top bar but at the middle of the top of the body, under the bar, and stays there. The wrapper takes no room and no pointer; the
    field is the look of the large one of Αρχική, smaller, so the one that flew down from the hero (utils/home-leave.ts) lands on it. */
 .shell.is-body-search .header-actions { margin-left: auto; }
-.body-search { position: sticky; top: 0; z-index: 30; height: 0; pointer-events: none; }
-.body-search .global-search { position: absolute; top: var(--search-land-gap, 16px); left: 50%; width: min(var(--search-land-width, 560px), calc(100vw - 32px)); margin: 0; transform: translateX(-50%); display: block; pointer-events: auto; }
+.body-search { position: fixed; top: 64px; left: 0; right: 0; z-index: 30; height: 0; pointer-events: none; }
+.body-search .global-search { position: absolute; top: var(--search-land-gap, 16px); left: 50%; width: min(var(--search-land-width, 480px), calc(100vw - 32px)); margin: 0; transform: translateX(-50%); display: block; pointer-events: auto; }
 .body-search .search-button {
-  width: 100%; height: 44px; padding: 0 8px 0 18px; border: 1px solid var(--border); border-radius: var(--pill, 999px); background: var(--surface-raised); color: var(--text-secondary); font-size: 15px;
-  box-shadow: 0 14px 34px -22px color-mix(in srgb, var(--shade) 35%, transparent);
+  width: 100%; height: 38px; padding: 0 8px 0 16px; border: 1px solid var(--border); border-radius: var(--pill, 999px); background: var(--surface-raised); color: var(--text-secondary); font-size: 14px;
+  box-shadow: 0 10px 28px -10px color-mix(in srgb, var(--shade) 55%, transparent), 0 2px 6px -2px color-mix(in srgb, var(--shade) 30%, transparent);
 }
 .body-search .search-button:hover, .body-search .search-button:focus-visible { border-color: var(--ink); background: var(--surface-raised); }
-.body-search .search-button-icon { width: 20px; height: 20px; color: var(--ink); }
+.body-search .search-button-icon { width: 18px; height: 18px; color: var(--ink); }
 .body-search .search-button-label { flex: 1; min-width: 0; padding: 0; overflow: hidden; text-align: left; text-overflow: ellipsis; }
 html[data-search-fly] .body-search { opacity: 0; }
-/* The views leave room for it above their title (the field is 44px high, 16px under the bar). */
-.shell.is-body-search .plegma-orbit { padding-top: 60px; }
+/* The views leave room for it above their title (the field is 38px high, 16px under the bar). */
+.shell.is-body-search .plegma-orbit { padding-top: 62px; }
 /* The way out: the text and the figures fade while the field moves up. */
 .home-hero.is-leaving .home-hero-inner > :not(.home-hero-search), .home-hero.is-leaving .home-hero-more { opacity: 0; transition: opacity 200ms var(--ease-out); }
 /* The copy of the field that moves up (utils/home-leave.ts): the look of the large field, since it is in the body and not in the hero. */
