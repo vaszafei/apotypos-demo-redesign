@@ -596,6 +596,9 @@ const drawTheme = (g: CanvasRenderingContext2D, sec: number, dt: number) => {
     const { disc, unit } = layoutTheme(web, sec)
     const k = web.stories.length
     const mix = themeMix
+    wasTheme = true
+    diveSpot.clear()
+    for (let i = 0; i < k; i++) diveSpot.set(web.stories[i]!.id, { x: hx[1 + i]!, y: hy[1 + i]! })
     const on = (i: number) => (i === 0 ? false : themeLit.outlet !== null ? web.outlet[i]! >= 0 && web.stories[web.story[i]!]!.outlets[web.outlet[i]!]!.name === themeLit.outlet : web.story[i] === themeLit.story)
     const back = 1 - 0.7 * mix
     const curve = (path: Path2D, i: number, j: number, bow: number) => {
@@ -1036,6 +1039,31 @@ const keepHeroFrame = () => {
   requestAnimationFrame(() => requestAnimationFrame(() => copies.forEach(copy => copy.classList.add('is-out'))))
   window.setTimeout(() => copies.forEach(copy => copy.remove()), HERO_SNAP_MS + 100)
 }
+// Picking a story on a theme (its card or its node), the web of the theme is not cut: a copy of the last frame dives into the story's node, which comes to the middle of the map
+// region and grows, and fades out as the web of the story grows in its place. `wasTheme` is the theme in view in the last frame; `diveSpot` is its story nodes' places.
+let wasTheme = false
+const diveSpot = new Map<number, PlegmaPoint>()
+const DIVE_MS = 900
+const DIVE_SCALE = 3.4
+const diveInto = (at: PlegmaPoint) => {
+  const stage = canvas.value?.parentElement
+  if (!stage || !canvas.value || !canvasFocus.value || reduced.value || !plegma.region) return
+  const rb = regionBox(width, height, plegma.region)
+  ;[canvas.value, canvasFocus.value].forEach((source, i) => {
+    const copy = document.createElement('canvas')
+    copy.width = source.width
+    copy.height = source.height
+    copy.getContext('2d')?.drawImage(source, 0, 0)
+    copy.className = `plegma-canvas plegma-dive-snap${i === 0 ? ' is-back' : ''}`
+    copy.style.transformOrigin = `${at.x}px ${at.y}px`
+    stage.append(copy)
+    copy.animate([
+      { transform: 'translate(0, 0) scale(1)', opacity: i === 0 ? 0.7 : 1 },
+      { transform: `translate(${(rb.cx - at.x) * 0.7}px, ${(rb.cy - at.y) * 0.7}px) scale(${1 + (DIVE_SCALE - 1) * 0.6})`, opacity: i === 0 ? 0.7 : 1, offset: 0.55 },
+      { transform: `translate(${rb.cx - at.x}px, ${rb.cy - at.y}px) scale(${DIVE_SCALE})`, opacity: 0, offset: 1 }
+    ], { duration: DIVE_MS, easing: 'cubic-bezier(0.55, 0, 0.25, 1)', fill: 'forwards' }).finished.then(() => copy.remove(), () => copy.remove())
+  })
+}
 const draw = (now: number) => {
   if (!ctx || !ctxFocus || !world) return
   const c = ctx
@@ -1043,6 +1071,19 @@ const draw = (now: number) => {
   const homeNow = !focusStory() && focusIssue() === null && focusOutlet() === null && plegma.homeDay === null
   if (wasHome && !homeNow && plegma.active) keepHeroFrame()
   wasHome = homeNow
+  const picked = focusStory()
+  if (wasTheme && picked && plegma.active) {
+    const at = diveSpot.get(picked.id)
+    const to = at && !reduced.value && plegma.region ? targetCamera() : null
+    if (at && to) {
+      // The copy covers the cut: the camera is at the story at once, so its web grows under the dive, and the cards wait for the dive to be half done.
+      diveInto(at)
+      Object.assign(cam, to)
+      flight = null
+      window.setTimeout(() => plegma.setLanded(true), DIVE_MS * 0.5)
+    }
+  }
+  wasTheme = false
   for (const g of [c, f]) { g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, width, height) }
   const z = cam.z
   const sec = reduced.value ? 0 : now / 1000

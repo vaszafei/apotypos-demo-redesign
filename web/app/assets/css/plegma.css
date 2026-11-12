@@ -202,3 +202,7 @@ html[data-search-fly] .body-search { opacity: 0; }
   .home-today { display: flex; flex-direction: column; height: auto; min-height: 0; }
   .home-today-map { height: 70vw; min-height: 420px; }
 }
+
+/* The last frame of a theme, kept when a story of it is picked (PlegmaStage.vue diveInto): it dives into the story's node and fades out. */
+.plegma-dive-snap { pointer-events: none; will-change: transform, opacity; }
+.plegma-dive-snap.is-back { filter: blur(1px); }
