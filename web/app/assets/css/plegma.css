@@ -70,12 +70,13 @@
 
 /* A card arrives after the camera lands: its box first, then a grid of blocks that grow and shrink in a sweep from the top left corner (the "blocks" loading spinner), and its content
    shows as they shrink. The card does not scroll; its body does, so the blocks stay over the card. */
-.plegma-card { --card-pad: var(--space-2) var(--space-3); --card-gap: 4px; --card-at: calc(var(--i) * 110ms); --block-ink: color-mix(in srgb, var(--ink) 30%, var(--surface-page)); position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; pointer-events: auto; background: var(--card-glass); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: var(--radius); opacity: 0; transition: opacity 140ms var(--ease-out) var(--card-at); }
+.plegma-card { --card-pad: var(--space-2) var(--space-3); --card-gap: 4px; --card-at: calc(var(--i) * 110ms); position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; pointer-events: auto; background: var(--card-glass); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: var(--radius); opacity: 0; transition: opacity 140ms var(--ease-out) var(--card-at); }
 .plegma-card-body { flex: 1 1 auto; min-width: 0; min-height: 0; overflow: auto; opacity: 0; transition: opacity 300ms var(--ease-out) calc(var(--card-at) + 240ms); }
-.plegma-blocks { position: absolute; inset: 0; z-index: 2; display: grid; grid-template: repeat(5, minmax(0, 1fr)) / repeat(8, minmax(0, 1fr)); gap: 2px; padding: 2px; pointer-events: none; }
-.plegma-blocks > i { border-radius: 2px; background: var(--block-ink); transform: scale(0); }
-.plegma-orbit.is-in .plegma-blocks > i { animation: plegma-block 420ms cubic-bezier(0.4, 0, 0.2, 1) calc(var(--card-at) + var(--d) * 34ms) both; }
-@keyframes plegma-block { 0% { transform: scale(0); } 42% { transform: scale(1); } 100% { transform: scale(0); } }
+.plegma-blocks { position: absolute; inset: 0; z-index: 2; overflow: hidden; border-radius: inherit; pointer-events: none; }
+/* A bar is a long strip leaning to the right (the "/" of the logo), centered on the diagonal of the card from the top left to the bottom right; it grows across its width and shrinks. */
+.plegma-blocks > i { position: absolute; left: calc((var(--k) + 0.5) / 16 * 100%); top: calc((var(--k) + 0.5) / 16 * 100%); width: var(--bar, 14px); height: 2400px; margin: -1200px 0 0 calc(var(--bar, 14px) / -2); background: var(--text-primary); transform: rotate(45deg) scaleX(0); }
+.plegma-orbit.is-in .plegma-blocks > i { animation: plegma-block 420ms cubic-bezier(0.4, 0, 0.2, 1) calc(var(--card-at) + var(--k) * 28ms) both; }
+@keyframes plegma-block { 0% { transform: rotate(45deg) scaleX(0); } 42% { transform: rotate(45deg) scaleX(1); } 100% { transform: rotate(45deg) scaleX(0); } }
 .plegma-card-body > .dcard { border-color: transparent; }
 .plegma-card .dcard-head { min-height: 20px; }
 .plegma-card .rows-related li { padding: 3px 0; }
