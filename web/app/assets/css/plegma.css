@@ -264,10 +264,35 @@ html[data-search-fly] .body-search { opacity: 0; }
 .media-plegma-below { --card-glass: color-mix(in srgb, var(--surface-page) 82%, transparent); margin-top: var(--space-4); }
 .media-plegma .dcard, .media-plegma-below .dcard { background: var(--card-glass); backdrop-filter: blur(10px); }
 .shell.is-backdrop .page-head { background: none; }
+.media-plegma.is-full { grid-template-columns: minmax(0, 1fr); position: relative; }
+.media-plegma.is-full > .media-plegma-side { position: absolute; top: 0; right: 0; width: min(400px, 34%); z-index: 1; }
+.stance-key { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: var(--space-2) 0 0; padding: 0; list-style: none; font-size: var(--text-caption); color: var(--text-secondary); }
+.stance-key li { display: inline-flex; align-items: center; gap: 6px; }
+.stance-key .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dot); }
 .topic-list li { transition: opacity 200ms var(--ease-out); }
 .topic-list:has(li.is-lit) li:not(.is-lit) { opacity: 0.45; }
 @media (max-width: 1023px) {
+  .media-plegma.is-full > .media-plegma-side { position: static; width: auto; }
   .media-plegma { display: flex; flex-direction: column; height: auto; min-height: 0; }
   .media-plegma-map { height: 70vw; min-height: 420px; }
   .media-plegma-side > .media-plegma-fill { flex: none; height: 360px; }
+}
+
+/* Ιδιοκτησία: the network of owners and outlets fills the free area of the screen (GroupsNetwork fill). When it comes into view its groups arrive one after the other: the lines draw out of
+   the owner and the circles grow out of their centers. */
+.net-fill { position: absolute; inset: 0; }
+.net-fill .net-hub, .net-fill .net-outlet { transform-box: fill-box; transform-origin: center; transform: scale(0); opacity: 0; }
+.net-fill .net-edge { stroke-dasharray: 600; stroke-dashoffset: 600; }
+.net-fill .bubble-labels { opacity: 0; }
+.net-fill.is-in .net-hub, .net-fill.is-in .net-outlet { animation: net-grow 700ms var(--ease-out) calc(var(--g, 0) * 90ms) both; }
+.net-fill.is-in .net-outlet { animation-delay: calc(var(--g, 0) * 90ms + 220ms); }
+.net-fill.is-in .net-edge { animation: net-draw 900ms var(--ease-out) calc(var(--g, 0) * 90ms + 120ms) both; }
+.net-fill.is-in .bubble-labels { animation: net-fade 500ms var(--ease-out) 1100ms both; }
+.net-fill.is-in .net-el.is-dim { opacity: 0.25; }
+@keyframes net-grow { from { transform: scale(0); opacity: 0; } 70% { opacity: 1; } to { transform: scale(1); opacity: 1; } }
+@keyframes net-draw { to { stroke-dashoffset: 0; } }
+@keyframes net-fade { to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .net-fill .net-hub, .net-fill .net-outlet, .net-fill .bubble-labels { transform: none; opacity: 1; animation: none !important; }
+  .net-fill .net-edge { stroke-dashoffset: 0; animation: none !important; }
 }

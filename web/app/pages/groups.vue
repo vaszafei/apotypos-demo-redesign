@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import { dayDots } from '~/utils/plegma-day'
-import type { PlegmaDayTheme } from '~/utils/plegma-day'
-import { compactName, slotOfColor } from '~/utils/groups'
-// Ιδιοκτησία (groups-v2.html): a screen of the Plegma (components/MediaPlegma.vue) whose web is the groups with their outlets (in place of the network of owners and outlets), and beside it
+// Ιδιοκτησία (groups-v2.html): a screen of the Plegma (components/MediaPlegma.vue) whose web is the network of owners and outlets, with no card, and beside it
 // the articles of each group by day and the stance of each group; under it the share of each group.
 // The group, the owner and the articles come from the static files, so the table and the shares cover the window of the groups file and there is no period control.
 definePageMeta({ backdrop: true })
@@ -10,22 +7,6 @@ const { t } = useI18n()
 useHead({ title: () => `${t('groups.title')} · ${t('site.name')}` })
 const { status, refresh, data, empty, groups, total, grouped, treeGroups, top3, media, stacks, volumeTotal, stanceRows, colorOf } = await useGroups()
 
-// The web: each group is a node with its outlets around it, each outlet a small web of dots as many as the root of its articles, in the color of the group; the ring is the share of
-// each group. The outlets with no group are the last, gray. A click opens the page of the outlet or of the group.
-const outletList = computed(() => treeGroups.value.flatMap(g => g.outlets))
-const webGroups = computed<PlegmaDayTheme[]>(() => {
-  let k = 0
-  return treeGroups.value.map((g, gi) => ({
-    issue: gi, name: compactName(g.label, g.key === null, t('media2.groups.none.short')), slot: slotOfColor(g.color), n: g.value, rest: 0,
-    stories: g.outlets.map(o => ({ id: k++, name: o.name, n: o.value, media: 0, dots: dayDots(Math.sqrt(o.value) / 6, [{ slot: slotOfColor(g.color), n: 1 }]) }))
-  })).sort((a, b) => b.n - a.n)
-})
-const webRing = computed(() => webGroups.value.map(g => ({ issue: g.issue, name: g.name, slot: g.slot, n: g.n })))
-const lit = ref<number | null>(null)
-const openGroup = (gi: number) => {
-  const g = treeGroups.value[gi]
-  if (g?.slug) navigateTo(groupPageHref(g.slug))
-}
 const period = computed(() => (data.value ? t('period.text', { from: fmtDate(data.value.window[0]), to: fmtDate(data.value.window[1]) }) : ''))
 const hasData = computed(() => !!total.value)
 
@@ -55,11 +36,7 @@ const stanceLabel = (r: (typeof stanceRows.value)[number]) => t('g2.stance.row',
   <MediaPlegma v-else>
     <template #map="{ active }">
       <ClientOnly>
-        <PlegmaDayWeb
-          v-if="hasData" v-model:lit="lit" :themes="webGroups" :ring="webRing" :outlets="[]" mode="themes" :date="fmtInt(total)" :sub="t('home.field.articles')"
-          :picked="null" :active="active" grow :theme-label="t('g2.web.group')" :label="t('g2.tree.title')"
-          @pick="id => navigateTo(outletHref(outletList[id]!.slug))" @pick-theme="openGroup"
-        />
+        <GroupsNetwork v-if="hasData" fill :class="{ 'is-in': active }" :groups="treeGroups" :total="total" />
       </ClientOnly>
     </template>
     <template #side>
