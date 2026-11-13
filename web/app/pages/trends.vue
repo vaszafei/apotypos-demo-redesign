@@ -1,13 +1,12 @@
 <script setup lang="ts">
 // Θέματα (topics-v2.html): a screen of the Plegma (components/MediaPlegma.vue) whose web is the largest themes of the period with their largest stories, and beside it the lines over
-// time and the list of the topics; under it the movers and the shifts of 2025.
+// time and the list of the topics; the movers on its left.
 definePageMeta({ backdrop: true })
 const { t } = useI18n()
 const lit = ref<number | null>(null)
 useHead({ title: () => `${t('nav.topics')} · ${t('site.name')}` })
 const period = usePeriodStore()
 const { status, refresh, dates, view, range, rows, total, colorOf, series, movers } = await useTopics()
-const { data: shifts, status: shiftsStatus } = await useFixture<{ window: [string, string], threshold: number, topics: { label: string, ratio: number, week: string }[], weeks: unknown[] }>('overton', { required: ['topics', 'weeks'], isEmpty: b => b.topics.length === 0 })
 
 // The web (components/TopicWeb.vue): the themes that have a color (the lines and the list have the same), each with its largest stories of the period.
 const slotOfIssue = computed(() => new Map([...colorOf.value].map(([k, c]) => [k, Number(/--cat-(\d+)/.exec(c)?.[1] ?? 0)])))
@@ -32,20 +31,6 @@ const moveInfo = computed(() => {
   return `${finding}. ${t('topics2.move.sub')}`
 })
 
-const ratio = (v: number) => `${new Intl.NumberFormat('el-GR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(v)}×`
-const shiftModel = computed(() => {
-  const sd = shifts.value
-  if (!sd || shiftsStatus.value !== 'ready') return null
-  const ranked = sd.topics.slice().sort((a, b) => b.ratio - a.ratio)
-  const moved = ranked.filter(r => r.ratio >= sd.threshold)
-  const finding = t('shifts.table.finding', { n: fmtInt(moved.length), total: fmtInt(ranked.length), topic: ranked[0]!.label, x: ratio(ranked[0]!.ratio) })
-  return {
-    info: `${finding}. ${t('shifts.table.info')}`,
-    sub: t('shifts.table.sub', { from: fmtDate(sd.window[0]), to: fmtDate(sd.window[1]) }),
-    max: ranked[0]!.ratio,
-    rows: moved.map(r => ({ key: r.label, label: r.label, sub: fmtDay(r.week), value: r.ratio, text: ratio(r.ratio), color: 'var(--accent)' }))
-  }
-})
 const bars = computed(() => movers.value.map(r => ({
   key: r.k, label: topicName(r.issue), to: topicHref(r.k), value: Math.abs(r.change ?? 0), color: (r.change ?? 0) > 0 ? 'var(--emph-more)' : 'var(--emph-less)',
   arrow: (r.change ?? 0) > 0 ? 'up' as const : 'down' as const, text: `${fmtSigned((r.change ?? 0) * 100)}%`
@@ -67,21 +52,17 @@ const widest = computed(() => Math.max(...bars.value.map(b => b.value), 0))
         <ClientOnly><TopicWeb :lit="lit" :rows="rows" :total="total" :color-of="colorOf" :themes="webThemes" :zoom="0.9" :active="active && webThemes.length > 0" @update:lit="v => lit = v" /></ClientOnly>
       </div>
       <DashCard :title="t('topics2.time.title')" :info="timeInfo" card="time">
-        <LinesChart v-if="series.length" :dates="sliced" :series="series" :caption="t('topics2.time.title')" />
+        <LinesChart v-if="series.length" :dates="sliced" :series="series" :tall="196" :caption="t('topics2.time.title')" />
       </DashCard>
+    </template>
+    <template #side>
+      <DashCard :title="t('topics2.move.title')" :info="moveInfo" card="movers"><BarList :rows="bars" :max="widest" /></DashCard>
     </template>
     <template #aside>
       <DashCard :title="t('topics2.flow.title')" :info="t('topics2.flow.info')">
         <ClientOnly><TopicOutletFlow v-if="flow" :data="flow" :lit="lit" @update:lit="v => lit = v" /></ClientOnly>
       </DashCard>
     </template>
-    <div class="topics-row">
-      <DashCard :title="t('topics2.move.title')" :info="moveInfo" card="movers"><BarList :rows="bars" :max="widest" /></DashCard>
-      <DashCard v-if="shiftModel" :title="t('tab.media.shifts')" :info="shiftModel.info" card="shifts">
-        <p class="dcard-sub">{{ shiftModel.sub }}</p>
-        <div class="shift-scroll"><BarList :rows="shiftModel.rows" :max="shiftModel.max" /></div>
-      </DashCard>
-    </div>
   </MediaPlegma>
   <p class="proto-note">{{ t('proto.states') }}</p>
 </template>
