@@ -3,7 +3,7 @@ import { useElementSize } from '@vueuse/core'
 import type { FlowData } from '~/composables/usePeriodWeb'
 
 // A Sankey of the topics of a period (left, in their colors) and the outlets that wrote them (right, in the colors of their groups): a band is the articles of a topic in an outlet, a bar is
-// the share of all the articles the chart has. The topic pointed at, here or on the web beside it (`lit`), takes its bands forward; a click on a topic picks it (`select`).
+// the share of all the articles of the period (the one of the list of the topics). The topic pointed at, here or on the web beside it (`lit`), takes its bands forward; a click on a topic picks it (`select`).
 // Layout by hand (two columns, no iteration): the bars are as tall as their articles on one scale, the bands leave a bar one after the other.
 const props = defineProps<{ data: FlowData, lit: number | null }>()
 const emit = defineEmits<{ select: [issue: number], 'update:lit': [issue: number | null] }>()
@@ -12,7 +12,7 @@ const tooltip = useTooltipStore()
 const box = ref<HTMLElement>()
 const { width, height } = useElementSize(box)
 
-const GAP = 7
+const GAP = 5
 const BAR = 10
 const PAD = 6
 const labelW = computed(() => Math.max(96, Math.min(150, width.value * 0.27)))
@@ -48,7 +48,7 @@ const layout = computed(() => {
 
 const cut = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s)
 const chars = computed(() => Math.floor((labelW.value - 34) / 5.6))
-const share = (n: number) => fmtPct(n / props.data.total)
+const share = (n: number) => fmtPct(n / props.data.all)
 const dim = (a: number) => (props.lit !== null && props.data.topics[a]!.issue !== props.lit)
 const showLink = (e: PointerEvent, l: { a: number, b: number, n: number }) => {
   const tp = props.data.topics[l.a]!

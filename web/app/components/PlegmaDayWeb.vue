@@ -342,8 +342,12 @@ const draw = (sec: number, dt: number) => {
     const th = props.themes[w.theme[i]!]!
     const name = th.name
     const short = name.length > 28 ? `${name.slice(0, 27).trimEnd()}…` : name
-    const text = props.shares ? `${short}${shareOf(ringN(th.issue))}` : short
+    const full = props.shares ? `${short}${shareOf(ringN(th.issue))}` : short
+    // The name is on the outer side of its node; when the area ends before the name does, the name is cut to fit (the share stays).
     const right = hx[i]! >= width / 2
+    const fits = (txt: string) => g.measureText(txt).width + radius(w, i, R) + 7 <= (right ? width - hx[i]! : hx[i]!)
+    let text = full
+    for (let cut = short.length; cut > 6 && !fits(text); cut--) text = `${short.slice(0, cut - 1).trimEnd()}…${props.shares ? shareOf(ringN(th.issue)) : ''}`
     g.textAlign = right ? 'left' : 'right'
     const lx = hx[i]! + (right ? 1 : -1) * (radius(w, i, R) + 7)
     g.lineWidth = 3.5

@@ -293,7 +293,7 @@ html[data-search-fly] .body-search { opacity: 0; }
 .media-plegma.is-topics { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) minmax(0, 3fr); }
 .media-plegma.is-topics > .media-plegma-side { order: -1; }
 .media-plegma-aside { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
-.media-plegma-aside > .dcard { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+.media-plegma-aside > .dcard { flex: none; height: 64%; min-height: 440px; display: flex; flex-direction: column; }
 .media-plegma.is-topics .topic-cards .how-grid-2, .media-plegma.is-topics .topic-cards .story-trend { grid-template-columns: minmax(0, 1fr); }
 /* Ιστορίες: the list is a column of 3 on the left, as tall as the column of 5 on the right, which is the web (80% of the screen) with the trends under it. */
 .media-plegma.is-stories { grid-template-columns: minmax(0, 3fr) minmax(0, 5fr); height: auto; min-height: 0; align-items: stretch; }

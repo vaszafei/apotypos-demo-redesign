@@ -12,7 +12,7 @@ import type { DayOutlet } from '~/components/PlegmaDayWeb.vue'
 // stories is some MB that the prerendered page should not carry.
 export interface FlowNode { key: string, name: string, slot: number, n: number, issue?: number }
 export interface FlowLink { a: number, b: number, n: number }
-export interface FlowData { topics: FlowNode[], outlets: FlowNode[], links: FlowLink[], total: number }
+export interface FlowData { topics: FlowNode[], outlets: FlowNode[], links: FlowLink[], total: number, all: number }
 export const PERIOD_WEB_STORIES = 18
 export const PERIOD_WEB_THEMES = 8
 
@@ -104,20 +104,20 @@ export const usePeriodWeb = (from: Ref<string>, to: Ref<string>, slotOfIssue: Re
     return [...perOutlet.values()].sort((a, b) => b.n - a.n)
   })
 
-  // The articles of the period by topic and outlet, for a Sankey (components/TopicOutletFlow.vue): the given topics (the colored ones of the page), the `maxOutlets`
-  // largest outlets, the others together as one. The articles are the ones in stories (storyDetail has them by outlet and day); a flow is a topic and an outlet with their articles.
+  // The topics of the period and the outlets that wrote them, for a Sankey (components/TopicOutletFlow.vue). A bar of a topic is its articles of the period, `counts`, the same as the list of
+  // the topics and the web; `all` is the articles of all topics, so a percentage is the one of the list. Only the articles in stories have an outlet (storyDetail has them by outlet and day), so
+  // the articles of a topic are shared among the outlets as the articles of its stories are: an estimate. The `maxOutlets` largest outlets, the others together as one.
   const { t: tr } = useI18n()
-  const flows = (issues: number[], maxOutlets = 12): FlowData | null => {
+  const flows = (issues: number[], counts: Map<number, number>, all: number, maxOutlets = 12): FlowData | null => {
     const l = list.data.value
     const d = detail.data.value
-    if (!l || !d || !groups.data.value) return null
+    if (!l || !d || !groups.data.value || !all) return null
     const i0 = d.dates.indexOf(from.value)
     const i1 = d.dates.indexOf(to.value)
     if (i0 < 0 || i1 < i0) return null
-    const slotOfTopic = new Map(issues.map(k => [k, k]))
-    const topicOf = new Map(l.stories.filter(s => slotOfTopic.has(s.issue)).map(s => [s.id, s.issue]))
+    const mine = new Set(issues)
+    const topicOf = new Map(l.stories.filter(s => mine.has(s.issue)).map(s => [s.id, s.issue]))
     const cell = new Map<string, number>()
-    const perOutlet = new Map<number, number>()
     const perTopic = new Map<number, number>()
     for (const r of d.stories) {
       const topic = topicOf.get(r.id)
@@ -125,15 +125,20 @@ export const usePeriodWeb = (from: Ref<string>, to: Ref<string>, slotOfIssue: Re
       for (let j = 0; j < r.t.length; j += 3) {
         const day = r.t[j + 1]!
         if (day < i0 || day > i1) continue
-        const n = r.t[j + 2]!
-        const o = r.t[j]!
-        cell.set(`${topic}:${o}`, (cell.get(`${topic}:${o}`) ?? 0) + n)
-        perOutlet.set(o, (perOutlet.get(o) ?? 0) + n)
-        perTopic.set(topic, (perTopic.get(topic) ?? 0) + n)
+        const key = `${topic}:${r.t[j]}`
+        cell.set(key, (cell.get(key) ?? 0) + r.t[j + 2]!)
+        perTopic.set(topic, (perTopic.get(topic) ?? 0) + r.t[j + 2]!)
       }
     }
-    const total = [...perTopic.values()].reduce((a, b) => a + b, 0)
-    if (!total) return null
+    // The articles of an outlet on a topic: its share of the topic's articles in stories, of the topic's articles.
+    const est = new Map<string, number>()
+    const perOutlet = new Map<number, number>()
+    for (const [key, v] of cell) {
+      const [ti, oi] = key.split(':').map(Number) as [number, number]
+      const n = (counts.get(ti) ?? 0) * v / perTopic.get(ti)!
+      est.set(key, n)
+      perOutlet.set(oi, (perOutlet.get(oi) ?? 0) + n)
+    }
     const shown = [...perOutlet].sort((a, b) => b[1] - a[1]).slice(0, maxOutlets).map(([o]) => o)
     const shownSet = new Set(shown)
     const outletNodes: FlowNode[] = shown.map((o) => {
@@ -142,18 +147,19 @@ export const usePeriodWeb = (from: Ref<string>, to: Ref<string>, slotOfIssue: Re
     })
     const restOutlets = [...perOutlet].filter(([o]) => !shownSet.has(o)).reduce((a, [, n]) => a + n, 0)
     if (restOutlets > 0) outletNodes.push({ key: 'o-rest', name: tr('topics2.flow.restOutlets'), slot: 0, n: restOutlets })
-    const topicNodes: FlowNode[] = issues.filter(k => perTopic.get(k)).map(k => ({ key: `t${k}`, issue: k, name: topicName(l.issues[k]!), slot: slotOfIssue.value.get(k) ?? 0, n: perTopic.get(k)! }))
+    const topicNodes: FlowNode[] = issues.filter(k => (counts.get(k) ?? 0) > 0).map(k => ({ key: `t${k}`, issue: k, name: topicName(l.issues[k]!), slot: slotOfIssue.value.get(k) ?? 0, n: counts.get(k)! }))
       .sort((a, b) => b.n - a.n)
     const links: FlowLink[] = []
     topicNodes.forEach((tn, a) => {
       outletNodes.forEach((on, b) => {
         let n = 0
-        if (on.key === 'o-rest') { for (const [k, v] of cell) { const [ti, oi] = k.split(':').map(Number); if (ti === tn.issue && !shownSet.has(oi!)) n += v } }
-        else n = cell.get(`${tn.issue}:${on.key.slice(1)}`) ?? 0
+        if (on.key === 'o-rest') { for (const [k, v] of est) { const [ti, oi] = k.split(':').map(Number); if (ti === tn.issue && !shownSet.has(oi!)) n += v } }
+        else n = est.get(`${tn.issue}:${on.key.slice(1)}`) ?? 0
         if (n > 0) links.push({ a, b, n })
       })
     })
-    return { topics: topicNodes, outlets: outletNodes, links, total }
+    const total = topicNodes.reduce((a, t) => a + t.n, 0)
+    return total ? { topics: topicNodes, outlets: outletNodes, links, total, all } : null
   }
 
   // The same arcs by group: the articles of the outlets of each group, the largest first (the outlets with no group are one arc).

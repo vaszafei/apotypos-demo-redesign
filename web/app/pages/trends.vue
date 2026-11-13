@@ -18,7 +18,7 @@ const webFrom = computed(() => view.value.from)
 const webTo = computed(() => view.value.to)
 const periodWeb = import.meta.client ? usePeriodWeb(webFrom, webTo, slotOfIssue) : null
 const webThemes = computed(() => (periodWeb?.ready.value ? periodWeb.themesFor([...colorOf.value.keys()]) : []))
-const flow = computed(() => (periodWeb?.ready.value ? periodWeb.flows([...colorOf.value.keys()]) : null))
+const flow = computed(() => (periodWeb?.ready.value ? periodWeb.flows([...colorOf.value.keys()], new Map(rows.value.map(r => [r.k, r.count])), total.value) : null))
 const sliced = computed(() => dates.value.slice(range.value[0], range.value[1] + 1))
 // A new period draws the lines in again (assets/motion.js replay); the first view is played by plugins/motion.client.ts.
 const { $motion } = useNuxtApp()
@@ -70,7 +70,7 @@ const widest = computed(() => Math.max(...bars.value.map(b => b.value), 0))
   </div>
   <MediaPlegma v-else variant="topics">
     <template #map="{ active }">
-      <ClientOnly><TopicWeb :lit="lit ?? picked" :rows="rows" :total="total" :color-of="colorOf" :themes="webThemes" :zoom="0.84" selectable :active="active && webThemes.length > 0" @update:lit="v => lit = v" @select="toggle" /></ClientOnly>
+      <ClientOnly><TopicWeb :lit="lit ?? picked" :rows="rows" :total="total" :color-of="colorOf" :themes="webThemes" :zoom="0.92" selectable :active="active && webThemes.length > 0" @update:lit="v => lit = v" @select="toggle" /></ClientOnly>
     </template>
     <template #side>
       <Transition name="side-swap" mode="out-in">
