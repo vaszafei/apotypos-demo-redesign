@@ -1,8 +1,8 @@
 <script setup lang="ts">
-defineProps<{ full?: boolean, variant?: 'topics' | 'stories' }>()
+defineProps<{ full?: boolean, variant?: 'topics' | 'stories', open?: boolean }>()
 // A tab of Μέσα as a screen of the Plegma (as Home's «Η επικαιρότητα», the story and the theme views): the world is a dim map behind the page (the page meta `backdrop`), the web of the
 // tab fills the free area on the left, and the cards of the tab float as glass cards on its right. The cards that do not fit the screen are under it (the default slot).
-// `full`: the web takes the whole width (Στάση, a plot) and the cards float over its empty top right corner. `variant` 'topics' (Θέματα): the cards (`side`) on the left, the web, and a chart (`aside`) on the right, as 2 : 3 : 3; 'stories' (Ιστορίες): the list (`side`) on the left and the web with its cards under it (`map`) on the right, as 3 : 5.
+// `full`: the web takes the whole width (Στάση, a plot) and the cards float over its empty top right corner. `variant` 'topics' (Θέματα): the web with a card under it (`map`) on the left, a chart (`aside`) on the right, as 5 : 3, and a column of cards (`side`) that opens on the left as 2 when `open`; 'stories' (Ιστορίες): the list (`side`) on the left and the web with its cards under it (`map`) on the right, as 3 : 5.
 // The web runs only while the screen is in view, and it grows when it comes into view (`active` of the map slot).
 const root = ref<HTMLElement>()
 const inView = ref(false)
@@ -15,7 +15,7 @@ onBeforeUnmount(() => watcher?.disconnect())
 </script>
 
 <template>
-  <section ref="root" class="media-plegma" :class="[{ 'is-full': full }, variant && `is-${variant}`]">
+  <section ref="root" class="media-plegma" :class="[{ 'is-full': full, 'has-pick': open }, variant && `is-${variant}`]">
     <div class="media-plegma-map"><slot name="map" :active="inView" /></div>
     <div class="media-plegma-side"><slot name="side" /></div>
     <div v-if="$slots.aside" class="media-plegma-aside"><slot name="aside" /></div>

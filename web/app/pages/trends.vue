@@ -24,9 +24,7 @@ const sliced = computed(() => dates.value.slice(range.value[0], range.value[1] +
 const { $motion } = useNuxtApp()
 watch(sliced, async () => { await nextTick(); $motion.replay(document.querySelector('[data-card="time"]')) })
 const pickedRow = computed(() => (picked.value === null ? null : rows.value.find(r => r.k === picked.value) ?? null))
-const top3 = computed(() => rows.value.slice(0, 3).reduce((a, r) => a + r.count, 0) / (total.value || 1))
 const timeInfo = computed(() => `${t('topics2.time.title')}. ${t('topics2.time.sub')}`)
-const allInfo = computed(() => `${t('topics2.all.title')}. ${t('topics2.all.sub')}`)
 const moveInfo = computed(() => {
   const up = movers.value.filter(r => r.change! > 0)
   const down = movers.value.filter(r => r.change! < 0)
@@ -68,21 +66,17 @@ const widest = computed(() => Math.max(...bars.value.map(b => b.value), 0))
   <div v-else-if="status === 'empty' || (status === 'ready' && !rows.length)" class="dash-grid">
     <div class="card-col c-12"><section class="dcard"><div class="empty-state" data-state="empty"><p>{{ t('topics2.empty') }}</p></div></section></div>
   </div>
-  <MediaPlegma v-else variant="topics">
+  <MediaPlegma v-else variant="topics" :open="!!pickedRow">
     <template #map="{ active }">
-      <ClientOnly><TopicWeb :lit="lit ?? picked" :rows="rows" :total="total" :color-of="colorOf" :themes="webThemes" :zoom="0.92" selectable :active="active && webThemes.length > 0" @update:lit="v => lit = v" @select="toggle" /></ClientOnly>
+      <div class="media-map-web">
+        <ClientOnly><TopicWeb :lit="lit ?? picked" :rows="rows" :total="total" :color-of="colorOf" :themes="webThemes" :zoom="0.9" selectable :active="active && webThemes.length > 0" @update:lit="v => lit = v" @select="toggle" /></ClientOnly>
+      </div>
+      <DashCard :title="t('topics2.time.title')" :info="timeInfo" card="time">
+        <LinesChart v-if="series.length" :dates="sliced" :series="series" :caption="t('topics2.time.title')" />
+      </DashCard>
     </template>
     <template #side>
-      <Transition name="side-swap" mode="out-in">
-        <TopicCards v-if="pickedRow" :key="pickedRow.k" :row="pickedRow" :total="total" :from="view.from" :to="view.to" @back="picked = null" />
-        <div v-else key="all" class="media-plegma-stack">
-          <DashCard class="media-plegma-fill" :title="t('topics2.all.title')" :info="allInfo">
-            <p v-if="rows.length > 3" class="dcard-sub">{{ t('topics2.all.finding', { share: fmtPct(top3) }) }}</p>
-            <p class="dcard-sub">{{ t('topics2.pick.hint') }}</p>
-            <TopicList v-model:lit="lit" :rows="rows" :total="total" :color-of="colorOf" pickable @pick="toggle" />
-          </DashCard>
-        </div>
-      </Transition>
+      <TopicCards v-if="pickedRow" :key="pickedRow.k" :row="pickedRow" :total="total" :from="view.from" :to="view.to" @back="picked = null" />
     </template>
     <template #aside>
       <DashCard :title="t('topics2.flow.title')" :info="t('topics2.flow.info')">
@@ -90,15 +84,10 @@ const widest = computed(() => Math.max(...bars.value.map(b => b.value), 0))
       </DashCard>
     </template>
     <div class="topics-row">
-      <div class="topics-row-pair">
-        <DashCard :title="t('topics2.move.title')" :info="moveInfo" card="movers"><BarList :rows="bars" :max="widest" /></DashCard>
-        <DashCard v-if="shiftModel" :title="t('tab.media.shifts')" :info="shiftModel.info" card="shifts">
-          <p class="dcard-sub">{{ shiftModel.sub }}</p>
-          <div class="shift-scroll"><BarList :rows="shiftModel.rows" :max="shiftModel.max" /></div>
-        </DashCard>
-      </div>
-      <DashCard class="topics-row-lines" :title="t('topics2.time.title')" :info="timeInfo" card="time">
-        <LinesChart v-if="series.length" :dates="sliced" :series="series" :caption="t('topics2.time.title')" />
+      <DashCard :title="t('topics2.move.title')" :info="moveInfo" card="movers"><BarList :rows="bars" :max="widest" /></DashCard>
+      <DashCard v-if="shiftModel" :title="t('tab.media.shifts')" :info="shiftModel.info" card="shifts">
+        <p class="dcard-sub">{{ shiftModel.sub }}</p>
+        <div class="shift-scroll"><BarList :rows="shiftModel.rows" :max="shiftModel.max" /></div>
       </DashCard>
     </div>
   </MediaPlegma>
