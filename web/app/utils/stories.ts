@@ -42,16 +42,14 @@ export const storyTrends = (byDay: StoryDay[][], i0: number, i1: number) => {
   return { p0, len, up, down, widest }
 }
 
-// The first LINE_STORIES stories of the period as lines. The axis starts the day before the first of these stories began (at least 7 days before the end), and it ends on the last day of the period.
+// The first LINE_STORIES stories of the period as lines, over the days of the period only: the axis starts on its first day and ends on its last.
 export const storyLines = (list: StoryDay[], i0: number, i1: number) => {
   const shown = list.slice(0, LINE_STORIES)
-  let d0 = Infinity
-  for (const { s } of shown) d0 = Math.min(d0, s.days[0]!)
-  d0 = Math.max(0, Math.min(d0 - 1, i1 - 6))
+  const d0 = i0
   const lines = shown.map(({ s }) => {
     const values = new Array<number>(i1 - d0 + 1).fill(0)
     for (let j = 0; j < s.days.length; j += 2) if (s.days[j]! >= d0 && s.days[j]! <= i1) values[s.days[j]! - d0] = s.days[j + 1]!
     return { s, values }
   })
-  return { d0, d1: i1, band: { from: Math.max(i0, d0) - d0, to: i1 - d0 }, lines }
+  return { d0, d1: i1, lines }
 }
