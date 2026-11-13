@@ -151,4 +151,3 @@ export const useStoryView = (id: MaybeRefOrGetter<number>) => {
 }
 
 export type StoryView = ReturnType<typeof useStoryView>
-export type StoryModel = NonNullable<StoryView['model']['value']>
