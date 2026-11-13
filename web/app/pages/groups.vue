@@ -1,10 +1,10 @@
 <script setup lang="ts">
-// Ιδιοκτησία (groups-v2.html): a screen of the Plegma (components/MediaPlegma.vue) whose web is the network of owners and outlets, with no card, alone on its row; under it the articles of each group by day (75 %) and the stance of each group (25 %).
+// Ιδιοκτησία (groups-v2.html): a screen of the Plegma (components/MediaPlegma.vue) whose web is the network of owners and outlets, with no card, alone on its row; the groups stand from left to right by their stance (critical to supportive); under it the articles of each group by day (75 % of the row).
 // The group, the owner and the articles come from the static files, so the table and the shares cover the window of the groups file and there is no period control.
 definePageMeta({ backdrop: true })
 const { t } = useI18n()
 useHead({ title: () => `${t('groups.title')} · ${t('site.name')}` })
-const { status, refresh, data, empty, groups, total, treeGroups, media, stacks, volumeTotal, stanceRows, colorOf } = await useGroups()
+const { status, refresh, data, empty, groups, total, treeGroups, media, stacks, volumeTotal } = await useGroups()
 
 const period = computed(() => (data.value ? t('period.text', { from: fmtDate(data.value.window[0]), to: fmtDate(data.value.window[1]) }) : ''))
 const hasData = computed(() => !!total.value)
@@ -12,15 +12,6 @@ const hasData = computed(() => !!total.value)
 const volumeInfo = computed(() => t('g2.volume.info', { min: fmtInt(GAP), n: fmtInt(volumeTotal.value) }))
 const legend = computed(() => treeGroups.value.map(g => ({ key: g.key ?? 'none', label: compactName(g.label, g.key === null, t('media2.groups.none.short')), color: g.color })))
 
-const scale = computed(() => Math.max(...stanceRows.value.map(r => Math.max(r.crit + r.neu / 2, r.sup + r.neu / 2)), 0.01))
-const critical = computed(() => stanceRows.value.slice().sort((a, b) => b.crit - a.crit))
-const stanceInfo = computed(() => {
-  const c = critical.value
-  const finding = c.length > 1 ? `${t('g2.stance.finding', { most: c[0]!.g.name, a: fmtPct(c[0]!.crit), least: c[c.length - 1]!.g.name, b: fmtPct(c[c.length - 1]!.crit) })}. ` : ''
-  return `${finding}${t('g2.stance.sub')}`
-})
-const stanceLegend = [['critical', 'var(--stance-critical)'], ['neutral', 'var(--stance-neutral)'], ['supportive', 'var(--stance-supportive)']] as const
-const stanceLabel = (r: (typeof stanceRows.value)[number]) => t('g2.stance.row', { group: r.g.name, critical: fmtPct(r.crit), neutral: fmtPct(r.neu), supportive: fmtPct(r.sup), n: fmtInt(r.n) })
 </script>
 
 <template>
@@ -42,22 +33,6 @@ const stanceLabel = (r: (typeof stanceRows.value)[number]) => t('g2.stance.row',
         <template v-if="volumeTotal && media">
           <ul class="legend legend-line"><li v-for="l in legend" :key="l.key"><span class="swatch" :style="{ background: l.color }" />{{ l.label }}</li></ul>
           <GroupLines :dates="media.dates" :stacks="stacks" />
-        </template>
-        <p v-else class="dcard-empty">{{ t('groups.empty') }}</p>
-      </DashCard>
-
-      <DashCard :title="t('g2.stance.title')" :info="stanceInfo">
-        <template v-if="stanceRows.length">
-          <ul class="legend"><li v-for="[name, color] in stanceLegend" :key="name"><span class="swatch" :style="{ background: color }" />{{ t(`stance.${name}`) }}</li></ul>
-          <div class="bar-box">
-            <ul class="bar-list">
-              <li v-for="r in stanceRows" :key="r.g.name">
-                <span class="row-name"><span class="dot" :style="`--dot:${colorOf.get(r.g.name)}`" aria-hidden="true" />{{ r.g.name }}</span>
-                <span class="row-value">{{ fmtPct(r.crit) }} · {{ fmtPct(r.sup) }}</span>
-                <DivergingBar :left="r.crit" :middle="r.neu" :right="r.sup" :scale="scale" :label="stanceLabel(r)" />
-              </li>
-            </ul>
-          </div>
         </template>
         <p v-else class="dcard-empty">{{ t('groups.empty') }}</p>
       </DashCard>

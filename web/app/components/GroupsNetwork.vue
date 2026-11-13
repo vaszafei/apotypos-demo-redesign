@@ -5,7 +5,7 @@ import { round, type OutletNode } from '~/utils/net-layout'
 
 // OwnerBubbles of groups-v2.html: a network of owners and outlets. Nothing moves and nothing opens: a hover on a group or an outlet fades the other groups and its numbers are in the tooltip.
 // A click on a group opens its page and a click on an outlet opens its page. An outlet has its name inside its circle when it fits and beside it when there is room.
-// `fill`: the network fills the height of its box (a screen of the Plegma, Μέσα › Ιδιοκτησία) instead of a height from its width.
+// `fill`: the network fills the height of its box (a screen of the Plegma, Μέσα › Ιδιοκτησία) instead of a height from its width, and the groups stand from left to right by their stance (critical to supportive).
 const props = defineProps<{ groups: NetGroup[], total: number, fill?: boolean }>()
 const { t } = useI18n()
 const tooltip = useTooltipStore()
@@ -15,7 +15,13 @@ const holder = ref<HTMLElement | null>(null)
 const { width: measured, height: measuredH } = useElementSize(holder)
 const width = computed(() => Math.floor(measured.value) || 640)
 const height = computed(() => (props.fill && measuredH.value > 200 ? Math.floor(measuredH.value) : Math.max(300, Math.min(440, Math.round(width.value * 0.56)))))
-const layout = computed(() => netLayout(props.groups, width.value, height.value, !!props.fill))
+// The place of a group, or of an outlet without a group, on the axis: the supportive share minus the critical one of its analysed articles (none under 30 of them).
+const stanceAxis = (outlets: NetOutlet[]) => {
+  const [critical, neutral, supportive] = stanceTotals(outlets)
+  const n = critical + neutral + supportive
+  return n >= 30 ? (supportive - critical) / n : null
+}
+const layout = computed(() => netLayout(props.groups, width.value, height.value, !!props.fill, props.fill ? stanceAxis : undefined))
 
 const hover = ref<NetGroup | null>(null)
 const tint = (g: NetGroup) => tintOf(g.color, g.key === null ? 0.5 : 0.35)
@@ -154,6 +160,11 @@ const showTip = (tip: { title: string, rows: { label: string, value: string, col
             @click="n.o.slug && open(outletHref(n.o.slug))"
           />
         </template>
+      </g>
+      <g v-if="fill" class="net-axis" aria-hidden="true">
+        <line x1="2" :x2="width - 2" :y1="height - 8" :y2="height - 8" />
+        <text x="2" :y="height - 13" text-anchor="start">← {{ t('stance.critical') }}</text>
+        <text :x="width - 2" :y="height - 13" text-anchor="end">{{ t('stance.supportive') }} →</text>
       </g>
       <g class="bubble-labels">
         <text

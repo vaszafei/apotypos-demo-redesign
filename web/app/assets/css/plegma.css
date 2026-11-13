@@ -356,6 +356,8 @@ html[data-search-fly] .body-search { opacity: 0; }
 /* Ιδιοκτησία: the network of owners and outlets fills the free area of the screen (GroupsNetwork fill). When it comes into view its groups arrive one after the other: the lines draw out of
    the owner and the circles grow out of their centers. */
 .net-fill { position: absolute; inset: 0; }
+.net-axis line { stroke: var(--border); stroke-width: 1; }
+.net-axis text { font-size: var(--text-caption); fill: var(--text-secondary); }
 .net-fill .net-hub, .net-fill .net-outlet { transform-box: fill-box; transform-origin: center; transform: scale(0); opacity: 0; }
 .net-fill .net-edge { stroke-dasharray: 600; stroke-dashoffset: 600; }
 .net-fill .bubble-labels { opacity: 0; }
