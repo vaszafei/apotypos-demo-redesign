@@ -175,6 +175,22 @@ export const usePeriodWeb = (from: Ref<string>, to: Ref<string>, slotOfIssue: Re
     return [...perGroup.values()].sort((a, b) => b.n - a.n)
   })
 
+
+  // The largest stories of the period with the outlets that ran each, in the colors of their groups (Μέσα › Ιστορίες, components/StoryMediaBars.vue). `rankOutlet` and `rankSlot` are the place of an outlet and of a
+  // group on the ring of the web (the largest first), so the parts of a bar go in the order of the arcs.
+  const storyMedia = (count = 10) => {
+    const x = ix.value
+    const sp = span.value
+    if (!x?.detail || !sp || !rows.value.length) return null
+    const rankOutlet = new Map(outlets.value.map((o, i) => [o.name, i]))
+    const rankSlot = new Map(groupRing.value.map((g, i) => [g.slot, i]))
+    const stories = rows.value.slice(0, count).map((r) => {
+      const os = homeOutletsOf(x, r.s, sp[0], sp[1]).map(o => ({ name: o.name, group: o.group ?? null, slot: groupSlot(o.group), n: o.n }))
+      return { id: r.s.id, name: storyName(r.s), n: r.n, outlets: os }
+    }).filter(r => r.outlets.length > 0)
+    return { stories, rankOutlet, rankSlot }
+  }
+
   const ready = computed(() => !!ix.value && !!detail.data.value && !!groups.data.value)
-  return { ready, rows, themesOf, themesFor, outlets, groupRing, flows }
+  return { ready, rows, themesOf, themesFor, outlets, groupRing, flows, storyMedia }
 }
