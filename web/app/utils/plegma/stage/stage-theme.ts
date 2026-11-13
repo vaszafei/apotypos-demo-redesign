@@ -280,3 +280,5 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
   }
   return { themeDisc, themeWebOf, themeNodeAt, themeRingAt, drawTheme }
 }
+
+export type StageTheme = ReturnType<typeof createStageTheme>

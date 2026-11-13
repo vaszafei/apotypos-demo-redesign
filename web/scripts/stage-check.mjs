@@ -2,6 +2,7 @@
 // Usage (in web/, after npm run generate):
 //   npm run check:stage -- --out <dir>                      save the canvases of every scene to <dir>
 //   npm run check:stage -- --out <dir> --baseline <dir>     save them, then compare each with the same file in the baseline
+//   npm run check:stage -- --out <dir> --root <dir>          take them from another build (for example main in a worktree: its .output/public) to make the baseline
 // Every scene is loaded signed in as lolovios with reduced motion (no clock in the drawing), then waited on until both canvases stop changing.
 // The canvases are read with toDataURL, so the page's cards are not in the image. A pixel differs when any channel differs at all.
 // Exit code 1 when a canvas differs, has another size, or is missing from the baseline.
@@ -87,6 +88,16 @@ const sweep = async (page, viewport) => {
   return tips
 }
 
+// With reduced motion the stage draws when something it watches changes. On a cold load of a story page the articles now and then arrive after the last draw and the nodes stay gray
+// (the same on main: 5 to 6 loads in 30), so after the page has settled the motion setting is flipped for a moment: the stage redraws with what has loaded, and settles again.
+// The free time is longer than the morph of the nodes (MORPH_MS in PlegmaStage, 900 ms).
+const redraw = async (page) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.waitForTimeout(1500)
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await settle(page)
+}
+
 const shoot = async (browser, base, scene) => {
   const viewport = { width: scene.width || DESKTOP.width, height: scene.height || DESKTOP.height }
   const context = await browser.newContext({ viewport, reducedMotion: 'reduce' })
@@ -98,6 +109,7 @@ const shoot = async (browser, base, scene) => {
   try {
     await page.goto(`${base}${scene.route}`, { waitUntil: 'networkidle' })
     await settle(page)
+    await redraw(page)
     if (scene.click) {
       // A click on the hero explores: the wave clears the ground around it (at once with reduced motion) and the camera takes a step.
       await page.mouse.click(scene.click.x, scene.click.y)
@@ -108,13 +120,8 @@ const shoot = async (browser, base, scene) => {
       const button = page.locator('.orbit-ring-tabs button').nth(['outlets', 'groups', 'stance'].indexOf(scene.ring))
       if (!(await button.count())) return { error: `no ring switch for ${scene.ring}` }
       await button.click()
-      // With reduced motion the stage does not redraw for a ring change (it only watches articles, highlight, hover, related and theme stories),
-      // so the motion setting is flipped for a moment: the stage redraws when it changes, and settles on the new ring at once.
-      // It stays free for longer than the morph of the nodes to their new sectors (MORPH_MS, 900 ms in PlegmaStage), so the morph is over when the picture is taken.
-      await page.emulateMedia({ reducedMotion: 'no-preference' })
-      await page.waitForTimeout(1500)
-      await page.emulateMedia({ reducedMotion: 'reduce' })
-      await settle(page)
+      // With reduced motion the stage does not redraw for a ring change (it only watches articles, highlight, hover, related and theme stories), so it is redrawn by hand.
+      await redraw(page)
     }
     const urls = await readCanvases(page)
     const tips = scene.sweep ? await sweep(page, viewport) : undefined
@@ -130,10 +137,10 @@ const main = async () => {
   const out = option('out') && resolve(option('out'))
   const baseline = option('baseline') && resolve(option('baseline'))
   const only = option('only')
-  if (!out) { console.error('Usage: npm run check:stage -- --out <dir> [--baseline <dir>] [--only <scene>]'); process.exit(2) }
+  if (!out) { console.error('Usage: npm run check:stage -- --out <dir> [--baseline <dir>] [--only <scene>] [--root <the .output/public of another build>]'); process.exit(2) }
   const chrome = process.env.CHROME_PATH || '/usr/bin/google-chrome'
   if (!existsSync(chrome)) { console.error(`Chrome not found at ${chrome}. Install Google Chrome or set CHROME_PATH.`); process.exit(2) }
-  const root = fileURLToPath(new URL('../.output/public/', import.meta.url))
+  const root = option('root') ? resolve(option('root')) : fileURLToPath(new URL('../.output/public/', import.meta.url))
   if (!existsSync(join(root, '_nuxt'))) { console.error('The Nuxt build is missing. Run npm run generate first.'); process.exit(2) }
   const port = Number(process.env.NUXT_PORT || 8794)
   const server = await startServer(root, port)

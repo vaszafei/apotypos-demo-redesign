@@ -9,7 +9,7 @@ import type { StageCore, StageDeps } from './stage-core'
 // The picked story: one node for each article, the ring of its groups or outlets or stance, what the pointer finds on it.
 export const createStageArticles = (st: StageState, deps: StageDeps, core: StageCore) => {
   const { plegma, reduced } = deps
-  const { placed, gatherTo, gatherR, colourOf, ease } = core
+  const { placed, gatherTo, gatherR, colourOf } = core
   // The web is the story's articles (utils/plegma/plegma-articles.ts). Its size on the screen is that of the free map region, so it is the same at any window; in the world it is
   // a disc of `Rt / zt` where zt is the zoom of the framing, so it grows and shrinks with the camera in a flight. The nodes go round on small circles, each its own way.
   const arts = { aw: null as ReturnType<typeof articleWebOf> | null, id: -1, cx: 0, cy: 0, R: 0, ring: 0, rWorld: 0, dr: 1, spacing: 0 }
@@ -271,3 +271,5 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
   }
   return { drawArticles, articleAt, ringAt, articleWorldRadius, ringOf, sectorOf, byOutlet }
 }
+
+export type StageArticles = ReturnType<typeof createStageArticles>
