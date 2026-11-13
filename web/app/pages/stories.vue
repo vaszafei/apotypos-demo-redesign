@@ -4,7 +4,7 @@ import type { StoryTrend } from '~/types/stories'
 import { themeSlots } from '~/utils/plegma-world'
 
 // Μέσα › Ιστορίες (stories-v2.html): a screen of the Plegma (components/MediaPlegma.vue) whose web is the largest stories of the period, each a small web of its articles in the colors
-// of the groups, with a ring of the outlets. Left of it the largest stories by the groups that ran them (components/StoryMediaBars.vue). In a row under the screen the lines of the first stories over the days of the period only, and right of them the stories that rise and fall against the period before. The date picker is at the top right; the web, the trends and the lines follow it. A story clicked on the web opens.
+// of the groups, grouped by their themes, in an ellipse whose ring is the outlets (or their groups), each arc as long as its share of the articles. Left of it the largest stories by the groups that ran them (components/StoryMediaBars.vue). In a row under the screen the lines of the first stories over the days of the period only, and right of them the stories that rise and fall against the period before. The date picker is at the top right; the web, the trends and the lines follow it. A story clicked on the web opens.
 definePageMeta({ backdrop: true })
 const { t } = useI18n()
 useHead({ title: () => `${t('nav.media')} · ${t('site.name')}` })
@@ -34,9 +34,7 @@ const slotOfIssue = computed(() => (topicsData.data.value ? themeSlots(topicsDat
 const webFrom = computed(() => view.value.from)
 const webTo = computed(() => view.value.to)
 const periodWeb = import.meta.client ? usePeriodWeb(webFrom, webTo, slotOfIssue) : null
-// MOCK: ?plegma=a|b shows the web as an ellipse, grouped by theme, with more stories.
-const mockWeb = computed(() => String(useRoute().query.plegma ?? ''))
-const webThemes = computed(() => (periodWeb?.ready.value ? (mockWeb.value === 'a' ? periodWeb.themesOf(24, 8) : mockWeb.value === 'b' ? periodWeb.themesOf(36, 10) : periodWeb.themesOf()) : []))
+const webThemes = computed(() => (periodWeb?.ready.value ? periodWeb.themesOf(36, 10) : []))
 // The ring of the web, as the story page has it: the outlets, or their groups.
 const ringBy = ref<'outlets' | 'groups'>('outlets')
 
@@ -76,7 +74,7 @@ watch(view, async () => { await nextTick(); $motion.replay(document.querySelecto
           <SegmentedControl v-if="webThemes.length" v-model="ringBy" class="media-map-tabs" :label="t('stories.ring.label')" :options="[{ value: 'outlets', label: t('stories.ring.outlets') }, { value: 'groups', label: t('stories.ring.groups') }]" />
           <PlegmaDayWeb
             v-if="webThemes.length" :themes="webThemes" :ring="[]" :outlets="ringBy === 'groups' ? periodWeb!.groupRing.value : periodWeb!.outlets.value" mode="stories" :lit="null" :date="dateText" :sub="t('stories.web.sub', { n: fmtInt(list.length) })"
-            :picked="null" :ellipse="!!mockWeb" :grouped="!!mockWeb" :spread="mockWeb === 'b'" :active="active" grow :label="t('topics2.stories.title')" @pick="id => navigateTo(storyHref(id))"
+            :picked="null" ellipse grouped spread :active="active" grow :label="t('topics2.stories.title')" @pick="id => navigateTo(storyHref(id))"
           />
           <p v-if="webThemes.length" class="media-map-note">{{ t('stories.web.note') }}</p>
         </ClientOnly>

@@ -57,7 +57,7 @@ const slotColour = (slot: number) => (slot > 0 ? cats[slot - 1] ?? mute : props.
 
 // The layout is the same for the same day; it is drawn again when the area changes shape.
 // The web lies inside the ring, which is a circle: the layout is on the unit disc.
-// MOCK: with `ellipse` the layout box is `aspect` times as wide as it is high, and the ring is the ellipse that holds it, with room for the names of the arcs on the sides.
+// With `ellipse` the layout box is `aspect` times as wide as it is high, and the ring is the ellipse that holds it, with room for the names of the arcs on the sides.
 const aspect = computed(() => {
   if (!size.value.h) return 0
   if (!props.ellipse) return 1
