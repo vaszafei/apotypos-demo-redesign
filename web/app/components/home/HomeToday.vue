@@ -5,10 +5,10 @@ import { homeIndex, homeOutletsOf } from '~/utils/home'
 import { dayTotals, lastCounted } from '~/utils/home-days'
 import { groupColors, NO_GROUP, slotOfColor } from '~/utils/groups'
 import type { GroupsData } from '~/utils/groups'
-import { dayDots, PLEGMA_DAY_STORIES, PLEGMA_DAY_THEMES } from '~/utils/plegma-day'
-import type { PlegmaDayTheme } from '~/utils/plegma-day'
+import { dayDots, PLEGMA_DAY_STORIES, PLEGMA_DAY_THEMES } from '~/utils/plegma/plegma-day'
+import type { PlegmaDayTheme } from '~/utils/plegma/plegma-day'
 import type { DayOutlet, DayRing } from '~/components/plegma/PlegmaDayWeb.vue'
-import { themeSlots } from '~/utils/plegma-world'
+import { themeSlots } from '~/utils/plegma/plegma-world'
 
 // «Η επικαιρότητα» under the hero (the section #home-today of index.html): the calendar of the days floating over the Plegma, under it the web of the picked day (the date, its themes, the stories
 // of each and a dot for each article: components/PlegmaDayWeb.vue), and beside it the card of the story of the day with the bar of the outlets that ran it. A story picked on the web takes the card.

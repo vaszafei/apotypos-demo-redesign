@@ -1,7 +1,7 @@
 import { mulberry } from './plegma-world.ts'
 
 // The web of a day on Home («Η επικαιρότητα»): the date is the center, the themes of the day lie around it, each theme has its largest stories, and each story is a small loose
-// web of dots, one for each article (a dot stands for several in a large story). It is the web of a theme (utils/plegma-theme.ts) one level up, and it is not a chart: the places are
+// web of dots, one for each article (a dot stands for several in a large story). It is the web of a theme (utils/plegma/plegma-theme.ts) one level up, and it is not a chart: the places are
 // loose on purpose, the numbers are in the card and the tooltips. The stories of the day that the web does not show are faint dots near their theme.
 
 export interface PlegmaDayStory { id: number, name: string, n: number, media: number, dots: number[] }

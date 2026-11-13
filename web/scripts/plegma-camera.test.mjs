@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { regionBox, frameStory, frameTheme, frameHome, framePair, toScreen, poseAt, startFlight, cameraAt, redirectFlight, flightDone, PLEGMA_REGION, PLEGMA_Z_FOCUS, PLEGMA_FLIGHT_MIN, PLEGMA_FLIGHT_MAX } from '../app/utils/plegma-camera.ts'
+import { regionBox, frameStory, frameTheme, frameHome, framePair, toScreen, poseAt, startFlight, cameraAt, redirectFlight, flightDone, PLEGMA_REGION, PLEGMA_Z_FOCUS, PLEGMA_FLIGHT_MIN, PLEGMA_FLIGHT_MAX } from '../app/utils/plegma/plegma-camera.ts'
 
 const W = 1440
 const H = 900

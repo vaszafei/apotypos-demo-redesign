@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { buildWorld, webOf, dotsOf, arcsOf, themeCore, themeFrameSet, themeSlots, homeWebs, drawLevel, PLEGMA_THEME_ARCS, PLEGMA_FOCUS_DOTS } from '../app/utils/plegma-world.ts'
+import { buildWorld, webOf, dotsOf, arcsOf, themeCore, themeFrameSet, themeSlots, homeWebs, drawLevel, PLEGMA_THEME_ARCS, PLEGMA_FOCUS_DOTS } from '../app/utils/plegma/plegma-world.ts'
 import { homeIndex } from '../app/utils/home.ts'
 
 const read = name => JSON.parse(readFileSync(new URL(`../public/data/${name}.json`, import.meta.url), 'utf8'))

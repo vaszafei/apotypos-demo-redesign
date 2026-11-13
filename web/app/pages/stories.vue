@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { themeSlots } from '~/utils/plegma-world'
+import { themeSlots } from '~/utils/plegma/plegma-world'
 
 // Μέσα › Ιστορίες (stories-v2.html): a screen of the Plegma (components/MediaPlegma.vue) whose web is the largest stories of the period, each a small web of its articles in the colors
 // of the groups, grouped by their themes, in an ellipse whose ring is the outlets (or their groups), each arc as long as its share of the articles. Left of it, as tall as the two, the largest stories by the outlets or the groups that ran them (as the ring of the web is), each with its change against the period before (components/StoryMediaBars.vue); above the web the date picker, and under it the lines of the first stories over the days of the period only. The date picker is at the top right; the web, the trends and the lines follow it. A story clicked on the web opens.

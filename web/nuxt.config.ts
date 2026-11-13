@@ -11,6 +11,8 @@ export default defineNuxtConfig({
   modules: ['@pinia/nuxt', '@nuxtjs/i18n'],
   // The components are in folders by what they belong to (ui, charts, shell, auth, home, outlet, group, topic, stance, story, plegma). The folder is not part of the name: <BarList>, not <ChartsBarList>.
   components: [{ path: '~/components', pathPrefix: false }],
+  // utils/plegma/ holds the files of the Plegma; its functions are auto-imported like the others.
+  imports: { dirs: ['utils/plegma'] },
   css: ['~/assets/css/tailwind.css', '~/assets/css/ssr.css', '~/assets/css/plegma.css'],
   // Tailwind 4 with no reset (preflight) and the tw: prefix, so no class of the prototype CSS changes (KTD6).
   vite: { plugins: [tailwindcss()] },

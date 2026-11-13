@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { PlegmaRegion } from '../utils/plegma-camera.ts'
-import type { PlegmaArticle, PlegmaHighlight } from '../utils/plegma-articles.ts'
-import type { PlegmaThemeStory } from '../utils/plegma-theme.ts'
-import { plegmaFocusOf, samePlegmaFocus } from '../utils/plegma-route.ts'
-import type { PlegmaFocus } from '../utils/plegma-route.ts'
+import type { PlegmaRegion } from '../utils/plegma/plegma-camera.ts'
+import type { PlegmaArticle, PlegmaHighlight } from '../utils/plegma/plegma-articles.ts'
+import type { PlegmaThemeStory } from '../utils/plegma/plegma-theme.ts'
+import { plegmaFocusOf, samePlegmaFocus } from '../utils/plegma/plegma-route.ts'
+import type { PlegmaFocus } from '../utils/plegma/plegma-route.ts'
 
 // `hero`: the page has the large search of Αρχική, so the search of the top bar waits.
 // `backdrop`: a page of tabs (Μέσα) that draws its own web over the map: the stage is only the dim world behind it, and the tabs and the top bar stay.

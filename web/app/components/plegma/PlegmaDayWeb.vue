@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { useEventListener, useMediaQuery, useRafFn } from '@vueuse/core'
 import { blendHex } from '~/utils/ink'
-import { buildDayWeb, DAY_DATE, DAY_DOT, DAY_REST, DAY_STORY, DAY_THEME, matchWebs, storiesAsThemes } from '~/utils/plegma-day'
-import type { PlegmaDayTheme, PlegmaDayWeb } from '~/utils/plegma-day'
+import { buildDayWeb, DAY_DATE, DAY_DOT, DAY_REST, DAY_STORY, DAY_THEME, matchWebs, storiesAsThemes } from '~/utils/plegma/plegma-day'
+import type { PlegmaDayTheme, PlegmaDayWeb } from '~/utils/plegma/plegma-day'
 
-// The web of a day on Home, drawn in the free area under the calendar (utils/plegma-day.ts has the layout): the date at the center, the themes of the day around it, the largest stories of each
+// The web of a day on Home, drawn in the free area under the calendar (utils/plegma/plegma-day.ts has the layout): the date at the center, the themes of the day around it, the largest stories of each
 // theme, and a dot for each article of a story. It has the look of the web of a theme (components/PlegmaStage.vue drawTheme): solid nodes with a rim of the page's color, the calm colors of the
 // groups, thin curved lines, a slow drift. A story on it is picked with a click and takes the card. The Plegma stage is behind it, as a dim map.
 // The web has two forms, `mode`: the stories of the day around the date (the ring around it has an arc for each outlet, as wide as its share of the articles of the day, in the color of its
@@ -15,7 +15,7 @@ export interface DayRing { issue: number, name: string, slot: number, n: number 
 export interface DayOutlet { name: string, slot: number, n: number, group?: string | null }
 // The pages of Μέσα use it for a period too: `date` is then the text at the center (a count, with `sub` under it), `labels` the most theme names it writes (the largest first),
 // `themeLabel` names the theme in the tooltip of a story when the themes are something else (the groups of Ιδιοκτησία, whose stories are their outlets: a story with no `media` has no row of them),
-// `spread` that many themes go round the center by the golden angle (utils/plegma-day.ts), `zoom` the share of the area the web fills (the ring included), `shares` that a theme is as large as its share
+// `spread` that many themes go round the center by the golden angle (utils/plegma/plegma-day.ts), `zoom` the share of the area the web fills (the ring included), `shares` that a theme is as large as its share
 // of the ring (the area of its node is its articles), `ellipse` that the ring is an ellipse as wide as the area allows (the web lies in it, and the arcs of the outlets are named with their share outside it), `grouped` that the stories are grouped by their themes (the nodes of the themes and their names) while the ring stays the outlets; and `shares` that a theme is as large as its share
 // of the ring (the area of its node is its articles) and its share is written after its name and in its tooltip, `grow` that the web grows out of the center when it comes into view and again when its data changes, and `label` the name of the picture for a screen reader.
 const props = withDefaults(defineProps<{ themes: PlegmaDayTheme[], ring: DayRing[], outlets: DayOutlet[], mode: 'stories' | 'themes', lit: number | null, date: string, picked: number | null, active: boolean, sub?: string, labels?: number, grow?: boolean, label?: string, spread?: boolean, themeLabel?: string, zoom?: number, shares?: boolean, ellipse?: boolean, grouped?: boolean }>(), { sub: undefined, labels: Infinity, grow: false, label: undefined, spread: false, themeLabel: undefined, zoom: 1, shares: false, ellipse: false, grouped: false })

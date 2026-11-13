@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { TopicRow } from '~/types/topics'
-import type { PlegmaDayTheme } from '~/utils/plegma-day'
+import type { PlegmaDayTheme } from '~/utils/plegma/plegma-day'
 import type { DayRing } from '~/components/plegma/PlegmaDayWeb.vue'
 
 // The topics of a period as a web of the Plegma (components/PlegmaDayWeb.vue): the count at the center, a node for each topic and a thin ring of their shares. With `themes` (Θέματα)

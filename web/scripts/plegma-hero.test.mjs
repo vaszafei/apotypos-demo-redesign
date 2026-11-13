@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { heroShape, looseOf, waveReveal, lanternReveal, heroClearMs, HERO_SPEED, HERO_FRONT } from '../app/utils/plegma-hero.ts'
-import { mulberry } from '../app/utils/plegma-world.ts'
+import { heroShape, looseOf, waveReveal, lanternReveal, heroClearMs, HERO_SPEED, HERO_FRONT } from '../app/utils/plegma/plegma-hero.ts'
+import { mulberry } from '../app/utils/plegma/plegma-world.ts'
 
 const components = (n, edges) => {
   const parent = Array.from({ length: n }, (_, i) => i)

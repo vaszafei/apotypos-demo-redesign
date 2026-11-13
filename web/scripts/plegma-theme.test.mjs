@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { buildThemeWeb } from '../app/utils/plegma-theme.ts'
+import { buildThemeWeb } from '../app/utils/plegma/plegma-theme.ts'
 
 const stories = Array.from({ length: 12 }, (_, i) => ({
   id: i + 1, name: `s${i}`, n: 200 - i * 10, media: 20,

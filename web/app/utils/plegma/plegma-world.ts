@@ -1,6 +1,6 @@
 import type { Story, StoryIssue } from '~/types/stories'
-import type { HomeIndex } from './home.ts'
-import { bestOfWeek } from './home.ts'
+import type { HomeIndex } from '../home.ts'
+import { bestOfWeek } from '../home.ts'
 
 // What the Plegma draws: one place for every story (data/plegma.json, made by scripts/build-plegma-layout.mjs), its web, its theme colour and the arcs of its theme.
 // The web code is that of assets/hero-field.js, seeded by the story id so a story looks the same on every page.

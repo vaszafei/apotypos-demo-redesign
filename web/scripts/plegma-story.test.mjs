@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { plegmaStoryColumns } from '../app/utils/plegma-story.ts'
+import { plegmaStoryColumns } from '../app/utils/plegma/plegma-story.ts'
 
 const plain = value => JSON.parse(JSON.stringify(value))
 

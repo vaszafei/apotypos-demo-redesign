@@ -3,8 +3,8 @@ import type { StoryDetailData } from '~/types/story-detail'
 import { homeIndex, homeOutletsOf } from '~/utils/home'
 import { groupColors, NO_GROUP, slotOfColor } from '~/utils/groups'
 import type { GroupsData } from '~/utils/groups'
-import { dayDots } from '~/utils/plegma-day'
-import type { PlegmaDayTheme } from '~/utils/plegma-day'
+import { dayDots } from '~/utils/plegma/plegma-day'
+import type { PlegmaDayTheme } from '~/utils/plegma/plegma-day'
 import type { DayOutlet } from '~/components/plegma/PlegmaDayWeb.vue'
 
 // The web of a period on the pages of Μέσα (components/PlegmaDayWeb.vue, the web of Home's day, over the days `from` to `to`): the largest stories of the period, each with a dot
