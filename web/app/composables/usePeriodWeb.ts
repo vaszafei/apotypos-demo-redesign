@@ -184,8 +184,8 @@ export const usePeriodWeb = (from: Ref<string>, to: Ref<string>, slotOfIssue: Re
     const perGroup = new Map<number, { slot: number, name: string, n: number }>()
     const stories = rows.value.slice(0, count).map((r) => {
       const os = homeOutletsOf(x, r.s, sp[0], sp[1]).map(o => ({ name: o.name, group: o.group ?? null, slot: groupSlot(o.group), n: o.n }))
-      return { id: r.s.id, name: storyName(r.s), n: os.reduce((a, o) => a + o.n, 0), outlets: os }
-    }).filter(r => r.n > 0)
+      return { id: r.s.id, name: storyName(r.s), n: r.n, outlets: os }
+    }).filter(r => r.outlets.length > 0)
     for (const r of stories) {
       for (const o of r.outlets) {
         const g = perGroup.get(o.slot)

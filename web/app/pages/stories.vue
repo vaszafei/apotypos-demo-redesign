@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import type { BarRow } from '~/components/BarList.vue'
-import type { StoryTrend } from '~/types/stories'
 import { themeSlots } from '~/utils/plegma-world'
 
 // Μέσα › Ιστορίες (stories-v2.html): a screen of the Plegma (components/MediaPlegma.vue) whose web is the largest stories of the period, each a small web of its articles in the colors
-// of the groups, grouped by their themes, in an ellipse whose ring is the outlets (or their groups), each arc as long as its share of the articles. Left of it the largest stories by the groups that ran them (components/StoryMediaBars.vue). In a row under the screen the lines of the first stories over the days of the period only, and right of them the stories that rise and fall against the period before. The date picker is at the top right; the web, the trends and the lines follow it. A story clicked on the web opens.
+// of the groups, grouped by their themes, in an ellipse whose ring is the outlets (or their groups), each arc as long as its share of the articles. Left of it, as tall as the two, the largest stories by the groups that ran them, each with its change against the period before (components/StoryMediaBars.vue); under the web the lines of the first stories over the days of the period only. The date picker is at the top right; the web, the trends and the lines follow it. A story clicked on the web opens.
 definePageMeta({ backdrop: true })
 const { t } = useI18n()
 useHead({ title: () => `${t('nav.media')} · ${t('site.name')}` })
@@ -22,11 +20,7 @@ const lines = computed(() => {
   return { dates: dates.value.slice(l.d0, l.d1 + 1), series }
 })
 
-const trends = computed(() => storyTrends(byDay.value, range.value[0], range.value[1]))
-const rowOf = (r: StoryTrend): BarRow => ({
-  key: r.s.id, label: storyName(r.s), to: storyHref(r.s.id), value: Math.abs(r.change), color: r.change > 0 ? 'var(--emph-more)' : 'var(--emph-less)',
-  arrow: r.change > 0 ? 'up' : 'down', text: `${fmtSigned(r.change * 100)}%`, tip: t('stories.trend.tip', { before: fmtInt(r.before), now: fmtInt(r.now) })
-})
+const changes = computed(() => storyChanges(byDay.value, range.value[0], range.value[1]))
 
 // The web: the stories of the period grouped by their theme only for their color (the web of the stories has no theme nodes), with the color slots of the themes of the period.
 const topicsData = useFixtureLazy<{ issues: unknown[], issueDaily: (number | null)[][] }>('home', { required: ['issues', 'issueDaily'], isEmpty: b => b.issueDaily.length === 0 })
@@ -38,7 +32,7 @@ const webThemes = computed(() => (periodWeb?.ready.value ? periodWeb.themesOf(36
 // The ring of the web, as the story page has it: the outlets, or their groups.
 const ringBy = ref<'outlets' | 'groups'>('outlets')
 
-const media = computed(() => (periodWeb?.ready.value ? periodWeb.storyMedia() : null))
+const media = computed(() => (periodWeb?.ready.value ? periodWeb.storyMedia(16) : null))
 
 // A new period draws the lines in again (assets/motion.js replay); the first view is played by plugins/motion.client.ts.
 const { $motion } = useNuxtApp()
@@ -63,8 +57,8 @@ watch(view, async () => { await nextTick(); $motion.replay(document.querySelecto
   <MediaPlegma v-else variant="stories">
     <template #side>
       <ClientOnly>
-        <DashCard v-if="media" class="media-side-card" :title="t('stories.media.title')" :info="t('stories.media.info')">
-          <StoryMediaBars :data="media" />
+        <DashCard v-if="media" class="media-side-card" :title="t('stories.media.title')" :info="t('stories.media.info', { n: TREND_MIN })">
+          <StoryMediaBars :data="media" :changes="changes" />
         </DashCard>
       </ClientOnly>
     </template>
@@ -80,27 +74,12 @@ watch(view, async () => { await nextTick(); $motion.replay(document.querySelecto
         </ClientOnly>
       </div>
     </template>
-    <div class="stories-time">
+    <template #under>
       <DashCard card="lines" :title="t('stories.time.title')" :info="t('stories.time.info')">
         <LinesChart v-if="lines" :dates="lines.dates" :series="lines.series" sparse sqrt :tall="300" :caption="t('stories.time.title')" :href-of="s => storyHref(s.key)" />
         <p v-else class="dcard-empty">{{ t('stories.period.empty') }}</p>
       </DashCard>
-      <DashCard class="media-time-trends" :title="t('stories.trend.title')" :info="t('stories.trend.info', { n: TREND_MIN })">
-        <p v-if="!trends" class="dcard-empty">{{ t('stories.trend.empty') }}</p>
-        <div v-else class="story-trend">
-          <div class="story-trend-col">
-            <p class="dcard-sub">{{ t('stories.trend.up') }}</p>
-            <BarList v-if="trends.up.length" :rows="trends.up.map(rowOf)" :max="trends.widest" />
-            <p v-else class="dcard-empty">{{ t('stories.trend.none') }}</p>
-          </div>
-          <div class="story-trend-col">
-            <p class="dcard-sub">{{ t('stories.trend.down') }}</p>
-            <BarList v-if="trends.down.length" :rows="trends.down.map(rowOf)" :max="trends.widest" />
-            <p v-else class="dcard-empty">{{ t('stories.trend.none') }}</p>
-          </div>
-        </div>
-      </DashCard>
-    </div>
+    </template>
   </MediaPlegma>
   <p class="proto-note">{{ t('proto.states') }}</p>
 </template>

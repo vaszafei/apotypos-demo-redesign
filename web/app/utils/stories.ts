@@ -1,8 +1,7 @@
-import type { Story, StoryDay, StoryTrend } from '~/types/stories'
+import type { Story, StoryDay } from '~/types/stories'
 
-// The lines of Μέσα › Ιστορίες: how many stories the line chart draws, how many rise and fall in Τάσεις, and the articles a story needs in the period before to count.
+// The lines of Μέσα › Ιστορίες: how many stories the line chart draws, and the articles a story needs in the period before to show a change.
 export const LINE_STORIES = 8
-export const TREND_STORIES = 5
 export const TREND_MIN = 10
 
 // The stories of each day, the largest first (Home.index of assets/home.js). A generic story is not a story, so it does not count.
@@ -27,19 +26,20 @@ const sumOver = (byDay: StoryDay[][], i0: number, i1: number) => {
 export const storiesOfPeriod = (byDay: StoryDay[][], i0: number, i1: number): StoryDay[] =>
   [...sumOver(byDay, i0, i1)].map(([s, n]) => ({ s, n })).sort((a, b) => b.n - a.n)
 
-// The articles of every story in the period against the period of the same length right before it. A story needs TREND_MIN articles in the period before to count, so a story that is only starting does not
-// show a change of thousands of per cent. null when there is no period before.
-export const storyTrends = (byDay: StoryDay[][], i0: number, i1: number) => {
-  const len = i1 - i0 + 1
-  const p0 = i0 - len
+// The articles of every story in the period against the period of the same length right before it, by the id of the story. A story needs TREND_MIN articles in the period before to show a change (`change`
+// is null otherwise), so a story that is only starting does not show a change of thousands of per cent. null when there is no period before.
+export interface StoryChange { before: number, now: number, change: number | null }
+export const storyChanges = (byDay: StoryDay[][], i0: number, i1: number) => {
+  const p0 = i0 - (i1 - i0 + 1)
   if (p0 < 0) return null
   const now = sumOver(byDay, i0, i1)
   const before = sumOver(byDay, p0, i0 - 1)
-  const rows: StoryTrend[] = [...before].filter(([, n]) => n >= TREND_MIN).map(([s, n]) => ({ s, now: now.get(s) ?? 0, before: n, change: ((now.get(s) ?? 0) - n) / n }))
-  const up = rows.filter(r => r.change > 0).sort((a, b) => b.change - a.change || b.now - a.now).slice(0, TREND_STORIES)
-  const down = rows.filter(r => r.change < 0).sort((a, b) => a.change - b.change || b.before - a.before).slice(0, TREND_STORIES)
-  const widest = Math.max(...up.concat(down).map(r => Math.abs(r.change)), 0)
-  return { p0, len, up, down, widest }
+  const out = new Map<number, StoryChange>()
+  for (const [s, n] of now) {
+    const b = before.get(s) ?? 0
+    out.set(s.id, { before: b, now: n, change: b >= TREND_MIN ? (n - b) / b : null })
+  }
+  return out
 }
 
 // The first LINE_STORIES stories of the period as lines, over the days of the period only: the axis starts on its first day and ends on its last.
