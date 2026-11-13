@@ -4,9 +4,6 @@
 definePageMeta({ backdrop: true })
 const { t } = useI18n()
 const lit = ref<number | null>(null)
-// The topic picked on the web or in the list: its cards take the place of the lines and the list (components/TopicCards.vue); a second pick of the same topic puts them back.
-const picked = ref<number | null>(null)
-const toggle = (k: number) => { picked.value = picked.value === k ? null : k }
 useHead({ title: () => `${t('nav.topics')} · ${t('site.name')}` })
 const period = usePeriodStore()
 const { status, refresh, dates, view, range, rows, total, colorOf, series, movers } = await useTopics()
@@ -25,7 +22,6 @@ const sliced = computed(() => dates.value.slice(range.value[0], range.value[1] +
 // A new period draws the lines in again (assets/motion.js replay); the first view is played by plugins/motion.client.ts.
 const { $motion } = useNuxtApp()
 watch(sliced, async () => { await nextTick(); $motion.replay(document.querySelector('[data-card="time"]')) })
-const pickedRow = computed(() => (picked.value === null ? null : rows.value.find(r => r.k === picked.value) ?? null))
 const timeInfo = computed(() => `${t('topics2.time.title')}. ${t('topics2.time.sub')}`)
 const moveInfo = computed(() => {
   const up = movers.value.filter(r => r.change! > 0)
@@ -64,22 +60,19 @@ const widest = computed(() => Math.max(...bars.value.map(b => b.value), 0))
   <div v-else-if="status === 'empty' || (status === 'ready' && !rows.length)" class="dash-grid">
     <div class="card-col c-12"><section class="dcard"><div class="empty-state" data-state="empty"><p>{{ t('topics2.empty') }}</p></div></section></div>
   </div>
-  <MediaPlegma v-else variant="topics" :open="!!pickedRow">
+  <MediaPlegma v-else variant="topics">
     <template #map="{ active }">
       <div v-if="dates.length" class="topics-date"><DateRange :dates="dates" :from="view.from" :to="view.to" @change="r => period.set(r.from, r.to)" /></div>
       <div class="media-map-web">
-        <ClientOnly><TopicWeb :lit="lit ?? picked" :rows="rows" :total="total" :color-of="colorOf" :themes="webThemes" :zoom="0.9" selectable :active="active && webThemes.length > 0" @update:lit="v => lit = v" @select="toggle" /></ClientOnly>
+        <ClientOnly><TopicWeb :lit="lit" :rows="rows" :total="total" :color-of="colorOf" :themes="webThemes" :zoom="0.9" :active="active && webThemes.length > 0" @update:lit="v => lit = v" /></ClientOnly>
       </div>
       <DashCard :title="t('topics2.time.title')" :info="timeInfo" card="time">
         <LinesChart v-if="series.length" :dates="sliced" :series="series" :caption="t('topics2.time.title')" />
       </DashCard>
     </template>
-    <template #side>
-      <TopicCards v-if="pickedRow" :key="pickedRow.k" :row="pickedRow" :total="total" :from="view.from" :to="view.to" @back="picked = null" />
-    </template>
     <template #aside>
       <DashCard :title="t('topics2.flow.title')" :info="t('topics2.flow.info')">
-        <ClientOnly><TopicOutletFlow v-if="flow" :data="flow" :lit="lit ?? picked" @update:lit="v => lit = v" @select="toggle" /></ClientOnly>
+        <ClientOnly><TopicOutletFlow v-if="flow" :data="flow" :lit="lit" @update:lit="v => lit = v" /></ClientOnly>
       </DashCard>
     </template>
     <div class="topics-row">

@@ -3,7 +3,7 @@ import { useElementSize } from '@vueuse/core'
 import type { FlowData } from '~/composables/usePeriodWeb'
 
 // A Sankey of the topics of a period (left, in their colors) and the outlets that wrote them (right, in the colors of their groups): a band is the articles of a topic in an outlet, a bar is
-// the share of all the articles of the period (the one of the list of the topics). The topic pointed at, here or on the web beside it (`lit`), takes its bands forward; a click on a topic picks it (`select`).
+// the share of all the articles of the period (the one of the list of the topics). The topic pointed at, here or on the web beside it (`lit`), takes its bands forward; a click on a topic opens its page (`select`).
 // Layout by hand (two columns, no iteration): the bars are as tall as their articles on one scale, the bands leave a bar one after the other.
 const props = defineProps<{ data: FlowData, lit: number | null }>()
 const emit = defineEmits<{ select: [issue: number], 'update:lit': [issue: number | null] }>()

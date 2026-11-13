@@ -61,38 +61,3 @@ export const useTopicDetail = (index: Ref<number | null>) => {
 
   return { home, list, detail, groupsData, loading, problem, retry, colorOfGroup, model }
 }
-
-// An outlet needs this many articles on the topic in the period before to have a trend, and the most rows each side shows.
-export const TOPIC_TREND_MIN = 8
-export const TOPIC_TREND_ROWS = 5
-
-// The outlets that write a topic more or less than in the period before (the days just before it, as many as the period has): the articles of the outlet in the stories of the topic, now
-// against before. null when the data has no period before. `from` and `to` are days of the stories.
-export const topicOutletTrends = (dd: StoryDetailData, list: StoriesData, index: number, from: string, to: string) => {
-  const i0 = dd.dates.indexOf(from)
-  const i1 = dd.dates.indexOf(to)
-  if (i0 < 0 || i1 < i0) return null
-  const len = i1 - i0 + 1
-  const p0 = i0 - len
-  if (p0 < 0) return null
-  const inTopic = new Set(list.stories.filter(s => s.issue === index && !s.generic).map(s => s.id))
-  const now = new Map<number, number>()
-  const before = new Map<number, number>()
-  for (const s of dd.stories) {
-    if (!inTopic.has(s.id)) continue
-    for (let j = 0; j < s.t.length; j += 3) {
-      const day = s.t[j + 1]!
-      const side = day >= i0 && day <= i1 ? now : day >= p0 && day < i0 ? before : null
-      if (side) side.set(s.t[j]!, (side.get(s.t[j]!) ?? 0) + s.t[j + 2]!)
-    }
-  }
-  const rows = [...before].filter(([, n]) => n >= TOPIC_TREND_MIN).map(([k, n]) => {
-    const o = dd.outlets[k]!
-    return { slug: o.slug, name: o.name, before: n, now: now.get(k) ?? 0, change: ((now.get(k) ?? 0) - n) / n }
-  })
-  const up = rows.filter(r => r.change > 0).sort((a, b) => b.change - a.change || b.now - a.now).slice(0, TOPIC_TREND_ROWS)
-  const down = rows.filter(r => r.change < 0).sort((a, b) => a.change - b.change || b.before - a.before).slice(0, TOPIC_TREND_ROWS)
-  const totalNow = [...now.values()].reduce((s, v) => s + v, 0)
-  const totalBefore = [...before.values()].reduce((s, v) => s + v, 0)
-  return { up, down, widest: Math.max(...up.concat(down).map(r => Math.abs(r.change)), 0), totalNow, totalBefore, p0 }
-}
