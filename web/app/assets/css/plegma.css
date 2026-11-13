@@ -373,6 +373,10 @@ html[data-search-fly] .body-search { opacity: 0; }
 /* Ιδιοκτησία: the network of owners and outlets fills the free area of the screen (GroupsNetwork fill). When it comes into view its groups arrive one after the other: the lines draw out of
    the owner and the circles grow out of their centers. */
 .net-fill { position: absolute; inset: 0; }
+/* The little drift of the web: every piece (a group with its outlets, lines and names, or one outlet without a group) floats a few pixels, each at its own time, only while the screen is in view. */
+.net-fill .net-drift { animation: net-drift calc(7s + var(--d, 0) * 0.9s) ease-in-out calc(var(--d, 0) * -1.7s) infinite alternate; animation-play-state: paused; }
+.net-fill.is-in .net-drift { animation-play-state: running; }
+@keyframes net-drift { 0% { transform: translate(0, 0); } 50% { transform: translate(4px, -3px); } 100% { transform: translate(-3px, 4px); } }
 .net-zones { transition: opacity 600ms var(--ease-out); pointer-events: none; }
 .net-zones text { font-size: var(--text-caption); fill: var(--text-secondary); }
 .net-fill .net-hub, .net-fill .net-outlet { transform-box: fill-box; transform-origin: center; transform: scale(0); opacity: 0; }
@@ -389,4 +393,6 @@ html[data-search-fly] .body-search { opacity: 0; }
 @media (prefers-reduced-motion: reduce) {
   .net-fill .net-hub, .net-fill .net-outlet, .net-fill .bubble-labels { transform: none; opacity: 1; animation: none !important; }
   .net-fill .net-edge { stroke-dashoffset: 0; animation: none !important; }
+  .net-fill .net-drift { animation: none; }
+  .net-fill .net-drift { animation: none !important; }
 }

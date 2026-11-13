@@ -108,7 +108,12 @@ const groupHref = (g: NetGroup) => groupPageHref(g.slug!)
 // A page that is ported is a route of the app, the others are static files.
 const open = (href: string) => navigateTo(href, { external: !portedPath(href) })
 
-interface Label { key: string, g: NetGroup, text: string, x: number, y: number, anchor: 'start' | 'middle' | 'end', kind: 'group' | 'outlet' | 'inner' | 'share', ink?: string }
+interface Label { key: string, g: NetGroup, text: string, x: number, y: number, anchor: 'start' | 'middle' | 'end', kind: 'group' | 'outlet' | 'inner' | 'share', ink?: string, d: number }
+// The little drift of the web (assets/css/plegma.css .net-drift): a group drifts as one piece (its node, its outlets, its lines and its names), and each outlet without a group drifts by itself.
+const driftOf = (g: NetGroup, slug?: string) => {
+  const gi = props.groups.indexOf(g)
+  return g.key !== null || !slug ? gi : gi + 1 + g.outlets.findIndex(o => o.slug === slug)
+}
 // The names. A name in a circle needs the circle to be wide enough; a name beside a circle goes away from its group and is left out where it would touch another name or a circle.
 const labels = computed<Label[]>(() => {
   const { nodes, clusters } = target.value
@@ -133,7 +138,7 @@ const labels = computed<Label[]>(() => {
       const x0 = anchor === 'middle' ? x - w / 2 : anchor === 'start' ? x : x - w
       if (x0 < 2 || x0 + w > w0 - 2 || y - 12 < 0 || y + 3 > h0 || hit(x0, x0 + w, y - 12, y + 3)) continue
       boxes.push({ x0, x1: x0 + w, y0: y - 12, y1: y + 3 })
-      out.push({ key: `g-${c.g.key ?? 'none'}`, g: c.g, text: name, x: round(x), y: round(y), anchor, kind: 'group' })
+      out.push({ key: `g-${c.g.key ?? 'none'}`, g: c.g, text: name, x: round(x), y: round(y), anchor, kind: 'group', d: driftOf(c.g) })
       break
     }
   }
@@ -144,8 +149,8 @@ const labels = computed<Label[]>(() => {
     if (n.r * 2 >= w + 8 && n.r >= 13) {
       const two = n.r >= 24
       const ink = inkOf(n.g.color, n.g.key === null ? 0.5 : 0.35)
-      out.push({ key: `i-${n.o.slug}`, g: n.g, text: name, x: n.x, y: n.y + (two ? -2 : 4), anchor: 'middle', kind: 'inner', ink })
-      if (two) out.push({ key: `s-${n.o.slug}`, g: n.g, text: fmtPct(n.o.value / props.total), x: n.x, y: n.y + 13, anchor: 'middle', kind: 'share', ink })
+      out.push({ key: `i-${n.o.slug}`, g: n.g, text: name, x: n.x, y: n.y + (two ? -2 : 4), anchor: 'middle', kind: 'inner', ink, d: driftOf(n.g, n.o.slug) })
+      if (two) out.push({ key: `s-${n.o.slug}`, g: n.g, text: fmtPct(n.o.value / props.total), x: n.x, y: n.y + 13, anchor: 'middle', kind: 'share', ink, d: driftOf(n.g, n.o.slug) })
       boxes.push({ x0: n.x - w / 2, x1: n.x + w / 2, y0: n.y - 10, y1: n.y + 16 })
       continue
     }
@@ -161,7 +166,7 @@ const labels = computed<Label[]>(() => {
       const x1 = side > 0 ? x + w : x
       if (x0 < 2 || x1 > w0 - 2 || hit(x0, x1, y - 12, y + 4)) continue
       boxes.push({ x0, x1, y0: y - 12, y1: y + 4 })
-      out.push({ key: `o-${n.o.slug}`, g: n.g, text: name, x: round(x), y: round(y), anchor: side > 0 ? 'start' : 'end', kind: 'outlet' })
+      out.push({ key: `o-${n.o.slug}`, g: n.g, text: name, x: round(x), y: round(y), anchor: side > 0 ? 'start' : 'end', kind: 'outlet', d: driftOf(n.g, n.o.slug) })
       placed = true
       break
     }
@@ -171,7 +176,7 @@ const labels = computed<Label[]>(() => {
       const x0 = n.x - w / 2
       if (x0 < 2 || x0 + w > w0 - 2 || y - 12 < 0 || y + 3 > h0 || hit(x0, x0 + w, y - 12, y + 3)) continue
       boxes.push({ x0, x1: x0 + w, y0: y - 12, y1: y + 3 })
-      out.push({ key: `o-${n.o.slug}`, g: n.g, text: name, x: round(n.x), y: round(y), anchor: 'middle', kind: 'outlet' })
+      out.push({ key: `o-${n.o.slug}`, g: n.g, text: name, x: round(n.x), y: round(y), anchor: 'middle', kind: 'outlet', d: driftOf(n.g, n.o.slug) })
       break
     }
   }
@@ -201,10 +206,12 @@ const showTip = (tip: { title: string, rows: { label: string, value: string, col
         </template>
       </g>
       <g>
-        <line v-for="l in layout.links" :key="l.b.o.slug" :class="['net-edge', cls(l.b.g)]" :style="{ '--g': orderOf(l.b.g) }" :x1="l.a.x" :y1="l.a.y" :x2="l.b.x" :y2="l.b.y" :stroke="l.b.g.color" />
+        <g v-for="l in layout.links" :key="l.b.o.slug" class="net-drift" :style="{ '--d': driftOf(l.b.g) }">
+          <line :class="['net-edge', cls(l.b.g)]" :style="{ '--g': orderOf(l.b.g) }" :x1="l.a.x" :y1="l.a.y" :x2="l.b.x" :y2="l.b.y" :stroke="l.b.g.color" />
+        </g>
       </g>
       <g>
-        <template v-for="n in layout.nodes" :key="n.kind === 'hub' ? `h-${n.g.key ?? 'none'}` : `o-${n.o.slug}`">
+        <g v-for="n in layout.nodes" :key="n.kind === 'hub' ? `h-${n.g.key ?? 'none'}` : `o-${n.o.slug}`" class="net-drift" :style="{ '--d': n.kind === 'hub' ? driftOf(n.g) : driftOf(n.g, n.o.slug) }">
           <circle
             v-if="n.kind === 'hub'" :class="['net-hub', cls(n.g)]" :cx="n.x" :cy="n.y" :r="n.r" :fill="n.g.color" stroke="var(--surface-page)" stroke-width="2"
             :tabindex="n.g.slug ? 0 : undefined" :role="n.g.slug ? 'link' : undefined" :aria-label="plain(groupTip(n.g))" :style="n.g.slug ? { '--g': orderOf(n.g) } : { '--g': orderOf(n.g), cursor: 'default' }"
@@ -217,15 +224,16 @@ const showTip = (tip: { title: string, rows: { label: string, value: string, col
             @pointerenter="enter(n.g); showTip(outletTip(n.o, n.g), $event)" @pointermove="showTip(outletTip(n.o, n.g), $event)" @pointerleave="leave(); tooltip.hide()"
             @click="n.o.slug && open(outletHref(n.o.slug))"
           />
-        </template>
+        </g>
       </g>
       <g :style="{ opacity: moving ? 0 : 1, transition: 'opacity 200ms' }">
       <g class="bubble-labels">
+        <g v-for="l in labels" :key="l.key" class="net-drift" :style="{ '--d': l.d }">
         <text
-          v-for="l in labels" :key="l.key"
           :class="[l.kind === 'group' ? 'bubble-name' : l.kind === 'outlet' ? 'net-name' : l.kind === 'inner' ? 'tile-label' : 'tile-share', cls(l.g)]"
           :x="l.x" :y="l.y" :text-anchor="l.anchor" :style="l.ink ? { fill: l.ink, ...(l.kind === 'inner' ? { fontWeight: 500 } : {}) } : undefined"
         >{{ l.text }}</text>
+        </g>
       </g>
       </g>
     </svg>
