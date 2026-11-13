@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useIntervalFn } from '@vueuse/core'
+import { useRafFn } from '@vueuse/core'
 import type { StanceSeries } from '~/components/StanceWeb.vue'
 
 // Μέσα › Στάση (media-v2.html?tab=writing): the stance of all the outlets to the government as a web of the Plegma over the whole screen (components/StanceWeb.vue), with its key as a
@@ -13,7 +13,7 @@ const { status, refresh, data, dates, set, colorOf } = await useMme()
 // An outlet needs 30 articles with a stance in a step to be a dot.
 const MIN_ARTICLES = 30
 const WINDOW = 30
-const STEP_MS = 450
+const STEP_MS = 450 // one step of the player, as a duration
 const steps = computed(() => {
   if (!set.value || !dates.value.length) return []
   const last = dates.value.length - 1
@@ -46,26 +46,40 @@ const series = computed<StanceSeries[]>(() => {
 })
 const avgs = computed(() => frames.value.map(f => f.avg))
 
-// The player: the step shown, from the first to the last. At the last step (the latest days) it stands still; playing starts from the first and stops at the last.
+// The player: the place in the steps, a number that runs on smoothly while it plays (STEP_MS for one step) and stops at the last. It stands at the last step (the latest days) until it is played;
+// playing from the end starts again from the first step. The dots glide to the place in components/StanceWeb.vue.
+const last = computed(() => Math.max(0, frames.value.length - 1))
 const at = ref<number | null>(null)
-const step = computed(() => at.value ?? Math.max(0, frames.value.length - 1))
+const place = computed(() => at.value ?? last.value)
+const step = computed(() => Math.min(last.value, Math.max(0, Math.round(place.value))))
 const playing = ref(false)
-const { pause: stop, resume: go } = useIntervalFn(() => {
-  if (step.value >= frames.value.length - 1) { playing.value = false; stop(); return }
-  at.value = step.value + 1
-}, STEP_MS, { immediate: false })
+// From the last step it first runs back to the first (REWIND_MS, eased), then plays: the outlets never jump.
+const REWIND_MS = 1400
+let rewound = 0
+const rewinding = ref(false)
+const { pause: stop, resume: go } = useRafFn(({ delta }) => {
+  if (rewinding.value) {
+    rewound = Math.min(1, rewound + delta / REWIND_MS)
+    const k = rewound < 0.5 ? 2 * rewound * rewound : 1 - (-2 * rewound + 2) ** 2 / 2
+    at.value = last.value * (1 - k)
+    if (rewound >= 1) rewinding.value = false
+    return
+  }
+  const next = place.value + delta / STEP_MS
+  if (next >= last.value) { at.value = last.value; playing.value = false; stop(); return }
+  at.value = next
+}, { immediate: false })
 const toggle = () => {
-  if (playing.value) { playing.value = false; stop(); return }
-  if (step.value >= frames.value.length - 1) at.value = 0
+  if (playing.value) { playing.value = false; rewinding.value = false; stop(); return }
+  if (place.value >= last.value) { rewinding.value = true; rewound = 0 }
   playing.value = true
   go()
 }
-const scrub = (v: number) => { playing.value = false; stop(); at.value = v }
+const scrub = (v: number) => { playing.value = false; rewinding.value = false; stop(); at.value = v }
 onBeforeUnmount(stop)
 
 const frame = computed(() => frames.value[step.value] ?? null)
 const title = computed(() => (set.value?.country === 'IL' ? t('mme.gov.title.il') : t('mme.gov.title')))
-const shownCount = computed(() => series.value.filter(o => o.n[step.value]! > 0).length)
 </script>
 
 <template>
@@ -84,12 +98,12 @@ const shownCount = computed(() => series.value.filter(o => o.n[step.value]! > 0)
       <template #map="{ active }">
         <div class="stance-stage">
           <div class="stance-web">
-            <ClientOnly><StanceWeb v-if="series.length > 1" :series="series" :avgs="avgs" :at="step" :active="active" :caption="title" /></ClientOnly>
+            <ClientOnly><StanceWeb v-if="series.length > 1" :series="series" :avgs="avgs" :at="place" :quiet="rewinding" :active="active" :caption="title" /></ClientOnly>
           </div>
           <div class="stance-player">
             <button type="button" class="stance-play" :aria-pressed="playing" @click="toggle">{{ playing ? t('mme.time.pause') : t('mme.time.play') }}</button>
             <input
-              class="stance-range" type="range" min="0" :max="frames.length - 1" step="1" :value="step" :aria-label="t('mme.time.slider')"
+              class="stance-range" type="range" min="0" :max="last" step="any" :value="place" :aria-label="t('mme.time.slider')"
               :aria-valuetext="t('mme.time.window', { from: fmtDate(frame.from), to: fmtDate(frame.to) })" @input="scrub(Number(($event.target as HTMLInputElement).value))"
             >
             <span class="stance-window">{{ t('mme.time.window', { from: fmtDate(frame.from), to: fmtDate(frame.to) }) }}</span>
@@ -97,13 +111,10 @@ const shownCount = computed(() => series.value.filter(o => o.n[step.value]! > 0)
         </div>
       </template>
       <template #side>
-        <DashCard :title="title" :info="t('mme.map.info')">
-          <template v-if="series.length > 1">
-            <p class="dcard-sub">{{ t('mme.map.sub', { n: fmtInt(shownCount), total: fmtInt(frame.active.length) }) }}</p>
-            <p class="dcard-sub">{{ t('mme.time.sub', { n: WINDOW }) }}</p>
-          </template>
-          <p v-else class="dcard-empty">{{ t('media2.empty.list') }}</p>
-        </DashCard>
+        <span class="info stance-info">
+          <button type="button" class="info-btn" :aria-label="t('dash.info')" aria-expanded="false"><AppIcon name="information-circle" /></button>
+          <span class="info-pop" role="note">{{ t('mme.map.info') }} {{ t('mme.time.sub', { n: WINDOW }) }}</span>
+        </span>
       </template>
     </MediaPlegma>
     <p class="proto-note">{{ t('mme.method', { from: fmtDate(frame.from), to: fmtDate(frame.to), n: fmtInt(frame.S.total), date: fmtDate(data!.updatedAt) }) }}</p>

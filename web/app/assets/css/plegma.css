@@ -357,6 +357,8 @@ html[data-search-fly] .body-search { opacity: 0; }
 .media-map-note { position: absolute; left: 0; right: 0; bottom: 0; margin: 0; font-size: var(--text-caption); color: var(--text-secondary); text-align: center; pointer-events: none; }
 .media-plegma.is-full { grid-template-columns: minmax(0, 1fr); position: relative; }
 .media-plegma.is-full > .media-plegma-side { position: absolute; top: 0; right: 0; width: min(400px, 34%); z-index: 1; }
+/* Στάση: the info of the plot is a button alone in the top right corner, no card. */
+.stance-info { align-self: flex-end; }
 /* Στάση: the web with the player under it (components/StanceWeb.vue fills .stance-web). */
 .stance-stage { position: absolute; inset: 0; display: flex; flex-direction: column; gap: var(--space-3); }
 .stance-web { position: relative; flex: 1 1 0; min-height: 0; }

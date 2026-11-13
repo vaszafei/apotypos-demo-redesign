@@ -6,11 +6,11 @@ import { mulberry } from '~/utils/plegma-world'
 // Μέσα › Στάση as a web of the Plegma (the stance map of media-v2.html, drawn over the dim world): each outlet is a node at its critical share (to the right) and its supportive share
 // (up), in the color of its group and as large as its articles. Thin curved threads join the outlets of one group. The three zones are where one share is the largest: thin
 // threads from the point where the three are a third each, with a flat tint of the stance color in each zone (as in the HTML map) that fades at the edge of the plot, and the name of each zone in its corner; the dashed threads are the shares of all the articles.
-// Every outlet has a series over time (one value for each step of the player under the web) and `at` is the place in it, in steps: the outlets glide to it, and an outlet without enough articles
+// Every outlet has a series over time (one value for each step of the player under the web) and `at` is the place in it, in steps (a number that runs on while it plays): the outlets stand there, and an outlet without enough articles
 // at a step fades out. The axes are those of the whole series, so the zones stay where they are while the outlets move.
 // It grows out of the point of all the articles when it comes into view, and drifts slowly. An outlet pointed at comes forward with the threads of its group; a click opens it.
 export interface StanceSeries { name: string, slug: string, group: string | null, color: string, c: number[], u: number[], s: number[], n: number[] }
-const props = defineProps<{ series: StanceSeries[], avgs: { c: number, s: number }[], at: number, active: boolean, caption: string }>()
+const props = defineProps<{ series: StanceSeries[], avgs: { c: number, s: number }[], at: number, quiet?: boolean, active: boolean, caption: string }>()
 const { t } = useI18n()
 const tooltip = useTooltipStore()
 const prefs = usePrefsStore()
@@ -81,7 +81,16 @@ const sample = (i: number, at: number) => {
   const ha = o.n[a]! > 0
   const hb = o.n[b]! > 0
   if (ha && hb) {
-    out.c = lerp(o.c[a]!, o.c[b]!, w); out.u = lerp(o.u[a]!, o.u[b]!, w); out.s = lerp(o.s[a]!, o.s[b]!, w); out.n = lerp(o.n[a]!, o.n[b]!, w); out.vis = 1
+    // A curve through the steps (Catmull-Rom), so the outlets do not turn sharply at each step; at the ends of its run, or next to a step where it is absent, it is a straight line.
+    const pick = (row: number[], k: number, fallback: number) => (k >= 0 && k <= lastStep.value && o.n[k]! > 0 ? row[k]! : fallback)
+    const curve = (row: number[]) => {
+      const p1 = row[a]!
+      const p2 = row[b]!
+      const p0 = pick(row, a - 1, p1 - (p2 - p1))
+      const p3 = pick(row, b + 1, p2 + (p2 - p1))
+      return 0.5 * (2 * p1 + (p2 - p0) * w + (2 * p0 - 5 * p1 + 4 * p2 - p3) * w * w + (3 * p1 - p0 - 3 * p2 + p3) * w * w * w)
+    }
+    out.c = clamp(curve(o.c), 0, 1); out.u = clamp(curve(o.u), 0, 1); out.s = clamp(curve(o.s), 0, 1); out.n = Math.max(1, curve(o.n)); out.vis = 1
   } else if (ha || hb) {
     const k = ha ? a : b
     out.c = o.c[k]!; out.u = o.u[k]!; out.s = o.s[k]!; out.n = o.n[k]!; out.vis = ha ? 1 - w : w
@@ -168,10 +177,10 @@ const buildZones = (dpr: number) => {
 const GROW_MS = 1600
 let growAt = -1
 let hover = -1
+let calm = 1
 let mix = 0
 let litLast = -1
 let last = 0
-let shownAt = -1
 let px = new Float32Array(0)
 let py = new Float32Array(0)
 const ease3 = (k: number) => 1 - (1 - clamp(k, 0, 1)) ** 3
@@ -181,11 +190,7 @@ const draw = (sec: number, dt: number) => {
   const total = props.series.length
   if (!g || !width || !total) return
   const dpr = Math.min(window.devicePixelRatio || 1, 2)
-  // The place the outlets are at glides to the place asked for.
-  if (shownAt < 0 || reduced.value) shownAt = props.at
-  else shownAt += (props.at - shownAt) * (1 - Math.exp(-dt * 5))
-  if (Math.abs(props.at - shownAt) < 0.002) shownAt = props.at
-  const at0 = clamp(shownAt, 0, lastStep.value)
+  const at0 = clamp(props.at, 0, lastStep.value)
   g.setTransform(dpr, 0, 0, dpr, 0, 0)
   g.clearRect(0, 0, width, height)
   const grown = growAt < 0 ? (reduced.value ? 1 : 0) : clamp((performance.now() - growAt) / GROW_MS, 0, 1)
@@ -286,27 +291,38 @@ const draw = (sec: number, dt: number) => {
     }
   }
   // The names, where they fit, once the outlets have arrived.
-  const named = ease3((grown - 0.7) / 0.3)
+  // The names fade while the player runs back (`quiet`): so fast they could not be read, and they would jump from side to side of their dot.
+  calm = reduced.value ? (props.quiet ? 0 : 1) : calm + ((props.quiet ? 0 : 1) - calm) * (1 - Math.exp(-dt * 8))
+  const named = ease3((grown - 0.7) / 0.3) * calm
   if (named > 0) {
-    const f = clamp(Math.round(at0), 0, lastStep.value)
+    // A name sits at its place for the step before and the step after, with its offset from the dot; between the two the offset glides, so a name does not jump when the next step comes.
+    const la = labelsAt(a)
+    const lb = labelsAt(b)
+    const wt = at0 - a
+    const ia = new Map(la.map(l => [l.i, l]))
+    const ib = new Map(lb.map(l => [l.i, l]))
     g.font = `11px ${font}`
     g.lineJoin = 'round'
     g.lineWidth = 3.5
     g.textAlign = 'left'
-    for (const l of labelsAt(f)) {
-      const i = l.i
+    for (const i of new Set([...ia.keys(), ...ib.keys()])) {
       const o = props.series[i]!
       const v = cur[i]!
       if (v.vis <= 0.01) continue
-      const ddx = px[i]! - sx(o.c[f]!)
-      const ddy = py[i]! - sy(o.s[f]!)
+      const off = (l: { x: number, y: number } | undefined, f: number) => (l ? [l.x - sx(o.c[f]!), l.y - sy(o.s[f]!)] as const : null)
+      const oa = off(ia.get(i), a)
+      const ob = off(ib.get(i), b)
+      const [ox2, oy2] = oa && ob ? [lerp(oa[0], ob[0], wt), lerp(oa[1], ob[1], wt)] : (oa ?? ob)!
+      const name = o.name
       const fade = (i === litLast ? 1 : litGroup !== null && o.group === litGroup ? 1 : back) * v.vis
+      const x = px[i]! + ox2
+      const y = py[i]! + oy2
       g.globalAlpha = 0.9 * named * fade
       g.strokeStyle = paper
-      g.strokeText(l.name, l.x + ddx, l.y + ddy)
+      g.strokeText(name, x, y)
       g.fillStyle = i === litLast && mix > 0.5 ? ink : mute
       g.globalAlpha = named * fade
-      g.fillText(l.name, l.x + ddx, l.y + ddy)
+      g.fillText(name, x, y)
     }
   }
   g.globalAlpha = 1
