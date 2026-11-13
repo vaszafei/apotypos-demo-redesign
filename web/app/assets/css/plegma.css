@@ -241,3 +241,22 @@ html[data-search-fly] .body-search { opacity: 0; }
 .home-cards-enter-active, .home-cards-leave-active { transition: opacity 0.22s ease; }
 .home-cards-enter-from, .home-cards-leave-to { opacity: 0; }
 @media (prefers-reduced-motion: reduce) { .home-cards-enter-active, .home-cards-leave-active { transition: none; } }
+
+/* The pager of the tabs (components/TabPager.vue): at the end of a tab the name of the next one waits at the bottom; a pull past the end fills its bar and opens it.
+   A pull above the top shows the tab before at the top. Rectangular, the type of the tabs of the sidebar. */
+.tab-pager { position: fixed; left: 50%; z-index: 30; display: grid; gap: 5px; justify-items: center; padding: 8px 14px 9px; border: 1px solid var(--rule); border-radius: 6px; background: color-mix(in srgb, var(--surface-page) 88%, transparent); backdrop-filter: blur(6px); opacity: 0; pointer-events: none; transition: opacity 240ms var(--ease-out), transform 320ms var(--ease-out); }
+.tab-pager-next { bottom: 20px; transform: translate(-50%, 12px); }
+.tab-pager-prev { top: 76px; transform: translate(-50%, -12px); }
+.tab-pager.is-shown { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+.tab-pager-next.is-pulling { transform: translate(-50%, calc(var(--pull) * -10px)); }
+.tab-pager-prev.is-pulling { transform: translate(-50%, calc(var(--pull) * 10px)); }
+.tab-pager-link { display: flex; align-items: center; gap: 6px; font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); text-decoration: none; }
+.tab-pager-link:hover, .tab-pager.is-pulling .tab-pager-link { color: var(--ink); }
+.tab-pager-prev .icon { transform: rotate(180deg); }
+.tab-pager-next .icon { animation: tab-pager-nudge 1.8s var(--ease-out) infinite; }
+.tab-pager.is-pulling .icon { animation: none; }
+.tab-pager-bar { width: 100%; height: 2px; background: var(--rule); overflow: hidden; position: relative; }
+.tab-pager-bar::after { content: ""; position: absolute; inset: 0; background: var(--ink); transform-origin: left; transform: scaleX(var(--pull, 0)); transition: transform 90ms linear; }
+@keyframes tab-pager-nudge { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(3px); } }
+@media (prefers-reduced-motion: reduce) { .tab-pager-next .icon { animation: none; } }
+@media (max-width: 1023px) { .tab-pager-prev { top: 64px; } }

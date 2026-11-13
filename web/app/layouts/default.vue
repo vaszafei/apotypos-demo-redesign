@@ -142,5 +142,6 @@ const back = () => {
     </div>
     <ChartTooltip />
     <AuthDrawer />
+    <ClientOnly><TabPager /></ClientOnly>
   </div>
 </template>
