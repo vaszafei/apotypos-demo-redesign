@@ -9,6 +9,10 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   // The design is the prototype's own CSS, copied from docs/redesign/prototypes/assets by scripts/sync-prototype.mjs. No Nuxt UI.
   modules: ['@pinia/nuxt', '@nuxtjs/i18n'],
+  // The components are in folders by what they belong to (ui, charts, shell, auth, home, outlet, group, topic, stance, story, plegma). The folder is not part of the name: <BarList>, not <ChartsBarList>.
+  components: [{ path: '~/components', pathPrefix: false }],
+  // utils/plegma/ holds the files of the Plegma; its functions are auto-imported like the others.
+  imports: { dirs: ['utils/plegma'] },
   css: ['~/assets/css/tailwind.css', '~/assets/css/ssr.css', '~/assets/css/plegma.css'],
   // Tailwind 4 with no reset (preflight) and the tw: prefix, so no class of the prototype CSS changes (KTD6).
   vite: { plugins: [tailwindcss()] },
@@ -27,7 +31,8 @@ export default defineNuxtConfig({
       htmlAttrs: { lang: 'el', 'data-header': 'v2' },
       title: 'Απότυπος',
       meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }],
-      link: [{ rel: 'icon', href: 'data:,' }, ...['tokens', 'app', 'dash', 'mme', 'home', 'date-range'].map(sheet)]
+      // The default font is fetched with the page: when it arrives late the masthead of Αρχική wraps in the fallback font and the hero jumps up one line (npm run check:load).
+      link: [{ rel: 'icon', href: 'data:,' }, { rel: 'preload', as: 'font', type: 'font/woff2', href: '/assets/fonts/IBMPlexSans-greek-latin.woff2', crossorigin: 'anonymous' }, ...['tokens', 'app', 'dash', 'mme', 'home', 'date-range'].map(sheet)]
     },
     // The page transition is a view transition (plugins/view-transition.client.ts), with the CSS of the prototype.
     pageTransition: false

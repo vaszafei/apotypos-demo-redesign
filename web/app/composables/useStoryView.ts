@@ -2,8 +2,8 @@ import type { MaybeRefOrGetter } from 'vue'
 import type { StoriesData } from '~/types/stories'
 import type { StoryDetailData } from '~/types/story-detail'
 import type { GroupsData } from '~/utils/groups'
-import type { BarRow } from '~/components/BarList.vue'
-import type { PlegmaArticle } from '~/utils/plegma-articles'
+import type { BarRow } from '~/components/charts/BarList.vue'
+import type { PlegmaArticle } from '~/utils/plegma/plegma-articles'
 import type { MmeData } from '~/types/mme'
 
 // The data of one story for its view (the cards of components/plegma/cards/ and the title): the fixtures, the story's rows, its days by group, the groups with
@@ -151,4 +151,3 @@ export const useStoryView = (id: MaybeRefOrGetter<number>) => {
 }
 
 export type StoryView = ReturnType<typeof useStoryView>
-export type StoryModel = NonNullable<StoryView['model']['value']>

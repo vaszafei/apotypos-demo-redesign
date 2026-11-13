@@ -4,7 +4,7 @@ import PlegmaHowCard from './PlegmaHowCard.vue'
 import PlegmaRelatedCard from './PlegmaRelatedCard.vue'
 import PlegmaStanceCard from './PlegmaStanceCard.vue'
 import PlegmaPeopleCard from './PlegmaPeopleCard.vue'
-import { articlesPerNode } from '~/utils/plegma-articles'
+import { articlesPerNode } from '~/utils/plegma/plegma-articles'
 
 // The story view: the title, under it the other stories of the theme, the free cell for the map and the cards beside it, and the days under that row. The web itself is the stage's (PlegmaStage.vue).
 const props = defineProps<{ id: number }>()
@@ -30,7 +30,7 @@ const columns = computed(() => plegmaStoryColumns(!!m.value?.labelled))
 const orbit = ref<HTMLElement>()
 const map = ref<HTMLElement>()
 usePlegmaRegion(orbit, map)
-// How many articles a node of the map stands for: one while the story is small enough to show each article (utils/plegma-articles.ts).
+// How many articles a node of the map stands for: one while the story is small enough to show each article (utils/plegma/plegma-articles.ts).
 const perNode = computed(() => (m.value ? articlesPerNode(m.value.articles) : 1))
 </script>
 

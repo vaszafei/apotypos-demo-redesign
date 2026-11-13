@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useWindowSize } from '@vueuse/core'
-import { PLEGMA_THEME_OUTLETS, PLEGMA_THEME_STORIES } from '~/utils/plegma-theme'
-import { themeSlots } from '~/utils/plegma-world'
+import { PLEGMA_THEME_OUTLETS, PLEGMA_THEME_STORIES } from '~/utils/plegma/plegma-theme'
+import { themeSlots } from '~/utils/plegma/plegma-world'
 
 // The theme view: the theme on the Plegma (a web with the theme at the center, its largest stories around it and the outlets that wrote each story around the story, and under
 // it the articles of the theme for each day: the stage draws both in the free cell) with the cards of the topic page around the map: its stories, the stance, the outlets and

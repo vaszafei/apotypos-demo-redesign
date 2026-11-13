@@ -1,21 +1,21 @@
 <script setup lang="ts">
 import { useEventListener, useMediaQuery } from '@vueuse/core'
-import type { PlegmaPoint } from '~/utils/plegma-camera'
-import { cameraAt, flightDone, frameHome, framePair, frameStory, frameTheme, PLEGMA_REGION, redirectFlight, regionBox, toScreen, toWorld } from '~/utils/plegma-camera'
-import type { PlegmaCamera, PlegmaFlight } from '~/utils/plegma-camera'
-import { arcsOf, buildWorld, drawLevel, homeWebs, PLEGMA_FAR_MIN, PLEGMA_FOCUS_DOTS, PLEGMA_WEB_MIN, themeCore, themeFrameSet, webOf } from '~/utils/plegma-world'
-import { heroClearMs, heroReach, heroWebOf, HERO_SPEED, lanternReveal, looseOf, smooth, waveReveal } from '~/utils/plegma-hero'
-import type { HeroSource } from '~/utils/plegma-hero'
-import { articleOfNode, articleRadius, articlesPerNode, articleWebOf, matchesHighlight, nodeCount } from '~/utils/plegma-articles'
-import type { PlegmaHighlight } from '~/utils/plegma-articles'
-import { buildThemeWeb } from '~/utils/plegma-theme'
-import type { PlegmaThemeWeb } from '~/utils/plegma-theme'
-import type { PlegmaFile, PlegmaHomeFile, PlegmaStoriesFile, PlegmaStory, PlegmaWorld } from '~/utils/plegma-world'
+import type { PlegmaPoint } from '~/utils/plegma/plegma-camera'
+import { cameraAt, flightDone, frameHome, framePair, frameStory, frameTheme, PLEGMA_REGION, redirectFlight, regionBox, toScreen, toWorld } from '~/utils/plegma/plegma-camera'
+import type { PlegmaCamera, PlegmaFlight } from '~/utils/plegma/plegma-camera'
+import { arcsOf, buildWorld, drawLevel, homeWebs, PLEGMA_FAR_MIN, PLEGMA_FOCUS_DOTS, PLEGMA_WEB_MIN, themeCore, themeFrameSet, webOf } from '~/utils/plegma/plegma-world'
+import { heroClearMs, heroReach, heroWebOf, HERO_SPEED, lanternReveal, looseOf, smooth, waveReveal } from '~/utils/plegma/plegma-hero'
+import type { HeroSource } from '~/utils/plegma/plegma-hero'
+import { articleOfNode, articleRadius, articlesPerNode, articleWebOf, matchesHighlight, nodeCount } from '~/utils/plegma/plegma-articles'
+import type { PlegmaHighlight } from '~/utils/plegma/plegma-articles'
+import { buildThemeWeb } from '~/utils/plegma/plegma-theme'
+import type { PlegmaThemeWeb } from '~/utils/plegma/plegma-theme'
+import type { PlegmaFile, PlegmaHomeFile, PlegmaStoriesFile, PlegmaStory, PlegmaWorld } from '~/utils/plegma/plegma-world'
 import { homeIndex, HOME_WEBS, HOME_WEBS_PHONE } from '~/utils/home'
 
 // The Plegma: one canvas behind the pages, in the layout, so it outlives a page change and a flight can end on another page (KTD1). It draws every story of the
 // fixtures at its permanent place (plegma.json), with the look of the home hero: a web for a story, a dot for the rest, dashed arcs along a theme. The route says what
-// is in focus (stores/plegma.ts); when it changes the camera flies there (utils/plegma-camera.ts). On a route without the plegma page meta the stage is hidden and stops.
+// is in focus (stores/plegma.ts); when it changes the camera flies there (utils/plegma/plegma-camera.ts). On a route without the plegma page meta the stage is hidden and stops.
 const TAU = Math.PI * 2
 const plegma = usePlegmaStore()
 const prefs = usePrefsStore()
@@ -208,7 +208,7 @@ const fly = () => {
 }
 
 // ---- the picked story: one node for each article ----
-// The web is the story's articles (utils/plegma-articles.ts). Its size on the screen is that of the free map region, so it is the same at any window; in the world it is
+// The web is the story's articles (utils/plegma/plegma-articles.ts). Its size on the screen is that of the free map region, so it is the same at any window; in the world it is
 // a disc of `Rt / zt` where zt is the zoom of the framing, so it grows and shrinks with the camera in a flight. The nodes go round on small circles, each its own way.
 const arts = { aw: null as ReturnType<typeof articleWebOf> | null, id: -1, cx: 0, cy: 0, R: 0, ring: 0, rWorld: 0, dr: 1, spacing: 0 }
 // When the outlets of the story are read the web changes from the plain disc to the sectors of its groups: the nodes move there, they do not jump.
@@ -528,7 +528,7 @@ const arcOf = (ctx2: CanvasRenderingContext2D, a: PlegmaStory, b: PlegmaStory, s
 }
 
 // ---- a theme in view ----
-// The web of the theme (utils/plegma-theme.ts), in the middle of the map region: the theme at the center, its stories on the first circle, the outlets of each story
+// The web of the theme (utils/plegma/plegma-theme.ts), in the middle of the map region: the theme at the center, its stories on the first circle, the outlets of each story
 // around it in the sector of the story. It has the look of the web of a story: solid nodes with a rim of the page's color, the calm colors of the groups, a ring of arcs.
 const themed = { key: '', web: null as PlegmaThemeWeb | null, index: new Map<number, number>() }
 let hx = new Float32Array(0)

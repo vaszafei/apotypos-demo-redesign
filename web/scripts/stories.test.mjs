@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { runInNewContext } from 'node:vm'
-import { storiesByDay, storiesOfPeriod, storyTrends, storyLines, LINE_STORIES } from '../app/utils/stories.ts'
+import { storiesByDay, storiesOfPeriod, storyLines, LINE_STORIES } from '../app/utils/stories.ts'
 
 const data = JSON.parse(readFileSync(new URL('../public/data/stories.json', import.meta.url), 'utf8'))
 
@@ -31,26 +31,14 @@ test('a generic story is not in any list', () => {
   assert.ok(storiesOfPeriod(byDay, 0, last).every(r => !r.s.generic))
 })
 
-test('trends: none without a period before; the rows are ordered and every story has enough articles before', () => {
-  const byDay = storiesByDay(data.stories, data.dates.length)
-  assert.equal(storyTrends(byDay, 0, 6), null)
-  const t = storyTrends(byDay, 30, 36)
-  assert.equal(t.p0, 23)
-  assert.ok(t.up.length <= 5 && t.down.length <= 5)
-  assert.ok(t.up.every((r, i) => r.change > 0 && r.before >= 10 && (i === 0 || t.up[i - 1].change >= r.change)))
-  assert.ok(t.down.every((r, i) => r.change < 0 && (i === 0 || t.down[i - 1].change <= r.change)))
-  assert.equal(t.widest, Math.max(...t.up.concat(t.down).map(r => Math.abs(r.change))))
-})
-
-test('lines: the axis ends on the last day, covers at least a week, and the values are the days of the story', () => {
+test('lines: the axis is the picked days, and the values are the days of the story', () => {
   const byDay = storiesByDay(data.stories, data.dates.length)
   const list = storiesOfPeriod(byDay, 40, 40)
   const l = storyLines(list, 40, 40)
   assert.equal(l.lines.length, Math.min(LINE_STORIES, list.length))
-  assert.ok(l.d1 - l.d0 >= 6)
+  assert.deepEqual([l.d0, l.d1], [40, 40])
   for (const { s, values } of l.lines) {
     assert.equal(values.length, l.d1 - l.d0 + 1)
     for (let j = 0; j < s.days.length; j += 2) if (s.days[j] >= l.d0 && s.days[j] <= l.d1) assert.equal(values[s.days[j] - l.d0], s.days[j + 1])
   }
-  assert.deepEqual(l.band, { from: 40 - l.d0, to: 40 - l.d0 })
 })

@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { PLEGMA_VIEW } from '../app/utils/plegma-route.ts'
+import { PLEGMA_VIEW } from '../app/utils/plegma/plegma-route.ts'
 
 test('a story or a theme route, with its query or a trailing slash, is a view of the Plegma', () => {
   for (const to of ['/story?id=5', '/topic?i=3', '/story/?id=5', '/story', '/topic/']) assert.ok(PLEGMA_VIEW.test(to), to)

@@ -2,7 +2,7 @@ import { test, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
 import { createPinia, setActivePinia } from 'pinia'
 import { usePlegmaStore } from '../app/stores/plegma.ts'
-import { plegmaFocusOf } from '../app/utils/plegma-route.ts'
+import { plegmaFocusOf } from '../app/utils/plegma/plegma-route.ts'
 
 beforeEach(() => setActivePinia(createPinia()))
 const route = (path, query = {}, plegma = true) => ({ path, query, meta: plegma ? { plegma: true } : {} })

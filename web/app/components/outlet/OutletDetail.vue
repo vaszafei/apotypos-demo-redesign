@@ -4,8 +4,8 @@ import type { MmeData } from '~/types/mme'
 import type { StoriesData } from '~/types/stories'
 import type { StoryDetailData } from '~/types/story-detail'
 import type { GroupsData, MediaDaily } from '~/utils/groups'
-import { PLEGMA_THEME_OUTLETS, PLEGMA_THEME_STORIES } from '~/utils/plegma-theme'
-import { themeSlots } from '~/utils/plegma-world'
+import { PLEGMA_THEME_OUTLETS, PLEGMA_THEME_STORIES } from '~/utils/plegma/plegma-theme'
+import { themeSlots } from '~/utils/plegma/plegma-world'
 
 // The outlet on the Plegma: the title card with the facts of the outlet, the web in the free cell (the outlet at the center, its largest stories around it in the color of their theme,
 // and for each story the days the outlet wrote it: the stage draws it), the cards of the old four tabs in two columns, and the articles of the outlet over time under them.

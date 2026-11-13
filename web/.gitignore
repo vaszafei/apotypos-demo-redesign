@@ -5,3 +5,4 @@ public
 dist
 app/generated
 i18n/locales
+dev.log

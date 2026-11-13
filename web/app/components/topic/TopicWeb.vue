@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { TopicRow } from '~/types/topics'
-import type { PlegmaDayTheme } from '~/utils/plegma-day'
-import type { DayRing } from '~/components/PlegmaDayWeb.vue'
+import type { PlegmaDayTheme } from '~/utils/plegma/plegma-day'
+import type { DayRing } from '~/components/plegma/PlegmaDayWeb.vue'
 
 // The topics of a period as a web of the Plegma (components/PlegmaDayWeb.vue): the count at the center, a node for each topic and a thin ring of their shares. With `themes` (Θέματα)
 // each topic has its largest stories, each a small web of dots in the colors of the groups that ran it; without (Επισκόπηση) the topics are alone, each with faint dots as many as its

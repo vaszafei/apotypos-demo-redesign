@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createPinia, setActivePinia } from 'pinia'
-import { articleDays, articleRadius, articleWebOf, buildArticleWeb } from '../app/utils/plegma-articles.ts'
+import { articleDays, articleRadius, articleWebOf, buildArticleWeb } from '../app/utils/plegma/plegma-articles.ts'
 import { usePlegmaStore } from '../app/stores/plegma.ts'
 
 const read = name => JSON.parse(readFileSync(new URL(`../public/data/${name}.json`, import.meta.url), 'utf8'))
@@ -63,7 +63,7 @@ test('the articles of the focused story are forgotten when another story is in f
 })
 
 test('a story of more than the most nodes has a node for several articles, evenly through its days, and a small one has one for each', async () => {
-  const { PLEGMA_NODES_MAX, nodeCount, articlesPerNode, articleOfNode } = await import('../app/utils/plegma-articles.ts')
+  const { PLEGMA_NODES_MAX, nodeCount, articlesPerNode, articleOfNode } = await import('../app/utils/plegma/plegma-articles.ts')
   assert.equal(nodeCount(44), 44)
   assert.equal(articlesPerNode(44), 1)
   assert.equal(nodeCount(3219), PLEGMA_NODES_MAX)

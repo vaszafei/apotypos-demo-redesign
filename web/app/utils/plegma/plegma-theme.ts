@@ -1,7 +1,7 @@
 import { mulberry } from './plegma-world.ts'
 
 // The web of a theme in view: the theme is the center, its largest stories lie around it at uneven distances, and each story is a small loose web of the outlets that
-// wrote it most (a node for each outlet, as large as its articles in that story). It is the web of a story (utils/plegma-articles.ts) one level up, and it is not a
+// wrote it most (a node for each outlet, as large as its articles in that story). It is the web of a story (utils/plegma/plegma-articles.ts) one level up, and it is not a
 // chart: the places are loose on purpose, the numbers are in the cards and the tooltips.
 
 export interface PlegmaThemeOutlet { name: string, group: string | null, slot: number, n: number }

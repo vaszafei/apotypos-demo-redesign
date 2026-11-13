@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { buildDayWeb, dayDots, DAY_DATE, DAY_THEME, DAY_STORY, DAY_DOT, DAY_REST, PLEGMA_DAY_DOTS } from '../app/utils/plegma-day.ts'
+import { buildDayWeb, dayDots, DAY_DATE, DAY_THEME, DAY_STORY, DAY_DOT, DAY_REST, PLEGMA_DAY_DOTS } from '../app/utils/plegma/plegma-day.ts'
 
 const story = (id, n, dots) => ({ id, name: `s${id}`, n, media: 3, dots })
 const themes = [

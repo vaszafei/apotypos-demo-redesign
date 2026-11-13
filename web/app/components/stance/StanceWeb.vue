@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useEventListener, useMediaQuery, useRafFn } from '@vueuse/core'
 import { placeLabels } from '~/utils/stance-labels'
-import { mulberry } from '~/utils/plegma-world'
+import { mulberry } from '~/utils/plegma/plegma-world'
 
 // Μέσα › Στάση as a web of the Plegma (the stance map of media-v2.html, drawn over the dim world): each outlet is a node at its critical share (to the right) and its supportive share
 // (up), in the color of its group and as large as its articles. Thin curved threads join the outlets of one group. The three zones are where one share is the largest: thin
