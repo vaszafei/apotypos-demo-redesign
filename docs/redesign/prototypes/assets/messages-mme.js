@@ -63,6 +63,11 @@ Object.assign(window.MESSAGES.el, {
   'mme.map.avg.supp': 'Όλα τα άρθρα: {v} υποστηρικτικά',
   'mme.map.info': 'Κάθε κουκκίδα είναι ένα μέσο. Όσο πιο δεξιά, τόσο περισσότερα επικριτικά άρθρα· όσο πιο ψηλά, τόσο περισσότερα υποστηρικτικά. Οι τρεις ζώνες δείχνουν τι γράφει περισσότερο το μέσο: επικριτικά, υποστηρικτικά ή ουδέτερα. Μετράνε τα άρθρα όπου η κυβέρνηση παίζει ρόλο. Τα μέσα με λιγότερα από 30 άρθρα δεν φαίνονται. Περάστε το ποντίκι πάνω από μια κουκκίδα για τα ακριβή ποσοστά.',
   'media2.scatter.period': 'Όλο το διάστημα των δεδομένων: {from} – {to}',
+  'mme.time.play': 'Αναπαραγωγή',
+  'mme.time.pause': 'Παύση',
+  'mme.time.slider': 'Περίοδος',
+  'mme.time.window': '{from} – {to}',
+  'mme.time.sub': 'Κάθε βήμα είναι οι τελευταίες {n} ημέρες μέχρι εκείνη τη μέρα· πατήστε αναπαραγωγή και τα μέσα κινούνται εκεί που ήταν τότε.',
   'mme.map.point': '{name}: επικριτικά {c}, ουδέτερα {u}, υποστηρικτικά {s} · {n} άρθρα',
 
   'mme.topic.title': 'Ένα θέμα, όλα τα μέσα',
@@ -226,6 +231,11 @@ Object.assign(window.MESSAGES.en, {
   'mme.map.avg.supp': 'All articles: {v} supportive',
   'mme.map.info': 'Each dot is an outlet. The further right, the more critical articles; the higher, the more supportive articles. The three zones show what the outlet writes most: critical, supportive or neutral. The articles counted are those where the government has a role. Outlets with fewer than 30 articles are not shown. Hover a dot for the exact shares.',
   'media2.scatter.period': 'The whole period of the data: {from} – {to}',
+  'mme.time.play': 'Play',
+  'mme.time.pause': 'Pause',
+  'mme.time.slider': 'Period',
+  'mme.time.window': '{from} – {to}',
+  'mme.time.sub': 'Each step is the last {n} days up to that day; press play and the outlets move to where they stood then.',
   'mme.map.point': '{name}: critical {c}, neutral {u}, supportive {s} · {n} articles',
 
   'mme.topic.title': 'One topic, all outlets',

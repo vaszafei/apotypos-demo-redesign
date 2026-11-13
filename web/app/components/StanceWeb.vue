@@ -1,21 +1,23 @@
 <script setup lang="ts">
 import { useEventListener, useMediaQuery, useRafFn } from '@vueuse/core'
-import { mulberry } from '~/utils/plegma-world'
 import { placeLabels } from '~/utils/stance-labels'
-import type { StancePoint } from '~/types/mme'
+import { mulberry } from '~/utils/plegma-world'
 
 // Μέσα › Στάση as a web of the Plegma (the stance map of media-v2.html, drawn over the dim world): each outlet is a node at its critical share (to the right) and its supportive share
 // (up), in the color of its group and as large as its articles. Thin curved threads join the outlets of one group. The three zones are where one share is the largest: thin
 // threads from the point where the three are a third each, with a flat tint of the stance color in each zone (as in the HTML map) that fades at the edge of the plot, and the name of each zone in its corner; the dashed threads are the shares of all the articles.
+// Every outlet has a series over time (one value for each step of the player under the web) and `at` is the place in it, in steps: the outlets glide to it, and an outlet without enough articles
+// at a step fades out. The axes are those of the whole series, so the zones stay where they are while the outlets move.
 // It grows out of the point of all the articles when it comes into view, and drifts slowly. An outlet pointed at comes forward with the threads of its group; a click opens it.
-export interface StanceNode extends StancePoint { slug: string, group: string | null }
-const props = defineProps<{ points: StanceNode[], avg: { c: number, s: number }, active: boolean, caption: string }>()
+export interface StanceSeries { name: string, slug: string, group: string | null, color: string, c: number[], u: number[], s: number[], n: number[] }
+const props = defineProps<{ series: StanceSeries[], avgs: { c: number, s: number }[], at: number, active: boolean, caption: string }>()
 const { t } = useI18n()
 const tooltip = useTooltipStore()
 const prefs = usePrefsStore()
 const reduced = useMediaQuery('(prefers-reduced-motion: reduce)')
 const TAU = Math.PI * 2
 const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x))
+const lerp = (a: number, b: number, w: number) => a + (b - a) * w
 const box = ref<HTMLElement>()
 const canvas = ref<HTMLCanvasElement>()
 let ctx: CanvasRenderingContext2D | null = null
@@ -50,11 +52,13 @@ const resolve = (c: string) => {
   return out
 }
 
-// The plot: the axes start and end near the data, so the outlets spread over the area; a margin leaves room for the names.
+// The plot: the axes start and end near the data of every step, so the outlets spread over the area; a margin leaves room for the names.
 const pad = { top: 34, right: 40, bottom: 44, left: 40 }
+const lastStep = computed(() => Math.max(0, props.avgs.length - 1))
+const shown = computed(() => props.series.flatMap(o => o.n.map((n, f) => (n > 0 ? { c: o.c[f]!, s: o.s[f]!, n } : null)).filter(p => p !== null)))
 const ext = computed(() => {
-  const cs = props.points.map(p => p.c)
-  const ss = props.points.map(p => p.s)
+  const cs = shown.value.map(p => p.c)
+  const ss = shown.value.map(p => p.s)
   return {
     x0: Math.max(0, Math.min(...cs) - 0.05), x1: Math.min(1, Math.max(...cs) + 0.05),
     y0: Math.max(0, Math.min(...ss) - 0.04), y1: Math.min(1, Math.max(...ss) + 0.05)
@@ -62,30 +66,60 @@ const ext = computed(() => {
 })
 const sx = (c: number) => pad.left + ((c - ext.value.x0) / (ext.value.x1 - ext.value.x0)) * (width - pad.left - pad.right)
 const sy = (s: number) => height - pad.bottom - ((s - ext.value.y0) / (ext.value.y1 - ext.value.y0)) * (height - pad.top - pad.bottom)
-const maxN = computed(() => Math.max(1, ...props.points.map(p => p.n)))
-const radius = (p: StancePoint) => 4 + 9 * Math.sqrt(p.n / maxN.value)
+const maxN = computed(() => Math.max(1, ...shown.value.map(p => p.n)))
+const radius = (n: number) => 4 + 9 * Math.sqrt(n / maxN.value)
 
+// An outlet at a place of its series: between two steps its shares and articles are the mix of the two; an outlet present at one of them only is the one, fading in or out.
+interface Cur { c: number, u: number, s: number, n: number, vis: number }
+const cur: Cur[] = []
+const sample = (i: number, at: number) => {
+  const o = props.series[i]!
+  const a = clamp(Math.floor(at), 0, lastStep.value)
+  const b = Math.min(lastStep.value, a + 1)
+  const w = clamp(at - a, 0, 1)
+  const out = (cur[i] ??= { c: 0, u: 0, s: 0, n: 0, vis: 0 })
+  const ha = o.n[a]! > 0
+  const hb = o.n[b]! > 0
+  if (ha && hb) {
+    out.c = lerp(o.c[a]!, o.c[b]!, w); out.u = lerp(o.u[a]!, o.u[b]!, w); out.s = lerp(o.s[a]!, o.s[b]!, w); out.n = lerp(o.n[a]!, o.n[b]!, w); out.vis = 1
+  } else if (ha || hb) {
+    const k = ha ? a : b
+    out.c = o.c[k]!; out.u = o.u[k]!; out.s = o.s[k]!; out.n = o.n[k]!; out.vis = ha ? 1 - w : w
+  } else {
+    out.c = 0; out.u = 0; out.s = 0; out.n = 0; out.vis = 0
+  }
+  return out
+}
 // The slow drift of each outlet: a phase and a speed seeded by its name, so they keep across frames.
-const drift = computed(() => props.points.map((p) => {
+const drift = computed(() => props.series.map((p) => {
   const rand = mulberry([...p.name].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) % 9973, 11))
   return { phase: rand() * TAU, speed: (0.25 + rand() * 0.5) * (rand() < 0.5 ? -1 : 1) }
 }))
 // The threads of a group: each outlet to the next one of its group, the largest first.
 const threads = computed(() => {
   const by = new Map<string, number[]>()
-  props.points.forEach((p, i) => { if (p.group) by.set(p.group, [...by.get(p.group) ?? [], i]) })
+  props.series.forEach((p, i) => { if (p.group) by.set(p.group, [...by.get(p.group) ?? [], i]) })
+  const total = (i: number) => props.series[i]!.n.reduce((x, y) => x + y, 0)
   const out: [number, number][] = []
   for (const list of by.values()) {
-    const order = list.slice().sort((a, b) => props.points[b]!.n - props.points[a]!.n)
+    const order = list.slice().sort((a, b) => total(b) - total(a))
     for (let k = 1; k < order.length; k++) out.push([order[k - 1]!, order[k]!])
   }
   return out
 })
-const labels = computed(() => {
-  if (!size.value.w) return []
-  const dots = props.points.map(p => ({ name: p.name, n: p.n, x: sx(p.c), y: sy(p.s), r: radius(p) + 10 }))
-  return placeLabels(dots, [], { x0: 0, x1: width, y0: 0, y1: height })
-})
+// The names are placed for one step at a time (and kept), and follow their dot between two steps.
+let labelCache = new Map<number, { name: string, x: number, y: number, i: number }[]>()
+const labelsAt = (f: number) => {
+  let list = labelCache.get(f)
+  if (!list) {
+    const idx = props.series.map((_, i) => i).filter(i => props.series[i]!.n[f]! > 0)
+    const dots = idx.map(i => ({ name: props.series[i]!.name, n: props.series[i]!.n[f]!, x: sx(props.series[i]!.c[f]!), y: sy(props.series[i]!.s[f]!), r: radius(props.series[i]!.n[f]!) + 10 }))
+    const where = new Map(idx.map(i => [props.series[i]!.name, i]))
+    list = placeLabels(dots, [], { x0: 0, x1: width, y0: 0, y1: height }).map(l => ({ name: l.name, x: l.x, y: l.y, i: where.get(l.name)! }))
+    labelCache.set(f, list)
+  }
+  return list
+}
 
 // The tints of the three zones, drawn once on their own layer (they only change with the size and the axes): flat inside the plot, fading out over 40px across its edge.
 let zoneLayer: HTMLCanvasElement | null = null
@@ -137,23 +171,34 @@ let hover = -1
 let mix = 0
 let litLast = -1
 let last = 0
+let shownAt = -1
 let px = new Float32Array(0)
 let py = new Float32Array(0)
 const ease3 = (k: number) => 1 - (1 - clamp(k, 0, 1)) ** 3
 
 const draw = (sec: number, dt: number) => {
   const g = ctx
-  if (!g || !width || !props.points.length) return
+  const total = props.series.length
+  if (!g || !width || !total) return
   const dpr = Math.min(window.devicePixelRatio || 1, 2)
+  // The place the outlets are at glides to the place asked for.
+  if (shownAt < 0 || reduced.value) shownAt = props.at
+  else shownAt += (props.at - shownAt) * (1 - Math.exp(-dt * 5))
+  if (Math.abs(props.at - shownAt) < 0.002) shownAt = props.at
+  const at0 = clamp(shownAt, 0, lastStep.value)
   g.setTransform(dpr, 0, 0, dpr, 0, 0)
   g.clearRect(0, 0, width, height)
   const grown = growAt < 0 ? (reduced.value ? 1 : 0) : clamp((performance.now() - growAt) / GROW_MS, 0, 1)
-  const ox = sx(props.avg.c)
-  const oy = sy(props.avg.s)
+  const a = Math.floor(at0)
+  const b = Math.min(lastStep.value, a + 1)
+  const avg = { c: lerp(props.avgs[a]!.c, props.avgs[b]!.c, at0 - a), s: lerp(props.avgs[a]!.s, props.avgs[b]!.s, at0 - a) }
+  for (let i = 0; i < total; i++) sample(i, at0)
+  const ox = sx(avg.c)
+  const oy = sy(avg.s)
   const third = 1 / 3
   mix = reduced.value ? (hover >= 0 ? 1 : 0) : mix + ((hover >= 0 ? 1 : 0) - mix) * (1 - Math.exp(-dt * 9))
   if (hover >= 0) litLast = hover
-  const litGroup = litLast >= 0 ? props.points[litLast]!.group : null
+  const litGroup = litLast >= 0 ? props.series[litLast]!.group : null
   const back = 1 - 0.6 * mix
   const frame = ease3(grown / 0.6)
 
@@ -189,50 +234,52 @@ const draw = (sec: number, dt: number) => {
   g.fillText(t('mme.map.zone.neutral'), pad.left, height - pad.bottom + 28)
   g.font = `11px ${font}`
   g.globalAlpha = 0.75 * frame
-  g.fillText(t('mme.gov.avg', { v: `${Math.round(props.avg.c * 100)}%` }), ox + 6, pad.top + 4)
-  g.textAlign = 'right'; g.fillText(t('mme.map.avg.supp', { v: `${Math.round(props.avg.s * 100)}%` }), width - pad.right, oy - 6)
+  g.fillText(t('mme.gov.avg', { v: `${Math.round(avg.c * 100)}%` }), ox + 6, pad.top + 4)
+  g.textAlign = 'right'; g.fillText(t('mme.map.avg.supp', { v: `${Math.round(avg.s * 100)}%` }), width - pad.right, oy - 6)
   g.textAlign = 'left'
 
   // The outlets: from the point of all the articles to their places, the largest first.
   const amp = reduced.value ? 0 : 2.2
-  if (px.length < props.points.length) { px = new Float32Array(props.points.length); py = new Float32Array(props.points.length) }
-  const order = props.points.map((_, i) => i).sort((a, b) => props.points[b]!.n - props.points[a]!.n)
-  const n = props.points.length
-  const at = (i: number) => ease3((grown - 0.25 * (order.indexOf(i) / Math.max(1, n - 1))) / 0.75)
-  props.points.forEach((p, i) => {
+  if (px.length < total) { px = new Float32Array(total); py = new Float32Array(total) }
+  const order = props.series.map((_, i) => i).sort((p, q) => cur[q]!.n - cur[p]!.n)
+  const rank = new Map(order.map((i, k) => [i, k]))
+  const at = (i: number) => ease3((grown - 0.25 * (rank.get(i)! / Math.max(1, total - 1))) / 0.75)
+  props.series.forEach((_, i) => {
     const e = at(i)
-    const { phase, speed } = drift.value[i]!
-    px[i] = ox + (sx(p.c) - ox) * e + Math.cos(sec * speed + phase) * amp
-    py[i] = oy + (sy(p.s) - oy) * e + Math.sin(sec * speed + phase) * amp
+    const d = drift.value[i]!
+    px[i] = ox + (sx(cur[i]!.c) - ox) * e + Math.cos(sec * d.speed + d.phase) * amp
+    py[i] = oy + (sy(cur[i]!.s) - oy) * e + Math.sin(sec * d.speed + d.phase) * amp
   })
   const curve = (x1: number, y1: number, x2: number, y2: number, bow: number) => {
     g.moveTo(x1, y1)
     g.quadraticCurveTo((x1 + x2) / 2 - (y2 - y1) * bow, (y1 + y2) / 2 + (x2 - x1) * bow, x2, y2)
   }
   // The threads of the groups.
-  for (const [a, b] of threads.value) {
-    const p = props.points[a]!
-    const lit = litGroup !== null && p.group === litGroup
-    g.strokeStyle = resolve(p.color)
-    g.globalAlpha = (lit ? 0.35 + 0.4 * mix : 0.3 * back) * ease3((grown - 0.5) / 0.5)
+  for (const [p, q] of threads.value) {
+    const o = props.series[p]!
+    const lit = litGroup !== null && o.group === litGroup
+    g.strokeStyle = resolve(o.color)
+    g.globalAlpha = (lit ? 0.35 + 0.4 * mix : 0.3 * back) * ease3((grown - 0.5) / 0.5) * Math.min(cur[p]!.vis, cur[q]!.vis)
     g.lineWidth = lit ? 1 + 0.6 * mix : 1
-    g.beginPath(); curve(px[a]!, py[a]!, px[b]!, py[b]!, 0.18); g.stroke()
+    g.beginPath(); curve(px[p]!, py[p]!, px[q]!, py[q]!, 0.18); g.stroke()
   }
   g.lineWidth = 1
   // The nodes of the outlets, the smallest last so they stay in view.
   for (const i of order) {
-    const p = props.points[i]!
-    const r = radius(p) * (0.4 + 0.6 * at(i))
+    const o = props.series[i]!
+    const v = cur[i]!
+    if (v.vis <= 0.01) continue
+    const r = radius(v.n) * (0.4 + 0.6 * at(i)) * (0.5 + 0.5 * v.vis)
     const lit = i === litLast && mix > 0.01
-    g.globalAlpha = 1
+    g.globalAlpha = v.vis
     g.fillStyle = paper
     g.beginPath(); g.arc(px[i]!, py[i]!, r + 1.8, 0, TAU); g.fill()
-    g.fillStyle = resolve(p.color)
-    g.globalAlpha = lit ? 1 : litGroup !== null && p.group === litGroup ? 1 : 0.35 + 0.65 * back
+    g.fillStyle = resolve(o.color)
+    g.globalAlpha = (lit ? 1 : litGroup !== null && o.group === litGroup ? 1 : 0.35 + 0.65 * back) * v.vis
     g.beginPath(); g.arc(px[i]!, py[i]!, r, 0, TAU); g.fill()
     if (lit) {
       g.strokeStyle = ink
-      g.globalAlpha = 0.85 * mix
+      g.globalAlpha = 0.85 * mix * v.vis
       g.lineWidth = 1.2
       g.beginPath(); g.arc(px[i]!, py[i]!, r + 4.5, 0, TAU); g.stroke()
       g.lineWidth = 1
@@ -241,16 +288,19 @@ const draw = (sec: number, dt: number) => {
   // The names, where they fit, once the outlets have arrived.
   const named = ease3((grown - 0.7) / 0.3)
   if (named > 0) {
+    const f = clamp(Math.round(at0), 0, lastStep.value)
     g.font = `11px ${font}`
     g.lineJoin = 'round'
     g.lineWidth = 3.5
     g.textAlign = 'left'
-    for (const l of labels.value) {
-      const i = props.points.findIndex(p => p.name === l.name)
-      const p = props.points[i]!
-      const ddx = px[i]! - sx(p.c)
-      const ddy = py[i]! - sy(p.s)
-      const fade = i === litLast ? 1 : litGroup !== null && p.group === litGroup ? 1 : back
+    for (const l of labelsAt(f)) {
+      const i = l.i
+      const o = props.series[i]!
+      const v = cur[i]!
+      if (v.vis <= 0.01) continue
+      const ddx = px[i]! - sx(o.c[f]!)
+      const ddy = py[i]! - sy(o.s[f]!)
+      const fade = (i === litLast ? 1 : litGroup !== null && o.group === litGroup ? 1 : back) * v.vis
       g.globalAlpha = 0.9 * named * fade
       g.strokeStyle = paper
       g.strokeText(l.name, l.x + ddx, l.y + ddy)
@@ -275,13 +325,16 @@ const resize = () => {
   el.height = Math.round(height * dpr)
   ctx = el.getContext('2d')
   size.value = { w: width, h: height }
+  labelCache = new Map()
   draw(performance.now() / 1000, 0.016)
 }
 const nodeAt = (x: number, y: number) => {
   let best = -1
   let bestD = Infinity
-  props.points.forEach((p, i) => {
-    const d = Math.hypot(px[i]! - x, py[i]! - y) - radius(p)
+  props.series.forEach((_, i) => {
+    const v = cur[i]
+    if (!v || v.vis < 0.5) return
+    const d = Math.hypot(px[i]! - x, py[i]! - y) - radius(v.n)
     if (d < 8 && d < bestD) { bestD = d; best = i }
   })
   return best
@@ -291,20 +344,20 @@ const onMove = (e: PointerEvent) => {
   hover = nodeAt(e.clientX - rect.left, e.clientY - rect.top)
   if (canvas.value) canvas.value.style.cursor = hover >= 0 ? 'pointer' : ''
   if (hover < 0) { tooltip.hide(); return }
-  const p = props.points[hover]!
+  const v = cur[hover]!
   tooltip.show({
-    title: p.name,
+    title: props.series[hover]!.name,
     rows: [
-      { label: t('stance.critical'), value: fmtPct(p.c), color: stance[0] },
-      { label: t('stance.neutral'), value: fmtPct(p.u), color: stance[1] },
-      { label: t('stance.supportive'), value: fmtPct(p.s), color: stance[2] },
-      { label: t('home.field.articles'), value: fmtInt(p.n) }
+      { label: t('stance.critical'), value: fmtPct(v.c), color: stance[0] },
+      { label: t('stance.neutral'), value: fmtPct(v.u), color: stance[1] },
+      { label: t('stance.supportive'), value: fmtPct(v.s), color: stance[2] },
+      { label: t('home.field.articles'), value: fmtInt(Math.round(v.n)) }
     ],
     field: true
   }, e)
 }
 const onLeave = () => { hover = -1; tooltip.hide() }
-const onClick = () => { if (hover >= 0) { tooltip.hide(); navigateTo(outletHref(props.points[hover]!.slug)) } }
+const onClick = () => { if (hover >= 0) { tooltip.hide(); navigateTo(outletHref(props.series[hover]!.slug)) } }
 
 onMounted(() => {
   readTokens()
@@ -325,10 +378,13 @@ watch(() => [props.active, reduced.value] as const, ([on, still]) => {
   if (on && !still) loop.resume()
   else { loop.pause(); draw(performance.now() / 1000, 0.016) }
 }, { immediate: true })
-// A new period: the web grows again.
-watch(() => props.points, () => { if (props.active && !reduced.value) growAt = performance.now(); if (!loop.isActive.value) draw(performance.now() / 1000, 0.016) })
+// With the loop stopped (a still screen) a new place is drawn at once.
+watch(() => props.at, () => { if (!loop.isActive.value) draw(performance.now() / 1000, 0.016) })
 useEventListener(document, 'visibilitychange', () => { if (document.hidden) loop.pause(); else if (props.active && !reduced.value) loop.resume() })
 onBeforeUnmount(() => loop.pause())
+// The table for a screen reader: the outlets at the step the player is on.
+const stepNow = computed(() => clamp(Math.round(props.at), 0, lastStep.value))
+const rows = computed(() => props.series.filter(o => o.n[stepNow.value]! > 0).map(o => ({ name: o.name, text: t('mme.map.point', { name: o.name, c: fmtPct(o.c[stepNow.value]!), u: fmtPct(o.u[stepNow.value]!), s: fmtPct(o.s[stepNow.value]!), n: fmtInt(o.n[stepNow.value]!) }) })))
 </script>
 
 <template>
@@ -337,7 +393,7 @@ onBeforeUnmount(() => loop.pause())
     <div class="visually-hidden">
       <table>
         <caption>{{ caption }}</caption>
-        <tbody><tr v-for="p in points" :key="p.name"><th scope="row">{{ p.name }}</th><td>{{ t('mme.map.point', { name: p.name, c: fmtPct(p.c), u: fmtPct(p.u), s: fmtPct(p.s), n: fmtInt(p.n) }) }}</td></tr></tbody>
+        <tbody><tr v-for="r in rows" :key="r.name"><th scope="row">{{ r.name }}</th><td>{{ r.text }}</td></tr></tbody>
       </table>
     </div>
   </div>
