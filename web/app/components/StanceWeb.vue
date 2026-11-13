@@ -10,7 +10,7 @@ import { mulberry } from '~/utils/plegma-world'
 // at a step fades out. The axes are those of the whole series, so the zones stay where they are while the outlets move.
 // It grows out of the point of all the articles when it comes into view, and drifts slowly. An outlet pointed at comes forward with the threads of its group; a click opens it.
 export interface StanceSeries { name: string, slug: string, group: string | null, color: string, c: number[], u: number[], s: number[], n: number[] }
-const props = defineProps<{ series: StanceSeries[], avgs: { c: number, s: number }[], at: number, quiet?: boolean, active: boolean, caption: string }>()
+const props = defineProps<{ series: StanceSeries[], avgs: { c: number, s: number }[], at: number, active: boolean, caption: string }>()
 const { t } = useI18n()
 const tooltip = useTooltipStore()
 const prefs = usePrefsStore()
@@ -177,7 +177,6 @@ const buildZones = (dpr: number) => {
 const GROW_MS = 1600
 let growAt = -1
 let hover = -1
-let calm = 1
 let mix = 0
 let litLast = -1
 let last = 0
@@ -291,9 +290,7 @@ const draw = (sec: number, dt: number) => {
     }
   }
   // The names, where they fit, once the outlets have arrived.
-  // The names fade while the player runs back (`quiet`): so fast they could not be read, and they would jump from side to side of their dot.
-  calm = reduced.value ? (props.quiet ? 0 : 1) : calm + ((props.quiet ? 0 : 1) - calm) * (1 - Math.exp(-dt * 8))
-  const named = ease3((grown - 0.7) / 0.3) * calm
+  const named = ease3((grown - 0.7) / 0.3)
   if (named > 0) {
     // A name sits at its place for the step before and the step after, with its offset from the dot; between the two the offset glides, so a name does not jump when the next step comes.
     const la = labelsAt(a)

@@ -46,36 +46,25 @@ const series = computed<StanceSeries[]>(() => {
 })
 const avgs = computed(() => frames.value.map(f => f.avg))
 
-// The player: the place in the steps, a number that runs on smoothly while it plays (STEP_MS for one step) and stops at the last. It stands at the last step (the latest days) until it is played;
-// playing from the end starts again from the first step. The dots glide to the place in components/StanceWeb.vue.
+// The player: the place in the steps, a number that runs on smoothly while it plays (STEP_MS for one step). It stands at the first step until it is played and stops at the last; played again from
+// the last it starts again at the first, at once (the outlets never run backwards). The slider moves it by hand.
 const last = computed(() => Math.max(0, frames.value.length - 1))
-const at = ref<number | null>(null)
-const place = computed(() => at.value ?? last.value)
-const step = computed(() => Math.min(last.value, Math.max(0, Math.round(place.value))))
+const at = ref(0)
+const place = computed(() => Math.min(last.value, at.value))
+const step = computed(() => Math.round(place.value))
 const playing = ref(false)
-// From the last step it first runs back to the first (REWIND_MS, eased), then plays: the outlets never jump.
-const REWIND_MS = 1400
-let rewound = 0
-const rewinding = ref(false)
 const { pause: stop, resume: go } = useRafFn(({ delta }) => {
-  if (rewinding.value) {
-    rewound = Math.min(1, rewound + delta / REWIND_MS)
-    const k = rewound < 0.5 ? 2 * rewound * rewound : 1 - (-2 * rewound + 2) ** 2 / 2
-    at.value = last.value * (1 - k)
-    if (rewound >= 1) rewinding.value = false
-    return
-  }
-  const next = place.value + delta / STEP_MS
+  const next = at.value + delta / STEP_MS
   if (next >= last.value) { at.value = last.value; playing.value = false; stop(); return }
   at.value = next
 }, { immediate: false })
 const toggle = () => {
-  if (playing.value) { playing.value = false; rewinding.value = false; stop(); return }
-  if (place.value >= last.value) { rewinding.value = true; rewound = 0 }
+  if (playing.value) { playing.value = false; stop(); return }
+  if (at.value >= last.value) at.value = 0
   playing.value = true
   go()
 }
-const scrub = (v: number) => { playing.value = false; rewinding.value = false; stop(); at.value = v }
+const scrub = (v: number) => { playing.value = false; stop(); at.value = v }
 onBeforeUnmount(stop)
 
 const frame = computed(() => frames.value[step.value] ?? null)
@@ -98,7 +87,7 @@ const title = computed(() => (set.value?.country === 'IL' ? t('mme.gov.title.il'
       <template #map="{ active }">
         <div class="stance-stage">
           <div class="stance-web">
-            <ClientOnly><StanceWeb v-if="series.length > 1" :series="series" :avgs="avgs" :at="place" :quiet="rewinding" :active="active" :caption="title" /></ClientOnly>
+            <ClientOnly><StanceWeb v-if="series.length > 1" :series="series" :avgs="avgs" :at="place" :active="active" :caption="title" /></ClientOnly>
           </div>
           <div class="stance-player">
             <button type="button" class="stance-play" :aria-pressed="playing" @click="toggle">{{ playing ? t('mme.time.pause') : t('mme.time.play') }}</button>
