@@ -2,7 +2,7 @@
 import { themeSlots } from '~/utils/plegma-world'
 
 // Μέσα › Ιστορίες (stories-v2.html): a screen of the Plegma (components/MediaPlegma.vue) whose web is the largest stories of the period, each a small web of its articles in the colors
-// of the groups, grouped by their themes, in an ellipse whose ring is the outlets (or their groups), each arc as long as its share of the articles. Left of it, as tall as the two, the largest stories by the outlets or the groups that ran them (as the ring of the web is), each with its change against the period before (components/StoryMediaBars.vue); under the web the lines of the first stories over the days of the period only. The date picker is at the top right; the web, the trends and the lines follow it. A story clicked on the web opens.
+// of the groups, grouped by their themes, in an ellipse whose ring is the outlets (or their groups), each arc as long as its share of the articles. Left of it, as tall as the two, the largest stories by the outlets or the groups that ran them (as the ring of the web is), each with its change against the period before (components/StoryMediaBars.vue); above the web the date picker, and under it the lines of the first stories over the days of the period only. The date picker is at the top right; the web, the trends and the lines follow it. A story clicked on the web opens.
 definePageMeta({ backdrop: true })
 const { t } = useI18n()
 useHead({ title: () => `${t('nav.media')} · ${t('site.name')}` })
@@ -40,10 +40,6 @@ watch(view, async () => { await nextTick(); $motion.replay(document.querySelecto
 </script>
 
 <template>
-  <Teleport v-if="status === 'ready'" defer to="#page-actions">
-    <DateRange :dates="dates" :from="view.from" :to="view.to" @change="r => period.set(r.from, r.to)" />
-  </Teleport>
-
   <template v-if="status === 'error'">
     <div class="error-state" role="alert" data-state="error">
       <AppIcon name="exclamation-triangle" />
@@ -63,6 +59,7 @@ watch(view, async () => { await nextTick(); $motion.replay(document.querySelecto
       </ClientOnly>
     </template>
     <template #map="{ active }">
+      <div class="stories-date"><DateRange :dates="dates" :from="view.from" :to="view.to" @change="r => period.set(r.from, r.to)" /></div>
       <div class="media-map-web">
         <ClientOnly>
           <SegmentedControl v-if="webThemes.length" v-model="ringBy" class="media-map-tabs" :label="t('stories.ring.label')" :options="[{ value: 'outlets', label: t('stories.ring.outlets') }, { value: 'groups', label: t('stories.ring.groups') }]" />
