@@ -301,7 +301,8 @@ html[data-search-fly] .body-search { opacity: 0; }
 .media-plegma.is-stories { --stories-row: max(300px, calc(100svh - 560px)); }
 .media-plegma.is-stories .media-map-web { height: var(--stories-row); min-height: 0; }
 .media-plegma.is-stories .media-side-trends { max-height: var(--stories-row); overflow-y: auto; scrollbar-width: thin; }
-.media-lines-row { width: 75%; }
+.stories-time { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 1fr); gap: var(--space-3); align-items: start; }
+.stories-date { display: flex; justify-content: flex-end; }
 .media-map-web { position: relative; flex: none; height: calc((100svh - 160px) * 0.8); min-height: 496px; }
 /* The Sankey of the topics and their outlets (components/TopicOutletFlow.vue). */
 .tof-box { position: relative; flex: 1 1 0; min-height: 280px; }
@@ -321,7 +322,8 @@ html[data-search-fly] .body-search { opacity: 0; }
   .media-plegma-aside > .dcard { height: auto; }
   .tof-box { min-height: 420px; }
   .media-plegma.is-stories > .media-plegma-map { order: 0; }
-  .media-lines-row { width: 100%; }
+  .stories-time { grid-template-columns: minmax(0, 1fr); }
+  .stories-date { order: -1; justify-content: flex-start; }
 }
 /* The tabs that turn the ring and the note under the web (as the story page has them), over the web of a screen. */
 .media-map-tabs { position: absolute; left: 0; top: 0; z-index: 1; }

@@ -4,7 +4,7 @@ import type { StoryTrend } from '~/types/stories'
 import { themeSlots } from '~/utils/plegma-world'
 
 // Μέσα › Ιστορίες (stories-v2.html): a screen of the Plegma (components/MediaPlegma.vue) whose web is the largest stories of the period, each a small web of its articles in the colors
-// of the groups, with a ring of the outlets. Left of it the stories that rise and fall against the period before and, in a row under the screen, the lines of the first of them. A story clicked on the web opens.
+// of the groups, with a ring of the outlets. Left of it the stories that rise and fall against the period before and, in a row under the screen, the lines of the first of them with the date picker beside them: the web, the trends and the lines follow it. A story clicked on the web opens.
 definePageMeta({ backdrop: true })
 const { t } = useI18n()
 useHead({ title: () => `${t('nav.media')} · ${t('site.name')}` })
@@ -50,10 +50,6 @@ watch(view, async () => { await nextTick(); $motion.replay(document.querySelecto
 </script>
 
 <template>
-  <Teleport v-if="status === 'ready'" defer to="#page-actions">
-    <DateRange :dates="dates" :from="view.from" :to="view.to" @change="r => period.set(r.from, r.to)" />
-  </Teleport>
-
   <template v-if="status === 'error'">
     <div class="error-state" role="alert" data-state="error">
       <AppIcon name="exclamation-triangle" />
@@ -95,12 +91,13 @@ watch(view, async () => { await nextTick(); $motion.replay(document.querySelecto
         </div>
       </DashCard>
     </template>
-    <div class="dash-grid">
-      <DashCard class="c-12 media-lines-row" card="lines" :title="t('stories.time.title')" :info="t('stories.time.info')">
+    <div class="stories-time">
+      <DashCard card="lines" :title="t('stories.time.title')" :info="t('stories.time.info')">
         <template #tools><span class="home-date">{{ dateText }}</span></template>
         <LinesChart v-if="lines" :dates="lines.dates" :series="lines.series" :band="lines.band" sparse sqrt :tall="300" :caption="t('stories.time.title')" :href-of="s => storyHref(s.key)" />
         <p v-else class="dcard-empty">{{ t('stories.period.empty') }}</p>
       </DashCard>
+      <div class="stories-date"><DateRange :dates="dates" :from="view.from" :to="view.to" @change="r => period.set(r.from, r.to)" /></div>
     </div>
   </MediaPlegma>
   <p class="proto-note">{{ t('proto.states') }}</p>
