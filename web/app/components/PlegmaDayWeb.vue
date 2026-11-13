@@ -14,8 +14,9 @@ import type { PlegmaDayTheme, PlegmaDayWeb } from '~/utils/plegma-day'
 export interface DayRing { issue: number, name: string, slot: number, n: number }
 export interface DayOutlet { name: string, slot: number, n: number }
 // The pages of Μέσα use it for a period too: `date` is then the text at the center (a count, with `sub` under it), `labels` the most theme names it writes (the largest first),
+// `themeLabel` names the theme in the tooltip of a story when the themes are something else (the groups of Ιδιοκτησία, whose stories are their outlets: a story with no `media` has no row of them),
 // `spread` that many themes go round the center by the golden angle (utils/plegma-day.ts), `grow` that the web grows out of the center when it comes into view and again when its data changes, and `label` the name of the picture for a screen reader.
-const props = withDefaults(defineProps<{ themes: PlegmaDayTheme[], ring: DayRing[], outlets: DayOutlet[], mode: 'stories' | 'themes', lit: number | null, date: string, picked: number | null, active: boolean, sub?: string, labels?: number, grow?: boolean, label?: string, spread?: boolean }>(), { sub: undefined, labels: Infinity, grow: false, label: undefined, spread: false })
+const props = withDefaults(defineProps<{ themes: PlegmaDayTheme[], ring: DayRing[], outlets: DayOutlet[], mode: 'stories' | 'themes', lit: number | null, date: string, picked: number | null, active: boolean, sub?: string, labels?: number, grow?: boolean, label?: string, spread?: boolean, themeLabel?: string }>(), { sub: undefined, labels: Infinity, grow: false, label: undefined, spread: false, themeLabel: undefined })
 const emit = defineEmits<{ pick: [id: number], pickTheme: [issue: number], 'update:lit': [issue: number | null] }>()
 const { t } = useI18n()
 const tooltip = useTooltipStore()
@@ -435,7 +436,7 @@ const onMove = (e: PointerEvent) => {
   }
   const s = theme.stories[w.story[i]!]!
   const per = s.n / s.dots.length
-  tooltip.show({ title: s.name, note: w.kind[i] === DAY_DOT ? t('home.web.dot', { n: fmtDec(per) }) : null, rows: [{ label: t('home.field.topic'), value: theme.name, color: slotColour(theme.slot) }, { label: t('home.field.articles'), value: fmtInt(s.n) }, { label: t('entity.fact.outlets'), value: fmtInt(s.media) }], field: true }, e)
+  tooltip.show({ title: s.name, note: w.kind[i] === DAY_DOT ? t('home.web.dot', { n: fmtDec(per) }) : null, rows: [{ label: props.themeLabel ?? t('home.field.topic'), value: theme.name, color: slotColour(theme.slot) }, { label: t('home.field.articles'), value: fmtInt(s.n) }, ...(s.media > 0 ? [{ label: t('entity.fact.outlets'), value: fmtInt(s.media) }] : [])], field: true }, e)
 }
 const onLeave = () => { hover = -1; hoverRing = -2; emit('update:lit', null); tooltip.hide() }
 const onClick = () => {
