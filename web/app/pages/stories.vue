@@ -66,19 +66,19 @@ watch(view, async () => { await nextTick(); $motion.replay(document.querySelecto
   <div v-else-if="status === 'empty'" class="dash-grid">
     <section class="dcard c-12"><div class="empty-state" data-state="empty"><AppIcon name="inbox" /><p style="margin: 0">{{ t('topics2.empty') }}</p></div></section>
   </div>
-  <MediaPlegma v-else flip>
+  <MediaPlegma v-else variant="stories">
     <template #map="{ active }">
-      <ClientOnly>
-        <SegmentedControl v-if="webThemes.length" v-model="ringBy" class="media-map-tabs" :label="t('stories.ring.label')" :options="[{ value: 'outlets', label: t('stories.ring.outlets') }, { value: 'groups', label: t('stories.ring.groups') }]" />
-        <PlegmaDayWeb
-          v-if="webThemes.length" :themes="webThemes" :ring="[]" :outlets="ringBy === 'groups' ? periodWeb!.groupRing.value : periodWeb!.outlets.value" mode="stories" :lit="null" :date="dateText" :sub="t('stories.web.sub', { n: fmtInt(list.length) })"
-          :picked="pointed" :active="active" grow :zoom="0.88" :label="t('topics2.stories.title')" @pick="id => navigateTo(storyHref(id))"
-        />
-        <p v-if="webThemes.length" class="media-map-note">{{ t('stories.web.note') }}</p>
-      </ClientOnly>
-    </template>
-    <template #side>
-      <DashCard :title="t('stories.trend.title')" :info="t('stories.trend.info', { n: TREND_MIN })">
+      <div class="media-map-web">
+        <ClientOnly>
+          <SegmentedControl v-if="webThemes.length" v-model="ringBy" class="media-map-tabs" :label="t('stories.ring.label')" :options="[{ value: 'outlets', label: t('stories.ring.outlets') }, { value: 'groups', label: t('stories.ring.groups') }]" />
+          <PlegmaDayWeb
+            v-if="webThemes.length" :themes="webThemes" :ring="[]" :outlets="ringBy === 'groups' ? periodWeb!.groupRing.value : periodWeb!.outlets.value" mode="stories" :lit="null" :date="dateText" :sub="t('stories.web.sub', { n: fmtInt(list.length) })"
+            :picked="pointed" :active="active" grow :label="t('topics2.stories.title')" @pick="id => navigateTo(storyHref(id))"
+          />
+          <p v-if="webThemes.length" class="media-map-note">{{ t('stories.web.note') }}</p>
+        </ClientOnly>
+      </div>
+      <DashCard class="media-map-trends" :title="t('stories.trend.title')" :info="t('stories.trend.info', { n: TREND_MIN })">
         <template v-if="trends" #tools><span class="home-date">{{ trendRange }}</span></template>
         <p v-if="!trends" class="dcard-empty">{{ t('stories.trend.empty') }}</p>
         <div v-else class="story-trend">
@@ -94,7 +94,9 @@ watch(view, async () => { await nextTick(); $motion.replay(document.querySelecto
           </div>
         </div>
       </DashCard>
-      <DashCard class="media-plegma-fill home-list home-day story-split" :title="t('topics2.stories.title')" :info="t('stories.period.info')">
+    </template>
+    <template #side>
+      <DashCard class="media-plegma-fill home-list home-day story-split" :title="t('stories.list.title')" :info="t('stories.period.info')">
         <StoryList v-if="list.length" :key="`${view.from}:${view.to}`" :rows="list" @point="id => pointed = id" />
         <p v-else class="dcard-empty">{{ t('stories.period.empty') }}</p>
       </DashCard>

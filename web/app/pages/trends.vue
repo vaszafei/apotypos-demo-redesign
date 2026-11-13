@@ -18,6 +18,7 @@ const webFrom = computed(() => view.value.from)
 const webTo = computed(() => view.value.to)
 const periodWeb = import.meta.client ? usePeriodWeb(webFrom, webTo, slotOfIssue) : null
 const webThemes = computed(() => (periodWeb?.ready.value ? periodWeb.themesFor([...colorOf.value.keys()]) : []))
+const flow = computed(() => (periodWeb?.ready.value ? periodWeb.flows([...colorOf.value.keys()]) : null))
 const sliced = computed(() => dates.value.slice(range.value[0], range.value[1] + 1))
 // A new period draws the lines in again (assets/motion.js replay); the first view is played by plugins/motion.client.ts.
 const { $motion } = useNuxtApp()
@@ -67,17 +68,14 @@ const widest = computed(() => Math.max(...bars.value.map(b => b.value), 0))
   <div v-else-if="status === 'empty' || (status === 'ready' && !rows.length)" class="dash-grid">
     <div class="card-col c-12"><section class="dcard"><div class="empty-state" data-state="empty"><p>{{ t('topics2.empty') }}</p></div></section></div>
   </div>
-  <MediaPlegma v-else>
+  <MediaPlegma v-else variant="topics">
     <template #map="{ active }">
-      <ClientOnly><TopicWeb :lit="lit ?? picked" :rows="rows" :total="total" :color-of="colorOf" :themes="webThemes" :zoom="0.8" selectable :active="active && webThemes.length > 0" @update:lit="v => lit = v" @select="toggle" /></ClientOnly>
+      <ClientOnly><TopicWeb :lit="lit ?? picked" :rows="rows" :total="total" :color-of="colorOf" :themes="webThemes" :zoom="0.84" selectable :active="active && webThemes.length > 0" @update:lit="v => lit = v" @select="toggle" /></ClientOnly>
     </template>
     <template #side>
       <Transition name="side-swap" mode="out-in">
         <TopicCards v-if="pickedRow" :key="pickedRow.k" :row="pickedRow" :total="total" :from="view.from" :to="view.to" @back="picked = null" />
         <div v-else key="all" class="media-plegma-stack">
-          <DashCard :title="t('topics2.time.title')" :info="timeInfo" card="time">
-            <LinesChart v-if="series.length" :dates="sliced" :series="series" :caption="t('topics2.time.title')" />
-          </DashCard>
           <DashCard class="media-plegma-fill" :title="t('topics2.all.title')" :info="allInfo">
             <p v-if="rows.length > 3" class="dcard-sub">{{ t('topics2.all.finding', { share: fmtPct(top3) }) }}</p>
             <p class="dcard-sub">{{ t('topics2.pick.hint') }}</p>
@@ -86,16 +84,22 @@ const widest = computed(() => Math.max(...bars.value.map(b => b.value), 0))
         </div>
       </Transition>
     </template>
-    <div class="dash-grid">
-      <div class="card-col c-6">
+    <template #aside>
+      <DashCard :title="t('topics2.flow.title')" :info="t('topics2.flow.info')">
+        <ClientOnly><TopicOutletFlow v-if="flow" :data="flow" :lit="lit ?? picked" @update:lit="v => lit = v" @select="toggle" /></ClientOnly>
+      </DashCard>
+    </template>
+    <div class="topics-row">
+      <div class="topics-row-pair">
         <DashCard :title="t('topics2.move.title')" :info="moveInfo" card="movers"><BarList :rows="bars" :max="widest" /></DashCard>
-      </div>
-      <div class="card-col c-6">
         <DashCard v-if="shiftModel" :title="t('tab.media.shifts')" :info="shiftModel.info" card="shifts">
           <p class="dcard-sub">{{ shiftModel.sub }}</p>
           <div class="shift-scroll"><BarList :rows="shiftModel.rows" :max="shiftModel.max" /></div>
         </DashCard>
       </div>
+      <DashCard class="topics-row-lines" :title="t('topics2.time.title')" :info="timeInfo" card="time">
+        <LinesChart v-if="series.length" :dates="sliced" :series="series" :caption="t('topics2.time.title')" />
+      </DashCard>
     </div>
   </MediaPlegma>
   <p class="proto-note">{{ t('proto.states') }}</p>

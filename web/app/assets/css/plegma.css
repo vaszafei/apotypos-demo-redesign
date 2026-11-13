@@ -290,8 +290,40 @@ html[data-search-fly] .body-search { opacity: 0; }
 .media-plegma-below { --card-glass: color-mix(in srgb, var(--surface-page) 82%, transparent); margin-top: var(--space-4); }
 .media-plegma .dcard, .media-plegma-below .dcard { background: var(--card-glass); backdrop-filter: blur(10px); }
 .shell.is-backdrop .page-head { background: none; }
-.media-plegma.is-flip { grid-template-columns: minmax(0, min(720px, 46%)) minmax(0, 1fr); }
-.media-plegma.is-flip > .media-plegma-map { order: 2; }
+.media-plegma.is-topics { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) minmax(0, 3fr); }
+.media-plegma.is-topics > .media-plegma-side { order: -1; }
+.media-plegma-aside { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.media-plegma-aside > .dcard { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+.media-plegma.is-topics .topic-cards .how-grid-2, .media-plegma.is-topics .topic-cards .story-trend { grid-template-columns: minmax(0, 1fr); }
+/* Ιστορίες: the list is a column of 3 on the left, as tall as the column of 5 on the right, which is the web (80% of the screen) with the trends under it. */
+.media-plegma.is-stories { grid-template-columns: minmax(0, 3fr) minmax(0, 5fr); height: auto; min-height: 0; align-items: stretch; }
+.media-plegma.is-stories > .media-plegma-map { order: 2; display: flex; flex-direction: column; gap: var(--space-3); }
+.media-plegma.is-stories > .media-plegma-side { position: relative; }
+.media-plegma.is-stories > .media-plegma-side > .media-plegma-fill { position: absolute; inset: 0; }
+.media-map-web { position: relative; flex: none; height: calc((100svh - 160px) * 0.8); min-height: 496px; }
+/* Θέματα: the bottom row, the cards of the movers and the shifts in a group of 3 and the lines at its end as 5. */
+.topics-row { display: flex; gap: var(--space-4); align-items: stretch; }
+.topics-row > .topics-row-pair { flex: 3 1 0; min-width: 0; display: flex; gap: var(--space-4); }
+.topics-row > .topics-row-pair > * { flex: 1 1 0; min-width: 0; }
+.topics-row > .topics-row-lines { flex: 5 1 0; min-width: 0; }
+.topics-row .dcard { height: 100%; }
+/* The Sankey of the topics and their outlets (components/TopicOutletFlow.vue). */
+.tof-box { position: relative; flex: 1 1 0; min-height: 280px; }
+.tof-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.tof-link { fill: none; transition: opacity 220ms var(--ease-out); animation: tof-in 700ms var(--ease-out) backwards; animation-delay: calc(var(--i) * 22ms); }
+.tof-node { transition: opacity 220ms var(--ease-out); }
+.tof-label { font-size: 11px; fill: var(--text-secondary); }
+.tof-label.is-topic { cursor: pointer; }
+.tof-pct { font-weight: 600; fill: var(--ink); }
+@keyframes tof-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .tof-link { animation: none; } }
+@media (max-width: 1023px) {
+  .topics-row, .topics-row > .topics-row-pair { flex-direction: column; }
+  .media-plegma.is-topics > .media-plegma-side { order: 0; }
+  .tof-box { min-height: 420px; }
+  .media-plegma.is-stories > .media-plegma-map { order: 0; }
+  .media-plegma.is-stories > .media-plegma-side > .media-plegma-fill { position: static; }
+}
 /* The tabs that turn the ring and the note under the web (as the story page has them), over the web of a screen. */
 .media-map-tabs { position: absolute; left: 0; top: 0; z-index: 1; }
 .media-map-tabs.segmented { gap: 6px; padding: 0; border: 0; border-radius: 0; background: none; }
@@ -309,7 +341,6 @@ html[data-search-fly] .body-search { opacity: 0; }
   .media-plegma.is-full > .media-plegma-side { position: static; width: auto; }
   .media-plegma { display: flex; flex-direction: column; height: auto; min-height: 0; }
   .media-plegma-map { height: 70vw; min-height: 420px; }
-  .media-plegma.is-flip > .media-plegma-map { order: 0; }
   .media-map-note { display: none; }
   .media-plegma-side > .media-plegma-fill, .media-plegma-stack > .media-plegma-fill { flex: none; height: 360px; }
   .media-plegma-stack { flex: none; }
