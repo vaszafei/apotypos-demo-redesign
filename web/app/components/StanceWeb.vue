@@ -5,8 +5,7 @@ import { placeLabels } from '~/utils/stance-labels'
 import type { StancePoint } from '~/types/mme'
 
 // Μέσα › Στάση as a web of the Plegma (the stance map of media-v2.html, drawn over the dim world): each outlet is a node at its critical share (to the right) and its supportive share
-// (up), in the color of its group and as large as its articles; around it a small loose cloud of dots in the colors of the stance of its articles (critical, neutral, supportive, as many
-// of each as their share), so the mix of an outlet shows at a glance. Thin curved threads join the outlets of one group. The three zones are where one share is the largest: thin
+// (up), in the color of its group and as large as its articles. Thin curved threads join the outlets of one group. The three zones are where one share is the largest: thin
 // threads from the point where the three are a third each, with a flat tint of the stance color in each zone (as in the HTML map) that fades at the edge of the plot, and the name of each zone in its corner; the dashed threads are the shares of all the articles.
 // It grows out of the point of all the articles when it comes into view, and drifts slowly. An outlet pointed at comes forward with the threads of its group; a click opens it.
 export interface StanceNode extends StancePoint { slug: string, group: string | null }
@@ -66,34 +65,10 @@ const sy = (s: number) => height - pad.bottom - ((s - ext.value.y0) / (ext.value
 const maxN = computed(() => Math.max(1, ...props.points.map(p => p.n)))
 const radius = (p: StancePoint) => 4 + 9 * Math.sqrt(p.n / maxN.value)
 
-// The cloud of each outlet: dots at loose places around it, the colors in the shares of its stance; the places and the drift are seeded by its name, so they keep across frames.
-interface Cloud { dx: Float32Array, dy: Float32Array, kind: Uint8Array, phase: Float32Array, speed: Float32Array, link: Int16Array, bow: Float32Array }
-const clouds = computed<Cloud[]>(() => props.points.map((p) => {
+// The slow drift of each outlet: a phase and a speed seeded by its name, so they keep across frames.
+const drift = computed(() => props.points.map((p) => {
   const rand = mulberry([...p.name].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) % 9973, 11))
-  const k = clamp(Math.round(4 + 10 * Math.sqrt(p.n / maxN.value)), 4, 14)
-  const counts = [Math.round(p.c * k), 0, Math.round(p.s * k)]
-  counts[1] = Math.max(0, k - counts[0]! - counts[2]!)
-  const kind = new Uint8Array(k)
-  let at = 0
-  counts.forEach((n, i) => { for (let j = 0; j < n && at < k; j++) kind[at++] = i })
-  const dx = new Float32Array(k)
-  const dy = new Float32Array(k)
-  const link = new Int16Array(k)
-  const bow = new Float32Array(k)
-  const reach = 16 + 22 * Math.sqrt(p.n / maxN.value)
-  for (let j = 0; j < k; j++) {
-    const a = rand() * TAU
-    const r = reach * (0.45 + 0.55 * Math.sqrt(rand()))
-    dx[j] = Math.cos(a) * r
-    dy[j] = Math.sin(a) * r
-    // Each dot hangs from the outlet or from the nearest dot placed before it.
-    let near = -1
-    let best = Math.hypot(dx[j]!, dy[j]!)
-    for (let q = 0; q < j; q++) { const d = Math.hypot(dx[q]! - dx[j]!, dy[q]! - dy[j]!); if (d < best) { best = d; near = q } }
-    link[j] = near
-    bow[j] = (rand() - 0.5) * 0.6
-  }
-  return { dx, dy, kind, link, bow, phase: Float32Array.from({ length: k + 1 }, () => rand() * TAU), speed: Float32Array.from({ length: k + 1 }, () => (0.25 + rand() * 0.5) * (rand() < 0.5 ? -1 : 1)) }
+  return { phase: rand() * TAU, speed: (0.25 + rand() * 0.5) * (rand() < 0.5 ? -1 : 1) }
 }))
 // The threads of a group: each outlet to the next one of its group, the largest first.
 const threads = computed(() => {
@@ -226,9 +201,9 @@ const draw = (sec: number, dt: number) => {
   const at = (i: number) => ease3((grown - 0.25 * (order.indexOf(i) / Math.max(1, n - 1))) / 0.75)
   props.points.forEach((p, i) => {
     const e = at(i)
-    const cl = clouds.value[i]!
-    px[i] = ox + (sx(p.c) - ox) * e + Math.cos(sec * cl.speed[0]! + cl.phase[0]!) * amp
-    py[i] = oy + (sy(p.s) - oy) * e + Math.sin(sec * cl.speed[0]! + cl.phase[0]!) * amp
+    const { phase, speed } = drift.value[i]!
+    px[i] = ox + (sx(p.c) - ox) * e + Math.cos(sec * speed + phase) * amp
+    py[i] = oy + (sy(p.s) - oy) * e + Math.sin(sec * speed + phase) * amp
   })
   const curve = (x1: number, y1: number, x2: number, y2: number, bow: number) => {
     g.moveTo(x1, y1)
@@ -244,37 +219,6 @@ const draw = (sec: number, dt: number) => {
     g.beginPath(); curve(px[a]!, py[a]!, px[b]!, py[b]!, 0.18); g.stroke()
   }
   g.lineWidth = 1
-  // The clouds: thin lines to the outlet, dots in the colors of the stance with a rim of the page's color.
-  props.points.forEach((p, i) => {
-    const cl = clouds.value[i]!
-    const lit = i === litLast && mix > 0.01
-    const fade = lit ? 1 : litGroup !== null && p.group === litGroup ? 1 - 0.3 * mix : back
-    const e = ease3((at(i) - 0.35) / 0.65)
-    if (e <= 0) return
-    const dot = (j: number) => {
-      const a = sec * cl.speed[j + 1]! + cl.phase[j + 1]!
-      return [px[i]! + (cl.dx[j]! + Math.cos(a) * amp * 1.4) * e, py[i]! + (cl.dy[j]! + Math.sin(a) * amp * 1.4) * e] as const
-    }
-    g.strokeStyle = resolve(p.color)
-    g.globalAlpha = 0.4 * fade * e
-    g.beginPath()
-    for (let j = 0; j < cl.kind.length; j++) {
-      const [x, y] = dot(j)
-      const [fx, fy] = cl.link[j]! < 0 ? [px[i]!, py[i]!] : dot(cl.link[j]!)
-      curve(fx, fy, x, y, cl.bow[j]!)
-    }
-    g.stroke()
-    for (let j = 0; j < cl.kind.length; j++) {
-      const [x, y] = dot(j)
-      const r = lit ? 2.6 + 0.6 * mix : 2.4
-      g.globalAlpha = e
-      g.fillStyle = paper
-      g.beginPath(); g.arc(x, y, r + 0.9, 0, TAU); g.fill()
-      g.fillStyle = stance[cl.kind[j]!]!
-      g.globalAlpha = (0.85 * fade + 0.15) * e
-      g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill()
-    }
-  })
   // The nodes of the outlets, the smallest last so they stay in view.
   for (const i of order) {
     const p = props.points[i]!

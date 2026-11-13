@@ -21,8 +21,6 @@ const avg = computed(() => {
   const total = tot[0]! + tot[1]! + tot[2]!
   return { c: tot[0]! / total, s: tot[2]! / total }
 })
-// The key of the dots around an outlet: the stance of its articles.
-const stanceKey = [['critical', 'var(--stance-critical)'], ['neutral', 'var(--stance-neutral)'], ['supportive', 'var(--stance-supportive)']] as const
 </script>
 
 <template>
@@ -49,9 +47,6 @@ const stanceKey = [['critical', 'var(--stance-critical)'], ['neutral', 'var(--st
         <DashCard :title="title" :info="t('mme.map.info')">
           <template v-if="points.length > 1">
             <p class="dcard-sub">{{ t('mme.map.sub', { n: fmtInt(points.length), total: fmtInt(all.length) }) }}</p>
-            <ul class="stance-key">
-              <li v-for="[code, color] in stanceKey" :key="code"><span class="dot" :style="`--dot:${color}`" />{{ t(`stance.${code}`) }}</li>
-            </ul>
           </template>
           <p v-else class="dcard-empty">{{ t('media2.empty.list') }}</p>
         </DashCard>
