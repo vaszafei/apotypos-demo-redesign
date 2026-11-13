@@ -4,7 +4,7 @@ import type { StoryTrend } from '~/types/stories'
 import { themeSlots } from '~/utils/plegma-world'
 
 // Μέσα › Ιστορίες (stories-v2.html): a screen of the Plegma (components/MediaPlegma.vue) whose web is the largest stories of the period, each a small web of its articles in the colors
-// of the groups, with a ring of the outlets. In a row under the screen the lines of the first stories over the days of the period only, and right of them the stories that rise and fall against the period before. The date picker is at the top right; the web, the trends and the lines follow it. A story clicked on the web opens.
+// of the groups, with a ring of the outlets. Left of it the largest stories by the groups that ran them (components/StoryMediaBars.vue). In a row under the screen the lines of the first stories over the days of the period only, and right of them the stories that rise and fall against the period before. The date picker is at the top right; the web, the trends and the lines follow it. A story clicked on the web opens.
 definePageMeta({ backdrop: true })
 const { t } = useI18n()
 useHead({ title: () => `${t('nav.media')} · ${t('site.name')}` })
@@ -44,6 +44,8 @@ const webThemes = computed(() => (periodWeb?.ready.value ? periodWeb.themesOf() 
 // The ring of the web, as the story page has it: the outlets, or their groups.
 const ringBy = ref<'outlets' | 'groups'>('outlets')
 
+const media = computed(() => (periodWeb?.ready.value ? periodWeb.storyMedia() : null))
+
 // A new period draws the lines in again (assets/motion.js replay); the first view is played by plugins/motion.client.ts.
 const { $motion } = useNuxtApp()
 watch(view, async () => { await nextTick(); $motion.replay(document.querySelector('[data-card="lines"]')) })
@@ -65,6 +67,13 @@ watch(view, async () => { await nextTick(); $motion.replay(document.querySelecto
     <section class="dcard c-12"><div class="empty-state" data-state="empty"><AppIcon name="inbox" /><p style="margin: 0">{{ t('topics2.empty') }}</p></div></section>
   </div>
   <MediaPlegma v-else variant="stories">
+    <template #side>
+      <ClientOnly>
+        <DashCard v-if="media" class="media-side-card" :title="t('stories.media.title')" :info="t('stories.media.info')">
+          <StoryMediaBars :data="media" />
+        </DashCard>
+      </ClientOnly>
+    </template>
     <template #map="{ active }">
       <div class="media-map-web">
         <ClientOnly>

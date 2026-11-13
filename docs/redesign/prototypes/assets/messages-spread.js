@@ -2,7 +2,10 @@
 Object.assign(window.MESSAGES.el, {
   'stories.period.info': 'Όλες οι ιστορίες της ημέρας ή της περιόδου που διαλέξατε στο ημερολόγιο της κορυφής, με πρώτες αυτές που έχουν τα περισσότερα άρθρα· η λίστα κυλάει. Μια ιστορία ανοίγει τη σελίδα της. Οι ιστορίες γενικών θεμάτων, όπως «Άλλα διεθνή», δεν μετρούν.',
   'stories.time.title': 'Ιστορίες στον χρόνο',
-  'stories.time.info': 'Οι ιστορίες με τα περισσότερα άρθρα στην ημέρα ή στην περίοδο που διαλέξατε, από την αρχή τους ως την τελευταία ημέρα της περιόδου (ο άξονας ξεκινά από την παλαιότερη)· η περίοδος έχει χρώμα. Ο κάθετος άξονας είναι η τετραγωνική ρίζα των άρθρων, ώστε να φαίνονται και οι μικρές ιστορίες δίπλα σε μια μεγάλη. Οι αριθμοί κάτω είναι τα άρθρα της περιόδου.',
+  'stories.time.info': 'Οι ιστορίες με τα περισσότερα άρθρα στην ημέρα ή στην περίοδο που διαλέξατε, μέρα με τη μέρα μέσα στην περίοδο. Ο κάθετος άξονας είναι η τετραγωνική ρίζα των άρθρων, ώστε να φαίνονται και οι μικρές ιστορίες δίπλα σε μια μεγάλη. Οι αριθμοί κάτω είναι οι ημέρες της περιόδου.',
+  'stories.media.title': 'Ιστορίες ανά όμιλο',
+  'stories.media.info': 'Οι μεγαλύτερες ιστορίες της περιόδου· η μπάρα κάθε ιστορίας χωρίζεται στα άρθρα των ομίλων που την έγραψαν, στα χρώματα του ιστού. Δίπλα της είναι τα άρθρα και τα μέσα που την έγραψαν.',
+  'stories.media.outlets': '{n} μέσα',
   'stories.trend.title': 'Τάσεις',
   'stories.trend.info': 'Τα άρθρα κάθε ιστορίας στην ημέρα ή στην περίοδο που διαλέξατε, έναντι της περιόδου με την ίδια διάρκεια ακριβώς πριν από αυτήν. Μόνο ιστορίες με {n} άρθρα ή περισσότερα στην περίοδο πριν. Οι ιστορίες γενικών θεμάτων δεν μετρούν.',
   'stories.trend.up': 'Αυξάνονται',
@@ -103,7 +106,10 @@ Object.assign(window.MESSAGES.el, {
 Object.assign(window.MESSAGES.en, {
   'stories.period.info': 'Every story that ran on the day or in the period you picked in the calendar at the top, the ones with the most articles first; the list scrolls. A story opens its page. Stories of general topics, such as “Other world news”, do not count.',
   'stories.time.title': 'Stories over time',
-  'stories.time.info': 'The stories with the most articles on the day or in the period you picked, each from its start to the last day of the period (the axis starts with the earliest); the period is tinted. The vertical axis is the square root of the articles, so the small stories show beside a large one. The numbers below are the articles of the period.',
+  'stories.time.info': 'The stories with the most articles on the day or in the period you picked, day by day within the period. The vertical axis is the square root of the articles, so the small stories show beside a large one. The numbers below are the days of the period.',
+  'stories.media.title': 'Stories by group',
+  'stories.media.info': 'The largest stories of the period; the bar of each story is split into the articles of the groups that ran it, in the colors of the web. Beside it are its articles and the outlets that ran it.',
+  'stories.media.outlets': '{n} outlets',
   'stories.trend.title': 'Trends',
   'stories.trend.info': 'The articles of every story on the day or in the period you picked, against the period of exactly the same length right before it. Only stories with {n} articles or more in the period before. Stories of general topics do not count.',
   'stories.trend.up': 'Rising',

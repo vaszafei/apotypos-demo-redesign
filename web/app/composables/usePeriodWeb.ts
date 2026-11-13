@@ -175,6 +175,27 @@ export const usePeriodWeb = (from: Ref<string>, to: Ref<string>, slotOfIssue: Re
     return [...perGroup.values()].sort((a, b) => b.n - a.n)
   })
 
+
+  // The largest stories of the period with the outlets that ran each, in the colors of their groups, and the groups of them, the largest first (Μέσα › Ιστορίες, components/StoryMediaBars.vue).
+  const storyMedia = (count = 10) => {
+    const x = ix.value
+    const sp = span.value
+    if (!x?.detail || !sp || !rows.value.length) return null
+    const perGroup = new Map<number, { slot: number, name: string, n: number }>()
+    const stories = rows.value.slice(0, count).map((r) => {
+      const os = homeOutletsOf(x, r.s, sp[0], sp[1]).map(o => ({ name: o.name, group: o.group ?? null, slot: groupSlot(o.group), n: o.n }))
+      return { id: r.s.id, name: storyName(r.s), n: os.reduce((a, o) => a + o.n, 0), outlets: os }
+    }).filter(r => r.n > 0)
+    for (const r of stories) {
+      for (const o of r.outlets) {
+        const g = perGroup.get(o.slot)
+        if (g) g.n += o.n
+        else perGroup.set(o.slot, { slot: o.slot, name: o.group ?? t('story.nogroup'), n: o.n })
+      }
+    }
+    return { stories, groups: [...perGroup.values()].sort((a, b) => b.n - a.n) }
+  }
+
   const ready = computed(() => !!ix.value && !!detail.data.value && !!groups.data.value)
-  return { ready, rows, themesOf, themesFor, outlets, groupRing, flows }
+  return { ready, rows, themesOf, themesFor, outlets, groupRing, flows, storyMedia }
 }
