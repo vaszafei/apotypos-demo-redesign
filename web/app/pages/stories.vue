@@ -4,7 +4,7 @@ import type { StoryTrend } from '~/types/stories'
 import { themeSlots } from '~/utils/plegma-world'
 
 // Μέσα › Ιστορίες (stories-v2.html): a screen of the Plegma (components/MediaPlegma.vue) whose web is the largest stories of the period, each a small web of its articles in the colors
-// of the groups, with a ring of the outlets. Left of it the stories that rise and fall against the period before and, under them, the lines of the first of them. A story clicked on the web opens.
+// of the groups, with a ring of the outlets. Left of it the stories that rise and fall against the period before and, in a row under the screen, the lines of the first of them. A story clicked on the web opens.
 definePageMeta({ backdrop: true })
 const { t } = useI18n()
 useHead({ title: () => `${t('nav.media')} · ${t('site.name')}` })
@@ -94,12 +94,14 @@ watch(view, async () => { await nextTick(); $motion.replay(document.querySelecto
           </div>
         </div>
       </DashCard>
-      <DashCard card="lines" :title="t('stories.time.title')" :info="t('stories.time.info')">
+    </template>
+    <div class="dash-grid">
+      <DashCard class="c-6" card="lines" :title="t('stories.time.title')" :info="t('stories.time.info')">
         <template #tools><span class="home-date">{{ dateText }}</span></template>
         <LinesChart v-if="lines" :dates="lines.dates" :series="lines.series" :band="lines.band" sparse sqrt :tall="300" :caption="t('stories.time.title')" :href-of="s => storyHref(s.key)" />
         <p v-else class="dcard-empty">{{ t('stories.period.empty') }}</p>
       </DashCard>
-    </template>
+    </div>
   </MediaPlegma>
   <p class="proto-note">{{ t('proto.states') }}</p>
 </template>
