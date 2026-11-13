@@ -315,6 +315,10 @@ html[data-search-fly] .body-search { opacity: 0; }
 .owner-outlets li { display: flex; justify-content: space-between; gap: var(--space-3); padding: 0; font-size: 11px; line-height: 1.15; color: var(--text-secondary); }
 .owner-outlets li span:last-child { font-variant-numeric: tabular-nums; }
 .media-plegma.is-groups > .media-plegma-map { grid-column: 1; grid-row: 1; height: max(380px, calc(100svh - 400px)); }
+.media-plegma.is-groups > .media-plegma-map { display: flex; flex-direction: column; }
+.groups-tools { flex: none; margin-bottom: var(--space-3); }
+.groups-tools .media-map-tabs { position: static; }
+.groups-web { position: relative; flex: 1 1 0; min-height: 0; }
 .media-plegma.is-groups > .media-plegma-side { grid-column: 1; grid-row: 2; }
 .stories-date { display: flex; margin-bottom: var(--space-3); }
 .stories-date .dr-pop { left: 0; right: auto; }
