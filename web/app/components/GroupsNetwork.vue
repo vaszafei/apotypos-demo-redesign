@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { useElementSize } from '@vueuse/core'
 import type { NetGroup, NetOutlet } from '~/utils/groups'
-import { round, type OutletNode } from '~/utils/net-layout'
+import { round, ZONE, type OutletNode } from '~/utils/net-layout'
 
 // OwnerBubbles of groups-v2.html: a network of owners and outlets. Nothing moves and nothing opens: a hover on a group or an outlet fades the other groups and its numbers are in the tooltip.
 // A click on a group opens its page and a click on an outlet opens its page. An outlet has its name inside its circle when it fits and beside it when there is room.
-// `fill`: the network fills the height of its box (a screen of the Plegma, Μέσα › Ιδιοκτησία) instead of a height from its width.
-const props = defineProps<{ groups: NetGroup[], total: number, fill?: boolean }>()
+// `fill`: the network fills the height of its box (a screen of the Plegma, Μέσα › Ιδιοκτησία) instead of a height from its width. `stance` (with `fill`): the groups and the outlets without a group move, smoothly, to their place from left to right by their stance (critical to supportive),
+// and three zones (critical, neutral, supportive) appear in the background.
+const props = defineProps<{ groups: NetGroup[], total: number, fill?: boolean, stance?: boolean }>()
 const { t } = useI18n()
 const tooltip = useTooltipStore()
 const inkOf = useInk()
@@ -15,7 +16,59 @@ const holder = ref<HTMLElement | null>(null)
 const { width: measured, height: measuredH } = useElementSize(holder)
 const width = computed(() => Math.floor(measured.value) || 640)
 const height = computed(() => (props.fill && measuredH.value > 200 ? Math.floor(measuredH.value) : Math.max(300, Math.min(440, Math.round(width.value * 0.56)))))
-const layout = computed(() => netLayout(props.groups, width.value, height.value))
+// The place of a group, or of an outlet without a group, on the axis: the supportive share minus the critical one of its analysed articles (none under 30 of them).
+const stanceAxis = (outlets: NetOutlet[]) => {
+  const [critical, neutral, supportive] = stanceTotals(outlets)
+  const n = critical + neutral + supportive
+  return n >= 30 ? (supportive - critical) / n : null
+}
+// Two layouts of the same nodes (the groups, and the groups by their stance); between them the nodes are drawn at a point of the way, and the names come back when they stop.
+const grouped = computed(() => netLayout(props.groups, width.value, height.value, !!props.fill))
+const spread = computed(() => netLayout(props.groups, width.value, height.value, !!props.fill, stanceAxis))
+const target = computed(() => (props.fill && props.stance ? spread.value : grouped.value))
+const way = ref(props.fill && props.stance ? 1 : 0)
+const moving = ref(false)
+let frame = 0
+watch(() => !!props.stance, (on) => {
+  cancelAnimationFrame(frame)
+  const [from, to] = [way.value, on ? 1 : 0]
+  if (from === to || window.matchMedia('(prefers-reduced-motion: reduce)').matches) { way.value = to; return }
+  const start = performance.now()
+  moving.value = true
+  const step = (now: number) => {
+    const k = Math.min(1, (now - start) / 900)
+    way.value = from + (to - from) * (1 - (1 - k) ** 3)
+    if (k < 1) frame = requestAnimationFrame(step)
+    else { way.value = to; moving.value = false }
+  }
+  frame = requestAnimationFrame(step)
+})
+onBeforeUnmount(() => cancelAnimationFrame(frame))
+const layout = computed(() => {
+  const [a, b] = [grouped.value, spread.value]
+  if (way.value <= 0 || a.nodes.length !== b.nodes.length) return a
+  if (way.value >= 1) return b
+  const mix = (u: number, v: number) => u + (v - u) * way.value
+  const nodes = a.nodes.map((n, i) => ({ ...n, x: mix(n.x, b.nodes[i]!.x), y: mix(n.y, b.nodes[i]!.y), r: mix(n.r, b.nodes[i]!.r) }))
+  const at = new Map(a.nodes.map((n, i) => [n, i]))
+  const links = a.links.map(l => ({ a: nodes[at.get(l.a)!] as typeof l.a, b: nodes[at.get(l.b)!] as typeof l.b }))
+  return { nodes, links, clusters: a.clusters }
+})
+// Each zone is one flat colour, and only its edges fade: the colour of a zone goes into the colour of the next one over a short stretch at the border (the two cross at half),
+// and at the sides of the box it fades out over the same stretch.
+const FADE = 40
+const OPACITY = 0.1
+const zones = computed(() => {
+  const [x1, x2] = [spread.value.axisX(-ZONE), spread.value.axisX(ZONE)]
+  const w = width.value
+  const zone = (key: string, color: string, left: number, right: number, outerLeft: boolean, outerRight: boolean) => {
+    const [from, to] = [outerLeft ? left : left - FADE, outerRight ? right : right + FADE]
+    const at = (x: number) => Math.max(0, Math.min(1, (x - from) / (to - from)))
+    const stops = [{ at: 0, o: 0 }, { at: at(outerLeft ? left + FADE : left + FADE), o: OPACITY }, { at: at(outerRight ? right - FADE : right - FADE), o: OPACITY }, { at: 1, o: 0 }]
+    return { key, color, label: (left + right) / 2, from, to, stops }
+  }
+  return [zone('critical', 'var(--stance-critical)', 0, x1, true, false), zone('neutral', 'var(--stance-neutral)', x1, x2, false, false), zone('supportive', 'var(--stance-supportive)', x2, w, false, true)]
+})
 
 const hover = ref<NetGroup | null>(null)
 const tint = (g: NetGroup) => tintOf(g.color, g.key === null ? 0.5 : 0.35)
@@ -55,10 +108,15 @@ const groupHref = (g: NetGroup) => groupPageHref(g.slug!)
 // A page that is ported is a route of the app, the others are static files.
 const open = (href: string) => navigateTo(href, { external: !portedPath(href) })
 
-interface Label { key: string, g: NetGroup, text: string, x: number, y: number, anchor: 'start' | 'middle' | 'end', kind: 'group' | 'outlet' | 'inner' | 'share', ink?: string }
+interface Label { key: string, g: NetGroup, text: string, x: number, y: number, anchor: 'start' | 'middle' | 'end', kind: 'group' | 'outlet' | 'inner' | 'share', ink?: string, d: number }
+// The little drift of the web (assets/css/plegma.css .net-drift): a group drifts as one piece (its node, its outlets, its lines and its names), and each outlet without a group drifts by itself.
+const driftOf = (g: NetGroup, slug?: string) => {
+  const gi = props.groups.indexOf(g)
+  return g.key !== null || !slug ? gi : gi + 1 + g.outlets.findIndex(o => o.slug === slug)
+}
 // The names. A name in a circle needs the circle to be wide enough; a name beside a circle goes away from its group and is left out where it would touch another name or a circle.
 const labels = computed<Label[]>(() => {
-  const { nodes, clusters } = layout.value
+  const { nodes, clusters } = target.value
   const [w0, h0] = [width.value, height.value]
   const out: Label[] = []
   const boxes: { x0: number, x1: number, y0: number, y1: number }[] = []
@@ -66,6 +124,7 @@ const labels = computed<Label[]>(() => {
     || nodes.some((o) => { const nx = Math.max(x0, Math.min(o.x, x1)); const ny = Math.max(y0, Math.min(o.y, y1)); return Math.hypot(o.x - nx, o.y - ny) < o.r })
   // The name of a group stands next to its node, where the box is free of circles and names, and at the edge of its cluster if there is no such place.
   for (const c of clusters) {
+    if (c.solo) continue
     const name = shortName(c.g.label)
     const w = name.length * 6.9
     const hub = nodes.find(n => n.kind === 'hub' && n.g === c.g)!
@@ -79,7 +138,7 @@ const labels = computed<Label[]>(() => {
       const x0 = anchor === 'middle' ? x - w / 2 : anchor === 'start' ? x : x - w
       if (x0 < 2 || x0 + w > w0 - 2 || y - 12 < 0 || y + 3 > h0 || hit(x0, x0 + w, y - 12, y + 3)) continue
       boxes.push({ x0, x1: x0 + w, y0: y - 12, y1: y + 3 })
-      out.push({ key: `g-${c.g.key ?? 'none'}`, g: c.g, text: name, x: round(x), y: round(y), anchor, kind: 'group' })
+      out.push({ key: `g-${c.g.key ?? 'none'}`, g: c.g, text: name, x: round(x), y: round(y), anchor, kind: 'group', d: driftOf(c.g) })
       break
     }
   }
@@ -90,21 +149,36 @@ const labels = computed<Label[]>(() => {
     if (n.r * 2 >= w + 8 && n.r >= 13) {
       const two = n.r >= 24
       const ink = inkOf(n.g.color, n.g.key === null ? 0.5 : 0.35)
-      out.push({ key: `i-${n.o.slug}`, g: n.g, text: name, x: n.x, y: n.y + (two ? -2 : 4), anchor: 'middle', kind: 'inner', ink })
-      if (two) out.push({ key: `s-${n.o.slug}`, g: n.g, text: fmtPct(n.o.value / props.total), x: n.x, y: n.y + 13, anchor: 'middle', kind: 'share', ink })
+      out.push({ key: `i-${n.o.slug}`, g: n.g, text: name, x: n.x, y: n.y + (two ? -2 : 4), anchor: 'middle', kind: 'inner', ink, d: driftOf(n.g, n.o.slug) })
+      if (two) out.push({ key: `s-${n.o.slug}`, g: n.g, text: fmtPct(n.o.value / props.total), x: n.x, y: n.y + 13, anchor: 'middle', kind: 'share', ink, d: driftOf(n.g, n.o.slug) })
       boxes.push({ x0: n.x - w / 2, x1: n.x + w / 2, y0: n.y - 10, y1: n.y + 16 })
       continue
     }
-    const hub = nodes.find(o => o.kind === 'hub' && o.g === n.g)!
-    const ang = Math.atan2(n.y - hub.y, n.x - hub.x)
-    const right = Math.cos(ang) >= 0
-    const x = n.x + (right ? 1 : -1) * (n.r + 4)
-    const y = n.y + 4
-    const x0 = right ? x : x - w
-    const x1 = right ? x + w : x
-    if (x0 < 2 || x1 > w0 - 2 || hit(x0, x1, y - 12, y + 4)) continue
-    boxes.push({ x0, x1, y0: y - 12, y1: y + 4 })
-    out.push({ key: `o-${n.o.slug}`, g: n.g, text: name, x: round(x), y: round(y), anchor: right ? 'start' : 'end', kind: 'outlet' })
+    const hub = nodes.find(o => o.kind === 'hub' && o.g === n.g)
+    const ang = Math.atan2(n.y - (hub?.y ?? h0 / 2), n.x - (hub?.x ?? w0 / 2))
+    // The name goes away from the group first, then to the other sides, and is left out only when every side is taken (more names are shown, never a name over a circle or another name).
+    const sides = [Math.cos(ang) >= 0 ? 1 : -1, Math.cos(ang) >= 0 ? -1 : 1] as const
+    let placed = false
+    for (const side of sides) {
+      const x = n.x + side * (n.r + 4)
+      const y = n.y + 4
+      const x0 = side > 0 ? x : x - w
+      const x1 = side > 0 ? x + w : x
+      if (x0 < 2 || x1 > w0 - 2 || hit(x0, x1, y - 12, y + 4)) continue
+      boxes.push({ x0, x1, y0: y - 12, y1: y + 4 })
+      out.push({ key: `o-${n.o.slug}`, g: n.g, text: name, x: round(x), y: round(y), anchor: side > 0 ? 'start' : 'end', kind: 'outlet', d: driftOf(n.g, n.o.slug) })
+      placed = true
+      break
+    }
+    if (placed) continue
+    for (const dy of [-1, 1]) {
+      const y = n.y + dy * (n.r + 4) + (dy > 0 ? 11 : -3)
+      const x0 = n.x - w / 2
+      if (x0 < 2 || x0 + w > w0 - 2 || y - 12 < 0 || y + 3 > h0 || hit(x0, x0 + w, y - 12, y + 3)) continue
+      boxes.push({ x0, x1: x0 + w, y0: y - 12, y1: y + 3 })
+      out.push({ key: `o-${n.o.slug}`, g: n.g, text: name, x: round(n.x), y: round(y), anchor: 'middle', kind: 'outlet', d: driftOf(n.g, n.o.slug) })
+      break
+    }
   }
   return out
 })
@@ -120,11 +194,24 @@ const showTip = (tip: { title: string, rows: { label: string, value: string, col
 <template>
   <div ref="holder" :class="fill ? 'fit net-fill' : 'fit'">
     <svg class="chart net" :width="width" :height="height" :viewBox="`0 0 ${width} ${height}`" role="group" :aria-label="t('g2.tree.title')">
-      <g>
-        <line v-for="l in layout.links" :key="l.b.o.slug" :class="['net-edge', cls(l.b.g)]" :style="{ '--g': orderOf(l.b.g) }" :x1="l.a.x" :y1="l.a.y" :x2="l.b.x" :y2="l.b.y" :stroke="l.b.g.color" />
+      <g v-if="fill" class="net-zones" :style="{ opacity: stance ? 1 : 0 }" aria-hidden="true">
+        <defs>
+          <linearGradient v-for="z in zones" :id="`net-zone-${z.key}`" :key="z.key" gradientUnits="userSpaceOnUse" :x1="z.from" y1="0" :x2="z.to" y2="0">
+            <stop v-for="(st, i) in z.stops" :key="i" :offset="st.at" :style="{ stopColor: z.color, stopOpacity: st.o }" />
+          </linearGradient>
+        </defs>
+        <template v-for="z in zones" :key="z.key">
+          <rect :x="z.from" y="0" :width="Math.max(0, z.to - z.from)" :height="height" :fill="`url(#net-zone-${z.key})`" />
+          <text :x="z.label" y="18" text-anchor="middle">{{ t(`stance.${z.key}`) }}</text>
+        </template>
       </g>
       <g>
-        <template v-for="n in layout.nodes" :key="n.kind === 'hub' ? `h-${n.g.key ?? 'none'}` : `o-${n.o.slug}`">
+        <g v-for="l in layout.links" :key="l.b.o.slug" class="net-drift" :style="{ '--d': driftOf(l.b.g) }">
+          <line :class="['net-edge', cls(l.b.g)]" :style="{ '--g': orderOf(l.b.g) }" :x1="l.a.x" :y1="l.a.y" :x2="l.b.x" :y2="l.b.y" :stroke="l.b.g.color" />
+        </g>
+      </g>
+      <g>
+        <g v-for="n in layout.nodes" :key="n.kind === 'hub' ? `h-${n.g.key ?? 'none'}` : `o-${n.o.slug}`" class="net-drift" :style="{ '--d': n.kind === 'hub' ? driftOf(n.g) : driftOf(n.g, n.o.slug) }">
           <circle
             v-if="n.kind === 'hub'" :class="['net-hub', cls(n.g)]" :cx="n.x" :cy="n.y" :r="n.r" :fill="n.g.color" stroke="var(--surface-page)" stroke-width="2"
             :tabindex="n.g.slug ? 0 : undefined" :role="n.g.slug ? 'link' : undefined" :aria-label="plain(groupTip(n.g))" :style="n.g.slug ? { '--g': orderOf(n.g) } : { '--g': orderOf(n.g), cursor: 'default' }"
@@ -137,14 +224,17 @@ const showTip = (tip: { title: string, rows: { label: string, value: string, col
             @pointerenter="enter(n.g); showTip(outletTip(n.o, n.g), $event)" @pointermove="showTip(outletTip(n.o, n.g), $event)" @pointerleave="leave(); tooltip.hide()"
             @click="n.o.slug && open(outletHref(n.o.slug))"
           />
-        </template>
+        </g>
       </g>
+      <g :style="{ opacity: moving ? 0 : 1, transition: 'opacity 200ms' }">
       <g class="bubble-labels">
+        <g v-for="l in labels" :key="l.key" class="net-drift" :style="{ '--d': l.d }">
         <text
-          v-for="l in labels" :key="l.key"
           :class="[l.kind === 'group' ? 'bubble-name' : l.kind === 'outlet' ? 'net-name' : l.kind === 'inner' ? 'tile-label' : 'tile-share', cls(l.g)]"
           :x="l.x" :y="l.y" :text-anchor="l.anchor" :style="l.ink ? { fill: l.ink, ...(l.kind === 'inner' ? { fontWeight: 500 } : {}) } : undefined"
         >{{ l.text }}</text>
+        </g>
+      </g>
       </g>
     </svg>
     <div class="visually-hidden">

@@ -300,6 +300,26 @@ html[data-search-fly] .body-search { opacity: 0; }
 .media-plegma.is-stories > .media-plegma-map { grid-column: 2; grid-row: 1; }
 .media-plegma.is-stories > .media-plegma-under { grid-column: 2; grid-row: 2; }
 .media-plegma.is-stories .media-map-web { height: var(--stories-row); min-height: 0; }
+/* Ιδιοκτησία: a column of 10 with the web of the owners and outlets and under it the lines (the whole column), and on the right a column of 2 with the list of the groups. */
+.media-plegma.is-groups { grid-template-columns: minmax(0, 10fr) minmax(0, 2fr); height: auto; min-height: 0; align-items: start; row-gap: var(--space-3); }
+.media-plegma.is-groups > .media-plegma-aside { grid-column: 2; grid-row: 1 / span 2; margin-left: 0; position: relative; align-self: stretch; }
+/* The groups with the outlets that they own, and the independent outlets: a column as tall as the screen (it scrolls inside only on a screen that is too short). */
+.media-plegma.is-groups > .media-plegma-aside { height: calc(100svh - 104px); min-height: 0; align-self: start; }
+.owner-col { display: flex; flex-direction: column; gap: var(--space-3); }
+.owner-col > .dcard { flex: none; }
+.owner { padding-left: var(--space-3); border-left: 3px solid var(--g); }
+.owner + .owner { margin-top: 4px; }
+.owner-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); font-size: var(--text-small); line-height: 1.2; font-weight: 600; color: var(--text-primary); }
+.owner-share { font-weight: 400; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.owner-outlets { display: block; margin: 0; padding: 0; border: 0; list-style: none; }
+.owner-outlets li { display: flex; justify-content: space-between; gap: var(--space-3); padding: 0; font-size: 11px; line-height: 1.15; color: var(--text-secondary); }
+.owner-outlets li span:last-child { font-variant-numeric: tabular-nums; }
+.media-plegma.is-groups > .media-plegma-map { grid-column: 1; grid-row: 1; height: max(380px, calc(100svh - 442px)); }
+.media-plegma.is-groups > .media-plegma-map { display: flex; flex-direction: column; }
+.groups-tools { flex: none; margin-bottom: var(--space-3); }
+.groups-tools .media-map-tabs { position: static; }
+.groups-web { position: relative; flex: 1 1 0; min-height: 0; }
+.media-plegma.is-groups > .media-plegma-side { grid-column: 1; grid-row: 2; }
 .stories-date { display: flex; margin-bottom: var(--space-3); }
 .stories-date .dr-pop { left: 0; right: auto; }
 .media-side-card { position: absolute; inset: 0; overflow-y: auto; scrollbar-width: thin; }
@@ -321,6 +341,9 @@ html[data-search-fly] .body-search { opacity: 0; }
   .media-plegma.is-topics > .media-plegma-under { margin-right: 0; }
   .media-plegma-aside > .dcard { height: auto; }
   .tof-box { min-height: 420px; }
+  .media-plegma.is-groups > .media-plegma-map { height: 70vw; min-height: 420px; }
+  .media-plegma.is-groups > .media-plegma-aside { order: 1; height: auto; }
+  .media-plegma.is-groups .media-side-card { position: static; }
   .media-plegma.is-stories { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
   .media-plegma.is-stories > .media-plegma-side, .media-plegma.is-stories > .media-plegma-map, .media-plegma.is-stories > .media-plegma-under { grid-column: 1; grid-row: auto; }
   .media-plegma.is-stories > .media-plegma-side { order: 1; }
@@ -350,6 +373,12 @@ html[data-search-fly] .body-search { opacity: 0; }
 /* Ιδιοκτησία: the network of owners and outlets fills the free area of the screen (GroupsNetwork fill). When it comes into view its groups arrive one after the other: the lines draw out of
    the owner and the circles grow out of their centers. */
 .net-fill { position: absolute; inset: 0; }
+/* The little drift of the web: every piece (a group with its outlets, lines and names, or one outlet without a group) floats a few pixels, each at its own time, only while the screen is in view. */
+.net-fill .net-drift { animation: net-drift calc(7s + var(--d, 0) * 0.9s) ease-in-out calc(var(--d, 0) * -1.7s) infinite alternate; animation-play-state: paused; }
+.net-fill.is-in .net-drift { animation-play-state: running; }
+@keyframes net-drift { 0% { transform: translate(0, 0); } 50% { transform: translate(4px, -3px); } 100% { transform: translate(-3px, 4px); } }
+.net-zones { transition: opacity 600ms var(--ease-out); pointer-events: none; }
+.net-zones text { font-size: var(--text-caption); fill: var(--text-secondary); }
 .net-fill .net-hub, .net-fill .net-outlet { transform-box: fill-box; transform-origin: center; transform: scale(0); opacity: 0; }
 .net-fill .net-edge { stroke-dasharray: 600; stroke-dashoffset: 600; }
 .net-fill .bubble-labels { opacity: 0; }
@@ -364,4 +393,6 @@ html[data-search-fly] .body-search { opacity: 0; }
 @media (prefers-reduced-motion: reduce) {
   .net-fill .net-hub, .net-fill .net-outlet, .net-fill .bubble-labels { transform: none; opacity: 1; animation: none !important; }
   .net-fill .net-edge { stroke-dashoffset: 0; animation: none !important; }
+  .net-fill .net-drift { animation: none; }
+  .net-fill .net-drift { animation: none !important; }
 }
