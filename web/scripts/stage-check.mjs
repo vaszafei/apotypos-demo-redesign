@@ -44,14 +44,17 @@ export const SCENES = [
 const CANVASES = 'canvas.plegma-canvas:not(.plegma-hero-snap):not(.plegma-dive-snap)'
 const readCanvases = page => page.evaluate((selector) => [...document.querySelectorAll(selector)].map(c => c.toDataURL('image/png')), CANVASES)
 
-// Wait until both canvases give the same pixels twice in a row, a second apart.
+// Wait until both canvases give the same pixels three times in a row, a second apart, and at least three seconds have passed: the fixtures load lazily after the network is idle,
+// and a late redraw after two equal reads made a scene differ from itself now and then.
 const settle = async (page) => {
   await page.evaluate(() => document.fonts.ready)
   let last = ''
+  let same = 0
   for (let i = 0; i < 30; i++) {
     await page.waitForTimeout(1000)
     const now = (await readCanvases(page)).join('|')
-    if (now.length > 200 && now === last) return
+    same = now.length > 200 && now === last ? same + 1 : 0
+    if (same >= 2 && i >= 2) return
     last = now
   }
   throw new Error('the canvases did not stop changing in 30 s')
