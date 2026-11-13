@@ -17,7 +17,7 @@ const PHONE = { width: 390, height: 844 }
 const DESKTOP = { width: 1440, height: 900 }
 
 // The scenes: one for each mode of the stage (hero, story, theme, outlet, backdrop), a ring switch, the night theme and the phone.
-// A scene may switch the ring (`ring`) after the page has settled. Not covered: hover states (with reduced motion a pointer move changes nothing on the canvases), flights of the camera, the intro, the dive and hero-frame copies.
+// A scene may click first (`click`, on the hero), switch the ring (`ring`), or sweep the pointer over a grid and keep what the tooltip says at each point (`sweep`; hover does not change the canvases with reduced motion, so the tooltip is what proves the pointer code). Not covered: how hover looks on the canvas, clicks that open a story, flights of the camera, the intro, the dive and hero-frame copies.
 export const SCENES = [
   { name: 'home', route: '/' },
   { name: 'home-night', route: '/', theme: 'night' },
@@ -27,6 +27,10 @@ export const SCENES = [
   { name: 'story-phone', route: '/story?id=1', ...PHONE },
   { name: 'story-outlets', route: '/story?id=1', ring: 'outlets' },
   { name: 'story-stance', route: '/story?id=1', ring: 'stance' },
+  { name: 'home-explored', route: '/', click: { x: 720, y: 450 }, sweep: true },
+  { name: 'story-sweep', route: '/story?id=1', sweep: true },
+  { name: 'theme-sweep', route: '/topic?i=3', sweep: true },
+  { name: 'outlet-sweep', route: '/outlet', sweep: true },
   { name: 'theme', route: '/topic?i=3' },
   { name: 'theme-night', route: '/topic?i=3', theme: 'night' },
   { name: 'theme-phone', route: '/topic?i=3', ...PHONE },
@@ -53,6 +57,33 @@ const settle = async (page) => {
   throw new Error('the canvases did not stop changing in 30 s')
 }
 
+// The pointer over a grid of points across the page: what the tooltip says at each (the map's own hover, with the cards and controls excluded by the stage).
+// Hover does not change the canvases with reduced motion, so the tooltip is what proves the pointer code. Cards and controls answer too, so the text is the same on both sides of a change.
+const sweep = async (page, viewport) => {
+  const tips = []
+  const read = () => page.evaluate(() => {
+    const t = document.querySelector('.tooltip')
+    if (!t || getComputedStyle(t).opacity === '0' || getComputedStyle(t).visibility === 'hidden' || getComputedStyle(t).display === 'none') return null
+    return t.textContent.trim().replace(/\s+/g, ' ')
+  })
+  await page.mouse.move(2, 2)
+  for (let gy = 0; gy < 12; gy++) {
+    for (let gx = 0; gx < 24; gx++) {
+      const x = Math.round(((gx + 0.5) / 24) * viewport.width)
+      const y = Math.round(((gy + 0.5) / 12) * viewport.height)
+      // Two moves, a pixel apart: a single one is now and then not answered before the tooltip is read.
+      await page.mouse.move(x - 1, y)
+      await page.mouse.move(x, y)
+      await page.waitForTimeout(120)
+      let tip = await read()
+      // Nothing yet: one more look a little later (a point is now and then answered after the first read).
+      if (tip === null) { await page.waitForTimeout(100); tip = await read() }
+      tips.push(`${x},${y} ${tip}`)
+    }
+  }
+  return tips
+}
+
 const shoot = async (browser, base, scene) => {
   const viewport = { width: scene.width || DESKTOP.width, height: scene.height || DESKTOP.height }
   const context = await browser.newContext({ viewport, reducedMotion: 'reduce' })
@@ -64,6 +95,11 @@ const shoot = async (browser, base, scene) => {
   try {
     await page.goto(`${base}${scene.route}`, { waitUntil: 'networkidle' })
     await settle(page)
+    if (scene.click) {
+      // A click on the hero explores: the wave clears the ground around it (at once with reduced motion) and the camera takes a step.
+      await page.mouse.click(scene.click.x, scene.click.y)
+      await settle(page)
+    }
     if (scene.ring) {
       // The ring switch of the story page: three buttons, in the order outlets, groups, stance.
       const button = page.locator('.orbit-ring-tabs button').nth(['outlets', 'groups', 'stance'].indexOf(scene.ring))
@@ -78,7 +114,8 @@ const shoot = async (browser, base, scene) => {
       await settle(page)
     }
     const urls = await readCanvases(page)
-    return { pngs: urls.map(u => PNG.sync.read(Buffer.from(u.split(',')[1], 'base64'))), problems }
+    const tips = scene.sweep ? await sweep(page, viewport) : undefined
+    return { tips, pngs: urls.map(u => PNG.sync.read(Buffer.from(u.split(',')[1], 'base64'))), problems }
   } finally {
     await context.close()
   }
@@ -107,6 +144,15 @@ const main = async () => {
     if (result.error) { console.log(`FAIL ${scene.name}: ${result.error}`); failed = true; continue }
     const note = result.problems.length ? `  (console: ${result.problems.slice(0, 2).join(' | ')})` : ''
     const parts = []
+    if (result.tips) {
+      const file = `${scene.name}-tips.txt`
+      writeFileSync(join(out, file), result.tips.join('\n') + '\n')
+      const seen = result.tips.filter(t => !t.endsWith(' null')).length
+      if (!baseline) parts.push(`${seen} of ${result.tips.length} points with a tooltip`)
+      else if (!existsSync(join(baseline, file))) { failed = true; parts.push('TIPS NOT IN BASELINE') }
+      else if (readFileSync(join(baseline, file), 'utf8') !== result.tips.join('\n') + '\n') { failed = true; parts.push('TOOLTIPS DIFFER') }
+      else parts.push(`tooltips same (${seen} points)`)
+    }
     result.pngs.forEach((png, i) => {
       const file = `${scene.name}-${i}.png`
       writeFileSync(join(out, file), PNG.sync.write(png))
@@ -118,7 +164,7 @@ const main = async () => {
       parts.push('same')
     })
     if (result.pngs.length !== 2) failed = true
-    console.log(`${parts.includes('same') && parts.every(p => p === 'same') && result.pngs.length === 2 ? 'ok  ' : baseline || result.pngs.length !== 2 ? 'FAIL' : 'saved'} ${scene.name}: ${result.pngs.length} canvases ${parts.join(', ')}${note}`)
+    console.log(`${parts.every(p => p === 'same' || p.startsWith('tooltips same')) && result.pngs.length === 2 ? 'ok  ' : baseline || result.pngs.length !== 2 ? 'FAIL' : 'saved'} ${scene.name}: ${result.pngs.length} canvases ${parts.join(', ')}${note}`)
   }
   await browser.close()
   server.close()
