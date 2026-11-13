@@ -16,8 +16,9 @@ export interface DayOutlet { name: string, slot: number, n: number, group?: stri
 // The pages of Μέσα use it for a period too: `date` is then the text at the center (a count, with `sub` under it), `labels` the most theme names it writes (the largest first),
 // `themeLabel` names the theme in the tooltip of a story when the themes are something else (the groups of Ιδιοκτησία, whose stories are their outlets: a story with no `media` has no row of them),
 // `spread` that many themes go round the center by the golden angle (utils/plegma-day.ts), `zoom` the share of the area the web fills (the ring included), `shares` that a theme is as large as its share
+// of the ring (the area of its node is its articles), `ellipse` that the ring is an ellipse as wide as the area allows (the web lies in it, and the arcs of the outlets are named with their share outside it), `grouped` that the stories are grouped by their themes (the nodes of the themes and their names) while the ring stays the outlets; and `shares` that a theme is as large as its share
 // of the ring (the area of its node is its articles) and its share is written after its name and in its tooltip, `grow` that the web grows out of the center when it comes into view and again when its data changes, and `label` the name of the picture for a screen reader.
-const props = withDefaults(defineProps<{ themes: PlegmaDayTheme[], ring: DayRing[], outlets: DayOutlet[], mode: 'stories' | 'themes', lit: number | null, date: string, picked: number | null, active: boolean, sub?: string, labels?: number, grow?: boolean, label?: string, spread?: boolean, themeLabel?: string, zoom?: number, shares?: boolean }>(), { sub: undefined, labels: Infinity, grow: false, label: undefined, spread: false, themeLabel: undefined, zoom: 1, shares: false })
+const props = withDefaults(defineProps<{ themes: PlegmaDayTheme[], ring: DayRing[], outlets: DayOutlet[], mode: 'stories' | 'themes', lit: number | null, date: string, picked: number | null, active: boolean, sub?: string, labels?: number, grow?: boolean, label?: string, spread?: boolean, themeLabel?: string, zoom?: number, shares?: boolean, ellipse?: boolean, grouped?: boolean }>(), { sub: undefined, labels: Infinity, grow: false, label: undefined, spread: false, themeLabel: undefined, zoom: 1, shares: false, ellipse: false, grouped: false })
 const emit = defineEmits<{ pick: [id: number], pickTheme: [issue: number], 'update:lit': [issue: number | null] }>()
 const { t } = useI18n()
 const tooltip = useTooltipStore()
@@ -56,7 +57,13 @@ const slotColour = (slot: number) => (slot > 0 ? cats[slot - 1] ?? mute : props.
 
 // The layout is the same for the same day; it is drawn again when the area changes shape.
 // The web lies inside the ring, which is a circle: the layout is on the unit disc.
-const aspect = computed(() => (size.value.h ? 1 : 0))
+// MOCK: with `ellipse` the layout box is `aspect` times as wide as it is high, and the ring is the ellipse that holds it, with room for the names of the arcs on the sides.
+const aspect = computed(() => {
+  if (!size.value.h) return 0
+  if (!props.ellipse) return 1
+  const ry = size.value.h / 2 * 0.8 - 10
+  return Math.round(clamp((size.value.w / 2 - 100) / ry, 1, 2.1) * 20) / 20
+})
 const seed = computed(() => [...props.date].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 9973, 7))
 const web = computed<PlegmaDayWeb | null>(() => (props.themes.length && aspect.value ? buildDayWeb(props.themes, aspect.value, seed.value, props.spread) : null))
 // The same stories with no themes between them, and which node of it each node of `web` is.
@@ -95,7 +102,34 @@ const shareOf = (n: number) => (ringTotal.value ? ` ${fmtPct(n / ringTotal.value
 const ringN = (issue: number) => props.ring.find(r => r.issue === issue)?.n ?? 0
 const storyOf = (w: PlegmaDayWeb, i: number) => props.themes[w.theme[i]!]!.stories[w.story[i]!]!
 // The ring is as large as the area allows, and the web is a little smaller inside it.
-const ringOf = () => (Math.min(width, height) / 2 * 0.9 - 10) * props.zoom
+const ringOf = () => (props.ellipse ? Math.min(height / 2 * 0.8 - 10, (width / 2 - 100) / Math.max(1, aspect.value)) : (Math.min(width, height) / 2 * 0.9 - 10)) * props.zoom
+const ringRx = () => ringOf() * (props.ellipse ? aspect.value : 1)
+// Where a share of the ring is: the arcs are as long as their shares along the ellipse (the table gives the angle of the ellipse for the length from the top).
+const perim = computed(() => {
+  const rx = ringRx()
+  const ry = ringOf()
+  const N = 720
+  const cum = new Float32Array(N + 1)
+  for (let k = 1; k <= N; k++) { const a = ((k - 0.5) / N) * TAU; cum[k] = cum[k - 1]! + Math.hypot(rx * Math.sin(a), ry * Math.cos(a)) * (TAU / N) }
+  return cum
+})
+const paramOf = (frac: number) => {
+  const cum = perim.value
+  const N = cum.length - 1
+  const target = clamp(frac, 0, 1) * cum[N]!
+  let lo = 0
+  let hi = N
+  while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (cum[mid]! < target) lo = mid; else hi = mid }
+  const span = cum[hi]! - cum[lo]! || 1
+  return ((lo + (target - cum[lo]!) / span) / N) * TAU
+}
+const fracOf = (param: number) => {
+  const cum = perim.value
+  const N = cum.length - 1
+  const k = clamp((param / TAU) * N, 0, N)
+  const lo = Math.floor(k)
+  return (cum[lo]! + (cum[Math.min(N, lo + 1)]! - cum[lo]!) * (k - lo)) / cum[N]!
+}
 const scaleOf = () => ringOf() - 22
 const radius = (w: PlegmaDayWeb, i: number, R: number) => {
   switch (w.kind[i]) {
@@ -133,7 +167,7 @@ const draw = (sec: number, dt: number) => {
   g.clearRect(0, 0, width, height)
   grown = growAt < 0 ? (props.grow && !reduced.value ? 0 : 1) : clamp((performance.now() - growAt) / GROW_MS, 0, 1)
   g.globalAlpha = 1
-  const goal = props.mode === 'themes' ? 1 : 0
+  const goal = props.mode === 'themes' || props.grouped ? 1 : 0
   themed = reduced.value ? goal : themed + (goal - themed) * (1 - Math.exp(-dt * 3))
   if (Math.abs(goal - themed) < 0.002) themed = goal
   form = themed * themed * (3 - 2 * themed)
@@ -290,33 +324,55 @@ const draw = (sec: number, dt: number) => {
   }
   // The ring: an arc for each outlet of the day (the stories) or each theme (the themes), as wide as its share of the articles; the one pointed at is thicker. The two rings fade into each other.
   const ringR = ringOf()
-  const sweep = grown < 1 ? (1 - (1 - clamp(grown / 0.8, 0, 1)) ** 3) * TAU : TAU
-  const arcs = (items: { slot: number, n: number }[], tag: string, alpha: number, hotOf: (k: number) => boolean) => {
+  const ringX = ringRx()
+  const per = perim.value[perim.value.length - 1]!
+  const sweepFrac = grown < 1 ? 1 - (1 - clamp(grown / 0.8, 0, 1)) ** 3 : 1
+  const arcs = (items: { slot: number, n: number, name?: string }[], tag: string, alpha: number, hotOf: (k: number) => boolean) => {
     const total = items.reduce((sum, r) => sum + r.n, 0)
     if (total <= 0 || alpha < 0.01) return
     let from = 0
     g.lineCap = 'round'
     items.forEach((r, k) => {
-      const span = (r.n / total) * TAU
+      const span = r.n / total
       const key = `${tag}${k}`
       const hot = arcHot.get(key) ?? 0
       const goal = hotOf(k) ? 1 : 0
       arcHot.set(key, reduced.value ? goal : hot + (goal - hot) * (1 - Math.exp(-dt * 9)))
-      const pad = Math.min(span / 2, 3 / ringR)
-      if (from + pad >= sweep) { from += span; return }
+      const pad = Math.min(span / 2, 3 / per)
+      if (from + pad >= sweepFrac) { from += span; return }
       g.strokeStyle = slotColour(r.slot)
       g.globalAlpha = (0.85 + 0.15 * (arcHot.get(key) ?? 0)) * alpha
       g.lineWidth = 2 + 2.5 * (arcHot.get(key) ?? 0)
       g.beginPath()
-      g.arc(width / 2, height / 2, ringR, from - Math.PI / 2 + pad, Math.min(from + span - pad, sweep) - Math.PI / 2)
+      g.ellipse(width / 2, height / 2, ringX, ringR, 0, paramOf(from + pad) - Math.PI / 2, paramOf(Math.min(from + span - pad, sweepFrac)) - Math.PI / 2)
       g.stroke()
+      // The name and the share of a large arc, outside the ring.
+      if (props.ellipse && tag === 'o' && r.name && span >= 0.035 && grown >= 1) {
+        const m = paramOf(from + span / 2) - Math.PI / 2
+        const c = Math.cos(m)
+        const sn = Math.sin(m)
+        const nm = r.name.replace(/^Συμφέροντα\s+/, '')
+        const text = `${nm.length > 17 ? `${nm.slice(0, 16).trimEnd()}…` : nm} ${fmtPct(span)}`
+        g.font = `11px ${fontText}`
+        g.textAlign = c > 0.25 ? 'left' : c < -0.25 ? 'right' : 'center'
+        g.lineWidth = 3.5
+        g.strokeStyle = paper
+        g.globalAlpha = 0.9
+        const tx = width / 2 + (ringX + 10) * c
+        const ty = height / 2 + (ringR + 10) * sn + (Math.abs(c) <= 0.25 ? (sn > 0 ? 8 : -2) : 4)
+        g.strokeText(text, tx, ty)
+        g.fillStyle = mute
+        g.globalAlpha = 1
+        g.fillText(text, tx, ty)
+        g.textAlign = 'start'
+      }
       from += span
     })
     g.lineCap = 'butt'
     g.globalAlpha = 1
   }
-  arcs(props.outlets, 'o', 1 - form, k => form < 0.5 && hoverRing === k)
-  arcs(props.ring, 't', form, k => form >= 0.5 && (props.lit === props.ring[k]!.issue || hoverRing === k))
+  arcs(props.outlets, 'o', props.grouped ? 1 : 1 - form, k => (props.grouped || form < 0.5) && hoverRing === k)
+  arcs(props.ring, 't', props.grouped ? 0 : form, k => form >= 0.5 && (props.lit === props.ring[k]!.issue || hoverRing === k))
   // The date at the center and the name of each theme beside its node: the only words on the web.
   g.font = `600 14px ${fontText}`
   g.textBaseline = 'alphabetic'
@@ -411,8 +467,11 @@ const arcAt = (x: number, y: number) => {
   if (!total) return -2
   const dx = x - width / 2
   const dy = y - height / 2
-  if (Math.abs(Math.hypot(dx, dy) - ringOf()) > 9) return -2
-  const angle = (((Math.atan2(dy, dx) + Math.PI / 2) % TAU) + TAU) % TAU
+  const rx = ringRx()
+  const ry = ringOf()
+  if (Math.abs(Math.hypot(dx / rx, dy / ry) - 1) * Math.min(rx, ry) > 9) return -2
+  const param = (((Math.atan2(dy / ry, dx / rx) + Math.PI / 2) % TAU) + TAU) % TAU
+  const angle = fracOf(param) * TAU
   let from = 0
   for (let k = 0; k < items.length; k++) {
     from += (items[k]!.n / total) * TAU

@@ -27,12 +27,6 @@ const rowOf = (r: StoryTrend): BarRow => ({
   key: r.s.id, label: storyName(r.s), to: storyHref(r.s.id), value: Math.abs(r.change), color: r.change > 0 ? 'var(--emph-more)' : 'var(--emph-less)',
   arrow: r.change > 0 ? 'up' : 'down', text: `${fmtSigned(r.change * 100)}%`, tip: t('stories.trend.tip', { before: fmtInt(r.before), now: fmtInt(r.now) })
 })
-const trendRange = computed(() => {
-  const tr = trends.value
-  if (!tr) return null
-  const [i0] = range.value
-  return t('stories.trend.vs', { range: `${day(dates.value[tr.p0]!)}${tr.len > 1 ? ` – ${day(dates.value[i0 - 1]!)}` : ''}` })
-})
 
 // The web: the stories of the period grouped by their theme only for their color (the web of the stories has no theme nodes), with the color slots of the themes of the period.
 const topicsData = useFixtureLazy<{ issues: unknown[], issueDaily: (number | null)[][] }>('home', { required: ['issues', 'issueDaily'], isEmpty: b => b.issueDaily.length === 0 })
@@ -40,7 +34,9 @@ const slotOfIssue = computed(() => (topicsData.data.value ? themeSlots(topicsDat
 const webFrom = computed(() => view.value.from)
 const webTo = computed(() => view.value.to)
 const periodWeb = import.meta.client ? usePeriodWeb(webFrom, webTo, slotOfIssue) : null
-const webThemes = computed(() => (periodWeb?.ready.value ? periodWeb.themesOf() : []))
+// MOCK: ?plegma=a|b shows the web as an ellipse, grouped by theme, with more stories.
+const mockWeb = computed(() => String(useRoute().query.plegma ?? ''))
+const webThemes = computed(() => (periodWeb?.ready.value ? (mockWeb.value === 'a' ? periodWeb.themesOf(24, 8) : mockWeb.value === 'b' ? periodWeb.themesOf(36, 10) : periodWeb.themesOf()) : []))
 // The ring of the web, as the story page has it: the outlets, or their groups.
 const ringBy = ref<'outlets' | 'groups'>('outlets')
 
@@ -80,7 +76,7 @@ watch(view, async () => { await nextTick(); $motion.replay(document.querySelecto
           <SegmentedControl v-if="webThemes.length" v-model="ringBy" class="media-map-tabs" :label="t('stories.ring.label')" :options="[{ value: 'outlets', label: t('stories.ring.outlets') }, { value: 'groups', label: t('stories.ring.groups') }]" />
           <PlegmaDayWeb
             v-if="webThemes.length" :themes="webThemes" :ring="[]" :outlets="ringBy === 'groups' ? periodWeb!.groupRing.value : periodWeb!.outlets.value" mode="stories" :lit="null" :date="dateText" :sub="t('stories.web.sub', { n: fmtInt(list.length) })"
-            :picked="null" :active="active" grow :label="t('topics2.stories.title')" @pick="id => navigateTo(storyHref(id))"
+            :picked="null" :ellipse="!!mockWeb" :grouped="!!mockWeb" :spread="mockWeb === 'b'" :active="active" grow :label="t('topics2.stories.title')" @pick="id => navigateTo(storyHref(id))"
           />
           <p v-if="webThemes.length" class="media-map-note">{{ t('stories.web.note') }}</p>
         </ClientOnly>
@@ -88,12 +84,10 @@ watch(view, async () => { await nextTick(); $motion.replay(document.querySelecto
     </template>
     <div class="stories-time">
       <DashCard card="lines" :title="t('stories.time.title')" :info="t('stories.time.info')">
-        <template #tools><span class="home-date">{{ dateText }}</span></template>
         <LinesChart v-if="lines" :dates="lines.dates" :series="lines.series" sparse sqrt :tall="300" :caption="t('stories.time.title')" :href-of="s => storyHref(s.key)" />
         <p v-else class="dcard-empty">{{ t('stories.period.empty') }}</p>
       </DashCard>
       <DashCard class="media-time-trends" :title="t('stories.trend.title')" :info="t('stories.trend.info', { n: TREND_MIN })">
-        <template v-if="trends" #tools><span class="home-date">{{ trendRange }}</span></template>
         <p v-if="!trends" class="dcard-empty">{{ t('stories.trend.empty') }}</p>
         <div v-else class="story-trend">
           <div class="story-trend-col">
