@@ -253,13 +253,39 @@ html[data-search-fly] .body-search { opacity: 0; }
 .tab-next-rule::after { content: ""; position: absolute; inset: 0; background: var(--ink); transform-origin: left; transform: scaleX(var(--pull, 0)); transition: transform 90ms linear; }
 .section-nav-link.is-pull { background: linear-gradient(90deg, var(--sidebar-hover-bg) calc(var(--pull, 0) * 100%), transparent 0); color: var(--ink); }
 
+/* The date picker's arrows: the period back and forward by its own length, rectangular like the other controls. */
+.dr-bar { display: inline-flex; align-items: center; gap: 6px; }
+.dr-bar .dr-trigger { border-radius: 6px; }
+.dr-bar .dr-step { border: 1px solid var(--border); border-radius: 6px; background: var(--surface-raised); width: 32px; height: 32px; }
+.dr-bar .dr-step:hover:not(:disabled) { border-color: var(--accent); }
+.dr-len { padding-left: 8px; border-left: 1px solid var(--border); font-size: var(--text-caption); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+
 /* A tab of Μέσα as a screen of the Plegma (components/MediaPlegma.vue): the web fills the free area on the left, over the dim map of the stage, and the cards of the tab are glass cards
    in a column on its right, as on Home's «Η επικαιρότητα». The cards that do not fit are under the screen, glass too. */
 .media-plegma { --card-glass: color-mix(in srgb, var(--surface-page) 82%, transparent); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, min(720px, 46%)); gap: var(--space-5); height: calc(100svh - 64px - 96px); min-height: 620px; }
 .media-plegma-map { position: relative; min-width: 0; min-height: 0; }
 .media-plegma-side { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: var(--space-3); }
 .media-plegma-side > .dcard { flex: none; }
-.media-plegma-side > .media-plegma-fill { flex: 1 1 0; min-height: 160px; display: flex; flex-direction: column; }
+.media-plegma-stack { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; gap: var(--space-3); }
+.media-plegma-stack > .dcard { flex: none; }
+.media-plegma-side > .media-plegma-fill, .media-plegma-stack > .media-plegma-fill { flex: 1 1 0; min-height: 160px; display: flex; flex-direction: column; }
+/* The cards of the topic picked on Θέματα: a scroll of glass cards (components/TopicCards.vue). */
+.topic-cards { flex: 1 1 0; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-3); padding-right: 2px; scrollbar-width: thin; }
+.topic-cards > .dcard { flex: none; }
+.topic-cards-head { display: grid; gap: 2px; }
+.topic-cards-head .topic-back { justify-self: start; margin-bottom: var(--space-2); min-height: 28px; padding: 0 10px 0 6px; border-radius: 6px; font-size: var(--text-caption); }
+.topic-cards-kind { margin: 0; font-size: var(--text-caption); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
+.topic-cards-title { margin: 0; font-size: var(--text-h3, 1.25rem); font-weight: 600; color: var(--ink); }
+.topic-cards-facts { display: flex; flex-wrap: wrap; gap: 4px var(--space-4); margin: var(--space-1) 0 0; font-size: var(--text-small); color: var(--text-secondary); }
+.topic-cards-facts b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.topic-cards-scope { margin: 0 var(--space-1) var(--space-2); }
+.topic-cards-wait { min-height: 120px; }
+.topic-pick { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; border-bottom: 1px solid color-mix(in srgb, var(--ink) 30%, transparent); }
+.topic-pick:hover { border-bottom-color: var(--ink); }
+.topic-list li { cursor: default; }
+.side-swap-enter-active, .side-swap-leave-active { transition: opacity 220ms var(--ease-out), transform 220ms var(--ease-out); }
+.side-swap-enter-from, .side-swap-leave-to { opacity: 0; transform: translateY(8px); }
+@media (prefers-reduced-motion: reduce) { .side-swap-enter-active, .side-swap-leave-active { transition: none; } }
 .media-plegma-fill .topic-list { flex: 1 1 0; min-height: 0; overflow-y: auto; position: static; }
 .media-plegma-below { --card-glass: color-mix(in srgb, var(--surface-page) 82%, transparent); margin-top: var(--space-4); }
 .media-plegma .dcard, .media-plegma-below .dcard { background: var(--card-glass); backdrop-filter: blur(10px); }
@@ -275,7 +301,9 @@ html[data-search-fly] .body-search { opacity: 0; }
   .media-plegma.is-full > .media-plegma-side { position: static; width: auto; }
   .media-plegma { display: flex; flex-direction: column; height: auto; min-height: 0; }
   .media-plegma-map { height: 70vw; min-height: 420px; }
-  .media-plegma-side > .media-plegma-fill { flex: none; height: 360px; }
+  .media-plegma-side > .media-plegma-fill, .media-plegma-stack > .media-plegma-fill { flex: none; height: 360px; }
+  .media-plegma-stack { flex: none; }
+  .topic-cards { flex: none; overflow: visible; }
 }
 
 /* Ιδιοκτησία: the network of owners and outlets fills the free area of the screen (GroupsNetwork fill). When it comes into view its groups arrive one after the other: the lines draw out of

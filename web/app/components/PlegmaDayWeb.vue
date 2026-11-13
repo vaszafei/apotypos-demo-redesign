@@ -15,8 +15,9 @@ export interface DayRing { issue: number, name: string, slot: number, n: number 
 export interface DayOutlet { name: string, slot: number, n: number }
 // The pages of Μέσα use it for a period too: `date` is then the text at the center (a count, with `sub` under it), `labels` the most theme names it writes (the largest first),
 // `themeLabel` names the theme in the tooltip of a story when the themes are something else (the groups of Ιδιοκτησία, whose stories are their outlets: a story with no `media` has no row of them),
-// `spread` that many themes go round the center by the golden angle (utils/plegma-day.ts), `grow` that the web grows out of the center when it comes into view and again when its data changes, and `label` the name of the picture for a screen reader.
-const props = withDefaults(defineProps<{ themes: PlegmaDayTheme[], ring: DayRing[], outlets: DayOutlet[], mode: 'stories' | 'themes', lit: number | null, date: string, picked: number | null, active: boolean, sub?: string, labels?: number, grow?: boolean, label?: string, spread?: boolean, themeLabel?: string }>(), { sub: undefined, labels: Infinity, grow: false, label: undefined, spread: false, themeLabel: undefined })
+// `spread` that many themes go round the center by the golden angle (utils/plegma-day.ts), `zoom` the share of the area the web fills (the ring included), `shares` that a theme is as large as its share
+// of the ring (the area of its node is its articles) and its share is written after its name and in its tooltip, `grow` that the web grows out of the center when it comes into view and again when its data changes, and `label` the name of the picture for a screen reader.
+const props = withDefaults(defineProps<{ themes: PlegmaDayTheme[], ring: DayRing[], outlets: DayOutlet[], mode: 'stories' | 'themes', lit: number | null, date: string, picked: number | null, active: boolean, sub?: string, labels?: number, grow?: boolean, label?: string, spread?: boolean, themeLabel?: string, zoom?: number, shares?: boolean }>(), { sub: undefined, labels: Infinity, grow: false, label: undefined, spread: false, themeLabel: undefined, zoom: 1, shares: false })
 const emit = defineEmits<{ pick: [id: number], pickTheme: [issue: number], 'update:lit': [issue: number | null] }>()
 const { t } = useI18n()
 const tooltip = useTooltipStore()
@@ -89,14 +90,17 @@ const growOf = (kind: number) => {
   const k = clamp((grown - d) / (1 - d), 0, 1)
   return 1 - (1 - k) ** 3
 }
+const ringTotal = computed(() => props.ring.reduce((sum, r) => sum + r.n, 0))
+const shareOf = (n: number) => (ringTotal.value ? ` ${fmtPct(n / ringTotal.value)}` : '')
+const ringN = (issue: number) => props.ring.find(r => r.issue === issue)?.n ?? 0
 const storyOf = (w: PlegmaDayWeb, i: number) => props.themes[w.theme[i]!]!.stories[w.story[i]!]!
 // The ring is as large as the area allows, and the web is a little smaller inside it.
-const ringOf = () => Math.min(width, height) / 2 * 0.9 - 10
+const ringOf = () => (Math.min(width, height) / 2 * 0.9 - 10) * props.zoom
 const scaleOf = () => ringOf() - 22
 const radius = (w: PlegmaDayWeb, i: number, R: number) => {
   switch (w.kind[i]) {
     case DAY_DATE: return 9
-    case DAY_THEME: return props.themes.length > 12 ? 2.6 + 6 * w.size[i]! : 6.5 + 4 * w.size[i]!
+    case DAY_THEME: return props.shares ? Math.max(4.5, 21 * w.size[i]!) : props.themes.length > 12 ? 2.6 + 6 * w.size[i]! : 6.5 + 4 * w.size[i]!
     case DAY_STORY: return 3.6 + 3.4 * w.size[i]!
     case DAY_DOT: return clamp(R * (0.004 + 0.0085 * w.size[i]!), 1.4, 5.2)
     default: return clamp(R * 0.004 * (0.6 + w.size[i]!), 1, 2.2)
@@ -335,8 +339,10 @@ const draw = (sec: number, dt: number) => {
   for (let i = 0; i < w.n; i++) {
     if (w.kind[i] !== DAY_THEME) continue
     if (form < 0.01 || w.theme[i]! >= props.labels) continue
-    const name = props.themes[w.theme[i]!]!.name
-    const text = name.length > 28 ? `${name.slice(0, 27).trimEnd()}…` : name
+    const th = props.themes[w.theme[i]!]!
+    const name = th.name
+    const short = name.length > 28 ? `${name.slice(0, 27).trimEnd()}…` : name
+    const text = props.shares ? `${short}${shareOf(ringN(th.issue))}` : short
     const right = hx[i]! >= width / 2
     g.textAlign = right ? 'left' : 'right'
     const lx = hx[i]! + (right ? 1 : -1) * (radius(w, i, R) + 7)
@@ -431,7 +437,7 @@ const onMove = (e: PointerEvent) => {
   if (!w || i < 0) { tooltip.hide(); return }
   const theme = props.themes[w.theme[i]!]!
   if (w.kind[i] === DAY_THEME) {
-    tooltip.show({ title: theme.name, rows: [{ label: t('home.field.articles'), value: fmtInt(theme.n), color: slotColour(theme.slot) }], field: true }, e)
+    tooltip.show({ title: theme.name, rows: [{ label: t('home.field.articles'), value: props.shares ? `${fmtInt(ringN(theme.issue))} ·${shareOf(ringN(theme.issue))}` : fmtInt(theme.n), color: slotColour(theme.slot) }], field: true }, e)
     return
   }
   const s = theme.stories[w.story[i]!]!

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // DateRangePicker of assets/date-range.js: one button with the period, and a popover with the presets on the left and two months of days on the right.
-// A first click on a day starts the period and a second click ends it. Only the days of the data can be picked.
+// A first click on a day starts the period and a second click ends it. Only the days of the data can be picked. A preset applies at once; the arrows beside the button step the period back and forward by its own length.
 interface Preset { key: string, label: string, from: string, to: string }
 const props = defineProps<{ dates: string[], from: string, to: string }>()
 const emit = defineEmits<{ change: [range: { from: string, to: string }] }>()
@@ -25,10 +25,11 @@ const presets = computed<Preset[]>(() => {
     return { key: m, label: cap(fmtMonth(days[0]!, { month: 'long', year: 'numeric' })), from: days[0]!, to: days[days.length - 1]! }
   })
   return [
-    { key: 'all', label: t('range.all'), from: d[0]!, to: last.value },
-    ...months,
+    { key: 'last7', label: t('mme.range.last7'), from: d[Math.max(0, d.length - 7)]!, to: last.value },
     { key: 'last14', label: t('range.last14'), from: d[Math.max(0, d.length - 14)]!, to: last.value },
-    { key: 'last7', label: t('mme.range.last7'), from: d[Math.max(0, d.length - 7)]!, to: last.value }
+    { key: 'last30', label: t('range.last30'), from: d[Math.max(0, d.length - 30)]!, to: last.value },
+    ...months.slice().reverse(),
+    { key: 'all', label: t('range.all'), from: d[0]!, to: last.value }
   ]
 })
 
@@ -68,13 +69,24 @@ const pick = (key: string) => {
     start.value = null; hover.value = null
   }
 }
-const usePreset = (p: Preset) => { draft.value = { from: p.from, to: p.to }; start.value = null; hover.value = null; view.value = clampView(monthStart(p.from)) }
+const usePreset = (p: Preset) => { draft.value = { from: p.from, to: p.to }; start.value = null; hover.value = null; view.value = clampView(monthStart(p.from)); apply() }
 const toggle = () => {
   if (open.value) { open.value = false; return }
   draft.value = { from: props.from, to: props.to }; start.value = null; hover.value = null
   view.value = clampView(monthStart(props.from)); open.value = true
 }
 const apply = () => { open.value = false; if (draft.value.from !== props.from || draft.value.to !== props.to) emit('change', { ...draft.value }) }
+
+// The period before or after, as long as this one (it stops at the first and the last day of the data).
+const at = computed(() => props.dates.indexOf(props.from))
+const len = computed(() => props.dates.indexOf(props.to) - at.value + 1)
+const canBack = computed(() => at.value > 0)
+const canForward = computed(() => at.value + len.value < props.dates.length)
+const step = (dir: -1 | 1) => {
+  const n = len.value
+  const i0 = dir < 0 ? Math.max(0, at.value - n) : Math.min(props.dates.length - n, at.value + n)
+  emit('change', { from: props.dates[i0]!, to: props.dates[i0 + n - 1]! })
+}
 
 const root = ref<HTMLElement | null>(null)
 onMounted(() => {
@@ -86,9 +98,13 @@ onMounted(() => {
 
 <template>
   <div ref="root" class="dr" @keydown.esc.stop="open = false">
-    <button type="button" class="dr-trigger" aria-haspopup="dialog" :aria-expanded="tf(open)" @click="toggle">
-      <AppIcon name="calendar" class="icon dr-icon" /><span class="dr-text">{{ label(from, to) }}</span><AppIcon name="chevron-down" class="icon icon-sm dr-chev" />
-    </button>
+    <div class="dr-bar">
+      <button type="button" class="icon-button dr-step dr-back" :disabled="!canBack" :aria-label="t('dr.step.back')" @click="step(-1)"><AppIcon name="chevron-left" class="icon icon-sm" /></button>
+      <button type="button" class="dr-trigger" aria-haspopup="dialog" :aria-expanded="tf(open)" @click="toggle">
+        <AppIcon name="calendar" class="icon dr-icon" /><span class="dr-text">{{ label(from, to) }}</span><span class="dr-len">{{ t('dr.days', { n: dayCount(from, to) }) }}</span><AppIcon name="chevron-down" class="icon icon-sm dr-chev" />
+      </button>
+      <button type="button" class="icon-button dr-step dr-forward" :disabled="!canForward" :aria-label="t('dr.step.forward')" @click="step(1)"><AppIcon name="chevron-right" class="icon icon-sm" /></button>
+    </div>
     <div class="dr-pop" role="dialog" :aria-label="t('dr.title')" :hidden="!open">
       <template v-if="open">
         <ul class="dr-presets" :aria-label="t('dr.presets')">
