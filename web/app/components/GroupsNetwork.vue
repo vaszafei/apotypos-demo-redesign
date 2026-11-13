@@ -15,7 +15,7 @@ const holder = ref<HTMLElement | null>(null)
 const { width: measured, height: measuredH } = useElementSize(holder)
 const width = computed(() => Math.floor(measured.value) || 640)
 const height = computed(() => (props.fill && measuredH.value > 200 ? Math.floor(measuredH.value) : Math.max(300, Math.min(440, Math.round(width.value * 0.56)))))
-const layout = computed(() => netLayout(props.groups, width.value, height.value))
+const layout = computed(() => netLayout(props.groups, width.value, height.value, !!props.fill))
 
 const hover = ref<NetGroup | null>(null)
 const tint = (g: NetGroup) => tintOf(g.color, g.key === null ? 0.5 : 0.35)
@@ -66,6 +66,7 @@ const labels = computed<Label[]>(() => {
     || nodes.some((o) => { const nx = Math.max(x0, Math.min(o.x, x1)); const ny = Math.max(y0, Math.min(o.y, y1)); return Math.hypot(o.x - nx, o.y - ny) < o.r })
   // The name of a group stands next to its node, where the box is free of circles and names, and at the edge of its cluster if there is no such place.
   for (const c of clusters) {
+    if (c.solo) continue
     const name = shortName(c.g.label)
     const w = name.length * 6.9
     const hub = nodes.find(n => n.kind === 'hub' && n.g === c.g)!
@@ -95,16 +96,31 @@ const labels = computed<Label[]>(() => {
       boxes.push({ x0: n.x - w / 2, x1: n.x + w / 2, y0: n.y - 10, y1: n.y + 16 })
       continue
     }
-    const hub = nodes.find(o => o.kind === 'hub' && o.g === n.g)!
-    const ang = Math.atan2(n.y - hub.y, n.x - hub.x)
-    const right = Math.cos(ang) >= 0
-    const x = n.x + (right ? 1 : -1) * (n.r + 4)
-    const y = n.y + 4
-    const x0 = right ? x : x - w
-    const x1 = right ? x + w : x
-    if (x0 < 2 || x1 > w0 - 2 || hit(x0, x1, y - 12, y + 4)) continue
-    boxes.push({ x0, x1, y0: y - 12, y1: y + 4 })
-    out.push({ key: `o-${n.o.slug}`, g: n.g, text: name, x: round(x), y: round(y), anchor: right ? 'start' : 'end', kind: 'outlet' })
+    const hub = nodes.find(o => o.kind === 'hub' && o.g === n.g)
+    const ang = Math.atan2(n.y - (hub?.y ?? h0 / 2), n.x - (hub?.x ?? w0 / 2))
+    // The name goes away from the group first, then to the other sides, and is left out only when every side is taken (more names are shown, never a name over a circle or another name).
+    const sides = [Math.cos(ang) >= 0 ? 1 : -1, Math.cos(ang) >= 0 ? -1 : 1] as const
+    let placed = false
+    for (const side of sides) {
+      const x = n.x + side * (n.r + 4)
+      const y = n.y + 4
+      const x0 = side > 0 ? x : x - w
+      const x1 = side > 0 ? x + w : x
+      if (x0 < 2 || x1 > w0 - 2 || hit(x0, x1, y - 12, y + 4)) continue
+      boxes.push({ x0, x1, y0: y - 12, y1: y + 4 })
+      out.push({ key: `o-${n.o.slug}`, g: n.g, text: name, x: round(x), y: round(y), anchor: side > 0 ? 'start' : 'end', kind: 'outlet' })
+      placed = true
+      break
+    }
+    if (placed) continue
+    for (const dy of [-1, 1]) {
+      const y = n.y + dy * (n.r + 4) + (dy > 0 ? 11 : -3)
+      const x0 = n.x - w / 2
+      if (x0 < 2 || x0 + w > w0 - 2 || y - 12 < 0 || y + 3 > h0 || hit(x0, x0 + w, y - 12, y + 3)) continue
+      boxes.push({ x0, x1: x0 + w, y0: y - 12, y1: y + 3 })
+      out.push({ key: `o-${n.o.slug}`, g: n.g, text: name, x: round(n.x), y: round(y), anchor: 'middle', kind: 'outlet' })
+      break
+    }
   }
   return out
 })

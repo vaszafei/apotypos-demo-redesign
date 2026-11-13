@@ -5,22 +5,30 @@ export const round = (v: number) => Math.round(v * 10000) / 10000
 export interface HubNode { kind: 'hub', g: NetGroup, x: number, y: number, r: number }
 export interface OutletNode { kind: 'outlet', g: NetGroup, o: NetOutlet, x: number, y: number, r: number, vx: number, vy: number }
 export type NetNode = HubNode | OutletNode
-export interface Cluster { g: NetGroup, hub: HubNode, outs: OutletNode[], R: number, x: number, y: number }
+export interface Cluster { g: NetGroup, hub: HubNode, outs: OutletNode[], R: number, x: number, y: number, solo?: boolean }
 
 // The layout of the network (netLayout in groups-v2.html, same arithmetic): each group is a node with its outlets joined to it. The area of an outlet is its collected articles.
 // Two steps, both run to the end, so the first draw is the final one: the outlets settle round their group (links like springs, circles that push apart),
 // then the groups settle in the chart as circles of the size of their outlets.
-export const netLayout = (groups: NetGroup[], width: number, height: number) => {
+// `wide` (a screen of the Plegma, a box much wider than tall): the circles take a smaller part of the area, the groups spread over the whole width, and the outlets without a group stand alone.
+export const netLayout = (groups: NetGroup[], width: number, height: number, wide = false) => {
   const cx = width / 2
   const cy = height / 2
   const sumV = groups.reduce((a, g) => a + g.value, 0)
   const maxG = Math.max(...groups.map(g => g.value))
-  let k = Math.sqrt((0.2 * width * height) / (Math.PI * sumV))
+  let k = Math.sqrt(((wide ? 0.11 : 0.2) * width * height) / (Math.PI * sumV))
   let clusters: Cluster[] = []
   for (let attempt = 0; attempt < 12; attempt++) {
-    clusters = groups.map((g, gi) => {
-      const hub: HubNode = { kind: 'hub', g, x: 0, y: 0, r: 8 + 6 * Math.sqrt(g.value / maxG) }
-      const outs: OutletNode[] = g.outlets.map((o, oi) => {
+    // The outlets without a group are not a group: each one stands alone, with no node and no line.
+    const units = groups.flatMap((g, gi) => (wide && g.key === null ? g.outlets.map(o => ({ g, gi, list: [o], solo: true })) : [{ g, gi, list: g.outlets, solo: false }]))
+    clusters = units.map(({ g, gi, list, solo }) => {
+      const hub: HubNode = { kind: 'hub', g, x: 0, y: 0, r: solo ? 0 : 8 + 6 * Math.sqrt(g.value / maxG) }
+      if (solo) {
+        const o = list[0]!
+        const r = Math.max(4.5, k * Math.sqrt(o.value))
+        return { g, hub, outs: [{ kind: 'outlet', g, o, r, x: 0, y: 0, vx: 0, vy: 0 } as OutletNode], R: r, x: 0, y: 0, solo }
+      }
+      const outs: OutletNode[] = list.map((o, oi) => {
         const r = Math.max(4.5, k * Math.sqrt(o.value))
         const ang = oi * 2.399963 + gi
         const dist = hub.r + r + 8 + oi * 4
@@ -47,16 +55,16 @@ export const netLayout = (groups: NetGroup[], width: number, height: number) => 
         for (const n of outs) { n.x += n.vx; n.y += n.vy; n.vx *= 0.6; n.vy *= 0.6 }
       }
       const R = Math.max(hub.r, ...outs.map(n => Math.hypot(n.x, n.y) + n.r))
-      return { g, hub, outs, R, x: 0, y: 0 }
+      return { g, hub, outs, R, x: 0, y: 0, solo }
     })
     clusters.forEach((c, i) => {
       const a = (i / clusters.length) * 2 * Math.PI - Math.PI / 2 + 0.35
-      c.x = cx + Math.cos(a) * width * 0.3
-      c.y = cy + Math.sin(a) * height * 0.3
+      c.x = cx + Math.cos(a) * width * (wide ? 0.42 : 0.3)
+      c.y = cy + Math.sin(a) * height * (wide ? 0.4 : 0.3)
     })
     // The groups are circles that cannot overlap each other, drawn a little to the center and kept in the chart.
     for (let it = 0; it < 700; it++) {
-      for (const c of clusters) { c.x += (cx - c.x) * 0.012; c.y += (cy - c.y) * 0.03 }
+      for (const c of clusters) { c.x += (cx - c.x) * (wide ? 0 : 0.012); c.y += (cy - c.y) * (wide ? 0.002 : 0.03) }
       for (let pass = 0; pass < 3; pass++) {
         for (let i = 0; i < clusters.length; i++) {
           for (let j = i + 1; j < clusters.length; j++) {
@@ -75,6 +83,13 @@ export const netLayout = (groups: NetGroup[], width: number, height: number) => 
         }
       }
     }
+    if (wide) {
+      // The groups only move apart: the centers are stretched sideways as far as the outermost circles reach the left and the right edge of the box.
+      const reach = (c: Cluster) => ({ l: Math.max(c.hub.r, ...c.outs.map(n => n.r - n.x)), r: Math.max(c.hub.r, ...c.outs.map(n => n.x + n.r)) })
+      const edge = Math.min(...clusters.map(c => c.x - reach(c).l))
+      const stretch = Math.max(1, Math.min(...clusters.map(c => (width - 16 - reach(c).r) / Math.max(1, c.x - edge))))
+      for (const c of clusters) c.x = 8 + (c.x - edge) * stretch
+    }
     const overlap = clusters.some((p, i) => clusters.some((q, j) => j > i && Math.hypot(q.x - p.x, q.y - p.y) < p.R + q.R + 10))
     if (!overlap) break
     k *= 0.92
@@ -86,8 +101,8 @@ export const netLayout = (groups: NetGroup[], width: number, height: number) => 
   const links: { a: HubNode, b: OutletNode }[] = []
   for (const c of clusters) {
     const hub: HubNode = { ...c.hub, x: c.x, y: c.y }
-    nodes.push(hub)
-    for (const n of c.outs) { const o: OutletNode = { ...n, x: round(c.x + n.x), y: round(c.y + n.y) }; nodes.push(o); links.push({ a: hub, b: o }) }
+    if (!c.solo) nodes.push(hub)
+    for (const n of c.outs) { const o: OutletNode = { ...n, x: round(c.x + n.x), y: round(c.y + n.y) }; nodes.push(o); if (!c.solo) links.push({ a: hub, b: o }) }
   }
   return { nodes, links, clusters }
 }
