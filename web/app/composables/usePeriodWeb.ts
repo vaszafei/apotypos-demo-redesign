@@ -95,12 +95,25 @@ export const usePeriodWeb = (from: Ref<string>, to: Ref<string>, slotOfIssue: Re
       for (const o of homeOutletsOf(x, r.s, s[0], s[1])) {
         const have = perOutlet.get(o.name)
         if (have) have.n += o.n
-        else perOutlet.set(o.name, { name: o.name, slot: groupSlot(o.group), n: o.n })
+        else perOutlet.set(o.name, { name: o.name, slot: groupSlot(o.group), n: o.n, group: o.group ?? null })
       }
     }
     return [...perOutlet.values()].sort((a, b) => b.n - a.n)
   })
 
+  // The same arcs by group: the articles of the outlets of each group, the largest first (the outlets with no group are one arc).
+  const { t } = useI18n()
+  const groupRing = computed<DayOutlet[]>(() => {
+    const perGroup = new Map<string, DayOutlet>()
+    for (const o of outlets.value) {
+      const name = o.group ?? t('story.nogroup')
+      const have = perGroup.get(name)
+      if (have) have.n += o.n
+      else perGroup.set(name, { name, slot: o.slot, n: o.n })
+    }
+    return [...perGroup.values()].sort((a, b) => b.n - a.n)
+  })
+
   const ready = computed(() => !!ix.value && !!detail.data.value && !!groups.data.value)
-  return { ready, rows, themesOf, themesFor, outlets }
+  return { ready, rows, themesOf, themesFor, outlets, groupRing }
 }

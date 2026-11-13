@@ -12,7 +12,7 @@ import type { PlegmaDayTheme, PlegmaDayWeb } from '~/utils/plegma-day'
 // in both, so a change of `mode` moves them from one place to the other, the themes and the faint dots fade in or out, and the ring turns into the other ring. In the form of the themes a
 // theme pointed at, on the ring, on the web or in the list beside it (`lit`), comes forward.
 export interface DayRing { issue: number, name: string, slot: number, n: number }
-export interface DayOutlet { name: string, slot: number, n: number }
+export interface DayOutlet { name: string, slot: number, n: number, group?: string | null }
 // The pages of Μέσα use it for a period too: `date` is then the text at the center (a count, with `sub` under it), `labels` the most theme names it writes (the largest first),
 // `themeLabel` names the theme in the tooltip of a story when the themes are something else (the groups of Ιδιοκτησία, whose stories are their outlets: a story with no `media` has no row of them),
 // `spread` that many themes go round the center by the golden angle (utils/plegma-day.ts), `zoom` the share of the area the web fills (the ring included), `shares` that a theme is as large as its share

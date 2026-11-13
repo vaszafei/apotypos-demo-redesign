@@ -1,8 +1,8 @@
 <script setup lang="ts">
-defineProps<{ full?: boolean }>()
+defineProps<{ full?: boolean, flip?: boolean }>()
 // A tab of Μέσα as a screen of the Plegma (as Home's «Η επικαιρότητα», the story and the theme views): the world is a dim map behind the page (the page meta `backdrop`), the web of the
 // tab fills the free area on the left, and the cards of the tab float as glass cards on its right. The cards that do not fit the screen are under it (the default slot).
-// `full`: the web takes the whole width (Στάση, a plot) and the cards float over its empty top right corner.
+// `full`: the web takes the whole width (Στάση, a plot) and the cards float over its empty top right corner. `flip`: the web is on the right and the cards on the left (Ιστορίες).
 // The web runs only while the screen is in view, and it grows when it comes into view (`active` of the map slot).
 const root = ref<HTMLElement>()
 const inView = ref(false)
@@ -15,7 +15,7 @@ onBeforeUnmount(() => watcher?.disconnect())
 </script>
 
 <template>
-  <section ref="root" class="media-plegma" :class="{ 'is-full': full }">
+  <section ref="root" class="media-plegma" :class="{ 'is-full': full, 'is-flip': flip }">
     <div class="media-plegma-map"><slot name="map" :active="inView" /></div>
     <div class="media-plegma-side"><slot name="side" /></div>
   </section>
