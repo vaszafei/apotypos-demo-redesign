@@ -294,14 +294,17 @@ html[data-search-fly] .body-search { opacity: 0; }
 .topic-trends .bar-list .row-sub { font-size: 11px; }
 .media-plegma-aside { min-width: 0; min-height: 0; display: flex; flex-direction: column; margin-left: var(--space-5); }
 .media-plegma-aside > .dcard { flex: none; height: calc(100svh - 104px); min-height: 560px; display: flex; flex-direction: column; }
-/* Ιστορίες: the trends are a column of 3 on the left; the web is a column of 5 on the right, as tall as what is left of the screen over the lines (100svh minus the head, the lines card and the gaps), so the screen and the lines fit one screen; the trends scroll inside their card to the same height; the lines are in a row under the screen, 75% wide. */
+/* Ιστορίες: the web is a column of 5 on the right (left of it is free), as tall as what is left of the screen over the lines (100svh minus the head, the lines card and the gaps), so the screen and the lines fit one screen; the lines are in a row under the screen, 75% wide, with the trends right of them (one column, scrolling inside the card). */
 .media-plegma.is-stories { grid-template-columns: minmax(0, 3fr) minmax(0, 5fr); height: auto; min-height: 0; align-items: start; }
 .media-plegma.is-stories > .media-plegma-map { order: 2; display: flex; flex-direction: column; gap: var(--space-3); }
 .media-plegma.is-stories > .media-plegma-side { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
 .media-plegma.is-stories { --stories-row: max(300px, calc(100svh - 560px)); }
 .media-plegma.is-stories .media-map-web { height: var(--stories-row); min-height: 0; }
-.media-plegma.is-stories .media-side-trends { max-height: var(--stories-row); overflow-y: auto; scrollbar-width: thin; }
-.media-lines-row { width: 75%; }
+.stories-time { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 1fr); gap: var(--space-3); align-items: stretch; }
+.stories-time > .media-time-trends { position: relative; }
+.stories-time > .media-time-trends > * { position: relative; }
+.media-time-trends { max-height: 368px; overflow-y: auto; scrollbar-width: thin; }
+.media-time-trends .story-trend { grid-template-columns: minmax(0, 1fr); gap: var(--space-3); }
 .media-map-web { position: relative; flex: none; height: calc((100svh - 160px) * 0.8); min-height: 496px; }
 /* The Sankey of the topics and their outlets (components/TopicOutletFlow.vue). */
 .tof-box { position: relative; flex: 1 1 0; min-height: 280px; }
@@ -321,7 +324,8 @@ html[data-search-fly] .body-search { opacity: 0; }
   .media-plegma-aside > .dcard { height: auto; }
   .tof-box { min-height: 420px; }
   .media-plegma.is-stories > .media-plegma-map { order: 0; }
-  .media-lines-row { width: 100%; }
+  .stories-time { grid-template-columns: minmax(0, 1fr); }
+  .media-time-trends { max-height: none; }
 }
 /* The tabs that turn the ring and the note under the web (as the story page has them), over the web of a screen. */
 .media-map-tabs { position: absolute; left: 0; top: 0; z-index: 1; }
