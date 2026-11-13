@@ -88,16 +88,6 @@ const sweep = async (page, viewport) => {
   return tips
 }
 
-// With reduced motion the stage draws when something it watches changes. On a cold load of a story page the articles now and then arrive after the last draw and the nodes stay gray
-// (the same on main: 5 to 6 loads in 30), so after the page has settled the motion setting is flipped for a moment: the stage redraws with what has loaded, and settles again.
-// The free time is longer than the morph of the nodes (MORPH_MS in PlegmaStage, 900 ms).
-const redraw = async (page) => {
-  await page.emulateMedia({ reducedMotion: 'no-preference' })
-  await page.waitForTimeout(1500)
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await settle(page)
-}
-
 const shoot = async (browser, base, scene) => {
   const viewport = { width: scene.width || DESKTOP.width, height: scene.height || DESKTOP.height }
   const context = await browser.newContext({ viewport, reducedMotion: 'reduce' })
@@ -109,7 +99,6 @@ const shoot = async (browser, base, scene) => {
   try {
     await page.goto(`${base}${scene.route}`, { waitUntil: 'networkidle' })
     await settle(page)
-    await redraw(page)
     if (scene.click) {
       // A click on the hero explores: the wave clears the ground around it (at once with reduced motion) and the camera takes a step.
       await page.mouse.click(scene.click.x, scene.click.y)
@@ -120,8 +109,7 @@ const shoot = async (browser, base, scene) => {
       const button = page.locator('.orbit-ring-tabs button').nth(['outlets', 'groups', 'stance'].indexOf(scene.ring))
       if (!(await button.count())) return { error: `no ring switch for ${scene.ring}` }
       await button.click()
-      // With reduced motion the stage does not redraw for a ring change (it only watches articles, highlight, hover, related and theme stories), so it is redrawn by hand.
-      await redraw(page)
+      await settle(page)
     }
     const urls = await readCanvases(page)
     const tips = scene.sweep ? await sweep(page, viewport) : undefined

@@ -157,7 +157,7 @@ watch(() => plegma.active, (active) => {
   if (to && !st.flight && (Math.abs(to.x - st.cam.x) > 0.5 || Math.abs(to.y - st.cam.y) > 0.5 || Math.abs(to.z - st.cam.z) > 0.001)) fly()
   else kick()
 })
-watch(() => [plegma.articles, plegma.highlight, plegma.hoverStory, plegma.related, plegma.themeStories], () => kick())
+watch(() => [plegma.articles, plegma.ring, plegma.highlight, plegma.hoverStory, plegma.related, plegma.themeStories], () => kick())
 watch(() => prefs.theme, async () => { await nextTick(); readTokens(); kick() })
 watch(reduced, (still) => { if (still) { st.flight = null; const to = targetCamera(); if (to) Object.assign(st.cam, to); plegma.setLanded(true) } kick() })
 onBeforeUnmount(halt)

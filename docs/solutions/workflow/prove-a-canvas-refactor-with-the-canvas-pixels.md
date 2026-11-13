@@ -37,9 +37,12 @@ How the split was made safe: one commit per step, each checked (typecheck, harne
 
 A 1650-line file with shared mutable state cannot be reviewed by reading. The pixels and the tooltips can be compared in minutes.
 
-## Known pre-existing issue found on the way
+## Two pre-existing bugs found on the way
 
-On a cold load of `/story?id=1`, in about 1 of 5 loads (6 of 30 on `main`, 5 of 30 on the branch) the articles arrive after the last draw and the nodes stay gray (no group colors) until something redraws. With reduced motion nothing does. Not fixed here; the harness hides it with the redraw.
+- On a cold load of `/story?id=1` about 1 in 5 loads (6 of 30 on `main`) had gray ring arcs (the nodes were colored). The cause was not that the articles arrive late: the sector cache in `stage-articles.ts` was keyed by story id, length and ring, so when the groups fixture arrived after the articles and the list was replaced with the same length and new slots, the arcs kept the old slots. The cache now also keys on the list. A forced late `groups.json` gave 16 of 16 gray before and 16 of 16 colored after.
+- Under reduced motion the ring switch did not redraw: `plegma.ring` was not in the stage's watch.
+
+The harness no longer redraws by hand after a load or a ring switch; before the fixes this made 3 of 12 and 1 of 5 runs of the story scene differ, after them 20 of 20 are the same. A random headless sample of 200 loads never showed the gray, so look at the pixels (a forced late fixture) when a bug is a race.
 
 ## Related
 

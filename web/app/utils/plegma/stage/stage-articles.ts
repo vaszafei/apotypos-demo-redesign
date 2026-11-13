@@ -36,7 +36,9 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     return hlMatch
   }
   // The group of each node, as its place among the groups of the story (the sectors of the web), once the articles are read.
+  // The list is part of the key: the articles are replaced (not only added) when the groups arrive after them, with the same length and new groups and slots.
   let sectorKey = ''
+  let sectorFrom: unknown = null
   let sectorList: Uint16Array | null = null
   let sectorSlot: number[] = []
   // The ring of the outlets has a sector for each outlet; the ring of the groups, and the stance (which keeps the groups), a sector for each group.
@@ -46,7 +48,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const list = plegma.articles
     if (!list || list.length !== s.n) return null
     const key = `${s.id}:${list.length}:${byOutlet()}`
-    if (key !== sectorKey || !sectorList) {
+    if (key !== sectorKey || list !== sectorFrom || !sectorList) {
       const nodes = nodeCount(s.n)
       sectorList = new Uint16Array(nodes)
       sectorSlot = []
@@ -56,6 +58,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
         sectorSlot[sectorOf(article)] = article.slot
       }
       sectorKey = key
+      sectorFrom = list
     }
     return sectorList
   }
