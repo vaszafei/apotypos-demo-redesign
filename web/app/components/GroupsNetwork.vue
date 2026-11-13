@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { useElementSize } from '@vueuse/core'
 import type { NetGroup, NetOutlet } from '~/utils/groups'
-import { round, type OutletNode } from '~/utils/net-layout'
+import { round, ZONE, type OutletNode } from '~/utils/net-layout'
 
 // OwnerBubbles of groups-v2.html: a network of owners and outlets. Nothing moves and nothing opens: a hover on a group or an outlet fades the other groups and its numbers are in the tooltip.
 // A click on a group opens its page and a click on an outlet opens its page. An outlet has its name inside its circle when it fits and beside it when there is room.
-// `fill`: the network fills the height of its box (a screen of the Plegma, Μέσα › Ιδιοκτησία) instead of a height from its width, and the groups stand from left to right by their stance (critical to supportive).
-const props = defineProps<{ groups: NetGroup[], total: number, fill?: boolean }>()
+// `fill`: the network fills the height of its box (a screen of the Plegma, Μέσα › Ιδιοκτησία) instead of a height from its width. `stance` (with `fill`): the groups and the outlets without a group move, smoothly, to their place from left to right by their stance (critical to supportive),
+// and three zones (critical, neutral, supportive) appear in the background.
+const props = defineProps<{ groups: NetGroup[], total: number, fill?: boolean, stance?: boolean }>()
 const { t } = useI18n()
 const tooltip = useTooltipStore()
 const inkOf = useInk()
@@ -21,7 +22,46 @@ const stanceAxis = (outlets: NetOutlet[]) => {
   const n = critical + neutral + supportive
   return n >= 30 ? (supportive - critical) / n : null
 }
-const layout = computed(() => netLayout(props.groups, width.value, height.value, !!props.fill, props.fill ? stanceAxis : undefined))
+// Two layouts of the same nodes (the groups, and the groups by their stance); between them the nodes are drawn at a point of the way, and the names come back when they stop.
+const grouped = computed(() => netLayout(props.groups, width.value, height.value, !!props.fill))
+const spread = computed(() => netLayout(props.groups, width.value, height.value, !!props.fill, stanceAxis))
+const target = computed(() => (props.fill && props.stance ? spread.value : grouped.value))
+const way = ref(props.fill && props.stance ? 1 : 0)
+const moving = ref(false)
+let frame = 0
+watch(() => !!props.stance, (on) => {
+  cancelAnimationFrame(frame)
+  const [from, to] = [way.value, on ? 1 : 0]
+  if (from === to || window.matchMedia('(prefers-reduced-motion: reduce)').matches) { way.value = to; return }
+  const start = performance.now()
+  moving.value = true
+  const step = (now: number) => {
+    const k = Math.min(1, (now - start) / 900)
+    way.value = from + (to - from) * (1 - (1 - k) ** 3)
+    if (k < 1) frame = requestAnimationFrame(step)
+    else { way.value = to; moving.value = false }
+  }
+  frame = requestAnimationFrame(step)
+})
+onBeforeUnmount(() => cancelAnimationFrame(frame))
+const layout = computed(() => {
+  const [a, b] = [grouped.value, spread.value]
+  if (way.value <= 0 || a.nodes.length !== b.nodes.length) return a
+  if (way.value >= 1) return b
+  const mix = (u: number, v: number) => u + (v - u) * way.value
+  const nodes = a.nodes.map((n, i) => ({ ...n, x: mix(n.x, b.nodes[i]!.x), y: mix(n.y, b.nodes[i]!.y), r: mix(n.r, b.nodes[i]!.r) }))
+  const at = new Map(a.nodes.map((n, i) => [n, i]))
+  const links = a.links.map(l => ({ a: nodes[at.get(l.a)!] as typeof l.a, b: nodes[at.get(l.b)!] as typeof l.b }))
+  return { nodes, links, clusters: a.clusters }
+})
+const zones = computed(() => {
+  const [x1, x2] = [spread.value.axisX(-ZONE), spread.value.axisX(ZONE)]
+  return [
+    { key: 'critical', x: 0, w: x1, color: 'var(--stance-critical)' },
+    { key: 'neutral', x: x1, w: x2 - x1, color: 'var(--stance-neutral)' },
+    { key: 'supportive', x: x2, w: width.value - x2, color: 'var(--stance-supportive)' }
+  ]
+})
 
 const hover = ref<NetGroup | null>(null)
 const tint = (g: NetGroup) => tintOf(g.color, g.key === null ? 0.5 : 0.35)
@@ -64,7 +104,7 @@ const open = (href: string) => navigateTo(href, { external: !portedPath(href) })
 interface Label { key: string, g: NetGroup, text: string, x: number, y: number, anchor: 'start' | 'middle' | 'end', kind: 'group' | 'outlet' | 'inner' | 'share', ink?: string }
 // The names. A name in a circle needs the circle to be wide enough; a name beside a circle goes away from its group and is left out where it would touch another name or a circle.
 const labels = computed<Label[]>(() => {
-  const { nodes, clusters } = layout.value
+  const { nodes, clusters } = target.value
   const [w0, h0] = [width.value, height.value]
   const out: Label[] = []
   const boxes: { x0: number, x1: number, y0: number, y1: number }[] = []
@@ -142,6 +182,12 @@ const showTip = (tip: { title: string, rows: { label: string, value: string, col
 <template>
   <div ref="holder" :class="fill ? 'fit net-fill' : 'fit'">
     <svg class="chart net" :width="width" :height="height" :viewBox="`0 0 ${width} ${height}`" role="group" :aria-label="t('g2.tree.title')">
+      <g v-if="fill" class="net-zones" :style="{ opacity: stance ? 1 : 0 }" aria-hidden="true">
+        <template v-for="z in zones" :key="z.key">
+          <rect :x="z.x" y="0" :width="Math.max(0, z.w)" :height="height" :fill="z.color" fill-opacity="0.09" />
+          <text :x="z.x + z.w / 2" :y="18" text-anchor="middle">{{ t(`stance.${z.key}`) }}</text>
+        </template>
+      </g>
       <g>
         <line v-for="l in layout.links" :key="l.b.o.slug" :class="['net-edge', cls(l.b.g)]" :style="{ '--g': orderOf(l.b.g) }" :x1="l.a.x" :y1="l.a.y" :x2="l.b.x" :y2="l.b.y" :stroke="l.b.g.color" />
       </g>
@@ -161,17 +207,14 @@ const showTip = (tip: { title: string, rows: { label: string, value: string, col
           />
         </template>
       </g>
-      <g v-if="fill" class="net-axis" aria-hidden="true">
-        <line x1="2" :x2="width - 2" :y1="height - 8" :y2="height - 8" />
-        <text x="2" :y="height - 13" text-anchor="start">← {{ t('stance.critical') }}</text>
-        <text :x="width - 2" :y="height - 13" text-anchor="end">{{ t('stance.supportive') }} →</text>
-      </g>
+      <g :style="{ opacity: moving ? 0 : 1, transition: 'opacity 200ms' }">
       <g class="bubble-labels">
         <text
           v-for="l in labels" :key="l.key"
           :class="[l.kind === 'group' ? 'bubble-name' : l.kind === 'outlet' ? 'net-name' : l.kind === 'inner' ? 'tile-label' : 'tile-share', cls(l.g)]"
           :x="l.x" :y="l.y" :text-anchor="l.anchor" :style="l.ink ? { fill: l.ink, ...(l.kind === 'inner' ? { fontWeight: 500 } : {}) } : undefined"
         >{{ l.text }}</text>
+      </g>
       </g>
     </svg>
     <div class="visually-hidden">

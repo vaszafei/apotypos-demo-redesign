@@ -10,6 +10,11 @@ export interface Cluster { g: NetGroup, hub: HubNode, outs: OutletNode[], R: num
 // The layout of the network (netLayout in groups-v2.html, same arithmetic): each group is a node with its outlets joined to it. The area of an outlet is its collected articles.
 // Two steps, both run to the end, so the first draw is the final one: the outlets settle round their group (links like springs, circles that push apart),
 // then the groups settle in the chart as circles of the size of their outlets.
+const AXIS_MARGIN = 40
+// The axis has three equal zones: critical (below -ZONE), neutral (within ZONE of 0) and supportive (above ZONE); inside a zone the place is linear in the value, so each zone is easy to read.
+export const ZONE = 0.05
+const unit = (v: number, lo: number, hi: number) => (hi > lo ? Math.max(0, Math.min(1, (v - lo) / (hi - lo))) : 0.5)
+export const zoneUnit = (v: number, lo: number, hi: number) => (v < -ZONE ? unit(v, Math.min(lo, -ZONE - 0.01), -ZONE) / 3 : v <= ZONE ? 1 / 3 + unit(v, -ZONE, ZONE) / 3 : 2 / 3 + unit(v, ZONE, Math.max(hi, ZONE + 0.01)) / 3)
 // `wide` (a screen of the Plegma, a box much wider than tall): the circles take a smaller part of the area, the groups spread over the whole width, and the outlets without a group stand alone.
 // `axis` (with `wide`): a value for a group or for an outlet without a group (null when there is none); the groups stand from left to right by it, and only up and down are free.
 export const netLayout = (groups: NetGroup[], width: number, height: number, wide = false, axis?: (outlets: NetOutlet[]) => number | null) => {
@@ -19,6 +24,7 @@ export const netLayout = (groups: NetGroup[], width: number, height: number, wid
   const maxG = Math.max(...groups.map(g => g.value))
   let k = Math.sqrt(((wide ? 0.11 : 0.2) * width * height) / (Math.PI * sumV))
   let clusters: Cluster[] = []
+  let scale = { lo: 0, hi: 0 }
   for (let attempt = 0; attempt < 12; attempt++) {
     // The outlets without a group are not a group: each one stands alone, with no node and no line.
     const units = groups.flatMap((g, gi) => (wide && g.key === null ? g.outlets.map(o => ({ g, gi, list: [o], solo: true })) : [{ g, gi, list: g.outlets, solo: false }]))
@@ -27,8 +33,9 @@ export const netLayout = (groups: NetGroup[], width: number, height: number, wid
     // The ends of the axis are the 10th and the 90th percentile, so one outlet with a few analysed articles does not squeeze the groups; the ones beyond stand at the edge.
     const sorted = known.slice().sort((a, b) => a - b)
     const [lo, hi] = [sorted[Math.floor((sorted.length - 1) * 0.1)] ?? 0, sorted[Math.ceil((sorted.length - 1) * 0.9)] ?? 0]
+    scale = { lo, hi }
     clusters = units.map(({ g, gi, list, solo }, ui) => {
-      const t = raw[ui] === null || hi === lo ? 0.5 : Math.max(0, Math.min(1, (raw[ui]! - lo) / (hi - lo)))
+      const t = raw[ui] === null ? 0.5 : zoneUnit(raw[ui]!, lo, hi)
       const hub: HubNode = { kind: 'hub', g, x: 0, y: 0, r: solo ? 0 : 8 + 6 * Math.sqrt(g.value / maxG) }
       if (solo) {
         const o = list[0]!
@@ -65,7 +72,7 @@ export const netLayout = (groups: NetGroup[], width: number, height: number, wid
       return { g, hub, outs, R, x: 0, y: 0, solo, t }
     })
     const byAxis = wide && !!axis
-    const aim = (c: Cluster) => c.R + 8 + (width - 2 * c.R - 16) * (c.t ?? 0.5)
+    const aim = (c: Cluster) => Math.max(c.R + 8, Math.min(width - c.R - 8, AXIS_MARGIN + (width - 2 * AXIS_MARGIN) * (c.t ?? 0.5)))
     clusters.forEach((c, i) => {
       const a = (i / clusters.length) * 2 * Math.PI - Math.PI / 2 + 0.35
       c.x = cx + Math.cos(a) * width * (wide ? 0.42 : 0.3)
@@ -134,5 +141,7 @@ export const netLayout = (groups: NetGroup[], width: number, height: number, wid
     if (!c.solo) nodes.push(hub)
     for (const n of c.outs) { const o: OutletNode = { ...n, x: round(c.x + n.x), y: round(c.y + n.y) }; nodes.push(o); if (!c.solo) links.push({ a: hub, b: o }) }
   }
-  return { nodes, links, clusters }
+  // Where a value of the axis stands in the box, for the zones drawn behind the groups.
+  const axisX = (v: number) => AXIS_MARGIN + (width - 2 * AXIS_MARGIN) * zoneUnit(v, scale.lo, scale.hi)
+  return { nodes, links, clusters, axisX }
 }
