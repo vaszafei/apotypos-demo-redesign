@@ -96,7 +96,7 @@ watch(view, async () => { await nextTick(); $motion.replay(document.querySelecto
       </DashCard>
     </template>
     <div class="dash-grid">
-      <DashCard class="c-6" card="lines" :title="t('stories.time.title')" :info="t('stories.time.info')">
+      <DashCard class="c-12 media-lines-row" card="lines" :title="t('stories.time.title')" :info="t('stories.time.info')">
         <template #tools><span class="home-date">{{ dateText }}</span></template>
         <LinesChart v-if="lines" :dates="lines.dates" :series="lines.series" :band="lines.band" sparse sqrt :tall="300" :caption="t('stories.time.title')" :href-of="s => storyHref(s.key)" />
         <p v-else class="dcard-empty">{{ t('stories.period.empty') }}</p>
