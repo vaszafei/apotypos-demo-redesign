@@ -1,18 +1,16 @@
 <script setup lang="ts">
-// Ιδιοκτησία (groups-v2.html): a screen of the Plegma (components/MediaPlegma.vue) whose web is the network of owners and outlets, with no card, and beside it
-// the articles of each group by day and the stance of each group; under it the share of each group.
+// Ιδιοκτησία (groups-v2.html): a screen of the Plegma (components/MediaPlegma.vue) whose web is the network of owners and outlets, with no card, alone on its row; under it the articles of each group by day (75 %) and the stance of each group (25 %).
 // The group, the owner and the articles come from the static files, so the table and the shares cover the window of the groups file and there is no period control.
 definePageMeta({ backdrop: true })
 const { t } = useI18n()
 useHead({ title: () => `${t('groups.title')} · ${t('site.name')}` })
-const { status, refresh, data, empty, groups, total, grouped, treeGroups, top3, media, stacks, volumeTotal, stanceRows, colorOf } = await useGroups()
+const { status, refresh, data, empty, groups, total, treeGroups, media, stacks, volumeTotal, stanceRows, colorOf } = await useGroups()
 
 const period = computed(() => (data.value ? t('period.text', { from: fmtDate(data.value.window[0]), to: fmtDate(data.value.window[1]) }) : ''))
 const hasData = computed(() => !!total.value)
 
 const volumeInfo = computed(() => t('g2.volume.info', { min: fmtInt(GAP), n: fmtInt(volumeTotal.value) }))
 const legend = computed(() => treeGroups.value.map(g => ({ key: g.key ?? 'none', label: compactName(g.label, g.key === null, t('media2.groups.none.short')), color: g.color })))
-const shareInfo = computed(() => (hasData.value ? [t('g2.share.finding', { share: fmtPct(top3.value / total.value) }), t('media2.groups.known', { share: fmtPct(grouped.value / total.value) })].join('. ') : undefined))
 
 const scale = computed(() => Math.max(...stanceRows.value.map(r => Math.max(r.crit + r.neu / 2, r.sup + r.neu / 2)), 0.01))
 const critical = computed(() => stanceRows.value.slice().sort((a, b) => b.crit - a.crit))
@@ -33,7 +31,7 @@ const stanceLabel = (r: (typeof stanceRows.value)[number]) => t('g2.stance.row',
       <button type="button" class="button" @click="refresh()"><AppIcon name="arrow-path" class="icon icon-sm" />{{ t('state.retry') }}</button>
     </div>
   </template>
-  <MediaPlegma v-else>
+  <MediaPlegma v-else variant="groups">
     <template #map="{ active }">
       <ClientOnly>
         <GroupsNetwork v-if="hasData" fill :class="{ 'is-in': active }" :groups="treeGroups" :total="total" />
@@ -64,12 +62,6 @@ const stanceLabel = (r: (typeof stanceRows.value)[number]) => t('g2.stance.row',
         <p v-else class="dcard-empty">{{ t('groups.empty') }}</p>
       </DashCard>
     </template>
-    <div class="dash-grid">
-      <DashCard class="c-6" :title="t('media2.groups.title')" :info="shareInfo">
-        <GroupSunburst v-if="hasData" :groups="treeGroups" :total="total" />
-        <p v-else class="dcard-empty">{{ t('groups.empty') }}</p>
-      </DashCard>
-    </div>
   </MediaPlegma>
   <p class="proto-note">{{ t('proto.states') }}</p>
 </template>
