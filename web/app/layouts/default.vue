@@ -43,6 +43,7 @@ watch(() => route.path, centerTabs)
 const current = (to: string) => (route.path === to ? 'page' : detail.value === to ? 'true' : undefined)
 // The back button of a detail page goes to the last page of the site. A visitor who came from outside goes to the parent page (BackButton in assets/shell.js).
 // The router remembers the page before in history.state; a visitor who came from a static page of the site has it in the referrer.
+const pager = useState<{ to: string | null, pull: number }>('tab-pull', () => ({ to: null, pull: 0 }))
 const back = () => {
   const cameFromSite = (history.state as { back?: string | null } | null)?.back || (document.referrer.startsWith(location.origin) && history.length > 1)
   if (cameFromSite) history.back()
@@ -99,7 +100,7 @@ const back = () => {
           <div class="section-nav-inner">
             <ul class="section-nav-list">
               <li v-for="tab in section.tabs" :key="tab.to">
-                <NavLink class="section-nav-link" :to="tab.to" :aria-current="current(tab.to)"><AppIcon :name="tab.icon" glyph /><span class="nav-label">{{ t(`tab.${section.key}.${tab.key}`) }}</span></NavLink>
+                <NavLink class="section-nav-link" :class="{ 'is-pull': pager.to === tab.to }" :style="pager.to === tab.to ? { '--pull': pager.pull } : undefined" :to="tab.to" :aria-current="current(tab.to)"><AppIcon :name="tab.icon" glyph /><span class="nav-label">{{ t(`tab.${section.key}.${tab.key}`) }}</span></NavLink>
               </li>
             </ul>
           </div>
@@ -129,6 +130,7 @@ const back = () => {
             </header>
             <SignInGate v-if="gated" />
             <slot v-else />
+            <ClientOnly><TabPager v-if="!gated" /></ClientOnly>
           </main>
         </div>
       </div>
@@ -142,6 +144,5 @@ const back = () => {
     </div>
     <ChartTooltip />
     <AuthDrawer />
-    <ClientOnly><TabPager /></ClientOnly>
   </div>
 </template>

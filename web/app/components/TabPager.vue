@@ -2,7 +2,7 @@
 import { useEventListener } from '@vueuse/core'
 
 // A tab of a section with tabs (Μέσα): scrolling on past the end of the page goes to the next tab, and past the top to the tab before, as an app with tabs does.
-// The pull is the scroll that the page cannot take any more; a hint at the edge fills with it, and when it is full the next tab opens (the tab move slides it up or down).
+// The pull is the scroll that the page cannot take any more; the tab it goes to fills in the sidebar, and the row of the next tab at the end of the page draws its rule. When it is full the tab opens (the tab move slides it up or down).
 // A pull starts only with a new gesture: the momentum of the scroll that reached the edge (or that opened this tab) does not count.
 const { t } = useI18n()
 const route = useRoute()
@@ -17,7 +17,6 @@ const prev = computed(() => (index.value > 0 ? section.value.tabs[index.value - 
 
 const pull = ref(0)
 const way = ref<'down' | 'up' | null>(null)
-const atEnd = ref(false)
 let lastWheel = 0
 let fresh = false
 let relax = 0
@@ -73,19 +72,16 @@ useEventListener(window, 'touchmove', (e: TouchEvent) => {
   touchY = y
 }, { passive: true })
 useEventListener(window, 'touchend', () => { touchY = null; if (pull.value < 1) reset() }, { passive: true })
-const look = () => { atEnd.value = index.value >= 0 && !!next.value && edge().end && document.documentElement.scrollHeight > window.innerHeight + 40 }
-useEventListener(window, 'scroll', look, { passive: true })
-watch(() => route.path, () => { reset(); fresh = false; nextTick(look) })
-onMounted(look)
+watch(() => route.path, () => { reset(); fresh = false })
+// The tab of the sidebar that the pull goes to fills with it (layouts/default.vue reads this).
+const shared = useState<{ to: string | null, pull: number }>('tab-pull', () => ({ to: null, pull: 0 }))
+watch([pull, way], () => { shared.value = { to: way.value === 'down' ? next.value?.to ?? null : way.value === 'up' ? prev.value?.to ?? null : null, pull: pull.value } })
+onBeforeUnmount(() => { shared.value = { to: null, pull: 0 } })
 </script>
 
 <template>
-  <div v-if="next" class="tab-pager tab-pager-next" :class="{ 'is-shown': atEnd || way === 'down', 'is-pulling': way === 'down' }" :style="{ '--pull': way === 'down' ? pull : 0 }" aria-hidden="true">
-    <NavLink :to="next.to" class="tab-pager-link" tabindex="-1"><span class="tab-pager-label">{{ t(`tab.${section.key}.${next.key}`) }}</span><AppIcon name="chevron-down" class="icon icon-sm" /></NavLink>
-    <span class="tab-pager-bar" />
-  </div>
-  <div v-if="prev" class="tab-pager tab-pager-prev" :class="{ 'is-shown': way === 'up', 'is-pulling': way === 'up' }" :style="{ '--pull': way === 'up' ? pull : 0 }" aria-hidden="true">
-    <span class="tab-pager-link"><AppIcon name="chevron-down" class="icon icon-sm" /><span class="tab-pager-label">{{ t(`tab.${section.key}.${prev.key}`) }}</span></span>
-    <span class="tab-pager-bar" />
+  <div v-if="next" class="tab-next" :class="{ 'is-pulling': way === 'down' }" :style="{ '--pull': way === 'down' ? pull : 0 }">
+    <NavLink :to="next.to" class="tab-next-link"><span class="dcard-title">{{ t(`tab.${section.key}.${next.key}`) }}</span><AppIcon name="chevron-down" class="icon icon-sm" /></NavLink>
+    <span class="tab-next-rule" aria-hidden="true" />
   </div>
 </template>
