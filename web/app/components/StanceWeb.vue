@@ -7,7 +7,7 @@ import type { StancePoint } from '~/types/mme'
 // Μέσα › Στάση as a web of the Plegma (the stance map of media-v2.html, drawn over the dim world): each outlet is a node at its critical share (to the right) and its supportive share
 // (up), in the color of its group and as large as its articles; around it a small loose cloud of dots in the colors of the stance of its articles (critical, neutral, supportive, as many
 // of each as their share), so the mix of an outlet shows at a glance. Thin curved threads join the outlets of one group. The three zones are where one share is the largest: thin
-// threads from the point where the three are a third each, with the name of each zone in its corner; the dashed threads are the shares of all the articles.
+// threads from the point where the three are a third each, with a flat tint of the stance color in each zone (as in the HTML map) that fades at the edge of the plot, and the name of each zone in its corner; the dashed threads are the shares of all the articles.
 // It grows out of the point of all the articles when it comes into view, and drifts slowly. An outlet pointed at comes forward with the threads of its group; a click opens it.
 export interface StanceNode extends StancePoint { slug: string, group: string | null }
 const props = defineProps<{ points: StanceNode[], avg: { c: number, s: number }, active: boolean, caption: string }>()
@@ -112,6 +112,49 @@ const labels = computed(() => {
   return placeLabels(dots, [], { x0: 0, x1: width, y0: 0, y1: height })
 })
 
+// The tints of the three zones, drawn once on their own layer (they only change with the size and the axes): flat inside the plot, fading out over 40px across its edge.
+let zoneLayer: HTMLCanvasElement | null = null
+let zoneKey = ''
+const buildZones = (dpr: number) => {
+  const key = [width, height, dpr, ext.value.x0, ext.value.x1, ext.value.y0, ext.value.y1, ...stance].join('|')
+  if (zoneLayer && key === zoneKey) return zoneLayer
+  zoneKey = key
+  zoneLayer ??= document.createElement('canvas')
+  zoneLayer.width = Math.round(width * dpr)
+  zoneLayer.height = Math.round(height * dpr)
+  const z = zoneLayer.getContext('2d')!
+  z.setTransform(dpr, 0, 0, dpr, 0, 0)
+  z.clearRect(0, 0, width, height)
+  const third = 1 / 3
+  const zones: [number, [number, number][]][] = [
+    [0, [[third, third], [0.5, 0], [1, 0], [0.5, 0.5]]],
+    [2, [[third, third], [0, 0.5], [0, 1], [0.5, 0.5]]],
+    [1, [[0, 0], [0.5, 0], [third, third], [0, 0.5]]]
+  ]
+  z.globalAlpha = 0.13
+  for (const [k, pts] of zones) {
+    z.fillStyle = stance[k]!
+    z.beginPath()
+    pts.forEach(([c, s], i) => (i ? z.lineTo(sx(c), sy(s)) : z.moveTo(sx(c), sy(s))))
+    z.closePath(); z.fill()
+  }
+  z.globalAlpha = 1
+  z.globalCompositeOperation = 'destination-out'
+  // The ramp is 40px, centred on the edge of the plot, and everything past it is cleared.
+  const ramp = 20
+  const edge = (x0: number, y0: number, x1: number, y1: number, rx: number, ry: number, rw: number, rh: number) => {
+    const grad = z.createLinearGradient(x0, y0, x1, y1)
+    grad.addColorStop(0, 'rgba(0,0,0,0)'); grad.addColorStop(1, 'rgba(0,0,0,1)')
+    z.fillStyle = grad
+    z.fillRect(rx, ry, rw, rh)
+  }
+  edge(pad.left + ramp, 0, pad.left - ramp, 0, 0, 0, pad.left + ramp, height)
+  edge(width - pad.right - ramp, 0, width - pad.right + ramp, 0, width - pad.right - ramp, 0, pad.right + ramp, height)
+  edge(0, pad.top + ramp, 0, pad.top - ramp, 0, 0, width, pad.top + ramp)
+  edge(0, height - pad.bottom - ramp, 0, height - pad.bottom + ramp, 0, height - pad.bottom - ramp, width, pad.bottom + ramp)
+  return zoneLayer
+}
+
 // The growth out of the point of all the articles.
 const GROW_MS = 1600
 let growAt = -1
@@ -138,6 +181,10 @@ const draw = (sec: number, dt: number) => {
   const litGroup = litLast >= 0 ? props.points[litLast]!.group : null
   const back = 1 - 0.6 * mix
   const frame = ease3(grown / 0.6)
+
+  g.globalAlpha = frame
+  g.drawImage(buildZones(dpr), 0, 0, width, height)
+  g.globalAlpha = 1
 
   // The zones: three thin threads from the point of thirds, and their names in the corners; the shares of all the articles as dashed threads with their notes.
   g.lineCap = 'round'
