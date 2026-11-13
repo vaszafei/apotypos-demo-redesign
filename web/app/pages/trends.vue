@@ -18,7 +18,9 @@ const webFrom = computed(() => view.value.from)
 const webTo = computed(() => view.value.to)
 const periodWeb = import.meta.client ? usePeriodWeb(webFrom, webTo, slotOfIssue) : null
 const webThemes = computed(() => (periodWeb?.ready.value ? periodWeb.themesFor([...colorOf.value.keys()]) : []))
-const flow = computed(() => (periodWeb?.ready.value ? periodWeb.flows([...colorOf.value.keys()], new Map(rows.value.map(r => [r.k, r.count])), total.value) : null))
+// The topics of the Sankey: the largest ones, the first 8 with a color.
+const FLOW_TOPICS = 16
+const flow = computed(() => (periodWeb?.ready.value ? periodWeb.flows(rows.value.slice(0, FLOW_TOPICS).map(r => r.k), new Map(rows.value.map(r => [r.k, r.count])), total.value) : null))
 const sliced = computed(() => dates.value.slice(range.value[0], range.value[1] + 1))
 // A new period draws the lines in again (assets/motion.js replay); the first view is played by plugins/motion.client.ts.
 const { $motion } = useNuxtApp()
@@ -56,10 +58,6 @@ const widest = computed(() => Math.max(...bars.value.map(b => b.value), 0))
 </script>
 
 <template>
-  <Teleport v-if="dates.length" defer to="#page-actions">
-    <DateRange :dates="dates" :from="view.from" :to="view.to" @change="r => period.set(r.from, r.to)" />
-  </Teleport>
-
   <div v-if="status === 'error'" class="dash-grid">
     <div class="card-col c-12"><div class="empty-state" data-state="error"><p>{{ t('state.failed') }}</p><button type="button" class="button" @click="refresh()">{{ t('state.retry') }}</button></div></div>
   </div>
@@ -68,6 +66,7 @@ const widest = computed(() => Math.max(...bars.value.map(b => b.value), 0))
   </div>
   <MediaPlegma v-else variant="topics" :open="!!pickedRow">
     <template #map="{ active }">
+      <div v-if="dates.length" class="topics-date"><DateRange :dates="dates" :from="view.from" :to="view.to" @change="r => period.set(r.from, r.to)" /></div>
       <div class="media-map-web">
         <ClientOnly><TopicWeb :lit="lit ?? picked" :rows="rows" :total="total" :color-of="colorOf" :themes="webThemes" :zoom="0.9" selectable :active="active && webThemes.length > 0" @update:lit="v => lit = v" @select="toggle" /></ClientOnly>
       </div>

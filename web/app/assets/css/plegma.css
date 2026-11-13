@@ -294,11 +294,13 @@ html[data-search-fly] .body-search { opacity: 0; }
 .media-plegma.is-topics.has-pick { grid-template-columns: minmax(0, 2fr) minmax(0, 5fr) minmax(0, 3fr); }
 .media-plegma.is-topics > .media-plegma-side { order: -1; overflow: hidden; height: calc(100svh - 160px); min-height: 620px; }
 .media-plegma.is-topics.has-pick > .media-plegma-side { margin-right: var(--space-5); }
-/* The web goes up beside the date picker (over the row of the page head), and the lines are under it. */
-.media-plegma.is-topics > .media-plegma-map { margin-top: -88px; display: flex; flex-direction: column; gap: var(--space-3); }
-.media-plegma.is-topics .media-map-web { height: calc((100svh - 160px) * 0.8 + 70px); min-height: 560px; }
+/* The date picker is above the web, and the lines are under it. */
+.topics-date { display: flex; }
+.topics-date .dr-pop { left: 0; right: auto; }
+.media-plegma.is-topics > .media-plegma-map { display: flex; flex-direction: column; gap: var(--space-3); }
+.media-plegma.is-topics .media-map-web { height: calc(((100svh - 160px) * 0.8 + 70px) * 0.7); min-height: 400px; }
 .media-plegma-aside { min-width: 0; min-height: 0; display: flex; flex-direction: column; margin-left: var(--space-5); }
-.media-plegma-aside > .dcard { flex: none; height: calc((100svh - 160px) * 0.64); min-height: 440px; display: flex; flex-direction: column; }
+.media-plegma-aside > .dcard { flex: none; height: calc((100svh - 160px) * 0.86); min-height: 540px; display: flex; flex-direction: column; }
 .media-plegma.is-topics .topic-cards .how-grid-2, .media-plegma.is-topics .topic-cards .story-trend { grid-template-columns: minmax(0, 1fr); }
 /* Ιστορίες: the list is a column of 3 on the left, as tall as the column of 5 on the right, which is the web (80% of the screen) with the trends under it. */
 .media-plegma.is-stories { grid-template-columns: minmax(0, 3fr) minmax(0, 5fr); height: auto; min-height: 0; align-items: stretch; }
@@ -324,7 +326,6 @@ html[data-search-fly] .body-search { opacity: 0; }
   .topics-row { flex-direction: column; }
   .media-plegma.is-topics { transition: none; }
   .media-plegma.is-topics > .media-plegma-side { order: 0; height: auto; min-height: 0; overflow: visible; margin-right: 0; }
-  .media-plegma.is-topics > .media-plegma-map { margin-top: 0; }
   .media-plegma.is-topics .media-map-web { height: 70vw; min-height: 420px; }
   .media-plegma-aside { margin-left: 0; }
   .media-plegma-aside > .dcard { height: auto; }
