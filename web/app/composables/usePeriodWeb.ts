@@ -176,24 +176,19 @@ export const usePeriodWeb = (from: Ref<string>, to: Ref<string>, slotOfIssue: Re
   })
 
 
-  // The largest stories of the period with the outlets that ran each, in the colors of their groups, and the groups of them, the largest first (Μέσα › Ιστορίες, components/StoryMediaBars.vue).
+  // The largest stories of the period with the outlets that ran each, in the colors of their groups (Μέσα › Ιστορίες, components/StoryMediaBars.vue). `rankOutlet` and `rankSlot` are the place of an outlet and of a
+  // group on the ring of the web (the largest first), so the parts of a bar go in the order of the arcs.
   const storyMedia = (count = 10) => {
     const x = ix.value
     const sp = span.value
     if (!x?.detail || !sp || !rows.value.length) return null
-    const perGroup = new Map<number, { slot: number, name: string, n: number }>()
+    const rankOutlet = new Map(outlets.value.map((o, i) => [o.name, i]))
+    const rankSlot = new Map(groupRing.value.map((g, i) => [g.slot, i]))
     const stories = rows.value.slice(0, count).map((r) => {
       const os = homeOutletsOf(x, r.s, sp[0], sp[1]).map(o => ({ name: o.name, group: o.group ?? null, slot: groupSlot(o.group), n: o.n }))
       return { id: r.s.id, name: storyName(r.s), n: r.n, outlets: os }
     }).filter(r => r.outlets.length > 0)
-    for (const r of stories) {
-      for (const o of r.outlets) {
-        const g = perGroup.get(o.slot)
-        if (g) g.n += o.n
-        else perGroup.set(o.slot, { slot: o.slot, name: o.group ?? t('story.nogroup'), n: o.n })
-      }
-    }
-    return { stories, groups: [...perGroup.values()].sort((a, b) => b.n - a.n) }
+    return { stories, rankOutlet, rankSlot }
   }
 
   const ready = computed(() => !!ix.value && !!detail.data.value && !!groups.data.value)

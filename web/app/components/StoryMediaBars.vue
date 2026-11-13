@@ -1,45 +1,48 @@
 <script setup lang="ts">
 import { shortName } from '~/utils/groups'
 import type { StoryChange } from '~/utils/stories'
-// The largest stories of the period, each a bar split by the groups of the outlets that ran it, in the colors of the web; the bars are on one scale (the largest story is the full width).
-// Beside the articles of a story is its change against the period of the same length before (`changes`, by the id of the story), with the articles before and now in its tooltip.
+// The largest stories of the period, each a bar split by the outlets that ran it (`by` outlets) or by their groups (`by` groups), in the colors of the groups, as the ring of the web beside it is; the parts
+// go in the order of the arcs of the ring. The bars are on one scale (the largest story is the full width). Beside the articles of a story is its change against the period of the same length before
+// (`changes`, by the id of the story), with the articles before and now in its tooltip.
 type Media = NonNullable<ReturnType<ReturnType<typeof usePeriodWeb>['storyMedia']>>
-const props = defineProps<{ data: Media, changes: Map<number, StoryChange> | null }>()
+const props = defineProps<{ data: Media, changes: Map<number, StoryChange> | null, by: 'outlets' | 'groups' }>()
 const { t } = useI18n()
 const colour = (slot: number) => `var(--cat-${slot})`
 const changeOf = (id: number) => props.changes?.get(id) ?? null
 const widest = computed(() => Math.max(1, ...props.data.stories.map(r => r.n)))
-const groupsOf = (outlets: Media['stories'][number]['outlets']) => {
-  const m = new Map<number, { slot: number, n: number, name: string }>()
+const partsOf = (outlets: Media['stories'][number]['outlets']) => {
+  if (props.by === 'outlets') {
+    return outlets.slice().sort((a, b) => (props.data.rankOutlet.get(a.name) ?? 1e6) - (props.data.rankOutlet.get(b.name) ?? 1e6))
+      .map(o => ({ key: o.name, slot: o.slot, n: o.n, title: `${o.name}: ${fmtInt(o.n)}` }))
+  }
+  const m = new Map<number, { key: string, slot: number, n: number, name: string }>()
   for (const o of outlets) {
     const g = m.get(o.slot)
     if (g) g.n += o.n
-    else m.set(o.slot, { slot: o.slot, n: o.n, name: o.group ?? t('story.nogroup') })
+    else m.set(o.slot, { key: String(o.slot), slot: o.slot, n: o.n, name: o.group ?? t('story.nogroup') })
   }
-  return [...m.values()].sort((a, b) => b.n - a.n)
+  return [...m.values()].sort((a, b) => (props.data.rankSlot.get(a.slot) ?? 1e6) - (props.data.rankSlot.get(b.slot) ?? 1e6))
+    .map(g => ({ key: g.key, slot: g.slot, n: g.n, title: `${shortName(g.name)}: ${fmtInt(g.n)}` }))
 }
 </script>
 
 <template>
-  <div class="smb">
-    <p class="smb-legend"><span v-for="g in data.groups" :key="g.slot"><i :style="{ background: colour(g.slot) }" />{{ shortName(g.name) }}</span></p>
-    <ul class="smb-list">
-      <li v-for="r in data.stories" :key="r.id">
-        <div class="smb-head">
-          <NuxtLink :to="storyHref(r.id)" class="smb-name">{{ r.name }}</NuxtLink>
-          <span class="smb-n">
-            {{ fmtInt(r.n) }} · {{ t('stories.media.outlets', { n: fmtInt(r.outlets.length) }) }}
-            <b class="smb-trend" :class="changeOf(r.id)?.change == null ? '' : changeOf(r.id)!.change! >= 0 ? 'is-up' : 'is-down'" :title="changeOf(r.id)?.change == null ? undefined : t('stories.trend.tip', { before: fmtInt(changeOf(r.id)!.before), now: fmtInt(changeOf(r.id)!.now) })">
-              <template v-if="changeOf(r.id)?.change != null"><span aria-hidden="true">{{ changeOf(r.id)!.change! >= 0 ? '▲' : '▼' }}</span> {{ fmtSigned(changeOf(r.id)!.change! * 100) }}%</template>
-            </b>
-          </span>
-        </div>
-        <div class="smb-bar" :style="{ width: `${Math.max(2, (r.n / widest) * 100)}%` }">
-          <i v-for="g in groupsOf(r.outlets)" :key="g.slot" :style="{ flexGrow: g.n, background: colour(g.slot) }" :title="`${shortName(g.name)}: ${fmtInt(g.n)}`" />
-        </div>
-      </li>
-    </ul>
-  </div>
+  <ul class="smb-list">
+    <li v-for="r in data.stories" :key="r.id">
+      <div class="smb-head">
+        <NuxtLink :to="storyHref(r.id)" class="smb-name">{{ r.name }}</NuxtLink>
+        <span class="smb-n">
+          {{ fmtInt(r.n) }} · {{ t('stories.media.outlets', { n: fmtInt(r.outlets.length) }) }}
+          <b class="smb-trend" :class="changeOf(r.id)?.change == null ? '' : changeOf(r.id)!.change! >= 0 ? 'is-up' : 'is-down'" :title="changeOf(r.id)?.change == null ? undefined : t('stories.trend.tip', { before: fmtInt(changeOf(r.id)!.before), now: fmtInt(changeOf(r.id)!.now) })">
+            <template v-if="changeOf(r.id)?.change != null"><span aria-hidden="true">{{ changeOf(r.id)!.change! >= 0 ? '▲' : '▼' }}</span> {{ fmtSigned(changeOf(r.id)!.change! * 100) }}%</template>
+          </b>
+        </span>
+      </div>
+      <div class="smb-bar" :style="{ width: `${Math.max(2, (r.n / widest) * 100)}%` }">
+        <i v-for="g in partsOf(r.outlets)" :key="g.key" :style="{ flexGrow: g.n, background: colour(g.slot) }" :title="g.title" />
+      </div>
+    </li>
+  </ul>
 </template>
 
 <style scoped>
@@ -54,7 +57,4 @@ const groupsOf = (outlets: Media['stories'][number]['outlets']) => {
 .smb-trend.is-down { color: var(--emph-less); }
 .smb-bar { display: flex; height: 10px; gap: 1px; border-radius: 3px; overflow: hidden; }
 .smb-bar i { display: block; min-width: 2px; }
-.smb-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0 0 12px; font-size: 11px; color: var(--text-secondary); }
-.smb-legend span { display: inline-flex; align-items: center; gap: 5px; }
-.smb-legend i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
 </style>
