@@ -12,7 +12,8 @@ const tooltip = useTooltipStore()
 const box = ref<HTMLElement>()
 const { width, height } = useElementSize(box)
 
-const GAP = computed(() => (props.data.topics.length > 10 ? 9 : 5))
+// The gap between bars: wide enough for the names of the small ones not to touch.
+const gapOf = (count: number) => (count > 16 ? 8 : count > 10 ? 9 : 5)
 const BAR = 10
 const PAD = 6
 const labelW = computed(() => Math.max(96, Math.min(150, width.value * 0.27)))
@@ -23,14 +24,16 @@ const layout = computed(() => {
   const w = width.value
   const h = height.value
   if (w < 120 || h < 120) return null
-  const k = Math.min((h - 2 * PAD - GAP.value * (d.topics.length - 1)) / d.total, (h - 2 * PAD - GAP.value * (d.outlets.length - 1)) / d.total)
+  const gl = gapOf(d.topics.length)
+  const gr = d.outlets.length > 16 ? 4 : 5
+  const k = Math.min((h - 2 * PAD - gl * (d.topics.length - 1)) / d.total, (h - 2 * PAD - gr * (d.outlets.length - 1)) / d.total)
   if (!(k > 0)) return null
-  const place = (nodes: { n: number }[]) => {
+  const place = (nodes: { n: number }[], gap: number) => {
     let y = PAD
-    return nodes.map((nd) => { const at = y; y += nd.n * k + GAP.value; return { y: at, h: Math.max(2, nd.n * k) } })
+    return nodes.map((nd) => { const at = y; y += nd.n * k + gap; return { y: at, h: Math.max(2, nd.n * k) } })
   }
-  const left = place(d.topics)
-  const right = place(d.outlets)
+  const left = place(d.topics, gl)
+  const right = place(d.outlets, gr)
   const x0 = labelW.value + BAR
   const x1 = w - labelW.value - BAR
   const outTop = left.map(() => 0)

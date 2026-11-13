@@ -278,8 +278,22 @@ html[data-search-fly] .body-search { opacity: 0; }
 .topics-date .dr-pop { left: 0; right: auto; }
 .media-plegma.is-topics > .media-plegma-map { display: flex; flex-direction: column; gap: var(--space-3); }
 .media-plegma.is-topics .media-map-web { height: calc(100svh - 440px); min-height: 340px; }
+.media-plegma.is-topics > .media-plegma-aside { grid-row: 1 / span 2; grid-column: 3; }
+.media-plegma-under { min-width: 0; }
+.media-plegma.is-topics > .media-plegma-under { grid-column: 1 / span 2; grid-row: 2; margin-top: var(--space-3); margin-right: var(--space-5); }
+.media-plegma.is-topics > .media-plegma-side { grid-row: 1; grid-column: 1; }
+.media-plegma.is-topics > .media-plegma-map { grid-row: 1; grid-column: 2; }
+/* The trends of the topics: compact, as the trends of the stories (a name of at most two lines, the articles before and now under it, a thin bar). */
+.topic-trends { max-height: calc(100svh - 384px); overflow-y: auto; scrollbar-width: thin; }
+.topic-trends .trend-vs { margin: 0; font-size: var(--text-caption); font-weight: 600; color: var(--ink); }
+.topic-trends .dcard-sub { margin: 8px 0 4px; }
+.topic-trends .bar-list { gap: 3px; }
+.topic-trends .bar-list li { font-size: var(--text-caption); line-height: 1.3; row-gap: 2px; }
+.topic-trends .bar-list .row-name a { text-decoration: none; }
+.topic-trends .bar-list .row-name a:hover { text-decoration: underline; }
+.topic-trends .bar-list .row-sub { font-size: 11px; }
 .media-plegma-aside { min-width: 0; min-height: 0; display: flex; flex-direction: column; margin-left: var(--space-5); }
-.media-plegma-aside > .dcard { flex: none; height: calc((100svh - 160px) * 0.86); min-height: 540px; display: flex; flex-direction: column; }
+.media-plegma-aside > .dcard { flex: none; height: calc(100svh - 104px); min-height: 560px; display: flex; flex-direction: column; }
 /* Ιστορίες: the list is a column of 3 on the left, as tall as the column of 5 on the right, which is the web (80% of the screen) with the trends under it. */
 .media-plegma.is-stories { grid-template-columns: minmax(0, 3fr) minmax(0, 5fr); height: auto; min-height: 0; align-items: stretch; }
 .media-plegma.is-stories > .media-plegma-map { order: 2; display: flex; flex-direction: column; gap: var(--space-3); }
@@ -300,6 +314,7 @@ html[data-search-fly] .body-search { opacity: 0; }
   .media-plegma.is-topics .media-map-web { height: 70vw; min-height: 420px; }
   .media-plegma.is-topics > .media-plegma-side { margin-right: 0; }
   .media-plegma-aside { margin-left: 0; }
+  .media-plegma.is-topics > .media-plegma-under { margin-right: 0; }
   .media-plegma-aside > .dcard { height: auto; }
   .tof-box { min-height: 420px; }
   .media-plegma.is-stories > .media-plegma-map { order: 0; }
