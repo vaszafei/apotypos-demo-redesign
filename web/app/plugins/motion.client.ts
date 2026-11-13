@@ -18,6 +18,8 @@ export default defineNuxtPlugin((nuxtApp) => {
 
   // Until the first content is sorted, the CSS hides the marks of every chart, so no chart paints full and then grows.
   let introDone = false
+  // A prerendered page is already on screen at its first intro, so its blocks do not rise in: they would go back to nothing and fade in a second time.
+  let onScreen = nuxtApp.payload.serverRendered === true
   let lastInput = -Infinity
   const begin = () => {
     introDone = false
@@ -72,7 +74,8 @@ export default defineNuxtPlugin((nuxtApp) => {
     introDone = true
     const content = document.getElementById('content')
     // A move from another page slides the page in (view-transition.client.ts), so the blocks do not rise as well.
-    if (content && !root.dataset.vt) enterPage(content)
+    if (content && !root.dataset.vt && !onScreen) enterPage(content)
+    onScreen = false
     if (!still() && content) {
       let k = 0
       for (const unit of content.querySelectorAll<HTMLElement>(UNIT)) {
