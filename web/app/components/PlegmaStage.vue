@@ -164,6 +164,8 @@ const readTokens = () => {
   softInk = groupInk.map(c => mixHex(c, groupInk[0] ?? mute, 0.3))
 }
 
+// The map is only a dim world behind the page: Home's «Η επικαιρότητα» with a day picked, or a page of Μέσα that draws its own web (stores/plegma.ts backdrop).
+const behind = () => plegma.homeDay !== null || plegma.backdrop
 const focusStory = () => (world && plegma.focus?.kind === 'story' ? world.byId.get(plegma.focus.id) ?? null : null)
 const focusIssue = () => (plegma.focus?.kind === 'theme' ? plegma.focus.issue : null)
 const focusOutlet = () => (plegma.focus?.kind === 'outlet' ? plegma.focus.slug : null)
@@ -189,6 +191,8 @@ const targetCamera = (): PlegmaCamera | null => {
     // A theme is framed on its largest stories; its web lies over this background.
     return frameTheme([...coreOf(issue)], width, height, plegma.region ?? undefined)
   }
+  // Behind a page that draws its own web the world is framed as on Home, so its dust fills the screen.
+  if (behind()) return weekWebs.length ? frameHome(weekWebs, width, height) : null
   return webs.length ? frameHome(webs, width, height) : null
 }
 
@@ -1073,7 +1077,7 @@ const draw = (now: number) => {
   if (!ctx || !ctxFocus || !world) return
   const c = ctx
   const f = ctxFocus
-  const homeNow = !focusStory() && focusIssue() === null && focusOutlet() === null && plegma.homeDay === null
+  const homeNow = !focusStory() && focusIssue() === null && focusOutlet() === null && !behind()
   if (wasHome && !homeNow && plegma.active) keepHeroFrame()
   wasHome = homeNow
   const picked = focusStory()
@@ -1109,7 +1113,7 @@ const draw = (now: number) => {
   const other = plegma.compare !== null ? world.byId.get(plegma.compare) ?? null : null
   const issue = focusIssue()
   const outletOn = focusOutlet() !== null
-  const onHome = !story && issue === null && !outletOn && plegma.homeDay === null
+  const onHome = !story && issue === null && !outletOn && !behind()
   if (onHome) { push = null; introKey = ''; introAt = -1; drawHero(now, sec, dt); return }
   // The intro of the web in view: it waits for the camera and for the view's free area, then grows (see INTRO_MS).
   const key = story ? `s${story.id}` : outletOn ? `o${focusOutlet()}` : issue !== null ? `t${issue}` : ''
@@ -1422,7 +1426,7 @@ useEventListener(window, 'pointermove', (e: PointerEvent) => {
   if ((e.target as Element | null)?.closest?.(CAPTURES)) return leave()
   const p = local(e)
   // In the hero the pointer is a lantern: a small patch of the ground under it clears.
-  const inHero = plegma.focus === null && plegma.homeDay === null
+  const inHero = plegma.focus === null && !behind()
   lantern.on = inHero && !reduced.value
   if (lantern.on) { lantern.x = p.x; lantern.y = p.y }
   // On the picked story the pointer finds an article first: its outlet and its day.
@@ -1567,7 +1571,7 @@ useEventListener(window, 'click', (e: MouseEvent) => {
   const box = canvas.value!.getBoundingClientRect()
   const p = { x: e.clientX - box.left, y: e.clientY - box.top }
   // In the hero a click explores: it opens no story (any pointer, a phone too).
-  if (plegma.focus === null && plegma.homeDay === null) { explore(p.x, p.y); return }
+  if (plegma.focus === null && !behind()) { explore(p.x, p.y); return }
   if (!pointerFine.value || phone.value || hoverArticle >= 0 || hoverRing) return
   // A story of the web of a theme opens that story.
   const web = webFocus() ? themeWebOf() : null
@@ -1592,7 +1596,7 @@ const start = () => {
   // The latest week that has topics, so the webs have their colours (the October stories have no topic): the last day with a count in the topics' days.
   const lastCoded = home.data.value!.issueDaily.reduce((m, row) => Math.max(m, row.findLastIndex(v => v !== null)), 0)
   weekWebs = homeWebs(world, ix, phone.value ? HOME_WEBS_PHONE : HOME_WEBS, lastCoded)
-  webs = plegma.homeDay === null ? weekWebs : []
+  webs = !behind() ? weekWebs : []
   readTokens()
   // A cold open lands settled: no flight (R14).
   const to = targetCamera()
@@ -1612,10 +1616,10 @@ useEventListener(document, 'visibilitychange', () => { if (document.hidden) halt
 // The route puts something else in focus: fly there. From a page with no map the flight starts from where the camera was left.
 watch(() => [plegma.focus, plegma.compare], () => fly(), { deep: true })
 // Home under the hero picked a day (the map steps back to a dim background) or went back to the hero (the camera frames the best of the week again).
-watch(() => plegma.homeDay, (day, was) => {
+watch(behind, (on, was) => {
   if (!world) return
-  webs = day === null ? weekWebs : []
-  if (day === null && was !== null && plegma.active) fly()
+  webs = on ? [] : weekWebs
+  if (!on && was && plegma.active) fly()
   kick()
 })
 // The view measured the free area again (its title grew, the window changed): the camera frames the new area, inside a flight from where it is.
@@ -1639,7 +1643,7 @@ onBeforeUnmount(halt)
 </script>
 
 <template>
-  <div class="plegma-stage" :class="{ 'is-view': plegma.focus !== null || plegma.homeDay !== null, 'is-fog': fogged && plegma.focus === null && plegma.homeDay === null, 'is-off': !plegma.active }" aria-hidden="true">
+  <div class="plegma-stage" :class="{ 'is-view': plegma.focus !== null || behind(), 'is-fog': fogged && plegma.focus === null && !behind(), 'is-off': !plegma.active }" aria-hidden="true">
     <canvas ref="canvas" class="plegma-canvas plegma-canvas-back" />
     <canvas ref="canvasFocus" class="plegma-canvas plegma-canvas-focus" />
   </div>

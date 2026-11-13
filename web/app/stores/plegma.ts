@@ -7,7 +7,8 @@ import { plegmaFocusOf, samePlegmaFocus } from '../utils/plegma-route.ts'
 import type { PlegmaFocus } from '../utils/plegma-route.ts'
 
 // `hero`: the page has the large search of Αρχική, so the search of the top bar waits.
-declare module '#app' { interface PageMeta { plegma?: boolean, hero?: boolean } }
+// `backdrop`: a page of tabs (Μέσα) that draws its own web over the map: the stage is only the dim world behind it, and the tabs and the top bar stay.
+declare module '#app' { interface PageMeta { plegma?: boolean, hero?: boolean, backdrop?: boolean } }
 
 // The Plegma behind the pages: whether the current route shows it, and what it is focused on. The route is the source of truth (KTD2): `syncRoute` is
 // the only way focus changes. The day being stepped and the story being compared live here too and end when the focused story changes.
@@ -45,8 +46,10 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const homeDay = ref<number | null>(null)
   const homePick = ref<number | null>(null)
 
-  const syncRoute = (route: { path: string, query: Record<string, unknown>, meta: { plegma?: boolean } }) => {
-    active.value = route.meta.plegma === true
+  const backdrop = ref(false)
+  const syncRoute = (route: { path: string, query: Record<string, unknown>, meta: { plegma?: boolean, backdrop?: boolean } }) => {
+    active.value = route.meta.plegma === true || route.meta.backdrop === true
+    backdrop.value = route.meta.backdrop === true
     if (!active.value) return
     const next = plegmaFocusOf(route.path, route.query)
     if (!samePlegmaFocus(next, focus.value)) {
@@ -81,5 +84,5 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const setHomeDay = (value: number | null) => { homeDay.value = value }
   const pickHome = (id: number | null) => { homePick.value = id }
 
-  return { active, focus, day, compare, landed, region, articles, highlight, hoverStory, related, ring, stance, themeStories, themeGroups, outletSlot, homeDay, homePick, syncRoute, stepTo, compareWith, setLanded, setRegion, setArticles, setHighlight, setHoverStory, setRelated, setRing, setStance, setThemeStories, setThemeGroups, setOutletSlot, setHomeDay, pickHome }
+  return { active, backdrop, focus, day, compare, landed, region, articles, highlight, hoverStory, related, ring, stance, themeStories, themeGroups, outletSlot, homeDay, homePick, syncRoute, stepTo, compareWith, setLanded, setRegion, setArticles, setHighlight, setHoverStory, setRelated, setRing, setStance, setThemeStories, setThemeGroups, setOutletSlot, setHomeDay, pickHome }
 })

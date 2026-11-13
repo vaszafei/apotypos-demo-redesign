@@ -1,6 +1,8 @@
 <script setup lang="ts">
-// Ιδιοκτησία (groups-v2.html): the articles of each group by day, the stance of each group, the network of owners and outlets and the share of each group.
+// Ιδιοκτησία (groups-v2.html): a screen of the Plegma (components/MediaPlegma.vue) whose web is the network of owners and outlets, with no card, and beside it
+// the articles of each group by day and the stance of each group; under it the share of each group.
 // The group, the owner and the articles come from the static files, so the table and the shares cover the window of the groups file and there is no period control.
+definePageMeta({ backdrop: true })
 const { t } = useI18n()
 useHead({ title: () => `${t('groups.title')} · ${t('site.name')}` })
 const { status, refresh, data, empty, groups, total, grouped, treeGroups, top3, media, stacks, volumeTotal, stanceRows, colorOf } = await useGroups()
@@ -10,7 +12,6 @@ const hasData = computed(() => !!total.value)
 
 const volumeInfo = computed(() => t('g2.volume.info', { min: fmtInt(GAP), n: fmtInt(volumeTotal.value) }))
 const legend = computed(() => treeGroups.value.map(g => ({ key: g.key ?? 'none', label: compactName(g.label, g.key === null, t('media2.groups.none.short')), color: g.color })))
-const treeInfo = computed(() => [t('g2.tree.sub', { period: period.value }), t('g2.record', { source: data.value?.record.source ?? '', date: data.value ? fmtDate(data.value.record.exportedAt) : '' })].join(' '))
 const shareInfo = computed(() => (hasData.value ? [t('g2.share.finding', { share: fmtPct(top3.value / total.value) }), t('media2.groups.known', { share: fmtPct(grouped.value / total.value) })].join('. ') : undefined))
 
 const scale = computed(() => Math.max(...stanceRows.value.map(r => Math.max(r.crit + r.neu / 2, r.sup + r.neu / 2)), 0.01))
@@ -32,40 +33,43 @@ const stanceLabel = (r: (typeof stanceRows.value)[number]) => t('g2.stance.row',
       <button type="button" class="button" @click="refresh()"><AppIcon name="arrow-path" class="icon icon-sm" />{{ t('state.retry') }}</button>
     </div>
   </template>
-  <div v-else class="dash-grid">
-    <DashCard class="c-7" :title="t('g2.volume.title')" :info="volumeInfo">
-      <template v-if="volumeTotal && media">
-        <ul class="legend legend-line"><li v-for="l in legend" :key="l.key"><span class="swatch" :style="{ background: l.color }" />{{ l.label }}</li></ul>
-        <GroupLines :dates="media.dates" :stacks="stacks" />
-      </template>
-      <p v-else class="dcard-empty">{{ t('groups.empty') }}</p>
-    </DashCard>
+  <MediaPlegma v-else>
+    <template #map="{ active }">
+      <ClientOnly>
+        <GroupsNetwork v-if="hasData" fill :class="{ 'is-in': active }" :groups="treeGroups" :total="total" />
+      </ClientOnly>
+    </template>
+    <template #side>
+      <DashCard :title="t('g2.volume.title')" :info="volumeInfo">
+        <template v-if="volumeTotal && media">
+          <ul class="legend legend-line"><li v-for="l in legend" :key="l.key"><span class="swatch" :style="{ background: l.color }" />{{ l.label }}</li></ul>
+          <GroupLines :dates="media.dates" :stacks="stacks" />
+        </template>
+        <p v-else class="dcard-empty">{{ t('groups.empty') }}</p>
+      </DashCard>
 
-    <DashCard class="c-5" :title="t('g2.stance.title')" :info="stanceInfo">
-      <template v-if="stanceRows.length">
-        <ul class="legend"><li v-for="[name, color] in stanceLegend" :key="name"><span class="swatch" :style="{ background: color }" />{{ t(`stance.${name}`) }}</li></ul>
-        <div class="bar-box">
-          <ul class="bar-list">
-            <li v-for="r in stanceRows" :key="r.g.name">
-              <span class="row-name"><span class="dot" :style="`--dot:${colorOf.get(r.g.name)}`" aria-hidden="true" />{{ r.g.name }}</span>
-              <span class="row-value">{{ fmtPct(r.crit) }} · {{ fmtPct(r.sup) }}</span>
-              <DivergingBar :left="r.crit" :middle="r.neu" :right="r.sup" :scale="scale" :label="stanceLabel(r)" />
-            </li>
-          </ul>
-        </div>
-      </template>
-      <p v-else class="dcard-empty">{{ t('groups.empty') }}</p>
-    </DashCard>
-
-    <DashCard class="c-8" :title="t('g2.tree.title')" :info="treeInfo">
-      <GroupsNetwork v-if="hasData" :groups="treeGroups" :total="total" />
-      <p v-else class="dcard-empty">{{ t('groups.empty') }}</p>
-    </DashCard>
-
-    <DashCard class="c-4" :title="t('media2.groups.title')" :info="shareInfo">
-      <GroupSunburst v-if="hasData" :groups="treeGroups" :total="total" />
-      <p v-else class="dcard-empty">{{ t('groups.empty') }}</p>
-    </DashCard>
-  </div>
+      <DashCard :title="t('g2.stance.title')" :info="stanceInfo">
+        <template v-if="stanceRows.length">
+          <ul class="legend"><li v-for="[name, color] in stanceLegend" :key="name"><span class="swatch" :style="{ background: color }" />{{ t(`stance.${name}`) }}</li></ul>
+          <div class="bar-box">
+            <ul class="bar-list">
+              <li v-for="r in stanceRows" :key="r.g.name">
+                <span class="row-name"><span class="dot" :style="`--dot:${colorOf.get(r.g.name)}`" aria-hidden="true" />{{ r.g.name }}</span>
+                <span class="row-value">{{ fmtPct(r.crit) }} · {{ fmtPct(r.sup) }}</span>
+                <DivergingBar :left="r.crit" :middle="r.neu" :right="r.sup" :scale="scale" :label="stanceLabel(r)" />
+              </li>
+            </ul>
+          </div>
+        </template>
+        <p v-else class="dcard-empty">{{ t('groups.empty') }}</p>
+      </DashCard>
+    </template>
+    <div class="dash-grid">
+      <DashCard class="c-6" :title="t('media2.groups.title')" :info="shareInfo">
+        <GroupSunburst v-if="hasData" :groups="treeGroups" :total="total" />
+        <p v-else class="dcard-empty">{{ t('groups.empty') }}</p>
+      </DashCard>
+    </div>
+  </MediaPlegma>
   <p class="proto-note">{{ t('proto.states') }}</p>
 </template>

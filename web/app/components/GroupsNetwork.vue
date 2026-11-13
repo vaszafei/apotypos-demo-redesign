@@ -5,15 +5,16 @@ import { round, type OutletNode } from '~/utils/net-layout'
 
 // OwnerBubbles of groups-v2.html: a network of owners and outlets. Nothing moves and nothing opens: a hover on a group or an outlet fades the other groups and its numbers are in the tooltip.
 // A click on a group opens its page and a click on an outlet opens its page. An outlet has its name inside its circle when it fits and beside it when there is room.
-const props = defineProps<{ groups: NetGroup[], total: number }>()
+// `fill`: the network fills the height of its box (a screen of the Plegma, Μέσα › Ιδιοκτησία) instead of a height from its width.
+const props = defineProps<{ groups: NetGroup[], total: number, fill?: boolean }>()
 const { t } = useI18n()
 const tooltip = useTooltipStore()
 const inkOf = useInk()
 
 const holder = ref<HTMLElement | null>(null)
-const { width: measured } = useElementSize(holder)
+const { width: measured, height: measuredH } = useElementSize(holder)
 const width = computed(() => Math.floor(measured.value) || 640)
-const height = computed(() => Math.max(300, Math.min(440, Math.round(width.value * 0.56))))
+const height = computed(() => (props.fill && measuredH.value > 200 ? Math.floor(measuredH.value) : Math.max(300, Math.min(440, Math.round(width.value * 0.56)))))
 const layout = computed(() => netLayout(props.groups, width.value, height.value))
 
 const hover = ref<NetGroup | null>(null)
@@ -108,6 +109,8 @@ const labels = computed<Label[]>(() => {
   return out
 })
 
+// The order of a group, for the arrival of its nodes one group after the other (assets/css/plegma.css .net-fill).
+const orderOf = (g: NetGroup) => props.groups.indexOf(g)
 const cls = (g: NetGroup) => ['net-el', { 'is-dim': hover.value !== null && g !== hover.value, 'is-active': g === hover.value }]
 const enter = (g: NetGroup) => { hover.value = g }
 const leave = () => { hover.value = null }
@@ -115,22 +118,22 @@ const showTip = (tip: { title: string, rows: { label: string, value: string, col
 </script>
 
 <template>
-  <div ref="holder" class="fit">
+  <div ref="holder" :class="fill ? 'fit net-fill' : 'fit'">
     <svg class="chart net" :width="width" :height="height" :viewBox="`0 0 ${width} ${height}`" role="group" :aria-label="t('g2.tree.title')">
       <g>
-        <line v-for="l in layout.links" :key="l.b.o.slug" :class="['net-edge', cls(l.b.g)]" :x1="l.a.x" :y1="l.a.y" :x2="l.b.x" :y2="l.b.y" :stroke="l.b.g.color" />
+        <line v-for="l in layout.links" :key="l.b.o.slug" :class="['net-edge', cls(l.b.g)]" :style="{ '--g': orderOf(l.b.g) }" :x1="l.a.x" :y1="l.a.y" :x2="l.b.x" :y2="l.b.y" :stroke="l.b.g.color" />
       </g>
       <g>
         <template v-for="n in layout.nodes" :key="n.kind === 'hub' ? `h-${n.g.key ?? 'none'}` : `o-${n.o.slug}`">
           <circle
             v-if="n.kind === 'hub'" :class="['net-hub', cls(n.g)]" :cx="n.x" :cy="n.y" :r="n.r" :fill="n.g.color" stroke="var(--surface-page)" stroke-width="2"
-            :tabindex="n.g.slug ? 0 : undefined" :role="n.g.slug ? 'link' : undefined" :aria-label="plain(groupTip(n.g))" :style="n.g.slug ? undefined : { cursor: 'default' }"
+            :tabindex="n.g.slug ? 0 : undefined" :role="n.g.slug ? 'link' : undefined" :aria-label="plain(groupTip(n.g))" :style="n.g.slug ? { '--g': orderOf(n.g) } : { '--g': orderOf(n.g), cursor: 'default' }"
             @pointerenter="enter(n.g); showTip(groupTip(n.g), $event)" @pointermove="showTip(groupTip(n.g), $event)" @pointerleave="leave(); tooltip.hide()"
             @click="n.g.slug && open(groupHref(n.g))" @keydown.enter="n.g.slug && open(groupHref(n.g))"
             @focus="n.g.slug && enter(n.g)" @blur="n.g.slug && leave()"
           />
           <circle
-            v-else :class="['net-outlet', cls(n.g)]" :cx="n.x" :cy="n.y" :r="n.r" :fill="tint(n.g)" :stroke="n.g.color" stroke-width="1.2"
+            v-else :class="['net-outlet', cls(n.g)]" :cx="n.x" :cy="n.y" :r="n.r" :fill="tint(n.g)" :stroke="n.g.color" stroke-width="1.2" :style="{ '--g': orderOf(n.g) }"
             @pointerenter="enter(n.g); showTip(outletTip(n.o, n.g), $event)" @pointermove="showTip(outletTip(n.o, n.g), $event)" @pointerleave="leave(); tooltip.hide()"
             @click="n.o.slug && open(outletHref(n.o.slug))"
           />

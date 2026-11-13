@@ -14,7 +14,7 @@ const menuButton = ref<HTMLButtonElement>()
 const closeButton = ref<HTMLButtonElement>()
 const smallScreen = useMediaQuery('(max-width: 1023px)')
 // A story or a theme on the Plegma: the search leaves the top bar and stays at the middle of the top of the body, under the bar (a phone keeps it in the bar).
-const bodySearch = computed(() => route.meta.plegma === true && route.meta.hero !== true && !smallScreen.value)
+const bodySearch = computed(() => route.meta.plegma === true && route.meta.hero !== true && route.meta.backdrop !== true && !smallScreen.value)
 // A phone or tablet: the open drawer keeps the focus and the rest of the page is inert until it closes (setDrawer of assets/shell.js).
 const setDrawer = async (open: boolean, moveFocus = true) => {
   drawer.value = open
@@ -43,6 +43,7 @@ watch(() => route.path, centerTabs)
 const current = (to: string) => (route.path === to ? 'page' : detail.value === to ? 'true' : undefined)
 // The back button of a detail page goes to the last page of the site. A visitor who came from outside goes to the parent page (BackButton in assets/shell.js).
 // The router remembers the page before in history.state; a visitor who came from a static page of the site has it in the referrer.
+const pager = useState<{ to: string | null, pull: number }>('tab-pull', () => ({ to: null, pull: 0 }))
 const back = () => {
   const cameFromSite = (history.state as { back?: string | null } | null)?.back || (document.referrer.startsWith(location.origin) && history.length > 1)
   if (cameFromSite) history.back()
@@ -51,7 +52,7 @@ const back = () => {
 </script>
 
 <template>
-  <div class="shell" :class="{ 'drawer-open': drawer, 'is-plegma': plegma.active, 'is-hero-page': route.meta.hero === true, 'is-body-search': bodySearch }">
+  <div class="shell" :class="{ 'drawer-open': drawer, 'is-plegma': plegma.active, 'is-backdrop': plegma.backdrop, 'is-hero-page': route.meta.hero === true, 'is-body-search': bodySearch }">
     <ClientOnly><PlegmaStage /></ClientOnly>
     <nav id="sidebar" class="sidebar" :aria-label="t('shell.nav')" :inert="smallScreen && !drawer">
       <div class="sidebar-logo">
@@ -95,11 +96,11 @@ const back = () => {
       </header>
       <Transition name="search-swap"><div v-if="bodySearch" class="body-search"><GlobalSearch /></div></Transition>
       <div class="page-body">
-        <nav v-if="section.tabs.length && !plegma.active" class="section-nav" :aria-label="t(`nav.${section.key}`)">
+        <nav v-if="section.tabs.length && (!plegma.active || plegma.backdrop)" class="section-nav" :aria-label="t(`nav.${section.key}`)">
           <div class="section-nav-inner">
             <ul class="section-nav-list">
               <li v-for="tab in section.tabs" :key="tab.to">
-                <NavLink class="section-nav-link" :to="tab.to" :aria-current="current(tab.to)"><AppIcon :name="tab.icon" glyph /><span class="nav-label">{{ t(`tab.${section.key}.${tab.key}`) }}</span></NavLink>
+                <NavLink class="section-nav-link" :class="{ 'is-pull': pager.to === tab.to }" :style="pager.to === tab.to ? { '--pull': pager.pull } : undefined" :to="tab.to" :aria-current="current(tab.to)"><AppIcon :name="tab.icon" glyph /><span class="nav-label">{{ t(`tab.${section.key}.${tab.key}`) }}</span></NavLink>
               </li>
             </ul>
           </div>
@@ -129,6 +130,7 @@ const back = () => {
             </header>
             <SignInGate v-if="gated" />
             <slot v-else />
+            <ClientOnly><TabPager v-if="!gated" /></ClientOnly>
           </main>
         </div>
       </div>

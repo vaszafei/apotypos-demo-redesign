@@ -23,7 +23,8 @@ export const useTopics = async () => {
   const view = computed(() => {
     const ds = dates.value
     const ok = period.from && period.to && ds.includes(period.from) && ds.includes(period.to)
-    return { from: ok ? period.from! : ds[0] ?? '', to: ok ? period.to! : ds[ds.length - 1] ?? '' }
+    // The first visit shows the last week of the coded days.
+    return { from: ok ? period.from! : ds[Math.max(0, ds.length - 7)] ?? '', to: ok ? period.to! : ds[ds.length - 1] ?? '' }
   })
   const range = computed(() => [dates.value.indexOf(view.value.from), dates.value.indexOf(view.value.to)] as const)
 
