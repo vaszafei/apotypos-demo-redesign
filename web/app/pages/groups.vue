@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Ιδιοκτησία (groups-v2.html): a screen of the Plegma (components/MediaPlegma.vue) whose web is the network of owners and outlets, with no card, and under it the articles of each group by day (the whole column); on the left a column of 2 : 10 with the groups and the outlets that they own, and under them the independent outlets (without a group).
+// Ιδιοκτησία (groups-v2.html): a screen of the Plegma (components/MediaPlegma.vue) whose web is the network of owners and outlets, with no card, and under it the articles of each group by day (the whole column); on the right a column of 10 : 2 with the groups and the outlets that they own, and under them the independent outlets (without a group).
 // The control «Στάση» over the web moves the groups and the outlets without a group to their place from left to right by their stance (critical to supportive), with three zones behind them.
 // The group, the owner and the articles come from the static files, so the table and the shares cover the window of the groups file and there is no period control.
 definePageMeta({ backdrop: true })

@@ -34,8 +34,17 @@ export const netLayout = (groups: NetGroup[], width: number, height: number, wid
     const sorted = known.slice().sort((a, b) => a - b)
     const [lo, hi] = [sorted[Math.floor((sorted.length - 1) * 0.1)] ?? 0, sorted[Math.ceil((sorted.length - 1) * 0.9)] ?? 0]
     scale = { lo, hi }
+    // Inside its zone a place is half by the value and half by the rank among the ones of the zone, so the zone is used from one side to the other and not only where the values crowd.
+    const place = raw.map<number | null>(() => null)
+    for (let z = 0; z < 3; z++) {
+      const inZone = raw.map((v, i) => ({ v, i })).filter((e): e is { v: number, i: number } => e.v !== null && (e.v < -ZONE ? 0 : e.v <= ZONE ? 1 : 2) === z).sort((a, b) => a.v - b.v)
+      inZone.forEach((e, rank) => {
+        const within = zoneUnit(e.v, lo, hi) * 3 - z
+        place[e.i] = (z + 0.08 + 0.84 * (0.5 * within + 0.5 * ((rank + 0.5) / inZone.length))) / 3
+      })
+    }
     clusters = units.map(({ g, gi, list, solo }, ui) => {
-      const t = raw[ui] === null ? 0.5 : zoneUnit(raw[ui]!, lo, hi)
+      const t = place[ui] ?? 0.5
       const hub: HubNode = { kind: 'hub', g, x: 0, y: 0, r: solo ? 0 : 8 + 6 * Math.sqrt(g.value / maxG) }
       if (solo) {
         const o = list[0]!

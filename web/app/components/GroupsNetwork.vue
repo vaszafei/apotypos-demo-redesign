@@ -54,12 +54,15 @@ const layout = computed(() => {
   const links = a.links.map(l => ({ a: nodes[at.get(l.a)!] as typeof l.a, b: nodes[at.get(l.b)!] as typeof l.b }))
   return { nodes, links, clusters: a.clusters }
 })
+// The zones are soft: the critical one is strongest at the left edge and fades towards the middle, the supportive one is strongest at the right edge and fades towards the middle,
+// and the neutral one is strongest in the middle and fades to both sides, so no zone has a hard edge.
 const zones = computed(() => {
   const [x1, x2] = [spread.value.axisX(-ZONE), spread.value.axisX(ZONE)]
+  const [w, mid] = [width.value, (x1 + x2) / 2]
   return [
-    { key: 'critical', x: 0, w: x1, color: 'var(--stance-critical)' },
-    { key: 'neutral', x: x1, w: x2 - x1, color: 'var(--stance-neutral)' },
-    { key: 'supportive', x: x2, w: width.value - x2, color: 'var(--stance-supportive)' }
+    { key: 'critical', color: 'var(--stance-critical)', label: x1 / 2, from: 0, to: mid, stops: [0.2, 0.08, 0] as const },
+    { key: 'neutral', color: 'var(--stance-neutral)', label: mid, from: x1 / 2, to: (x2 + w) / 2, stops: [0, 0.16, 0] as const },
+    { key: 'supportive', color: 'var(--stance-supportive)', label: (x2 + w) / 2, from: mid, to: w, stops: [0, 0.08, 0.2] as const }
   ]
 })
 
@@ -183,9 +186,14 @@ const showTip = (tip: { title: string, rows: { label: string, value: string, col
   <div ref="holder" :class="fill ? 'fit net-fill' : 'fit'">
     <svg class="chart net" :width="width" :height="height" :viewBox="`0 0 ${width} ${height}`" role="group" :aria-label="t('g2.tree.title')">
       <g v-if="fill" class="net-zones" :style="{ opacity: stance ? 1 : 0 }" aria-hidden="true">
+        <defs>
+          <linearGradient v-for="z in zones" :id="`net-zone-${z.key}`" :key="z.key" gradientUnits="userSpaceOnUse" :x1="z.from" y1="0" :x2="z.to" y2="0">
+            <stop v-for="(o, i) in z.stops" :key="i" :offset="i / 2" :style="{ stopColor: z.color, stopOpacity: o }" />
+          </linearGradient>
+        </defs>
         <template v-for="z in zones" :key="z.key">
-          <rect :x="z.x" y="0" :width="Math.max(0, z.w)" :height="height" :fill="z.color" fill-opacity="0.09" />
-          <text :x="z.x + z.w / 2" :y="18" text-anchor="middle">{{ t(`stance.${z.key}`) }}</text>
+          <rect :x="z.from" y="0" :width="Math.max(0, z.to - z.from)" :height="height" :fill="`url(#net-zone-${z.key})`" />
+          <text :x="z.label" y="18" text-anchor="middle">{{ t(`stance.${z.key}`) }}</text>
         </template>
       </g>
       <g>
