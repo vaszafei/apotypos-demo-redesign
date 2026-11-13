@@ -7,7 +7,7 @@ import { groupColors, NO_GROUP, slotOfColor } from '~/utils/groups'
 import type { GroupsData } from '~/utils/groups'
 import { dayDots, PLEGMA_DAY_STORIES, PLEGMA_DAY_THEMES } from '~/utils/plegma-day'
 import type { PlegmaDayTheme } from '~/utils/plegma-day'
-import type { DayOutlet, DayRing } from '~/components/PlegmaDayWeb.vue'
+import type { DayOutlet, DayRing } from '~/components/plegma/PlegmaDayWeb.vue'
 import { themeSlots } from '~/utils/plegma-world'
 
 // «Η επικαιρότητα» under the hero (the section #home-today of index.html): the calendar of the days floating over the Plegma, under it the web of the picked day (the date, its themes, the stories

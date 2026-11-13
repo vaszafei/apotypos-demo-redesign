@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { BarRow } from '~/components/BarList.vue'
+import type { BarRow } from '~/components/charts/BarList.vue'
 
 // Entity.StanceCard of assets/entity-cards.js: the neutral share in the center of a bar, the critical share to the left, the supportive share to the right.
 // rows: counts are [critical, neutral, supportive]. A row needs 30 articles with a stance, and the card needs two rows to compare.

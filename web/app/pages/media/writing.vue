@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRafFn } from '@vueuse/core'
-import type { StanceSeries } from '~/components/StanceWeb.vue'
+import type { StanceSeries } from '~/components/stance/StanceWeb.vue'
 
 // Μέσα › Στάση (media-v2.html?tab=writing): the stance of all the outlets to the government as a web of the Plegma over the whole screen (components/StanceWeb.vue), with its key as a
 // glass card in the empty top right corner of the plot. Under the web a player plays the stance over time: each step is the last WINDOW days up to one day of the data, and the outlets move

@@ -5,7 +5,7 @@ import { groupColors, NO_GROUP, slotOfColor } from '~/utils/groups'
 import type { GroupsData } from '~/utils/groups'
 import { dayDots } from '~/utils/plegma-day'
 import type { PlegmaDayTheme } from '~/utils/plegma-day'
-import type { DayOutlet } from '~/components/PlegmaDayWeb.vue'
+import type { DayOutlet } from '~/components/plegma/PlegmaDayWeb.vue'
 
 // The web of a period on the pages of Μέσα (components/PlegmaDayWeb.vue, the web of Home's day, over the days `from` to `to`): the largest stories of the period, each with a dot
 // for its articles in the colors of the groups that ran them, grouped by theme; and the outlets of the period for the ring of the stories. Drawn in the browser: the data of the

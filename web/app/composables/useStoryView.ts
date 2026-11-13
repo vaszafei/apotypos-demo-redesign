@@ -2,7 +2,7 @@ import type { MaybeRefOrGetter } from 'vue'
 import type { StoriesData } from '~/types/stories'
 import type { StoryDetailData } from '~/types/story-detail'
 import type { GroupsData } from '~/utils/groups'
-import type { BarRow } from '~/components/BarList.vue'
+import type { BarRow } from '~/components/charts/BarList.vue'
 import type { PlegmaArticle } from '~/utils/plegma-articles'
 import type { MmeData } from '~/types/mme'
 

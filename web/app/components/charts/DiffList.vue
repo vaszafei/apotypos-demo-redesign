@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="R extends DiffInput">
-import type { BarRow } from '~/components/BarList.vue'
+import type { BarRow } from '~/components/charts/BarList.vue'
 
 // Entity.DiffRow of assets/entity-cards.js in a UI.BarList: the share of a row, and a bar from the center line (the usual share) that goes right in teal when the row has more
 // and left in orange when it has less. scale is the difference that fills half of the track; the rows of one card share it. tipKey is the message of the tooltip.
