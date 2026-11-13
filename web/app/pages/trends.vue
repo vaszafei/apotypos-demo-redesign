@@ -1,11 +1,20 @@
 <script setup lang="ts">
-// Θέματα (topics-v2.html): the topics of the period as a donut and a list, the lines over time, the movers and the shifts of 2025.
+// Θέματα (topics-v2.html): a screen of the Plegma (components/MediaPlegma.vue) whose web is the largest themes of the period with their largest stories, and beside it the lines over
+// time and the list of the topics; under it the movers and the shifts of 2025.
+definePageMeta({ backdrop: true })
 const { t } = useI18n()
+const lit = ref<number | null>(null)
 useHead({ title: () => `${t('nav.topics')} · ${t('site.name')}` })
 const period = usePeriodStore()
 const { status, refresh, dates, view, range, rows, total, colorOf, series, movers } = await useTopics()
 const { data: shifts, status: shiftsStatus } = await useFixture<{ window: [string, string], threshold: number, topics: { label: string, ratio: number, week: string }[], weeks: unknown[] }>('overton', { required: ['topics', 'weeks'], isEmpty: b => b.topics.length === 0 })
 
+// The web (components/TopicWeb.vue): the themes that have a color (the lines and the list have the same), each with its largest stories of the period.
+const slotOfIssue = computed(() => new Map([...colorOf.value].map(([k, c]) => [k, Number(/--cat-(\d+)/.exec(c)?.[1] ?? 0)])))
+const webFrom = computed(() => view.value.from)
+const webTo = computed(() => view.value.to)
+const periodWeb = import.meta.client ? usePeriodWeb(webFrom, webTo, slotOfIssue) : null
+const webThemes = computed(() => (periodWeb?.ready.value ? periodWeb.themesFor([...colorOf.value.keys()]) : []))
 const sliced = computed(() => dates.value.slice(range.value[0], range.value[1] + 1))
 // A new period draws the lines in again (assets/motion.js replay); the first view is played by plugins/motion.client.ts.
 const { $motion } = useNuxtApp()
@@ -54,29 +63,30 @@ const widest = computed(() => Math.max(...bars.value.map(b => b.value), 0))
   <div v-else-if="status === 'empty' || (status === 'ready' && !rows.length)" class="dash-grid">
     <div class="card-col c-12"><section class="dcard"><div class="empty-state" data-state="empty"><p>{{ t('topics2.empty') }}</p></div></section></div>
   </div>
-  <div v-else class="dash-grid">
-    <div class="card-col c-3">
-      <DashCard :title="t('topics2.all.title')" :info="allInfo">
-        <p v-if="rows.length > 3" class="dcard-sub">{{ t('topics2.all.finding', { share: fmtPct(top3) }) }}</p>
-        <TopicDonut :rows="rows" :total="total" :color-of="colorOf" />
-      </DashCard>
-    </div>
-    <div class="card-col c-9">
+  <MediaPlegma v-else>
+    <template #map="{ active }">
+      <ClientOnly><TopicWeb v-model:lit="lit" :rows="rows" :total="total" :color-of="colorOf" :themes="webThemes" :active="active && webThemes.length > 0" /></ClientOnly>
+    </template>
+    <template #side>
       <DashCard :title="t('topics2.time.title')" :info="timeInfo" card="time">
         <LinesChart v-if="series.length" :dates="sliced" :series="series" :caption="t('topics2.time.title')" />
       </DashCard>
-      <div class="dash-grid">
-        <div class="card-col c-6">
-          <DashCard :title="t('topics2.move.title')" :info="moveInfo" card="movers"><BarList :rows="bars" :max="widest" /></DashCard>
-        </div>
-        <div class="card-col c-6">
-          <DashCard v-if="shiftModel" :title="t('tab.media.shifts')" :info="shiftModel.info" card="shifts">
-            <p class="dcard-sub">{{ shiftModel.sub }}</p>
-            <div class="shift-scroll"><BarList :rows="shiftModel.rows" :max="shiftModel.max" /></div>
-          </DashCard>
-        </div>
+      <DashCard class="media-plegma-fill" :title="t('topics2.all.title')" :info="allInfo">
+        <p v-if="rows.length > 3" class="dcard-sub">{{ t('topics2.all.finding', { share: fmtPct(top3) }) }}</p>
+        <TopicList v-model:lit="lit" :rows="rows" :total="total" :color-of="colorOf" />
+      </DashCard>
+    </template>
+    <div class="dash-grid">
+      <div class="card-col c-6">
+        <DashCard :title="t('topics2.move.title')" :info="moveInfo" card="movers"><BarList :rows="bars" :max="widest" /></DashCard>
+      </div>
+      <div class="card-col c-6">
+        <DashCard v-if="shiftModel" :title="t('tab.media.shifts')" :info="shiftModel.info" card="shifts">
+          <p class="dcard-sub">{{ shiftModel.sub }}</p>
+          <div class="shift-scroll"><BarList :rows="shiftModel.rows" :max="shiftModel.max" /></div>
+        </DashCard>
       </div>
     </div>
-  </div>
+  </MediaPlegma>
   <p class="proto-note">{{ t('proto.states') }}</p>
 </template>

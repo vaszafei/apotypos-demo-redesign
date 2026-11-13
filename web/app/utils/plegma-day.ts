@@ -57,7 +57,9 @@ export const dayDots = (n: number, counts: { slot: number, n: number }[]): numbe
   return out.slice(0, k)
 }
 
-export const buildDayWeb = (themes: PlegmaDayTheme[], aspect: number, seed: number): PlegmaDayWeb => {
+// `spread`: many themes (a period on the pages of Μέσα) go round by the golden angle, the largest nearest the center and the smallest out by the ring, so the large ones do not
+// crowd one side.
+export const buildDayWeb = (themes: PlegmaDayTheme[], aspect: number, seed: number, spread = false): PlegmaDayWeb => {
   const rand = mulberry(seed * 37 + 5)
   const T = themes.length
   const stories = themes.flatMap((t, ti) => t.stories.map((s, si) => ({ s, ti, si })))
@@ -85,9 +87,9 @@ export const buildDayWeb = (themes: PlegmaDayTheme[], aspect: number, seed: numb
   const mostTheme = Math.max(1, ...themes.map(t => t.n))
   const themeAt = (ti: number) => 1 + ti
   themes.forEach((t, ti) => {
-    const a = turn + ((ti + (rand() - 0.5) * 0.45) / Math.max(1, T)) * Math.PI * 2
+    const a = spread ? turn + ti * 2.39996 + (rand() - 0.5) * 0.3 : turn + ((ti + (rand() - 0.5) * 0.45) / Math.max(1, T)) * Math.PI * 2
     // A day with one theme (the days with no coded themes have only the catch-all) has it near the date, and its stories spread over the whole box.
-    const r = T === 1 ? 0.12 : (ti % 2 ? 0.82 : 0.5) + (rand() - 0.5) * 0.14
+    const r = T === 1 ? 0.12 : spread ? 0.62 + 0.5 * (ti / Math.max(1, T - 1)) ** 0.7 + (rand() - 0.5) * 0.1 : (ti % 2 ? 0.82 : 0.5) + (rand() - 0.5) * 0.14
     x[themeAt(ti)] = Math.cos(a) * r * aspect * 0.8
     y[themeAt(ti)] = Math.sin(a) * r * 0.82
     kind[themeAt(ti)] = DAY_THEME

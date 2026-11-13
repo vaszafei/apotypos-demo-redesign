@@ -13,7 +13,9 @@ import type { PlegmaDayTheme, PlegmaDayWeb } from '~/utils/plegma-day'
 // theme pointed at, on the ring, on the web or in the list beside it (`lit`), comes forward.
 export interface DayRing { issue: number, name: string, slot: number, n: number }
 export interface DayOutlet { name: string, slot: number, n: number }
-const props = defineProps<{ themes: PlegmaDayTheme[], ring: DayRing[], outlets: DayOutlet[], mode: 'stories' | 'themes', lit: number | null, date: string, picked: number | null, active: boolean }>()
+// The pages of Μέσα use it for a period too: `date` is then the text at the center (a count, with `sub` under it), `labels` the most theme names it writes (the largest first),
+// `spread` that many themes go round the center by the golden angle (utils/plegma-day.ts), `grow` that the web grows out of the center when it comes into view and again when its data changes, and `label` the name of the picture for a screen reader.
+const props = withDefaults(defineProps<{ themes: PlegmaDayTheme[], ring: DayRing[], outlets: DayOutlet[], mode: 'stories' | 'themes', lit: number | null, date: string, picked: number | null, active: boolean, sub?: string, labels?: number, grow?: boolean, label?: string, spread?: boolean }>(), { sub: undefined, labels: Infinity, grow: false, label: undefined, spread: false })
 const emit = defineEmits<{ pick: [id: number], pickTheme: [issue: number], 'update:lit': [issue: number | null] }>()
 const { t } = useI18n()
 const tooltip = useTooltipStore()
@@ -47,19 +49,20 @@ const readTokens = () => {
   groupInk = Array.from({ length: 10 }, (_, i) => style.getPropertyValue(`--cat-${i}`).trim() || mute)
   softInk = groupInk.map(c => (/^#[0-9a-f]{6}$/i.test(c) && /^#[0-9a-f]{6}$/i.test(groupInk[0]!) ? blendHex(c, groupInk[0]!, 0.7) : c))
 }
-const slotColour = (slot: number) => (slot > 0 ? cats[slot - 1] ?? mute : mute)
+// With many themes (`spread`) the ones with no color of their own are the light gray of the page's charts, so the colored ones stand out.
+const slotColour = (slot: number) => (slot > 0 ? cats[slot - 1] ?? mute : props.spread ? groupInk[0] ?? mute : mute)
 
 // The layout is the same for the same day; it is drawn again when the area changes shape.
 // The web lies inside the ring, which is a circle: the layout is on the unit disc.
 const aspect = computed(() => (size.value.h ? 1 : 0))
 const seed = computed(() => [...props.date].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 9973, 7))
-const web = computed<PlegmaDayWeb | null>(() => (props.themes.length && aspect.value ? buildDayWeb(props.themes, aspect.value, seed.value) : null))
+const web = computed<PlegmaDayWeb | null>(() => (props.themes.length && aspect.value ? buildDayWeb(props.themes, aspect.value, seed.value, props.spread) : null))
 // The same stories with no themes between them, and which node of it each node of `web` is.
 const flat = computed(() => {
   const w = web.value
   if (!w || !aspect.value) return null
   const themes = storiesAsThemes(props.themes)
-  const b = buildDayWeb(themes, aspect.value, seed.value)
+  const b = buildDayWeb(themes, aspect.value, seed.value, props.spread)
   return { b, match: matchWebs(props.themes, w, themes, b) }
 })
 
@@ -76,6 +79,15 @@ let form = themed
 let litTheme = -1
 const arcHot = new Map<string, number>()
 let last = 0
+// The growth out of the center (`grow`): the time it started, or -1 before it starts; the themes come first, then the stories, then the dots, and the ring is drawn round.
+const GROW_MS = 1400
+let growAt = -1
+let grown = 1
+const growOf = (kind: number) => {
+  const d = kind === DAY_THEME ? 0 : kind === DAY_STORY ? 0.14 : kind === DAY_REST ? 0.22 : kind === DAY_DOT ? 0.3 : 0
+  const k = clamp((grown - d) / (1 - d), 0, 1)
+  return 1 - (1 - k) ** 3
+}
 const storyOf = (w: PlegmaDayWeb, i: number) => props.themes[w.theme[i]!]!.stories[w.story[i]!]!
 // The ring is as large as the area allows, and the web is a little smaller inside it.
 const ringOf = () => Math.min(width, height) / 2 * 0.9 - 10
@@ -83,7 +95,7 @@ const scaleOf = () => ringOf() - 22
 const radius = (w: PlegmaDayWeb, i: number, R: number) => {
   switch (w.kind[i]) {
     case DAY_DATE: return 9
-    case DAY_THEME: return 6.5 + 4 * w.size[i]!
+    case DAY_THEME: return props.themes.length > 12 ? 2.6 + 6 * w.size[i]! : 6.5 + 4 * w.size[i]!
     case DAY_STORY: return 3.6 + 3.4 * w.size[i]!
     case DAY_DOT: return clamp(R * (0.004 + 0.0085 * w.size[i]!), 1.4, 5.2)
     default: return clamp(R * 0.004 * (0.6 + w.size[i]!), 1, 2.2)
@@ -100,8 +112,9 @@ const layout = (w: PlegmaDayWeb, sec: number) => {
     const j = f ? f.match[i]! : -1
     const px = j >= 0 ? f!.b.x[j]! + (w.x[i]! - f!.b.x[j]!) * form : w.x[i]!
     const py = j >= 0 ? f!.b.y[j]! + (w.y[i]! - f!.b.y[j]!) * form : w.y[i]!
-    hx[i] = width / 2 + px * R + Math.cos(a) * amp * k
-    hy[i] = height / 2 + py * R + Math.sin(a) * amp * k
+    const e = grown < 1 ? growOf(w.kind[i]!) : 1
+    hx[i] = width / 2 + (px * R + Math.cos(a) * amp * k) * e
+    hy[i] = height / 2 + (py * R + Math.sin(a) * amp * k) * e
   }
   return R
 }
@@ -113,6 +126,8 @@ const draw = (sec: number, dt: number) => {
   const dpr = Math.min(window.devicePixelRatio || 1, 2)
   g.setTransform(dpr, 0, 0, dpr, 0, 0)
   g.clearRect(0, 0, width, height)
+  grown = growAt < 0 ? (props.grow && !reduced.value ? 0 : 1) : clamp((performance.now() - growAt) / GROW_MS, 0, 1)
+  g.globalAlpha = 1
   const goal = props.mode === 'themes' ? 1 : 0
   themed = reduced.value ? goal : themed + (goal - themed) * (1 - Math.exp(-dt * 3))
   if (Math.abs(goal - themed) < 0.002) themed = goal
@@ -165,12 +180,13 @@ const draw = (sec: number, dt: number) => {
     if (!path) { path = new Path2D(); lines.set(slot, path) }
     curve(path, j, i, w.bow[e]!)
   }
+  const lineIn = grown < 1 ? growOf(DAY_DOT) : 1
   g.strokeStyle = ink
-  g.globalAlpha = 0.3 * (1 - 0.6 * tmix) * form
+  g.globalAlpha = 0.3 * (1 - 0.6 * tmix) * form * lineIn
   g.stroke(spokes)
-  if (form > 0.01) for (const [slot, path] of themeLines) { g.strokeStyle = slotColour(slot); g.globalAlpha = 0.45 * back * form; g.stroke(path) }
-  if (form < 0.99) for (const [slot, path] of directLines) { g.strokeStyle = slotColour(slot); g.globalAlpha = 0.45 * back * (1 - form); g.stroke(path) }
-  for (const [slot, path] of lines) { g.strokeStyle = softInk[slot] ?? mute; g.globalAlpha = 0.6 * back; g.stroke(path) }
+  if (form > 0.01) for (const [slot, path] of themeLines) { g.strokeStyle = slotColour(slot); g.globalAlpha = 0.45 * back * form * lineIn; g.stroke(path) }
+  if (form < 0.99) for (const [slot, path] of directLines) { g.strokeStyle = slotColour(slot); g.globalAlpha = 0.45 * back * (1 - form) * lineIn; g.stroke(path) }
+  for (const [slot, path] of lines) { g.strokeStyle = softInk[slot] ?? mute; g.globalAlpha = 0.6 * back * lineIn; g.stroke(path) }
   if (mix > 0.01) { g.strokeStyle = ink; g.globalAlpha = 0.45 * mix; g.stroke(litLines) }
   // The faint dots of the stories that are not shown: the color of their theme.
   const circle = (path: Path2D, i: number, r: number) => { path.moveTo(hx[i]! + r, hy[i]!); path.arc(hx[i]!, hy[i]!, r, 0, TAU) }
@@ -269,6 +285,7 @@ const draw = (sec: number, dt: number) => {
   }
   // The ring: an arc for each outlet of the day (the stories) or each theme (the themes), as wide as its share of the articles; the one pointed at is thicker. The two rings fade into each other.
   const ringR = ringOf()
+  const sweep = grown < 1 ? (1 - (1 - clamp(grown / 0.8, 0, 1)) ** 3) * TAU : TAU
   const arcs = (items: { slot: number, n: number }[], tag: string, alpha: number, hotOf: (k: number) => boolean) => {
     const total = items.reduce((sum, r) => sum + r.n, 0)
     if (total <= 0 || alpha < 0.01) return
@@ -281,11 +298,12 @@ const draw = (sec: number, dt: number) => {
       const goal = hotOf(k) ? 1 : 0
       arcHot.set(key, reduced.value ? goal : hot + (goal - hot) * (1 - Math.exp(-dt * 9)))
       const pad = Math.min(span / 2, 3 / ringR)
+      if (from + pad >= sweep) { from += span; return }
       g.strokeStyle = slotColour(r.slot)
       g.globalAlpha = (0.85 + 0.15 * (arcHot.get(key) ?? 0)) * alpha
       g.lineWidth = 2 + 2.5 * (arcHot.get(key) ?? 0)
       g.beginPath()
-      g.arc(width / 2, height / 2, ringR, from - Math.PI / 2 + pad, from + span - Math.PI / 2 - pad)
+      g.arc(width / 2, height / 2, ringR, from - Math.PI / 2 + pad, Math.min(from + span - pad, sweep) - Math.PI / 2)
       g.stroke()
       from += span
     })
@@ -307,9 +325,15 @@ const draw = (sec: number, dt: number) => {
   g.globalAlpha = 1
   g.fillText(props.date, hx[0]!, hy[0]! + 28)
   g.font = `11px ${fontText}`
+  if (props.sub) {
+    g.lineWidth = 3.5
+    g.strokeText(props.sub, hx[0]!, hy[0]! + 42)
+    g.fillStyle = mute
+    g.fillText(props.sub, hx[0]!, hy[0]! + 42)
+  }
   for (let i = 0; i < w.n; i++) {
     if (w.kind[i] !== DAY_THEME) continue
-    if (form < 0.01) continue
+    if (form < 0.01 || w.theme[i]! >= props.labels) continue
     const name = props.themes[w.theme[i]!]!.name
     const text = name.length > 28 ? `${name.slice(0, 27).trimEnd()}…` : name
     const right = hx[i]! >= width / 2
@@ -317,10 +341,11 @@ const draw = (sec: number, dt: number) => {
     const lx = hx[i]! + (right ? 1 : -1) * (radius(w, i, R) + 7)
     g.lineWidth = 3.5
     g.strokeStyle = paper
-    g.globalAlpha = 0.9 * form
+    const labelIn = grown < 1 ? growOf(DAY_DOT) : 1
+    g.globalAlpha = 0.9 * form * labelIn
     g.strokeText(text, lx, hy[i]! + 4)
     g.fillStyle = mute
-    g.globalAlpha = form
+    g.globalAlpha = form * labelIn
     g.fillText(text, lx, hy[i]! + 4)
   }
   g.textAlign = 'start'
@@ -434,6 +459,9 @@ const loop = useRafFn(({ timestamp }) => {
   draw(now, Math.min(0.1, last ? now - last : 0.016))
   last = now
 }, { immediate: false })
+const startGrow = () => { if (props.grow && !reduced.value && web.value) growAt = performance.now() }
+watch(() => [props.active, !!web.value] as const, ([on, ready]) => { if (on && ready && growAt < 0) startGrow() }, { immediate: true })
+watch(web, (w, before) => { if (props.grow && w && before && props.active) startGrow() })
 watch(() => [props.active, reduced.value] as const, ([on, still]) => {
   last = 0
   if (on && !still) loop.resume()
@@ -447,6 +475,6 @@ onBeforeUnmount(() => loop.pause())
 
 <template>
   <div ref="box" class="plegma-day">
-    <canvas ref="canvas" class="plegma-day-canvas" role="img" :aria-label="t('home.web.label', { date })" @pointermove="onMove" @pointerleave="onLeave" @click="onClick" />
+    <canvas ref="canvas" class="plegma-day-canvas" role="img" :aria-label="label ?? t('home.web.label', { date })" @pointermove="onMove" @pointerleave="onLeave" @click="onClick" />
   </div>
 </template>

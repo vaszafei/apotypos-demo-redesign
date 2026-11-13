@@ -30,7 +30,7 @@ const reset = () => { pull.value = 0; way.value = null }
 const go = (to: string, up: boolean) => {
   going = true
   reset()
-  navigateTo(to).then(async () => {
+  Promise.resolve(navigateTo(to)).then(async () => {
     if (!up) return
     // The tab before opens at its end, where the pull came from: once its cards have their height.
     await nextTick()
