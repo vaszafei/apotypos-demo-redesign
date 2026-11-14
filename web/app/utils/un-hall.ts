@@ -49,7 +49,7 @@ export const unCountries = (rows: UnSpeech[]): UnCountry[] => {
     const main = r.shares[0]?.[0]
     if (main) e.topics.set(main, (e.topics.get(main) ?? 0) + 1)
     for (const [target, n] of r.targets) {
-      if (/^Israel/.test(target)) e.c.attacksOnIsrael += n
+      if (target.includes('Israel')) e.c.attacksOnIsrael += n
       const to = TARGET_ALIAS[target] ?? target
       if (to !== r.country) e.out.set(to, (e.out.get(to) ?? 0) + n)
     }

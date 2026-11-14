@@ -10,5 +10,6 @@
   { "html": "topic-v2.html", "route": "/topic" },
   { "html": "group-v2.html", "route": "/group" },
   { "html": "outlet-v2.html", "route": "/outlet" },
-  { "html": "speeches-v2.html", "route": "/speeches" }
+  { "html": "speeches-v2.html", "route": "/speeches" },
+  { "html": "un-israel-v2.html", "route": "/un-israel-palestine" }
 ]

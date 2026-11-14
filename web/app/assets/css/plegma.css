@@ -410,11 +410,21 @@ html[data-search-fly] .body-search { opacity: 0; }
 /* Αναλύσεις › ΟΗΕ: the hall on the left (the tabs over it, the region chips under it), the list in a column of 5.7 and the cards of the tabs in a column of 4, as in the mock (the plan is 660 x 800 and scales to its column). */
 .media-plegma.is-un { grid-template-columns: minmax(0, 6.6fr) minmax(0, 5.7fr) minmax(0, 4fr); column-gap: var(--space-5); height: auto; min-height: 0; align-items: start; }
 .media-plegma.is-un > .media-plegma-map { display: flex; flex-direction: column; gap: var(--space-2); }
+@media (max-width: 1023px) { .media-plegma.is-un > .media-plegma-map { height: auto; min-height: 0; } }
 .media-plegma.is-un > .media-plegma-aside { margin-left: 0; gap: var(--space-3); }
 .media-plegma.is-un > .media-plegma-aside > .dcard { height: auto; min-height: 0; cursor: pointer; outline: 2px solid transparent; transition: outline-color 0.35s; }
 .media-plegma.is-un > .media-plegma-aside > .dcard.is-on { outline-color: var(--ink); }
+.media-plegma.is-un .dn-wrap { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: var(--space-3); }
+.media-plegma.is-un .dn-sun { width: 200px; height: 200px; }
+.media-plegma.is-un .dn-legend { justify-self: stretch; max-width: none; gap: 0; }
+.media-plegma.is-un .dn-legend .dn-row { min-height: 0; padding: 1px 8px; line-height: 1.3; }
+.media-plegma.is-un .dn-wrap + .legend { justify-content: center; }
 .media-plegma.is-un .media-plegma-side .un-list { max-height: calc(100svh - 300px); }
 .un-web { height: auto; padding-top: 44px; }
+.media-plegma.is-un .leader-cell { min-width: 0; }
+@media (max-width: 1750px) { .media-plegma.is-un .stats-2x2 { grid-template-columns: minmax(0, 1fr); grid-auto-rows: auto; } }
+.media-plegma.is-un .un-scroll { max-height: 340px; overflow-y: auto; padding-right: var(--space-2); }
+.media-plegma.is-un .media-plegma-side { display: flex; flex-direction: column; gap: var(--space-3); }
 .media-plegma.is-un .un-row { grid-template-columns: 22px minmax(0, 1.5fr) minmax(0, 0.7fr) 30px 110px; gap: var(--space-3); }
 .un-hall { margin: 0; height: 100%; display: flex; flex-direction: column; }
 .un-hall svg { flex: none; width: 100%; aspect-ratio: 660 / 530; }

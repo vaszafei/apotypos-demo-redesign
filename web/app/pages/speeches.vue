@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // Αναλύσεις › ΟΗΕ › Όλες οι ομιλίες (speeches-v2.html): the 192 speeches of the 81st General Assembly as a screen of the Plegma. The web is the hall: a dot for each country in its seat (components/un/UnHall.vue), the tabs
 // rearrange it (the topics, who attacked whom, who named Greece and Cyprus), the region chips under it dim the other regions. The cards of the page stand on its right and follow the tab.
+import type { SunLegend, SunRing } from '~/components/charts/Sunburst.vue'
 definePageMeta({ backdrop: true })
 const { t, te, locale } = useI18n()
 useHead({ title: () => `${t('nav.world')} · ${t('site.name')}` })
@@ -31,6 +32,26 @@ const targets = computed(() => {
   }
   return [...by].sort((a, b) => b[1].n - a[1].n).slice(0, 8).map(([k, e]) => ({ key: k, label: k, value: e.n, text: t('un.targets.value', { n: fmtInt(e.n), l: fmtInt(e.leaders) }), color: 'var(--stance-critical)' }))
 })
+// The agenda: the regions inside, the topics outside. The colors come from all the speeches, so a region picked keeps the color of each topic.
+const everything = computed(() => unTopicMinutes(rows.value))
+const topicColor = computed(() => unTopicColors(everything.value))
+const agenda = computed(() => unAgenda(rows.value.filter(inRegion)))
+const sun = computed(() => {
+  const a = agenda.value
+  const regionName = (g: string) => t(`un.region.${g}`)
+  const rings: SunRing[] = a.regions.map((x, i) => ({
+    label: regionName(x.region), value: x.total, color: UN_REGION_TINTS[i]!, tip: t('un.sun.region', { region: regionName(x.region), h: fmtDec(x.total / 60), n: fmtInt(x.speeches) }),
+    children: x.kids.map(k => {
+      const label = k.topic ? topicName(k.topic) : t('un.other')
+      return { key: k.topic, label, value: k.minutes, color: k.topic ? topicColor.value(k.topic) : 'var(--bar-track)', tip: t('un.sun.tip', { region: regionName(x.region), topic: label, m: fmtInt(Math.round(k.minutes)), p: fmtPct(k.minutes / x.total) }) }
+    })
+  }))
+  const legend: SunLegend[] = [
+    ...a.big.map(x => ({ key: x.topic, label: topicName(x.topic), color: topicColor.value(x.topic), text: t('un.agenda.row', { m: fmtInt(Math.round(x.minutes)), p: fmtPct(x.minutes / a.total) }), tip: t('un.agenda.top', { names: x.top.join(', ') }) })),
+    { key: '', label: t('un.other'), color: 'var(--bar-track)', text: t('un.agenda.row', { m: fmtInt(Math.round(a.rest)), p: fmtPct(a.rest / a.total) }) }
+  ]
+  return { rings, legend, num: fmtDec(a.total / 60), regions: a.regions.map((x, i) => ({ label: `${regionName(x.region)} ${fmtDec(x.total / 60)}`, color: UN_REGION_TINTS[i]! })) }
+})
 const TONES = ['hostile', 'critical', 'neutral', 'conciliatory', 'supportive']
 const greek = computed(() => rows.value.filter(inRegion).filter(r => r.greece.n).sort((a, b) => b.greece.n - a.greece.n))
 </script>
@@ -49,7 +70,7 @@ const greek = computed(() => rows.value.filter(inRegion).filter(r => r.greece.n)
   <MediaPlegma v-else variant="un">
     <template #map="{ active }">
       <div class="media-map-web un-web">
-        <SegmentedControl :model-value="tab === 'hall' ? '' : tab" class="media-map-tabs" :label="t('un.tabs.label')" :options="TABS.map(k => ({ value: k, label: t(`un.tab.${k}`) }))" @update:model-value="v => pick(v as UnTab)" />
+        <SegmentedControl :model-value="tab === 'hall' ? '' : tab" class="media-map-tabs" :label="t('un.tabs.label')" :options="TABS.map(k => ({ value: k, label: t(`un.tab.${k}`) }))" @update:model-value="v => pick(v as UnTab)" @again="v => pick(v as UnTab)" />
         <ClientOnly><UnHall :countries="countries" :seats="seats" :tab="tab" :region="region" :active="active" /></ClientOnly>
       </div>
       <div class="un-chips region-pills" role="group" :aria-label="t('un.regions')">
@@ -64,6 +85,10 @@ const greek = computed(() => rows.value.filter(inRegion).filter(r => r.greece.n)
       </DashCard>
     </template>
     <template #aside>
+      <DashCard :title="t('un.agenda.title')" :info="t('un.agenda.info')" :class="{ 'is-on': tab === 'themes' }" @click="pick('themes')">
+        <Sunburst :rings="sun.rings" :legend="sun.legend" :center="{ num: sun.num, cap: t('un.donut.hours') }" :size="230" />
+        <ChartLegend :items="sun.regions" />
+      </DashCard>
       <DashCard :title="t('un.targets.title')" :info="t('un.targets.info')" :class="{ 'is-on': tab === 'attacks' }" @click="pick('attacks')">
         <BarList :rows="targets" />
       </DashCard>
