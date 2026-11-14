@@ -20,5 +20,6 @@ export const useFixture = async <T extends object>(key: string, rules: FixtureRu
 }
 
 // A page that is drawn in the browser only (ClientOnly) does not wait: the status is 'loading' until the fixture is there.
-export const useFixtureLazy = <T extends object>(key: string, rules: FixtureRules<T> = {}) =>
-  fixtureOf(useRoute(), rules, useLazyFetch<T>(`/data/${key}.json`, { key: `fixture:${key}` }))
+// `immediate: false` waits for refresh(): a fixture that a page needs only after the first ones are in does not share the connection with them.
+export const useFixtureLazy = <T extends object>(key: string, rules: FixtureRules<T> = {}, options: { immediate?: boolean } = {}) =>
+  fixtureOf(useRoute(), rules, useLazyFetch<T>(`/data/${key}.json`, { key: `fixture:${key}`, ...options }))

@@ -7,7 +7,8 @@ import type { TopicsData } from '~/types/topics'
 const { t } = useI18n()
 type HomeData = TopicsData & { outlets: { name: string, daily: (number | null)[] }[] }
 const { data: home } = await useFixture<HomeData>('home', { required: ['dates', 'issues', 'issueDaily'], isEmpty: b => b.dates.length === 0 })
-const stories = useFixtureLazy<StoriesData>('stories', { required: ['dates', 'issues', 'stories'], isEmpty: b => b.stories.length === 0 })
+// Only the count is kept: the payload of the prerendered page carries what the fetch returns, and the whole list is over a megabyte (the stage reads it on its own).
+const { data: storyCount } = useAsyncData('fixture:stories-count', () => $fetch<StoriesData>('/data/stories.json'), { lazy: true, transform: d => d.stories.filter(s => !s.generic).length, default: () => null })
 const search = ref<{ open: (query?: string) => void }>()
 
 // The topics have no count after the coded days, so the last day is the last one that has a count (as Θέματα does).
@@ -21,10 +22,6 @@ const chips = computed(() => {
     .sort((a, b) => b.n - a.n).slice(0, 4)
 })
 const collected = computed(() => home.value?.outlets.reduce((sum, o) => sum + o.daily.reduce<number>((s, v) => s + (v ?? 0), 0), 0) ?? 0)
-const storyCount = computed(() => {
-  const d = stories.data.value
-  return d ? d.stories.filter(s => !s.generic).length : null
-})
 const period = computed(() => {
   const d = home.value
   if (!d) return ''
