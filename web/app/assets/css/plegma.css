@@ -406,3 +406,33 @@ html[data-search-fly] .body-search { opacity: 0; }
   .net-fill .net-drift { animation: none; }
   .net-fill .net-drift { animation: none !important; }
 }
+
+/* Αναλύσεις › ΟΗΕ: the hall on the left (the tabs over it, the region chips under it), the list in a column of 5.7 and the cards of the tabs in a column of 4, as in the mock (the plan is 660 x 800 and scales to its column). */
+.media-plegma.is-un { grid-template-columns: minmax(0, 6.6fr) minmax(0, 5.7fr) minmax(0, 4fr); column-gap: var(--space-5); height: auto; min-height: 0; align-items: start; }
+.media-plegma.is-un > .media-plegma-map { display: flex; flex-direction: column; gap: var(--space-2); }
+.media-plegma.is-un > .media-plegma-aside { margin-left: 0; gap: var(--space-3); }
+.media-plegma.is-un > .media-plegma-aside > .dcard { height: auto; min-height: 0; cursor: pointer; outline: 2px solid transparent; transition: outline-color 0.35s; }
+.media-plegma.is-un > .media-plegma-aside > .dcard.is-on { outline-color: var(--ink); }
+.media-plegma.is-un .media-plegma-side .un-list { max-height: calc(100svh - 300px); }
+.un-web { height: auto; padding-top: 44px; }
+.media-plegma.is-un .un-row { grid-template-columns: 22px minmax(0, 1.5fr) minmax(0, 0.7fr) 30px 110px; gap: var(--space-3); }
+.un-hall { margin: 0; height: 100%; display: flex; flex-direction: column; }
+.un-hall svg { flex: none; width: 100%; aspect-ratio: 660 / 530; }
+.un-hint { font-size: var(--text-caption); color: var(--text-secondary); text-align: center; min-height: 2.6em; }
+.un-lines { fill: none; stroke: var(--rule); stroke-width: 1.3; transition: opacity 0.6s; }
+.un-lines .un-rostrum { fill: var(--ink); stroke: none; }
+.un-lines .un-rostrum-ring { stroke: var(--ink); stroke-width: 1; }
+.un-lines text { stroke: none; }
+.un-label { font: 600 12px var(--font-sans, inherit); fill: var(--ink); paint-order: stroke; stroke: var(--surface-page); stroke-width: 3px; }
+.un-label.is-small { font-weight: 500; font-size: 11px; fill: var(--text-secondary); }
+.un-labels .un-label { opacity: 0; transition: opacity 0.5s; }
+.un-labels.is-in .un-label { opacity: 1; }
+.un-edge { fill: none; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 0.9s cubic-bezier(0.4, 0, 0.2, 1); }
+.un-edge.is-in { stroke-dashoffset: 0; }
+.un-dots circle { transition: fill-opacity 0.45s; }
+.un-chips { gap: 3px; }
+.un-chips button { min-height: 24px; padding: 0 6px; font-size: 11px; display: inline-flex; align-items: center; gap: 5px; background: transparent; }
+.un-chip-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+@media (prefers-reduced-motion: reduce) { .un-edge, .un-labels .un-label { transition: none; } }
+.media-plegma.is-un .un-name { display: grid; line-height: 1.25; }
+.media-plegma.is-un .un-name .muted-text { margin-left: 0; }
