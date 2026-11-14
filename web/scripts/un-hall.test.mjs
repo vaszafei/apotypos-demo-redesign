@@ -60,3 +60,27 @@ test('the themes tab has a cluster for every country and the cluster names', () 
 test('every country has a Greek name', () => {
   assert.deepEqual(countries.map(c => c.name).filter(n => !UN_COUNTRY_EL[n]), [])
 })
+
+test('topic minutes: the total is the seconds of the rows, the topics are largest first and the agenda adds up', async () => {
+  const { unTopicMinutes, unAgenda, unTopicColors, UN_DOMESTIC } = await import('../app/utils/un-topics.ts')
+  const m = unTopicMinutes(rows)
+  assert.ok(Math.abs(m.total - rows.reduce((a, r) => a + r.seconds, 0) / 60) < 1e-6)
+  assert.ok(m.tagged <= m.total + 1e-6)
+  assert.ok(m.topics.every((x, i) => i === 0 || m.topics[i - 1].minutes >= x.minutes))
+  assert.ok(m.topics.every(x => x.top.length >= 1 && x.top.length <= 3))
+  const a = unAgenda(rows)
+  assert.equal(a.big.length, 9)
+  assert.ok(Math.abs(a.total - m.total) < 1e-6)
+  // The regions add up to all the speeches; each region's outer pieces add up to its own minutes.
+  assert.equal(a.regions.reduce((s, x) => s + x.speeches, 0), rows.length)
+  assert.ok(Math.abs(a.regions.reduce((s, x) => s + x.total, 0) - a.total) < 1e-6)
+  for (const x of a.regions) assert.ok(Math.abs(x.kids.reduce((s, k) => s + k.minutes, 0) - x.total) < 1e-6)
+  assert.ok(a.regions.every((x, i) => i === 0 || a.regions[i - 1].total >= x.total))
+  // One region picked: the inner ring is that region alone.
+  const one = unAgenda(rows.filter(r => r.region === 'Europe'))
+  assert.deepEqual(one.regions.map(x => x.region), ['Europe'])
+  const color = unTopicColors(m)
+  assert.equal(color(UN_DOMESTIC), 'var(--cat-strong)')
+  assert.equal(color('no such topic'), 'var(--bar-muted)')
+  assert.equal(new Set(m.topics.filter(x => x.topic !== UN_DOMESTIC).slice(0, 8).map(x => color(x.topic))).size, 8)
+})
