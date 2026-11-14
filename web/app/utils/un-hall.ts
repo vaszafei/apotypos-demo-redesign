@@ -73,6 +73,8 @@ const seeded = (seed: number) => () => (seed = (seed * 16807) % 2147483647) / 21
 
 // The plan is drawn in a box of UN_BOX; the hall stands at the bottom of it with the rostrum at HALL and the arc 116° wide.
 export const UN_BOX = { w: 660, h: 800 }
+// What the plan shows of it: the hall and the clusters of the topics stand between y 190 and 720.
+export const UN_VIEW = { x: 0, y: 190, w: 660, h: 530 }
 const HALL = { x: 328, y: 630, half: 58, rows: 7 }
 const CLUSTERS = { x: 328, y: 460 }
 const rowRadius = (i: number) => 70 + i * 35

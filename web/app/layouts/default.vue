@@ -40,6 +40,7 @@ const centerTabs = async () => {
 onMounted(centerTabs)
 watch(() => route.path, centerTabs)
 // A detail page marks the tab that lists it, not as the page itself ('true', as the static shell does).
+const inTab = (tab: { to: string, children?: { to: string }[] }) => route.path === tab.to || detail.value === tab.to || !!tab.children?.some(c => c.to === route.path)
 const current = (to: string) => (route.path === to ? 'page' : detail.value === to ? 'true' : undefined)
 // The back button of a detail page goes to the last page of the site. A visitor who came from outside goes to the parent page (BackButton in assets/shell.js).
 // The router remembers the page before in history.state; a visitor who came from a static page of the site has it in the referrer.
@@ -100,7 +101,10 @@ const back = () => {
           <div class="section-nav-inner">
             <ul class="section-nav-list">
               <li v-for="tab in section.tabs" :key="tab.to">
-                <NavLink class="section-nav-link" :class="{ 'is-pull': pager.to === tab.to }" :style="pager.to === tab.to ? { '--pull': pager.pull } : undefined" :to="tab.to" :aria-current="current(tab.to)"><AppIcon :name="tab.icon" glyph /><span class="nav-label">{{ t(`tab.${section.key}.${tab.key}`) }}</span></NavLink>
+                <NavLink class="section-nav-link" :class="{ 'is-pull': pager.to === tab.to, 'is-parent': inTab(tab) && tab.children }" :style="pager.to === tab.to ? { '--pull': pager.pull } : undefined" :to="tab.to" :aria-current="tab.children && inTab(tab) ? 'true' : current(tab.to)"><AppIcon :name="tab.icon" glyph /><span class="nav-label">{{ t(`tab.${section.key}.${tab.key}`) }}</span></NavLink>
+                <ul v-if="tab.children && inTab(tab)" class="section-nav-sub">
+                  <li v-for="child in tab.children" :key="child.to"><NavLink class="section-nav-link" :to="child.to" :aria-current="route.path === child.to ? 'page' : undefined"><AppIcon :name="child.icon" glyph /><span class="nav-label">{{ t(`tab.${section.key}.${child.key}`) }}</span></NavLink></li>
+                </ul>
               </li>
             </ul>
           </div>

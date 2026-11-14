@@ -9,5 +9,6 @@
   { "html": "similarity-v2.html", "route": "/similarity" },
   { "html": "topic-v2.html", "route": "/topic" },
   { "html": "group-v2.html", "route": "/group" },
-  { "html": "outlet-v2.html", "route": "/outlet" }
+  { "html": "outlet-v2.html", "route": "/outlet" },
+  { "html": "speeches-v2.html", "route": "/speeches" }
 ]

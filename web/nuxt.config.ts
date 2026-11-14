@@ -32,7 +32,7 @@ export default defineNuxtConfig({
       title: 'Απότυπος',
       meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }],
       // The default font is fetched with the page: when it arrives late the masthead of Αρχική wraps in the fallback font and the hero jumps up one line (npm run check:load).
-      link: [{ rel: 'icon', href: 'data:,' }, { rel: 'preload', as: 'font', type: 'font/woff2', href: '/assets/fonts/IBMPlexSans-greek-latin.woff2', crossorigin: 'anonymous' }, ...['tokens', 'app', 'dash', 'mme', 'home', 'date-range'].map(sheet)]
+      link: [{ rel: 'icon', href: 'data:,' }, { rel: 'preload', as: 'font', type: 'font/woff2', href: '/assets/fonts/IBMPlexSans-greek-latin.woff2', crossorigin: 'anonymous' }, ...['tokens', 'app', 'dash', 'mme', 'home', 'date-range', 'politics'].map(sheet)]
     },
     // The page transition is a view transition (plugins/view-transition.client.ts), with the CSS of the prototype.
     pageTransition: false
