@@ -19,7 +19,9 @@ const { t } = useI18n()
 const plegma = usePlegmaStore()
 const home = useFixtureLazy<HomeData>('home', { required: ['dates', 'outlets', 'issues', 'issueDaily'], isEmpty: b => b.dates.length === 0 })
 const list = useFixtureLazy<StoriesData>('stories', { required: ['dates', 'issues', 'stories'], isEmpty: b => b.stories.length === 0 })
-const detail = useFixtureLazy<StoryDetailData>('storyDetail', { required: ['outlets', 'stories', 'base'], isEmpty: b => b.stories.length === 0 })
+// The detail (1.4 MB) comes after the list of stories, which the web needs first; the day shows without the outlets' groups until it is in.
+const detail = useFixtureLazy<StoryDetailData>('storyDetail', { required: ['outlets', 'stories', 'base'], isEmpty: b => b.stories.length === 0 }, { immediate: false })
+watch(() => list.data.value, (d) => { if (d) detail.refresh() }, { immediate: true })
 const groups = useFixtureLazy<GroupsData>('groups', { required: ['groups'], isEmpty: b => b.groups.length === 0 })
 
 const totals = computed(() => (home.data.value ? dayTotals(home.data.value.outlets, home.data.value.dates.length) : []))
