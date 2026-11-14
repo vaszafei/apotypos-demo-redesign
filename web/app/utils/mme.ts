@@ -1,4 +1,4 @@
-import type { MmeProfile, MmeSet, MmeSummary } from '~/types/mme'
+import type { MmeData, MmeLiteData, MmeProfile, MmeSet, MmeSetLite, MmeSummary } from '~/types/mme'
 
 // The arithmetic of assets/mme.js (summary) for the cards of Μέσα › Επισκόπηση and Στάση.
 const sum = (a: number[]) => a.reduce((x, y) => x + y, 0)
@@ -19,7 +19,7 @@ export const critShare = (st: number[]) => (sum(st) ? st[0]! / sum(st) : 0)
 export const netOf = (tone: number[]) => { const n = sum(tone); return n ? (tone[2]! - tone[0]!) / n : 0 }
 
 // All the sums of one period (the days i0 to i1). The shares of a topic use the news (the topics with soft: false) as the base.
-export const mmeSummary = (set: MmeSet, i0: number, i1: number): MmeSummary => {
+export const mmeSummary = <S extends MmeSetLite>(set: S, i0: number, i1: number): MmeSummary<S> => {
   const hard = set.issues.map(x => !x.soft)
   const outlets = set.outlets.map((o, k) => {
     const c = [0, 0, 0, 0, 0, 0, 0]
@@ -36,8 +36,14 @@ export const mmeSummary = (set: MmeSet, i0: number, i1: number): MmeSummary => {
   }
 }
 
+// The part of the file that the pages of the Μέσα read: the Greek set without the stories, the quotes and the headlines. It is what goes into the page payload (1.3 MB of the file, about 0.2 MB of this).
+export const mmeLite = (b: MmeData): MmeLiteData => {
+  const { country, dates, outlets, issues, od, oi } = b.sets.gr!
+  return { updatedAt: b.updatedAt, sets: { gr: { country, dates, outlets, issues, od, oi } } }
+}
+
 // The articles of each day of the whole set: all of them, and those of the news.
-export const mmeDaily = (set: MmeSet) => {
+export const mmeDaily = (set: MmeSetLite) => {
   const total = set.dates.map((_, d) => set.od.reduce((s, row) => s + row[d * 7]!, 0))
   const news = set.dates.map((_, d) => set.od.reduce((s, row) => s + row[d * 7 + 1]!, 0))
   return { total, news, other: total.map((v, d) => v - news[d]!) }

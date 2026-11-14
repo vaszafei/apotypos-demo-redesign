@@ -4,7 +4,12 @@ import type { StoriesData } from '~/types/stories'
 export const useStories = async () => {
   // The store before the await: after it the Nuxt context is gone on the server.
   const period = usePeriodStore()
-  const { data, status, refresh } = await useFixture<StoriesData>('stories', { required: ['dates', 'issues', 'stories'], isEmpty: b => b.stories.length === 0 })
+  const rules = { required: ['dates', 'issues', 'stories'], isEmpty: (b: StoriesData) => b.stories.length === 0 }
+  // The page is prerendered with the recent stories only. In the browser the whole file follows (the web of the page fetches the same one) and takes their place. It is called before the await: after it the Nuxt context is gone.
+  const full = import.meta.client ? useFixtureLazy<StoriesData>('stories', rules) : null
+  const recent = await useFixture<StoriesData>('stories', rules, { as: 'stories-recent', transform: storiesRecent })
+  const data = computed(() => full?.data.value ?? recent.data.value)
+  const { status, refresh } = recent
 
   const dates = computed(() => data.value?.dates ?? [])
   const view = computed(() => {
