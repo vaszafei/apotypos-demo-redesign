@@ -1,4 +1,4 @@
-import type { MmeData } from '~/types/mme'
+import type { MmeData, MmeLiteData } from '~/types/mme'
 import type { GroupsData } from '~/utils/groups'
 
 // The data of Μέσα › Επισκόπηση and Στάση and the period they share (the same arithmetic as media-v2.html): the Greek set of outlets, summed for the chosen days.
@@ -6,7 +6,7 @@ export const useMme = async () => {
   // The store before the await: after it the Nuxt context is gone on the server.
   const period = usePeriodStore()
   const [mme, groupsFixture] = await Promise.all([
-    useFixture<MmeData>('mme', { required: ['sets'], isEmpty: b => Object.keys(b.sets).length === 0 }),
+    useFixture<MmeData, MmeLiteData>('mme', { required: ['sets'], isEmpty: b => Object.keys(b.sets).length === 0 }, { as: 'mme-lite', transform: mmeLite }),
     useFixture<GroupsData>('groups', { required: ['groups'] })
   ])
   const { data, status, refresh } = mme

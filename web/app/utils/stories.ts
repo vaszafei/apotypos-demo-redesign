@@ -1,8 +1,16 @@
-import type { Story, StoryDay } from '~/types/stories'
+import type { Story, StoryDay, StoriesData } from '~/types/stories'
 
 // The lines of Μέσα › Ιστορίες: how many stories the line chart draws, and the articles a story needs in the period before to show a change.
 export const LINE_STORIES = 8
 export const TREND_MIN = 10
+
+// The days that the first view of Ιστορίες needs: its last week and the week before it (for the change of each story). Only the stories that ran in these days go into the page payload;
+// the whole file is fetched in the browser after it (the period picker reaches back over all days).
+export const RECENT_DAYS = 14
+export const storiesRecent = (b: StoriesData): StoriesData => {
+  const from = b.dates.length - RECENT_DAYS
+  return { ...b, stories: b.stories.filter(s => s.generic || s.days.some((d, j) => j % 2 === 0 && d >= from)) }
+}
 
 // The stories of each day, the largest first (Home.index of assets/home.js). A generic story is not a story, so it does not count.
 export const storiesByDay = (stories: Story[], days: number): StoryDay[][] => {

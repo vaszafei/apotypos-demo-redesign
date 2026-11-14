@@ -19,6 +19,10 @@ export interface MmeSet {
 }
 export interface MmeData { updatedAt: string, sets: Record<string, MmeSet> }
 
+// What Επισκόπηση, Στάση and Ομοιότητα read of the set: the outlets, the topics and the counts per day. They are the Greek set only (sets.gr), without the stories, the quotes and the headlines of the page of an outlet.
+export type MmeSetLite = Pick<MmeSet, 'country' | 'dates' | 'outlets' | 'issues' | 'od' | 'oi'>
+export interface MmeLiteData { updatedAt: string, sets: { gr: MmeSetLite } }
+
 export interface MmeOutletSum extends MmeOutlet {
   k: number
   n: number
@@ -29,8 +33,8 @@ export interface MmeOutletSum extends MmeOutlet {
   issues: number[]
   stance: [number, number, number]
 }
-export interface MmeSummary {
-  set: MmeSet
+export interface MmeSummary<S extends MmeSetLite = MmeSet> {
+  set: S
   i0: number
   i1: number
   outlets: MmeOutletSum[]

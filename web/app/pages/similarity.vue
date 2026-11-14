@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { MmeData } from '~/types/mme'
+import type { MmeData, MmeLiteData } from '~/types/mme'
 import type { OriginalityData } from '~/types/originality'
 import type { GroupsData } from '~/utils/groups'
 
@@ -7,7 +7,7 @@ import type { GroupsData } from '~/utils/groups'
 // so its cards state that period; the clickbait map uses the whole period of the Μέσα data (this page has no period picker).
 const { t } = useI18n()
 useHead({ title: () => `${t('nav.media')} · ${t('site.name')}` })
-const mme = await useFixture<MmeData>('mme', { required: ['sets'], isEmpty: b => Object.keys(b.sets).length === 0 })
+const mme = await useFixture<MmeData, MmeLiteData>('mme', { required: ['sets'], isEmpty: b => Object.keys(b.sets).length === 0 }, { as: 'mme-lite', transform: mmeLite })
 const orig = await useFixture<OriginalityData>('originality', { required: ['window', 'outlets'], isEmpty: b => b.outlets.length === 0 })
 const groupsData = await useFixture<GroupsData>('groups', { required: ['groups'] })
 const problem = computed(() => [orig.status.value, mme.status.value].find(s => s !== 'ready'))

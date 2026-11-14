@@ -14,9 +14,10 @@ const fixtureOf = <T extends object>(route: ReturnType<typeof useRoute>, rules: 
 }
 
 // The page waits for the fixture (it is prerendered with it).
-export const useFixture = async <T extends object>(key: string, rules: FixtureRules<T> = {}) => {
+// `pick` keeps only what the page reads: the page payload carries the picked part, not the whole file. It has its own key (`as`), so a page that needs the whole file does not get the picked one from the cache.
+export const useFixture = async <T extends object, P extends object = T>(key: string, rules: FixtureRules<P> = {}, pick?: { as: string, transform: (body: T) => P }) => {
   const route = useRoute()
-  return fixtureOf(route, rules, await useFetch<T>(`/data/${key}.json`, { key: `fixture:${key}` }))
+  return fixtureOf<P>(route, rules, await useFetch(`/data/${key}.json`, { key: `fixture:${pick?.as ?? key}`, transform: pick?.transform as ((body: any) => any) | undefined }))
 }
 
 // A page that is drawn in the browser only (ClientOnly) does not wait: the status is 'loading' until the fixture is there.
