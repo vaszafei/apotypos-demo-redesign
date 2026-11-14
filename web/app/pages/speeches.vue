@@ -70,7 +70,7 @@ const greek = computed(() => rows.value.filter(inRegion).filter(r => r.greece.n)
   <MediaPlegma v-else variant="un">
     <template #map="{ active }">
       <div class="media-map-web un-web">
-        <SegmentedControl :model-value="tab === 'hall' ? '' : tab" class="media-map-tabs" :label="t('un.tabs.label')" :options="TABS.map(k => ({ value: k, label: t(`un.tab.${k}`) }))" @update:model-value="v => pick(v as UnTab)" />
+        <SegmentedControl :model-value="tab === 'hall' ? '' : tab" class="media-map-tabs" :label="t('un.tabs.label')" :options="TABS.map(k => ({ value: k, label: t(`un.tab.${k}`) }))" @update:model-value="v => pick(v as UnTab)" @again="v => pick(v as UnTab)" />
         <ClientOnly><UnHall :countries="countries" :seats="seats" :tab="tab" :region="region" :active="active" /></ClientOnly>
       </div>
       <div class="un-chips region-pills" role="group" :aria-label="t('un.regions')">
