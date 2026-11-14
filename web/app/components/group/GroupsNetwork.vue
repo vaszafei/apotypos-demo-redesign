@@ -22,6 +22,7 @@ const stanceAxis = (outlets: NetOutlet[]) => {
   const n = critical + neutral + supportive
   return n >= 30 ? (supportive - critical) / n : null
 }
+// The layouts are made once the box is measured: before that the width is a placeholder (640) and both layouts would be made for it and again for the real size.
 // Two layouts of the same nodes (the groups, and the groups by their stance); between them the nodes are drawn at a point of the way, and the names come back when they stop.
 const grouped = computed(() => netLayout(props.groups, width.value, height.value, !!props.fill))
 const spread = computed(() => netLayout(props.groups, width.value, height.value, !!props.fill, stanceAxis))
@@ -193,7 +194,7 @@ const showTip = (tip: { title: string, rows: { label: string, value: string, col
 
 <template>
   <div ref="holder" :class="fill ? 'fit net-fill' : 'fit'">
-    <svg class="chart net" :width="width" :height="height" :viewBox="`0 0 ${width} ${height}`" role="group" :aria-label="t('g2.tree.title')">
+    <svg v-if="measured > 0" class="chart net" :width="width" :height="height" :viewBox="`0 0 ${width} ${height}`" role="group" :aria-label="t('g2.tree.title')">
       <g v-if="fill" class="net-zones" :style="{ opacity: stance ? 1 : 0 }" aria-hidden="true">
         <defs>
           <linearGradient v-for="z in zones" :id="`net-zone-${z.key}`" :key="z.key" gradientUnits="userSpaceOnUse" :x1="z.from" y1="0" :x2="z.to" y2="0">
