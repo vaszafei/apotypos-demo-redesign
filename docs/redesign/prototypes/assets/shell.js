@@ -1048,8 +1048,8 @@
           const ensureHead = () => { if (!content.querySelector('.page-head')) content.prepend(window.Shell.PageHead({})) }
           new MutationObserver(ensureHead).observe(content, { childList: true })
         }
-        // The detail pages of Αναλύσεις (a speech, a person's file) are locked as well.
-        if (item?.key === 'world' && !signedIn()) {
+        // Πρόσωπα and Αναλύσεις need a log in; their detail pages (a speech, a person's file) are locked as well.
+        if ((item?.key === 'world' || item?.key === 'people') && !signedIn()) {
           content.classList.add('is-gated')
           content.replaceChildren(window.Shell.PageHead({ tabs: null }), SignInGate())
           centerTabs()

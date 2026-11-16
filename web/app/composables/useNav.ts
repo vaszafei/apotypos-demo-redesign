@@ -12,7 +12,10 @@ export const NAV: NavSection[] = [
     { key: 'stories', to: '/stories', icon: 'sensors' },
     { key: 'writing', to: '/media/writing', icon: 'edit' }
   ] },
-  { key: 'people', to: '/fingerprints', icon: 'person', tabs: [] },
+  { key: 'people', to: '/fingerprints', icon: 'person', tabs: [
+    { key: 'overview', to: '/fingerprints', icon: 'view_list' },
+    { key: 'spread', to: '/fingerprints/spread', icon: 'tune' }
+  ] },
   { key: 'world', to: '/speeches', icon: 'bar_chart', tabs: [
     // The sub-tabs of a tab are listed under it while it is the current one (the Israel–Palestine page of the speeches is not ported yet, so its link is the static page).
     { key: 'speeches', to: '/speeches', icon: 'mic', children: [{ key: 'speeches.all', to: '/speeches', icon: 'mic' }, { key: 'speeches.pi', to: '/un-israel-palestine', icon: 'flag' }] },
