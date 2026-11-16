@@ -17,7 +17,7 @@ export interface DrawDeps extends StageDeps { canvas: Ref<HTMLCanvasElement | un
 export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore, articles: StageArticles, theme: StageTheme, hero: StageHero) => {
   const { plegma, reduced, canvas, canvasFocus } = deps
   const { placed, drift, colourOf, focusStory, focusIssue, focusOutlet, behind, coreOf, spokeSet, targetCamera, CLEAR_PAD, visible, arcOf, ease } = core
-  const { drawArticles, articleWorldRadius, ringOf } = articles
+  const { drawArticles, articleWorldRadius, articleAspect, ringOf } = articles
   const { drawTheme } = theme
   const { drawHero } = hero
   const EMPTY = new Set<PlegmaStory>()
@@ -132,7 +132,7 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
     const core = issue !== null ? coreOf(issue) : story?.coded ? spokeSet(story.issue) : EMPTY
     const homeSet = new Set(st.webs)
     const dim = onHome ? 0.38 : issue !== null || outletOn ? 0.13 : 0.2
-    st.push = story ? { s: story, r: articleWorldRadius(story) * 1.25 + CLEAR_PAD } : null
+    st.push = story ? { s: story, r: articleWorldRadius(story) * 1.25 * articleAspect() + CLEAR_PAD } : null
     const bz = onHome ? z : BACK_Z
     // The background is seen from the web: the world point at the middle of the map region stays there, and the world around it is drawn at the far zoom.
     const rb = regionBox(st.width, st.height, plegma.region ?? undefined)
@@ -261,6 +261,7 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
       const here = toScreen(st.cam, st.width, st.height, placed(story))
       const ring = ringOf(articleWorldRadius(story) * st.cam.z)
       const edge = ring + 9
+      const kx = articleAspect()
       const colour = story.slot > 0 ? colourOf(story) : st.cats[0] ?? st.mute
       const listed: PlegmaStory[] = []
       for (const id of plegma.related) { const b = st.world.byId.get(id); if (b && b !== story) listed.push(b) }
@@ -282,7 +283,7 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
       f.lineWidth = 1
       lines.forEach((l, k) => {
         if (l.b === pointed) { litLine = l; return }
-        const sx = here.x + Math.cos(starts[k]!) * edge
+        const sx = here.x + Math.cos(starts[k]!) * edge * kx
         const sy = here.y + Math.sin(starts[k]!) * edge
         const run = Math.hypot(l.q.x - sx, l.q.y - sy) || 1
         const ux = (l.q.x - sx) / run
@@ -306,7 +307,7 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
       })
       const on = litLine as (typeof lines)[number] | null
       if (on) {
-        const sx = here.x + Math.cos(on.angle) * edge
+        const sx = here.x + Math.cos(on.angle) * edge * kx
         const sy = here.y + Math.sin(on.angle) * edge
         const ux = (on.q.x - sx) / (on.len || 1)
         const uy = (on.q.y - sy) / (on.len || 1)

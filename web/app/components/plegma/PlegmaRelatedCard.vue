@@ -15,7 +15,6 @@ const plegma = usePlegmaStore()
       <li v-for="r in related" :key="r.s.id" @pointerenter="plegma.setHoverStory(r.s.id)" @pointerleave="plegma.setHoverStory(null)" @focusin="plegma.setHoverStory(r.s.id)" @focusout="plegma.setHoverStory(null)">
         <span class="related-main">
           <EntityLink type="story" :to="storyHref(r.s.id)">{{ storyName(r.s) }}</EntityLink>
-          <span class="muted-text">{{ r.shared.length ? t('story.related.shared', { words: r.shared.slice(0, 2).join(', ') }) : t('story.related.days') }}</span>
         </span>
         <SparkLine :values="r.values" :from="0" :to="m.last" :label="t('media2.spark.articles')" :width="64" :height="20" />
         <span class="row-value">{{ fmtInt(r.articles) }}</span>

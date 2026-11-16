@@ -26,6 +26,8 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const region = ref<PlegmaRegion | null>(null)
   // The articles of the focused story (day, outlet, group), first day first, which the story view reads from its detail; null until it has them. The stage draws one node for each.
   const articles = ref<PlegmaArticle[] | null>(null)
+  // The area the names of the ring may use (the free cell of the view) and the boxes in it that they keep out of (the switch of the ring, the title); fractions of the stage. null: no names.
+  const labelRoom = ref<{ room: PlegmaRegion, avoid: PlegmaRegion[] } | null>(null)
   // What the pointer is on in the cards, so the map answers it: a group or an outlet (its articles come forward), and a story of the card of the other stories (its line lights up).
   // `related` are the stories that card lists.
   const highlight = ref<PlegmaHighlight | null>(null)
@@ -33,7 +35,7 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const related = ref<number[]>([])
   // What the ring of the story web shows: the outlets or the groups (an arc for each) or the stance towards the government (an arc each for critical, neutral and supportive, wide as their share).
   // The stance is a count for the whole story, not for each article, so it is a ring and the nodes keep their sectors. `stance` holds [critical, neutral, supportive].
-  const ring = ref<'outlets' | 'groups' | 'stance'>('groups')
+  const ring = ref<'outlets' | 'groups' | 'stance'>('outlets')
   const stance = ref<number[] | null>(null)
   // The largest stories of the focused theme with the outlets that wrote each, which the theme view reads from the fixtures; null until it has them. The stage draws its web from them.
   const themeStories = ref<PlegmaThemeStory[] | null>(null)
@@ -61,7 +63,8 @@ export const usePlegmaStore = defineStore('plegma', () => {
       highlight.value = null
       hoverStory.value = null
       related.value = []
-      ring.value = 'groups'
+      // A story opens on its outlets (the tab Μέσα); a theme or an outlet on the groups.
+      ring.value = next?.kind === 'story' ? 'outlets' : 'groups'
       stance.value = null
       themeStories.value = null
       themeGroups.value = null
@@ -72,6 +75,7 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const compareWith = (id: number | null) => { compare.value = id }
   const setRegion = (value: PlegmaRegion | null) => { region.value = value }
   const setLanded = (value: boolean) => { landed.value = value }
+  const setLabelRoom = (value: { room: PlegmaRegion, avoid: PlegmaRegion[] } | null) => { labelRoom.value = value }
   const setArticles = (value: PlegmaArticle[] | null) => { articles.value = value }
   const setHighlight = (value: PlegmaHighlight | null) => { highlight.value = value }
   const setHoverStory = (id: number | null) => { hoverStory.value = id }
@@ -84,5 +88,5 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const setHomeDay = (value: number | null) => { homeDay.value = value }
   const pickHome = (id: number | null) => { homePick.value = id }
 
-  return { active, backdrop, focus, day, compare, landed, region, articles, highlight, hoverStory, related, ring, stance, themeStories, themeGroups, outletSlot, homeDay, homePick, syncRoute, stepTo, compareWith, setLanded, setRegion, setArticles, setHighlight, setHoverStory, setRelated, setRing, setStance, setThemeStories, setThemeGroups, setOutletSlot, setHomeDay, pickHome }
+  return { active, backdrop, focus, day, compare, landed, region, articles, labelRoom, highlight, hoverStory, related, ring, stance, themeStories, themeGroups, outletSlot, homeDay, homePick, syncRoute, stepTo, compareWith, setLanded, setRegion, setLabelRoom, setArticles, setHighlight, setHoverStory, setRelated, setRing, setStance, setThemeStories, setThemeGroups, setOutletSlot, setHomeDay, pickHome }
 })

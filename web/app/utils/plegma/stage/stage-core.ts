@@ -8,7 +8,7 @@ import type { Ref } from 'vue'
 
 // What every part of the stage uses: which story, theme or outlet is in focus, the camera that frames it, the colors, where a story is drawn (pushed, drifting, gathering in)
 // and which stories are on the screen.
-export interface StageDeps { plegma: ReturnType<typeof usePlegmaStore>, reduced: Ref<boolean>, locale: Ref<string> }
+export interface StageDeps { plegma: ReturnType<typeof usePlegmaStore>, reduced: Ref<boolean>, locale: Ref<string>, t: (key: string) => string }
 
 export const createStageCore = (st: StageState, deps: StageDeps) => {
   const { plegma, reduced, locale } = deps
