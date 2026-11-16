@@ -516,11 +516,11 @@ html[data-search-fly] .body-search { opacity: 0; }
 @keyframes nav-slash-out { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(100% 0 0 0); } }
 @media (min-width: 1024px) {
   :root:root .shell .header-nav .nav-link .nav-label::before, :root:root .shell .section-nav .section-nav-link .nav-label::before { content: none; }
-  :root:root .shell .header-nav .nav-link .nav-label::after, :root:root .shell .section-nav .section-nav-link:not(.is-parent) .nav-label::after { content: " /"; white-space: pre; display: inline-block; visibility: hidden; }
+  :root:root .shell .header-nav .nav-link .nav-label::after, :root:root .shell .section-nav .section-nav-link:not(.is-parent) .nav-label::after { content: " /"; white-space: pre; display: inline-block; visibility: hidden; font-size: 1.25em; line-height: 1; vertical-align: -0.05em; }
   :root:root .shell .header-nav .nav-link[aria-current="page"] .nav-label::after, :root:root .shell .section-nav .section-nav-link[aria-current]:not(.is-parent) .nav-label::after,
   :root:root .shell .header-nav .nav-link.is-leaving .nav-label::after, :root:root .shell .section-nav .section-nav-link.is-leaving:not(.is-parent) .nav-label::after { visibility: visible; }
-  :root:root .shell .header-nav .nav-link[aria-current="page"] .nav-label::after, :root:root .shell .section-nav .section-nav-link[aria-current]:not(.is-parent) .nav-label::after { animation: nav-slash-in 300ms cubic-bezier(0.65, 0, 0.35, 1) both; }
-  :root:root .shell .header-nav .nav-link.is-leaving:not([aria-current]) .nav-label::after, :root:root .shell .section-nav .section-nav-link.is-leaving:not([aria-current], .is-parent) .nav-label::after { animation: nav-slash-out 260ms cubic-bezier(0.65, 0, 0.35, 1) both; }
+  :root:root .shell .header-nav .nav-link[aria-current="page"] .nav-label::after, :root:root .shell .section-nav .section-nav-link[aria-current]:not(.is-parent) .nav-label::after { animation: nav-slash-in 650ms cubic-bezier(0.65, 0, 0.35, 1) both; }
+  :root:root .shell .header-nav .nav-link.is-leaving:not([aria-current]) .nav-label::after, :root:root .shell .section-nav .section-nav-link.is-leaving:not([aria-current], .is-parent) .nav-label::after { animation: nav-slash-out 500ms cubic-bezier(0.65, 0, 0.35, 1) both; }
 }
 @media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
   :root:root .shell .header-nav .nav-link.is-leaving:not([aria-current]) .nav-label::after, :root:root .shell .section-nav .section-nav-link.is-leaving:not([aria-current], .is-parent) .nav-label::after { visibility: hidden; }
