@@ -128,9 +128,8 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     for (let k = 0; k < aw.arcs.length / 2; k++) if (inside(aw.arcs[k * 2]!, aw.arcs[k * 2 + 1]!)) return { kind: 'g' as const, k }
     return null
   }
-  // The size of a node against the spacing of the web, and how much of its color the fill keeps inside the border.
+  // The size of a node against the spacing of the web.
   const NODE_SCALE = 0.82
-  const NODE_FILL = 0.3
   // The names of the ring: the widest arcs, each with its name outside the ring at the middle of the arc and a dot in its color; the outlet on the ring of the outlets, the group on the ring of the groups.
   // Two names are never nearer than a little over 12 degrees, and none is drawn at the bottom, where the note of the map is. A name that would leave the room the view gave it (plegma.labelRoom) or touch a box it keeps out of is left out.
   const LABELS = 9
@@ -141,7 +140,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const names = new Map<number, { name: string, slot: number }>()
     for (const x of articles) {
       const k = sectorOf(x)
-      if (!names.has(k)) names.set(k, { name: (byOutlet() ? x.outlet : x.group) ?? '', slot: x.slot })
+      if (!names.has(k)) names.set(k, { name: (byOutlet() ? x.outlet : x.group ?? deps.t('story.nogroup')), slot: x.slot })
     }
     const widest = [...names.keys()].filter(k => (aw.arcs[k * 2 + 1] ?? 0) > 0 && names.get(k)!.name).sort((u, v) => aw.arcs[v * 2 + 1]! - aw.arcs[u * 2 + 1]!).slice(0, LABELS).sort((u, v) => aw.arcs[u * 2]! - aw.arcs[v * 2]!)
     g.font = `11.5px ${st.fontText}`
@@ -221,10 +220,10 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       }
     }
     const rim = clamp(a.dr * 0.4, 0.8, 1.6)
-    // A node is a small disc with a border in the color of its group and a light fill of the same color; the ones a card points at (below) are solid, so they stand out.
+    // A node is a small ring in the color of its group, with nothing inside it (the page shows through); the ones a card points at (below) are solid, so they stand out.
     const rims = new Path2D()
     const fills = new Map<number, Path2D>()
-    for (let i = 0; i < aw.n; i++) {
+    for (let i = 1; i < aw.n; i++) {
       if (lit && lit[i]) continue
       const r = rOf(i) * NODE_SCALE
       rims.moveTo(ax[i]! + r + rim, ay[i]!)
@@ -240,16 +239,12 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     g.fill(rims)
     g.lineWidth = clamp(a.dr * 0.34, 1, 1.6)
     for (const [slot, path] of fills) {
-      const colour = slot < 0 ? col : st.groupInk[slot] ?? st.mute
-      g.fillStyle = colour
-      g.globalAlpha = NODE_FILL * (1 - 0.5 * mix) * st.nodeIn
-      g.fill(path)
-      g.strokeStyle = colour
+      g.strokeStyle = slot < 0 ? col : st.groupInk[slot] ?? st.mute
       g.globalAlpha = (1 - 0.35 * mix) * st.nodeIn
       g.stroke(path)
     }
     if (lit) {
-      for (let i = 0; i < aw.n; i++) {
+      for (let i = 1; i < aw.n; i++) {
         if (!lit[i]) continue
         const slot = slotOf(i)
         const colour = slot > 0 ? st.groupInk[slot] ?? st.ink : st.mute
@@ -270,14 +265,28 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
         g.fill()
       }
     }
-    // The first article: a thin circle around the center node.
-    if (aw.arcs.length) {
-      g.globalAlpha = 0.55 * (1 - 0.5 * mix) * st.ringIn
+    // The center is the story: an eclipse, a dark disc with a soft light around it and a thin corona. The lines of the first articles of the groups begin at it.
+    {
+      const er = gatherR(0, Math.max(5, a.dr * 2.3))
+      const halo = g.createRadialGradient(ax[0]!, ay[0]!, er * 0.9, ax[0]!, ay[0]!, er * 3.4)
+      halo.addColorStop(0, 'rgba(255, 255, 255, 0.85)')
+      halo.addColorStop(1, 'rgba(255, 255, 255, 0)')
+      g.globalAlpha = 0.9 * st.nodeIn
+      g.fillStyle = halo
+      g.beginPath()
+      g.arc(ax[0]!, ay[0]!, er * 3.4, 0, TAU)
+      g.fill()
+      g.globalAlpha = 0.5 * (1 - 0.5 * mix) * st.ringIn
       g.strokeStyle = st.ink
       g.lineWidth = 1
       g.beginPath()
-      g.arc(ax[0]!, ay[0]!, rOf(0) + rim + 2.5, 0, TAU)
+      g.arc(ax[0]!, ay[0]!, er * 1.7, 0, TAU)
       g.stroke()
+      g.globalAlpha = st.nodeIn
+      g.fillStyle = st.ink
+      g.beginPath()
+      g.arc(ax[0]!, ay[0]!, er, 0, TAU)
+      g.fill()
     }
     // The ring: a thin line with nothing inside it. With the groups known it is an arc for each group, over the sector of its articles.
     g.lineCap = 'round'

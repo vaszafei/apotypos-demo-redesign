@@ -76,6 +76,13 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
         st.hover = null
         st.hoverArticle = i
         if (st.ringLit) { st.ringLit = false; plegma.setHighlight(null) }
+        // The center is the story itself, not an article: its name and its articles.
+        if (i === 0) {
+          st.hover = null
+          if (st.hoverArticle >= 0) { st.hoverArticle = -1; if (reduced.value) kick() }
+          tooltip.show({ title: core.name(story), rows: [{ label: t('entity.fact.articles'), value: fmtInt(story.n) }], field: true }, e)
+          return
+        }
         // A node that stands for an article of the sample of headlines (or for several, one of which is in it) has the title of that article, with its outlet and day under it.
         const nodes = nodeCount(story.n)
         const from = Math.floor((i * story.n) / nodes)

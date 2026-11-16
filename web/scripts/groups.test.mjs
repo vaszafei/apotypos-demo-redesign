@@ -23,7 +23,7 @@ test('names are shortened for the legends', () => {
   assert.equal(shortName('Συμφέροντα Μελισσανίδη'), 'Μελισσανίδη')
   assert.equal(compactName('DPG Digital Media', false, 'none'), 'DPG')
   assert.equal(compactName('Όμιλος ΣΚΑΪ', false, 'none'), 'ΣΚΑΪ')
-  assert.equal(compactName('anything', true, 'Χωρίς όμιλο'), 'Χωρίς όμιλο')
+  assert.equal(compactName('anything', true, 'Ανεξάρτητα'), 'Ανεξάρτητα')
   assert.equal(GAP, 50)
 })
 
