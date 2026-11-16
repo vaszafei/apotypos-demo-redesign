@@ -21,7 +21,7 @@ const ring = computed({ get: () => plegma.ring, set: (v: string) => plegma.setRi
 const lightPart = (p: { group: string | null, name: string } | null) => plegma.setHighlight(p ? (plegma.ring === 'outlets' ? { group: p.group, outlet: p.name } : { group: p.group }) : null)
 const stripParts = computed(() => (plegma.ring === 'outlets' ? view.outletParts.value : view.groupParts.value))
 watch(() => (m.value?.labelled ? m.value.det.s!.slice(1) : null), counts => plegma.setStance(counts), { immediate: true })
-onBeforeUnmount(() => { plegma.setStance(null); plegma.setRing('groups'); plegma.setArticles(null); plegma.setHighlight(null); plegma.setHoverStory(null); plegma.setRelated([]) })
+onBeforeUnmount(() => { plegma.setStance(null); plegma.setArticles(null); plegma.setHighlight(null); plegma.setHoverStory(null); plegma.setRelated([]) })
 
 const BODY = { days: PlegmaDaysCard, how: PlegmaHowCard, related: PlegmaRelatedCard, stance: PlegmaStanceCard, people: PlegmaPeopleCard }
 const columns = computed(() => plegmaStoryColumns(!!m.value?.labelled))
@@ -29,7 +29,10 @@ const columns = computed(() => plegmaStoryColumns(!!m.value?.labelled))
 // The map region is the free cell of the left column, under the title (composables/usePlegmaRegion.ts).
 const orbit = ref<HTMLElement>()
 const map = ref<HTMLElement>()
-usePlegmaRegion(orbit, map)
+// The story's web is larger than the theme's: the largest side of its square (px). It starts a little above the cell (top: -32, under the free space beside the title), ends at the note
+// under it (bottom) and leans to the right in the cell (lean), so the names of its arcs have room (names). No card is over it: it is the biggest square whose ring touches no card (clear).
+const STORY_MAP_SIDE = 455
+usePlegmaRegion(orbit, map, { side: STORY_MAP_SIDE, top: -32, bottom: 28, lean: 0.75, names: true, clear: true })
 // How many articles a node of the map stands for: one while the story is small enough to show each article (utils/plegma/plegma-articles.ts).
 const perNode = computed(() => (m.value ? articlesPerNode(m.value.articles) : 1))
 </script>

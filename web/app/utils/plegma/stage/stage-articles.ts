@@ -65,7 +65,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
   const articleWorldRadius = (s: PlegmaStory) => {
     const region = plegma.region ?? undefined
     const box = regionBox(st.width, st.height, region ?? PLEGMA_REGION)
-    return articleRadius(s.n, Math.min(box.w, box.h) * 0.36) / frameStory(s, st.width, st.height, region).z
+    return articleRadius(s.n, Math.min(box.w, box.h) * 0.41) / frameStory(s, st.width, st.height, region).z
   }
   // The ring around the picked web, from its radius on the screen.
   const ringOf = (R: number) => R * 1.2 + 6
@@ -128,6 +128,64 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     for (let k = 0; k < aw.arcs.length / 2; k++) if (inside(aw.arcs[k * 2]!, aw.arcs[k * 2 + 1]!)) return { kind: 'g' as const, k }
     return null
   }
+  // The size of a node against the spacing of the web, and how much of its color the fill keeps inside the border.
+  const NODE_SCALE = 0.82
+  const NODE_FILL = 0.3
+  // The names of the ring: the widest arcs, each with its name outside the ring at the middle of the arc and a dot in its color; the outlet on the ring of the outlets, the group on the ring of the groups.
+  // Two names are never nearer than a little over 12 degrees, and none is drawn at the bottom, where the note of the map is. A name that would leave the room the view gave it (plegma.labelRoom) or touch a box it keeps out of is left out.
+  const LABELS = 9
+  const LABEL_GAP = 0.22
+  const NAME_MAX = 22
+  const drawNames = (g: CanvasRenderingContext2D, a: typeof arts, articles: NonNullable<typeof plegma.articles>, alpha: number) => {
+    const aw = a.aw!
+    const names = new Map<number, { name: string, slot: number }>()
+    for (const x of articles) {
+      const k = sectorOf(x)
+      if (!names.has(k)) names.set(k, { name: (byOutlet() ? x.outlet : x.group) ?? '', slot: x.slot })
+    }
+    const widest = [...names.keys()].filter(k => (aw.arcs[k * 2 + 1] ?? 0) > 0 && names.get(k)!.name).sort((u, v) => aw.arcs[v * 2 + 1]! - aw.arcs[u * 2 + 1]!).slice(0, LABELS).sort((u, v) => aw.arcs[u * 2]! - aw.arcs[v * 2]!)
+    g.font = `11.5px ${st.fontText}`
+    g.textBaseline = 'middle'
+    g.lineJoin = 'round'
+    g.lineWidth = 3.5
+    const used: number[] = []
+    const lr = plegma.labelRoom
+    const px = (r: { x0: number, y0: number, x1: number, y1: number }) => ({ x0: r.x0 * st.width, y0: r.y0 * st.height, x1: r.x1 * st.width, y1: r.y1 * st.height })
+    const fits = (b: { x0: number, y0: number, x1: number, y1: number }) => {
+      if (!lr) return false
+      const room = px(lr.room)
+      if (b.x0 < room.x0 || b.x1 > room.x1 || b.y0 < room.y0 || b.y1 > room.y1) return false
+      return !lr.avoid.some((r) => { const o = px(r); return b.x0 < o.x1 && b.x1 > o.x0 && b.y0 < o.y1 && b.y1 > o.y0 })
+    }
+    for (const k of widest) {
+      const mid = aw.arcs[k * 2]! + aw.arcs[k * 2 + 1]! / 2
+      if (used.some(u => Math.abs(u - mid) < LABEL_GAP)) continue
+      const ang = mid - Math.PI / 2
+      if (Math.sin(ang) > 0.93) continue
+      const { name, slot } = names.get(k)!
+      const text = name.length > NAME_MAX ? `${name.slice(0, NAME_MAX - 1)}…` : name
+      const x = a.cx + Math.cos(ang) * (a.ring + 12)
+      const y = a.cy + Math.sin(ang) * (a.ring + 12)
+      const right = Math.cos(ang) >= -0.05
+      const w = g.measureText(text).width + 9
+      const box = { x0: right ? x : x - w, x1: right ? x + w : x, y0: y - 8, y1: y + 8 }
+      if (!fits(box)) continue
+      used.push(mid)
+      g.globalAlpha = alpha
+      g.textAlign = right ? 'left' : 'right'
+      g.strokeStyle = st.paper
+      g.strokeText(text, x + (right ? 9 : -9), y)
+      g.fillStyle = st.ink
+      g.fillText(text, x + (right ? 9 : -9), y)
+      g.fillStyle = slot > 0 ? st.groupInk[slot] ?? st.ink : st.mute
+      g.beginPath()
+      g.arc(x, y, 3.2, 0, TAU)
+      g.fill()
+    }
+    g.lineJoin = 'miter'
+    g.textAlign = 'left'
+    g.textBaseline = 'alphabetic'
+  }
   // The picked web. Its nodes are solid and each has a rim of the page's color, so a line never muddies a node and two nodes that touch stay two; a node and the line
   // to the article before it have the calm color of their group, and the ring is the groups' ring: an arc for each group over its sector. The articles of a group or an
   // outlet that a card points at come forward in the full color, larger and pulsing, and the others step back.
@@ -163,11 +221,12 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       }
     }
     const rim = clamp(a.dr * 0.4, 0.8, 1.6)
+    // A node is a small disc with a border in the color of its group and a light fill of the same color; the ones a card points at (below) are solid, so they stand out.
     const rims = new Path2D()
     const fills = new Map<number, Path2D>()
     for (let i = 0; i < aw.n; i++) {
       if (lit && lit[i]) continue
-      const r = rOf(i)
+      const r = rOf(i) * NODE_SCALE
       rims.moveTo(ax[i]! + r + rim, ay[i]!)
       rims.arc(ax[i]!, ay[i]!, r + rim, 0, TAU)
       const slot = slotOf(i)
@@ -179,10 +238,15 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     g.globalAlpha = st.nodeIn
     g.fillStyle = st.paper
     g.fill(rims)
+    g.lineWidth = clamp(a.dr * 0.34, 1, 1.6)
     for (const [slot, path] of fills) {
-      g.fillStyle = inkOf(slot)
-      g.globalAlpha = (1 - 0.5 * mix) * st.nodeIn
+      const colour = slot < 0 ? col : st.groupInk[slot] ?? st.mute
+      g.fillStyle = colour
+      g.globalAlpha = NODE_FILL * (1 - 0.5 * mix) * st.nodeIn
       g.fill(path)
+      g.strokeStyle = colour
+      g.globalAlpha = (1 - 0.35 * mix) * st.nodeIn
+      g.stroke(path)
     }
     if (lit) {
       for (let i = 0; i < aw.n; i++) {
@@ -238,6 +302,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
         g.arc(a.cx, a.cy, a.ring, aw.arcs[k * 2]! - Math.PI / 2 + pad + turn, aw.arcs[k * 2]! + span - Math.PI / 2 - pad + turn)
         g.stroke()
       }
+      if (articles && groupsOut < 0.5) drawNames(g, a, articles, 0.9 * (1 - groupsOut * 2) * (1 - 0.35 * mix) * st.ringIn)
       if (stanceAt) {
         const back = (1 - st.ringMix) * (Math.PI / 2)
         for (let k = 0; k < 3; k++) {
