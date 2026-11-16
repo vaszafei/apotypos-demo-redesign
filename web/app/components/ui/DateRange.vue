@@ -2,7 +2,8 @@
 // DateRangePicker of assets/date-range.js: one button with the period, and a popover with the presets on the left and two months of days on the right.
 // A first click on a day starts the period and a second click ends it. Only the days of the data can be picked. A preset applies at once; the arrows beside the button step the period back and forward by its own length.
 interface Preset { key: string, label: string, from: string, to: string }
-const props = defineProps<{ dates: string[], from: string, to: string }>()
+// `plain`: the arrows beside the button are the arrows of the calendar of Home (a chevron with no box).
+const props = defineProps<{ dates: string[], from: string, to: string, plain?: boolean }>()
 const emit = defineEmits<{ change: [range: { from: string, to: string }] }>()
 
 const { t } = useI18n()
@@ -97,13 +98,13 @@ onMounted(() => {
 </script>
 
 <template>
-  <div ref="root" class="dr" @keydown.esc.stop="open = false">
+  <div ref="root" class="dr" :class="{ 'is-plain': plain }" @keydown.esc.stop="open = false">
     <div class="dr-bar">
-      <button type="button" class="icon-button dr-step dr-back" :disabled="!canBack" :aria-label="t('dr.step.back')" @click="step(-1)"><AppIcon name="chevron-left" class="icon icon-sm" /></button>
+      <button type="button" class="icon-button dr-step dr-back" :disabled="!canBack" :aria-label="t('dr.step.back')" @click="step(-1)"><AppIcon name="chevron-left" :class="plain ? 'icon' : 'icon icon-sm'" /></button>
       <button type="button" class="dr-trigger" aria-haspopup="dialog" :aria-expanded="tf(open)" @click="toggle">
         <AppIcon name="calendar" class="icon dr-icon" /><span class="dr-text">{{ label(from, to) }}</span><span class="dr-len">{{ t('dr.days', { n: dayCount(from, to) }) }}</span><AppIcon name="chevron-down" class="icon icon-sm dr-chev" />
       </button>
-      <button type="button" class="icon-button dr-step dr-forward" :disabled="!canForward" :aria-label="t('dr.step.forward')" @click="step(1)"><AppIcon name="chevron-right" class="icon icon-sm" /></button>
+      <button type="button" class="icon-button dr-step dr-forward" :disabled="!canForward" :aria-label="t('dr.step.forward')" @click="step(1)"><AppIcon name="chevron-right" :class="plain ? 'icon' : 'icon icon-sm'" /></button>
     </div>
     <div class="dr-pop" role="dialog" :aria-label="t('dr.title')" :hidden="!open">
       <template v-if="open">

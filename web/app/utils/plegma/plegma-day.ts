@@ -57,9 +57,51 @@ export const dayDots = (n: number, counts: { slot: number, n: number }[]): numbe
   return out.slice(0, k)
 }
 
+// The nodes at 1..T (themes) and T+1.. (stories, each with the reach of its dots) are moved along their direction from the center, each direction by how far the web is from the ring there:
+// the angle goes round in BINS bins, each bin has the farthest edge of a node in it (the ring is 1 in the box where the ring is a circle of 1), the empty bins take it from their neighbors, and a node goes out by
+// the ring (FILL of it) over that, never in and at most FILL_MAX times out.
+const BINS = 24
+const FILL = 0.97
+const FILL_MAX = 1.9
+const fillRing = (x: Float32Array, y: Float32Array, T: number, reach: number[], aspect: number) => {
+  const first = 1
+  const last = 1 + T + reach.length
+  const reachAt = (i: number) => (i <= T ? 0.05 : reach[i - 1 - T]!)
+  const angle = (i: number) => Math.atan2(y[i]!, x[i]! / aspect)
+  const bin = (a: number) => (((Math.round(((a + Math.PI) / (Math.PI * 2)) * BINS) % BINS) + BINS) % BINS)
+  const far = new Float32Array(BINS)
+  for (let i = first; i < last; i++) {
+    const q = Math.hypot(x[i]! / aspect, y[i]!) + reachAt(i) * 0.8
+    const b = bin(angle(i))
+    far[b] = Math.max(far[b]!, q)
+  }
+  // The empty bins take from the nearest bins with a node; then two passes of smoothing.
+  const known = Array.from(far, (v, b) => (v > 0 ? b : -1)).filter(b => b >= 0)
+  if (!known.length) return
+  const filled = Float32Array.from(far, (v, b) => {
+    if (v > 0) return v
+    let near = known[0]!
+    let dist = BINS
+    for (const k of known) { const d = Math.min(Math.abs(k - b), BINS - Math.abs(k - b)); if (d < dist) { dist = d; near = k } }
+    return far[near]!
+  })
+  let smooth = filled
+  for (let pass = 0; pass < 2; pass++) smooth = Float32Array.from(smooth, (v, b) => Math.max(v * 0.5, (smooth[(b + BINS - 1) % BINS]! + 2 * v + smooth[(b + 1) % BINS]!) / 4) as number)
+  const gain = Float32Array.from(smooth, (v, b) => Math.min(FILL_MAX, Math.max(1, FILL / Math.max(v, far[b]!, 0.2))))
+  for (let i = first; i < last; i++) {
+    const t = ((angle(i) + Math.PI) / (Math.PI * 2)) * BINS
+    const b0 = Math.floor(t) % BINS
+    const k = t - Math.floor(t)
+    const g = gain[b0]! * (1 - k) + gain[(b0 + 1) % BINS]! * k
+    x[i] = x[i]! * g
+    y[i] = y[i]! * g
+  }
+}
+
 // `spread`: many themes (a period on the pages of Μέσα) go round by the golden angle, the largest nearest the center and the smallest out by the ring, so the large ones do not
 // crowd one side.
-export const buildDayWeb = (themes: PlegmaDayTheme[], aspect: number, seed: number, spread = false): PlegmaDayWeb => {
+// `fill`: after the stories have room, they are drawn out toward the ring in each direction until the web touches it all round (the loose layout leaves the sides of a wide ring empty).
+export const buildDayWeb = (themes: PlegmaDayTheme[], aspect: number, seed: number, spread = false, fill = false): PlegmaDayWeb => {
   const rand = mulberry(seed * 37 + 5)
   const T = themes.length
   const stories = themes.flatMap((t, ti) => t.stories.map((s, si) => ({ s, ti, si })))
@@ -152,6 +194,7 @@ export const buildDayWeb = (themes: PlegmaDayTheme[], aspect: number, seed: numb
       y[storyAt(i)] = py
     }
   }
+  if (fill) fillRing(x, y, themes.length, stories.map(r => reachOf(r.s.dots.length)), aspect)
   // The dots of each story: each at the best of a few random spots around it (the farthest from the ones placed), joined to the nearest node placed before it.
   let node = 1 + T + stories.length
   // A dot is as large as the articles it stands for: one in a small story, many in a large one, the same scale on every story of the day.

@@ -192,5 +192,6 @@ export const usePeriodWeb = (from: Ref<string>, to: Ref<string>, slotOfIssue: Re
   }
 
   const ready = computed(() => !!ix.value && !!detail.data.value && !!groups.data.value)
-  return { ready, rows, themesOf, themesFor, outlets, groupRing, flows, storyMedia }
+  const themeName = (issue: number) => topicName(ix.value!.issues[issue]!)
+  return { ready, rows, themeName, themesOf, themesFor, outlets, groupRing, flows, storyMedia }
 }
