@@ -145,14 +145,8 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
   const NUDGES = [0, 15, -15, 30, -30, 45, -45, 60, -60]
   const NAME_MAX = 22
   const ALONG = [0, -0.2, 0.2, -0.35, 0.35]
-  const drawNames = (g: CanvasRenderingContext2D, a: typeof arts, articles: NonNullable<typeof plegma.articles>, alpha: number) => {
-    const aw = a.aw!
-    const names = new Map<number, { name: string, slot: number }>()
-    for (const x of articles) {
-      const k = sectorOf(x)
-      if (!names.has(k)) names.set(k, { name: byOutlet() ? x.outlet : x.group ?? deps.t('story.nogroup'), slot: x.slot })
-    }
-    const widest = [...names.keys()].filter(k => (aw.arcs[k * 2 + 1] ?? 0) > 0 && names.get(k)!.name).sort((u, v) => aw.arcs[v * 2 + 1]! - aw.arcs[u * 2 + 1]!)
+  type NameItem = { mid: number, span: number, text: string, dot: string }
+  const drawNames = (g: CanvasRenderingContext2D, a: typeof arts, items: NameItem[], alpha: number, inside = false) => {
     g.font = `11.5px ${st.fontText}`
     g.textBaseline = 'middle'
     g.lineJoin = 'round'
@@ -167,25 +161,25 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       return !lr.avoid.some(r => meets(b, px(r)))
     }
     const taken: Box[] = []
-    for (const k of widest) {
-      const { name, slot } = names.get(k)!
-      const text = name.length > NAME_MAX ? `${name.slice(0, NAME_MAX - 1)}…` : name
+    for (const { mid, span, text, dot } of [...items].sort((u, v) => v.span - u.span)) {
       const w = g.measureText(text).width + 9
-      const mid = aw.arcs[k * 2]! + aw.arcs[k * 2 + 1]! / 2
       let at: { y: number, box: Box, moved: boolean, ex: number, ey: number, x: number, right: boolean } | null = null
-      // At the middle of its arc, then at other places along it (a wide arc can have its name where there is room).
-      for (const along of ALONG) {
-        const ang = mid + aw.arcs[k * 2 + 1]! * along - Math.PI / 2
-        const c = Math.cos(ang)
-        const sn = Math.sin(ang)
-        const ex = a.cx + c * a.ring * a.kx
-        const ey = a.cy + sn * a.ring
-        const x = ex + c * 12
-        const right = c >= -0.05
-        for (const d of NUDGES) {
-          const y = ey + sn * 12 + d
-          const box = { x0: (right ? x : x - w) - 2, x1: (right ? x + w : x) + 2, y0: y - 8, y1: y + 8 }
-          if (fits(box) && !taken.some(o => meets(box, o))) { at = { y, box, moved: d !== 0 || along !== 0, ex, ey, x, right }; break }
+      // At the middle of its arc, then at other places along it (a wide arc can have its name where there is room); when `inside`, then inside the ring if there is no room outside it.
+      for (const side of inside ? [1, -1] : [1]) {
+        for (const along of ALONG) {
+          const ang = mid + span * along - Math.PI / 2
+          const c = Math.cos(ang)
+          const sn = Math.sin(ang)
+          const ex = a.cx + c * a.ring * a.kx
+          const ey = a.cy + sn * a.ring
+          const x = ex + c * 12 * side
+          const right = (c >= -0.05) === (side === 1)
+          for (const d of NUDGES) {
+            const y = ey + sn * 12 * side + d
+            const box = { x0: (right ? x : x - w) - 2, x1: (right ? x + w : x) + 2, y0: y - 8, y1: y + 8 }
+            if (fits(box) && !taken.some(o => meets(box, o))) { at = { y, box, moved: side === 1 && (d !== 0 || along !== 0), ex, ey, x, right }; break }
+          }
+          if (at) break
         }
         if (at) break
       }
@@ -209,7 +203,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       g.strokeText(text, x + (right ? 9 : -9), at.y)
       g.fillStyle = st.ink
       g.fillText(text, x + (right ? 9 : -9), at.y)
-      g.fillStyle = slot > 0 ? st.groupInk[slot] ?? st.ink : st.mute
+      g.fillStyle = dot
       g.beginPath()
       g.arc(x, at.y, 3.2, 0, TAU)
       g.fill()
@@ -217,6 +211,31 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     g.lineJoin = 'miter'
     g.textAlign = 'left'
     g.textBaseline = 'alphabetic'
+  }
+  // The names of the arcs of the ring of the outlets or the groups: every arc with a name, the outlet or the group of its articles and the dot of its color.
+  const ringNames = (a: typeof arts, articles: NonNullable<typeof plegma.articles>): NameItem[] => {
+    const aw = a.aw!
+    const names = new Map<number, { name: string, slot: number }>()
+    for (const x of articles) {
+      const k = sectorOf(x)
+      if (!names.has(k)) names.set(k, { name: byOutlet() ? x.outlet : x.group ?? deps.t('story.nogroup'), slot: x.slot })
+    }
+    return [...names.entries()].filter(([k, v]) => (aw.arcs[k * 2 + 1] ?? 0) > 0 && v.name).map(([k, v]) => ({
+      mid: aw.arcs[k * 2]! + aw.arcs[k * 2 + 1]! / 2,
+      span: aw.arcs[k * 2 + 1]!,
+      text: v.name.length > NAME_MAX ? `${v.name.slice(0, NAME_MAX - 1)}…` : v.name,
+      dot: v.slot > 0 ? st.groupInk[v.slot] ?? st.ink : st.mute
+    }))
+  }
+  // The names of the arcs of the ring of the stance: critical, neutral, supportive, each with its share of the articles that take a stance.
+  const STANCES = ['critical', 'neutral', 'supportive']
+  const stanceNames = (stanceAt: NonNullable<ReturnType<typeof shareArcs>>): NameItem[] => {
+    const back = (1 - st.ringMix) * (Math.PI / 2)
+    const counts = plegma.stance ?? []
+    const total = counts.reduce((x, y) => x + y, 0)
+    return STANCES.flatMap((key, k) => (stanceAt[k * 2 + 1]! > 0 && total
+      ? [{ mid: stanceAt[k * 2]! + stanceAt[k * 2 + 1]! / 2 - back, span: stanceAt[k * 2 + 1]!, text: `${deps.t(`stance.${key}`)} · ${fmtPct(counts[k]! / total)}`, dot: st.stanceInk[k] ?? st.mute }]
+      : []))
   }
   // The picked web. Its nodes are solid and each has a rim of the page's color, so a line never muddies a node and two nodes that touch stay two; a node and the line
   // to the article before it have the calm color of their group, and the ring is the groups' ring: an arc for each group over its sector. The articles of a group or an
@@ -347,7 +366,8 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
         g.ellipse(a.cx, a.cy, a.ring * a.kx, a.ring, 0, aw.arcs[k * 2]! - Math.PI / 2 + pad + turn, aw.arcs[k * 2]! + span - Math.PI / 2 - pad + turn)
         g.stroke()
       }
-      if (articles && groupsOut < 0.5) drawNames(g, a, articles, 0.9 * (1 - groupsOut * 2) * (1 - 0.35 * mix) * st.ringIn)
+      if (articles && groupsOut < 0.5) drawNames(g, a, ringNames(a, articles), 0.9 * (1 - groupsOut * 2) * (1 - 0.35 * mix) * st.ringIn)
+      if (stanceAt && st.ringMix > 0.5) drawNames(g, a, stanceNames(stanceAt), 0.9 * (st.ringMix * 2 - 1) * st.ringIn, true)
       if (stanceAt) {
         const back = (1 - st.ringMix) * (Math.PI / 2)
         for (let k = 0; k < 3; k++) {
