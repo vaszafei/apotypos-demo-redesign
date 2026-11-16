@@ -534,3 +534,27 @@ html[data-search-fly] .body-search { opacity: 0; }
 @media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
   :root:root .shell .header-nav .nav-link.is-leaving:not([aria-current]) .nav-label::after, :root:root .shell .section-nav .section-nav-link.is-leaving:not([aria-current], .is-parent) .nav-label::after { visibility: hidden; }
 }
+
+/* Home «Μεθοδολογία» (components/home/HomeMethod.vue): a glass card of text beside an animation of dots that sits on the world with no card; the second row is turned round. */
+.home-method { --card-glass: color-mix(in srgb, var(--surface-page) 82%, transparent); scroll-margin-top: 64px; padding: var(--space-6) 0 64px; }
+.home-method .dcard { background: var(--card-glass); backdrop-filter: blur(10px); }
+.method-in { padding-inline: clamp(48px, 8vw, 160px); }
+.method-kicker { margin: 0 0 var(--space-3); font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); }
+.method-kicker::before { content: "/"; margin-right: 6px; }
+.method-row { display: grid; grid-template-columns: minmax(0, 480px) minmax(0, 1fr); gap: var(--space-5); align-items: center; padding: var(--space-4) 0; }
+.method-row.is-flip { grid-template-columns: minmax(0, 1fr) minmax(0, 480px); }
+.method-row.is-flip .method-card { grid-column: 2; grid-row: 1; }
+.method-text { margin: var(--space-2) 0 var(--space-3); font-size: var(--text-small); line-height: 1.6; color: var(--text-primary); }
+.method-fact { font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-secondary); }
+.method-canvas { display: block; width: 100%; height: 300px; }
+@media (max-width: 1023px) {
+  .method-in { padding-inline: 0; }
+  .method-row, .method-row.is-flip { grid-template-columns: minmax(0, 1fr); gap: var(--space-3); }
+  .method-row.is-flip .method-card { grid-column: auto; grid-row: auto; }
+  .method-canvas { height: 240px; }
+}
+/* The link of the top bar to it: plain text, left of the search. The drawer has the same link on a phone. */
+.method-link { flex: none; margin-left: auto; margin-right: var(--space-3); display: inline-flex; align-items: center; min-height: 36px; padding: 0 8px; border-radius: 6px; font: 600 14px var(--font-text); color: var(--ink); text-decoration: none; }
+.method-link:hover, .method-link:focus-visible { background: color-mix(in srgb, var(--ink) 7%, transparent); }
+.header-bar .method-link + .global-search { margin-left: 0; }
+@media (max-width: 1023px) { .method-link { display: none; } }
