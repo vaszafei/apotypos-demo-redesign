@@ -143,24 +143,14 @@ onBeforeUnmount(() => { watcher?.disconnect(); plegma.setHomeDay(null); plegma.p
 <template>
   <section id="home-today" ref="root" class="home-today" :aria-label="t('home.today.title')">
     <template v-if="home.data.value && day !== null">
-      <div class="home-today-days"><HomeCalendar v-model="day" :dates="home.data.value.dates" :totals="totals" /></div>
+      <div class="home-today-top">
+        <SegmentedControl v-model="mode" class="home-mode-tabs" :label="t('home.mode.label')" :options="modes" />
+        <div class="home-today-days"><HomeCalendar v-model="day" :dates="home.data.value.dates" :totals="totals" /></div>
+      </div>
       <div class="home-today-map"><PlegmaDayWeb v-model:lit="litIssue" names :themes="themes" :ring="ring" :outlets="dayOutlets" :mode="mode" :date="fmtDate(home.data.value.dates[day]!)" :picked="plegma.homePick" :active="inView" @pick="plegma.pickHome" @pick-theme="pickedTheme = $event" /></div>
       <div class="home-today-side">
-        <SegmentedControl v-model="mode" class="home-mode-tabs" :label="t('home.mode.label')" :options="modes" />
         <Transition name="home-cards" mode="out-in">
           <div v-if="mode === 'stories'" key="stories" class="home-today-cards">
-            <div class="home-today-card">
-              <DashCard :title="t('home.pick.title')" :info="t('home.pick.info')" card="home-day" class="home-day">
-                <template #tools><span class="home-date">{{ fmtDate(home.data.value.dates[day]!) }}</span></template>
-                <template v-if="story">
-                  <h3 class="home-day-story">{{ storyName(story.s) }}</h3>
-                  <p class="home-day-meta"><span class="home-topic-label">{{ t('home.day.topic') }}</span> <EntityLink type="topic" :to="topicHref(String(story.s.issue))">{{ topicName(story.topic) }}</EntityLink></p>
-                  <div v-if="story.parts.length" class="home-block"><OutletStack :parts="story.parts" /></div>
-                  <NuxtLink class="button button-sm home-story-go" :to="storyHref(story.s.id)">{{ t('home.day.open') }}<AppIcon name="chevron-right" class="icon icon-sm" /></NuxtLink>
-                </template>
-                <p v-else-if="ix" class="dcard-empty">{{ t('home.day.empty') }}</p>
-              </DashCard>
-            </div>
             <DashCard :title="t('home.day.title')" :info="t('home.stories.info')" card="home-stories" class="home-day-list">
               <ul v-if="storyRows.length" class="home-stories" @scroll="more">
                 <li v-for="r in storyRows.slice(0, shown)" :key="r.s.id" :class="story && story.s.id === r.s.id ? 'is-current' : undefined">
@@ -173,18 +163,6 @@ onBeforeUnmount(() => { watcher?.disconnect(); plegma.setHomeDay(null); plegma.p
             </DashCard>
           </div>
           <div v-else key="themes" class="home-today-cards">
-            <div class="home-today-card">
-              <DashCard :title="t('home.theme.title')" :info="t('home.theme.info')" card="home-day-theme" class="home-day">
-                <template #tools><span class="home-date">{{ fmtDate(home.data.value.dates[day]!) }}</span></template>
-                <template v-if="theme">
-                  <h3 class="home-day-story">{{ theme.name }}</h3>
-                  <p class="home-day-meta">{{ t('home.theme.meta', { n: fmtInt(theme.n), stories: fmtInt(theme.stories), share: fmtPct(theme.share) }) }}</p>
-                  <div v-if="theme.parts.length" class="home-block"><OutletStack :parts="theme.parts" /></div>
-                  <NuxtLink class="button button-sm home-story-go" :to="topicHref(String(theme.issue))">{{ t('home.theme.open') }}<AppIcon name="chevron-right" class="icon icon-sm" /></NuxtLink>
-                </template>
-                <p v-else-if="ix" class="dcard-empty">{{ t('home.day.empty') }}</p>
-              </DashCard>
-            </div>
             <DashCard :title="t('home.themes.title')" :info="t('home.themes.info')" card="home-themes" class="home-day-list">
               <ul v-if="dayThemes.length" class="home-stories">
                 <li v-for="r in dayThemes" :key="r.issue" :class="theme && theme.issue === r.issue ? 'is-current' : undefined" @pointerenter="litIssue = r.issue" @pointerleave="litIssue = null">
