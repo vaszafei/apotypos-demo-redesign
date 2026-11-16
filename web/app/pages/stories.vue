@@ -83,7 +83,7 @@ watch(view, async () => { await nextTick(); $motion.replay(document.querySelecto
     </template>
     <template #under>
       <DashCard card="lines" class="dive-fade" :class="{ 'is-leaving': leaving }" :title="t('stories.time.title')" :info="t('stories.time.info')">
-        <LinesChart v-if="lines" :dates="lines.dates" :series="lines.series" sparse sqrt :tall="300" :caption="t('stories.time.title')" :href-of="s => storyHref(s.key)" />
+        <LinesChart v-if="lines" :dates="lines.dates" :series="lines.series" sparse sqrt :tall="220" :caption="t('stories.time.title')" :href-of="s => storyHref(s.key)" />
         <p v-else class="dcard-empty">{{ t('stories.period.empty') }}</p>
       </DashCard>
     </template>
