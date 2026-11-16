@@ -285,6 +285,17 @@ Object.assign(window.MESSAGES.el, {
   'originality.anon.finding': 'Το {name} δεν υπογράφει το {v} των άρθρων του',
   'originality.anon.avg': 'Μέσος όρος {v}',
   'originality.anon.info': 'Το μερίδιο των άρθρων του μέσου που δεν έχουν υπογραφή.',
+  'sim.web.title': 'Ομοιότητα μέσων',
+  'sim.web.info': 'Δύο μέσα είναι κοντά όταν γράφουν πολλές κοινές ιστορίες: οι ιστορίες που έγραψαν και τα δύο, προς τις ιστορίες που έγραψε τουλάχιστον ένα. Το εμβαδόν του κύκλου είναι τα άρθρα του μέσου και το χρώμα ο όμιλός του. Οι γραμμές ενώνουν τα δύο πιο όμοια μέσα του καθενός. Δύο μέσα συγκρίνονται μόνο τις ημέρες που και τα δύο υπάρχουν στα δεδομένα, και μέσα με λίγες ημέρες ή ιστορίες δεν υπάρχουν εδώ. Η θέση είναι εικόνα, οι ακριβείς τιμές είναι στο tooltip. Τα μεγάλα μέσα μοιάζουν περισσότερο μεταξύ τους και επειδή γράφουν περισσότερες ιστορίες.',
+  'sim.web.stories': 'Ιστορίες',
+  'sim.web.near': 'Γράφει τα ίδια με',
+  'sim.web.far': 'Γράφει πιο διαφορετικά από',
+  'sim.missed.title': 'Μεγάλες ιστορίες που δεν έγραψε',
+  'sim.missed.info': 'Για κάθε μέσο, το μερίδιο των μεγάλων ιστοριών (αυτές που έγραψαν {min} μέσα ή περισσότερα) που δεν έγραψε, μόνο στις ημέρες που υπάρχει στα δεδομένα. Δείξε ένα μέσο στο διάγραμμα για να δεις ποιες δεν έγραψε.',
+  'sim.missed.sub': '{n} ιστορίες που έγραψαν {min} μέσα ή περισσότερα',
+  'sim.missed.count': '{k} από {c} ιστορίες',
+  'sim.missed.media': '{n} μέσα',
+  'sim.missed.none': 'Έγραψε όλες τις μεγάλες ιστορίες.',
 })
 Object.assign(window.MESSAGES.en, {
   'spread.sort': 'Sort',
@@ -356,6 +367,17 @@ Object.assign(window.MESSAGES.en, {
   'originality.anon.finding': '{name} leaves {v} of its articles unsigned',
   'originality.anon.avg': 'Average {v}',
   'originality.anon.info': 'The share of the articles of the outlet that have no byline.',
+  'sim.web.title': 'Outlet similarity',
+  'sim.web.info': 'Two outlets are close when they write many of the same stories: the stories that both wrote, over the stories that at least one wrote. The area of a circle is the articles of the outlet and its color is its group. The lines join the two most similar outlets of each one. Two outlets are compared only on the days when both are in the data, and outlets with few days or stories are not here. The place is a picture, the exact values are in the tooltip. Big outlets also look more alike because they write more stories.',
+  'sim.web.stories': 'Stories',
+  'sim.web.near': 'Writes the same as',
+  'sim.web.far': 'Writes most differently from',
+  'sim.missed.title': 'Big stories it did not write',
+  'sim.missed.info': 'For each outlet, the share of the big stories (the ones that {min} outlets or more wrote) that it did not write, counted only on the days when it is in the data. Point at an outlet in the web to see which ones it did not write.',
+  'sim.missed.sub': '{n} stories that {min} outlets or more wrote',
+  'sim.missed.count': '{k} of {c} stories',
+  'sim.missed.media': '{n} outlets',
+  'sim.missed.none': 'It wrote every big story.',
 })
 
 // Second pass of the tabs: the title card of Ιστορίες, the rings, and the difference bars of Ομοιότητα and Πρωτοτυπία. These keys replace the older keys of the same name.
