@@ -5,8 +5,9 @@ import type { Series } from '~/types/topics'
 // Dash.LinesChart of assets/dash.js, same layout and arithmetic: the names sit at the line ends where there is room, else a legend names the lines.
 // band: the indexes of a period that is tinted. tall: the height on a wide card. sparse: the lines are 0 most of the time (stories), so the tooltip leaves out the lines that are 0 on the day and cuts long names.
 // opacity: the opacity of the lines (1 by default). lit: the key of a line that comes forward (thicker, on top) while the others step back.
+// roomy: more room for the names at the line ends (wider, further apart). With `lit` the name of that line is written in ink and bold, the others step back.
 // plain: one line that the title of the card already names, so no name at its end and no legend. sqrt: the vertical axis is the square root of the value. hrefOf: the page of a line (the topic page by default).
-const props = defineProps<{ dates: string[], series: Series[], caption: string, band?: { from: number, to: number }, tall?: number, sparse?: boolean, sqrt?: boolean, plain?: boolean, opacity?: number, lit?: string | null, hrefOf?: (s: Series) => string }>()
+const props = defineProps<{ dates: string[], series: Series[], caption: string, band?: { from: number, to: number }, tall?: number, sparse?: boolean, sqrt?: boolean, plain?: boolean, opacity?: number, lit?: string | null, roomy?: boolean, hrefOf?: (s: Series) => string }>()
 const linkOf = (s: Series) => (props.hrefOf ? props.hrefOf(s) : topicHref(s.key))
 const tooltip = useTooltipStore()
 
@@ -16,7 +17,7 @@ const width = computed(() => Math.floor(measured.value) || 640)
 const height = computed(() => (width.value < 520 ? (props.tall && props.plain ? props.tall : 190) : props.tall || (width.value < 640 ? 280 : 380)))
 const labelled = computed(() => width.value >= 520 && !props.plain)
 const long = computed(() => width.value >= 700)
-const pad = computed(() => ({ top: 10, right: labelled.value ? (long.value ? 205 : 135) : 12, bottom: 24, left: 44 }))
+const pad = computed(() => ({ top: 10, right: labelled.value ? (long.value ? (props.roomy ? 270 : 205) : 135) : 12, bottom: 24, left: 44 }))
 const n = computed(() => props.dates.length)
 const plotW = computed(() => width.value - pad.value.left - pad.value.right)
 const plotH = computed(() => height.value - pad.value.top - pad.value.bottom)
@@ -59,24 +60,27 @@ const paths = computed(() => {
   return props.lit ? [...list.filter(p => p.s.key !== props.lit), ...list.filter(p => p.s.key === props.lit)] : list
 })
 
-// Where two ends are less than 13 px apart the names move apart, each by half of what is missing; the names stay inside the plot.
+const gap = computed(() => (props.roomy ? 15 : 13))
+// Where two ends are less than 13 px apart (15 when roomy) the names move apart, each by half of what is missing; the names stay inside the plot.
 const ends = computed(() => {
   if (!labelled.value) return []
   const marks = props.series.map((s, i) => { const y = Y(s.values[n.value - 1] ?? 0); return { s, i, y, at: y } }).sort((a, b) => a.y - b.y)
   for (let round = 0; round < 40; round++) {
     let moved = false
     for (let k = 1; k < marks.length; k++) {
-      const miss = 13 - (marks[k]!.y - marks[k - 1]!.y)
+      const miss = gap.value - (marks[k]!.y - marks[k - 1]!.y)
       if (miss > 0.1) { marks[k - 1]!.y -= miss / 2; marks[k]!.y += miss / 2; moved = true }
     }
     if (!moved) break
   }
   const [lo, hi] = [pad.value.top + 4, pad.value.top + plotH.value + 4]
-  for (let k = marks.length - 1; k >= 0; k--) marks[k]!.y = Math.min(marks[k]!.y, k === marks.length - 1 ? hi : marks[k + 1]!.y - 13)
-  for (let k = 0; k < marks.length; k++) marks[k]!.y = Math.max(marks[k]!.y, k === 0 ? lo : marks[k - 1]!.y + 13)
+  for (let k = marks.length - 1; k >= 0; k--) marks[k]!.y = Math.min(marks[k]!.y, k === marks.length - 1 ? hi : marks[k + 1]!.y - gap.value)
+  for (let k = 0; k < marks.length; k++) marks[k]!.y = Math.max(marks[k]!.y, k === 0 ? lo : marks[k - 1]!.y + gap.value)
   return marks
 })
-const maxChars = computed(() => (long.value ? 32 : 17))
+const maxChars = computed(() => (long.value ? (props.roomy ? 44 : 32) : 17))
+// The names of the ends: the lit one is in ink and bold, the others fainter while one is lit.
+const endStyle = (key: string) => (props.lit ? (key === props.lit ? 'fill: var(--ink); font-weight: 700' : 'opacity: 0.4') : undefined)
 const cut = (s: string) => (s.length > maxChars.value ? `${s.slice(0, maxChars.value - 1)}…` : s)
 
 const hover = ref<number | null>(null)
@@ -108,10 +112,10 @@ const leave = () => { hover.value = null; tooltip.hide() }
       <path v-for="p in paths" :key="p.s.key" class="line-series" :d="p.d" :stroke="p.s.color" stroke-width="1.5" :style="lit && p.s.key === lit ? 'stroke-width: 2.8px' : undefined" :stroke-opacity="lit ? (p.s.key === lit ? 1 : 0.18) : opacity ?? 1" pathLength="1" />
       <template v-for="m in ends" :key="m.s.key">
         <line v-if="Math.abs(m.y - m.at) > 6" class="line-leader" :x1="X(n - 1)" :y1="m.at" :x2="X(n - 1) + 8" :y2="m.y" :stroke="m.s.color" />
-        <circle class="line-dot" :cx="X(n - 1)" :cy="m.at" r="3" :fill="m.s.color" :style="`--m-i: ${m.i};`" />
-        <NuxtLink v-if="portedPath(linkOf(m.s))" :to="linkOf(m.s)" class="line-end-link"><title>{{ m.s.name }}</title><text class="line-end" :x="X(n - 1) + 10" :y="m.y + 4">{{ cut(m.s.name) }}</text></NuxtLink>
-        <a v-else-if="linkOf(m.s)" :href="linkOf(m.s)" class="line-end-link"><title>{{ m.s.name }}</title><text class="line-end" :x="X(n - 1) + 10" :y="m.y + 4">{{ cut(m.s.name) }}</text></a>
-        <text v-else class="line-end" :x="X(n - 1) + 10" :y="m.y + 4">{{ cut(m.s.name) }}</text>
+        <circle class="line-dot" :cx="X(n - 1)" :cy="m.at" :r="lit === m.s.key ? 4.5 : 3" :fill="m.s.color" :style="`--m-i: ${m.i};`" />
+        <NuxtLink v-if="portedPath(linkOf(m.s))" :to="linkOf(m.s)" class="line-end-link"><title>{{ m.s.name }}</title><text class="line-end" :style="endStyle(m.s.key)" :x="X(n - 1) + 10" :y="m.y + 4">{{ cut(m.s.name) }}</text></NuxtLink>
+        <a v-else-if="linkOf(m.s)" :href="linkOf(m.s)" class="line-end-link"><title>{{ m.s.name }}</title><text class="line-end" :style="endStyle(m.s.key)" :x="X(n - 1) + 10" :y="m.y + 4">{{ cut(m.s.name) }}</text></a>
+        <text v-else class="line-end" :style="endStyle(m.s.key)" :x="X(n - 1) + 10" :y="m.y + 4">{{ cut(m.s.name) }}</text>
       </template>
       <line class="hover-rule" :y1="pad.top" :y2="pad.top + plotH" stroke="var(--rule)" stroke-width="1" :x1="hover !== null ? X(hover) : 0" :x2="hover !== null ? X(hover) : 0" :visibility="hover !== null ? 'visible' : 'hidden'" />
       <circle
