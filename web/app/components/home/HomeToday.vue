@@ -8,9 +8,8 @@ import type { GroupsData } from '~/utils/groups'
 import { dayDots, PLEGMA_DAY_STORIES, PLEGMA_DAY_THEMES } from '~/utils/plegma/plegma-day'
 import type { PlegmaDayTheme } from '~/utils/plegma/plegma-day'
 import type { DayOutlet, DayRing } from '~/components/plegma/PlegmaDayWeb.vue'
+import type { DayStoryRow } from '~/components/home/DayStoryList.vue'
 import { themeSlots } from '~/utils/plegma/plegma-world'
-import { diveFromDay } from '~/utils/plegma/plegma-dive'
-import { useMediaQuery } from '@vueuse/core'
 
 // «Η επικαιρότητα» under the hero (the section #home-today of index.html): the calendar of the days floating over the Plegma, under it the web of the picked day (the date, its themes, the stories
 // of each and a dot for each article: components/PlegmaDayWeb.vue), and beside it the list of the stories (or the themes) of the day. A story pointed at in the list is lit on the web with its title; a click on one dives into its page.
@@ -51,20 +50,15 @@ const litIssue = ref<number | null>(null)
 const storyRows = computed(() => (ix.value && day.value !== null ? ix.value.byDay[day.value] ?? [] : []))
 // What a story had the day before: its articles that day, for the change shown beside its count (a story with none the day before is new).
 const prevN = computed(() => (ix.value && day.value !== null && day.value > 0 ? new Map((ix.value.byDay[day.value - 1] ?? []).map(r => [r.s.id, r.n])) : new Map<number, number>()))
-const change = (id: number, n: number) => {
+const change = (id: number, n: number): DayStoryRow['change'] => {
   const before = prevN.value.get(id)
   if (!before) return null
   const v = (n - before) / before * 100
   const size = fmtDec(Math.abs(v))
   return { size: `${size}%`, dir: Number(size) === 0 ? null : v > 0 ? 'up' : 'down' }
 }
-const shown = ref(100)
-watch(day, () => { shown.value = 100 })
-const more = (e: Event) => {
-  const el = e.target as HTMLElement
-  if (el.scrollTop + el.clientHeight > el.scrollHeight - 300 && shown.value < storyRows.value.length) shown.value += 100
-}
 watch(day, () => { litIssue.value = null })
+const rows = computed<DayStoryRow[]>(() => storyRows.value.map(r => ({ id: r.s.id, name: storyName(r.s), n: r.n, issue: r.s.issue, theme: topicName(ix.value!.issues[r.s.issue]!), change: change(r.s.id, r.n) })))
 // The outlets of the day, the largest first: the arcs of the ring of the stories, each in the color of its group.
 const dayOutlets = computed<DayOutlet[]>(() => {
   const h = home.data.value
@@ -104,20 +98,8 @@ const themes = computed<PlegmaDayTheme[]>(() => {
   return [...byIssue.values()].sort((a, b) => b.n - a.n).slice(0, PLEGMA_DAY_THEMES)
 })
 
-// Picking a story or a theme (on the web or in the list) dives into its page: the section fades out, the web swells and dives into the node (utils/plegma/plegma-dive.ts), the page changes.
-const web = ref<{ spotOf: (t: { story?: number, theme?: number }) => { x: number, y: number }, canvas: HTMLCanvasElement | undefined }>()
-const reduced = useMediaQuery('(prefers-reduced-motion: reduce)')
-const leaving = ref(false)
-const hoverStory = ref<number | null>(null)
-const open = async (target: { story?: number, theme?: number }) => {
-  const w = web.value
-  if (leaving.value || !w?.canvas) return
-  leaving.value = true
-  hoverStory.value = null
-  litIssue.value = null
-  const to = target.story !== undefined ? storyHref(target.story) : topicHref(String(target.theme))
-  await diveFromDay(w.canvas, w.spotOf(target), { go: () => navigateTo(to), region: () => plegma.region, reduced: reduced.value })
-}
+// Picking a story or a theme (on the web or in the list) dives into its page (composables/useWebDive.ts).
+const { web, leaving, hoverStory, open } = useWebDive(litIssue)
 
 // The Plegma behind steps back to a dim map while the section is in view, and goes back to the best of the week with the hero in view.
 const root = ref<HTMLElement>()
@@ -140,23 +122,7 @@ onBeforeUnmount(() => { watcher?.disconnect(); plegma.setHomeDay(null); plegma.p
       <div class="home-today-days"><HomeCalendar v-model="day" :dates="home.data.value.dates" :totals="totals" /></div>
       <div class="home-today-map"><PlegmaDayWeb ref="web" v-model:lit="litIssue" names grow :grow-ms="1000" :hover-story="hoverStory" :themes="themes" :ring="ring" :outlets="dayOutlets"  mode="stories" grouped :date="fmtDate(home.data.value.dates[day]!)" :picked="null" :active="inView" @pick="open({ story: $event })" @pick-theme="open({ theme: $event })" /></div>
       <div class="home-today-side">
-        <DashCard :title="t('home.daylist.title')" :info="t('home.daylist.info')" card="home-stories" class="home-day-list">
-          <ul v-if="storyRows.length" class="home-stories" @scroll="more">
-            <li v-for="r in storyRows.slice(0, shown)" :key="r.s.id">
-              <button type="button" class="home-story-pick" @pointerenter="hoverStory = r.s.id" @pointerleave="hoverStory = null" @focus="hoverStory = r.s.id" @blur="hoverStory = null" @click="open({ story: r.s.id })">
-                <span class="home-story-name">{{ storyName(r.s) }}</span>
-                <span class="home-story-num"><span class="muted-text">{{ fmtInt(r.n) }}</span><span class="home-story-delta muted-text">
-                  <template v-if="change(r.s.id, r.n)"><span v-if="change(r.s.id, r.n)!.dir" :class="`home-arrow is-${change(r.s.id, r.n)!.dir}`" aria-hidden="true">{{ change(r.s.id, r.n)!.dir === 'up' ? '▲' : '▼' }}</span> {{ change(r.s.id, r.n)!.size }}</template>
-                  <template v-else>{{ t('home.day.fresh') }}</template>
-                </span></span>
-              </button>
-              <button type="button" class="home-row-theme" @pointerenter="litIssue = r.s.issue" @pointerleave="litIssue = null" @focus="litIssue = r.s.issue" @blur="litIssue = null" @click="open({ theme: r.s.issue })">
-                {{ t('home.day.topic') }} <span class="home-row-theme-name">{{ topicName(ix!.issues[r.s.issue]!) }}</span>
-              </button>
-            </li>
-          </ul>
-          <p v-else-if="ix" class="dcard-empty">{{ t('home.day.empty') }}</p>
-        </DashCard>
+        <DayStoryList :rows="rows" :title="t('home.daylist.title')" :info="t('home.daylist.info')" :empty="ix ? t('home.day.empty') : undefined" @hover="hoverStory = $event" @hover-theme="litIssue = $event" @open="open" />
       </div>
     </template>
   </section>

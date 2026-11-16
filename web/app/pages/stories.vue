@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { themeSlots } from '~/utils/plegma/plegma-world'
+import type { DayStoryRow } from '~/components/home/DayStoryList.vue'
 
 // Μέσα › Ιστορίες (stories-v2.html): a screen of the Plegma (components/MediaPlegma.vue) whose web is the largest stories of the period, each a small web of its articles in the colors
-// of the groups, grouped by their themes, in an ellipse whose ring is the outlets (or their groups), each arc as long as its share of the articles. Left of it, as tall as the two, the largest stories by the outlets or the groups that ran them (as the ring of the web is), each with its change against the period before (components/StoryMediaBars.vue); above the web the date picker, and under it the lines of the first stories over the days of the period only. The date picker is at the top right; the web, the trends and the lines follow it. A story clicked on the web opens.
+// of the groups, grouped by their themes, in an ellipse whose ring is the outlets (or their groups), each arc as long as its share of the articles, and the web fills the ellipse. Left of it, as tall as the two, the list of the stories of the period as Home has it (components/home/DayStoryList.vue): each with its articles, its change against the period before and its theme; above the web the date picker, and under it the lines of the first stories over the days of the period only. The web and the lines follow the date picker. A story or a theme picked on the web or in the list is dived into.
 definePageMeta({ backdrop: true })
 const { t } = useI18n()
 useHead({ title: () => `${t('nav.media')} · ${t('site.name')}` })
@@ -32,7 +33,18 @@ const webThemes = computed(() => (periodWeb?.ready.value ? periodWeb.themesOf(36
 // The ring of the web, as the story page has it: the outlets, or their groups.
 const ringBy = ref<'outlets' | 'groups'>('outlets')
 
-const media = computed(() => (periodWeb?.ready.value ? periodWeb.storyMedia(16) : null))
+// The list: every story of the period, the largest first, with its change against the period before (new when it had no articles then; none shown when it had too few to compare).
+const changeOf = (id: number): DayStoryRow['change'] => {
+  const c = changes.value?.get(id)
+  if (!c) return undefined
+  if (c.before === 0) return null
+  if (c.change === null) return undefined
+  const size = fmtDec(Math.abs(c.change * 100))
+  return { size: `${size}%`, dir: Number(size) === 0 ? null : c.change > 0 ? 'up' : 'down' }
+}
+const rows = computed<DayStoryRow[]>(() => (periodWeb?.ready.value ? periodWeb.rows.value.map(r => ({ id: r.s.id, name: storyName(r.s), n: r.n, issue: r.s.issue, theme: periodWeb.themeName(r.s.issue), change: changeOf(r.s.id) })) : []))
+const litIssue = ref<number | null>(null)
+const { web, leaving, hoverStory, open } = useWebDive(litIssue)
 
 // A new period draws the lines in again (assets/motion.js replay); the first view is played by plugins/motion.client.ts.
 const { $motion } = useNuxtApp()
@@ -53,26 +65,24 @@ watch(view, async () => { await nextTick(); $motion.replay(document.querySelecto
   <MediaPlegma v-else variant="stories">
     <template #side>
       <ClientOnly>
-        <DashCard v-if="media" class="media-side-card" :title="t(ringBy === 'groups' ? 'stories.media.title' : 'stories.media.outletsTitle')" :info="t(ringBy === 'groups' ? 'stories.media.info' : 'stories.media.outletsInfo', { n: TREND_MIN })">
-          <StoryMediaBars :data="media" :changes="changes" :by="ringBy" />
-        </DashCard>
+        <DayStoryList class="media-side-card dive-fade" :class="{ 'is-leaving': leaving }" :rows="rows" :title="t('stories.list.title')" :info="t('stories.list.info')" :empty="periodWeb?.ready.value ? t('stories.period.empty') : undefined" @hover="hoverStory = $event" @hover-theme="litIssue = $event" @open="open" />
       </ClientOnly>
     </template>
     <template #map="{ active }">
-      <div class="stories-date"><DateRange :dates="dates" :from="view.from" :to="view.to" @change="r => period.set(r.from, r.to)" /></div>
+      <div class="stories-date dive-fade" :class="{ 'is-leaving': leaving }"><DateRange plain :dates="dates" :from="view.from" :to="view.to" @change="r => period.set(r.from, r.to)" /></div>
       <div class="media-map-web">
         <ClientOnly>
-          <SegmentedControl v-if="webThemes.length" v-model="ringBy" class="media-map-tabs" :label="t('stories.ring.label')" :options="[{ value: 'outlets', label: t('stories.ring.outlets') }, { value: 'groups', label: t('stories.ring.groups') }]" />
+          <SegmentedControl v-if="webThemes.length" v-model="ringBy" class="media-map-tabs dive-fade" :class="{ 'is-leaving': leaving }" :label="t('stories.ring.label')" :options="[{ value: 'outlets', label: t('stories.ring.outlets') }, { value: 'groups', label: t('stories.ring.groups') }]" />
           <PlegmaDayWeb
-            v-if="webThemes.length" :themes="webThemes" :ring="[]" :outlets="ringBy === 'groups' ? periodWeb!.groupRing.value : periodWeb!.outlets.value" mode="stories" :lit="null" :date="dateText" :sub="t('stories.web.sub', { n: fmtInt(list.length) })"
-            :picked="null" ellipse grouped spread :active="active" grow :label="t('topics2.stories.title')" @pick="id => navigateTo(storyHref(id))"
+            v-if="webThemes.length" ref="web" v-model:lit="litIssue" :hover-story="hoverStory" :themes="webThemes" :ring="[]" :outlets="ringBy === 'groups' ? periodWeb!.groupRing.value : periodWeb!.outlets.value" mode="stories" :date="dateText" :sub="t('stories.web.sub', { n: fmtInt(list.length) })"
+            :picked="null" ellipse grouped spread fill titles :active="active" grow :label="t('topics2.stories.title')" @pick="id => open({ story: id })" @pick-theme="issue => open({ theme: issue })"
           />
-          <p v-if="webThemes.length" class="media-map-note">{{ t('stories.web.note') }}</p>
+          <p v-if="webThemes.length" class="media-map-note dive-fade" :class="{ 'is-leaving': leaving }">{{ t('stories.web.note') }}</p>
         </ClientOnly>
       </div>
     </template>
     <template #under>
-      <DashCard card="lines" :title="t('stories.time.title')" :info="t('stories.time.info')">
+      <DashCard card="lines" class="dive-fade" :class="{ 'is-leaving': leaving }" :title="t('stories.time.title')" :info="t('stories.time.info')">
         <LinesChart v-if="lines" :dates="lines.dates" :series="lines.series" sparse sqrt :tall="300" :caption="t('stories.time.title')" :href-of="s => storyHref(s.key)" />
         <p v-else class="dcard-empty">{{ t('stories.period.empty') }}</p>
       </DashCard>

@@ -20,8 +20,8 @@ export interface DayOutlet { name: string, slot: number, n: number, group?: stri
 // `themeLabel` names the theme in the tooltip of a story when the themes are something else (the groups of Ιδιοκτησία, whose stories are their outlets: a story with no `media` has no row of them),
 // `spread` that many themes go round the center by the golden angle (utils/plegma/plegma-day.ts), `zoom` the share of the area the web fills (the ring included), `shares` that a theme is as large as its share
 // of the ring (the area of its node is its articles), `ellipse` that the ring is an ellipse as wide as the area allows (the web lies in it, and the arcs of the outlets are named with their share outside it), `grouped` that the stories are grouped by their themes (the nodes of the themes and their names) while the ring stays the outlets; and `shares` that a theme is as large as its share
-// of the ring (the area of its node is its articles) and its share is written after its name and in its tooltip, `growMs` how long the growth takes, `hoverStory` the id of a story that is pointed at in a list beside the web (it is lit and its title is written at its circle, as when the pointer is on it), `names` that it has the look of the web of a story and of a theme (components/PlegmaStage.vue: a story is a gray circle as large as its articles, a dot a small ring in the color of its group, no lines from the center to the stories, the names of the arcs in two columns beside the ring), `grow` that the web grows out of the center when it comes into view and again when its data changes, and `label` the name of the picture for a screen reader.
-const props = withDefaults(defineProps<{ themes: PlegmaDayTheme[], ring: DayRing[], outlets: DayOutlet[], mode: 'stories' | 'themes', lit: number | null, date: string, picked: number | null, active: boolean, sub?: string, labels?: number, grow?: boolean, label?: string, spread?: boolean, themeLabel?: string, zoom?: number, shares?: boolean, ellipse?: boolean, grouped?: boolean, names?: boolean, hoverStory?: number | null, growMs?: number }>(), { sub: undefined, labels: Infinity, grow: false, label: undefined, spread: false, themeLabel: undefined, zoom: 1, shares: false, ellipse: false, grouped: false, names: false, hoverStory: null, growMs: GROW_MS })
+// of the ring (the area of its node is its articles) and its share is written after its name and in its tooltip, `titles` that the date and the count are not written at the center and the whole title of the story pointed at is written at its circle (as `names` does), `fill` that the stories are drawn out until the web touches the ring all round (utils/plegma/plegma-day.ts), `growMs` how long the growth takes, `hoverStory` the id of a story that is pointed at in a list beside the web (it is lit and its title is written at its circle, as when the pointer is on it), `names` that it has the look of the web of a story and of a theme (components/PlegmaStage.vue: a story is a gray circle as large as its articles, a dot a small ring in the color of its group, no lines from the center to the stories, the names of the arcs in two columns beside the ring), `grow` that the web grows out of the center when it comes into view and again when its data changes, and `label` the name of the picture for a screen reader.
+const props = withDefaults(defineProps<{ themes: PlegmaDayTheme[], ring: DayRing[], outlets: DayOutlet[], mode: 'stories' | 'themes', lit: number | null, date: string, picked: number | null, active: boolean, sub?: string, labels?: number, grow?: boolean, label?: string, spread?: boolean, themeLabel?: string, zoom?: number, shares?: boolean, ellipse?: boolean, grouped?: boolean, names?: boolean, titles?: boolean, fill?: boolean, hoverStory?: number | null, growMs?: number }>(), { sub: undefined, labels: Infinity, grow: false, label: undefined, spread: false, themeLabel: undefined, zoom: 1, shares: false, ellipse: false, grouped: false, names: false, titles: false, fill: false, hoverStory: null, growMs: GROW_MS })
 const emit = defineEmits<{ pick: [id: number], pickTheme: [issue: number], 'update:lit': [issue: number | null] }>()
 const { t } = useI18n()
 const tooltip = useTooltipStore()
@@ -68,7 +68,7 @@ const aspect = computed(() => {
   return Math.round(clamp((size.value.w / 2 - 100) / ry, 1, 2.1) * 20) / 20
 })
 const seed = computed(() => [...props.date].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 9973, 7))
-const web = computed<PlegmaDayWeb | null>(() => (props.themes.length && aspect.value ? buildDayWeb(props.themes, aspect.value, seed.value, props.spread) : null))
+const web = computed<PlegmaDayWeb | null>(() => (props.themes.length && aspect.value ? buildDayWeb(props.themes, aspect.value, seed.value, props.spread, props.fill) : null))
 // The same stories with no themes between them, and which node of it each node of `web` is.
 const flat = computed(() => {
   const w = web.value
@@ -135,7 +135,7 @@ const fracOf = (param: number) => {
   const lo = Math.floor(k)
   return (cum[lo]! + (cum[Math.min(N, lo + 1)]! - cum[lo]!) * (k - lo)) / cum[N]!
 }
-const scaleOf = () => ringOf() - 22
+const scaleOf = () => ringOf() - (props.fill ? 10 : 22)
 const radius = (w: PlegmaDayWeb, i: number, R: number) => {
   switch (w.kind[i]) {
     case DAY_DATE: return 9
@@ -407,12 +407,12 @@ const draw = (sec: number, dt: number) => {
   g.lineWidth = 4
   g.strokeStyle = paper
   g.globalAlpha = 0.9
-  g.strokeText(props.date, hx[0]!, hy[0]! + 28)
+  if (!props.titles) g.strokeText(props.date, hx[0]!, hy[0]! + 28)
   g.fillStyle = ink
   g.globalAlpha = 1
-  g.fillText(props.date, hx[0]!, hy[0]! + 28)
+  if (!props.titles) g.fillText(props.date, hx[0]!, hy[0]! + 28)
   g.font = `11px ${fontText}`
-  if (props.sub) {
+  if (props.sub && !props.titles) {
     g.lineWidth = 3.5
     g.strokeText(props.sub, hx[0]!, hy[0]! + 42)
     g.fillStyle = mute
@@ -444,7 +444,7 @@ const draw = (sec: number, dt: number) => {
   g.textAlign = 'start'
   g.globalAlpha = 1
   // With `names` the whole title of the story pointed at (on the web or in the list) is at its circle, on the side toward the middle of the web, in lines of at most 190 px.
-  if (props.names && titleMix > 0.02 && titleKey >= 0) {
+  if ((props.names || props.titles) && titleMix > 0.02 && titleKey >= 0) {
     const at = Array.from({ length: w.n }, (_, i) => i).find(i => w.kind[i] === DAY_STORY && w.theme[i]! * 100 + w.story[i]! === titleKey)
     const named = at !== undefined ? storyOf(w, at) : null
     if (at !== undefined && named) {
