@@ -11,5 +11,7 @@
   { "html": "group-v2.html", "route": "/group" },
   { "html": "outlet-v2.html", "route": "/outlet" },
   { "html": "speeches-v2.html", "route": "/speeches" },
-  { "html": "un-israel-v2.html", "route": "/un-israel-palestine" }
+  { "html": "un-israel-v2.html", "route": "/un-israel-palestine" },
+  { "html": "fingerprints-v2.html", "route": "/fingerprints" },
+  { "html": "fingerprints-v2.html", "query": "tab=spread", "route": "/fingerprints/spread" }
 ]

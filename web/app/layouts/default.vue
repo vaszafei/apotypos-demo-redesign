@@ -27,8 +27,8 @@ watch(() => route.path, () => { drawer.value = false })
 watch(smallScreen, () => { drawer.value = false })
 useEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Escape' && drawer.value) setDrawer(false) })
 
-// Αναλύσεις needs a log in: its pages show the page head and the gate, as in the static shell.
-const gated = computed(() => section.value.key === 'world' && !session.signedIn)
+// Πρόσωπα and Αναλύσεις need a log in: their pages show the page head and the gate, as in the static shell.
+const gated = computed(() => (section.value.key === 'world' || section.value.key === 'people') && !session.signedIn)
 
 // A tab bar that scrolls sideways (phones) shows the current tab (centerTabs in assets/shell.js).
 const centerTabs = async () => {

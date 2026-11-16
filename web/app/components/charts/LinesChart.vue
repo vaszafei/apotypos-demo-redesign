@@ -110,7 +110,8 @@ const leave = () => { hover.value = null; tooltip.hide() }
         <line v-if="Math.abs(m.y - m.at) > 6" class="line-leader" :x1="X(n - 1)" :y1="m.at" :x2="X(n - 1) + 8" :y2="m.y" :stroke="m.s.color" />
         <circle class="line-dot" :cx="X(n - 1)" :cy="m.at" r="3" :fill="m.s.color" :style="`--m-i: ${m.i};`" />
         <NuxtLink v-if="portedPath(linkOf(m.s))" :to="linkOf(m.s)" class="line-end-link"><title>{{ m.s.name }}</title><text class="line-end" :x="X(n - 1) + 10" :y="m.y + 4">{{ cut(m.s.name) }}</text></NuxtLink>
-        <a v-else :href="linkOf(m.s)" class="line-end-link"><title>{{ m.s.name }}</title><text class="line-end" :x="X(n - 1) + 10" :y="m.y + 4">{{ cut(m.s.name) }}</text></a>
+        <a v-else-if="linkOf(m.s)" :href="linkOf(m.s)" class="line-end-link"><title>{{ m.s.name }}</title><text class="line-end" :x="X(n - 1) + 10" :y="m.y + 4">{{ cut(m.s.name) }}</text></a>
+        <text v-else class="line-end" :x="X(n - 1) + 10" :y="m.y + 4">{{ cut(m.s.name) }}</text>
       </template>
       <line class="hover-rule" :y1="pad.top" :y2="pad.top + plotH" stroke="var(--rule)" stroke-width="1" :x1="hover !== null ? X(hover) : 0" :x2="hover !== null ? X(hover) : 0" :visibility="hover !== null ? 'visible' : 'hidden'" />
       <circle
