@@ -500,3 +500,27 @@ html[data-search-fly] .body-search { opacity: 0; }
 
 /* A line of the chart that a card points at comes forward and the others step back, softly. */
 .plegma-orbit .line-series { transition: stroke-opacity 200ms var(--ease-out), stroke-width 200ms var(--ease-out); }
+
+/* The tabs of a section on the Plegma (layouts/default.vue). The column is part of the world, not a block of one color over it. The tabs stand as far from the left edge as the page stands from the right edge
+   (--page-gap-end, plus what a wide screen leaves of its margin: 100% is the width of .page-body), and no further than leaves a gap of 12px to the page. */
+@media (min-width: 1024px) {
+  .shell.is-backdrop .section-nav { background: none; }
+  .page-body > .section-nav { --nav-w: max(232px, calc(50vw - var(--page-width) / 2)); padding-left: min(calc(var(--page-gap-end) + max(0px, 100% - var(--nav-w) - var(--page-width))), calc(var(--nav-w) - 155px - 12px)); }
+  .page-body > .section-nav .section-nav-inner { padding-left: 0; }
+}
+
+/* The "/" of the current tab, in the top bar and in the column of tabs: it is drawn from the top when the tab becomes the current one, and the tab that was current has it erased from the top, a moment before.
+   layouts/default.vue marks the tab that was just left `is-leaving` (it has no aria-current any more). The "/" stands before the label, or after it where the icons show (data-icons). */
+@keyframes nav-slash-in { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes nav-slash-out { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(100% 0 0 0); } }
+@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+  .header-nav .nav-link[aria-current="page"] .nav-label::before, .header-nav .nav-link[aria-current="page"] .nav-label::after,
+  .section-nav .section-nav-link[aria-current]:not(.is-parent) .nav-label::before, .section-nav .section-nav-link[aria-current]:not(.is-parent) .nav-label::after { display: inline-block; animation: nav-slash-in 380ms cubic-bezier(0.65, 0, 0.35, 1) 160ms both; }
+  .header-nav .nav-link.is-leaving:not([aria-current]) .nav-label::before, .section-nav .section-nav-link.is-leaving:not([aria-current], .is-parent) .nav-label::before { content: "/ "; white-space: pre; display: inline-block; animation: nav-slash-out 300ms cubic-bezier(0.65, 0, 0.35, 1) both; }
+  :root[data-icons="all"] .header-nav .nav-link.is-leaving:not([aria-current]) .nav-label::before,
+  :root[data-icons="all"] .section-nav .section-nav-link.is-leaving:not([aria-current], .is-parent) .nav-label::before,
+  :root[data-icons="sidebar"] .section-nav .section-nav-link.is-leaving:not([aria-current], .is-parent) .nav-label::before { content: none; }
+  :root[data-icons="all"] .header-nav .nav-link.is-leaving:not([aria-current]) .nav-label::after,
+  :root[data-icons="all"] .section-nav .section-nav-link.is-leaving:not([aria-current], .is-parent) .nav-label::after,
+  :root[data-icons="sidebar"] .section-nav .section-nav-link.is-leaving:not([aria-current], .is-parent) .nav-label::after { content: " /"; white-space: pre; display: inline-block; animation: nav-slash-out 300ms cubic-bezier(0.65, 0, 0.35, 1) both; }
+}
