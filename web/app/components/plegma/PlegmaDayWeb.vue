@@ -3,6 +3,8 @@ import { useEventListener, useMediaQuery, useRafFn } from '@vueuse/core'
 import { blendHex } from '~/utils/ink'
 import { buildDayWeb, DAY_DATE, DAY_DOT, DAY_REST, DAY_STORY, DAY_THEME, matchWebs, storiesAsThemes } from '~/utils/plegma/plegma-day'
 import type { PlegmaDayTheme, PlegmaDayWeb } from '~/utils/plegma/plegma-day'
+import { NAME_MAX, drawColumns } from '~/utils/plegma/stage/stage-names'
+import type { NameItem } from '~/utils/plegma/stage/stage-names'
 
 // The web of a day on Home, drawn in the free area under the calendar (utils/plegma/plegma-day.ts has the layout): the date at the center, the themes of the day around it, the largest stories of each
 // theme, and a dot for each article of a story. It has the look of the web of a theme (components/PlegmaStage.vue drawTheme): solid nodes with a rim of the page's color, the calm colors of the
@@ -17,8 +19,8 @@ export interface DayOutlet { name: string, slot: number, n: number, group?: stri
 // `themeLabel` names the theme in the tooltip of a story when the themes are something else (the groups of Ιδιοκτησία, whose stories are their outlets: a story with no `media` has no row of them),
 // `spread` that many themes go round the center by the golden angle (utils/plegma/plegma-day.ts), `zoom` the share of the area the web fills (the ring included), `shares` that a theme is as large as its share
 // of the ring (the area of its node is its articles), `ellipse` that the ring is an ellipse as wide as the area allows (the web lies in it, and the arcs of the outlets are named with their share outside it), `grouped` that the stories are grouped by their themes (the nodes of the themes and their names) while the ring stays the outlets; and `shares` that a theme is as large as its share
-// of the ring (the area of its node is its articles) and its share is written after its name and in its tooltip, `grow` that the web grows out of the center when it comes into view and again when its data changes, and `label` the name of the picture for a screen reader.
-const props = withDefaults(defineProps<{ themes: PlegmaDayTheme[], ring: DayRing[], outlets: DayOutlet[], mode: 'stories' | 'themes', lit: number | null, date: string, picked: number | null, active: boolean, sub?: string, labels?: number, grow?: boolean, label?: string, spread?: boolean, themeLabel?: string, zoom?: number, shares?: boolean, ellipse?: boolean, grouped?: boolean }>(), { sub: undefined, labels: Infinity, grow: false, label: undefined, spread: false, themeLabel: undefined, zoom: 1, shares: false, ellipse: false, grouped: false })
+// of the ring (the area of its node is its articles) and its share is written after its name and in its tooltip, `names` that it has the look of the web of a story and of a theme (components/PlegmaStage.vue: a story is a gray circle as large as its articles, a dot a small ring in the color of its group, no lines from the center to the stories, the names of the arcs in two columns beside the ring), `grow` that the web grows out of the center when it comes into view and again when its data changes, and `label` the name of the picture for a screen reader.
+const props = withDefaults(defineProps<{ themes: PlegmaDayTheme[], ring: DayRing[], outlets: DayOutlet[], mode: 'stories' | 'themes', lit: number | null, date: string, picked: number | null, active: boolean, sub?: string, labels?: number, grow?: boolean, label?: string, spread?: boolean, themeLabel?: string, zoom?: number, shares?: boolean, ellipse?: boolean, grouped?: boolean, names?: boolean }>(), { sub: undefined, labels: Infinity, grow: false, label: undefined, spread: false, themeLabel: undefined, zoom: 1, shares: false, ellipse: false, grouped: false, names: false })
 const emit = defineEmits<{ pick: [id: number], pickTheme: [issue: number], 'update:lit': [issue: number | null] }>()
 const { t } = useI18n()
 const tooltip = useTooltipStore()
@@ -101,8 +103,9 @@ const ringTotal = computed(() => props.ring.reduce((sum, r) => sum + r.n, 0))
 const shareOf = (n: number) => (ringTotal.value ? ` ${fmtPct(n / ringTotal.value)}` : '')
 const ringN = (issue: number) => props.ring.find(r => r.issue === issue)?.n ?? 0
 const storyOf = (w: PlegmaDayWeb, i: number) => props.themes[w.theme[i]!]!.stories[w.story[i]!]!
-// The ring is as large as the area allows, and the web is a little smaller inside it.
-const ringOf = () => (props.ellipse ? Math.min(height / 2 * 0.8 - 10, (width / 2 - 100) / Math.max(1, aspect.value)) : (Math.min(width, height) / 2 * 0.9 - 10)) * props.zoom
+// The ring is as large as the area allows, and the web is a little smaller inside it; with `names` the two columns of names beside it need NAMES_ROOM on each side.
+const NAMES_ROOM = 170
+const ringOf = () => (props.ellipse ? Math.min(height / 2 * 0.8 - 10, (width / 2 - 100) / Math.max(1, aspect.value)) : props.names ? Math.max(80, Math.min(height / 2 * 0.9 - 10, width / 2 - NAMES_ROOM)) : (Math.min(width, height) / 2 * 0.9 - 10)) * props.zoom
 const ringRx = () => ringOf() * (props.ellipse ? aspect.value : 1)
 // Where a share of the ring is: the arcs are as long as their shares along the ellipse (the table gives the angle of the ellipse for the length from the top).
 const perim = computed(() => {
@@ -135,8 +138,8 @@ const radius = (w: PlegmaDayWeb, i: number, R: number) => {
   switch (w.kind[i]) {
     case DAY_DATE: return 9
     case DAY_THEME: return props.shares ? Math.max(4.5, 21 * w.size[i]!) : props.themes.length > 12 ? 2.6 + 6 * w.size[i]! : 6.5 + 4 * w.size[i]!
-    case DAY_STORY: return 3.6 + 3.4 * w.size[i]!
-    case DAY_DOT: return clamp(R * (0.004 + 0.0085 * w.size[i]!), 1.4, 5.2)
+    case DAY_STORY: return props.names ? 3.5 + 8.5 * w.size[i]! : 3.6 + 3.4 * w.size[i]!
+    case DAY_DOT: return clamp(R * (0.004 + 0.0085 * w.size[i]!), 1.4, 5.2) * (props.names ? 0.82 : 1)
     default: return clamp(R * 0.004 * (0.6 + w.size[i]!), 1, 2.2)
   }
 }
@@ -224,7 +227,7 @@ const draw = (sec: number, dt: number) => {
   g.globalAlpha = 0.3 * (1 - 0.6 * tmix) * form * lineIn
   g.stroke(spokes)
   if (form > 0.01) for (const [slot, path] of themeLines) { g.strokeStyle = slotColour(slot); g.globalAlpha = 0.45 * back * form * lineIn; g.stroke(path) }
-  if (form < 0.99) for (const [slot, path] of directLines) { g.strokeStyle = slotColour(slot); g.globalAlpha = 0.45 * back * (1 - form) * lineIn; g.stroke(path) }
+  if (form < 0.99 && !props.names) for (const [slot, path] of directLines) { g.strokeStyle = slotColour(slot); g.globalAlpha = 0.45 * back * (1 - form) * lineIn; g.stroke(path) }
   for (const [slot, path] of lines) { g.strokeStyle = softInk[slot] ?? mute; g.globalAlpha = 0.6 * back * lineIn; g.stroke(path) }
   if (mix > 0.01) { g.strokeStyle = ink; g.globalAlpha = 0.45 * mix; g.stroke(litLines) }
   // The faint dots of the stories that are not shown: the color of their theme.
@@ -255,7 +258,12 @@ const draw = (sec: number, dt: number) => {
   g.globalAlpha = 1
   g.fillStyle = paper
   g.fill(rims)
-  for (const [slot, path] of fills) { g.fillStyle = softInk[slot] ?? mute; g.globalAlpha = back; g.fill(path) }
+  // With `names` a dot is a small ring in the color of its group with nothing inside it (the dots pointed at, below, are solid).
+  if (props.names) {
+    g.lineWidth = clamp(R * 0.004, 1, 1.4)
+    for (const [slot, path] of fills) { g.strokeStyle = slot > 0 ? groupInk[slot] ?? mute : mute; g.globalAlpha = back; g.stroke(path) }
+    g.lineWidth = 1
+  } else for (const [slot, path] of fills) { g.fillStyle = softInk[slot] ?? mute; g.globalAlpha = back; g.fill(path) }
   for (const i of litDots) {
     const slot = storyOf(w, i).dots[w.dot[i]!] ?? 0
     g.fillStyle = slot > 0 ? groupInk[slot] ?? ink : mute
@@ -275,11 +283,19 @@ const draw = (sec: number, dt: number) => {
     g.beginPath()
     g.arc(hx[i]!, hy[i]!, r + 1.6, 0, TAU)
     g.fill()
-    g.fillStyle = w.kind[i] === DAY_DATE ? ink : slotColour(props.themes[w.theme[i]!]!.slot)
     g.globalAlpha = w.kind[i] === DAY_STORY && !isLit(i) ? back : fade
     g.beginPath()
     g.arc(hx[i]!, hy[i]!, r, 0, TAU)
-    g.fill()
+    if (props.names) {
+      // A story is a gray circle with nothing inside it (its size follows its articles), the date a gray one, a theme one in its color.
+      g.strokeStyle = w.kind[i] === DAY_THEME ? slotColour(props.themes[w.theme[i]!]!.slot) : mute
+      g.lineWidth = 2
+      g.stroke()
+      g.lineWidth = 1
+    } else {
+      g.fillStyle = w.kind[i] === DAY_DATE ? ink : slotColour(props.themes[w.theme[i]!]!.slot)
+      g.fill()
+    }
   }
   g.strokeStyle = ink
   g.globalAlpha = 0.5
@@ -332,6 +348,7 @@ const draw = (sec: number, dt: number) => {
     if (total <= 0 || alpha < 0.01) return
     let from = 0
     g.lineCap = 'round'
+    const named: NameItem[] = []
     items.forEach((r, k) => {
       const span = r.n / total
       const key = `${tag}${k}`
@@ -340,9 +357,10 @@ const draw = (sec: number, dt: number) => {
       arcHot.set(key, reduced.value ? goal : hot + (goal - hot) * (1 - Math.exp(-dt * 9)))
       const pad = Math.min(span / 2, 3 / per)
       if (from + pad >= sweepFrac) { from += span; return }
-      g.strokeStyle = slotColour(r.slot)
-      g.globalAlpha = (0.85 + 0.15 * (arcHot.get(key) ?? 0)) * alpha
-      g.lineWidth = 2 + 2.5 * (arcHot.get(key) ?? 0)
+      const heat = arcHot.get(key) ?? 0
+      g.strokeStyle = props.names ? (heat > 0.01 ? slotColour(r.slot) : softInk[r.slot] ?? mute) : slotColour(r.slot)
+      g.globalAlpha = (0.85 + 0.15 * heat) * alpha
+      g.lineWidth = props.names ? 3 + 1.4 * heat : 2 + 2.5 * heat
       g.beginPath()
       g.ellipse(width / 2, height / 2, ringX, ringR, 0, paramOf(from + pad) - Math.PI / 2, paramOf(Math.min(from + span - pad, sweepFrac)) - Math.PI / 2)
       g.stroke()
@@ -366,10 +384,12 @@ const draw = (sec: number, dt: number) => {
         g.fillText(text, tx, ty)
         g.textAlign = 'start'
       }
+      if (props.names && r.name && span > 0) named.push({ mid: (from + span / 2) * TAU, span: span * TAU, text: r.name.length > NAME_MAX ? `${r.name.slice(0, NAME_MAX - 1)}…` : r.name, dot: r.slot > 0 ? groupInk[r.slot] ?? ink : mute })
       from += span
     })
     g.lineCap = 'butt'
     g.globalAlpha = 1
+    if (named.length && grown >= 1) drawColumns(g, { fontText, paper, ink, mute }, { x0: 0, y0: 0, x1: width, y1: height }, { cx: width / 2, cy: height / 2, ring: ringR, kx: 1 }, named, 0.9 * alpha)
   }
   arcs(props.outlets, 'o', props.grouped ? 1 : 1 - form, k => (props.grouped || form < 0.5) && hoverRing === k)
   arcs(props.ring, 't', props.grouped ? 0 : form, k => form >= 0.5 && (props.lit === props.ring[k]!.issue || hoverRing === k))
@@ -394,7 +414,7 @@ const draw = (sec: number, dt: number) => {
   }
   for (let i = 0; i < w.n; i++) {
     if (w.kind[i] !== DAY_THEME) continue
-    if (form < 0.01 || w.theme[i]! >= props.labels) continue
+    if (form < 0.01 || w.theme[i]! >= props.labels || props.names) continue
     const th = props.themes[w.theme[i]!]!
     const name = th.name
     const short = name.length > 28 ? `${name.slice(0, 27).trimEnd()}…` : name

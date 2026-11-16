@@ -144,7 +144,7 @@ onBeforeUnmount(() => { watcher?.disconnect(); plegma.setHomeDay(null); plegma.p
   <section id="home-today" ref="root" class="home-today" :aria-label="t('home.today.title')">
     <template v-if="home.data.value && day !== null">
       <div class="home-today-days"><HomeCalendar v-model="day" :dates="home.data.value.dates" :totals="totals" /></div>
-      <div class="home-today-map"><PlegmaDayWeb v-model:lit="litIssue" :themes="themes" :ring="ring" :outlets="dayOutlets" :mode="mode" :date="fmtDate(home.data.value.dates[day]!)" :picked="plegma.homePick" :active="inView" @pick="plegma.pickHome" @pick-theme="pickedTheme = $event" /></div>
+      <div class="home-today-map"><PlegmaDayWeb v-model:lit="litIssue" names :themes="themes" :ring="ring" :outlets="dayOutlets" :mode="mode" :date="fmtDate(home.data.value.dates[day]!)" :picked="plegma.homePick" :active="inView" @pick="plegma.pickHome" @pick-theme="pickedTheme = $event" /></div>
       <div class="home-today-side">
         <SegmentedControl v-model="mode" class="home-mode-tabs" :label="t('home.mode.label')" :options="modes" />
         <Transition name="home-cards" mode="out-in">
