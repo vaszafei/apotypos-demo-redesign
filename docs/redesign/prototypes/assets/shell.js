@@ -48,7 +48,7 @@
   // A detail route names the tab that lists it: the back button and the trail of the page go there.
   const NAV = [
     { key: 'home', tabs: [['home', '/']] },
-    { key: 'media', tabs: [['overview', '/media'], ['ownership', '/groups'],
+    { key: 'media', tabs: [['ownership', '/groups'],
       ['topics', '/trends'],
       ['stories', '/stories'],
       ['writing', '/media/writing']], details: [['/outlet', '/media'], ['/group', '/groups'], ['/topic', '/trends'], ['/story', '/stories']] },

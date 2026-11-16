@@ -39,7 +39,7 @@ type Tab = [key: string, route: string, subs?: [string, string][]]
 interface Item { key: string, tabs: Tab[], details?: [string, string][] }
 export const PAGE_TREE: Item[] = [
   { key: 'home', tabs: [['home', '/']] },
-  { key: 'media', tabs: [['overview', '/media'], ['ownership', '/groups'], ['topics', '/trends'], ['stories', '/stories'], ['writing', '/media/writing']],
+  { key: 'media', tabs: [['ownership', '/groups'], ['topics', '/trends'], ['stories', '/stories'], ['writing', '/media/writing']],
     details: [['/outlet', '/media'], ['/group', '/groups'], ['/topic', '/trends'], ['/story', '/stories']] },
   { key: 'people', tabs: [['overview', '/fingerprints'], ['spread', '/fingerprints/spread']], details: [['/person', '/fingerprints']] },
   { key: 'world', tabs: [
