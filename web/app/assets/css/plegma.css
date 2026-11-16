@@ -91,7 +91,8 @@
 .plegma-blocks > i { position: absolute; left: calc((var(--k) + 0.5) / 16 * 100%); top: calc((var(--k) + 0.5) / 16 * 100%); width: var(--bar, 14px); height: 2400px; margin: -1200px 0 0 calc(var(--bar, 14px) / -2); background: var(--text-primary); transform: rotate(45deg) scaleX(0); }
 .plegma-orbit.is-in .plegma-blocks > i { animation: plegma-block 420ms cubic-bezier(0.4, 0, 0.2, 1) calc(var(--card-at) + var(--k) * 28ms) both; }
 @keyframes plegma-block { 0% { transform: rotate(45deg) scaleX(0); } 42% { transform: rotate(45deg) scaleX(1); } 100% { transform: rotate(45deg) scaleX(0); } }
-.plegma-card-body > .dcard { border-color: transparent; }
+/* The card of the page has its own edge; the dcard inside has none, also under the pointer (the global hover of a dcard, in app.css, would draw a second, darker edge and a glow inside the first). */
+.plegma-card .plegma-card-body > .dcard, .plegma-card .plegma-card-body > .dcard:is(:hover, :focus-within) { border-color: transparent; box-shadow: none; }
 .plegma-card .dcard-head { min-height: 20px; }
 .plegma-card .rows-related li { padding: 3px 0; }
 .plegma-card .how-panel .rows-caption { margin-top: var(--space-2); }
@@ -446,3 +447,23 @@ html[data-search-fly] .body-search { opacity: 0; }
 @media (prefers-reduced-motion: reduce) { .un-edge, .un-labels .un-label { transition: none; } }
 .media-plegma.is-un .un-name { display: grid; line-height: 1.25; }
 .media-plegma.is-un .un-name .muted-text { margin-left: 0; }
+
+/* The story view only: the left column (the other stories of the theme) is a little wider, the two columns of cards on the right a little narrower, so the web has more room (from 1600px; below it the columns keep their old widths). The names of the stories are in the small caption size. */
+@media (min-width: 1600px) {
+  .plegma-orbit.is-story, .plegma-orbit.is-story.no-right { grid-template-columns: minmax(0, 2.4fr) minmax(0, 4.6fr) minmax(0, 2.4fr) minmax(0, 2.6fr); }
+}
+.plegma-orbit.is-story .card-related .rows-related li { font-size: var(--text-caption); }
+@media (min-width: 1600px) {
+  .plegma-orbit.is-story .card-how .how-panel .bar-list { grid-template-columns: fit-content(54%) minmax(56px, 1fr) auto; }
+  .plegma-orbit.is-story .card-people .data-table td:nth-child(2) { white-space: nowrap; }
+}
+
+/* The story view on a small laptop (1024 to 1279px): the days and the people are side by side under the row, as on a wide screen, so the row of the map and the cards keeps its height (stacked, they took all of it and the cards lay over each other). */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .plegma-orbit.is-story.has-strip .orbit-under { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--space-3); }
+  .plegma-orbit.is-story.has-strip .orbit-under > .plegma-card { max-height: 200px; }
+  .plegma-orbit.is-story.has-strip .card-people .data-table :is(th, td) { padding-block: 2px; }
+  /* The two cards of the right keep their height and the column scrolls, instead of the cards being squeezed over each other. */
+  .plegma-orbit.is-story.has-strip .orbit-subs { display: flex; flex-direction: column; gap: var(--space-3); overflow-y: auto; pointer-events: auto; scrollbar-width: thin; }
+  .plegma-orbit.is-story.has-strip .orbit-sub, .plegma-orbit.is-story.has-strip .orbit-sub > .plegma-card { flex: none; }
+}
