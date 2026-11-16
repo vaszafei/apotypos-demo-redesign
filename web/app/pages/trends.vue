@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useElementSize } from '@vueuse/core'
 // Θέματα (topics-v2.html): a screen of the Plegma (components/MediaPlegma.vue) whose web is the largest themes of the period with their largest stories, and beside it the lines over
 // time and the list of the topics; the movers on its left.
 definePageMeta({ backdrop: true })
@@ -20,6 +21,11 @@ const FLOW_OUTLETS = 22
 const flow = computed(() => (periodWeb?.ready.value ? periodWeb.flows(rows.value.slice(0, FLOW_TOPICS).map(r => r.k), new Map(rows.value.map(r => [r.k, r.count])), total.value, FLOW_OUTLETS) : null))
 // The line of the theme pointed at, on the web or on the Sankey, comes forward on the chart.
 const litLine = computed(() => (lit.value !== null && series.value.some(s => s.key === String(lit.value)) ? String(lit.value) : null))
+// The lines card ends where the Sankey card ends: the chart is as tall as the room under the web and the trends (the card's own title and padding are CHART_CHROME).
+const CHART_CHROME = 68
+const underBox = ref<HTMLElement>()
+const { height: underHeight } = useElementSize(underBox)
+const chartTall = computed(() => Math.min(420, Math.max(120, Math.floor(underHeight.value - CHART_CHROME) || 196)))
 const sliced = computed(() => dates.value.slice(range.value[0], range.value[1] + 1))
 // A new period draws the lines in again (assets/motion.js replay); the first view is played by plugins/motion.client.ts.
 const { $motion } = useNuxtApp()
@@ -62,26 +68,26 @@ const trendVs = computed(() => {
     <template #map="{ active }">
       <div v-if="dates.length" class="topics-date"><DateRange plain :dates="dates" :from="view.from" :to="view.to" @change="r => period.set(r.from, r.to)" /></div>
       <div class="media-map-web">
-        <ClientOnly><TopicWeb :lit="lit" :rows="rows" :total="total" :color-of="colorOf" :themes="webThemes" :zoom="0.9" :active="active && webThemes.length > 0" @update:lit="v => lit = v" /></ClientOnly>
+        <ClientOnly><TopicWeb :lit="lit" :rows="rows" :total="total" :color-of="colorOf" :themes="webThemes" :zoom="1.12" :active="active && webThemes.length > 0" @update:lit="v => lit = v" /></ClientOnly>
       </div>
     </template>
     <template #side>
       <DashCard class="topic-trends" :title="t('topics2.move.title')" :info="`${trendVs ? `${trendVs} ` : ''}${t('topics2.trend.info2', { n: MIN_BEFORE })}`">
         <p v-if="!trends" class="dcard-empty">{{ t('stories.trend.empty') }}</p>
         <template v-else>
-          <p class="dcard-sub">{{ t('stories.trend.up') }}</p>
           <BarList v-if="trends.up.length" :rows="trends.up.map(trendRow)" :max="trends.widest" />
           <p v-else class="dcard-empty">{{ t('stories.trend.none') }}</p>
-          <p class="dcard-sub">{{ t('stories.trend.down') }}</p>
           <BarList v-if="trends.down.length" :rows="trends.down.map(trendRow)" :max="trends.widest" />
           <p v-else class="dcard-empty">{{ t('stories.trend.none') }}</p>
         </template>
       </DashCard>
     </template>
     <template #under>
-      <DashCard :title="t('topics2.time.title')" :info="timeInfo" card="time">
-        <LinesChart v-if="series.length" :lit="litLine" roomy :dates="sliced" :series="series" :tall="196" :caption="t('topics2.time.title')" />
-      </DashCard>
+      <div ref="underBox" class="topics-under">
+        <DashCard :title="t('topics2.time.title')" :info="timeInfo" card="time">
+          <LinesChart v-if="series.length" :lit="litLine" roomy :dates="sliced" :series="series" :tall="chartTall" :caption="t('topics2.time.title')" />
+        </DashCard>
+      </div>
     </template>
     <template #aside>
       <DashCard :title="t('topics2.flow.title')" :info="t('topics2.flow.info')">
