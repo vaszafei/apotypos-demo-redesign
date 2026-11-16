@@ -5,8 +5,7 @@ export interface NavSection { key: string, to: string, icon: string, tabs: NavTa
 // The sections and tabs of NAV in assets/shell.js, (the routes that are not ported yet link to their static page, see NavLink).
 export const NAV: NavSection[] = [
   { key: 'home', to: '/', icon: 'home', tabs: [] },
-  { key: 'media', to: '/media', icon: 'tv', tabs: [
-    { key: 'overview', to: '/media', icon: 'grid_view' },
+  { key: 'media', to: '/groups', icon: 'tv', tabs: [
     { key: 'ownership', to: '/groups', icon: 'account_balance' },
     { key: 'topics', to: '/trends', icon: 'sell' },
     { key: 'stories', to: '/stories', icon: 'sensors' },
