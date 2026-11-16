@@ -9,9 +9,11 @@ import { dayDots, PLEGMA_DAY_STORIES, PLEGMA_DAY_THEMES } from '~/utils/plegma/p
 import type { PlegmaDayTheme } from '~/utils/plegma/plegma-day'
 import type { DayOutlet, DayRing } from '~/components/plegma/PlegmaDayWeb.vue'
 import { themeSlots } from '~/utils/plegma/plegma-world'
+import { diveFromDay } from '~/utils/plegma/plegma-dive'
+import { useMediaQuery } from '@vueuse/core'
 
 // «Η επικαιρότητα» under the hero (the section #home-today of index.html): the calendar of the days floating over the Plegma, under it the web of the picked day (the date, its themes, the stories
-// of each and a dot for each article: components/PlegmaDayWeb.vue), and beside it the card of the story of the day with the bar of the outlets that ran it. A story picked on the web takes the card.
+// of each and a dot for each article: components/PlegmaDayWeb.vue), and beside it the list of the stories (or the themes) of the day. A story pointed at in the list is lit on the web with its title; a click on one dives into its page.
 // A switch over the cards turns the web (and the cards) from the stories of the day, whose ring is the outlets, to the themes of the day, whose ring is the themes.
 // The section is drawn in the browser (the data of the stories is 2.8 MB that the prerendered page should not carry).
 type HomeData = { dates: string[], outlets: { name: string, daily: (number | null)[] }[], issues: StoriesData['issues'], issueDaily: (number | null)[][] }
@@ -64,25 +66,7 @@ const dayOutlets = computed<DayOutlet[]>(() => {
 })
 const mode = ref<'stories' | 'themes'>('stories')
 const modes = computed(() => [{ value: 'stories', label: t('home.mode.stories') }, { value: 'themes', label: t('home.mode.themes') }])
-const pickedTheme = ref<number | null>(null)
-watch(day, () => { pickedTheme.value = null })
 watch(mode, () => { litIssue.value = null })
-// The theme in its card: the one picked, or the day's largest; with its stories of the day and the bar of the outlets that ran them.
-const theme = computed(() => {
-  const x = ix.value
-  const d = day.value
-  const row = (pickedTheme.value !== null ? dayThemes.value.find(r => r.issue === pickedTheme.value) : null) ?? dayThemes.value[0]
-  if (!x || d === null || !row) return null
-  const rows = (x.byDay[d] ?? []).filter(r => r.s.issue === row.issue)
-  const perOutlet = new Map<string, { name: string, group: string | null, n: number, slug: string }>()
-  for (const r of rows) for (const o of homeOutletsOf(x, r.s, d, d)) {
-    const have = perOutlet.get(o.slug)
-    if (have) have.n += o.n
-    else perOutlet.set(o.slug, { name: o.name, group: o.group, n: o.n, slug: o.slug })
-  }
-  const parts = [...perOutlet.values()].sort((a, b) => b.n - a.n).map(o => ({ ...o, color: (o.group && colorOf.value.get(o.group)) || NO_GROUP }))
-  return { ...row, stories: rows.length, parts }
-})
 const ring = computed<DayRing[]>(() => dayThemes.value.map(r => ({ issue: r.issue, name: r.name, slot: r.slot, n: r.n })))
 
 // The themes of the day for the web: the largest stories of the day (the most articles) grouped by theme; the other stories of the day are only counted, for the faint dots.
@@ -114,16 +98,20 @@ const themes = computed<PlegmaDayTheme[]>(() => {
   return [...byIssue.values()].sort((a, b) => b.n - a.n).slice(0, PLEGMA_DAY_THEMES)
 })
 
-// The story in the card: the one picked on the web, or the day's largest.
-const story = computed(() => {
-  const x = ix.value
-  if (!x || day.value === null) return null
-  const rows = x.byDay[day.value] ?? []
-  const row = (plegma.homePick !== null ? rows.find(r => r.s.id === plegma.homePick) : null) ?? rows[0]
-  if (!row) return null
-  const outlets = homeOutletsOf(x, row.s, day.value, day.value)
-  return { s: row.s, n: row.n, topic: x.issues[row.s.issue]!, outlets, parts: outlets.map(o => ({ name: o.name, group: o.group, n: o.n, slug: o.slug, color: (o.group && colorOf.value.get(o.group)) || NO_GROUP })) }
-})
+// Picking a story or a theme (on the web or in the list) dives into its page: the section fades out, the web swells and dives into the node (utils/plegma/plegma-dive.ts), the page changes.
+const web = ref<{ spotOf: (t: { story?: number, theme?: number }) => { x: number, y: number }, canvas: HTMLCanvasElement | undefined }>()
+const reduced = useMediaQuery('(prefers-reduced-motion: reduce)')
+const leaving = ref(false)
+const hoverStory = ref<number | null>(null)
+const open = async (target: { story?: number, theme?: number }) => {
+  const w = web.value
+  if (leaving.value || !w?.canvas) return
+  leaving.value = true
+  hoverStory.value = null
+  litIssue.value = null
+  const to = target.story !== undefined ? storyHref(target.story) : topicHref(String(target.theme))
+  await diveFromDay(w.canvas, w.spotOf(target), { go: () => navigateTo(to), region: () => plegma.region, reduced: reduced.value })
+}
 
 // The Plegma behind steps back to a dim map while the section is in view, and goes back to the best of the week with the hero in view.
 const root = ref<HTMLElement>()
@@ -141,20 +129,20 @@ onBeforeUnmount(() => { watcher?.disconnect(); plegma.setHomeDay(null); plegma.p
 </script>
 
 <template>
-  <section id="home-today" ref="root" class="home-today" :aria-label="t('home.today.title')">
+  <section id="home-today" ref="root" class="home-today" :class="{ 'is-leaving': leaving }" :aria-label="t('home.today.title')">
     <template v-if="home.data.value && day !== null">
       <div class="home-today-top">
-        <SegmentedControl v-model="mode" class="home-mode-tabs" :label="t('home.mode.label')" :options="modes" />
-        <div class="home-today-days"><HomeCalendar v-model="day" :dates="home.data.value.dates" :totals="totals" /></div>
+        <div class="home-today-days"><HomeCalendar v-model="day" :dates="home.data.value.dates" :totals="totals" :max="14" /></div>
       </div>
-      <div class="home-today-map"><PlegmaDayWeb v-model:lit="litIssue" names :themes="themes" :ring="ring" :outlets="dayOutlets" :mode="mode" :date="fmtDate(home.data.value.dates[day]!)" :picked="plegma.homePick" :active="inView" @pick="plegma.pickHome" @pick-theme="pickedTheme = $event" /></div>
+      <div class="home-today-map"><PlegmaDayWeb ref="web" v-model:lit="litIssue" names :hover-story="hoverStory" :themes="themes" :ring="ring" :outlets="dayOutlets" :mode="mode" :date="fmtDate(home.data.value.dates[day]!)" :picked="null" :active="inView" @pick="open({ story: $event })" @pick-theme="open({ theme: $event })" /></div>
       <div class="home-today-side">
+        <SegmentedControl v-model="mode" class="home-mode-tabs" :label="t('home.mode.label')" :options="modes" />
         <Transition name="home-cards" mode="out-in">
           <div v-if="mode === 'stories'" key="stories" class="home-today-cards">
             <DashCard :title="t('home.day.title')" :info="t('home.stories.info')" card="home-stories" class="home-day-list">
               <ul v-if="storyRows.length" class="home-stories" @scroll="more">
-                <li v-for="r in storyRows.slice(0, shown)" :key="r.s.id" :class="story && story.s.id === r.s.id ? 'is-current' : undefined">
-                  <button type="button" class="home-story-pick" :aria-pressed="story?.s.id === r.s.id" @click="plegma.pickHome(r.s.id)">
+                <li v-for="r in storyRows.slice(0, shown)" :key="r.s.id" @pointerenter="hoverStory = r.s.id" @pointerleave="hoverStory = null">
+                  <button type="button" class="home-story-pick" @focus="hoverStory = r.s.id" @blur="hoverStory = null" @click="open({ story: r.s.id })">
                     <span class="home-story-name">{{ storyName(r.s) }}</span><span class="muted-text">{{ fmtInt(r.n) }}</span>
                   </button>
                 </li>
@@ -165,8 +153,8 @@ onBeforeUnmount(() => { watcher?.disconnect(); plegma.setHomeDay(null); plegma.p
           <div v-else key="themes" class="home-today-cards">
             <DashCard :title="t('home.themes.title')" :info="t('home.themes.info')" card="home-themes" class="home-day-list">
               <ul v-if="dayThemes.length" class="home-stories">
-                <li v-for="r in dayThemes" :key="r.issue" :class="theme && theme.issue === r.issue ? 'is-current' : undefined" @pointerenter="litIssue = r.issue" @pointerleave="litIssue = null">
-                  <button type="button" class="home-story-pick" :aria-pressed="theme?.issue === r.issue" @click="pickedTheme = r.issue">
+                <li v-for="r in dayThemes" :key="r.issue" @pointerenter="litIssue = r.issue" @pointerleave="litIssue = null">
+                  <button type="button" class="home-story-pick" @focus="litIssue = r.issue" @blur="litIssue = null" @click="open({ theme: r.issue })">
                     <span class="home-story-name">{{ r.name }}</span><span class="muted-text">{{ fmtInt(r.n) }}</span>
                   </button>
                 </li>

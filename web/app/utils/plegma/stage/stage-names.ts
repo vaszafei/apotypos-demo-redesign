@@ -3,7 +3,7 @@ import type { StageState } from './stage-state'
 import type { StageDeps } from './stage-core'
 
 // The names of the arcs of a ring (the web of a story, the web of a theme): drawn outside the ring, each with a dot in its color.
-export type NameItem = { mid: number, span: number, text: string, dot: string }
+export type NameItem = { mid: number, span: number, text: string, dot: string, hot?: boolean }
 export type RingAt = { cx: number, cy: number, ring: number, kx: number }
 export const NAME_MAX = 22
 
@@ -18,6 +18,7 @@ export const drawColumns = (g: CanvasRenderingContext2D, look: ColumnLook, room:
   g.lineJoin = 'round'
   const yMin = Math.max(room.y0, a.cy - a.ring - 4) + 8
   const yMax = room.y1 - 6
+  const anyHot = items.some(it => it.hot)
   for (const side of [1, -1] as const) {
     const colx = a.cx + side * (a.ring + 24)
     const room_w = side === 1 ? room.x1 - (colx + 9) - 4 : colx - 9 - room.x0 - 4
@@ -51,7 +52,8 @@ export const drawColumns = (g: CanvasRenderingContext2D, look: ColumnLook, room:
       g.lineTo(colx - side * 14, y)
       g.lineTo(colx, y)
       g.stroke()
-      g.globalAlpha = alpha
+      g.globalAlpha = anyHot && !m.it.hot ? alpha * 0.55 : alpha
+      g.font = `${m.it.hot ? '600 ' : ''}11.5px ${look.fontText}`
       g.textAlign = side === 1 ? 'left' : 'right'
       g.lineWidth = 3.5
       g.strokeStyle = look.paper

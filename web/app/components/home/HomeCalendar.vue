@@ -5,11 +5,13 @@ import { dayChange } from '~/utils/home-days'
 // Home.Calendar of assets/home.js, floating over the Plegma with no card and no title: a row of day tiles, as many as the width holds, with an arrow on the left of the first and one on the
 // right of the last that move the row by a page of days. A tile has the day, the articles of all the outlets and the change against the day before, and picks the day. The name of a month
 // is over the first tile of the row and over the first day of each month in it.
-const props = defineProps<{ dates: string[], totals: (number | null)[] }>()
+const props = withDefaults(defineProps<{ dates: string[], totals: (number | null)[], max?: number }>(), { max: Infinity })
 const selected = defineModel<number>({ required: true })
 const { t } = useI18n()
 const TILE = 62
 const GAP = 6
+// The two arrows with their gaps.
+const ARROWS = 96
 const win = ref<HTMLElement>()
 const count = ref(7)
 const start = ref(0)
@@ -31,7 +33,7 @@ const page = (dir: number) => { start.value = clampStart(start.value + dir * Mat
 useResizeObserver(win, ([entry]) => {
   const w = entry?.contentRect.width ?? 0
   if (!w) return
-  count.value = Math.max(3, Math.floor((w + GAP) / (TILE + GAP)))
+  count.value = Math.min(props.max, Math.max(3, Math.floor((w + GAP) / (TILE + GAP))))
   start.value = clampStart(placed ? start.value : last.value)
   placed = true
 })
@@ -39,7 +41,7 @@ watch(selected, (i) => { if (i < start.value || i >= start.value + count.value) 
 </script>
 
 <template>
-  <div class="home-calendar" role="group" :aria-label="t('home.days.title')">
+  <div class="home-calendar" role="group" :aria-label="t('home.days.title')" :style="Number.isFinite(max) ? { maxWidth: `${max * (TILE + GAP) - GAP + ARROWS}px` } : undefined">
     <button type="button" class="icon-button home-days-step" :disabled="start <= 0" :aria-label="t('home.days.prev')" @click="page(-1)"><AppIcon name="chevron-left" class="icon" /></button>
     <div ref="win" class="home-days-window">
       <ul class="home-days">

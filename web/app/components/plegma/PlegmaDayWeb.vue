@@ -19,8 +19,8 @@ export interface DayOutlet { name: string, slot: number, n: number, group?: stri
 // `themeLabel` names the theme in the tooltip of a story when the themes are something else (the groups of Ιδιοκτησία, whose stories are their outlets: a story with no `media` has no row of them),
 // `spread` that many themes go round the center by the golden angle (utils/plegma/plegma-day.ts), `zoom` the share of the area the web fills (the ring included), `shares` that a theme is as large as its share
 // of the ring (the area of its node is its articles), `ellipse` that the ring is an ellipse as wide as the area allows (the web lies in it, and the arcs of the outlets are named with their share outside it), `grouped` that the stories are grouped by their themes (the nodes of the themes and their names) while the ring stays the outlets; and `shares` that a theme is as large as its share
-// of the ring (the area of its node is its articles) and its share is written after its name and in its tooltip, `names` that it has the look of the web of a story and of a theme (components/PlegmaStage.vue: a story is a gray circle as large as its articles, a dot a small ring in the color of its group, no lines from the center to the stories, the names of the arcs in two columns beside the ring), `grow` that the web grows out of the center when it comes into view and again when its data changes, and `label` the name of the picture for a screen reader.
-const props = withDefaults(defineProps<{ themes: PlegmaDayTheme[], ring: DayRing[], outlets: DayOutlet[], mode: 'stories' | 'themes', lit: number | null, date: string, picked: number | null, active: boolean, sub?: string, labels?: number, grow?: boolean, label?: string, spread?: boolean, themeLabel?: string, zoom?: number, shares?: boolean, ellipse?: boolean, grouped?: boolean, names?: boolean }>(), { sub: undefined, labels: Infinity, grow: false, label: undefined, spread: false, themeLabel: undefined, zoom: 1, shares: false, ellipse: false, grouped: false, names: false })
+// of the ring (the area of its node is its articles) and its share is written after its name and in its tooltip, `hoverStory` the id of a story that is pointed at in a list beside the web (it is lit and its title is written at its circle, as when the pointer is on it), `names` that it has the look of the web of a story and of a theme (components/PlegmaStage.vue: a story is a gray circle as large as its articles, a dot a small ring in the color of its group, no lines from the center to the stories, the names of the arcs in two columns beside the ring), `grow` that the web grows out of the center when it comes into view and again when its data changes, and `label` the name of the picture for a screen reader.
+const props = withDefaults(defineProps<{ themes: PlegmaDayTheme[], ring: DayRing[], outlets: DayOutlet[], mode: 'stories' | 'themes', lit: number | null, date: string, picked: number | null, active: boolean, sub?: string, labels?: number, grow?: boolean, label?: string, spread?: boolean, themeLabel?: string, zoom?: number, shares?: boolean, ellipse?: boolean, grouped?: boolean, names?: boolean, hoverStory?: number | null }>(), { sub: undefined, labels: Infinity, grow: false, label: undefined, spread: false, themeLabel: undefined, zoom: 1, shares: false, ellipse: false, grouped: false, names: false, hoverStory: null })
 const emit = defineEmits<{ pick: [id: number], pickTheme: [issue: number], 'update:lit': [issue: number | null] }>()
 const { t } = useI18n()
 const tooltip = useTooltipStore()
@@ -83,6 +83,8 @@ let hover = -1
 let hoverRing = -2
 let mix = 0
 let litStory = -1
+let titleKey = -1
+let titleMix = 0
 let tmix = 0
 // 0 for the form of the stories, 1 for the form of the themes; `form` is the same eased, for the places and the fades.
 let themed = props.mode === 'themes' ? 1 : 0
@@ -178,8 +180,12 @@ const draw = (sec: number, dt: number) => {
   // What is lit: the story pointed at, or the one picked; the others step back.
   const pointedStory = hover > 0 && (w.kind[hover] === DAY_STORY || w.kind[hover] === DAY_DOT) ? w.theme[hover]! * 100 + w.story[hover]! : null
   const pickedStory = props.picked !== null ? props.themes.flatMap((th, ti) => th.stories.map((s, si) => ({ id: s.id, key: ti * 100 + si }))).find(r => r.id === props.picked)?.key ?? null : null
-  const lit = pointedStory ?? pickedStory
+  const listedStory = props.hoverStory !== null ? props.themes.flatMap((th, ti) => th.stories.map((s, si) => ({ id: s.id, key: ti * 100 + si }))).find(r => r.id === props.hoverStory)?.key ?? null : null
+  const titled = pointedStory ?? listedStory
+  const lit = titled ?? pickedStory
   if (lit !== null) litStory = lit
+  if (titled !== null) titleKey = titled
+  titleMix = reduced.value ? (titled !== null ? 1 : 0) : titleMix + ((titled !== null ? 1 : 0) - titleMix) * (1 - Math.exp(-dt * 9))
   mix = reduced.value ? (lit !== null ? 1 : 0) : mix + ((lit !== null ? 1 : 0) - mix) * (1 - Math.exp(-dt * 9))
   // A theme that is pointed at comes forward: the rest steps back, and the theme is drawn again at the end.
   const litIssue = form > 0.5 ? props.lit : null
@@ -384,7 +390,7 @@ const draw = (sec: number, dt: number) => {
         g.fillText(text, tx, ty)
         g.textAlign = 'start'
       }
-      if (props.names && r.name && span > 0) named.push({ mid: (from + span / 2) * TAU, span: span * TAU, text: r.name.length > NAME_MAX ? `${r.name.slice(0, NAME_MAX - 1)}…` : r.name, dot: r.slot > 0 ? groupInk[r.slot] ?? ink : mute })
+      if (props.names && r.name && span > 0) named.push({ mid: (from + span / 2) * TAU, span: span * TAU, text: r.name.length > NAME_MAX ? `${r.name.slice(0, NAME_MAX - 1)}…` : r.name, dot: r.slot > 0 ? groupInk[r.slot] ?? ink : mute, hot: heat > 0.5 })
       from += span
     })
     g.lineCap = 'butt'
@@ -437,6 +443,41 @@ const draw = (sec: number, dt: number) => {
   }
   g.textAlign = 'start'
   g.globalAlpha = 1
+  // With `names` the whole title of the story pointed at (on the web or in the list) is at its circle, on the side toward the middle of the web, in lines of at most 190 px.
+  if (props.names && titleMix > 0.02 && titleKey >= 0) {
+    const at = Array.from({ length: w.n }, (_, i) => i).find(i => w.kind[i] === DAY_STORY && w.theme[i]! * 100 + w.story[i]! === titleKey)
+    const named = at !== undefined ? storyOf(w, at) : null
+    if (at !== undefined && named) {
+      const toRight = hx[at]! <= width / 2
+      const gap = radius(w, at, R) + 8
+      g.font = `600 12px ${fontText}`
+      g.textBaseline = 'middle'
+      g.textAlign = toRight ? 'left' : 'right'
+      g.lineJoin = 'round'
+      const rows: string[] = []
+      let row = ''
+      for (const word of named.name.split(/\s+/)) {
+        const next = row ? `${row} ${word}` : word
+        if (row && g.measureText(next).width > 190) { rows.push(row); row = word } else row = next
+      }
+      if (row) rows.push(row)
+      const x = hx[at]! + (toRight ? gap : -gap)
+      rows.forEach((text, n) => {
+        const y = hy[at]! + (n - (rows.length - 1) / 2) * 15
+        g.globalAlpha = 0.95 * titleMix
+        g.strokeStyle = paper
+        g.lineWidth = 4
+        g.strokeText(text, x, y)
+        g.globalAlpha = titleMix
+        g.fillStyle = ink
+        g.fillText(text, x, y)
+      })
+      g.textBaseline = 'alphabetic'
+      g.textAlign = 'start'
+      g.lineJoin = 'miter'
+      g.globalAlpha = 1
+    }
+  }
   if (hover > 0 && (w.kind[hover] === DAY_STORY || w.kind[hover] === DAY_THEME)) {
     g.strokeStyle = ink
     g.globalAlpha = 0.85
@@ -557,10 +598,17 @@ watch(() => [props.active, reduced.value] as const, ([on, still]) => {
   if (on && !still) loop.resume()
   else { loop.pause(); draw(performance.now() / 1000, 0.016) }
 }, { immediate: true })
-watch([web, () => props.picked, () => props.lit, () => props.ring, () => props.outlets], () => { if (!loop.isActive.value) draw(performance.now() / 1000, 0.016) })
+watch([web, () => props.picked, () => props.lit, () => props.hoverStory, () => props.ring, () => props.outlets], () => { if (!loop.isActive.value) draw(performance.now() / 1000, 0.016) })
 watch(() => props.mode, () => { if (loop.isActive.value) return; themed = props.mode === 'themes' ? 1 : 0; draw(performance.now() / 1000, 0.016) })
 useEventListener(document, 'visibilitychange', () => { if (document.hidden) loop.pause(); else if (props.active && !reduced.value) loop.resume() })
 onBeforeUnmount(() => loop.pause())
+// Where a story or a theme is on the canvas (px), for the dive into its page: its node, or the middle of the web when it has none (a story beyond the largest ones, a theme in the form of the stories).
+const spotOf = (target: { story?: number, theme?: number }) => {
+  const w = web.value
+  const at = w ? Array.from({ length: w.n }, (_, i) => i).find(i => (target.story !== undefined ? w.kind[i] === DAY_STORY && storyOf(w, i).id === target.story : w.kind[i] === DAY_THEME && props.themes[w.theme[i]!]!.issue === target.theme)) : undefined
+  return at !== undefined && (target.story !== undefined || form > 0.5) ? { x: hx[at]!, y: hy[at]! } : { x: width / 2, y: height / 2 }
+}
+defineExpose({ spotOf, canvas })
 </script>
 
 <template>
