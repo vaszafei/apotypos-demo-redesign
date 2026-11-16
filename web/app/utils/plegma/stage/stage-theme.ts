@@ -287,6 +287,37 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
         const first = themeLit.story === i && mix > 0.5
         // The web is the size of a story's, so there is no room for the names around it: only the story pointed at has its name.
         if (!first) continue
+        if (fresh) {
+          // On a theme's web the whole title of the story is at its circle: beside it, on the side toward the middle of the web, in lines of at most 190 px.
+          const nx = hx[1 + i]!
+          const ny = hy[1 + i]!
+          const toRight = nx <= disc.x
+          const gap = themeNodeRadius(web, 1 + i, unit) + 8
+          g.font = `600 12px ${st.fontText}`
+          g.textBaseline = 'middle'
+          const lines: string[] = []
+          let line = ''
+          for (const word of web.stories[i]!.name.split(/\s+/)) {
+            const next = line ? `${line} ${word}` : word
+            if (line && g.measureText(next).width > 190) { lines.push(line); line = word } else line = next
+          }
+          if (line) lines.push(line)
+          g.textAlign = toRight ? 'left' : 'right'
+          const x = nx + (toRight ? gap : -gap)
+          lines.forEach((text, n) => {
+            const y = ny + (n - (lines.length - 1) / 2) * 15
+            g.globalAlpha = 0.95
+            g.strokeStyle = st.paper
+            g.lineWidth = 4
+            g.strokeText(text, x, y)
+            g.globalAlpha = 1
+            g.fillStyle = st.ink
+            g.fillText(text, x, y)
+          })
+          g.font = `11px ${st.fontText}`
+          g.textBaseline = 'alphabetic'
+          continue
+        }
         // The name is outside the ring, the way its story lies from the theme.
         const a = Math.atan2(web.y[1 + i]!, web.x[1 + i]!)
         const sx = Math.cos(a)

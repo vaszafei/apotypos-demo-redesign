@@ -11,7 +11,6 @@ const { t } = useI18n()
 const plegma = usePlegmaStore()
 const index = computed(() => props.index)
 const { home, loading, problem, retry, colorOfGroup, model } = useTopicDetail(index)
-const diffKey = computed(() => [{ label: t('story.how.more'), color: 'var(--emph-more)' }, { label: t('story.how.less'), color: 'var(--emph-less)' }])
 
 // The name of the topic is in the trail and the title of the document as soon as the topics are there, also when another card has no data (the static title()).
 const named = computed(() => { const issue = home.data.value?.issues[props.index]; return issue ? topicName(issue) : null })
@@ -77,10 +76,9 @@ const orbit = ref<HTMLElement>()
 const map = ref<HTMLElement>()
 usePlegmaRegion(orbit, map, { side: 440, top: -32, bottom: 28, lean: 0.62, names: true, clear: true, ringPerSide: 0.45 })
 
-// The theme over time, as the story view has its days (PlegmaDaysCard): the line of the theme, and under it a line for each story the web shows. The axis is the square
-// root, so the stories are not flat next to the theme.
+// The stories of the theme over time: a line for each story the web shows (the theme itself has no line).
 const { height: windowHeight } = useWindowSize()
-const tall = computed(() => Math.round(Math.min(300, Math.max(110, windowHeight.value * 0.12))))
+const tall = computed(() => Math.round(Math.min(300, Math.max(110, windowHeight.value * 0.2))))
 const timeLines = computed(() => {
   const m = model.value
   if (!m) return null
@@ -88,10 +86,9 @@ const timeLines = computed(() => {
   const to = m.last + 1
   const others = [1, 2, 3, 4, 5, 6, 7, 8].filter(c => c !== slot)
   const stories = listed.value.map((s, i) => ({ key: `s${s.id}`, name: storyName(s), color: `var(--cat-${others[i % others.length]})`, values: s.values.slice(0, to) }))
-  const theme = { key: 'topic', name: topicName(m.issue), color: slot ? `var(--cat-${slot})` : 'var(--ink)', values: m.daily.slice(0, to).map(v => v ?? 0) }
-  return { dates: m.hd.dates.slice(0, to), series: [theme, ...stories] }
+  return { dates: m.hd.dates.slice(0, to), series: stories }
 })
-const lineHref = (key: string) => (key === 'topic' ? topicHref(String(props.index)) : storyHref(Number(key.slice(1))))
+const lineHref = (key: string) => storyHref(Number(key.slice(1)))
 </script>
 
 <template>
@@ -110,8 +107,6 @@ const lineHref = (key: string) => (key === 'topic' ? topicHref(String(props.inde
       <EntityTitle :kind="t('hero.kind.topic')" :title="topicName(model.issue)">
         <EntityFact :label="t('entity.fact.articles')" :value="fmtInt(model.total)" />
         <EntityFact :label="t('entity.fact.stories')" :value="fmtInt(model.mine.length)" />
-        <EntityFact :label="t('entity.fact.share')" :value="fmtPct(model.share)" :sub="t('entity.fact.rank', { n: model.rank, total: model.hd.issues.length })" />
-        <EntityFact v-if="model.change !== null && !model.issue.catchAll" :label="t('entity.fact.change')" :value="`${model.change > 0 ? '▲' : '▼'} ${fmtSigned(model.change * 100)}%`" :sub="t('entity.fact.change.sub')" />
       </EntityTitle>
       <SegmentedControl v-model="ring" class="orbit-ring-tabs" :label="t('story.ring.label')" :options="[{ value: 'outlets', label: t('story.ring.outlets') }, { value: 'groups', label: t('story.groups.title') }, ...(model.stanceN >= STANCE_MIN ? [{ value: 'stance', label: t('story.ring.stance') }] : [])]" />
     </div>
@@ -156,7 +151,7 @@ const lineHref = (key: string) => (key === 'topic' ? topicHref(String(props.inde
                     </DiffList>
                   </div>
                 </div>
-                <div class="theme-foot"><p class="dcard-sub">{{ t('topic2.outlets.n', { n: fmtInt(model.rowsTopic), total: fmtInt(model.rowsAll) }) }}</p><ChartLegend :items="diffKey" /></div>
+                <div class="theme-foot"><p class="dcard-sub">{{ t('topic2.outlets.n', { n: fmtInt(model.rowsTopic), total: fmtInt(model.rowsAll) }) }}</p></div>
               </template>
               <p v-else class="dcard-empty">{{ t('topic2.empty') }}</p>
             </DashCard>
@@ -187,7 +182,7 @@ const lineHref = (key: string) => (key === 'topic' ? topicHref(String(props.inde
     <div class="orbit-col orbit-under">
       <PlegmaCard :at="4" :order="2" class="card-days">
         <DashCard :title="t('topic2.time.title')" :info="t('topic2.time.info')">
-          <LinesChart v-if="timeLines" :lit="plegma.hoverStory !== null ? `s${plegma.hoverStory}` : null" :dates="timeLines.dates" :series="timeLines.series" plain sparse sqrt :opacity="0.9" :tall="tall" :caption="t('topic2.time.title')" :href-of="s => lineHref(s.key)" />
+          <LinesChart v-if="timeLines" :lit="plegma.hoverStory !== null ? `s${plegma.hoverStory}` : null" :dates="timeLines.dates" :series="timeLines.series" plain sparse :opacity="0.9" :tall="tall" :caption="t('topic2.time.title')" :href-of="s => lineHref(s.key)" />
         </DashCard>
       </PlegmaCard>
     </div>
