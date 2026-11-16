@@ -58,10 +58,20 @@ const dim = (a: number) => (props.lit !== null && props.data.topics[a]!.issue !=
 const showLink = (e: PointerEvent, l: { a: number, b: number, n: number }) => {
   const tp = props.data.topics[l.a]!
   const o = props.data.outlets[l.b]!
-  tooltip.show({ title: `${tp.name} → ${o.name}`, rows: [{ label: t('home.field.articles'), value: `${fmtInt(l.n)} · ${share(l.n)}`, color: colour(tp.slot) }], field: true }, e)
+  // What the band is of its two ends: of the articles of the topic that this outlet wrote, and of the articles of this outlet that are the topic.
+  tooltip.show({
+    title: `${tp.name} → ${o.name}`,
+    note: t('topics2.flow.estimate'),
+    rows: [
+      { label: t('home.field.articles'), value: `${fmtInt(Math.round(l.n))} · ${share(l.n)}`, color: colour(tp.slot) },
+      { label: t('topics2.flow.ofTopic'), value: fmtPct(l.n / tp.n) },
+      { label: t('topics2.flow.ofOutlet'), value: fmtPct(l.n / o.n) }
+    ],
+    field: true
+  }, e)
   if (tp.issue !== undefined && tp.issue >= 0) emit('update:lit', tp.issue)
 }
-const showNode = (e: PointerEvent, nd: { name: string, n: number, slot: number }) => tooltip.show({ title: nd.name, rows: [{ label: t('home.field.articles'), value: `${fmtInt(nd.n)} · ${share(nd.n)}`, color: colour(nd.slot) }], field: true }, e)
+const showNode = (e: PointerEvent, nd: { name: string, n: number, slot: number }) => tooltip.show({ title: nd.name, rows: [{ label: t('home.field.articles'), value: `${fmtInt(Math.round(nd.n))} · ${share(nd.n)}`, color: colour(nd.slot) }], field: true }, e)
 const leave = () => { tooltip.hide(); emit('update:lit', null) }
 onBeforeUnmount(() => tooltip.hide())
 </script>
