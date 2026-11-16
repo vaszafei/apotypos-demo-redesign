@@ -10,8 +10,7 @@ export const NAV: NavSection[] = [
     { key: 'ownership', to: '/groups', icon: 'account_balance' },
     { key: 'topics', to: '/trends', icon: 'sell' },
     { key: 'stories', to: '/stories', icon: 'sensors' },
-    { key: 'writing', to: '/media/writing', icon: 'edit' },
-    { key: 'similarity', to: '/similarity', icon: 'content_copy' }
+    { key: 'writing', to: '/media/writing', icon: 'edit' }
   ] },
   { key: 'people', to: '/fingerprints', icon: 'person', tabs: [] },
   { key: 'world', to: '/speeches', icon: 'bar_chart', tabs: [
