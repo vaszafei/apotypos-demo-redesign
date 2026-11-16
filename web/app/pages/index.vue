@@ -10,6 +10,9 @@ useHead({ title: () => t('home.title'), link: ['stories', 'plegma', 'home'].map(
 
 <template>
   <HomeHero />
-  <ClientOnly><HomeToday /></ClientOnly>
+  <ClientOnly>
+    <HomeToday />
+    <div class="home-today-more"><a class="home-hero-more" href="#home-method">{{ t('home.method.title') }}<AppIcon name="chevron-down" class="icon icon-sm" /></a></div>
+  </ClientOnly>
   <HomeMethod />
 </template>
