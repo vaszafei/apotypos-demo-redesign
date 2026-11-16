@@ -63,8 +63,8 @@ export const usePlegmaStore = defineStore('plegma', () => {
       highlight.value = null
       hoverStory.value = null
       related.value = []
-      // A story opens on its outlets (the tab Μέσα); a theme or an outlet on the groups.
-      ring.value = next?.kind === 'story' ? 'outlets' : 'groups'
+      // A story or a theme opens on its outlets (the tab Μέσα); an outlet on the groups.
+      ring.value = next?.kind === 'story' || next?.kind === 'theme' ? 'outlets' : 'groups'
       stance.value = null
       themeStories.value = null
       themeGroups.value = null

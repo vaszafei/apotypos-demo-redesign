@@ -117,15 +117,15 @@
 
 /* The theme view (components/plegma/PlegmaThemeView.vue) has the layout of the story view (the rules above): a narrow column with the stories of the theme, the web in the free cell,
    two columns of cards beside it (the stance, the outlets and the themes like it; the groups and how it is written) and the theme over time under them. */
-.plegma-orbit.is-theme .card-stance { flex: none; }
+.plegma-orbit.is-theme .card-ring { flex: 0 1 auto; }
 .plegma-card .theme-diff-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px var(--space-5); }
 .plegma-card .theme-foot { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 var(--space-4); }
 .plegma-card .theme-foot .dcard-sub { margin: 0; }
 .plegma-card .group-cell { display: flex; min-width: 0; max-width: 100%; }
 .plegma-card .group-cell .dot { flex: none; }
 .plegma-card .group-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.plegma-card.card-groups-diff .how-panel .bar-list { grid-template-columns: fit-content(60%) minmax(48px, 1fr) auto; }
-.plegma-card.card-groups-diff .how-panel .bar-list .row-name { overflow: hidden; }
+.plegma-card.card-ring.is-groups .how-panel .bar-list { grid-template-columns: fit-content(60%) minmax(48px, 1fr) auto; }
+.plegma-card.card-ring.is-groups .how-panel .bar-list .row-name { overflow: hidden; }
 /* The bar of a difference list gives way before the value does in a narrow card (it has a 96px minimum elsewhere). */
 .plegma-card .how-panel .dbar { min-width: 0; }
 
@@ -471,6 +471,13 @@ html[data-search-fly] .body-search { opacity: 0; }
 /* The bar of the outlets (the card with the colored bar and the total) is hidden on the story page for now; the card and its place in PlegmaStoryView.vue stay. */
 .plegma-orbit.is-story .card-strip { display: none; }
 
-/* The switch of the ring of a story is beside the title card, on its right, and ends where the card ends. */
-.plegma-orbit.is-story .plegma-title { display: flex; align-items: flex-end; gap: var(--space-3); }
-.plegma-orbit.is-story .plegma-title > .orbit-ring-tabs { position: static; flex: none; }
+/* The switch of the ring of a story or a theme is beside the title card, on its right, and ends where the card ends. */
+.plegma-orbit:is(.is-story, .is-theme) .plegma-title { display: flex; align-items: flex-end; gap: var(--space-3); }
+.plegma-orbit:is(.is-story, .is-theme) .plegma-title > .orbit-ring-tabs { position: static; flex: none; }
+
+/* The theme view: the two columns of cards on the right are 20% narrower (3 parts of 12 become 2.4), so the web has the room. */
+@media (min-width: 1280px) { .plegma-orbit.is-theme { grid-template-columns: minmax(0, 2fr) minmax(0, 5.2fr) minmax(0, 2.4fr) minmax(0, 2.4fr); } }
+@media (min-width: 1024px) and (max-width: 1279px) { .plegma-orbit.is-theme { grid-template-columns: minmax(0, 2fr) minmax(0, 5.2fr) minmax(0, 4.8fr); } }
+
+/* A line of the chart that a card points at comes forward and the others step back, softly. */
+.plegma-orbit .line-series { transition: stroke-opacity 200ms var(--ease-out), stroke-width 200ms var(--ease-out); }

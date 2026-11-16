@@ -4,11 +4,16 @@ import type { PlegmaThemeWeb } from '../plegma-theme'
 import { TAU, clamp, shareArcs } from './stage-draw-util'
 import type { StageState } from './stage-state'
 import type { StageCore, StageDeps } from './stage-core'
+import { NAME_MAX, createStageNames } from './stage-names'
+import type { NameItem } from './stage-names'
 
 // A theme or an outlet in view: its web in the middle of the map region, and what the pointer finds on it.
 export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCore) => {
   const { plegma, reduced } = deps
   const { webFocus, focusOutlet, focusIssue, gatherTo, gatherR, ease } = core
+  const { drawNames, drawNamesColumns, stanceNames } = createStageNames(st, deps)
+  // A theme's web (not an outlet's) has the look of the story's: small rings with nothing inside, thicker arcs, and the name of each arc.
+  const NODE_SCALE = 0.82
   // The arc of the ring of a theme under the pointer: a group, or a stance once the ring has turned to it.
   const themeRingAt = (x: number, y: number) => {
     const disc = themeDisc()
@@ -44,8 +49,9 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
     if (themed.key !== key) Object.assign(themed, { key, web: buildThemeWeb(list, focus.seed), index: new Map(list.map((s, i) => [s.id, i])) })
     return themed.web
   }
+  // On a theme's web a story is as large as its articles (the area follows them), from 3.5 to 12 px; on an outlet's web the stories keep their small size.
   const themeNodeRadius = (web: PlegmaThemeWeb, i: number, unit: number) =>
-    gatherR(i, i === 0 ? 8 : web.outlet[i]! < 0 ? 4.2 + 3.2 * web.size[i]! : clamp(unit * (0.13 + 0.12 * web.size[i]!), 1.6, 5))
+    gatherR(i, i === 0 ? 8 : web.outlet[i]! < 0 ? (focusOutlet() === null ? 3.5 + 8.5 * web.size[i]! : 4.2 + 3.2 * web.size[i]!) : clamp(unit * (0.13 + 0.12 * web.size[i]!), 1.6, 5))
   const layoutTheme = (web: PlegmaThemeWeb, sec: number) => {
     const disc = themeDisc()!
     if (hx.length < web.n) { hx = new Float32Array(web.n); hy = new Float32Array(web.n) }
@@ -79,6 +85,7 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
     const slotColour = (sl: number) => (sl > 0 ? st.cats[sl - 1] ?? st.mute : st.mute)
     const slot = outlet ? plegma.outletSlot : issue !== null ? st.world!.slotOf.get(issue) ?? 0 : 0
     const colour = slot > 0 ? slotColour(slot) : outlet ? st.ink : st.mute
+    const fresh = !outlet
     const web = themeWebOf()
     const nodeSlot = (i: number) => {
       const s = web!.stories[web!.story[i]!]!
@@ -117,6 +124,8 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
         const i = web.edges[e * 2]!
         const j = web.edges[e * 2 + 1]!
         if (web.outlet[i]! < 0) {
+          // A theme's web has no lines from the theme to its stories: the stories stand where they are.
+          if (fresh) continue
           const key = outlet ? web.stories[web.story[i]!]!.slot ?? 0 : 0
           let path = spokes.get(key)
           if (!path) { path = new Path2D(); spokes.set(key, path) }
@@ -141,18 +150,22 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
       const circle = (path: Path2D, i: number, r: number) => { path.moveTo(hx[i]! + r, hy[i]!); path.arc(hx[i]!, hy[i]!, r, 0, TAU) }
       for (let i = 1 + k; i < web.n; i++) {
         const r = themeNodeRadius(web, i, unit)
-        circle(rims, i, r + rim)
+        circle(rims, i, (fresh ? r * NODE_SCALE : r) + rim)
         if (mix > 0.01 && on(i)) continue
         const group = nodeSlot(i)
         let path = fills.get(group)
         if (!path) { path = new Path2D(); fills.set(group, path) }
-        circle(path, i, r)
+        circle(path, i, fresh ? r * NODE_SCALE : r)
       }
       for (let i = 0; i <= k; i++) circle(rims, i, themeNodeRadius(web, i, unit) + 1.6)
       g.globalAlpha = st.nodeIn
       g.fillStyle = st.paper
       g.fill(rims)
-      for (const [group, path] of fills) { g.fillStyle = st.softInk[group] ?? st.mute; g.globalAlpha = back * st.nodeIn; g.fill(path) }
+      if (fresh) {
+        // A node is a small ring in the color of its group with nothing inside it; the ones pointed at (below) are solid.
+        g.lineWidth = clamp(unit * 0.06, 1, 1.6)
+        for (const [group, path] of fills) { g.strokeStyle = group > 0 ? st.groupInk[group] ?? st.mute : st.mute; g.globalAlpha = back * st.nodeIn; g.stroke(path) }
+      } else for (const [group, path] of fills) { g.fillStyle = st.softInk[group] ?? st.mute; g.globalAlpha = back * st.nodeIn; g.fill(path) }
       if (mix > 0.01) {
         for (let i = 1 + k; i < web.n; i++) {
           if (!on(i)) continue
@@ -172,13 +185,24 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
         g.globalAlpha = (strong ? 1 : back) * st.nodeIn
         g.beginPath()
         g.arc(hx[i]!, hy[i]!, themeNodeRadius(web, i, unit), 0, TAU)
-        g.fill()
+        if (fresh) {
+          // On a theme's web a story is a gray circle with nothing inside it (its size follows its articles), the way the outlets are small circles in their group's color.
+          g.strokeStyle = st.mute
+          g.lineWidth = 2
+          g.globalAlpha = (strong ? 1 : back) * st.nodeIn
+          g.stroke()
+        } else g.fill()
       }
       g.globalAlpha = st.nodeIn
       g.fillStyle = colour
       g.beginPath()
       g.arc(hx[0]!, hy[0]!, themeNodeRadius(web, 0, unit), 0, TAU)
-      g.fill()
+      if (fresh) {
+        g.strokeStyle = st.mute
+        g.lineWidth = 2
+        g.globalAlpha = st.nodeIn
+        g.stroke()
+      } else g.fill()
       g.strokeStyle = st.ink
       g.globalAlpha = 0.5 * st.ringIn
       g.lineWidth = 1
@@ -199,7 +223,7 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
           const slot = plegma.themeGroups![k]!.slot
           const hot = st.ringHot.get(`g${k}`) ?? 0
           g.strokeStyle = hot > 0.01 ? (slot > 0 ? st.groupInk[slot] ?? st.ink : st.mute) : st.softInk[slot] ?? st.mute
-          g.lineWidth = 2 + 2.5 * hot
+          g.lineWidth = fresh ? 3 + 1.4 * hot : 2 + 2.5 * hot
           g.globalAlpha = (0.85 + 0.15 * hot) * (1 - groupsOut) * st.ringIn
           const pad = Math.min(span / 2, 3 / disc.r)
           g.beginPath()
@@ -213,13 +237,29 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
             if (span <= 0) continue
             const hot = st.ringHot.get(`s${k}`) ?? 0
             g.strokeStyle = st.stanceInk[k] ?? st.mute
-            g.lineWidth = 2 + 2.5 * hot
+            g.lineWidth = fresh ? 3 + 2.5 * hot : 2 + 2.5 * hot
             g.globalAlpha = (0.9 + 0.1 * hot) * st.ringMix * st.ringIn
             const pad = Math.min(span / 2, 3 / disc.r)
             g.beginPath()
             g.arc(disc.x, disc.y, disc.r, stanceAt[k * 2]! - Math.PI / 2 + pad - back, stanceAt[k * 2]! + span - Math.PI / 2 - pad - back)
             g.stroke()
           }
+        }
+        if (fresh) {
+          const ring = { cx: disc.x, cy: disc.y, ring: disc.r, kx: 1 }
+          const total = plegma.themeGroups!.length
+          if (groupsOut < 0.5) {
+            const items: NameItem[] = []
+            for (let k = 0; k < total; k++) {
+              const span = groupAt[k * 2 + 1]!
+              const name = plegma.themeGroups![k]!.name
+              if (span <= 0 || !name) continue
+              const slot = plegma.themeGroups![k]!.slot
+              items.push({ mid: groupAt[k * 2]! + span / 2, span, text: name.length > NAME_MAX ? `${name.slice(0, NAME_MAX - 1)}…` : name, dot: slot > 0 ? st.groupInk[slot] ?? st.ink : st.mute })
+            }
+            drawNamesColumns(g, ring, items, 0.9 * (1 - groupsOut * 2) * (1 - 0.35 * mix) * st.ringIn)
+          }
+          if (stanceAt && st.ringMix > 0.5) drawNames(g, ring, stanceNames(stanceAt), 0.9 * (st.ringMix * 2 - 1) * st.ringIn, true)
         }
       } else {
         g.strokeStyle = colour
