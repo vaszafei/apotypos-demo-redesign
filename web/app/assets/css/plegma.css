@@ -552,9 +552,10 @@ html[data-search-fly] .body-search { opacity: 0; }
   .method-row.is-flip .method-card { grid-column: auto; grid-row: auto; }
   .method-canvas { height: 240px; }
 }
-/* The two ways down at the bottom of the hero: the news and the methodology. */
-.home-hero-ways { position: absolute; left: 50%; bottom: var(--space-5); transform: translateX(-50%); display: flex; align-items: flex-start; gap: clamp(32px, 6vw, 88px); }
+/* The two ways down at the bottom of the hero: the news, and the methodology under it. */
+.home-hero-ways { position: absolute; left: 50%; bottom: var(--space-4); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: var(--space-3); }
 .home-hero-ways .home-hero-more { position: static; transform: none; }
+@media (max-width: 1023px) { .home-hero { padding-bottom: 136px; } }
 .home-hero.is-leaving .home-hero-ways { opacity: 0; transition: opacity 200ms var(--ease-out); }
 /* The link of the top bar to it, set like the sections of the bar: left of the search, and on Αρχική (where the search of the bar is not shown) left of the log in. */
 .method-link { flex: none; margin-left: auto; margin-right: var(--space-3); display: inline-flex; align-items: center; align-self: stretch; padding: 0 var(--space-3); font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); white-space: nowrap; text-decoration: none; }
