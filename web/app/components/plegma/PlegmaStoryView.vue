@@ -56,10 +56,8 @@ const perNode = computed(() => (m.value ? articlesPerNode(m.value.articles) : 1)
         <template #meta><EntityLink type="topic" :to="topicHref(String(m.story.issue))">{{ topicName(m.issue) }}</EntityLink></template>
         <EntityFact :label="t('entity.fact.articles')" :value="fmtInt(m.articles)" />
         <EntityFact :label="t('entity.fact.outlets')" :value="fmtInt(m.outlets.length)" :sub="t('entity.fact.of', { n: m.dd.outlets.length })" />
-        <template #actions>
-          <SegmentedControl v-if="m.labelled" v-model="ring" class="orbit-ring-tabs" :label="t('story.ring.label')" :options="[{ value: 'outlets', label: t('story.ring.outlets') }, { value: 'groups', label: t('story.groups.title') }, { value: 'stance', label: t('story.ring.stance') }]" />
-        </template>
       </EntityTitle>
+      <SegmentedControl v-if="m.labelled" v-model="ring" class="orbit-ring-tabs" :label="t('story.ring.label')" :options="[{ value: 'outlets', label: t('story.ring.outlets') }, { value: 'groups', label: t('story.groups.title') }, { value: 'stance', label: t('story.ring.stance') }]" />
     </div>
     <div class="orbit-col orbit-left">
       <PlegmaCard v-for="(key, i) in columns.left" :key="key" :at="2" :order="3 + i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
