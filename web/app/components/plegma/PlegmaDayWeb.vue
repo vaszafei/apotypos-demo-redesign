@@ -87,7 +87,7 @@ let titleKey = -1
 let titleMix = 0
 let tmix = 0
 // 0 for the form of the stories, 1 for the form of the themes; `form` is the same eased, for the places and the fades.
-let themed = props.mode === 'themes' ? 1 : 0
+let themed = props.mode === 'themes' || (props.grouped && props.names) ? 1 : 0
 let form = themed
 let litTheme = -1
 const arcHot = new Map<string, number>()
@@ -231,7 +231,7 @@ const draw = (sec: number, dt: number) => {
   const lineIn = grown < 1 ? growOf(DAY_DOT) : 1
   g.strokeStyle = ink
   g.globalAlpha = 0.3 * (1 - 0.6 * tmix) * form * lineIn
-  g.stroke(spokes)
+  if (!props.names) g.stroke(spokes)
   if (form > 0.01) for (const [slot, path] of themeLines) { g.strokeStyle = slotColour(slot); g.globalAlpha = 0.45 * back * form * lineIn; g.stroke(path) }
   if (form < 0.99 && !props.names) for (const [slot, path] of directLines) { g.strokeStyle = slotColour(slot); g.globalAlpha = 0.45 * back * (1 - form) * lineIn; g.stroke(path) }
   for (const [slot, path] of lines) { g.strokeStyle = softInk[slot] ?? mute; g.globalAlpha = 0.6 * back * lineIn; g.stroke(path) }
@@ -420,7 +420,7 @@ const draw = (sec: number, dt: number) => {
   }
   for (let i = 0; i < w.n; i++) {
     if (w.kind[i] !== DAY_THEME) continue
-    if (form < 0.01 || w.theme[i]! >= props.labels || props.names) continue
+    if (form < 0.01 || w.theme[i]! >= props.labels || (props.names && !props.grouped)) continue
     const th = props.themes[w.theme[i]!]!
     const name = th.name
     const short = name.length > 28 ? `${name.slice(0, 27).trimEnd()}…` : name
@@ -550,7 +550,7 @@ const onMove = (e: PointerEvent) => {
   const arc = i < 0 ? arcAt(px, py) : -2
   hoverRing = arc
   const items = ringItems()
-  const issue = props.mode !== 'themes' ? null : arc >= 0 ? items[arc]!.issue ?? null : i > 0 && w ? props.themes[w.theme[i]!]!.issue : null
+  const issue = props.mode !== 'themes' && !props.grouped ? null : arc >= 0 ? items[arc]!.issue ?? null : i > 0 && w ? props.themes[w.theme[i]!]!.issue : null
   if (issue !== props.lit) emit('update:lit', issue)
   if (arc >= 0) {
     const r = items[arc]!

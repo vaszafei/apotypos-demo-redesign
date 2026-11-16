@@ -14,7 +14,7 @@ import { useMediaQuery } from '@vueuse/core'
 
 // «Η επικαιρότητα» under the hero (the section #home-today of index.html): the calendar of the days floating over the Plegma, under it the web of the picked day (the date, its themes, the stories
 // of each and a dot for each article: components/PlegmaDayWeb.vue), and beside it the list of the stories (or the themes) of the day. A story pointed at in the list is lit on the web with its title; a click on one dives into its page.
-// A switch over the cards turns the web (and the cards) from the stories of the day, whose ring is the outlets, to the themes of the day, whose ring is the themes.
+// The web has one form: the themes of the day as nodes, each joined to its stories; the ring is the outlets. The list has the theme under each story.
 // The section is drawn in the browser (the data of the stories is 2.8 MB that the prerendered page should not carry).
 type HomeData = { dates: string[], outlets: { name: string, daily: (number | null)[] }[], issues: StoriesData['issues'], issueDaily: (number | null)[][] }
 const { t } = useI18n()
@@ -64,9 +64,6 @@ const dayOutlets = computed<DayOutlet[]>(() => {
   const groupOf = new Map((detail.data.value?.outlets ?? []).map(o => [o.name, o.group]))
   return h.outlets.map(o => ({ name: o.name, n: o.daily[d] ?? 0, slot: groupSlot(groupOf.get(o.name) ?? null) })).filter(o => o.n > 0).sort((a, b) => b.n - a.n)
 })
-const mode = ref<'stories' | 'themes'>('stories')
-const modes = computed(() => [{ value: 'stories', label: t('home.mode.stories') }, { value: 'themes', label: t('home.mode.themes') }])
-watch(mode, () => { litIssue.value = null })
 const ring = computed<DayRing[]>(() => dayThemes.value.map(r => ({ issue: r.issue, name: r.name, slot: r.slot, n: r.n })))
 
 // The themes of the day for the web: the largest stories of the day (the most articles) grouped by theme; the other stories of the day are only counted, for the faint dots.
@@ -131,38 +128,22 @@ onBeforeUnmount(() => { watcher?.disconnect(); plegma.setHomeDay(null); plegma.p
 <template>
   <section id="home-today" ref="root" class="home-today" :class="{ 'is-leaving': leaving }" :aria-label="t('home.today.title')">
     <template v-if="home.data.value && day !== null">
-      <div class="home-today-top">
-        <div class="home-today-days"><HomeCalendar v-model="day" :dates="home.data.value.dates" :totals="totals" :max="14" /></div>
-      </div>
-      <div class="home-today-map"><PlegmaDayWeb ref="web" v-model:lit="litIssue" names :hover-story="hoverStory" :themes="themes" :ring="ring" :outlets="dayOutlets" :mode="mode" :date="fmtDate(home.data.value.dates[day]!)" :picked="null" :active="inView" @pick="open({ story: $event })" @pick-theme="open({ theme: $event })" /></div>
+      <div class="home-today-days"><HomeCalendar v-model="day" :dates="home.data.value.dates" :totals="totals" /></div>
+      <div class="home-today-map"><PlegmaDayWeb ref="web" v-model:lit="litIssue" names :hover-story="hoverStory" :themes="themes" :ring="ring" :outlets="dayOutlets"  mode="stories" grouped :date="fmtDate(home.data.value.dates[day]!)" :picked="null" :active="inView" @pick="open({ story: $event })" @pick-theme="open({ theme: $event })" /></div>
       <div class="home-today-side">
-        <SegmentedControl v-model="mode" class="home-mode-tabs" :label="t('home.mode.label')" :options="modes" />
-        <Transition name="home-cards" mode="out-in">
-          <div v-if="mode === 'stories'" key="stories" class="home-today-cards">
-            <DashCard :title="t('home.day.title')" :info="t('home.stories.info')" card="home-stories" class="home-day-list">
-              <ul v-if="storyRows.length" class="home-stories" @scroll="more">
-                <li v-for="r in storyRows.slice(0, shown)" :key="r.s.id" @pointerenter="hoverStory = r.s.id" @pointerleave="hoverStory = null">
-                  <button type="button" class="home-story-pick" @focus="hoverStory = r.s.id" @blur="hoverStory = null" @click="open({ story: r.s.id })">
-                    <span class="home-story-name">{{ storyName(r.s) }}</span><span class="muted-text">{{ fmtInt(r.n) }}</span>
-                  </button>
-                </li>
-              </ul>
-              <p v-else-if="ix" class="dcard-empty">{{ t('home.day.empty') }}</p>
-            </DashCard>
-          </div>
-          <div v-else key="themes" class="home-today-cards">
-            <DashCard :title="t('home.themes.title')" :info="t('home.themes.info')" card="home-themes" class="home-day-list">
-              <ul v-if="dayThemes.length" class="home-stories">
-                <li v-for="r in dayThemes" :key="r.issue" @pointerenter="litIssue = r.issue" @pointerleave="litIssue = null">
-                  <button type="button" class="home-story-pick" @focus="litIssue = r.issue" @blur="litIssue = null" @click="open({ theme: r.issue })">
-                    <span class="home-story-name">{{ r.name }}</span><span class="muted-text">{{ fmtInt(r.n) }}</span>
-                  </button>
-                </li>
-              </ul>
-              <p v-else-if="ix" class="dcard-empty">{{ t('home.day.empty') }}</p>
-            </DashCard>
-          </div>
-        </Transition>
+        <DashCard :title="t('home.daylist.title')" :info="t('home.daylist.info')" card="home-stories" class="home-day-list">
+          <ul v-if="storyRows.length" class="home-stories" @scroll="more">
+            <li v-for="r in storyRows.slice(0, shown)" :key="r.s.id">
+              <button type="button" class="home-story-pick" @pointerenter="hoverStory = r.s.id" @pointerleave="hoverStory = null" @focus="hoverStory = r.s.id" @blur="hoverStory = null" @click="open({ story: r.s.id })">
+                <span class="home-story-name">{{ storyName(r.s) }}</span><span class="muted-text">{{ fmtInt(r.n) }}</span>
+              </button>
+              <button type="button" class="home-row-theme" @pointerenter="litIssue = r.s.issue" @pointerleave="litIssue = null" @focus="litIssue = r.s.issue" @blur="litIssue = null" @click="open({ theme: r.s.issue })">
+                <span class="home-row-dot" :style="{ background: `var(--cat-${slotOf.get(r.s.issue) ?? 0})` }" aria-hidden="true" /><span class="home-row-theme-name">{{ topicName(ix!.issues[r.s.issue]!) }}</span>
+              </button>
+            </li>
+          </ul>
+          <p v-else-if="ix" class="dcard-empty">{{ t('home.day.empty') }}</p>
+        </DashCard>
       </div>
     </template>
   </section>
