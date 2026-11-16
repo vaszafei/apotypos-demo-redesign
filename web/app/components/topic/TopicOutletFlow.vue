@@ -4,7 +4,7 @@ import type { FlowData } from '~/composables/usePeriodWeb'
 
 // A Sankey of the topics of a period (left, in their colors) and the outlets that wrote them (right, in the colors of their groups): a band is the articles of a topic in an outlet, a bar is
 // the share of all the articles of the period (the one of the list of the topics). The topic pointed at, here or on the web beside it (`lit`), takes its bands forward; a click on a topic opens its page (`select`).
-// Layout by hand (two columns, no iteration): the bars are as tall as their articles on one scale, the bands leave a bar one after the other.
+// The bands of a topic are one group that fades as a whole (a hover fades a few groups, not every band). Layout by hand (two columns, no iteration): the bars are as tall as their articles on one scale, the bands leave a bar one after the other.
 const props = defineProps<{ data: FlowData, lit: number | null }>()
 const emit = defineEmits<{ select: [issue: number], 'update:lit': [issue: number | null] }>()
 const { t } = useI18n()
@@ -46,7 +46,9 @@ const layout = computed(() => {
   for (const l of links.slice().sort((a, b) => a.a - b.a || a.b - b.b)) { l.y0 = left[l.a]!.y + outTop[l.a]! + l.th / 2; outTop[l.a]! += l.th }
   for (const l of links.slice().sort((a, b) => a.b - b.b || a.a - b.a)) { l.y1 = right[l.b]!.y + inTop[l.b]! + l.th / 2; inTop[l.b]! += l.th }
   const xm = (x0 + x1) / 2
-  return { left, right, x0, x1, links: links.map(l => ({ ...l, path: `M${x0},${l.y0} C${xm},${l.y0} ${xm},${l.y1} ${x1},${l.y1}` })) }
+  const drawn = links.map(l => ({ ...l, path: `M${x0},${l.y0} C${xm},${l.y0} ${xm},${l.y1} ${x1},${l.y1}` }))
+  // The bands of a topic are one group, so pointing at a topic fades a few groups and not hundreds of bands.
+  return { left, right, x0, x1, byTopic: d.topics.map((_, a) => drawn.filter(l => l.a === a)) }
 })
 
 const cut = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s)
@@ -67,10 +69,9 @@ onBeforeUnmount(() => tooltip.hide())
 <template>
   <div ref="box" class="tof-box">
     <svg v-if="layout" class="tof-svg" role="img" :aria-label="t('topics2.flow.title')" :width="width" :height="height" @pointerleave="leave">
-      <g>
+      <g v-for="(nd, a) in data.topics" :key="`b${nd.key}`" class="tof-bands" :style="`--a:${a}`" :opacity="lit === null ? 0.46 : dim(a) ? 0.1 : 1">
         <path
-          v-for="l in layout.links" :key="`${l.a}-${l.b}`" class="tof-link" :d="l.path" :style="`--i:${l.i}`" :stroke="colour(data.topics[l.a]!.slot)" :stroke-width="Math.max(0.6, l.th)"
-          :opacity="lit === null ? 0.32 : dim(l.a) ? 0.07 : 0.7" @pointermove="showLink($event, l)"
+          v-for="l in layout.byTopic[a]" :key="l.b" class="tof-link" :d="l.path" :stroke="colour(nd.slot)" :stroke-width="Math.max(0.6, l.th)" opacity="0.7" @pointermove="showLink($event, l)"
         />
       </g>
       <g v-for="(nd, a) in data.topics" :key="nd.key" class="tof-node" :opacity="lit === null || !dim(a) ? 1 : 0.4">

@@ -18,6 +18,8 @@ const webThemes = computed(() => (periodWeb?.ready.value ? periodWeb.themesFor([
 const FLOW_TOPICS = 18
 const FLOW_OUTLETS = 22
 const flow = computed(() => (periodWeb?.ready.value ? periodWeb.flows(rows.value.slice(0, FLOW_TOPICS).map(r => r.k), new Map(rows.value.map(r => [r.k, r.count])), total.value, FLOW_OUTLETS) : null))
+// The line of the theme pointed at, on the web or on the Sankey, comes forward on the chart.
+const litLine = computed(() => (lit.value !== null && series.value.some(s => s.key === String(lit.value)) ? String(lit.value) : null))
 const sliced = computed(() => dates.value.slice(range.value[0], range.value[1] + 1))
 // A new period draws the lines in again (assets/motion.js replay); the first view is played by plugins/motion.client.ts.
 const { $motion } = useNuxtApp()
@@ -45,7 +47,7 @@ const trendRow = (x: NonNullable<typeof trends.value>['up'][number]) => ({
 const trendVs = computed(() => {
   const tr = trends.value
   if (!tr) return null
-  return t('stories.trend.vs', { range: `${fmtDate(dates.value[tr.p0]!)}${tr.len > 1 ? ` – ${fmtDate(dates.value[range.value[0] - 1]!)}` : ''}` })
+  return t('topics2.trend.vsInfo', { range: `${fmtDate(dates.value[tr.p0]!)}${tr.len > 1 ? ` – ${fmtDate(dates.value[range.value[0] - 1]!)}` : ''}` })
 })
 </script>
 
@@ -58,16 +60,15 @@ const trendVs = computed(() => {
   </div>
   <MediaPlegma v-else variant="topics">
     <template #map="{ active }">
-      <div v-if="dates.length" class="topics-date"><DateRange :dates="dates" :from="view.from" :to="view.to" @change="r => period.set(r.from, r.to)" /></div>
+      <div v-if="dates.length" class="topics-date"><DateRange plain :dates="dates" :from="view.from" :to="view.to" @change="r => period.set(r.from, r.to)" /></div>
       <div class="media-map-web">
         <ClientOnly><TopicWeb :lit="lit" :rows="rows" :total="total" :color-of="colorOf" :themes="webThemes" :zoom="0.9" :active="active && webThemes.length > 0" @update:lit="v => lit = v" /></ClientOnly>
       </div>
     </template>
     <template #side>
-      <DashCard class="topic-trends" :title="t('topics2.move.title')" :info="t('topics2.trend.info2', { n: MIN_BEFORE })">
+      <DashCard class="topic-trends" :title="t('topics2.move.title')" :info="`${trendVs ? `${trendVs} ` : ''}${t('topics2.trend.info2', { n: MIN_BEFORE })}`">
         <p v-if="!trends" class="dcard-empty">{{ t('stories.trend.empty') }}</p>
         <template v-else>
-          <p class="trend-vs">{{ trendVs }}</p>
           <p class="dcard-sub">{{ t('stories.trend.up') }}</p>
           <BarList v-if="trends.up.length" :rows="trends.up.map(trendRow)" :max="trends.widest" />
           <p v-else class="dcard-empty">{{ t('stories.trend.none') }}</p>
@@ -79,7 +80,7 @@ const trendVs = computed(() => {
     </template>
     <template #under>
       <DashCard :title="t('topics2.time.title')" :info="timeInfo" card="time">
-        <LinesChart v-if="series.length" :dates="sliced" :series="series" :tall="196" :caption="t('topics2.time.title')" />
+        <LinesChart v-if="series.length" :lit="litLine" roomy :dates="sliced" :series="series" :tall="196" :caption="t('topics2.time.title')" />
       </DashCard>
     </template>
     <template #aside>
