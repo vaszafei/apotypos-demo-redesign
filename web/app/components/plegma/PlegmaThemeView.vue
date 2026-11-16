@@ -69,7 +69,7 @@ const themeGroups = computed(() => {
 })
 watch(themeGroups, list => plegma.setThemeGroups(list), { immediate: true })
 watch(() => (model.value && model.value.stanceN >= STANCE_MIN ? model.value.det.s.slice(1) : null), counts => plegma.setStance(counts), { immediate: true })
-onBeforeUnmount(() => { plegma.setHoverStory(null); plegma.setThemeStories(null); plegma.setThemeGroups(null); plegma.setStance(null); plegma.setRing('groups') })
+onBeforeUnmount(() => { plegma.setHoverStory(null); plegma.setThemeStories(null); plegma.setThemeGroups(null); plegma.setStance(null) })
 
 // The map region is the free cell between the stories and the cards, under the title, as on the story page (composables/usePlegmaRegion.ts): the biggest circle that touches no card (clear),
 // with room for the names of its arcs (names). The ring of a theme's web is 0.45 of the side of its region (stage-theme.ts), so the side is the story's divided by that.
@@ -166,7 +166,6 @@ const lineHref = (key: string) => (key === 'topic' ? topicHref(String(props.inde
                   <template #label="{ row }"><span class="group-cell"><span class="dot" :style="`--dot:${colorOfGroup.get(row.label)}`" /><span class="group-name">{{ row.label }}</span></span></template>
                 </DiffList>
               </div>
-              <ChartLegend :items="diffKey" />
             </DashCard>
           </PlegmaCard>
         </div>

@@ -49,8 +49,9 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
     if (themed.key !== key) Object.assign(themed, { key, web: buildThemeWeb(list, focus.seed), index: new Map(list.map((s, i) => [s.id, i])) })
     return themed.web
   }
+  // On a theme's web a story is as large as its articles (the area follows them), from 3.5 to 12 px; on an outlet's web the stories keep their small size.
   const themeNodeRadius = (web: PlegmaThemeWeb, i: number, unit: number) =>
-    gatherR(i, i === 0 ? 8 : web.outlet[i]! < 0 ? 4.2 + 3.2 * web.size[i]! : clamp(unit * (0.13 + 0.12 * web.size[i]!), 1.6, 5))
+    gatherR(i, i === 0 ? 8 : web.outlet[i]! < 0 ? (focusOutlet() === null ? 3.5 + 8.5 * web.size[i]! : 4.2 + 3.2 * web.size[i]!) : clamp(unit * (0.13 + 0.12 * web.size[i]!), 1.6, 5))
   const layoutTheme = (web: PlegmaThemeWeb, sec: number) => {
     const disc = themeDisc()!
     if (hx.length < web.n) { hx = new Float32Array(web.n); hy = new Float32Array(web.n) }
@@ -123,6 +124,8 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
         const i = web.edges[e * 2]!
         const j = web.edges[e * 2 + 1]!
         if (web.outlet[i]! < 0) {
+          // A theme's web has no lines from the theme to its stories: the stories stand where they are.
+          if (fresh) continue
           const key = outlet ? web.stories[web.story[i]!]!.slot ?? 0 : 0
           let path = spokes.get(key)
           if (!path) { path = new Path2D(); spokes.set(key, path) }
@@ -182,13 +185,24 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
         g.globalAlpha = (strong ? 1 : back) * st.nodeIn
         g.beginPath()
         g.arc(hx[i]!, hy[i]!, themeNodeRadius(web, i, unit), 0, TAU)
-        g.fill()
+        if (fresh) {
+          // On a theme's web a story is a gray circle with nothing inside it (its size follows its articles), the way the outlets are small circles in their group's color.
+          g.strokeStyle = st.mute
+          g.lineWidth = 2
+          g.globalAlpha = (strong ? 1 : back) * st.nodeIn
+          g.stroke()
+        } else g.fill()
       }
       g.globalAlpha = st.nodeIn
       g.fillStyle = colour
       g.beginPath()
       g.arc(hx[0]!, hy[0]!, themeNodeRadius(web, 0, unit), 0, TAU)
-      g.fill()
+      if (fresh) {
+        g.strokeStyle = st.mute
+        g.lineWidth = 2
+        g.globalAlpha = st.nodeIn
+        g.stroke()
+      } else g.fill()
       g.strokeStyle = st.ink
       g.globalAlpha = 0.5 * st.ringIn
       g.lineWidth = 1
