@@ -32,7 +32,9 @@ const map = ref<HTMLElement>()
 // The story's web is larger than the theme's: the largest side of its square (px). It starts a little above the cell (top: -32, under the free space beside the title), ends at the note
 // under it (bottom) and leans to the right in the cell (lean), so the names of its arcs have room (names). No card is over it: it is the biggest square whose ring touches no card (clear).
 const STORY_MAP_SIDE = 455
-usePlegmaRegion(orbit, map, { side: STORY_MAP_SIDE, top: -32, bottom: 28, lean: 0.75, names: true, clear: true })
+// How much wider than tall the web is: 1 is a circle (the user did not like the ellipse, 1.25).
+const STORY_ASPECT = 1
+usePlegmaRegion(orbit, map, { side: STORY_MAP_SIDE, top: -32, bottom: 28, lean: 0.75, names: true, clear: true, aspect: STORY_ASPECT })
 // How many articles a node of the map stands for: one while the story is small enough to show each article (utils/plegma/plegma-articles.ts).
 const perNode = computed(() => (m.value ? articlesPerNode(m.value.articles) : 1))
 </script>
