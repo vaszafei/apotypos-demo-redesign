@@ -47,6 +47,8 @@ export const usePlegmaStore = defineStore('plegma', () => {
   // the webs are then the best of the latest week. The section sets and clears them, so no route change has to.
   const homeDay = ref<number | null>(null)
   const homePick = ref<number | null>(null)
+  // Home's «Μεθοδολογία» (components/home/HomeMethod.vue): the same dim world behind it, with no day.
+  const homeDim = ref(false)
 
   const backdrop = ref(false)
   const syncRoute = (route: { path: string, query: Record<string, unknown>, meta: { plegma?: boolean, backdrop?: boolean } }) => {
@@ -87,6 +89,7 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const setThemeStories = (value: PlegmaThemeStory[] | null) => { themeStories.value = value }
   const setHomeDay = (value: number | null) => { homeDay.value = value }
   const pickHome = (id: number | null) => { homePick.value = id }
+  const setHomeDim = (value: boolean) => { homeDim.value = value }
 
-  return { active, backdrop, focus, day, compare, landed, region, articles, labelRoom, highlight, hoverStory, related, ring, stance, themeStories, themeGroups, outletSlot, homeDay, homePick, syncRoute, stepTo, compareWith, setLanded, setRegion, setLabelRoom, setArticles, setHighlight, setHoverStory, setRelated, setRing, setStance, setThemeStories, setThemeGroups, setOutletSlot, setHomeDay, pickHome }
+  return { active, backdrop, focus, day, compare, landed, region, articles, labelRoom, highlight, hoverStory, related, ring, stance, themeStories, themeGroups, outletSlot, homeDay, homePick, homeDim, syncRoute, stepTo, compareWith, setLanded, setRegion, setLabelRoom, setArticles, setHighlight, setHoverStory, setRelated, setRing, setStance, setThemeStories, setThemeGroups, setOutletSlot, setHomeDay, pickHome, setHomeDim }
 })

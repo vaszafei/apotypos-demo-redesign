@@ -41,7 +41,7 @@ export const createStageCore = (st: StageState, deps: StageDeps) => {
     st.softInk = st.groupInk.map(c => mixHex(c, st.groupInk[0] ?? st.mute, 0.3))
   }
   // The map is only a dim world behind the page: Home's «Η επικαιρότητα» with a day picked, or a page of Μέσα that draws its own web (stores/plegma.ts backdrop).
-  const behind = () => plegma.homeDay !== null || plegma.backdrop
+  const behind = () => plegma.homeDay !== null || plegma.homeDim || plegma.backdrop
   const focusStory = () => (st.world && plegma.focus?.kind === 'story' ? st.world.byId.get(plegma.focus.id) ?? null : null)
   const focusIssue = () => (plegma.focus?.kind === 'theme' ? plegma.focus.issue : null)
   const focusOutlet = () => (plegma.focus?.kind === 'outlet' ? plegma.focus.slug : null)

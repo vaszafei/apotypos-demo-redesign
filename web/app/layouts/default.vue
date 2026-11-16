@@ -120,6 +120,7 @@ const back = () => {
             </li>
           </ul>
         </nav>
+        <NuxtLink class="method-link" :to="{ path: '/', hash: '#home-method' }">{{ t('nav.methodology') }}</NuxtLink>
         <GlobalSearch v-if="!bodySearch" :disabled="route.meta.hero === true" />
         <div class="header-actions">
           <AuthLinks cls="auth-links" />
