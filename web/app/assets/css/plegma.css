@@ -46,7 +46,7 @@
 .card-strip .home-stack { height: 38px; gap: 3px; }
 .card-strip .home-stack-part { border-radius: 5px; min-width: 6px; }
 @media (min-width: 1280px) {
-  .plegma-orbit.is-story.has-strip { grid-template-rows: auto auto minmax(0, 1fr) auto; grid-template-areas: "title title title title" "left map strip strip" "left map one two" "under under under people"; }
+  .plegma-orbit.is-story.has-strip { grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "title title title title" "left map one two" "under under under people"; }
   .plegma-orbit.is-story.has-strip .orbit-right > .card-strip { grid-area: strip; }
   .plegma-orbit.is-story.has-strip .orbit-under { display: contents; }
   .plegma-orbit.is-story.has-strip .orbit-under > .card-days { grid-area: under; }
@@ -467,3 +467,6 @@ html[data-search-fly] .body-search { opacity: 0; }
   .plegma-orbit.is-story.has-strip .orbit-subs { display: flex; flex-direction: column; gap: var(--space-3); overflow-y: auto; pointer-events: auto; scrollbar-width: thin; }
   .plegma-orbit.is-story.has-strip .orbit-sub, .plegma-orbit.is-story.has-strip .orbit-sub > .plegma-card { flex: none; }
 }
+
+/* The bar of the outlets (the card with the colored bar and the total) is hidden on the story page for now; the card and its place in PlegmaStoryView.vue stay. */
+.plegma-orbit.is-story .card-strip { display: none; }
