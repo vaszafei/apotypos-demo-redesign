@@ -500,3 +500,28 @@ html[data-search-fly] .body-search { opacity: 0; }
 
 /* A line of the chart that a card points at comes forward and the others step back, softly. */
 .plegma-orbit .line-series { transition: stroke-opacity 200ms var(--ease-out), stroke-width 200ms var(--ease-out); }
+
+/* The tabs of a section on the Plegma (layouts/default.vue). The column is part of the world, not a block of one color over it. The tabs stand as far from the left edge as the page stands from the right edge
+   (--page-gap-end, plus what a wide screen leaves of its margin: 100% is the width of .page-body), and no further than leaves a gap of 12px to the page. */
+@media (min-width: 1024px) {
+  .shell.is-backdrop .section-nav { background: none; }
+  .page-body > .section-nav { --nav-w: max(232px, calc(50vw - var(--page-width) / 2)); padding-left: min(calc(var(--page-gap-end) + max(0px, 100% - var(--nav-w) - var(--page-width))), calc(var(--nav-w) - 155px - 12px)); }
+  .page-body > .section-nav .section-nav-inner { padding-left: 0; }
+}
+
+/* The "/" of the current tab, in the top bar and in the column of tabs, stands after the label. Every label keeps the room for it (hidden), so nothing moves when it comes or goes.
+   It is drawn from the top on the tab that becomes the current one and erased from the top on the tab that was current, both at once; layouts/default.vue marks the tab that was just left
+   `is-leaving` (it has no aria-current any more) and makes the clicked tab current before the page is there. */
+@keyframes nav-slash-in { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes nav-slash-out { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(100% 0 0 0); } }
+@media (min-width: 1024px) {
+  :root:root .shell .header-nav .nav-link .nav-label::before, :root:root .shell .section-nav .section-nav-link .nav-label::before { content: none; }
+  :root:root .shell .header-nav .nav-link .nav-label::after, :root:root .shell .section-nav .section-nav-link:not(.is-parent) .nav-label::after { content: " /"; white-space: pre; display: inline-block; visibility: hidden; }
+  :root:root .shell .header-nav .nav-link[aria-current="page"] .nav-label::after, :root:root .shell .section-nav .section-nav-link[aria-current]:not(.is-parent) .nav-label::after,
+  :root:root .shell .header-nav .nav-link.is-leaving .nav-label::after, :root:root .shell .section-nav .section-nav-link.is-leaving:not(.is-parent) .nav-label::after { visibility: visible; }
+  :root:root .shell .header-nav .nav-link[aria-current="page"] .nav-label::after, :root:root .shell .section-nav .section-nav-link[aria-current]:not(.is-parent) .nav-label::after { animation: nav-slash-in 300ms cubic-bezier(0.65, 0, 0.35, 1) both; }
+  :root:root .shell .header-nav .nav-link.is-leaving:not([aria-current]) .nav-label::after, :root:root .shell .section-nav .section-nav-link.is-leaving:not([aria-current], .is-parent) .nav-label::after { animation: nav-slash-out 260ms cubic-bezier(0.65, 0, 0.35, 1) both; }
+}
+@media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
+  :root:root .shell .header-nav .nav-link.is-leaving:not([aria-current]) .nav-label::after, :root:root .shell .section-nav .section-nav-link.is-leaving:not([aria-current], .is-parent) .nav-label::after { visibility: hidden; }
+}

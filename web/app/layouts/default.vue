@@ -42,6 +42,37 @@ watch(() => route.path, centerTabs)
 // A detail page marks the tab that lists it, not as the page itself ('true', as the static shell does).
 const inTab = (tab: { to: string, children?: { to: string }[] }) => route.path === tab.to || detail.value === tab.to || !!tab.children?.some(c => c.to === route.path)
 const current = (to: string) => (route.path === to ? 'page' : detail.value === to ? 'true' : undefined)
+// A click on a section of the top bar or on a tab of the left column makes it the current one at once, not when the page has loaded (a lazy page takes a few hundred ms): the "/" moves with the click.
+const clicked = ref<string | null>(null)
+let clickedTimer: ReturnType<typeof setTimeout> | undefined
+useEventListener(document, 'click', (e: MouseEvent) => {
+  const link = (e.target as Element | null)?.closest?.<HTMLAnchorElement>('.header-nav a[href], .section-nav a[href]')
+  if (!link || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || link.hasAttribute('download')) return
+  clicked.value = new URL(link.href).pathname
+  clearTimeout(clickedTimer)
+  clickedTimer = setTimeout(() => { clicked.value = null }, 4000)
+}, { capture: true })
+watch(() => route.fullPath, () => { clicked.value = null })
+// A story, a theme or an outlet on the Plegma belongs to Μέσα but is not one of its pages: no section of the top bar is the current one there.
+const bareNav = computed(() => route.meta.plegma === true && route.meta.hero !== true)
+const shownSection = computed(() => {
+  const picked = clicked.value && sections.find(s => s.to === clicked.value)
+  return picked ? picked.key : bareNav.value ? null : section.value.key
+})
+const sectionCurrent = (key: string) => (key === shownSection.value ? 'page' : undefined)
+// The tab of the left column that has the "/" (a tab with sub-tabs gives it to the sub-tab), and the one that has just lost it.
+const slashTo = computed(() => {
+  const all = section.value.tabs.flatMap(tab => (tab.children ?? [tab]).map(c => c.to))
+  if (clicked.value && all.includes(clicked.value)) return clicked.value
+  for (const tab of section.value.tabs) {
+    if (tab.children) { const c = tab.children.find(c => c.to === route.path); if (c) return c.to } else if (current(tab.to)) return tab.to
+  }
+  return null
+})
+const tabCurrent = (tab: { to: string, children?: unknown[] }) => (tab.children && inTab(tab as { to: string, children: { to: string }[] }) ? 'true' : clicked.value && !tab.children ? (clicked.value === tab.to ? 'page' : undefined) : current(tab.to))
+const subCurrent = (to: string) => ((clicked.value && slashTo.value === clicked.value ? clicked.value === to : route.path === to) ? 'page' : undefined)
+const leavingSection = useSlashLeave(() => shownSection.value)
+const leavingTab = useSlashLeave(() => slashTo.value)
 // The back button of a detail page goes to the last page of the site. A visitor who came from outside goes to the parent page (BackButton in assets/shell.js).
 // The router remembers the page before in history.state; a visitor who came from a static page of the site has it in the referrer.
 const pager = useState<{ to: string | null, pull: number }>('tab-pull', () => ({ to: null, pull: 0 }))
@@ -62,7 +93,7 @@ const back = () => {
       </div>
       <ul class="nav-list nav-main">
         <li v-for="s in sections" :key="s.key">
-          <NavLink class="nav-link" :to="s.to" :aria-current="s.key === section.key ? 'page' : undefined"><AppIcon :name="s.icon" glyph /><span class="nav-label">{{ t(`nav.${s.key}`) }}</span></NavLink>
+          <NavLink class="nav-link" :to="s.to" :aria-current="sectionCurrent(s.key)"><AppIcon :name="s.icon" glyph /><span class="nav-label">{{ t(`nav.${s.key}`) }}</span></NavLink>
         </li>
       </ul>
       <AuthLinks cls="auth-links drawer-auth" in-drawer @opened="setDrawer(false, false)" />
@@ -85,7 +116,7 @@ const back = () => {
         <nav class="header-nav" :aria-label="t('shell.nav')">
           <ul class="nav-list nav-main">
             <li v-for="s in sections" :key="s.key">
-              <NavLink class="nav-link" :to="s.to" :aria-current="s.key === section.key ? 'page' : undefined"><AppIcon :name="s.icon" glyph /><span class="nav-label">{{ t(`nav.${s.key}`) }}</span></NavLink>
+              <NavLink class="nav-link" :class="{ 'is-leaving': leavingSection === s.key }" :to="s.to" :aria-current="sectionCurrent(s.key)"><AppIcon :name="s.icon" glyph /><span class="nav-label">{{ t(`nav.${s.key}`) }}</span></NavLink>
             </li>
           </ul>
         </nav>
@@ -101,9 +132,9 @@ const back = () => {
           <div class="section-nav-inner">
             <ul class="section-nav-list">
               <li v-for="tab in section.tabs" :key="tab.to">
-                <NavLink class="section-nav-link" :class="{ 'is-pull': pager.to === tab.to, 'is-parent': inTab(tab) && tab.children }" :style="pager.to === tab.to ? { '--pull': pager.pull } : undefined" :to="tab.to" :aria-current="tab.children && inTab(tab) ? 'true' : current(tab.to)"><AppIcon :name="tab.icon" glyph /><span class="nav-label">{{ t(`tab.${section.key}.${tab.key}`) }}</span></NavLink>
+                <NavLink class="section-nav-link" :class="{ 'is-pull': pager.to === tab.to, 'is-parent': inTab(tab) && tab.children, 'is-leaving': !tab.children && leavingTab === tab.to }" :style="pager.to === tab.to ? { '--pull': pager.pull } : undefined" :to="tab.to" :aria-current="tabCurrent(tab)"><AppIcon :name="tab.icon" glyph /><span class="nav-label">{{ t(`tab.${section.key}.${tab.key}`) }}</span></NavLink>
                 <ul v-if="tab.children && inTab(tab)" class="section-nav-sub">
-                  <li v-for="child in tab.children" :key="child.to"><NavLink class="section-nav-link" :to="child.to" :aria-current="route.path === child.to ? 'page' : undefined"><AppIcon :name="child.icon" glyph /><span class="nav-label">{{ t(`tab.${section.key}.${child.key}`) }}</span></NavLink></li>
+                  <li v-for="child in tab.children" :key="child.to"><NavLink class="section-nav-link" :class="{ 'is-leaving': leavingTab === child.to }" :to="child.to" :aria-current="subCurrent(child.to)"><AppIcon :name="child.icon" glyph /><span class="nav-label">{{ t(`tab.${section.key}.${child.key}`) }}</span></NavLink></li>
                 </ul>
               </li>
             </ul>
