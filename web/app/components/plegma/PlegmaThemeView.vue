@@ -75,7 +75,7 @@ onBeforeUnmount(() => { plegma.setHoverStory(null); plegma.setThemeStories(null)
 // with room for the names of its arcs (names). The ring of a theme's web is 0.45 of the side of its region (stage-theme.ts), so the side is the story's divided by that.
 const orbit = ref<HTMLElement>()
 const map = ref<HTMLElement>()
-usePlegmaRegion(orbit, map, { side: 470, top: -32, bottom: 28, lean: 0.75, names: true, clear: true, ringPerSide: 0.45 })
+usePlegmaRegion(orbit, map, { side: 440, top: -32, bottom: 28, lean: 0.62, names: true, clear: true, ringPerSide: 0.45 })
 
 // The theme over time, as the story view has its days (PlegmaDaysCard): the line of the theme, and under it a line for each story the web shows. The axis is the square
 // root, so the stories are not flat next to the theme.
@@ -177,11 +177,6 @@ const lineHref = (key: string) => (key === 'topic' ? topicHref(String(props.inde
                 <div class="how-panel">
                   <h3 class="rows-caption">{{ t('story.how.frame') }}</h3>
                   <DiffList v-if="model.frames.length" :rows="model.frames" :scale="model.howScale" tip-key="topic2.how.tip" />
-                </div>
-                <div>
-                  <div class="how-panel">
-                    <DiffList v-if="model.sections.length" :rows="model.sections" :scale="model.howScale" tip-key="topic2.how.tip" />
-                  </div>
                 </div>
               </div>
             </DashCard>

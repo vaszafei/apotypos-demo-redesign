@@ -11,7 +11,7 @@ import type { NameItem } from './stage-names'
 export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCore) => {
   const { plegma, reduced } = deps
   const { webFocus, focusOutlet, focusIssue, gatherTo, gatherR, ease } = core
-  const { drawNames, stanceNames } = createStageNames(st, deps)
+  const { drawNames, drawNamesColumns, stanceNames } = createStageNames(st, deps)
   // A theme's web (not an outlet's) has the look of the story's: small rings with nothing inside, thicker arcs, and the name of each arc.
   const NODE_SCALE = 0.82
   // The arc of the ring of a theme under the pointer: a group, or a stance once the ring has turned to it.
@@ -243,7 +243,7 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
               const slot = plegma.themeGroups![k]!.slot
               items.push({ mid: groupAt[k * 2]! + span / 2, span, text: name.length > NAME_MAX ? `${name.slice(0, NAME_MAX - 1)}…` : name, dot: slot > 0 ? st.groupInk[slot] ?? st.ink : st.mute })
             }
-            drawNames(g, ring, items, 0.9 * (1 - groupsOut * 2) * (1 - 0.35 * mix) * st.ringIn)
+            drawNamesColumns(g, ring, items, 0.9 * (1 - groupsOut * 2) * (1 - 0.35 * mix) * st.ringIn)
           }
           if (stanceAt && st.ringMix > 0.5) drawNames(g, ring, stanceNames(stanceAt), 0.9 * (st.ringMix * 2 - 1) * st.ringIn, true)
         }
