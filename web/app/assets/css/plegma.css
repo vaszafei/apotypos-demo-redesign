@@ -470,3 +470,8 @@ html[data-search-fly] .body-search { opacity: 0; }
 
 /* The bar of the outlets (the card with the colored bar and the total) is hidden on the story page for now; the card and its place in PlegmaStoryView.vue stay. */
 .plegma-orbit.is-story .card-strip { display: none; }
+
+/* The switch of the ring of a story is in the title card, at the end of the line of facts, so it ends where the card ends. */
+.plegma-title .ecard-foot { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 4px 24px; }
+.plegma-title .orbit-ring-tabs { position: static; }
+.plegma-orbit .plegma-title .orbit-ring-tabs.segmented button { min-height: 26px; }
