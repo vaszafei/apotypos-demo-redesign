@@ -51,7 +51,7 @@
     { key: 'media', tabs: [['overview', '/media'], ['ownership', '/groups'],
       ['topics', '/trends'],
       ['stories', '/stories'],
-      ['writing', '/media/writing'], ['similarity', '/similarity']], details: [['/outlet', '/media'], ['/group', '/groups'], ['/topic', '/trends'], ['/story', '/stories']] },
+      ['writing', '/media/writing']], details: [['/outlet', '/media'], ['/group', '/groups'], ['/topic', '/trends'], ['/story', '/stories']] },
     { key: 'people', tabs: [['overview', '/fingerprints'], ['spread', '/fingerprints/spread']], details: [['/person', '/fingerprints']] },
     { key: 'world', tabs: [['speeches', '/speeches', [['speeches.all', '/speeches'], ['speeches.pi', '/un-israel-palestine']]],
       ['pi', '/narrative', [['pi.overview', '/narrative'], ['gaza', '/gaza'], ['israel', '/israel'], ['language', '/gaza-language']]],
