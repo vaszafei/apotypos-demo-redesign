@@ -125,19 +125,15 @@ export const useStoryView = (id: MaybeRefOrGetter<number>) => {
       diffRows(det[key]!.map((_, i) => ({ label: t(`story.${prefix}.${labels[i]}`), value: share(det[key]!, i), usual: share(dd.base[key], i) })), count)
     const stanceN = totalOf(det.s!.slice(1))
     const stanceRaw = STANCES.map((code, i) => ({ label: t(`stance.${code}`), value: share(det.s!.slice(1), i, stanceN), usual: share(dd.base.s.slice(1), i, totalOf(dd.base.s.slice(1))) }))
-    const [scored, baited] = det.k!
-    const clickRaw = scored ? [{ label: t('story.how.clickbait'), value: baited! / scored, usual: dd.base.k[1]! / dd.base.k[0]! }] : []
     const panels = [
       { title: t('story.how.frame'), rows: rowsOf('f', dd.frames, 'frame', 8), note: null as string | null },
       { title: t('story.how.section'), rows: rowsOf('c', dd.sections, 'section', 6), note: null },
-      { title: '', rows: stanceN ? stanceRaw : [], note: null },
-      { title: t('story.how.clickbait'), rows: clickRaw, note: scored ? t('story.how.clickbait.n', { n: fmtInt(baited!), total: fmtInt(scored) }) : t('story.how.clickbait.none') }
+      { title: '', rows: stanceN ? stanceRaw : [], note: null }
     ]
-    // The section is not shown: the card is the frame and the clickbait, on one scale.
-    const shownPanels = [panels[0]!, panels[3]!]
-    const scale = Math.max(0.05, ...shownPanels.flatMap(p => p.rows.map(r => Math.abs(r.value - r.usual))))
+    // The section is not shown: the card is the frame.
+    const scale = Math.max(0.05, ...panels[0]!.rows.map(r => Math.abs(r.value - r.usual)))
     const column = (items: typeof panels) => items.map(p => ({ title: p.title, rows: p.rows.map(diffRow), note: p.note }))
-    return { scale, columns: [column([panels[0]!]), column([panels[3]!])] }
+    return { scale, columns: [column([panels[0]!])] }
   })
 
   const related = computed(() => {

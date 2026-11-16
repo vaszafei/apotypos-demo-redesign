@@ -4,9 +4,9 @@ import type { Series } from '~/types/topics'
 
 // Dash.LinesChart of assets/dash.js, same layout and arithmetic: the names sit at the line ends where there is room, else a legend names the lines.
 // band: the indexes of a period that is tinted. tall: the height on a wide card. sparse: the lines are 0 most of the time (stories), so the tooltip leaves out the lines that are 0 on the day and cuts long names.
-// opacity: the opacity of the lines (1 by default).
+// opacity: the opacity of the lines (1 by default). lit: the key of a line that comes forward (thicker, on top) while the others step back.
 // plain: one line that the title of the card already names, so no name at its end and no legend. sqrt: the vertical axis is the square root of the value. hrefOf: the page of a line (the topic page by default).
-const props = defineProps<{ dates: string[], series: Series[], caption: string, band?: { from: number, to: number }, tall?: number, sparse?: boolean, sqrt?: boolean, plain?: boolean, opacity?: number, hrefOf?: (s: Series) => string }>()
+const props = defineProps<{ dates: string[], series: Series[], caption: string, band?: { from: number, to: number }, tall?: number, sparse?: boolean, sqrt?: boolean, plain?: boolean, opacity?: number, lit?: string | null, hrefOf?: (s: Series) => string }>()
 const linkOf = (s: Series) => (props.hrefOf ? props.hrefOf(s) : topicHref(s.key))
 const tooltip = useTooltipStore()
 
@@ -54,7 +54,10 @@ const bandBox = computed(() => {
   const x1 = Math.min(width.value - pad.value.right, X(props.band.to) + step / 2)
   return { x: x0, width: Math.max(3, x1 - x0) }
 })
-const paths = computed(() => props.series.slice().reverse().map(s => ({ s, d: smoothPath(s.values.map((v, i) => [X(i), Y(v)] as [number, number])) })))
+const paths = computed(() => {
+  const list = props.series.slice().reverse().map(s => ({ s, d: smoothPath(s.values.map((v, i) => [X(i), Y(v)] as [number, number])) }))
+  return props.lit ? [...list.filter(p => p.s.key !== props.lit), ...list.filter(p => p.s.key === props.lit)] : list
+})
 
 // Where two ends are less than 13 px apart the names move apart, each by half of what is missing; the names stay inside the plot.
 const ends = computed(() => {
@@ -102,7 +105,7 @@ const leave = () => { hover.value = null; tooltip.hide() }
       </template>
       <text v-for="t in xTicks" :key="t.d" :x="X(t.i)" :y="height - 6" text-anchor="middle">{{ fmtDay(t.d) }}</text>
       <rect v-if="bandBox" class="line-band" :x="bandBox.x" :y="pad.top" :width="bandBox.width" :height="plotH" />
-      <path v-for="p in paths" :key="p.s.key" class="line-series" :d="p.d" :stroke="p.s.color" stroke-width="1.5" :stroke-opacity="opacity ?? 1" pathLength="1" />
+      <path v-for="p in paths" :key="p.s.key" class="line-series" :d="p.d" :stroke="p.s.color" stroke-width="1.5" :style="lit && p.s.key === lit ? 'stroke-width: 2.8px' : undefined" :stroke-opacity="lit ? (p.s.key === lit ? 1 : 0.18) : opacity ?? 1" pathLength="1" />
       <template v-for="m in ends" :key="m.s.key">
         <line v-if="Math.abs(m.y - m.at) > 6" class="line-leader" :x1="X(n - 1)" :y1="m.at" :x2="X(n - 1) + 8" :y2="m.y" :stroke="m.s.color" />
         <circle class="line-dot" :cx="X(n - 1)" :cy="m.at" r="3" :fill="m.s.color" :style="`--m-i: ${m.i};`" />

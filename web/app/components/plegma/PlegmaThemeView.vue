@@ -18,8 +18,6 @@ const named = computed(() => { const issue = home.data.value?.issues[props.index
 provideDetailTitle(() => named.value)
 useHead({ title: () => (named.value ? `${named.value} · ${t('site.name')}` : undefined) })
 
-const dayLabel = (i: number) => fmtDay(home.data.value!.dates[i]!)
-
 // The stories the web shows are the largest of the theme: the card lists the same ones, so a row is the name of a sector of the web.
 const listed = computed(() => (model.value ? model.value.mine.slice(0, PLEGMA_THEME_STORIES) : []))
 // For the map: each of those stories with the outlets that wrote it most and the articles of each (storyDetail.json has them for each outlet and day).
@@ -77,7 +75,7 @@ onBeforeUnmount(() => { plegma.setHoverStory(null); plegma.setThemeStories(null)
 // with room for the names of its arcs (names). The ring of a theme's web is 0.45 of the side of its region (stage-theme.ts), so the side is the story's divided by that.
 const orbit = ref<HTMLElement>()
 const map = ref<HTMLElement>()
-usePlegmaRegion(orbit, map, { side: 511, top: -32, bottom: 28, lean: 0.75, names: true, clear: true, ringPerSide: 0.45 })
+usePlegmaRegion(orbit, map, { side: 470, top: -32, bottom: 28, lean: 0.75, names: true, clear: true, ringPerSide: 0.45 })
 
 // The theme over time, as the story view has its days (PlegmaDaysCard): the line of the theme, and under it a line for each story the web shows. The axis is the square
 // root, so the stories are not flat next to the theme.
@@ -125,7 +123,6 @@ const lineHref = (key: string) => (key === 'topic' ? topicHref(String(props.inde
             <li v-for="s in listed" :key="s.id" @pointerenter="plegma.setHoverStory(s.id)" @pointerleave="plegma.setHoverStory(null)" @focusin="plegma.setHoverStory(s.id)" @focusout="plegma.setHoverStory(null)">
               <span class="related-main">
                 <EntityLink type="story" :to="storyHref(s.id)">{{ storyName(s) }}</EntityLink>
-                <span class="muted-text">{{ `${dayLabel(s.days[0]!)} · ${t('topic2.stories.outlets', { n: s.outlets })}` }}</span>
               </span>
               <span class="row-value">{{ fmtInt(s.articles) }}</span>
             </li>
@@ -185,11 +182,6 @@ const lineHref = (key: string) => (key === 'topic' ? topicHref(String(props.inde
                   <div class="how-panel">
                     <DiffList v-if="model.sections.length" :rows="model.sections" :scale="model.howScale" tip-key="topic2.how.tip" />
                   </div>
-                  <div class="how-panel">
-                    <h3 class="rows-caption">{{ t('story.how.clickbait') }}</h3>
-                    <DiffList v-if="model.click.length" :rows="model.click" :scale="model.howScale" tip-key="topic2.how.tip" />
-                    <p class="dcard-sub">{{ model.scored ? t('story.how.clickbait.n', { n: fmtInt(model.baited), total: fmtInt(model.scored) }) : t('story.how.clickbait.none') }}</p>
-                  </div>
                 </div>
               </div>
             </DashCard>
@@ -201,7 +193,7 @@ const lineHref = (key: string) => (key === 'topic' ? topicHref(String(props.inde
     <div class="orbit-col orbit-under">
       <PlegmaCard :at="4" :order="2" class="card-days">
         <DashCard :title="t('topic2.time.title')" :info="t('topic2.time.info')">
-          <LinesChart v-if="timeLines" :dates="timeLines.dates" :series="timeLines.series" plain sparse sqrt :opacity="0.9" :tall="tall" :caption="t('topic2.time.title')" :href-of="s => lineHref(s.key)" />
+          <LinesChart v-if="timeLines" :lit="plegma.hoverStory !== null ? `s${plegma.hoverStory}` : null" :dates="timeLines.dates" :series="timeLines.series" plain sparse sqrt :opacity="0.9" :tall="tall" :caption="t('topic2.time.title')" :href-of="s => lineHref(s.key)" />
         </DashCard>
       </PlegmaCard>
     </div>

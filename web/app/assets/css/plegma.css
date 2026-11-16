@@ -474,3 +474,10 @@ html[data-search-fly] .body-search { opacity: 0; }
 /* The switch of the ring of a story or a theme is beside the title card, on its right, and ends where the card ends. */
 .plegma-orbit:is(.is-story, .is-theme) .plegma-title { display: flex; align-items: flex-end; gap: var(--space-3); }
 .plegma-orbit:is(.is-story, .is-theme) .plegma-title > .orbit-ring-tabs { position: static; flex: none; }
+
+/* The theme view: the two columns of cards on the right are 20% narrower (3 parts of 12 become 2.4), so the web has the room. */
+@media (min-width: 1280px) { .plegma-orbit.is-theme { grid-template-columns: minmax(0, 2fr) minmax(0, 5.2fr) minmax(0, 2.4fr) minmax(0, 2.4fr); } }
+@media (min-width: 1024px) and (max-width: 1279px) { .plegma-orbit.is-theme { grid-template-columns: minmax(0, 2fr) minmax(0, 5.2fr) minmax(0, 4.8fr); } }
+
+/* A line of the chart that a card points at comes forward and the others step back, softly. */
+.plegma-orbit .line-series { transition: stroke-opacity 200ms var(--ease-out), stroke-width 200ms var(--ease-out); }
