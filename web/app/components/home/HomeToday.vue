@@ -9,10 +9,12 @@ import { dayDots, PLEGMA_DAY_STORIES, PLEGMA_DAY_THEMES } from '~/utils/plegma/p
 import type { PlegmaDayTheme } from '~/utils/plegma/plegma-day'
 import type { DayOutlet, DayRing } from '~/components/plegma/PlegmaDayWeb.vue'
 import { themeSlots } from '~/utils/plegma/plegma-world'
+import { diveFromDay } from '~/utils/plegma/plegma-dive'
+import { useMediaQuery } from '@vueuse/core'
 
 // «Η επικαιρότητα» under the hero (the section #home-today of index.html): the calendar of the days floating over the Plegma, under it the web of the picked day (the date, its themes, the stories
-// of each and a dot for each article: components/PlegmaDayWeb.vue), and beside it the card of the story of the day with the bar of the outlets that ran it. A story picked on the web takes the card.
-// A switch over the cards turns the web (and the cards) from the stories of the day, whose ring is the outlets, to the themes of the day, whose ring is the themes.
+// of each and a dot for each article: components/PlegmaDayWeb.vue), and beside it the list of the stories (or the themes) of the day. A story pointed at in the list is lit on the web with its title; a click on one dives into its page.
+// The web has one form: the themes of the day as nodes, each joined to its stories; the ring is the outlets. The list has the theme under each story.
 // The section is drawn in the browser (the data of the stories is 2.8 MB that the prerendered page should not carry).
 type HomeData = { dates: string[], outlets: { name: string, daily: (number | null)[] }[], issues: StoriesData['issues'], issueDaily: (number | null)[][] }
 const { t } = useI18n()
@@ -47,6 +49,15 @@ const dayThemes = computed(() => {
 const litIssue = ref<number | null>(null)
 // The stories of the day, the largest first, in parts of 100 that come as the list scrolls (a day has up to some hundreds).
 const storyRows = computed(() => (ix.value && day.value !== null ? ix.value.byDay[day.value] ?? [] : []))
+// What a story had the day before: its articles that day, for the change shown beside its count (a story with none the day before is new).
+const prevN = computed(() => (ix.value && day.value !== null && day.value > 0 ? new Map((ix.value.byDay[day.value - 1] ?? []).map(r => [r.s.id, r.n])) : new Map<number, number>()))
+const change = (id: number, n: number) => {
+  const before = prevN.value.get(id)
+  if (!before) return null
+  const v = (n - before) / before * 100
+  const size = fmtDec(Math.abs(v))
+  return { size: `${size}%`, dir: Number(size) === 0 ? null : v > 0 ? 'up' : 'down' }
+}
 const shown = ref(100)
 watch(day, () => { shown.value = 100 })
 const more = (e: Event) => {
@@ -61,27 +72,6 @@ const dayOutlets = computed<DayOutlet[]>(() => {
   if (!h || d === null) return []
   const groupOf = new Map((detail.data.value?.outlets ?? []).map(o => [o.name, o.group]))
   return h.outlets.map(o => ({ name: o.name, n: o.daily[d] ?? 0, slot: groupSlot(groupOf.get(o.name) ?? null) })).filter(o => o.n > 0).sort((a, b) => b.n - a.n)
-})
-const mode = ref<'stories' | 'themes'>('stories')
-const modes = computed(() => [{ value: 'stories', label: t('home.mode.stories') }, { value: 'themes', label: t('home.mode.themes') }])
-const pickedTheme = ref<number | null>(null)
-watch(day, () => { pickedTheme.value = null })
-watch(mode, () => { litIssue.value = null })
-// The theme in its card: the one picked, or the day's largest; with its stories of the day and the bar of the outlets that ran them.
-const theme = computed(() => {
-  const x = ix.value
-  const d = day.value
-  const row = (pickedTheme.value !== null ? dayThemes.value.find(r => r.issue === pickedTheme.value) : null) ?? dayThemes.value[0]
-  if (!x || d === null || !row) return null
-  const rows = (x.byDay[d] ?? []).filter(r => r.s.issue === row.issue)
-  const perOutlet = new Map<string, { name: string, group: string | null, n: number, slug: string }>()
-  for (const r of rows) for (const o of homeOutletsOf(x, r.s, d, d)) {
-    const have = perOutlet.get(o.slug)
-    if (have) have.n += o.n
-    else perOutlet.set(o.slug, { name: o.name, group: o.group, n: o.n, slug: o.slug })
-  }
-  const parts = [...perOutlet.values()].sort((a, b) => b.n - a.n).map(o => ({ ...o, color: (o.group && colorOf.value.get(o.group)) || NO_GROUP }))
-  return { ...row, stories: rows.length, parts }
 })
 const ring = computed<DayRing[]>(() => dayThemes.value.map(r => ({ issue: r.issue, name: r.name, slot: r.slot, n: r.n })))
 
@@ -114,16 +104,20 @@ const themes = computed<PlegmaDayTheme[]>(() => {
   return [...byIssue.values()].sort((a, b) => b.n - a.n).slice(0, PLEGMA_DAY_THEMES)
 })
 
-// The story in the card: the one picked on the web, or the day's largest.
-const story = computed(() => {
-  const x = ix.value
-  if (!x || day.value === null) return null
-  const rows = x.byDay[day.value] ?? []
-  const row = (plegma.homePick !== null ? rows.find(r => r.s.id === plegma.homePick) : null) ?? rows[0]
-  if (!row) return null
-  const outlets = homeOutletsOf(x, row.s, day.value, day.value)
-  return { s: row.s, n: row.n, topic: x.issues[row.s.issue]!, outlets, parts: outlets.map(o => ({ name: o.name, group: o.group, n: o.n, slug: o.slug, color: (o.group && colorOf.value.get(o.group)) || NO_GROUP })) }
-})
+// Picking a story or a theme (on the web or in the list) dives into its page: the section fades out, the web swells and dives into the node (utils/plegma/plegma-dive.ts), the page changes.
+const web = ref<{ spotOf: (t: { story?: number, theme?: number }) => { x: number, y: number }, canvas: HTMLCanvasElement | undefined }>()
+const reduced = useMediaQuery('(prefers-reduced-motion: reduce)')
+const leaving = ref(false)
+const hoverStory = ref<number | null>(null)
+const open = async (target: { story?: number, theme?: number }) => {
+  const w = web.value
+  if (leaving.value || !w?.canvas) return
+  leaving.value = true
+  hoverStory.value = null
+  litIssue.value = null
+  const to = target.story !== undefined ? storyHref(target.story) : topicHref(String(target.theme))
+  await diveFromDay(w.canvas, w.spotOf(target), { go: () => navigateTo(to), region: () => plegma.region, reduced: reduced.value })
+}
 
 // The Plegma behind steps back to a dim map while the section is in view, and goes back to the best of the week with the hero in view.
 const root = ref<HTMLElement>()
@@ -141,62 +135,28 @@ onBeforeUnmount(() => { watcher?.disconnect(); plegma.setHomeDay(null); plegma.p
 </script>
 
 <template>
-  <section id="home-today" ref="root" class="home-today" :aria-label="t('home.today.title')">
+  <section id="home-today" ref="root" class="home-today" :class="{ 'is-leaving': leaving }" :aria-label="t('home.today.title')">
     <template v-if="home.data.value && day !== null">
       <div class="home-today-days"><HomeCalendar v-model="day" :dates="home.data.value.dates" :totals="totals" /></div>
-      <div class="home-today-map"><PlegmaDayWeb v-model:lit="litIssue" :themes="themes" :ring="ring" :outlets="dayOutlets" :mode="mode" :date="fmtDate(home.data.value.dates[day]!)" :picked="plegma.homePick" :active="inView" @pick="plegma.pickHome" @pick-theme="pickedTheme = $event" /></div>
+      <div class="home-today-map"><PlegmaDayWeb ref="web" v-model:lit="litIssue" names grow :grow-ms="1000" :hover-story="hoverStory" :themes="themes" :ring="ring" :outlets="dayOutlets"  mode="stories" grouped :date="fmtDate(home.data.value.dates[day]!)" :picked="null" :active="inView" @pick="open({ story: $event })" @pick-theme="open({ theme: $event })" /></div>
       <div class="home-today-side">
-        <SegmentedControl v-model="mode" class="home-mode-tabs" :label="t('home.mode.label')" :options="modes" />
-        <Transition name="home-cards" mode="out-in">
-          <div v-if="mode === 'stories'" key="stories" class="home-today-cards">
-            <div class="home-today-card">
-              <DashCard :title="t('home.pick.title')" :info="t('home.pick.info')" card="home-day" class="home-day">
-                <template #tools><span class="home-date">{{ fmtDate(home.data.value.dates[day]!) }}</span></template>
-                <template v-if="story">
-                  <h3 class="home-day-story">{{ storyName(story.s) }}</h3>
-                  <p class="home-day-meta"><span class="home-topic-label">{{ t('home.day.topic') }}</span> <EntityLink type="topic" :to="topicHref(String(story.s.issue))">{{ topicName(story.topic) }}</EntityLink></p>
-                  <div v-if="story.parts.length" class="home-block"><OutletStack :parts="story.parts" /></div>
-                  <NuxtLink class="button button-sm home-story-go" :to="storyHref(story.s.id)">{{ t('home.day.open') }}<AppIcon name="chevron-right" class="icon icon-sm" /></NuxtLink>
-                </template>
-                <p v-else-if="ix" class="dcard-empty">{{ t('home.day.empty') }}</p>
-              </DashCard>
-            </div>
-            <DashCard :title="t('home.day.title')" :info="t('home.stories.info')" card="home-stories" class="home-day-list">
-              <ul v-if="storyRows.length" class="home-stories" @scroll="more">
-                <li v-for="r in storyRows.slice(0, shown)" :key="r.s.id" :class="story && story.s.id === r.s.id ? 'is-current' : undefined">
-                  <button type="button" class="home-story-pick" :aria-pressed="story?.s.id === r.s.id" @click="plegma.pickHome(r.s.id)">
-                    <span class="home-story-name">{{ storyName(r.s) }}</span><span class="muted-text">{{ fmtInt(r.n) }}</span>
-                  </button>
-                </li>
-              </ul>
-              <p v-else-if="ix" class="dcard-empty">{{ t('home.day.empty') }}</p>
-            </DashCard>
-          </div>
-          <div v-else key="themes" class="home-today-cards">
-            <div class="home-today-card">
-              <DashCard :title="t('home.theme.title')" :info="t('home.theme.info')" card="home-day-theme" class="home-day">
-                <template #tools><span class="home-date">{{ fmtDate(home.data.value.dates[day]!) }}</span></template>
-                <template v-if="theme">
-                  <h3 class="home-day-story">{{ theme.name }}</h3>
-                  <p class="home-day-meta">{{ t('home.theme.meta', { n: fmtInt(theme.n), stories: fmtInt(theme.stories), share: fmtPct(theme.share) }) }}</p>
-                  <div v-if="theme.parts.length" class="home-block"><OutletStack :parts="theme.parts" /></div>
-                  <NuxtLink class="button button-sm home-story-go" :to="topicHref(String(theme.issue))">{{ t('home.theme.open') }}<AppIcon name="chevron-right" class="icon icon-sm" /></NuxtLink>
-                </template>
-                <p v-else-if="ix" class="dcard-empty">{{ t('home.day.empty') }}</p>
-              </DashCard>
-            </div>
-            <DashCard :title="t('home.themes.title')" :info="t('home.themes.info')" card="home-themes" class="home-day-list">
-              <ul v-if="dayThemes.length" class="home-stories">
-                <li v-for="r in dayThemes" :key="r.issue" :class="theme && theme.issue === r.issue ? 'is-current' : undefined" @pointerenter="litIssue = r.issue" @pointerleave="litIssue = null">
-                  <button type="button" class="home-story-pick" :aria-pressed="theme?.issue === r.issue" @click="pickedTheme = r.issue">
-                    <span class="home-story-name">{{ r.name }}</span><span class="muted-text">{{ fmtInt(r.n) }}</span>
-                  </button>
-                </li>
-              </ul>
-              <p v-else-if="ix" class="dcard-empty">{{ t('home.day.empty') }}</p>
-            </DashCard>
-          </div>
-        </Transition>
+        <DashCard :title="t('home.daylist.title')" :info="t('home.daylist.info')" card="home-stories" class="home-day-list">
+          <ul v-if="storyRows.length" class="home-stories" @scroll="more">
+            <li v-for="r in storyRows.slice(0, shown)" :key="r.s.id">
+              <button type="button" class="home-story-pick" @pointerenter="hoverStory = r.s.id" @pointerleave="hoverStory = null" @focus="hoverStory = r.s.id" @blur="hoverStory = null" @click="open({ story: r.s.id })">
+                <span class="home-story-name">{{ storyName(r.s) }}</span>
+                <span class="home-story-num"><span class="muted-text">{{ fmtInt(r.n) }}</span><span class="home-story-delta muted-text">
+                  <template v-if="change(r.s.id, r.n)"><span v-if="change(r.s.id, r.n)!.dir" :class="`home-arrow is-${change(r.s.id, r.n)!.dir}`" aria-hidden="true">{{ change(r.s.id, r.n)!.dir === 'up' ? '▲' : '▼' }}</span> {{ change(r.s.id, r.n)!.size }}</template>
+                  <template v-else>{{ t('home.day.fresh') }}</template>
+                </span></span>
+              </button>
+              <button type="button" class="home-row-theme" @pointerenter="litIssue = r.s.issue" @pointerleave="litIssue = null" @focus="litIssue = r.s.issue" @blur="litIssue = null" @click="open({ theme: r.s.issue })">
+                {{ t('home.day.topic') }} <span class="home-row-theme-name">{{ topicName(ix!.issues[r.s.issue]!) }}</span>
+              </button>
+            </li>
+          </ul>
+          <p v-else-if="ix" class="dcard-empty">{{ t('home.day.empty') }}</p>
+        </DashCard>
       </div>
     </template>
   </section>
