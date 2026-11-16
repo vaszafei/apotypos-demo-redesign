@@ -13,14 +13,15 @@ import type { NameItem } from '~/utils/plegma/stage/stage-names'
 // group), and the themes of the day, each with its stories (the ring has an arc for each theme; a theme with no color of its own is gray). The nodes of a story and its dots are the same
 // in both, so a change of `mode` moves them from one place to the other, the themes and the faint dots fade in or out, and the ring turns into the other ring. In the form of the themes a
 // theme pointed at, on the ring, on the web or in the list beside it (`lit`), comes forward.
+const GROW_MS = 1400
 export interface DayRing { issue: number, name: string, slot: number, n: number }
 export interface DayOutlet { name: string, slot: number, n: number, group?: string | null }
 // The pages of Μέσα use it for a period too: `date` is then the text at the center (a count, with `sub` under it), `labels` the most theme names it writes (the largest first),
 // `themeLabel` names the theme in the tooltip of a story when the themes are something else (the groups of Ιδιοκτησία, whose stories are their outlets: a story with no `media` has no row of them),
 // `spread` that many themes go round the center by the golden angle (utils/plegma/plegma-day.ts), `zoom` the share of the area the web fills (the ring included), `shares` that a theme is as large as its share
 // of the ring (the area of its node is its articles), `ellipse` that the ring is an ellipse as wide as the area allows (the web lies in it, and the arcs of the outlets are named with their share outside it), `grouped` that the stories are grouped by their themes (the nodes of the themes and their names) while the ring stays the outlets; and `shares` that a theme is as large as its share
-// of the ring (the area of its node is its articles) and its share is written after its name and in its tooltip, `hoverStory` the id of a story that is pointed at in a list beside the web (it is lit and its title is written at its circle, as when the pointer is on it), `names` that it has the look of the web of a story and of a theme (components/PlegmaStage.vue: a story is a gray circle as large as its articles, a dot a small ring in the color of its group, no lines from the center to the stories, the names of the arcs in two columns beside the ring), `grow` that the web grows out of the center when it comes into view and again when its data changes, and `label` the name of the picture for a screen reader.
-const props = withDefaults(defineProps<{ themes: PlegmaDayTheme[], ring: DayRing[], outlets: DayOutlet[], mode: 'stories' | 'themes', lit: number | null, date: string, picked: number | null, active: boolean, sub?: string, labels?: number, grow?: boolean, label?: string, spread?: boolean, themeLabel?: string, zoom?: number, shares?: boolean, ellipse?: boolean, grouped?: boolean, names?: boolean, hoverStory?: number | null }>(), { sub: undefined, labels: Infinity, grow: false, label: undefined, spread: false, themeLabel: undefined, zoom: 1, shares: false, ellipse: false, grouped: false, names: false, hoverStory: null })
+// of the ring (the area of its node is its articles) and its share is written after its name and in its tooltip, `growMs` how long the growth takes, `hoverStory` the id of a story that is pointed at in a list beside the web (it is lit and its title is written at its circle, as when the pointer is on it), `names` that it has the look of the web of a story and of a theme (components/PlegmaStage.vue: a story is a gray circle as large as its articles, a dot a small ring in the color of its group, no lines from the center to the stories, the names of the arcs in two columns beside the ring), `grow` that the web grows out of the center when it comes into view and again when its data changes, and `label` the name of the picture for a screen reader.
+const props = withDefaults(defineProps<{ themes: PlegmaDayTheme[], ring: DayRing[], outlets: DayOutlet[], mode: 'stories' | 'themes', lit: number | null, date: string, picked: number | null, active: boolean, sub?: string, labels?: number, grow?: boolean, label?: string, spread?: boolean, themeLabel?: string, zoom?: number, shares?: boolean, ellipse?: boolean, grouped?: boolean, names?: boolean, hoverStory?: number | null, growMs?: number }>(), { sub: undefined, labels: Infinity, grow: false, label: undefined, spread: false, themeLabel: undefined, zoom: 1, shares: false, ellipse: false, grouped: false, names: false, hoverStory: null, growMs: GROW_MS })
 const emit = defineEmits<{ pick: [id: number], pickTheme: [issue: number], 'update:lit': [issue: number | null] }>()
 const { t } = useI18n()
 const tooltip = useTooltipStore()
@@ -93,7 +94,6 @@ let litTheme = -1
 const arcHot = new Map<string, number>()
 let last = 0
 // The growth out of the center (`grow`): the time it started, or -1 before it starts; the themes come first, then the stories, then the dots, and the ring is drawn round.
-const GROW_MS = 1400
 let growAt = -1
 let grown = 1
 const growOf = (kind: number) => {
@@ -170,7 +170,7 @@ const draw = (sec: number, dt: number) => {
   const dpr = Math.min(window.devicePixelRatio || 1, 2)
   g.setTransform(dpr, 0, 0, dpr, 0, 0)
   g.clearRect(0, 0, width, height)
-  grown = growAt < 0 ? (props.grow && !reduced.value ? 0 : 1) : clamp((performance.now() - growAt) / GROW_MS, 0, 1)
+  grown = growAt < 0 ? (props.grow && !reduced.value ? 0 : 1) : clamp((performance.now() - growAt) / props.growMs, 0, 1)
   g.globalAlpha = 1
   const goal = props.mode === 'themes' || props.grouped ? 1 : 0
   themed = reduced.value ? goal : themed + (goal - themed) * (1 - Math.exp(-dt * 3))
@@ -592,7 +592,21 @@ const loop = useRafFn(({ timestamp }) => {
 }, { immediate: false })
 const startGrow = () => { if (props.grow && !reduced.value && web.value) growAt = performance.now() }
 watch(() => [props.active, !!web.value] as const, ([on, ready]) => { if (on && ready && growAt < 0) startGrow() }, { immediate: true })
-watch(web, (w, before) => { if (props.grow && w && before && props.active) startGrow() })
+// The same web again for another day (not for the same stories with other colors): the old picture fades and swells away over the new web, which grows out of the center.
+const storiesKey = (themes: PlegmaDayTheme[]) => themes.map(th => th.stories.map(s => `${s.id}:${s.n}`).join(',')).join('|')
+const fadeOld = () => {
+  const el = canvas.value
+  const holder = box.value
+  if (!el || !holder || reduced.value) return
+  const copy = document.createElement('canvas')
+  copy.width = el.width
+  copy.height = el.height
+  copy.getContext('2d')?.drawImage(el, 0, 0)
+  copy.className = 'plegma-day-canvas plegma-day-old'
+  holder.append(copy)
+  copy.animate([{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(1.05)' }], { duration: 380, easing: 'ease-out', fill: 'forwards' }).finished.then(() => copy.remove(), () => copy.remove())
+}
+watch(() => storiesKey(props.themes), (now, was) => { if (props.grow && props.active && was && now !== was && web.value) { fadeOld(); startGrow() } })
 watch(() => [props.active, reduced.value] as const, ([on, still]) => {
   last = 0
   if (on && !still) loop.resume()
