@@ -33,11 +33,10 @@ const webThemes = computed(() => (periodWeb?.ready.value ? periodWeb.themesOf(36
 // The ring of the web, as the story page has it: the outlets, or their groups.
 const ringBy = ref<'outlets' | 'groups'>('outlets')
 
-// The list: every story of the period, the largest first, with its change against the period before (new when it had no articles then; none shown when it had too few to compare).
+// The list: every story of the period, the largest first, with its change against the period before (none shown when it had none or too few to compare).
 const changeOf = (id: number): DayStoryRow['change'] => {
   const c = changes.value?.get(id)
   if (!c) return undefined
-  if (c.before === 0) return null
   if (c.change === null) return undefined
   const size = fmtDec(Math.abs(c.change * 100))
   return { size: `${size}%`, dir: Number(size) === 0 ? null : c.change > 0 ? 'up' : 'down' }
@@ -45,6 +44,8 @@ const changeOf = (id: number): DayStoryRow['change'] => {
 const rows = computed<DayStoryRow[]>(() => (periodWeb?.ready.value ? periodWeb.rows.value.map(r => ({ id: r.s.id, name: storyName(r.s), n: r.n, issue: r.s.issue, theme: periodWeb.themeName(r.s.issue), change: changeOf(r.s.id) })) : []))
 const litIssue = ref<number | null>(null)
 const { web, leaving, hoverStory, open } = useWebDive(litIssue)
+// The line of the story pointed at in the list comes forward on the chart (only the first stories have a line; for the others the chart stays as it is).
+const litLine = computed(() => (hoverStory.value !== null && lines.value?.series.some(l => l.key === String(hoverStory.value)) ? String(hoverStory.value) : null))
 
 // A new period draws the lines in again (assets/motion.js replay); the first view is played by plugins/motion.client.ts.
 const { $motion } = useNuxtApp()
@@ -83,7 +84,7 @@ watch(view, async () => { await nextTick(); $motion.replay(document.querySelecto
     </template>
     <template #under>
       <DashCard card="lines" class="dive-fade" :class="{ 'is-leaving': leaving }" :title="t('stories.time.title')" :info="t('stories.time.info')">
-        <LinesChart v-if="lines" :dates="lines.dates" :series="lines.series" sparse sqrt :tall="220" :caption="t('stories.time.title')" :href-of="s => storyHref(s.key)" />
+        <LinesChart v-if="lines" :lit="litLine" :dates="lines.dates" :series="lines.series" sparse sqrt :tall="220" :caption="t('stories.time.title')" :href-of="s => storyHref(s.key)" />
         <p v-else class="dcard-empty">{{ t('stories.period.empty') }}</p>
       </DashCard>
     </template>
