@@ -8,7 +8,8 @@ const props = defineProps<{ row: number, labels: MethodLabels, label: string }>(
 const canvas = ref<HTMLCanvasElement>()
 const reduced = useMediaQuery('(prefers-reduced-motion: reduce)')
 const visible = ref(false)
-const CYCLE_MS = 8000
+// The collection row has the most to show (articles arriving, then the cleaning), so it takes the longest.
+const CYCLE_MS = [16000, 9000, 9000]
 let loop = METHOD_LOOP_PLAY
 let raf = 0
 let last = 0
@@ -41,7 +42,7 @@ const paint = () => {
   el.style.opacity = String(loop < 0.05 ? loop / 0.05 : loop > 0.94 ? (1 - loop) / 0.06 : 1)
 }
 const tick = (now: number) => {
-  loop = (loop + (now - last) / CYCLE_MS) % 1
+  loop = (loop + (now - last) / (CYCLE_MS[props.row] ?? 9000)) % 1
   if (loop < 0.02) palette = null
   last = now
   paint()

@@ -6,7 +6,6 @@ interface Item { i: number, o: number, k: number, h: number, kind: 'ok' | 'dup' 
 type P = [number, number]
 interface Spot { p: P, alpha: number, scale: number, slot: number, sample?: boolean, ok?: boolean }
 
-const OUTLETS = ['Kathimerini', 'Efsyn', 'Proto Thema', 'Iefimerida', 'Newsbomb', 'Documento', 'Ta Nea', 'Avgi', 'Flash.gr']
 const GRAY = 'rgba(95,93,86,.8)'
 const rngOf = (seed: number) => () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296)
 const ease = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x))
@@ -19,7 +18,7 @@ const build = () => {
   const outlets = Array.from({ length: 24 }, (_, i) => {
     const a = (i / 24) * Math.PI * 2 + r() * 0.2
     const rad = 0.62 + r() * 0.22
-    return { p: [Math.cos(a) * rad * 1.2, Math.sin(a) * rad * 0.95] as P, slot: [1, 2, 3, 4, 5, 6, 7, 8, 0][Math.floor(r() * 9)]!, name: OUTLETS[i] }
+    return { p: [Math.cos(a) * rad * 1.2, Math.sin(a) * rad * 0.95] as P, slot: [1, 2, 3, 4, 5, 6, 7, 8, 0][Math.floor(r() * 9)]! }
   })
   const centers = Array.from({ length: 8 }, (_, k): P => { const a = (k / 8) * Math.PI * 2 - Math.PI / 2 + 0.2; return [Math.cos(a) * 0.34 * 1.25, Math.sin(a) * 0.34] })
   const hubs = centers.map(c => Array.from({ length: 3 }, (): P => [c[0] + gauss() * 0.045, c[1] + gauss() * 0.045]))
@@ -66,10 +65,6 @@ const drawStep = (ctx: CanvasRenderingContext2D, W: number, H: number, step: num
       const [x, y] = X(o.p)
       const pulse = step === 0 ? Math.max(0, 1 - Math.abs(((u * 3 + i / 24) % 1) - 0.1) * 6) : 0
       dot(x, y, 3.6 + pulse * 3, pal.groups[o.slot]!, a)
-      if (i % 3 === 0 && o.name && Math.abs(x - cx) < W / 2 - 78) {
-        ctx.globalAlpha = a; ctx.fillStyle = mute; ctx.textBaseline = 'middle'; ctx.textAlign = o.p[0] > 0 ? 'left' : 'right'
-        ctx.fillText(o.name, x + (o.p[0] > 0 ? 9 : -9), y); ctx.globalAlpha = 1
-      }
     })
   }
   const spotOf = (it: Item): Spot | null => {

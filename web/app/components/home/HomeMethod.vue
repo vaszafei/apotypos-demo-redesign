@@ -29,11 +29,10 @@ onBeforeUnmount(() => plegma.setHomeDim(false))
 <template>
   <section id="home-method" ref="root" class="home-method" aria-labelledby="home-method-title">
     <div class="method-in">
-      <h2 id="home-method-title" class="method-kicker">{{ t('home.method.title') }}</h2>
+      <h2 id="home-method-title" class="visually-hidden">{{ t('home.method.title') }}</h2>
       <div v-for="n in steps" :key="n" class="method-row" :class="{ 'is-flip': n === 2 }">
         <DashCard :title="t(`home.method.${n}.title`)" class="method-card">
           <p class="method-text">{{ t(`home.method.${n}.text`) }}</p>
-          <span class="method-fact">{{ t(`home.method.${n}.fact`) }}</span>
         </DashCard>
         <ClientOnly><MethodScene :row="n - 1" :labels="labels" :label="t(`home.method.${n}.alt`)" /></ClientOnly>
       </div>
