@@ -9,7 +9,7 @@ const canvas = ref<HTMLCanvasElement>()
 const reduced = useMediaQuery('(prefers-reduced-motion: reduce)')
 const visible = ref(false)
 // The collection row has the most to show (articles arriving, then the cleaning), so it takes the longest.
-const CYCLE_MS = [16000, 9000, 9000]
+const CYCLE_MS = [20000, 9000, 9000]
 let loop = METHOD_LOOP_PLAY
 let raf = 0
 let last = 0

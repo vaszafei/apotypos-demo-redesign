@@ -4,7 +4,7 @@ export interface MethodPalette { ink: string, mute: string, groups: string[], th
 export interface MethodLabels { themes: string[], judgeA: string, judgeB: string, score: string, agreement: string }
 interface Item { i: number, o: number, k: number, h: number, kind: 'ok' | 'dup' | 'junk', ta: number, size: number, p1: P, p3: P, p4: P, partner?: Item, sample: boolean, ok: boolean }
 type P = [number, number]
-interface Spot { p: P, alpha: number, scale: number, slot: number, sample?: boolean, ok?: boolean }
+interface Spot { p: P, alpha: number, scale: number, slot: number, sample?: boolean, ok?: boolean, mark?: 'junk' | 'dup', mt?: number, to?: P }
 
 const GRAY = 'rgba(95,93,86,.8)'
 const rngOf = (seed: number) => () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296)
@@ -20,7 +20,7 @@ const build = () => {
     const rad = 0.62 + r() * 0.22
     return { p: [Math.cos(a) * rad * 1.2, Math.sin(a) * rad * 0.95] as P, slot: [1, 2, 3, 4, 5, 6, 7, 8, 0][Math.floor(r() * 9)]! }
   })
-  const centers = Array.from({ length: 8 }, (_, k): P => { const a = (k / 8) * Math.PI * 2 - Math.PI / 2 + 0.2; return [Math.cos(a) * 0.34 * 1.25, Math.sin(a) * 0.34] })
+  const centers = Array.from({ length: 8 }, (_, k): P => { const a = (k / 8) * Math.PI * 2 - Math.PI / 2 + 0.2; return [Math.cos(a) * 0.4 * 1.3, Math.sin(a) * 0.4] })
   const hubs = centers.map(c => Array.from({ length: 3 }, (): P => [c[0] + gauss() * 0.045, c[1] + gauss() * 0.045]))
   const items: Item[] = Array.from({ length: 230 }, (_, i) => {
     const o = Math.floor(r() * outlets.length)
@@ -29,11 +29,11 @@ const build = () => {
     const kind = r() < 0.12 ? 'dup' : r() < 0.09 ? 'junk' : 'ok'
     const hub = hubs[k]![h]!
     const ang = r() * 6.283
-    const rad = 0.02 + r() * 0.07
+    const rad = 0.025 + r() * 0.09
     return {
       i, o, k, h, kind, ta: r() * 0.78, size: 1.8 + r() * 1.8, sample: false, ok: true,
-      p1: [gauss() * 0.14 * 1.2, gauss() * 0.14],
-      p3: [centers[k]![0] + gauss() * 0.06, centers[k]![1] + gauss() * 0.06],
+      p1: [gauss() * 0.19 * 1.2, gauss() * 0.19],
+      p3: [centers[k]![0] + gauss() * 0.07, centers[k]![1] + gauss() * 0.07],
       p4: [hub[0] + Math.cos(ang) * rad, hub[1] + Math.sin(ang) * rad]
     }
   })
@@ -46,6 +46,8 @@ const scene = build()
 
 // The loop of every row: it plays for most of the cycle, holds the end, then the canvas fades (the component does it).
 export const METHOD_LOOP_PLAY = 0.86
+
+const scan = (u: number) => u * 1.5 - 0.1
 
 const drawStep = (ctx: CanvasRenderingContext2D, W: number, H: number, step: number, u: number, pal: MethodPalette, labels: MethodLabels) => {
   const { ink, mute } = pal
@@ -60,7 +62,7 @@ const drawStep = (ctx: CanvasRenderingContext2D, W: number, H: number, step: num
   const dot = (x: number, y: number, r: number, color: string, a = 1) => { ctx.globalAlpha = a; ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); ctx.globalAlpha = 1 }
 
   if (step <= 1) {
-    const a = step === 0 ? 1 : 1 - seg(u, 0.5, 1)
+    const a = step === 0 ? 1 : 1 - seg(u, 0, 0.35)
     S.outlets.forEach((o, i) => {
       const [x, y] = X(o.p)
       const pulse = step === 0 ? Math.max(0, 1 - Math.abs(((u * 3 + i / 24) % 1) - 0.1) * 6) : 0
@@ -73,17 +75,23 @@ const drawStep = (ctx: CanvasRenderingContext2D, W: number, H: number, step: num
       return { p: lerp(S.outlets[it.o]!.p, it.p1, seg(u, it.ta, it.ta + 0.2)), alpha: Math.min(1, (u - it.ta) * 12) * 0.5, scale: 1, slot: 0 }
     }
     if (step === 1) {
-      const sweep = u * 1.25 - 0.1
+      // The scan goes round the cloud. A dot it has passed is checked (it turns dark); an empty or very short article gets a cross and falls out;
+      // a duplicate is joined to the article it copies by a line, slides onto it and is gone.
       const d = ((Math.atan2(it.p1[1], it.p1[0]) + Math.PI / 2 + 6.283) % 6.283) / 6.283
-      const light = d > sweep
-      const m = seg(sweep - d, 0, 0.3)
-      let p = it.p1
-      let alpha = 1
-      let scale = 1
-      if (!light && it.kind === 'dup') { p = lerp(it.p1, it.partner!.p1, m); scale = 1 - m }
-      if (!light && it.kind === 'junk') { alpha = 1 - m; scale = 1 + m * 0.5 }
-      if (it.kind === 'dup' && !light && scale < 0.05) return null
-      return { p, alpha: light ? 0.5 : alpha, scale, slot: 0 }
+      const m = Math.min(1, Math.max(0, (scan(u) - d) / 0.4))
+      if (scan(u) < d) return { p: it.p1, alpha: 0.5, scale: 1, slot: 0 }
+      if (it.kind === 'junk') {
+        const fall = seg(m, 0.45, 1)
+        if (fall > 0.98) return null
+        return { p: [it.p1[0], it.p1[1] + fall * 0.28], alpha: 1 - fall, scale: 1, slot: 0, mark: 'junk', mt: seg(m, 0, 0.25) * (1 - fall) }
+      }
+      if (it.kind === 'dup') {
+        const slide = seg(m, 0.4, 0.9)
+        const gone = seg(m, 0.85, 1)
+        if (gone > 0.98) return null
+        return { p: lerp(it.p1, it.partner!.p1, slide), alpha: 1 - gone, scale: 1, slot: 0, mark: 'dup', mt: seg(m, 0, 0.25) * (1 - slide), to: it.partner!.p1 }
+      }
+      return { p: it.p1, alpha: 1, scale: 1, slot: 0 }
     }
     if (it.kind !== 'ok') return null
     if (step === 2) {
@@ -97,9 +105,12 @@ const drawStep = (ctx: CanvasRenderingContext2D, W: number, H: number, step: num
   const pts = S.items.map(it => ({ it, s: spotOf(it) })).filter((x): x is { it: Item, s: Spot } => x.s !== null)
   const color = (slot: number) => (slot ? pal.themes[slot - 1]! : GRAY)
   if (step === 1) {
-    const sweep = u * 1.25 - 0.1
+    const sweep = scan(u)
     const a = -Math.PI / 2 + sweep * 6.283
-    if (sweep > 0 && sweep < 1) { ctx.strokeStyle = ink; ctx.globalAlpha = 0.35; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * K * 0.5, cy + Math.sin(a) * K * 0.42); ctx.stroke(); ctx.globalAlpha = 1 }
+    if (sweep > 0 && sweep < 1.1) {
+      ctx.fillStyle = ink; ctx.globalAlpha = 0.07; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, K * 0.75, a - 0.4, a); ctx.closePath(); ctx.fill()
+      ctx.strokeStyle = ink; ctx.globalAlpha = 0.45; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * K * 0.75, cy + Math.sin(a) * K * 0.75); ctx.stroke(); ctx.globalAlpha = 1
+    }
   }
   if (step >= 3) {
     const grow = step === 3 ? seg(u, 0.35, 0.95) : 1
@@ -122,6 +133,12 @@ const drawStep = (ctx: CanvasRenderingContext2D, W: number, H: number, step: num
       if (m * 1.2 > sampled.findIndex(q => q.it === it) / 14) dot(x, y, r + 5, s.ok ? pal.agree : pal.differ, 0.35)
     }
     dot(x, y, r, color(s.slot), s.alpha)
+    if (s.mark === 'junk' && s.mt) { ctx.strokeStyle = ink; ctx.globalAlpha = s.mt; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(x - 4, y - 4); ctx.lineTo(x + 4, y + 4); ctx.moveTo(x + 4, y - 4); ctx.lineTo(x - 4, y + 4); ctx.stroke(); ctx.globalAlpha = 1 }
+    if (s.mark === 'dup' && s.mt && s.to) {
+      const [tx, ty] = X(s.to)
+      ctx.strokeStyle = ink; ctx.globalAlpha = 0.45 * s.mt; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(tx, ty); ctx.stroke(); ctx.globalAlpha = 1
+      dot(tx, ty, r + 4, ink, 0.18 * s.mt)
+    }
   })
   if (step === 2 && u > 0.55) {
     ctx.globalAlpha = seg(u, 0.55, 0.8); ctx.fillStyle = ink; ctx.textBaseline = 'middle'
@@ -139,7 +156,7 @@ const drawStep = (ctx: CanvasRenderingContext2D, W: number, H: number, step: num
   }
   if (step === 4) {
     const f = seg(u, 0.1, 0.5)
-    const judges = ([[-0.55, 0.5], [0.55, 0.5]] as P[]).map(X)
+    const judges = ([[-0.98, 0.02], [0.98, 0.02]] as P[]).map(X)
     sampled.forEach(({ s }) => {
       const [x, y] = X(s.p)
       judges.forEach((j) => { ctx.strokeStyle = 'rgba(95,93,86,.3)'; ctx.lineWidth = 0.8; ctx.globalAlpha = f; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(j[0], j[1]); ctx.stroke(); ctx.globalAlpha = 1 })
@@ -154,7 +171,7 @@ const drawStep = (ctx: CanvasRenderingContext2D, W: number, H: number, step: num
 }
 
 export const drawMethodRow = (ctx: CanvasRenderingContext2D, W: number, H: number, row: number, u: number, pal: MethodPalette, labels: MethodLabels) => {
-  if (row === 0) return u < 0.55 ? drawStep(ctx, W, H, 0, u / 0.55, pal, labels) : drawStep(ctx, W, H, 1, (u - 0.55) / 0.45, pal, labels)
+  if (row === 0) return u < 0.45 ? drawStep(ctx, W, H, 0, u / 0.45, pal, labels) : drawStep(ctx, W, H, 1, (u - 0.45) / 0.55, pal, labels)
   if (row === 1) return u < 0.5 ? drawStep(ctx, W, H, 2, u / 0.5, pal, labels) : drawStep(ctx, W, H, 3, (u - 0.5) / 0.5, pal, labels)
   return drawStep(ctx, W, H, 4, u, pal, labels)
 }
