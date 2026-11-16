@@ -71,7 +71,23 @@ const showLink = (e: PointerEvent, l: { a: number, b: number, n: number }) => {
   }, e)
   if (tp.issue !== undefined && tp.issue >= 0) emit('update:lit', tp.issue)
 }
-const showNode = (e: PointerEvent, nd: { name: string, n: number, slot: number }) => tooltip.show({ title: nd.name, rows: [{ label: t('home.field.articles'), value: `${fmtInt(Math.round(nd.n))} · ${share(nd.n)}`, color: colour(nd.slot) }], field: true }, e)
+// A bar of a topic (left) says which outlets its articles went to, a bar of an outlet (right) which topics its articles are: the largest parts as shares of the bar, the rest together.
+const SHOWN = 8
+const showNode = (e: PointerEvent, side: 'topic' | 'outlet', i: number) => {
+  const d = props.data
+  const nd = side === 'topic' ? d.topics[i]! : d.outlets[i]!
+  const mine = d.links.filter(l => (side === 'topic' ? l.a : l.b) === i).sort((x, y) => y.n - x.n)
+  const total = mine.reduce((sum, l) => sum + l.n, 0) || nd.n
+  const part = (l: { a: number, b: number }) => (side === 'topic' ? d.outlets[l.b]! : d.topics[l.a]!)
+  const line = (n: number) => `${fmtInt(Math.round(n))} · ${fmtPct(n / total)}`
+  const rows = [
+    { label: t('home.field.articles'), value: `${fmtInt(Math.round(nd.n))} · ${share(nd.n)}`, color: colour(nd.slot) },
+    ...mine.slice(0, SHOWN).map(l => ({ label: part(l).name, value: line(l.n), color: colour(part(l).slot) }))
+  ]
+  const rest = mine.slice(SHOWN).reduce((sum, l) => sum + l.n, 0)
+  if (rest > 0) rows.push({ label: t(side === 'topic' ? 'topics2.flow.restOutlets' : 'topics2.flow.restTopics'), value: line(rest), color: colour(0) })
+  tooltip.show({ title: nd.name, note: `${t(side === 'topic' ? 'topics2.flow.byOutlet' : 'topics2.flow.byTopic')} ${t('topics2.flow.estimate')}`, rows, field: true }, e)
+}
 const leave = () => { tooltip.hide(); emit('update:lit', null) }
 onBeforeUnmount(() => tooltip.hide())
 </script>
@@ -85,12 +101,12 @@ onBeforeUnmount(() => tooltip.hide())
         />
       </g>
       <g v-for="(nd, a) in data.topics" :key="nd.key" class="tof-node" :opacity="lit === null || !dim(a) ? 1 : 0.4">
-        <rect :x="layout.x0 - BAR" :y="layout.left[a]!.y" :width="BAR" :height="layout.left[a]!.h" rx="2" :fill="colour(nd.slot)" @pointermove="nd.issue! >= 0 && emit('update:lit', nd.issue!); showNode($event, nd)" />
-        <text class="tof-label is-topic" :x="layout.x0 - BAR - 7" :y="layout.left[a]!.y + layout.left[a]!.h / 2 + 4" text-anchor="end" @click="nd.issue! >= 0 && emit('select', nd.issue!)" @pointermove="nd.issue! >= 0 && emit('update:lit', nd.issue!)">{{ cut(nd.name, chars) }} <tspan class="tof-pct">{{ share(nd.n) }}</tspan></text>
+        <rect :x="layout.x0 - BAR" :y="layout.left[a]!.y" :width="BAR" :height="layout.left[a]!.h" rx="2" :fill="colour(nd.slot)" @pointermove="nd.issue! >= 0 && emit('update:lit', nd.issue!); showNode($event, 'topic', a)" />
+        <text class="tof-label is-topic" :x="layout.x0 - BAR - 7" :y="layout.left[a]!.y + layout.left[a]!.h / 2 + 4" text-anchor="end" @click="nd.issue! >= 0 && emit('select', nd.issue!)" @pointermove="nd.issue! >= 0 && emit('update:lit', nd.issue!); showNode($event, 'topic', a)">{{ cut(nd.name, chars) }} <tspan class="tof-pct">{{ share(nd.n) }}</tspan></text>
       </g>
       <g v-for="(nd, b) in data.outlets" :key="nd.key" class="tof-node">
-        <rect :x="layout.x1" :y="layout.right[b]!.y" :width="BAR" :height="layout.right[b]!.h" rx="2" :fill="colour(nd.slot)" @pointermove="showNode($event, nd)" />
-        <text class="tof-label" :x="layout.x1 + BAR + 7" :y="layout.right[b]!.y + layout.right[b]!.h / 2 + 4" text-anchor="start">{{ cut(nd.name, chars) }} <tspan class="tof-pct">{{ share(nd.n) }}</tspan></text>
+        <rect :x="layout.x1" :y="layout.right[b]!.y" :width="BAR" :height="layout.right[b]!.h" rx="2" :fill="colour(nd.slot)" @pointermove="showNode($event, 'outlet', b)" />
+        <text class="tof-label" :x="layout.x1 + BAR + 7" :y="layout.right[b]!.y + layout.right[b]!.h / 2 + 4" text-anchor="start" @pointermove="showNode($event, 'outlet', b)">{{ cut(nd.name, chars) }} <tspan class="tof-pct">{{ share(nd.n) }}</tspan></text>
       </g>
     </svg>
   </div>
