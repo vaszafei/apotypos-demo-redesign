@@ -41,19 +41,30 @@ const themeStories = computed(() => {
 watch(themeStories, list => plegma.setThemeStories(list), { immediate: true })
 // The stance card gives no row under 30 rated articles (StanceCard), so the ring has no stance under it either.
 const STANCE_MIN = 30
-// The ring of the web: an arc for each group that wrote the theme (as wide as its articles in all the stories of the theme), or the arcs of the stance; the tabs turn it.
-const ring = computed({ get: () => plegma.ring, set: (v: string) => plegma.setRing(v === 'stance' ? 'stance' : 'groups') })
+// The ring of the web: an arc for each outlet or each group that wrote the theme (as wide as its articles in all the stories of the theme), or the arcs of the stance; the tabs turn it.
+const ring = computed({ get: () => plegma.ring, set: (v: string) => plegma.setRing(v === 'stance' || v === 'outlets' ? v : 'groups') })
+// The arcs of the outlets or the groups stay under the arcs of the stance while it turns in, so they do not change when the tab goes to the stance.
+const arcsBy = ref<'outlets' | 'groups'>(plegma.ring === 'outlets' ? 'outlets' : 'groups')
+watch(() => plegma.ring, (r) => { if (r !== 'stance') arcsBy.value = r })
 const themeGroups = computed(() => {
   const m = model.value
   if (!m) return null
   const rows = new Map(m.dd.stories.map(r => [r.id, r]))
   const count = new Map<string | null, number>()
+  const byOutlet = new Map<number, number>()
   for (const s of m.mine) {
     const t = rows.get(s.id)?.t ?? []
     for (let i = 0; i + 2 < t.length; i += 3) {
       const group = m.dd.outlets[t[i]!]!.group ?? null
       count.set(group, (count.get(group) ?? 0) + t[i + 2]!)
+      byOutlet.set(t[i]!, (byOutlet.get(t[i]!) ?? 0) + t[i + 2]!)
     }
+  }
+  if (arcsBy.value === 'outlets') {
+    return [...byOutlet].filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]).map(([o, n]) => {
+      const outlet = m.dd.outlets[o]!
+      return { name: outlet.name, slot: slotOfColor((outlet.group && colorOfGroup.value.get(outlet.group)) || NO_GROUP), n }
+    })
   }
   return [...count].filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1])
     .map(([group, n]) => ({ name: group ?? t('story.nogroup'), slot: slotOfColor((group && colorOfGroup.value.get(group)) || NO_GROUP), n }))
@@ -62,10 +73,11 @@ watch(themeGroups, list => plegma.setThemeGroups(list), { immediate: true })
 watch(() => (model.value && model.value.stanceN >= STANCE_MIN ? model.value.det.s.slice(1) : null), counts => plegma.setStance(counts), { immediate: true })
 onBeforeUnmount(() => { plegma.setHoverStory(null); plegma.setThemeStories(null); plegma.setThemeGroups(null); plegma.setStance(null); plegma.setRing('groups') })
 
-// The map region is the free cell between the stories and the cards, under the title: the same square as the story view has, so the two webs are the same size.
+// The map region is the free cell between the stories and the cards, under the title, as on the story page (composables/usePlegmaRegion.ts): the biggest circle that touches no card (clear),
+// with room for the names of its arcs (names). The ring of a theme's web is 0.45 of the side of its region (stage-theme.ts), so the side is the story's divided by that.
 const orbit = ref<HTMLElement>()
 const map = ref<HTMLElement>()
-usePlegmaRegion(orbit, map)
+usePlegmaRegion(orbit, map, { side: 511, top: -32, bottom: 28, lean: 0.75, names: true, clear: true, ringPerSide: 0.45 })
 
 // The theme over time, as the story view has its days (PlegmaDaysCard): the line of the theme, and under it a line for each story the web shows. The axis is the square
 // root, so the stories are not flat next to the theme.
@@ -103,6 +115,7 @@ const lineHref = (key: string) => (key === 'topic' ? topicHref(String(props.inde
         <EntityFact :label="t('entity.fact.share')" :value="fmtPct(model.share)" :sub="t('entity.fact.rank', { n: model.rank, total: model.hd.issues.length })" />
         <EntityFact v-if="model.change !== null && !model.issue.catchAll" :label="t('entity.fact.change')" :value="`${model.change > 0 ? '▲' : '▼'} ${fmtSigned(model.change * 100)}%`" :sub="t('entity.fact.change.sub')" />
       </EntityTitle>
+      <SegmentedControl v-model="ring" class="orbit-ring-tabs" :label="t('story.ring.label')" :options="[{ value: 'outlets', label: t('story.ring.outlets') }, { value: 'groups', label: t('story.groups.title') }, ...(model.stanceN >= STANCE_MIN ? [{ value: 'stance', label: t('story.ring.stance') }] : [])]" />
     </div>
 
     <div class="orbit-col orbit-left">
@@ -123,21 +136,20 @@ const lineHref = (key: string) => (key === 'topic' ? topicHref(String(props.inde
     </div>
 
     <div ref="map" class="orbit-map">
-      <SegmentedControl v-if="model.stanceN >= STANCE_MIN" v-model="ring" class="orbit-ring-tabs" :label="t('story.ring.label')" :options="[{ value: 'groups', label: t('story.groups.title') }, { value: 'stance', label: t('story.ring.stance') }]" />
       <p class="plegma-nodes-note">{{ t('topic.map.note') }}</p>
     </div>
 
     <div class="orbit-col orbit-right">
       <div class="orbit-subs">
         <div class="orbit-sub">
-          <PlegmaCard :at="0" :order="1" class="card-stance">
+          <!-- One card for the ring: the outlets, the groups or the stance, as the tab says (the tabs beside the title). -->
+          <PlegmaCard :at="0" :order="1" :class="`card-ring is-${ring}`">
             <StanceCard
+              v-if="ring === 'stance'"
               :rows="[{ label: t('entity.stance.topic'), color: 'var(--series-news)', counts: model.det.s.slice(1) }, { label: t('entity.stance.all'), color: NO_GROUP, counts: model.dd.base.s.slice(1) }]"
               :foot="model.stanceN ? t('topic2.how.stance.n', { n: fmtInt(model.stanceN) }) : null"
             />
-          </PlegmaCard>
-          <PlegmaCard :at="4" :order="2" class="card-outlets-diff">
-            <DashCard :title="t('topic2.outlets.title')" :info="t('topic2.outlets.info')">
+            <DashCard v-else-if="ring === 'outlets'" :title="t('topic2.outlets.title')" :info="t('topic2.outlets.info')">
               <template v-if="model.outlets.rows.length">
                 <div class="how-grid how-grid-2">
                   <div v-for="side in ['more', 'less'] as const" :key="side" class="how-panel">
@@ -151,11 +163,7 @@ const lineHref = (key: string) => (key === 'topic' ? topicHref(String(props.inde
               </template>
               <p v-else class="dcard-empty">{{ t('topic2.empty') }}</p>
             </DashCard>
-          </PlegmaCard>
-        </div>
-        <div class="orbit-sub">
-          <PlegmaCard :at="4" :order="3" class="card-groups-diff">
-            <DashCard :title="t('topic2.groups.title')" :info="t('topic2.groups.info')">
+            <DashCard v-else :title="t('topic2.groups.title')" :info="t('topic2.groups.info')">
               <div class="how-panel">
                 <DiffList :rows="model.groups" :scale="model.outletScale" tip-key="topic2.how.tip">
                   <template #label="{ row }"><span class="group-cell"><span class="dot" :style="`--dot:${colorOfGroup.get(row.label)}`" /><span class="group-name">{{ row.label }}</span></span></template>
@@ -164,6 +172,8 @@ const lineHref = (key: string) => (key === 'topic' ? topicHref(String(props.inde
               <ChartLegend :items="diffKey" />
             </DashCard>
           </PlegmaCard>
+        </div>
+        <div class="orbit-sub">
           <PlegmaCard :at="0" :order="3" class="card-how">
             <DashCard :title="t('topic2.how.title')" :info="t('topic2.how.info')">
               <div class="how-grid how-grid-2">
@@ -173,7 +183,6 @@ const lineHref = (key: string) => (key === 'topic' ? topicHref(String(props.inde
                 </div>
                 <div>
                   <div class="how-panel">
-                    <h3 class="rows-caption">{{ t('story.how.section') }}</h3>
                     <DiffList v-if="model.sections.length" :rows="model.sections" :scale="model.howScale" tip-key="topic2.how.tip" />
                   </div>
                   <div class="how-panel">

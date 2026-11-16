@@ -13,7 +13,7 @@ const SIDE_MIN = 180
 const BLOCKS = '.plegma-card, .plegma-title .ecard, .orbit-ring-tabs, .plegma-nodes-note'
 // The Plegma has no card over it: the biggest region (up to `maxSide` high, `aspect` times as wide) in the cell and the free space above it whose ring (an ellipse) touches no card, no switch of the
 // ring, no title and no note, as near as it can be to `want`. Returns its center and its height, or null when nothing of at least SIDE_MIN fits.
-const clearEllipse = (orbit: HTMLElement, stage: DOMRect, cell: DOMRect, maxSide: number, aspect: number, want: { x: number, y: number }) => {
+const clearEllipse = (orbit: HTMLElement, stage: DOMRect, cell: DOMRect, maxSide: number, aspect: number, perSide: number, want: { x: number, y: number }) => {
   const blocks = [...orbit.querySelectorAll(BLOCKS)].map((el) => {
     const r = el.getBoundingClientRect()
     return { x0: r.left, y0: r.top - stage.top, x1: r.right, y1: r.bottom - stage.top }
@@ -29,8 +29,8 @@ const clearEllipse = (orbit: HTMLElement, stage: DOMRect, cell: DOMRect, maxSide
     return dx * dx + dy * dy < 1
   })
   for (let side = maxSide; side >= SIDE_MIN; side -= 8) {
-    const ry = side * RING_PER_SIDE + RING_EXTRA
-    const rx = side * aspect * RING_PER_SIDE + RING_EXTRA
+    const ry = side * perSide + RING_EXTRA
+    const rx = side * aspect * perSide + RING_EXTRA
     let best: { x: number, y: number } | null = null
     let bestD = Infinity
     for (let cx = left + rx; cx <= right; cx += 8) {
@@ -44,7 +44,7 @@ const clearEllipse = (orbit: HTMLElement, stage: DOMRect, cell: DOMRect, maxSide
   return null
 }
 
-export const usePlegmaRegion = (orbit: Ref<HTMLElement | undefined>, map: Ref<HTMLElement | undefined>, room: { side?: number, top?: number, bottom?: number, lean?: number, names?: boolean, clear?: boolean, aspect?: number } = {}) => {
+export const usePlegmaRegion = (orbit: Ref<HTMLElement | undefined>, map: Ref<HTMLElement | undefined>, room: { side?: number, top?: number, bottom?: number, lean?: number, names?: boolean, clear?: boolean, aspect?: number, ringPerSide?: number } = {}) => {
   const aspect = room.aspect ?? 1
   const maxSide = room.side ?? REGION_SIDE
   const gapTop = room.top ?? REGION_GAP_TOP
@@ -66,7 +66,7 @@ export const usePlegmaRegion = (orbit: Ref<HTMLElement | undefined>, map: Ref<HT
     if (room.clear) {
       // A card that grows or shrinks (its data arrives) moves the free space: watch each one (observing an element already watched does nothing).
       o.querySelectorAll(BLOCKS).forEach(el => watcher?.observe(el))
-      const fit = clearEllipse(o, stage, box, maxSide, aspect, { x: cx, y: cy })
+      const fit = clearEllipse(o, stage, box, maxSide, aspect, room.ringPerSide ?? RING_PER_SIDE, { x: cx, y: cy })
       if (fit) { cx = fit.cx; cy = fit.cy; side = fit.side }
     }
     const half = (side * aspect) / 2
