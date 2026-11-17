@@ -522,6 +522,8 @@ html[data-search-fly] .body-search { opacity: 0; }
 /* The switch of the ring of a story or a theme is beside the title card, on its right, and ends where the card ends. */
 .plegma-orbit:is(.is-story, .is-theme, .is-outlet) .plegma-title { display: flex; align-items: flex-end; gap: var(--space-3); }
 .plegma-orbit:is(.is-story, .is-theme, .is-outlet) .plegma-title > .orbit-ring-tabs { position: static; flex: none; }
+/* The outlet: the tabs are under the title card. */
+.plegma-orbit.is-outlet .plegma-title { flex-direction: column; align-items: flex-start; gap: var(--space-2); }
 
 /* The theme view: the two columns of cards on the right are 20% narrower (3 parts of 12 become 2.4), so the web has the room. */
 @media (min-width: 1280px) { .plegma-orbit.is-theme { grid-template-columns: minmax(0, 2fr) minmax(0, 5.2fr) minmax(0, 2.4fr) minmax(0, 2.4fr); } }

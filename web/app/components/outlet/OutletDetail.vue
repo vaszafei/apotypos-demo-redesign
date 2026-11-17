@@ -72,15 +72,15 @@ const sampleHeadlines = computed(() => (sample.data.value?.slug === props.slug ?
 
 // The cards of the tab in up to two columns, the latest list in the last column and the chart under them (null: none). The cards of the profile are for the outlets of ΜΜΕ & πρόσωπα only (live).
 // The card under the web is the outlet over time and turns with the tab: the articles per day as bars (Επισκόπηση), the lines of its topics (Θέματα), the lines of its stories (Ιστορίες), the
-// mentions of each person (Πρόσωπα). Επισκόπηση: the stance towards the government, the latest articles. Θέματα: what it stresses and the stance by topic, the latest topics.
+// mentions of each person (Πρόσωπα). Επισκόπηση: the stance towards the government, the similarity with the other outlets of its group, the latest articles. Θέματα: what it stresses and the stance by topic, the latest topics.
 // Ιστορίες: the big stories it did not run and the ones it pushes, its latest stories. Πρόσωπα: the people it mentions and how it portrays them.
 // An outlet without the profile has no Πρόσωπα, and in Θέματα and Ιστορίες only what the stories file can give.
-type CardId = 'stance' | 'stanceTopic' | 'portrayal' | 'emphasis' | 'skip' | 'push' | 'voices'
+type CardId = 'stance' | 'similar' | 'stanceTopic' | 'portrayal' | 'emphasis' | 'skip' | 'push' | 'voices'
 type TabId = 'overview' | 'topics' | 'stories' | 'people'
 type LatestId = 'articles' | 'topics' | 'stories'
 interface TabSpec { columns: CardId[][], latest: LatestId | null, under: 'bars' | 'topics' | 'stories' | 'mentions' }
 const SPECS: Record<TabId, { live: TabSpec, plain: TabSpec }> = {
-  overview: { live: { columns: [['stance']], latest: 'articles', under: 'bars' }, plain: { columns: [['stance']], latest: 'articles', under: 'bars' } },
+  overview: { live: { columns: [['stance'], ['similar']], latest: 'articles', under: 'bars' }, plain: { columns: [['stance'], ['similar']], latest: 'articles', under: 'bars' } },
   topics: { live: { columns: [['emphasis'], ['stanceTopic']], latest: 'topics', under: 'topics' }, plain: { columns: [['emphasis']], latest: 'topics', under: 'topics' } },
   stories: { live: { columns: [['skip'], ['push']], latest: 'stories', under: 'stories' }, plain: { columns: [], latest: 'stories', under: 'stories' } },
   people: { live: { columns: [['voices'], ['portrayal']], latest: null, under: 'mentions' }, plain: { columns: [], latest: null, under: 'bars' } }
@@ -95,7 +95,7 @@ provideDetailTitle(() => named.value)
 useHead({ title: () => (named.value ? `${named.value} · ${t('site.name')}` : undefined) })
 
 // The period of the page: the days with articles of the outlet (the picker has no other days, and «all», the default, is from its first to its last), or the period that was picked. Everything that is
-// told by day (the facts of the title, the web, the latest lists and the charts) follows it; the cards of the profile are for the whole window of ΜΜΕ & πρόσωπα.
+// told by day (the web, the latest lists and the charts) follows it; the cards of the profile are for the whole window of ΜΜΕ & πρόσωπα.
 const spanDays = computed(() => {
   const c = model.value?.collected ?? []
   return { a: Math.max(0, c.findIndex(v => v > 0)), b: Math.max(0, c.reduce((at, v, i) => (v > 0 ? i : at), -1)) }
@@ -112,7 +112,8 @@ const view = computed(() => {
 const i0 = computed(() => Math.max(0, model.value?.m.dates.indexOf(view.value.from) ?? 0))
 const i1 = computed(() => Math.max(i0.value, model.value?.m.dates.indexOf(view.value.to) ?? 0))
 const inPeriod = (days: number[]) => sum(days.slice(i0.value, i1.value + 1))
-const facts = computed(() => (model.value ? { articles: inPeriod(model.value.collected), stories: model.value.mine.filter(r => inPeriod(r.days) > 0).length } : { articles: 0, stories: 0 }))
+// The other outlets of its group with the similarity (the stories they share over the stories of either), for the whole window.
+const groupSimilar = computed(() => (model.value ? relatedOutlets(model.value.dd, model.value.kd, props.slug, model.value.group, model.value.record).related.filter(r => r.same) : []))
 const startedHere = computed(() => (model.value ? model.value.mine.filter(r => r.story && r.first >= i0.value && r.first <= i1.value) : []))
 const latestStories = computed(() => (model.value ? latestStoriesOf(model.value.mine, i0.value, i1.value) : []))
 
@@ -180,12 +181,10 @@ const headlinesShown = computed(() => liveHeadlines.value.filter(x => String(x[0
     <div class="plegma-title entity-grid">
       <EntityTitle :kind="t('hero.kind.outlet')" :title="model.outlet.name">
         <template #meta>{{ t('entity.fact.group') }}: <EntityLink v-if="model.group && model.record?.slug" type="group" :to="groupPageHref(model.record.slug)">{{ model.group }}</EntityLink><template v-else>{{ model.group ?? t('story.nogroup') }}</template></template>
-        <EntityFact :label="t('entity.fact.articles')" :value="fmtInt(facts.articles)" />
-        <EntityFact :label="t('entity.fact.stories')" :value="fmtInt(facts.stories)" />
       </EntityTitle>
       <SegmentedControl v-model="tab" class="orbit-ring-tabs" :label="t('mme.o.tab.label')" :options="tabs" />
     </div>
-    <div v-if="allDates.length" class="outlet-period"><DateRange :dates="allDates" :from="view.from" :to="view.to" @change="r => (picked = r)" /></div>
+    <div v-if="allDates.length" class="outlet-period"><DateRange plain :dates="allDates" :from="view.from" :to="view.to" @change="r => (picked = r)" /></div>
 
     <div ref="map" class="orbit-map">
       <p class="plegma-nodes-note">{{ t('outlet.map.note') }}</p>
@@ -200,6 +199,7 @@ const headlinesShown = computed(() => liveHeadlines.value.filter(x => String(x[0
               :rows="[{ label: t('entity.stance.outlet'), color: groupColor(model.group), counts: model.writes.stanceMine }, { label: t('entity.stance.all'), color: NO_GROUP, counts: model.writes.stanceAll }]"
               :foot="model.writes.stanceN >= 30 ? t('outlet2.how.stance.n', { n: fmtInt(model.writes.stanceN) }) : null"
             />
+            <OutletGroupSimilarity v-else-if="id === 'similar'" :rows="groupSimilar" :color="groupColor(model.group)" :group="model.group" />
             <OutletStanceByTopic v-else-if="id === 'stanceTopic'" :P="live!.P" :k="live!.k" :limit="OUTLET_STANCE_LIMIT" />
             <OutletPortrayal v-else-if="id === 'portrayal'" :P="live!.P" :k="live!.k" />
             <OutletEmphasis v-else-if="id === 'emphasis'" :P="live?.P ?? null" :k="mk" :topics="model.topics" :topic-n="model.mineTotal" />
