@@ -53,14 +53,21 @@
   .plegma-orbit.is-story.has-strip .orbit-under > .card-people { grid-area: people; max-height: 200px; }
   .plegma-orbit.is-story.has-strip .card-people .data-table :is(th, td) { padding-block: 2px; }
 }
-/* The outlet view (components/OutletDetail.vue) has no narrow column: the web is in the first column, the cards of the outlet in two columns beside it and its articles over time under them, as far as the first of the two columns.
-   A column of cards scrolls as a whole when its cards are taller than the screen; each card keeps its own height. */
-.plegma-orbit.is-outlet { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); grid-template-areas: "title title" "map right" "under under"; }
-@media (min-width: 1280px) {
-  .plegma-orbit.is-outlet { grid-template-columns: minmax(0, 5fr) minmax(0, 3.5fr) minmax(0, 3.5fr); grid-template-areas: "title title title" "map one two" "under under ."; }
-}
+/* The outlet view (components/outlet/OutletDetail.vue) has the layout of the story and the theme: its stories on the left, the web, two columns of cards, and under them its stories over time with
+   its latest articles beside it (the column of the right edge; under 1280px the two share the row). */
 .plegma-orbit.is-outlet .orbit-sub { overflow-y: auto; pointer-events: auto; scrollbar-width: thin; }
 .plegma-orbit.is-outlet .orbit-sub > .plegma-card { flex: none; max-height: 46%; }
+.plegma-orbit.is-outlet .orbit-under { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--space-3); }
+.plegma-orbit.is-outlet .orbit-under > .plegma-card { flex: none; }
+/* The articles card does not add to the height of the row: the chart sets it, and the articles scroll inside the card. */
+.plegma-orbit.is-outlet .orbit-under > .card-latest { height: 0; min-height: 100%; }
+@media (min-width: 1280px) {
+  .plegma-orbit.is-outlet { grid-template-columns: minmax(0, 2fr) minmax(0, 5.2fr) minmax(0, 2.4fr) minmax(0, 2.4fr); grid-template-areas: "title title title title" "left map one two" "under under under latest"; }
+  .plegma-orbit.is-outlet .orbit-under { display: contents; }
+  .plegma-orbit.is-outlet .orbit-under > .card-days { grid-area: under; }
+  .plegma-orbit.is-outlet .orbit-under > .card-latest { grid-area: latest; }
+}
+@media (min-width: 1024px) and (max-width: 1279px) { .plegma-orbit.is-outlet { grid-template-columns: minmax(0, 2fr) minmax(0, 5.2fr) minmax(0, 4.8fr); } }
 .plegma-orbit.is-story.no-right { grid-template-areas: "title title title" "left map map" "under under under"; }
 @media (min-width: 1280px) { .plegma-orbit.is-story.no-right { grid-template-columns: minmax(0, 2fr) minmax(0, 4fr) minmax(0, 6fr); grid-template-areas: "title title title" "left map map" "under under under"; } }
 .plegma-orbit:is(.is-story, .is-theme, .is-outlet) .orbit-map { grid-area: map; }
