@@ -6,8 +6,9 @@ import type { StoryDetailData } from '~/types/story-detail'
 import type { Series } from '~/types/topics'
 import type { GroupsData, MediaDaily } from '~/utils/groups'
 import { PERSON_KEYS, personHref } from '~/utils/people'
-import { PLEGMA_THEME_OUTLETS, PLEGMA_THEME_STORIES } from '~/utils/plegma/plegma-theme'
 import { themeSlots } from '~/utils/plegma/plegma-world'
+import type { PlegmaDayTheme } from '~/utils/plegma/plegma-day'
+import type { DayOutlet, DayRing } from '~/components/plegma/PlegmaDayWeb.vue'
 
 // The outlet on the Plegma: the title card with the facts of the outlet and the tabs, under it the web first (the outlet at the center, its largest stories around it in the color of
 // their theme, and for each story the days the outlet wrote it: the stage draws it), then the cards of the tab, and in the last column the latest list of the tab (articles, topics or
@@ -117,26 +118,56 @@ const groupSimilar = computed(() => (model.value ? relatedOutlets(model.value.dd
 const startedHere = computed(() => (model.value ? model.value.mine.filter(r => r.story && r.first >= i0.value && r.first <= i1.value) : []))
 const latestStories = computed(() => (model.value ? latestStoriesOf(model.value.mine, i0.value, i1.value) : []))
 
-// The web: the largest stories of the outlet in the period, each with the days the outlet wrote it (the stage reads them from the store).
+// The stage is only the dim world behind the page. The web of each tab is drawn in the map cell, as the pages of Μέσα do: Επισκόπηση the articles of the outlet with the ring of its stance, Θέματα and
+// Ιστορίες the web of Μέσα › Θέματα and Μέσα › Ιστορίες (PlegmaDayWeb) with the stories of this outlet, Πρόσωπα the people it quotes.
 const slots = computed(() => (home.data.value ? themeSlots(home.data.value) : new Map<number, number>()))
-const webStories = computed(() => {
+onMounted(() => plegma.setHomeDim(true))
+onBeforeUnmount(() => { plegma.setHomeDim(false); plegma.setHoverStory(null) })
+const groupSlot = computed(() => (model.value ? slotOfColor(groupColor(model.value.group)) : 0))
+const themeOptions = computed(() => ({
+  groupSlot: groupSlot.value, slotOf: (issue: number) => slots.value.get(issue) ?? 0, nameOf: (issue: number) => topicName(model.value!.l.issues[issue]!), storyName
+}))
+const periodArticles = computed(() => (model.value ? inPeriod(model.value.collected) : 0))
+const webThemes = computed(() => (model.value ? outletThemes(model.value.mine, model.value.l.issues, i0.value, i1.value, { ...themeOptions.value, maxThemes: 8, perTheme: 3, skipCatchAll: true }) : []))
+const themeRing = computed<DayRing[]>(() => webThemes.value.map(th => ({ issue: th.issue, name: th.name, slot: th.slot, n: th.n })))
+const webStoryThemes = computed(() => (model.value ? outletThemes(model.value.mine, model.value.l.issues, i0.value, i1.value, { ...themeOptions.value, maxThemes: 10, maxStories: 36 }) : []))
+const storyPeers = computed<DayOutlet[]>(() => {
   const m = model.value
-  if (!m) return null
-  return m.mine.filter(r => r.story).map(r => ({ r, n: inPeriod(r.days) })).filter(x => x.n > 0).sort((a, b) => b.n - a.n).slice(0, PLEGMA_THEME_STORIES).map(({ r, n }) => {
-    const story = r.story!
-    const slot = slots.value.get(story.issue) ?? 0
-    const days = r.days.map((v, d) => ({ d, n: d >= i0.value && d <= i1.value ? v : 0 })).filter(x => x.n > 0).sort((a, b) => b.n - a.n).slice(0, PLEGMA_THEME_OUTLETS)
-    return { id: story.id, name: storyName(story), n, media: r.reach, slot, theme: topicName(m.l.issues[story.issue]!), outlets: days.map(x => ({ name: fmtDay(m.m.dates[x.d]!), group: null, slot, n: x.n })) }
-  })
+  if (!m) return []
+  const ids = new Set(startedOrWritten.value)
+  return outletPeers(m.dd, ids, i0.value, i1.value).map(({ outlet, n }) => ({ name: outlet.name, slot: slotOfColor(groupColor(outlet.group)), n, group: outlet.group }))
 })
-watch(webStories, list => plegma.setThemeStories(list?.length ? list : null), { immediate: true })
-watch(() => (model.value ? slotOfColor(groupColor(model.value.group)) : 0), slot => plegma.setOutletSlot(slot), { immediate: true })
-onBeforeUnmount(() => { plegma.setThemeStories(null); plegma.setOutletSlot(0); plegma.setHoverStory(null) })
-
-// The map region is the free cell between the stories and the cards, under the title, as on the story and theme pages (composables/usePlegmaRegion.ts): the biggest circle that touches no card.
-const orbit = ref<HTMLElement>()
-const map = ref<HTMLElement>()
-usePlegmaRegion(orbit, map, { side: 440, top: -32, bottom: 28, lean: 0, vlean: 0, clear: true, atLeft: true, ringPerSide: 0.45 })
+const startedOrWritten = computed(() => (model.value ? model.value.mine.filter(r => r.story && inPeriod(r.days) > 0).map(r => r.story!.id) : []))
+// The people the outlet quotes in the period: the days of the set of ΜΜΕ & πρόσωπα are its own (mmeRange).
+const mmeRange = computed(() => {
+  const l = live.value
+  if (!l) return null
+  const lo = l.set.dates.findIndex(d => d >= view.value.from)
+  const hi = l.set.dates.reduce((at, d, i) => (d <= view.value.to ? i : at), -1)
+  return lo >= 0 && hi >= lo ? { lo, hi } : null
+})
+const personRows = computed(() => {
+  const l = live.value
+  const r = mmeRange.value
+  if (!l || !r) return []
+  return mentionsOf(l.set, l.k).map(x => ({ ...x, n: sum(x.values.slice(r.lo, r.hi + 1)) })).filter(x => x.n > 0).sort((a, b) => b.n - a.n)
+})
+const personThemes = computed<PlegmaDayTheme[]>(() => {
+  const most = Math.max(1, ...personRows.value.map(r => r.n))
+  return personRows.value.map((r, i) => ({ issue: r.j, name: r.p.name, slot: i < 8 ? i + 1 : 0, n: r.n, stories: [], rest: Math.max(1, Math.round(14 * Math.sqrt(r.n / most))) }))
+})
+const personRing = computed<DayRing[]>(() => personThemes.value.map(th => ({ issue: th.issue, name: th.name, slot: th.slot, n: th.n })))
+const openPerson = (j: number) => {
+  const key = PERSON_KEYS[personRows.value.find(r => r.j === j)?.p.name ?? '']
+  if (key) navigateTo(personHref(key))
+}
+const mapNote = computed(() => {
+  if (tab.value === 'overview') {
+    const n = Math.ceil(periodArticles.value / Math.max(1, Math.min(periodArticles.value, 250)))
+    return n > 1 ? t('outlet.web.note.overview', { n: fmtInt(n) }) : t('outlet.web.note.overview1')
+  }
+  return t(`outlet.web.note.${tab.value}`)
+})
 
 // The outlet over time: its articles each day as bars, its largest topics or stories as lines (OutletTimeLines), and the quotes of each person each day (Πρόσωπα).
 const { height: windowHeight } = useWindowSize()
@@ -151,16 +182,14 @@ const latestTopicRows = computed(() => (model.value ? latestTopics(model.value.t
 // The quotes of each person in the period (the set of ΜΜΕ & πρόσωπα has its own days), from the first day with a quote to the last.
 const mentions = computed(() => {
   const l = live.value
-  if (!l) return { dates: [] as string[], series: [] as Series[] }
-  const lo = l.set.dates.findIndex(d => d >= view.value.from)
-  const hi = l.set.dates.reduce((at, d, i) => (d <= view.value.to ? i : at), -1)
-  if (lo < 0 || hi < lo) return { dates: [] as string[], series: [] as Series[] }
-  const rows = mentionsOf(l.set, l.k).map(r => ({ ...r, values: r.values.slice(lo, hi + 1) })).filter(r => sum(r.values) > 0).sort((a, b) => sum(b.values) - sum(a.values)).slice(0, OUTLET_LINES)
+  const r = mmeRange.value
+  if (!l || !r) return { dates: [] as string[], series: [] as Series[] }
+  const rows = personRows.value.map(x => ({ ...x, values: x.values.slice(r.lo, r.hi + 1) })).slice(0, OUTLET_LINES)
   const span = dataSpan(rows)
   if (!span) return { dates: [] as string[], series: [] as Series[] }
   return {
-    dates: l.set.dates.slice(lo, hi + 1).slice(span[0], span[1] + 1),
-    series: rows.map((r, i) => ({ key: PERSON_KEYS[r.p.name] ?? String(r.j), name: r.p.name, color: `var(--cat-${i + 1})`, values: r.values.slice(span[0], span[1] + 1) })) as Series[]
+    dates: l.set.dates.slice(r.lo, r.hi + 1).slice(span[0], span[1] + 1),
+    series: rows.map((x, i) => ({ key: PERSON_KEYS[x.p.name] ?? String(x.j), name: x.p.name, color: `var(--cat-${i + 1})`, values: x.values.slice(span[0], span[1] + 1) })) as Series[]
   }
 })
 const headlinesShown = computed(() => liveHeadlines.value.filter(x => String(x[0]) >= view.value.from && String(x[0]) <= view.value.to))
@@ -177,7 +206,7 @@ const headlinesShown = computed(() => liveHeadlines.value.filter(x => String(x[0
     <section class="dcard c-12"><div class="empty-state" data-state="empty"><AppIcon name="inbox" /><p style="margin: 0">{{ t('topics2.empty') }}</p></div></section>
   </div>
   <ErrorPage v-else-if="!model" :status="404" />
-  <div v-else ref="orbit" class="plegma-orbit is-outlet" :class="[`cols-${spec.columns.length}`, spec.latest ? 'has-latest' : 'no-latest', { 'is-in': plegma.landed }]">
+  <div v-else class="plegma-orbit is-outlet" :class="[`cols-${spec.columns.length}`, spec.latest ? 'has-latest' : 'no-latest', { 'is-in': plegma.landed }]">
     <div class="plegma-title entity-grid">
       <EntityTitle :kind="t('hero.kind.outlet')" :title="model.outlet.name">
         <template #meta>{{ t('entity.fact.group') }}: <EntityLink v-if="model.group && model.record?.slug" type="group" :to="groupPageHref(model.record.slug)">{{ model.group }}</EntityLink><template v-else>{{ model.group ?? t('story.nogroup') }}</template></template>
@@ -186,8 +215,23 @@ const headlinesShown = computed(() => liveHeadlines.value.filter(x => String(x[0
     </div>
     <div v-if="allDates.length" class="outlet-period"><DateRange plain :dates="allDates" :from="view.from" :to="view.to" @change="r => (picked = r)" /></div>
 
-    <div ref="map" class="orbit-map">
-      <p class="plegma-nodes-note">{{ t('outlet.map.note') }}</p>
+    <div class="orbit-map">
+      <ClientOnly><div class="outlet-map-web">
+        <OutletArticleWeb v-if="tab === 'overview'" key="overview" :days="bars?.series[0]?.values.map(v => v ?? 0) ?? []" :color-slot="groupSlot" :stance="model.writes.stanceMine" :label="t('outlet.web.label')" />
+        <PlegmaDayWeb
+          v-else-if="tab === 'topics'" key="topics" :themes="webThemes" :ring="themeRing" :outlets="[]" mode="themes" :date="fmtInt(periodArticles)" :sub="model.outlet.name" :lit="null" :picked="null" active
+          :labels="8" grow shares :zoom="1.12" :label="t('outlet.web.label')" @pick="id => navigateTo(storyHref(id))" @pick-theme="k => navigateTo(topicHref(k))"
+        />
+        <PlegmaDayWeb
+          v-else-if="tab === 'stories'" key="stories" :themes="webStoryThemes" :ring="[]" :outlets="storyPeers" mode="stories" :date="fmtInt(periodArticles)" :sub="model.outlet.name" :lit="null" :picked="null" active
+          :hover-story="plegma.hoverStory" ellipse grouped spread fill titles grow :label="t('outlet.web.label')" @pick="id => navigateTo(storyHref(id))" @pick-theme="k => navigateTo(topicHref(k))"
+        />
+        <PlegmaDayWeb
+          v-else key="people" :themes="personThemes" :ring="personRing" :outlets="[]" mode="themes" :date="fmtInt(personRows.reduce((a, r) => a + r.n, 0))" :sub="t('outlet.web.quotes')" :lit="null" :picked="null" active
+          :labels="8" grow spread :zoom="1.12" :label="t('outlet.web.label')" @pick-theme="openPerson"
+        />
+      </div></ClientOnly>
+      <p class="plegma-nodes-note">{{ mapNote }}</p>
     </div>
 
     <div class="orbit-col orbit-right">

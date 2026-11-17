@@ -63,6 +63,10 @@
    The outlet over time (bars, lines of the topics or of the stories, the mentions: it turns with the tab) is a row under the web and the cards. The modifiers cols-0/1/2 (cards of the tab) and has-latest set the cells; the items are placed by line. */
 .plegma-orbit.is-outlet { grid-template-areas: none; grid-template-columns: minmax(0, 5.2fr) minmax(0, 4.8fr); grid-template-rows: auto minmax(0, 1fr) auto; }
 .plegma-orbit.is-outlet .plegma-title { grid-area: auto; grid-row: 1; grid-column: 1 / -1; }
+.plegma-orbit.is-outlet .orbit-map { position: relative; pointer-events: auto; }
+.outlet-map-web { position: absolute; inset: 0 0 24px 0; }
+.outlet-article-web { position: absolute; inset: 0; }
+.outlet-article-web canvas { display: block; width: 100%; height: 100%; }
 /* The period picker is at the right end of the title row. */
 .plegma-orbit.is-outlet .outlet-period { grid-row: 1; grid-column: 1 / -1; justify-self: end; align-self: start; pointer-events: auto; position: relative; z-index: 3; }
 .plegma-orbit.is-outlet .orbit-map { grid-area: auto; grid-row: 2; grid-column: 1; }
