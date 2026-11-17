@@ -7,8 +7,9 @@ import type { GroupsData, MediaDaily } from '~/utils/groups'
 import { PLEGMA_THEME_OUTLETS, PLEGMA_THEME_STORIES } from '~/utils/plegma/plegma-theme'
 import { themeSlots } from '~/utils/plegma/plegma-world'
 
-// The outlet on the Plegma: the title card with the facts of the outlet, the web in the free cell (the outlet at the center, its largest stories around it in the color of their theme,
-// and for each story the days the outlet wrote it: the stage draws it), the cards of the old four tabs in two columns, and the articles of the outlet over time under them.
+// The outlet on the Plegma, laid out as the story and the theme pages are: the title card with the facts of the outlet, its stories in a narrow column on the left, the web in the free
+// cell (the outlet at the center, its largest stories around it in the color of their theme, and for each story the days the outlet wrote it: the stage draws it), the cards of the
+// profile in two columns, and under them the stories of the outlet over time with its latest articles beside it.
 // The outlets of ΜΜΕ & πρόσωπα (the Greek set) also have the profile cards of outlet-v2.html; the others have the cards of the groups file.
 interface OutletSample { name: string, slug: string, headlines: { title: string, url: string }[] }
 interface HomeOutlets { outlets: { name: string, daily: number[] }[], issues: StoriesData['issues'], issueDaily: (number | null)[][] }
@@ -30,7 +31,6 @@ const retry = () => fixtures.forEach(f => f.refresh())
 
 const colorOfGroup = computed(() => groupColors(groupsData.data.value?.groups ?? []))
 const groupColor = (g: string | null) => (g && colorOfGroup.value.get(g)) || NO_GROUP
-const diffKey = computed(() => [{ label: t('story.how.more'), color: 'var(--emph-more)' }, { label: t('story.how.less'), color: 'var(--emph-less)' }])
 const sum = (a: number[]) => a.reduce((x, y) => x + y, 0)
 
 // null when the slug is not one of the outlets (the 404 page).
@@ -46,18 +46,15 @@ const model = computed(() => {
   const outlet = m.outlets[k]!
   const kd = dd.outlets.findIndex(o => o.slug === props.slug)
   const last = m.dates.length - 1
-  // Collected articles per day. The first day with articles is the start of the collection.
+  // Collected articles per day.
   const collected = h.outlets.find(o => o.name === outlet.name)!.daily
-  const start = collected.findIndex(v => v > 0)
-  const end = collected.length - 1 - [...collected].reverse().findIndex(v => v > 0)
   const stories = outletStories(l, dd, kd, last)
   const group = outlet.group
   const record = group ? g.groups.find(x => x.name === group) ?? null : null
   const writes = outletWrites(g, m, k, props.slug)
-  const rows = [writes.news && { key: 'news', label: t('outlet2.how.news'), ...writes.news }, writes.click && { key: 'click', label: t('outlet2.how.clickbait'), ...writes.click }].filter((r): r is NonNullable<typeof r> => !!r)
   const topics = stories.topicShares.map(r => ({ ...r, label: topicName(r.issue) }))
   return {
-    m, l, dd, g, k, kd, last, outlet, group, record, collected, start, end, collectedTotal: sum(collected), writes, howRows: rows, howScale: diffScale(rows), topics,
+    m, l, dd, g, k, kd, last, outlet, group, record, collected, collectedTotal: sum(collected), writes, topics,
     ...stories
   }
 })
@@ -71,31 +68,18 @@ const liveHeadlines = computed(() => (live.value ? headlinesOf(live.value.set, m
 const sampleHeadlines = computed(() => (sample.data.value?.slug === props.slug ? sample.data.value.headlines : []))
 
 
-const facts = computed(() => {
-  const mdl = model.value
-  if (!mdl) return []
-  const file = mdl.writes.file
-  if (P.value) {
-    const f = outletFacts(P.value, mk.value)
-    const rank = (r: { rank: number, n: number } | null) => (r ? t('mme.o.rank', { rank: r.rank, n: r.n }) : '')
-    return [
-      { label: t('mme.o.news'), value: fmtPct0(f.news.share), sub: rank(f.news.rank) },
-      { label: t('mme.o.clickbait'), value: f.clickbait.known ? fmtPct0(f.clickbait.share!) : '—', sub: f.clickbait.known ? (f.clickbait.rank ? rank(f.clickbait.rank) : t('mme.n', { n: fmtInt(f.clickbait.known) })) : t('mme.o.none') }
-    ]
-  }
-  // An outlet that is not in ΜΜΕ & πρόσωπα gets the numbers of the groups file, with no rank.
-  return [
-    file && file.analysed ? { label: t('outlet2.how.news'), value: fmtPct(file.news / file.analysed), sub: '' } : null,
-    file && file.cbKnown ? { label: t('outlet2.how.clickbait'), value: fmtPct(file.cbYes / file.cbKnown), sub: '' } : null
-  ].filter((x): x is NonNullable<typeof x> => !!x)
-})
-
-// The cards of the old four tabs, now all on the page: the stories and the headlines beside the web, then how it writes. The cards of the profile
-// are for the outlets of ΜΜΕ & πρόσωπα only.
-type CardId = 'latest' | 'weekly' | 'emphasis' | 'stories' | 'coverage' | 'stance' | 'how' | 'stanceTopic' | 'portrayal' | 'voices'
-const COLUMNS: CardId[][] = [['stories', 'latest', 'coverage'], ['stance', 'how', 'emphasis', 'weekly', 'stanceTopic', 'portrayal', 'voices']]
-const LIVE_ONLY: CardId[] = ['weekly', 'coverage', 'stanceTopic', 'portrayal', 'voices']
-const columns = computed(() => COLUMNS.map(ids => ids.filter(id => live.value || !LIVE_ONLY.includes(id))))
+// The cards of the profile in the two columns of the right. The cards of the profile are for the outlets of ΜΜΕ & πρόσωπα only.
+// The tabs beside the title turn the cards of the columns: Θέματα has what the outlet stresses and its stance (towards the government and by topic), Ιστορίες the big stories it did not run and the
+// ones it pushes, Πρόσωπα the people it mentions and its stance towards them. An outlet without the profile has the stance card and what it stresses, and no tabs.
+type CardId = 'stance' | 'stanceTopic' | 'portrayal' | 'emphasis' | 'skip' | 'push' | 'voices'
+const COLUMNS: Record<'topics' | 'stories' | 'people', CardId[][]> = {
+  topics: [['emphasis'], ['stance', 'stanceTopic']],
+  stories: [['skip'], ['push']],
+  people: [['voices'], ['portrayal']]
+}
+const tab = ref<'topics' | 'stories' | 'people'>('topics')
+const columns = computed(() => (live.value ? COLUMNS[tab.value] : [['stance'], ['emphasis']] as CardId[][]))
+const tabs = computed(() => (live.value ? [{ value: 'topics', label: t('mme.o.tab.topics') }, { value: 'stories', label: t('mme.o.tab.stories') }, { value: 'people', label: t('mme.o.tab.people') }] : []))
 
 // A slug that is not an outlet has the name of the section, as the static page.
 const named = computed(() => (model.value ? model.value.outlet.name : !loading.value && !problem.value ? t('nav.media') : null))
@@ -118,24 +102,21 @@ watch(webStories, list => plegma.setThemeStories(list?.length ? list : null), { 
 watch(() => (model.value ? slotOfColor(groupColor(model.value.group)) : 0), slot => plegma.setOutletSlot(slot), { immediate: true })
 onBeforeUnmount(() => { plegma.setThemeStories(null); plegma.setOutletSlot(0); plegma.setHoverStory(null) })
 
-// The map region is the free cell of the first column, under the title (composables/usePlegmaRegion.ts).
+// The map region is the free cell between the stories and the cards, under the title, as on the story and theme pages (composables/usePlegmaRegion.ts): the biggest circle that touches no card.
 const orbit = ref<HTMLElement>()
 const map = ref<HTMLElement>()
-usePlegmaRegion(orbit, map)
+usePlegmaRegion(orbit, map, { side: 440, top: -32, bottom: 28, lean: 0.62, clear: true, ringPerSide: 0.45 })
 
-// The outlet over time: its articles each day, and under it a line for each story the web shows. The axis is the square root, so the stories are not flat next to the outlet.
+// The outlet over time: its articles each day, as bars.
 const { height: windowHeight } = useWindowSize()
-const tall = computed(() => Math.round(Math.min(300, Math.max(110, windowHeight.value * 0.12))))
-const timeLines = computed(() => {
+const tall = computed(() => Math.round(Math.min(300, Math.max(110, windowHeight.value * 0.2))))
+const bars = computed(() => {
   const m = model.value
-  const stories = webStories.value
-  if (!m || !stories) return null
+  if (!m) return null
   const to = m.last + 1
-  const outlet = { key: 'outlet', name: m.outlet.name, color: m.group ? groupColor(m.group) : 'var(--ink)', values: m.collected.slice(0, to) }
-  const rows = m.mine.filter(r => r.story).slice(0, PLEGMA_THEME_STORIES).map((r, i) => ({ key: `s${r.story!.id}`, name: stories[i]!.name, color: stories[i]!.slot ? `var(--cat-${stories[i]!.slot})` : NO_GROUP, values: r.days.slice(0, to) }))
-  return { dates: m.m.dates.slice(0, to), series: [outlet, ...rows] }
+  return { dates: m.m.dates.slice(0, to), series: [{ name: m.outlet.name, color: m.group ? groupColor(m.group) : 'var(--ink)', values: m.collected.slice(0, to) as (number | null)[] }] }
 })
-const lineHref = (key: string) => (key === 'outlet' ? outletHref(props.slug) : storyHref(Number(key.slice(1))))
+const barTip = (i: number) => t('story.daily.tip', { date: fmtDate(bars.value!.dates[i]!), n: fmtInt(bars.value!.series[0]!.values[i] ?? 0) })
 </script>
 
 <template>
@@ -152,12 +133,28 @@ const lineHref = (key: string) => (key === 'outlet' ? outletHref(props.slug) : s
   <div v-else ref="orbit" class="plegma-orbit is-outlet" :class="{ 'is-in': plegma.landed }">
     <div class="plegma-title entity-grid">
       <EntityTitle :kind="t('hero.kind.outlet')" :title="model.outlet.name">
-        <template #meta>{{ `${fmtDay(model.m.dates[model.start]!)} → ${fmtDate(model.m.dates[model.end]!)} · ${t('entity.fact.days', { n: model.end - model.start + 1 })}` }}</template>
-        <EntityFact :label="t('entity.fact.group')" :value="model.group ?? t('story.nogroup')" :sub="model.outlet.owner ? `${t('entity.fact.owner')}: ${model.outlet.owner}` : ''" />
+        <template #meta>{{ t('entity.fact.group') }}: <EntityLink v-if="model.group && model.record?.slug" type="group" :to="groupPageHref(model.record.slug)">{{ model.group }}</EntityLink><template v-else>{{ model.group ?? t('story.nogroup') }}</template></template>
         <EntityFact :label="t('entity.fact.articles')" :value="fmtInt(model.collectedTotal)" />
         <EntityFact :label="t('entity.fact.stories')" :value="fmtInt(model.mine.length)" />
-        <EntityFact v-for="f in facts" :key="f.label" :label="f.label" :value="f.value" :sub="f.sub" />
       </EntityTitle>
+      <SegmentedControl v-if="tabs.length" v-model="tab" class="orbit-ring-tabs" :label="t('mme.o.tab.label')" :options="tabs" />
+    </div>
+
+    <div class="orbit-col orbit-left">
+      <PlegmaCard :at="2" :order="3" class="card-stories">
+        <DashCard
+          :title="t('outlet2.stories.title')"
+          :info="`${t('outlet2.stories.first', { n: fmtInt(model.firsts), total: fmtInt(model.mine.length) })}. ${t('outlet2.stories.info')}`"
+        >
+          <ul v-if="model.latest.length" class="rows-related latest-stories">
+            <li v-for="r in model.latest" :key="r.story!.id" @pointerenter="plegma.setHoverStory(r.story!.id)" @pointerleave="plegma.setHoverStory(null)" @focusin="plegma.setHoverStory(r.story!.id)" @focusout="plegma.setHoverStory(null)">
+              <span class="related-main"><span class="story-line" :title="`${storyName(r.story!)} / ${topicName(model.l.issues[r.story!.issue]!)}`"><EntityLink type="story" :to="storyHref(r.story!.id)">{{ storyName(r.story!) }}</EntityLink><span class="muted-text">{{ ` / ${topicName(model.l.issues[r.story!.issue]!)}` }}</span></span></span>
+              <span class="row-value">{{ fmtDay(model.m.dates[r.first]!) }}</span>
+            </li>
+          </ul>
+          <p v-else class="dcard-empty">{{ t('outlet2.stories.empty') }}</p>
+        </DashCard>
+      </PlegmaCard>
     </div>
 
     <div ref="map" class="orbit-map">
@@ -167,57 +164,17 @@ const lineHref = (key: string) => (key === 'outlet' ? outletHref(props.slug) : s
     <div class="orbit-col orbit-right">
       <div class="orbit-subs">
         <div v-for="(ids, c) in columns" :key="c" class="orbit-sub">
-          <PlegmaCard v-for="(id, r) in ids" :key="id" :at="c === 0 ? 2 : 0" :order="r + 1" :class="`card-${id}`">
-            <DashCard v-if="id === 'latest'" class="c-6 outlet-latest" :title="t('outlet2.latest.title')" :info="liveHeadlines.length ? t('mme.o.headlines.info') : t('outlet2.headlines.info')">
-              <div v-if="liveHeadlines.length" class="latest-scroll">
-                <ul class="plain-list">
-                  <li v-for="(x, i) in liveHeadlines" :key="i" class="mme-headline">
-                    <a v-if="safeUrl(x[2])" :href="safeUrl(x[2])!" rel="noopener" target="_blank">{{ x[1] }}</a><span v-else>{{ x[1] }}</span>
-                    <span class="muted-text">{{ [fmtDay(x[0]), x[4] >= 0 ? t(`frame.${live!.set.frames[x[4]]}`) : null, x[5] || null].filter(Boolean).join(' · ') }}</span>
-                    <span v-if="x[3]" class="mme-angle">{{ x[3] }}</span>
-                  </li>
-                </ul>
-              </div>
-              <div v-else-if="sampleHeadlines.length" class="latest-scroll">
-                <ul class="plain-list">
-                  <li v-for="(x, i) in sampleHeadlines" :key="i"><a v-if="safeUrl(x.url)" :href="safeUrl(x.url)!" rel="noopener" target="_blank">{{ x.title }}</a><template v-else>{{ x.title }}</template></li>
-                </ul>
-              </div>
-              <p v-else class="dcard-empty">{{ t('outlet2.headlines.empty') }}</p>
-            </DashCard>
-            <OutletWeekly v-else-if="id === 'weekly'" :set="live!.set" :k="live!.k" />
-            <OutletEmphasis v-else-if="id === 'emphasis'" :P="live?.P ?? null" :k="mk" :topics="model.topics" :topic-n="model.mineTotal" />
-            <DashCard
-              v-else-if="id === 'stories'" class="c-7" :title="t('outlet2.stories.title')"
-              :info="`${t('outlet2.stories.first', { n: fmtInt(model.firsts), total: fmtInt(model.mine.length) })}. ${t('outlet2.stories.info')}`"
-            >
-              <ul v-if="model.latest.length" class="rows-related latest-stories">
-                <li v-for="r in model.latest" :key="r.story!.id">
-                  <span class="related-main"><span class="story-line" :title="`${storyName(r.story!)} / ${topicName(model.l.issues[r.story!.issue]!)}`"><EntityLink type="story" :to="storyHref(r.story!.id)">{{ storyName(r.story!) }}</EntityLink><span class="muted-text">{{ ` / ${topicName(model.l.issues[r.story!.issue]!)}` }}</span></span></span>
-                  <span class="row-value">{{ fmtDay(model.m.dates[r.first]!) }}</span>
-                  <span class="row-value">{{ t('outlet2.stories.reach', { n: fmtInt(r.reach) }) }}</span>
-                  <span class="row-value">{{ fmtInt(r.n) }}</span>
-                </li>
-              </ul>
-              <p v-else class="dcard-empty">{{ t('outlet2.stories.empty') }}</p>
-            </DashCard>
-            <OutletCoverage v-else-if="id === 'coverage'" :P="live!.P" :k="live!.k" />
+          <PlegmaCard v-for="(id, r) in ids" :key="`${tab}-${id}`" :at="0" :order="r + 1" :class="`card-${id}`">
             <StanceCard
-              v-else-if="id === 'stance'" class="c-12"
+              v-if="id === 'stance'" class="c-12"
               :rows="[{ label: t('entity.stance.outlet'), color: groupColor(model.group), counts: model.writes.stanceMine }, { label: t('entity.stance.all'), color: NO_GROUP, counts: model.writes.stanceAll }]"
               :foot="model.writes.stanceN >= 30 ? t('outlet2.how.stance.n', { n: fmtInt(model.writes.stanceN) }) : null"
             />
-            <DashCard v-else-if="id === 'how'" class="c-12" :title="t('outlet2.how.title')" :info="t('outlet2.how.info')">
-              <template #tools><ChartLegend :items="diffKey" /></template>
-              <div class="how-panel">
-                <DiffList v-if="model.howRows.length" :rows="model.howRows" :scale="model.howScale" tip-key="outlet2.how.tip" />
-                <p class="dcard-sub">{{ t('outlet2.how.news.n', { n: fmtInt(model.writes.file ? model.writes.file.analysed : 0) }) }}</p>
-                <p class="dcard-sub">{{ model.writes.click && model.writes.file ? t('outlet2.how.clickbait.n', { baited: fmtInt(model.writes.file.cbYes), scored: fmtInt(model.writes.file.cbKnown) }) : t('outlet2.how.clickbait.none') }}</p>
-              </div>
-            </DashCard>
             <OutletStanceByTopic v-else-if="id === 'stanceTopic'" :P="live!.P" :k="live!.k" :limit="OUTLET_STANCE_LIMIT" />
             <OutletPortrayal v-else-if="id === 'portrayal'" :P="live!.P" :k="live!.k" />
-            <OutletVoices v-else-if="id === 'voices'" :P="live!.P" :k="live!.k" />
+            <OutletEmphasis v-else-if="id === 'emphasis'" :P="live?.P ?? null" :k="mk" :topics="model.topics" :topic-n="model.mineTotal" />
+            <OutletCoverage v-else-if="id === 'skip' || id === 'push'" :P="live!.P" :k="live!.k" :part="id" />
+            <OutletVoices v-else-if="id === 'voices'" :P="live!.P" :k="live!.k" :title="t('mme.o.people.title')" />
           </PlegmaCard>
         </div>
       </div>
@@ -226,7 +183,26 @@ const lineHref = (key: string) => (key === 'outlet' ? outletHref(props.slug) : s
     <div class="orbit-col orbit-under">
       <PlegmaCard :at="4" :order="2" class="card-days">
         <DashCard :title="t('outlet2.time.title')" :info="t('outlet2.time.info')">
-          <LinesChart v-if="timeLines" :dates="timeLines.dates" :series="timeLines.series" plain sparse sqrt :opacity="0.9" :tall="tall" :caption="t('outlet2.time.title')" :href-of="s => lineHref(s.key)" />
+          <DayBars v-if="bars" :dates="bars.dates" :series="bars.series" :height="tall" :caption="t('outlet2.time.title')" :tip-of="barTip" :selectable="false" />
+        </DashCard>
+      </PlegmaCard>
+      <PlegmaCard :at="4" :order="3" class="card-latest">
+        <DashCard class="outlet-latest" :title="t('outlet2.latest.title')" :info="liveHeadlines.length ? t('mme.o.headlines.info') : t('outlet2.headlines.info')">
+          <div v-if="liveHeadlines.length" class="latest-scroll">
+            <ul class="plain-list">
+              <li v-for="(x, i) in liveHeadlines" :key="i" class="mme-headline">
+                <a v-if="safeUrl(x[2])" :href="safeUrl(x[2])!" rel="noopener" target="_blank">{{ x[1] }}</a><span v-else>{{ x[1] }}</span>
+                <span class="muted-text">{{ [fmtDay(x[0]), x[4] >= 0 ? t(`frame.${live!.set.frames[x[4]]}`) : null, x[5] || null].filter(Boolean).join(' · ') }}</span>
+                <span v-if="x[3]" class="mme-angle">{{ x[3] }}</span>
+              </li>
+            </ul>
+          </div>
+          <div v-else-if="sampleHeadlines.length" class="latest-scroll">
+            <ul class="plain-list">
+              <li v-for="(x, i) in sampleHeadlines" :key="i"><a v-if="safeUrl(x.url)" :href="safeUrl(x.url)!" rel="noopener" target="_blank">{{ x.title }}</a><template v-else>{{ x.title }}</template></li>
+            </ul>
+          </div>
+          <p v-else class="dcard-empty">{{ t('outlet2.headlines.empty') }}</p>
         </DashCard>
       </PlegmaCard>
     </div>
