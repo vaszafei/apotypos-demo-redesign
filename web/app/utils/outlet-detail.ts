@@ -212,3 +212,24 @@ export const portrayalOf = (P: MmeProfile, k: number) => {
 
 // The newest headlines of the outlet, newest first.
 export const headlinesOf = (set: MmeSet, k: number) => (set.headlines[k] ?? []).slice().sort((a, b) => String(b[0]).localeCompare(String(a[0])))
+
+// ———— The latest topics, and the mentions over time ————
+
+export const LATEST_TOPICS_DAYS = 7
+export const OUTLET_LINES = 8
+// The topics the outlet wrote in its last 7 days (topicDays: the articles of the outlet in stories, per day; the days end at its last day with articles, because the period can run on past it),
+// the latest first, the bigger first within a day.
+export const latestTopics = (topicDays: Map<number, number[]>, issues: StoriesData['issues'], last: number) => {
+  const rows = [...topicDays].filter(([issue]) => !issues[issue]!.catchAll).map(([issue, days]) => ({ issue, days, last: days.slice(0, last + 1).reduce((at, n, d) => (n > 0 ? d : at), -1) })).filter(r => r.last >= 0)
+  const end = Math.max(-1, ...rows.map(r => r.last))
+  const from = Math.max(0, end - LATEST_TOPICS_DAYS + 1)
+  return rows.map(r => ({ issue: r.issue, n: sum(r.days.slice(from, end + 1)), last: r.last })).filter(r => r.n > 0).sort((a, b) => b.last - a.last || b.n - a.n)
+}
+
+// The quotes of each person in the articles of the outlet, per day of the set; the people it never quotes are left out, the most quoted first.
+export const mentionsOf = (set: MmeSet, k: number) => set.people.map((p, j) => {
+  const values = new Array<number>(set.dates.length).fill(0)
+  const pairs = set.q[k]![j]!
+  for (let i = 0; i < pairs.length; i += 2) values[pairs[i]!] = pairs[i + 1]!
+  return { p, j, values, total: sum(values) }
+}).filter(r => r.total > 0).sort((a, b) => b.total - a.total)

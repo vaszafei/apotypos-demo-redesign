@@ -3,13 +3,15 @@ import { useWindowSize } from '@vueuse/core'
 import type { MmeData } from '~/types/mme'
 import type { StoriesData } from '~/types/stories'
 import type { StoryDetailData } from '~/types/story-detail'
+import type { Series } from '~/types/topics'
 import type { GroupsData, MediaDaily } from '~/utils/groups'
+import { PERSON_KEYS, personHref } from '~/utils/people'
 import { PLEGMA_THEME_OUTLETS, PLEGMA_THEME_STORIES } from '~/utils/plegma/plegma-theme'
 import { themeSlots } from '~/utils/plegma/plegma-world'
 
-// The outlet on the Plegma, laid out as the story and the theme pages are: the title card with the facts of the outlet, its stories in a narrow column on the left, the web in the free
-// cell (the outlet at the center, its largest stories around it in the color of their theme, and for each story the days the outlet wrote it: the stage draws it), the cards of the
-// profile in two columns, and under them the stories of the outlet over time with its latest articles beside it.
+// The outlet on the Plegma: the title card with the facts of the outlet and the tabs, under it the web first (the outlet at the center, its largest stories around it in the color of
+// their theme, and for each story the days the outlet wrote it: the stage draws it), then the cards of the tab, and in the last column the latest list of the tab (articles, topics or
+// stories; Πρόσωπα has none). Επισκόπηση and Πρόσωπα have a chart under the web and the cards.
 // The outlets of ΜΜΕ & πρόσωπα (the Greek set) also have the profile cards of outlet-v2.html; the others have the cards of the groups file.
 interface OutletSample { name: string, slug: string, headlines: { title: string, url: string }[] }
 interface HomeOutlets { outlets: { name: string, daily: number[] }[], issues: StoriesData['issues'], issueDaily: (number | null)[][] }
@@ -68,18 +70,23 @@ const liveHeadlines = computed(() => (live.value ? headlinesOf(live.value.set, m
 const sampleHeadlines = computed(() => (sample.data.value?.slug === props.slug ? sample.data.value.headlines : []))
 
 
-// The cards of the profile in the two columns of the right. The cards of the profile are for the outlets of ΜΜΕ & πρόσωπα only.
-// The tabs beside the title turn the cards of the columns: Θέματα has what the outlet stresses and its stance (towards the government and by topic), Ιστορίες the big stories it did not run and the
-// ones it pushes, Πρόσωπα the people it mentions and its stance towards them. An outlet without the profile has the stance card and what it stresses, and no tabs.
+// The cards of the tab in up to two columns, the latest list in the last column and the chart under them (null: none). The cards of the profile are for the outlets of ΜΜΕ & πρόσωπα only (live).
+// Επισκόπηση: the stance towards the government, the chart of the topics and the stories over time, the latest articles. Θέματα: what it stresses and the stance by topic, the latest topics.
+// Ιστορίες: the big stories it did not run and the ones it pushes, its latest stories. Πρόσωπα: the people it mentions and how it portrays them, the mentions over time.
+// An outlet without the profile has no Πρόσωπα, and in Θέματα and Ιστορίες only what the stories file can give.
 type CardId = 'stance' | 'stanceTopic' | 'portrayal' | 'emphasis' | 'skip' | 'push' | 'voices'
-const COLUMNS: Record<'topics' | 'stories' | 'people', CardId[][]> = {
-  topics: [['emphasis'], ['stance', 'stanceTopic']],
-  stories: [['skip'], ['push']],
-  people: [['voices'], ['portrayal']]
+type TabId = 'overview' | 'topics' | 'stories' | 'people'
+type LatestId = 'articles' | 'topics' | 'stories'
+interface TabSpec { columns: CardId[][], latest: LatestId | null, under: 'lines' | 'mentions' | null }
+const SPECS: Record<TabId, { live: TabSpec, plain: TabSpec }> = {
+  overview: { live: { columns: [['stance']], latest: 'articles', under: 'lines' }, plain: { columns: [['stance']], latest: 'articles', under: 'lines' } },
+  topics: { live: { columns: [['emphasis'], ['stanceTopic']], latest: 'topics', under: null }, plain: { columns: [['emphasis']], latest: 'topics', under: null } },
+  stories: { live: { columns: [['skip'], ['push']], latest: 'stories', under: null }, plain: { columns: [], latest: 'stories', under: null } },
+  people: { live: { columns: [['voices'], ['portrayal']], latest: null, under: 'mentions' }, plain: { columns: [], latest: null, under: null } }
 }
-const tab = ref<'topics' | 'stories' | 'people'>('topics')
-const columns = computed(() => (live.value ? COLUMNS[tab.value] : [['stance'], ['emphasis']] as CardId[][]))
-const tabs = computed(() => (live.value ? [{ value: 'topics', label: t('mme.o.tab.topics') }, { value: 'stories', label: t('mme.o.tab.stories') }, { value: 'people', label: t('mme.o.tab.people') }] : []))
+const tab = ref<TabId>('overview')
+const spec = computed(() => SPECS[tab.value][live.value ? 'live' : 'plain'])
+const tabs = computed(() => (['overview', 'topics', 'stories', ...(live.value ? ['people'] : [])] as TabId[]).map(value => ({ value, label: t(`mme.o.tab.${value}`) })))
 
 // A slug that is not an outlet has the name of the section, as the static page.
 const named = computed(() => (model.value ? model.value.outlet.name : !loading.value && !problem.value ? t('nav.media') : null))
@@ -107,16 +114,14 @@ const orbit = ref<HTMLElement>()
 const map = ref<HTMLElement>()
 usePlegmaRegion(orbit, map, { side: 440, top: -32, bottom: 28, lean: 0.62, clear: true, ringPerSide: 0.45 })
 
-// The outlet over time: its articles each day, as bars.
+// The outlet over time: its articles of the largest topics or stories each day (OutletTimeLines), and the quotes of each person each day (Πρόσωπα).
 const { height: windowHeight } = useWindowSize()
 const tall = computed(() => Math.round(Math.min(300, Math.max(110, windowHeight.value * 0.2))))
-const bars = computed(() => {
-  const m = model.value
-  if (!m) return null
-  const to = m.last + 1
-  return { dates: m.m.dates.slice(0, to), series: [{ name: m.outlet.name, color: m.group ? groupColor(m.group) : 'var(--ink)', values: m.collected.slice(0, to) as (number | null)[] }] }
-})
-const barTip = (i: number) => t('story.daily.tip', { date: fmtDate(bars.value!.dates[i]!), n: fmtInt(bars.value!.series[0]!.values[i] ?? 0) })
+const lastDates = computed(() => (model.value ? model.value.m.dates.slice(0, model.value.last + 1) : []))
+const latestTopicRows = computed(() => (model.value ? latestTopics(model.value.topicDays, model.value.l.issues, model.value.last) : []))
+const mentions = computed<Series[]>(() => (live.value ? mentionsOf(live.value.set, live.value.k).slice(0, OUTLET_LINES).map((r, i) => ({
+  key: PERSON_KEYS[r.p.name] ?? String(r.j), name: r.p.name, color: `var(--cat-${i + 1})`, values: r.values
+})) : []))
 </script>
 
 <template>
@@ -130,31 +135,14 @@ const barTip = (i: number) => t('story.daily.tip', { date: fmtDate(bars.value!.d
     <section class="dcard c-12"><div class="empty-state" data-state="empty"><AppIcon name="inbox" /><p style="margin: 0">{{ t('topics2.empty') }}</p></div></section>
   </div>
   <ErrorPage v-else-if="!model" :status="404" />
-  <div v-else ref="orbit" class="plegma-orbit is-outlet" :class="{ 'is-in': plegma.landed }">
+  <div v-else ref="orbit" class="plegma-orbit is-outlet" :class="[`cols-${spec.columns.length}`, spec.latest ? 'has-latest' : 'no-latest', { 'has-under': spec.under, 'is-in': plegma.landed }]">
     <div class="plegma-title entity-grid">
       <EntityTitle :kind="t('hero.kind.outlet')" :title="model.outlet.name">
         <template #meta>{{ t('entity.fact.group') }}: <EntityLink v-if="model.group && model.record?.slug" type="group" :to="groupPageHref(model.record.slug)">{{ model.group }}</EntityLink><template v-else>{{ model.group ?? t('story.nogroup') }}</template></template>
         <EntityFact :label="t('entity.fact.articles')" :value="fmtInt(model.collectedTotal)" />
         <EntityFact :label="t('entity.fact.stories')" :value="fmtInt(model.mine.length)" />
       </EntityTitle>
-      <SegmentedControl v-if="tabs.length" v-model="tab" class="orbit-ring-tabs" :label="t('mme.o.tab.label')" :options="tabs" />
-    </div>
-
-    <div class="orbit-col orbit-left">
-      <PlegmaCard :at="2" :order="3" class="card-stories">
-        <DashCard
-          :title="t('outlet2.stories.title')"
-          :info="`${t('outlet2.stories.first', { n: fmtInt(model.firsts), total: fmtInt(model.mine.length) })}. ${t('outlet2.stories.info')}`"
-        >
-          <ul v-if="model.latest.length" class="rows-related latest-stories">
-            <li v-for="r in model.latest" :key="r.story!.id" @pointerenter="plegma.setHoverStory(r.story!.id)" @pointerleave="plegma.setHoverStory(null)" @focusin="plegma.setHoverStory(r.story!.id)" @focusout="plegma.setHoverStory(null)">
-              <span class="related-main"><span class="story-line" :title="`${storyName(r.story!)} / ${topicName(model.l.issues[r.story!.issue]!)}`"><EntityLink type="story" :to="storyHref(r.story!.id)">{{ storyName(r.story!) }}</EntityLink><span class="muted-text">{{ ` / ${topicName(model.l.issues[r.story!.issue]!)}` }}</span></span></span>
-              <span class="row-value">{{ fmtDay(model.m.dates[r.first]!) }}</span>
-            </li>
-          </ul>
-          <p v-else class="dcard-empty">{{ t('outlet2.stories.empty') }}</p>
-        </DashCard>
-      </PlegmaCard>
+      <SegmentedControl v-model="tab" class="orbit-ring-tabs" :label="t('mme.o.tab.label')" :options="tabs" />
     </div>
 
     <div ref="map" class="orbit-map">
@@ -163,7 +151,7 @@ const barTip = (i: number) => t('story.daily.tip', { date: fmtDate(bars.value!.d
 
     <div class="orbit-col orbit-right">
       <div class="orbit-subs">
-        <div v-for="(ids, c) in columns" :key="c" class="orbit-sub">
+        <div v-for="(ids, c) in spec.columns" :key="`${tab}-${c}`" class="orbit-sub">
           <PlegmaCard v-for="(id, r) in ids" :key="`${tab}-${id}`" :at="0" :order="r + 1" :class="`card-${id}`">
             <StanceCard
               v-if="id === 'stance'" class="c-12"
@@ -178,16 +166,21 @@ const barTip = (i: number) => t('story.daily.tip', { date: fmtDate(bars.value!.d
           </PlegmaCard>
         </div>
       </div>
-    </div>
 
-    <div class="orbit-col orbit-under">
-      <PlegmaCard :at="4" :order="2" class="card-days">
-        <DashCard :title="t('outlet2.time.title')" :info="t('outlet2.time.info')">
-          <DayBars v-if="bars" :dates="bars.dates" :series="bars.series" :height="tall" :caption="t('outlet2.time.title')" :tip-of="barTip" :selectable="false" />
+      <PlegmaCard v-if="spec.latest" :key="`${tab}-latest`" :at="3" :order="2" class="card-latest">
+        <OutletTopicsLatest v-if="spec.latest === 'topics'" :rows="latestTopicRows" :issues="model.l.issues" :dates="model.m.dates" />
+        <DashCard v-else-if="spec.latest === 'stories'" :title="t('outlet2.stories.title')" :info="`${t('outlet2.stories.first', { n: fmtInt(model.firsts), total: fmtInt(model.mine.length) })}. ${t('outlet2.stories.info')}`">
+          <div v-if="model.latest.length" class="latest-scroll">
+            <ul class="rows-related latest-stories">
+              <li v-for="r in model.latest" :key="r.story!.id" @pointerenter="plegma.setHoverStory(r.story!.id)" @pointerleave="plegma.setHoverStory(null)" @focusin="plegma.setHoverStory(r.story!.id)" @focusout="plegma.setHoverStory(null)">
+                <span class="related-main"><span class="story-line" :title="`${storyName(r.story!)} / ${topicName(model.l.issues[r.story!.issue]!)}`"><EntityLink type="story" :to="storyHref(r.story!.id)">{{ storyName(r.story!) }}</EntityLink><span class="muted-text">{{ ` / ${topicName(model.l.issues[r.story!.issue]!)}` }}</span></span></span>
+                <span class="row-value">{{ fmtDay(model.m.dates[r.first]!) }}</span>
+              </li>
+            </ul>
+          </div>
+          <p v-else class="dcard-empty">{{ t('outlet2.stories.empty') }}</p>
         </DashCard>
-      </PlegmaCard>
-      <PlegmaCard :at="4" :order="3" class="card-latest">
-        <DashCard class="outlet-latest" :title="t('outlet2.latest.title')" :info="liveHeadlines.length ? t('mme.o.headlines.info') : t('outlet2.headlines.info')">
+        <DashCard v-else class="outlet-latest" :title="t('outlet2.latest.title')" :info="liveHeadlines.length ? t('mme.o.headlines.info') : t('outlet2.headlines.info')">
           <div v-if="liveHeadlines.length" class="latest-scroll">
             <ul class="plain-list">
               <li v-for="(x, i) in liveHeadlines" :key="i" class="mme-headline">
@@ -203,6 +196,16 @@ const barTip = (i: number) => t('story.daily.tip', { date: fmtDate(bars.value!.d
             </ul>
           </div>
           <p v-else class="dcard-empty">{{ t('outlet2.headlines.empty') }}</p>
+        </DashCard>
+      </PlegmaCard>
+    </div>
+
+    <div v-if="spec.under" class="orbit-col orbit-under">
+      <PlegmaCard :key="`${tab}-under`" :at="4" :order="2" class="card-days">
+        <OutletTimeLines v-if="spec.under === 'lines'" :dates="lastDates" :topic-days="model.topicDays" :mine="model.mine" :issues="model.l.issues" />
+        <DashCard v-else :title="t('outlet2.mentions.title')" :info="t('outlet2.mentions.info')">
+          <LinesChart v-if="mentions.length" :dates="live!.set.dates" :series="mentions" :tall="tall" :caption="t('outlet2.mentions.title')" :href-of="s => personHref(s.key)" />
+          <p v-else class="dcard-empty">{{ t('media2.empty.list') }}</p>
         </DashCard>
       </PlegmaCard>
     </div>
