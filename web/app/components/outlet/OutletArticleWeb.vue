@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useElementSize, useMediaQuery, useRafFn } from '@vueuse/core'
-import { buildArticleWeb, PLEGMA_NODES_MAX } from '~/utils/plegma/plegma-articles'
+import { PLEGMA_NODES_MAX } from '~/utils/plegma/plegma-articles'
+import { cloudWeb } from '~/utils/plegma/plegma-clouds'
 import { shareArcs } from '~/utils/plegma/stage/stage-draw-util'
 
-// The web of the outlet's articles on Επισκόπηση: the same web as the story page has (utils/plegma/plegma-articles.ts), one node for each article, or for several when there are many
-// (each node then stands for `perNode` articles). The nodes are grouped by day, a sector for each day with articles, and no date is written. Around it is the ring of the stance towards
+// The web of the outlet's articles on Επισκόπηση: one node for each article, or for several when there are many (each node then stands for `perNode` articles), in a loose cloud for each day
+// (utils/plegma/plegma-clouds.ts), as large as the articles of the day. No date is written. Around it is the ring of the stance towards
 // the government: an arc each for critical, neutral and supportive, as wide as their share, with the name and the share written outside it.
 const props = defineProps<{ days: number[], colorSlot: number, stance: number[], label: string }>()
 const { t } = useI18n()
@@ -18,22 +19,11 @@ const canvas = ref<HTMLCanvasElement>()
 const { width, height } = useElementSize(box)
 
 const total = computed(() => props.days.reduce((a, n) => a + n, 0))
-const nodes = computed(() => Math.min(total.value, PLEGMA_NODES_MAX))
-const perNode = computed(() => (nodes.value ? Math.ceil(total.value / nodes.value) : 1))
-// The sector of a node is the day of the article in the middle of it, counted over the days that have articles.
+const perNode = computed(() => (total.value ? Math.ceil(total.value / Math.min(total.value, PLEGMA_NODES_MAX)) : 1))
+// A cloud for each day with articles: a node for each `perNode` articles of the day (at least one).
 const web = computed(() => {
-  const n = nodes.value
-  if (!n) return null
-  const withArticles = props.days.map((count, d) => ({ d, count })).filter(x => x.count > 0)
-  const sectors = new Uint16Array(n)
-  let k = 0
-  let upTo = withArticles[0]?.count ?? 0
-  for (let i = 0; i < n; i++) {
-    const article = Math.min(total.value - 1, Math.floor(((i + 0.5) * total.value) / n))
-    while (article >= upTo && k < withArticles.length - 1) { k++; upTo += withArticles[k]!.count }
-    sectors[i] = k
-  }
-  return buildArticleWeb(n, 7 + total.value, sectors)
+  const counts = props.days.filter(n => n > 0).map(n => Math.max(1, Math.round(n / perNode.value)))
+  return counts.length ? cloudWeb(counts, 7 + total.value) : null
 })
 const ringArcs = computed(() => shareArcs(props.stance))
 
@@ -86,7 +76,7 @@ const draw = (now: number) => {
   if (px.length < aw.n) { px = new Float32Array(aw.n); py = new Float32Array(aw.n) }
   for (let i = 0; i < aw.n; i++) {
     const a = sec * aw.speed[i]! + aw.phase[i]!
-    const reach = i === 0 && aw.arcs.length ? 0 : aw.reach[i]!
+    const reach = aw.reach[i]!
     px[i] = cx + aw.x[i]! * R * kx * grow + Math.cos(a) * amp * reach
     py[i] = cy + aw.y[i]! * R * grow + Math.sin(a) * amp * reach
   }
