@@ -57,6 +57,7 @@
    its latest articles beside it (the column of the right edge; under 1280px the two share the row). */
 .plegma-orbit.is-outlet .orbit-sub { overflow-y: auto; pointer-events: auto; scrollbar-width: thin; }
 .plegma-orbit.is-outlet .orbit-sub > .plegma-card { flex: none; max-height: 46%; }
+.plegma-orbit.is-outlet .orbit-sub > .plegma-card:only-child { max-height: 100%; }
 .plegma-orbit.is-outlet .orbit-under { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--space-3); }
 .plegma-orbit.is-outlet .orbit-under > .plegma-card { flex: none; }
 /* The articles card does not add to the height of the row: the chart sets it, and the articles scroll inside the card. */

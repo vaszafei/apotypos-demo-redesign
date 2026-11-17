@@ -2,7 +2,7 @@
 import type { MmeProfile } from '~/types/mme'
 
 // VoicesCard of assets/mme.js: whom the outlet quotes, its parties against all outlets (the tick), and who attacks whom (the 6 pairs with the most statements).
-const props = defineProps<{ P: MmeProfile, k: number }>()
+const props = defineProps<{ P: MmeProfile, k: number, title?: string }>()
 const { t } = useI18n()
 const voices = computed(() => voicesOf(props.P, props.k))
 const people = computed(() => voices.value.people.map(r => ({ key: r.p.name, label: r.p.name, text: fmtInt(r.n), value: r.n, color: '' })))
@@ -11,7 +11,7 @@ const attacks = computed(() => voices.value.attacks.map(([a, b, n]) => ({ key: `
 </script>
 
 <template>
-  <DashCard class="c-12" :title="t('mme.o.voices.title')" :info="t('mme.o.voices.info')">
+  <DashCard class="c-12" :title="title ?? t('mme.o.voices.title')" :info="t('mme.o.voices.info')">
     <BarList v-if="people.length" :rows="people" :max="Math.max(...people.map(r => r.value), 1)" />
     <p v-else class="dcard-empty">{{ t('media2.empty.list') }}</p>
     <template v-if="parties.length">

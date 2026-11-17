@@ -69,12 +69,16 @@ const sampleHeadlines = computed(() => (sample.data.value?.slug === props.slug ?
 
 
 // The cards of the profile in the two columns of the right. The cards of the profile are for the outlets of ΜΜΕ & πρόσωπα only.
-// The three cards of the stance (towards the government, by topic, towards people) are one card slot that the tabs beside the title turn; the other cards fill the columns.
-type CardId = 'ring' | 'emphasis' | 'coverage' | 'voices'
-const COLUMNS: CardId[][] = [['ring', 'emphasis'], ['coverage', 'voices']]
-const LIVE_ONLY: CardId[] = ['coverage', 'voices']
-const columns = computed(() => COLUMNS.map(ids => ids.filter(id => live.value || !LIVE_ONLY.includes(id))))
+// The tabs beside the title turn the cards of the columns: Στάση has the three cards of the stance (towards the government, by topic, towards people), Θέματα what the outlet stresses
+// and how it covers the stories against the others, Πρόσωπα the people it mentions. An outlet without the profile has the stance card and what it stresses, and no tabs.
+type CardId = 'stance' | 'stanceTopic' | 'portrayal' | 'emphasis' | 'coverage' | 'voices'
+const COLUMNS: Record<'gov' | 'topics' | 'people', CardId[][]> = {
+  gov: [['stance', 'stanceTopic'], ['portrayal']],
+  topics: [['emphasis'], ['coverage']],
+  people: [['voices'], []]
+}
 const tab = ref<'gov' | 'topics' | 'people'>('gov')
+const columns = computed(() => (live.value ? COLUMNS[tab.value] : [['stance'], ['emphasis']] as CardId[][]))
 const tabs = computed(() => (live.value ? [{ value: 'gov', label: t('mme.o.tab.gov') }, { value: 'topics', label: t('mme.o.tab.topics') }, { value: 'people', label: t('mme.o.tab.people') }] : []))
 
 // A slug that is not an outlet has the name of the section, as the static page.
@@ -161,19 +165,17 @@ const barTip = (i: number) => t('story.daily.tip', { date: fmtDate(bars.value!.d
     <div class="orbit-col orbit-right">
       <div class="orbit-subs">
         <div v-for="(ids, c) in columns" :key="c" class="orbit-sub">
-          <PlegmaCard v-for="(id, r) in ids" :key="id" :at="0" :order="r + 1" :class="`card-${id}`">
-            <template v-if="id === 'ring'">
-              <OutletStanceByTopic v-if="live && tab === 'topics'" :P="live.P" :k="live.k" :limit="OUTLET_STANCE_LIMIT" />
-              <OutletPortrayal v-else-if="live && tab === 'people'" :P="live.P" :k="live.k" />
-              <StanceCard
-                v-else class="c-12"
-                :rows="[{ label: t('entity.stance.outlet'), color: groupColor(model.group), counts: model.writes.stanceMine }, { label: t('entity.stance.all'), color: NO_GROUP, counts: model.writes.stanceAll }]"
-                :foot="model.writes.stanceN >= 30 ? t('outlet2.how.stance.n', { n: fmtInt(model.writes.stanceN) }) : null"
-              />
-            </template>
+          <PlegmaCard v-for="(id, r) in ids" :key="`${tab}-${id}`" :at="0" :order="r + 1" :class="`card-${id}`">
+            <StanceCard
+              v-if="id === 'stance'" class="c-12"
+              :rows="[{ label: t('entity.stance.outlet'), color: groupColor(model.group), counts: model.writes.stanceMine }, { label: t('entity.stance.all'), color: NO_GROUP, counts: model.writes.stanceAll }]"
+              :foot="model.writes.stanceN >= 30 ? t('outlet2.how.stance.n', { n: fmtInt(model.writes.stanceN) }) : null"
+            />
+            <OutletStanceByTopic v-else-if="id === 'stanceTopic'" :P="live!.P" :k="live!.k" :limit="OUTLET_STANCE_LIMIT" />
+            <OutletPortrayal v-else-if="id === 'portrayal'" :P="live!.P" :k="live!.k" />
             <OutletEmphasis v-else-if="id === 'emphasis'" :P="live?.P ?? null" :k="mk" :topics="model.topics" :topic-n="model.mineTotal" />
             <OutletCoverage v-else-if="id === 'coverage'" :P="live!.P" :k="live!.k" />
-            <OutletVoices v-else-if="id === 'voices'" :P="live!.P" :k="live!.k" />
+            <OutletVoices v-else-if="id === 'voices'" :P="live!.P" :k="live!.k" :title="t('mme.o.people.title')" />
           </PlegmaCard>
         </div>
       </div>
