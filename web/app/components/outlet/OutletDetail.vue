@@ -46,17 +46,15 @@ const model = computed(() => {
   const outlet = m.outlets[k]!
   const kd = dd.outlets.findIndex(o => o.slug === props.slug)
   const last = m.dates.length - 1
-  // Collected articles per day. The first day with articles is the start of the collection.
+  // Collected articles per day.
   const collected = h.outlets.find(o => o.name === outlet.name)!.daily
-  const start = collected.findIndex(v => v > 0)
-  const end = collected.length - 1 - [...collected].reverse().findIndex(v => v > 0)
   const stories = outletStories(l, dd, kd, last)
   const group = outlet.group
   const record = group ? g.groups.find(x => x.name === group) ?? null : null
   const writes = outletWrites(g, m, k, props.slug)
   const topics = stories.topicShares.map(r => ({ ...r, label: topicName(r.issue) }))
   return {
-    m, l, dd, g, k, kd, last, outlet, group, record, collected, start, end, collectedTotal: sum(collected), writes, topics,
+    m, l, dd, g, k, kd, last, outlet, group, record, collected, collectedTotal: sum(collected), writes, topics,
     ...stories
   }
 })
@@ -69,25 +67,6 @@ const live = computed(() => (P.value ? { set: mset.value!, P: P.value, k: mk.val
 const liveHeadlines = computed(() => (live.value ? headlinesOf(live.value.set, mk.value) : []))
 const sampleHeadlines = computed(() => (sample.data.value?.slug === props.slug ? sample.data.value.headlines : []))
 
-
-const facts = computed(() => {
-  const mdl = model.value
-  if (!mdl) return []
-  const file = mdl.writes.file
-  if (P.value) {
-    const f = outletFacts(P.value, mk.value)
-    const rank = (r: { rank: number, n: number } | null) => (r ? t('mme.o.rank', { rank: r.rank, n: r.n }) : '')
-    return [
-      { label: t('mme.o.news'), value: fmtPct0(f.news.share), sub: rank(f.news.rank) },
-      { label: t('mme.o.clickbait'), value: f.clickbait.known ? fmtPct0(f.clickbait.share!) : '—', sub: f.clickbait.known ? (f.clickbait.rank ? rank(f.clickbait.rank) : t('mme.n', { n: fmtInt(f.clickbait.known) })) : t('mme.o.none') }
-    ]
-  }
-  // An outlet that is not in ΜΜΕ & πρόσωπα gets the numbers of the groups file, with no rank.
-  return [
-    file && file.analysed ? { label: t('outlet2.how.news'), value: fmtPct(file.news / file.analysed), sub: '' } : null,
-    file && file.cbKnown ? { label: t('outlet2.how.clickbait'), value: fmtPct(file.cbYes / file.cbKnown), sub: '' } : null
-  ].filter((x): x is NonNullable<typeof x> => !!x)
-})
 
 // The cards of the profile in the two columns of the right. The cards of the profile are for the outlets of ΜΜΕ & πρόσωπα only.
 type CardId = 'emphasis' | 'coverage' | 'stance' | 'stanceTopic' | 'portrayal' | 'voices'
@@ -121,20 +100,16 @@ const orbit = ref<HTMLElement>()
 const map = ref<HTMLElement>()
 usePlegmaRegion(orbit, map, { side: 440, top: -32, bottom: 28, lean: 0.62, clear: true, ringPerSide: 0.45 })
 
-// The stories of the outlet over time: a line for each story the web shows, in the color of its theme, on a linear axis (the outlet's own line was far above them and flattened them).
+// The outlet over time: its articles each day, as bars.
 const { height: windowHeight } = useWindowSize()
 const tall = computed(() => Math.round(Math.min(300, Math.max(110, windowHeight.value * 0.2))))
-const timeLines = computed(() => {
+const bars = computed(() => {
   const m = model.value
-  const stories = webStories.value
-  if (!m || !stories) return null
+  if (!m) return null
   const to = m.last + 1
-  const rows = m.mine.filter(r => r.story).slice(0, PLEGMA_THEME_STORIES).map((r, i) => ({ key: `s${r.story!.id}`, name: stories[i]!.name, color: stories[i]!.slot ? `var(--cat-${stories[i]!.slot})` : NO_GROUP, values: r.days.slice(0, to) }))
-  return { dates: m.m.dates.slice(0, to), series: rows }
+  return { dates: m.m.dates.slice(0, to), series: [{ name: m.outlet.name, color: m.group ? groupColor(m.group) : 'var(--ink)', values: m.collected.slice(0, to) as (number | null)[] }] }
 })
-const lineHref = (key: string) => storyHref(Number(key.slice(1)))
-// The list is the latest stories and the chart the largest: a row lights its line only when the story has one.
-const lit = computed(() => (plegma.hoverStory !== null && webStories.value?.some(s => s.id === plegma.hoverStory) ? `s${plegma.hoverStory}` : null))
+const barTip = (i: number) => t('story.daily.tip', { date: fmtDate(bars.value!.dates[i]!), n: fmtInt(bars.value!.series[0]!.values[i] ?? 0) })
 </script>
 
 <template>
@@ -151,11 +126,10 @@ const lit = computed(() => (plegma.hoverStory !== null && webStories.value?.some
   <div v-else ref="orbit" class="plegma-orbit is-outlet" :class="{ 'is-in': plegma.landed }">
     <div class="plegma-title entity-grid">
       <EntityTitle :kind="t('hero.kind.outlet')" :title="model.outlet.name">
-        <template #meta>{{ `${fmtDay(model.m.dates[model.start]!)} → ${fmtDate(model.m.dates[model.end]!)} · ${t('entity.fact.days', { n: model.end - model.start + 1 })}` }}</template>
-        <EntityFact :label="t('entity.fact.group')" :value="model.group ?? t('story.nogroup')" :sub="model.outlet.owner ? `${t('entity.fact.owner')}: ${model.outlet.owner}` : ''" />
+        <template #meta><EntityLink v-if="model.group && model.record?.slug" type="group" :to="groupPageHref(model.record.slug)">{{ model.group }}</EntityLink><template v-else>{{ model.group ?? t('story.nogroup') }}</template></template>
         <EntityFact :label="t('entity.fact.articles')" :value="fmtInt(model.collectedTotal)" />
         <EntityFact :label="t('entity.fact.stories')" :value="fmtInt(model.mine.length)" />
-        <EntityFact v-for="f in facts" :key="f.label" :label="f.label" :value="f.value" :sub="f.sub" />
+        <EntityFact v-if="model.outlet.owner" :label="t('entity.fact.owner')" :value="model.outlet.owner" />
       </EntityTitle>
     </div>
 
@@ -169,8 +143,6 @@ const lit = computed(() => (plegma.hoverStory !== null && webStories.value?.some
             <li v-for="r in model.latest" :key="r.story!.id" @pointerenter="plegma.setHoverStory(r.story!.id)" @pointerleave="plegma.setHoverStory(null)" @focusin="plegma.setHoverStory(r.story!.id)" @focusout="plegma.setHoverStory(null)">
               <span class="related-main"><span class="story-line" :title="`${storyName(r.story!)} / ${topicName(model.l.issues[r.story!.issue]!)}`"><EntityLink type="story" :to="storyHref(r.story!.id)">{{ storyName(r.story!) }}</EntityLink><span class="muted-text">{{ ` / ${topicName(model.l.issues[r.story!.issue]!)}` }}</span></span></span>
               <span class="row-value">{{ fmtDay(model.m.dates[r.first]!) }}</span>
-              <span class="row-value">{{ t('outlet2.stories.reach', { n: fmtInt(r.reach) }) }}</span>
-              <span class="row-value">{{ fmtInt(r.n) }}</span>
             </li>
           </ul>
           <p v-else class="dcard-empty">{{ t('outlet2.stories.empty') }}</p>
@@ -204,7 +176,7 @@ const lit = computed(() => (plegma.hoverStory !== null && webStories.value?.some
     <div class="orbit-col orbit-under">
       <PlegmaCard :at="4" :order="2" class="card-days">
         <DashCard :title="t('outlet2.time.title')" :info="t('outlet2.time.info')">
-          <LinesChart v-if="timeLines" :lit="lit" :dates="timeLines.dates" :series="timeLines.series" plain sparse :opacity="0.9" :tall="tall" :caption="t('outlet2.time.title')" :href-of="s => lineHref(s.key)" />
+          <DayBars v-if="bars" :dates="bars.dates" :series="bars.series" :height="tall" :caption="t('outlet2.time.title')" :tip-of="barTip" :selectable="false" />
         </DashCard>
       </PlegmaCard>
       <PlegmaCard :at="4" :order="3" class="card-latest">
