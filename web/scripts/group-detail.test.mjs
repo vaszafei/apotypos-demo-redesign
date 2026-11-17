@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { runInNewContext } from 'node:vm'
 import { storyProfiles } from '../app/utils/profiles.ts'
-import { groupDaily, groupWindow, storiesOfGroup, groupTopics, groupWrites } from '../app/utils/group-detail.ts'
+import { groupDaily, groupWindow, storiesOfGroup, groupTopics, groupWrites, groupOutletsOfStory } from '../app/utils/group-detail.ts'
 
 const read = name => JSON.parse(readFileSync(new URL(`../public/data/${name}.json`, import.meta.url), 'utf8'))
 const media = read('media')
@@ -71,4 +71,13 @@ test('how a group writes: the stance counts are the sum of its outlets, and the 
   assert.equal(w.stanceN, g.outlets.reduce((a, o) => a + o.stance[0] + o.stance[1] + o.stance[2], 0))
   assert.ok(w.stanceAll.every((v, i) => v >= w.stanceMine[i]))
   assert.ok(w.news.value >= 0 && w.news.value <= 1)
+})
+
+test('the outlets of a group that wrote a story add up to the articles of the group in it, the largest first', () => {
+  const g = groups.groups[0]
+  const { mine } = storiesOfGroup(list, dd, g, media.dates.length - 1)
+  const top = mine.find(r => r.story)
+  const outlets = groupOutletsOfStory(dd, g, top.story.id)
+  assert.equal(outlets.reduce((a, o) => a + o.n, 0), top.n)
+  assert.deepEqual(outlets.map(o => o.n), [...outlets.map(o => o.n)].sort((a, b) => b - a))
 })

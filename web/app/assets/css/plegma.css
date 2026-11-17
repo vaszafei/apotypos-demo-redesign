@@ -53,7 +53,7 @@
   .plegma-orbit.is-story.has-strip .orbit-under > .card-people { grid-area: people; max-height: 200px; }
   .plegma-orbit.is-story.has-strip .card-people .data-table :is(th, td) { padding-block: 2px; }
 }
-/* The outlet view (components/outlet/OutletDetail.vue) has the layout of the story and the theme: its stories on the left, the web, two columns of cards, and under them its stories over time with
+/* The outlet view (components/outlet/OutletDetail.vue) and the group view (components/group/GroupDetail.vue, which is also is-outlet) have the layout of the story and the theme: its stories on the left, the web, two columns of cards, and under them its stories over time with
    its latest articles beside it (the column of the right edge; under 1280px the two share the row). */
 .plegma-orbit.is-outlet .orbit-sub { overflow-y: auto; pointer-events: auto; scrollbar-width: thin; }
 .plegma-orbit.is-outlet .orbit-sub > .plegma-card { flex: none; max-height: 46%; }

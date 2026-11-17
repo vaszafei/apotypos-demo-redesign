@@ -94,3 +94,15 @@ export const groupWrites = (g: GroupsData, group: GroupRecord) => {
     stanceMine, stanceAll, stanceN: sum(stanceMine)
   }
 }
+
+// The outlets of the group that wrote a story, the one with the most articles first (the small circles around the story on the web of the group).
+export const groupOutletsOfStory = (dd: StoryDetailData, group: GroupRecord, id: number) => {
+  const members = new Set(group.outlets.map(o => o.slug))
+  const count = new Map<string, number>()
+  const t = dd.stories.find(s => s.id === id)?.t ?? []
+  for (let i = 0; i + 2 < t.length; i += 3) {
+    const outlet = dd.outlets[t[i]!]!
+    if (members.has(outlet.slug)) count.set(outlet.name, (count.get(outlet.name) ?? 0) + t[i + 2]!)
+  }
+  return [...count].map(([name, n]) => ({ name, n })).sort((a, b) => b.n - a.n)
+}
