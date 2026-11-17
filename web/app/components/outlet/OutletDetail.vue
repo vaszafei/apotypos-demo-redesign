@@ -71,18 +71,19 @@ const sampleHeadlines = computed(() => (sample.data.value?.slug === props.slug ?
 
 
 // The cards of the tab in up to two columns, the latest list in the last column and the chart under them (null: none). The cards of the profile are for the outlets of ΜΜΕ & πρόσωπα only (live).
-// Επισκόπηση: the stance towards the government, the chart of the topics and the stories over time, the latest articles. Θέματα: what it stresses and the stance by topic, the latest topics.
-// Ιστορίες: the big stories it did not run and the ones it pushes, its latest stories. Πρόσωπα: the people it mentions and how it portrays them, the mentions over time.
+// The card under the web is the outlet over time and turns with the tab: the articles per day as bars (Επισκόπηση), the lines of its topics (Θέματα), the lines of its stories (Ιστορίες), the
+// mentions of each person (Πρόσωπα). Επισκόπηση: the stance towards the government, the latest articles. Θέματα: what it stresses and the stance by topic, the latest topics.
+// Ιστορίες: the big stories it did not run and the ones it pushes, its latest stories. Πρόσωπα: the people it mentions and how it portrays them.
 // An outlet without the profile has no Πρόσωπα, and in Θέματα and Ιστορίες only what the stories file can give.
 type CardId = 'stance' | 'stanceTopic' | 'portrayal' | 'emphasis' | 'skip' | 'push' | 'voices'
 type TabId = 'overview' | 'topics' | 'stories' | 'people'
 type LatestId = 'articles' | 'topics' | 'stories'
-interface TabSpec { columns: CardId[][], latest: LatestId | null, under: 'lines' | 'mentions' | null }
+interface TabSpec { columns: CardId[][], latest: LatestId | null, under: 'bars' | 'topics' | 'stories' | 'mentions' }
 const SPECS: Record<TabId, { live: TabSpec, plain: TabSpec }> = {
-  overview: { live: { columns: [['stance']], latest: 'articles', under: 'lines' }, plain: { columns: [['stance']], latest: 'articles', under: 'lines' } },
-  topics: { live: { columns: [['emphasis'], ['stanceTopic']], latest: 'topics', under: null }, plain: { columns: [['emphasis']], latest: 'topics', under: null } },
-  stories: { live: { columns: [['skip'], ['push']], latest: 'stories', under: null }, plain: { columns: [], latest: 'stories', under: null } },
-  people: { live: { columns: [['voices'], ['portrayal']], latest: null, under: 'mentions' }, plain: { columns: [], latest: null, under: null } }
+  overview: { live: { columns: [['stance']], latest: 'articles', under: 'bars' }, plain: { columns: [['stance']], latest: 'articles', under: 'bars' } },
+  topics: { live: { columns: [['emphasis'], ['stanceTopic']], latest: 'topics', under: 'topics' }, plain: { columns: [['emphasis']], latest: 'topics', under: 'topics' } },
+  stories: { live: { columns: [['skip'], ['push']], latest: 'stories', under: 'stories' }, plain: { columns: [], latest: 'stories', under: 'stories' } },
+  people: { live: { columns: [['voices'], ['portrayal']], latest: null, under: 'mentions' }, plain: { columns: [], latest: null, under: 'bars' } }
 }
 const tab = ref<TabId>('overview')
 const spec = computed(() => SPECS[tab.value][live.value ? 'live' : 'plain'])
@@ -114,9 +115,16 @@ const orbit = ref<HTMLElement>()
 const map = ref<HTMLElement>()
 usePlegmaRegion(orbit, map, { side: 440, top: -32, bottom: 28, lean: 0, vlean: 0, clear: true, atLeft: true, ringPerSide: 0.45 })
 
-// The outlet over time: its articles of the largest topics or stories each day (OutletTimeLines), and the quotes of each person each day (Πρόσωπα).
+// The outlet over time: its articles each day as bars, its largest topics or stories as lines (OutletTimeLines), and the quotes of each person each day (Πρόσωπα).
 const { height: windowHeight } = useWindowSize()
 const tall = computed(() => Math.round(Math.min(300, Math.max(110, windowHeight.value * 0.2))))
+const bars = computed(() => {
+  const m = model.value
+  if (!m) return null
+  const to = m.last + 1
+  return { dates: m.m.dates.slice(0, to), series: [{ name: m.outlet.name, color: m.group ? groupColor(m.group) : 'var(--ink)', values: m.collected.slice(0, to) as (number | null)[] }] }
+})
+const barTip = (i: number) => t('story.daily.tip', { date: fmtDate(bars.value!.dates[i]!), n: fmtInt(bars.value!.series[0]!.values[i] ?? 0) })
 const lastDates = computed(() => (model.value ? model.value.m.dates.slice(0, model.value.last + 1) : []))
 const latestTopicRows = computed(() => (model.value ? latestTopics(model.value.topicDays, model.value.l.issues, model.value.last) : []))
 const mentions = computed<Series[]>(() => (live.value ? mentionsOf(live.value.set, live.value.k).slice(0, OUTLET_LINES).map((r, i) => ({
@@ -135,7 +143,7 @@ const mentions = computed<Series[]>(() => (live.value ? mentionsOf(live.value.se
     <section class="dcard c-12"><div class="empty-state" data-state="empty"><AppIcon name="inbox" /><p style="margin: 0">{{ t('topics2.empty') }}</p></div></section>
   </div>
   <ErrorPage v-else-if="!model" :status="404" />
-  <div v-else ref="orbit" class="plegma-orbit is-outlet" :class="[`cols-${spec.columns.length}`, spec.latest ? 'has-latest' : 'no-latest', { 'has-under': spec.under, 'is-in': plegma.landed }]">
+  <div v-else ref="orbit" class="plegma-orbit is-outlet" :class="[`cols-${spec.columns.length}`, spec.latest ? 'has-latest' : 'no-latest', { 'is-in': plegma.landed }]">
     <div class="plegma-title entity-grid">
       <EntityTitle :kind="t('hero.kind.outlet')" :title="model.outlet.name">
         <template #meta>{{ t('entity.fact.group') }}: <EntityLink v-if="model.group && model.record?.slug" type="group" :to="groupPageHref(model.record.slug)">{{ model.group }}</EntityLink><template v-else>{{ model.group ?? t('story.nogroup') }}</template></template>
@@ -200,9 +208,12 @@ const mentions = computed<Series[]>(() => (live.value ? mentionsOf(live.value.se
       </PlegmaCard>
     </div>
 
-    <div v-if="spec.under" class="orbit-col orbit-under">
+    <div class="orbit-col orbit-under">
       <PlegmaCard :key="`${tab}-under`" :at="4" :order="2" class="card-days">
-        <OutletTimeLines v-if="spec.under === 'lines'" :dates="lastDates" :topic-days="model.topicDays" :mine="model.mine" :issues="model.l.issues" />
+        <DashCard v-if="spec.under === 'bars'" :title="t('outlet2.time.title')" :info="t('outlet2.time.info')">
+          <DayBars v-if="bars" :dates="bars.dates" :series="bars.series" :height="tall" :caption="t('outlet2.time.title')" :tip-of="barTip" :selectable="false" />
+        </DashCard>
+        <OutletTimeLines v-else-if="spec.under === 'topics' || spec.under === 'stories'" :dates="lastDates" :topic-days="model.topicDays" :mine="model.mine" :issues="model.l.issues" :mode="spec.under" />
         <DashCard v-else :title="t('outlet2.mentions.title')" :info="t('outlet2.mentions.info')">
           <LinesChart v-if="mentions.length" :dates="live!.set.dates" :series="mentions" :tall="tall" :caption="t('outlet2.mentions.title')" :href-of="s => personHref(s.key)" />
           <p v-else class="dcard-empty">{{ t('media2.empty.list') }}</p>

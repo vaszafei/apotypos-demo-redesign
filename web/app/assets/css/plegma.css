@@ -60,9 +60,8 @@
 .plegma-orbit:is(.is-story, .is-theme, .is-outlet) .orbit-under { grid-area: under; }
 .plegma-orbit:is(.is-story, .is-theme, .is-outlet) .orbit-under > .card-days { flex: none; }
 /* The outlet view (components/outlet/OutletDetail.vue): the web first under the title, then the cards of the tab in up to two columns, and the latest list of the tab in the last column (not on Πρόσωπα).
-   The chart of the tab (Επισκόπηση, Πρόσωπα) is a row under the web and the cards. The modifiers cols-0/1/2 (cards of the tab), has-latest and has-under set the cells; the items are placed by line. */
-.plegma-orbit.is-outlet { grid-template-areas: none; grid-template-columns: minmax(0, 5.2fr) minmax(0, 4.8fr); grid-template-rows: auto minmax(0, 1fr); }
-.plegma-orbit.is-outlet.has-under { grid-template-rows: auto minmax(0, 1fr) auto; }
+   The outlet over time (bars, lines of the topics or of the stories, the mentions: it turns with the tab) is a row under the web and the cards. The modifiers cols-0/1/2 (cards of the tab) and has-latest set the cells; the items are placed by line. */
+.plegma-orbit.is-outlet { grid-template-areas: none; grid-template-columns: minmax(0, 5.2fr) minmax(0, 4.8fr); grid-template-rows: auto minmax(0, 1fr) auto; }
 .plegma-orbit.is-outlet .plegma-title { grid-area: auto; grid-row: 1; grid-column: 1 / -1; }
 .plegma-orbit.is-outlet .orbit-map { grid-area: auto; grid-row: 2; grid-column: 1; }
 .plegma-orbit.is-outlet .orbit-right { grid-area: auto; grid-row: 2; grid-column: 2; }
