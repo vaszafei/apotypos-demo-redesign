@@ -112,7 +112,7 @@ onBeforeUnmount(() => { plegma.setThemeStories(null); plegma.setOutletSlot(0); p
 // The map region is the free cell between the stories and the cards, under the title, as on the story and theme pages (composables/usePlegmaRegion.ts): the biggest circle that touches no card.
 const orbit = ref<HTMLElement>()
 const map = ref<HTMLElement>()
-usePlegmaRegion(orbit, map, { side: 440, top: -32, bottom: 28, lean: 0.62, clear: true, ringPerSide: 0.45 })
+usePlegmaRegion(orbit, map, { side: 440, top: -32, bottom: 28, lean: 0, vlean: 0, clear: true, atLeft: true, ringPerSide: 0.45 })
 
 // The outlet over time: its articles of the largest topics or stories each day (OutletTimeLines), and the quotes of each person each day (Πρόσωπα).
 const { height: windowHeight } = useWindowSize()
