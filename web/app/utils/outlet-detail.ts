@@ -217,13 +217,25 @@ export const headlinesOf = (set: MmeSet, k: number) => (set.headlines[k] ?? []).
 
 export const LATEST_TOPICS_DAYS = 7
 export const OUTLET_LINES = 8
-// The topics the outlet wrote in its last 7 days (topicDays: the articles of the outlet in stories, per day; the days end at its last day with articles, because the period can run on past it),
-// the latest first, the bigger first within a day.
-export const latestTopics = (topicDays: Map<number, number[]>, issues: StoriesData['issues'], last: number) => {
-  const rows = [...topicDays].filter(([issue]) => !issues[issue]!.catchAll).map(([issue, days]) => ({ issue, days, last: days.slice(0, last + 1).reduce((at, n, d) => (n > 0 ? d : at), -1) })).filter(r => r.last >= 0)
+// The topics the outlet wrote in its last 7 days of the period i0 to i1 (topicDays: the articles of the outlet in stories, per day; the days end at its last day with articles, because the period
+// can run on past it), the latest first, the bigger first within a day.
+export const latestTopics = (topicDays: Map<number, number[]>, issues: StoriesData['issues'], i0: number, i1: number) => {
+  const rows = [...topicDays].filter(([issue]) => !issues[issue]!.catchAll).map(([issue, days]) => ({ issue, days, last: days.slice(0, i1 + 1).reduce((at, n, d) => (n > 0 && d >= i0 ? d : at), -1) })).filter(r => r.last >= 0)
   const end = Math.max(-1, ...rows.map(r => r.last))
-  const from = Math.max(0, end - LATEST_TOPICS_DAYS + 1)
+  const from = Math.max(i0, end - LATEST_TOPICS_DAYS + 1)
   return rows.map(r => ({ issue: r.issue, n: sum(r.days.slice(from, end + 1)), last: r.last })).filter(r => r.n > 0).sort((a, b) => b.last - a.last || b.n - a.n)
+}
+
+// The stories the outlet started to cover in the period i0 to i1, the latest first (the bigger story first on a day).
+export const latestStoriesOf = (mine: OutletStory[], i0: number, i1: number) =>
+  mine.filter(r => r.story && r.first >= i0 && r.first <= i1).sort((a, b) => b.first - a.first || b.reach - a.reach || b.n - a.n).slice(0, OUTLET_STORIES)
+
+// The first and the last index where any of the lines has a value: a chart starts where the data starts and stops where it stops. null when there is none.
+export const dataSpan = (lines: { values: (number | null)[] }[]): [number, number] | null => {
+  let a = -1
+  let b = -1
+  lines.forEach(l => l.values.forEach((v, i) => { if ((v ?? 0) > 0) { if (a < 0 || i < a) a = i; if (i > b) b = i } }))
+  return a < 0 ? null : [a, b]
 }
 
 // The quotes of each person in the articles of the outlet, per day of the set; the people it never quotes are left out, the most quoted first.

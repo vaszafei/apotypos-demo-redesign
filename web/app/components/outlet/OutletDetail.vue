@@ -94,16 +94,38 @@ const named = computed(() => (model.value ? model.value.outlet.name : !loading.v
 provideDetailTitle(() => named.value)
 useHead({ title: () => (named.value ? `${named.value} · ${t('site.name')}` : undefined) })
 
-// The web: the largest stories of the outlet, each with the days the outlet wrote it (the stage reads them from the store).
+// The period of the page: the days with articles of the outlet (the picker has no other days, and «all», the default, is from its first to its last), or the period that was picked. Everything that is
+// told by day (the facts of the title, the web, the latest lists and the charts) follows it; the cards of the profile are for the whole window of ΜΜΕ & πρόσωπα.
+const spanDays = computed(() => {
+  const c = model.value?.collected ?? []
+  return { a: Math.max(0, c.findIndex(v => v > 0)), b: Math.max(0, c.reduce((at, v, i) => (v > 0 ? i : at), -1)) }
+})
+const allDates = computed(() => (model.value ? model.value.m.dates.slice(spanDays.value.a, spanDays.value.b + 1) : []))
+const picked = ref<{ from: string, to: string } | null>(null)
+watch(() => props.slug, () => { picked.value = null })
+const view = computed(() => {
+  const d = allDates.value
+  const p = picked.value
+  const ok = p && d.includes(p.from) && d.includes(p.to)
+  return { from: ok ? p.from : d[0] ?? '', to: ok ? p.to : d[d.length - 1] ?? '' }
+})
+const i0 = computed(() => Math.max(0, model.value?.m.dates.indexOf(view.value.from) ?? 0))
+const i1 = computed(() => Math.max(i0.value, model.value?.m.dates.indexOf(view.value.to) ?? 0))
+const inPeriod = (days: number[]) => sum(days.slice(i0.value, i1.value + 1))
+const facts = computed(() => (model.value ? { articles: inPeriod(model.value.collected), stories: model.value.mine.filter(r => inPeriod(r.days) > 0).length } : { articles: 0, stories: 0 }))
+const startedHere = computed(() => (model.value ? model.value.mine.filter(r => r.story && r.first >= i0.value && r.first <= i1.value) : []))
+const latestStories = computed(() => (model.value ? latestStoriesOf(model.value.mine, i0.value, i1.value) : []))
+
+// The web: the largest stories of the outlet in the period, each with the days the outlet wrote it (the stage reads them from the store).
 const slots = computed(() => (home.data.value ? themeSlots(home.data.value) : new Map<number, number>()))
 const webStories = computed(() => {
   const m = model.value
   if (!m) return null
-  return m.mine.filter(r => r.story).slice(0, PLEGMA_THEME_STORIES).map((r) => {
+  return m.mine.filter(r => r.story).map(r => ({ r, n: inPeriod(r.days) })).filter(x => x.n > 0).sort((a, b) => b.n - a.n).slice(0, PLEGMA_THEME_STORIES).map(({ r, n }) => {
     const story = r.story!
     const slot = slots.value.get(story.issue) ?? 0
-    const days = r.days.map((n, d) => ({ d, n })).filter(x => x.n > 0).sort((a, b) => b.n - a.n).slice(0, PLEGMA_THEME_OUTLETS)
-    return { id: story.id, name: storyName(story), n: r.n, media: r.reach, slot, theme: topicName(m.l.issues[story.issue]!), outlets: days.map(x => ({ name: fmtDay(m.m.dates[x.d]!), group: null, slot, n: x.n })) }
+    const days = r.days.map((v, d) => ({ d, n: d >= i0.value && d <= i1.value ? v : 0 })).filter(x => x.n > 0).sort((a, b) => b.n - a.n).slice(0, PLEGMA_THEME_OUTLETS)
+    return { id: story.id, name: storyName(story), n, media: r.reach, slot, theme: topicName(m.l.issues[story.issue]!), outlets: days.map(x => ({ name: fmtDay(m.m.dates[x.d]!), group: null, slot, n: x.n })) }
   })
 })
 watch(webStories, list => plegma.setThemeStories(list?.length ? list : null), { immediate: true })
@@ -121,15 +143,26 @@ const tall = computed(() => Math.round(Math.min(300, Math.max(110, windowHeight.
 const bars = computed(() => {
   const m = model.value
   if (!m) return null
-  const to = m.last + 1
-  return { dates: m.m.dates.slice(0, to), series: [{ name: m.outlet.name, color: m.group ? groupColor(m.group) : 'var(--ink)', values: m.collected.slice(0, to) as (number | null)[] }] }
+  return { dates: m.m.dates.slice(i0.value, i1.value + 1), series: [{ name: m.outlet.name, color: m.group ? groupColor(m.group) : 'var(--ink)', values: m.collected.slice(i0.value, i1.value + 1) as (number | null)[] }] }
 })
 const barTip = (i: number) => t('story.daily.tip', { date: fmtDate(bars.value!.dates[i]!), n: fmtInt(bars.value!.series[0]!.values[i] ?? 0) })
-const lastDates = computed(() => (model.value ? model.value.m.dates.slice(0, model.value.last + 1) : []))
-const latestTopicRows = computed(() => (model.value ? latestTopics(model.value.topicDays, model.value.l.issues, model.value.last) : []))
-const mentions = computed<Series[]>(() => (live.value ? mentionsOf(live.value.set, live.value.k).slice(0, OUTLET_LINES).map((r, i) => ({
-  key: PERSON_KEYS[r.p.name] ?? String(r.j), name: r.p.name, color: `var(--cat-${i + 1})`, values: r.values
-})) : []))
+const latestTopicRows = computed(() => (model.value ? latestTopics(model.value.topicDays, model.value.l.issues, i0.value, i1.value) : []))
+// The quotes of each person in the period (the set of ΜΜΕ & πρόσωπα has its own days), from the first day with a quote to the last.
+const mentions = computed(() => {
+  const l = live.value
+  if (!l) return { dates: [] as string[], series: [] as Series[] }
+  const lo = l.set.dates.findIndex(d => d >= view.value.from)
+  const hi = l.set.dates.reduce((at, d, i) => (d <= view.value.to ? i : at), -1)
+  if (lo < 0 || hi < lo) return { dates: [] as string[], series: [] as Series[] }
+  const rows = mentionsOf(l.set, l.k).map(r => ({ ...r, values: r.values.slice(lo, hi + 1) })).filter(r => sum(r.values) > 0).sort((a, b) => sum(b.values) - sum(a.values)).slice(0, OUTLET_LINES)
+  const span = dataSpan(rows)
+  if (!span) return { dates: [] as string[], series: [] as Series[] }
+  return {
+    dates: l.set.dates.slice(lo, hi + 1).slice(span[0], span[1] + 1),
+    series: rows.map((r, i) => ({ key: PERSON_KEYS[r.p.name] ?? String(r.j), name: r.p.name, color: `var(--cat-${i + 1})`, values: r.values.slice(span[0], span[1] + 1) })) as Series[]
+  }
+})
+const headlinesShown = computed(() => liveHeadlines.value.filter(x => String(x[0]) >= view.value.from && String(x[0]) <= view.value.to))
 </script>
 
 <template>
@@ -147,11 +180,12 @@ const mentions = computed<Series[]>(() => (live.value ? mentionsOf(live.value.se
     <div class="plegma-title entity-grid">
       <EntityTitle :kind="t('hero.kind.outlet')" :title="model.outlet.name">
         <template #meta>{{ t('entity.fact.group') }}: <EntityLink v-if="model.group && model.record?.slug" type="group" :to="groupPageHref(model.record.slug)">{{ model.group }}</EntityLink><template v-else>{{ model.group ?? t('story.nogroup') }}</template></template>
-        <EntityFact :label="t('entity.fact.articles')" :value="fmtInt(model.collectedTotal)" />
-        <EntityFact :label="t('entity.fact.stories')" :value="fmtInt(model.mine.length)" />
+        <EntityFact :label="t('entity.fact.articles')" :value="fmtInt(facts.articles)" />
+        <EntityFact :label="t('entity.fact.stories')" :value="fmtInt(facts.stories)" />
       </EntityTitle>
       <SegmentedControl v-model="tab" class="orbit-ring-tabs" :label="t('mme.o.tab.label')" :options="tabs" />
     </div>
+    <div v-if="allDates.length" class="outlet-period"><DateRange :dates="allDates" :from="view.from" :to="view.to" @change="r => (picked = r)" /></div>
 
     <div ref="map" class="orbit-map">
       <p class="plegma-nodes-note">{{ t('outlet.map.note') }}</p>
@@ -177,10 +211,10 @@ const mentions = computed<Series[]>(() => (live.value ? mentionsOf(live.value.se
 
       <PlegmaCard v-if="spec.latest" :key="`${tab}-latest`" :at="3" :order="2" class="card-latest">
         <OutletTopicsLatest v-if="spec.latest === 'topics'" :rows="latestTopicRows" :issues="model.l.issues" :dates="model.m.dates" />
-        <DashCard v-else-if="spec.latest === 'stories'" :title="t('outlet2.stories.title')" :info="`${t('outlet2.stories.first', { n: fmtInt(model.firsts), total: fmtInt(model.mine.length) })}. ${t('outlet2.stories.info')}`">
-          <div v-if="model.latest.length" class="latest-scroll">
+        <DashCard v-else-if="spec.latest === 'stories'" :title="t('outlet2.stories.title')" :info="`${t('outlet2.stories.first', { n: fmtInt(startedHere.filter(r => r.first === r.storyStart).length), total: fmtInt(startedHere.length) })}. ${t('outlet2.stories.info')}`">
+          <div v-if="latestStories.length" class="latest-scroll">
             <ul class="rows-related latest-stories">
-              <li v-for="r in model.latest" :key="r.story!.id" @pointerenter="plegma.setHoverStory(r.story!.id)" @pointerleave="plegma.setHoverStory(null)" @focusin="plegma.setHoverStory(r.story!.id)" @focusout="plegma.setHoverStory(null)">
+              <li v-for="r in latestStories" :key="r.story!.id" @pointerenter="plegma.setHoverStory(r.story!.id)" @pointerleave="plegma.setHoverStory(null)" @focusin="plegma.setHoverStory(r.story!.id)" @focusout="plegma.setHoverStory(null)">
                 <span class="related-main"><span class="story-line" :title="`${storyName(r.story!)} / ${topicName(model.l.issues[r.story!.issue]!)}`"><EntityLink type="story" :to="storyHref(r.story!.id)">{{ storyName(r.story!) }}</EntityLink><span class="muted-text">{{ ` / ${topicName(model.l.issues[r.story!.issue]!)}` }}</span></span></span>
                 <span class="row-value">{{ fmtDay(model.m.dates[r.first]!) }}</span>
               </li>
@@ -191,7 +225,7 @@ const mentions = computed<Series[]>(() => (live.value ? mentionsOf(live.value.se
         <DashCard v-else class="outlet-latest" :title="t('outlet2.latest.title')" :info="liveHeadlines.length ? t('mme.o.headlines.info') : t('outlet2.headlines.info')">
           <div v-if="liveHeadlines.length" class="latest-scroll">
             <ul class="plain-list">
-              <li v-for="(x, i) in liveHeadlines" :key="i" class="mme-headline">
+              <li v-for="(x, i) in headlinesShown" :key="i" class="mme-headline">
                 <a v-if="safeUrl(x[2])" :href="safeUrl(x[2])!" rel="noopener" target="_blank">{{ x[1] }}</a><span v-else>{{ x[1] }}</span>
                 <span class="muted-text">{{ [fmtDay(x[0]), x[4] >= 0 ? t(`frame.${live!.set.frames[x[4]]}`) : null, x[5] || null].filter(Boolean).join(' · ') }}</span>
                 <span v-if="x[3]" class="mme-angle">{{ x[3] }}</span>
@@ -213,9 +247,9 @@ const mentions = computed<Series[]>(() => (live.value ? mentionsOf(live.value.se
         <DashCard v-if="spec.under === 'bars'" :title="t('outlet2.time.title')" :info="t('outlet2.time.info')">
           <DayBars v-if="bars" :dates="bars.dates" :series="bars.series" :height="tall" :caption="t('outlet2.time.title')" :tip-of="barTip" :selectable="false" />
         </DashCard>
-        <OutletTimeLines v-else-if="spec.under === 'topics' || spec.under === 'stories'" :dates="lastDates" :topic-days="model.topicDays" :mine="model.mine" :issues="model.l.issues" :mode="spec.under" />
+        <OutletTimeLines v-else-if="spec.under === 'topics' || spec.under === 'stories'" :dates="model.m.dates" :i0="i0" :i1="i1" :topic-days="model.topicDays" :mine="model.mine" :issues="model.l.issues" :mode="spec.under" />
         <DashCard v-else :title="t('outlet2.mentions.title')" :info="t('outlet2.mentions.info')">
-          <LinesChart v-if="mentions.length" :dates="live!.set.dates" :series="mentions" :tall="tall" :caption="t('outlet2.mentions.title')" :href-of="s => personHref(s.key)" />
+          <LinesChart v-if="mentions.series.length" :key="`${i0}-${i1}`" :dates="mentions.dates" :series="mentions.series" :tall="tall" :caption="t('outlet2.mentions.title')" :href-of="s => personHref(s.key)" />
           <p v-else class="dcard-empty">{{ t('media2.empty.list') }}</p>
         </DashCard>
       </PlegmaCard>
