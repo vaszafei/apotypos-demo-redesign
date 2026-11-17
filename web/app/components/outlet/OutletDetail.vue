@@ -69,17 +69,17 @@ const sampleHeadlines = computed(() => (sample.data.value?.slug === props.slug ?
 
 
 // The cards of the profile in the two columns of the right. The cards of the profile are for the outlets of ΜΜΕ & πρόσωπα only.
-// The tabs beside the title turn the cards of the columns: Στάση has the three cards of the stance (towards the government, by topic, towards people), Θέματα what the outlet stresses
-// and how it covers the stories against the others, Πρόσωπα the people it mentions. An outlet without the profile has the stance card and what it stresses, and no tabs.
-type CardId = 'stance' | 'stanceTopic' | 'portrayal' | 'emphasis' | 'coverage' | 'voices'
-const COLUMNS: Record<'gov' | 'topics' | 'people', CardId[][]> = {
-  gov: [['stance', 'stanceTopic'], ['portrayal']],
-  topics: [['emphasis'], ['coverage']],
-  people: [['voices'], []]
+// The tabs beside the title turn the cards of the columns: Θέματα has what the outlet stresses and its stance (towards the government and by topic), Ιστορίες the big stories it did not run and the
+// ones it pushes, Πρόσωπα the people it mentions and its stance towards them. An outlet without the profile has the stance card and what it stresses, and no tabs.
+type CardId = 'stance' | 'stanceTopic' | 'portrayal' | 'emphasis' | 'skip' | 'push' | 'voices'
+const COLUMNS: Record<'topics' | 'stories' | 'people', CardId[][]> = {
+  topics: [['emphasis'], ['stance', 'stanceTopic']],
+  stories: [['skip'], ['push']],
+  people: [['voices'], ['portrayal']]
 }
-const tab = ref<'gov' | 'topics' | 'people'>('gov')
+const tab = ref<'topics' | 'stories' | 'people'>('topics')
 const columns = computed(() => (live.value ? COLUMNS[tab.value] : [['stance'], ['emphasis']] as CardId[][]))
-const tabs = computed(() => (live.value ? [{ value: 'gov', label: t('mme.o.tab.gov') }, { value: 'topics', label: t('mme.o.tab.topics') }, { value: 'people', label: t('mme.o.tab.people') }] : []))
+const tabs = computed(() => (live.value ? [{ value: 'topics', label: t('mme.o.tab.topics') }, { value: 'stories', label: t('mme.o.tab.stories') }, { value: 'people', label: t('mme.o.tab.people') }] : []))
 
 // A slug that is not an outlet has the name of the section, as the static page.
 const named = computed(() => (model.value ? model.value.outlet.name : !loading.value && !problem.value ? t('nav.media') : null))
@@ -133,10 +133,9 @@ const barTip = (i: number) => t('story.daily.tip', { date: fmtDate(bars.value!.d
   <div v-else ref="orbit" class="plegma-orbit is-outlet" :class="{ 'is-in': plegma.landed }">
     <div class="plegma-title entity-grid">
       <EntityTitle :kind="t('hero.kind.outlet')" :title="model.outlet.name">
-        <template #meta><EntityLink v-if="model.group && model.record?.slug" type="group" :to="groupPageHref(model.record.slug)">{{ model.group }}</EntityLink><template v-else>{{ model.group ?? t('story.nogroup') }}</template></template>
+        <template #meta>{{ t('entity.fact.group') }}: <EntityLink v-if="model.group && model.record?.slug" type="group" :to="groupPageHref(model.record.slug)">{{ model.group }}</EntityLink><template v-else>{{ model.group ?? t('story.nogroup') }}</template></template>
         <EntityFact :label="t('entity.fact.articles')" :value="fmtInt(model.collectedTotal)" />
         <EntityFact :label="t('entity.fact.stories')" :value="fmtInt(model.mine.length)" />
-        <EntityFact v-if="model.outlet.owner" :label="t('entity.fact.owner')" :value="model.outlet.owner" />
       </EntityTitle>
       <SegmentedControl v-if="tabs.length" v-model="tab" class="orbit-ring-tabs" :label="t('mme.o.tab.label')" :options="tabs" />
     </div>
@@ -174,7 +173,7 @@ const barTip = (i: number) => t('story.daily.tip', { date: fmtDate(bars.value!.d
             <OutletStanceByTopic v-else-if="id === 'stanceTopic'" :P="live!.P" :k="live!.k" :limit="OUTLET_STANCE_LIMIT" />
             <OutletPortrayal v-else-if="id === 'portrayal'" :P="live!.P" :k="live!.k" />
             <OutletEmphasis v-else-if="id === 'emphasis'" :P="live?.P ?? null" :k="mk" :topics="model.topics" :topic-n="model.mineTotal" />
-            <OutletCoverage v-else-if="id === 'coverage'" :P="live!.P" :k="live!.k" />
+            <OutletCoverage v-else-if="id === 'skip' || id === 'push'" :P="live!.P" :k="live!.k" :part="id" />
             <OutletVoices v-else-if="id === 'voices'" :P="live!.P" :k="live!.k" :title="t('mme.o.people.title')" />
           </PlegmaCard>
         </div>
