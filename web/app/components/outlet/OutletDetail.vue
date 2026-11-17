@@ -69,10 +69,13 @@ const sampleHeadlines = computed(() => (sample.data.value?.slug === props.slug ?
 
 
 // The cards of the profile in the two columns of the right. The cards of the profile are for the outlets of ΜΜΕ & πρόσωπα only.
-type CardId = 'emphasis' | 'coverage' | 'stance' | 'stanceTopic' | 'portrayal' | 'voices'
-const COLUMNS: CardId[][] = [['stance', 'emphasis', 'coverage'], ['stanceTopic', 'portrayal', 'voices']]
-const LIVE_ONLY: CardId[] = ['coverage', 'stanceTopic', 'portrayal', 'voices']
+// The three cards of the stance (towards the government, by topic, towards people) are one card slot that the tabs beside the title turn; the other cards fill the columns.
+type CardId = 'ring' | 'emphasis' | 'coverage' | 'voices'
+const COLUMNS: CardId[][] = [['ring', 'emphasis'], ['coverage', 'voices']]
+const LIVE_ONLY: CardId[] = ['coverage', 'voices']
 const columns = computed(() => COLUMNS.map(ids => ids.filter(id => live.value || !LIVE_ONLY.includes(id))))
+const tab = ref<'gov' | 'topics' | 'people'>('gov')
+const tabs = computed(() => (live.value ? [{ value: 'gov', label: t('mme.o.tab.gov') }, { value: 'topics', label: t('mme.o.tab.topics') }, { value: 'people', label: t('mme.o.tab.people') }] : []))
 
 // A slug that is not an outlet has the name of the section, as the static page.
 const named = computed(() => (model.value ? model.value.outlet.name : !loading.value && !problem.value ? t('nav.media') : null))
@@ -131,6 +134,7 @@ const barTip = (i: number) => t('story.daily.tip', { date: fmtDate(bars.value!.d
         <EntityFact :label="t('entity.fact.stories')" :value="fmtInt(model.mine.length)" />
         <EntityFact v-if="model.outlet.owner" :label="t('entity.fact.owner')" :value="model.outlet.owner" />
       </EntityTitle>
+      <SegmentedControl v-if="tabs.length" v-model="tab" class="orbit-ring-tabs" :label="t('mme.o.tab.label')" :options="tabs" />
     </div>
 
     <div class="orbit-col orbit-left">
@@ -158,15 +162,17 @@ const barTip = (i: number) => t('story.daily.tip', { date: fmtDate(bars.value!.d
       <div class="orbit-subs">
         <div v-for="(ids, c) in columns" :key="c" class="orbit-sub">
           <PlegmaCard v-for="(id, r) in ids" :key="id" :at="0" :order="r + 1" :class="`card-${id}`">
-            <OutletEmphasis v-if="id === 'emphasis'" :P="live?.P ?? null" :k="mk" :topics="model.topics" :topic-n="model.mineTotal" />
+            <template v-if="id === 'ring'">
+              <OutletStanceByTopic v-if="live && tab === 'topics'" :P="live.P" :k="live.k" :limit="OUTLET_STANCE_LIMIT" />
+              <OutletPortrayal v-else-if="live && tab === 'people'" :P="live.P" :k="live.k" />
+              <StanceCard
+                v-else class="c-12"
+                :rows="[{ label: t('entity.stance.outlet'), color: groupColor(model.group), counts: model.writes.stanceMine }, { label: t('entity.stance.all'), color: NO_GROUP, counts: model.writes.stanceAll }]"
+                :foot="model.writes.stanceN >= 30 ? t('outlet2.how.stance.n', { n: fmtInt(model.writes.stanceN) }) : null"
+              />
+            </template>
+            <OutletEmphasis v-else-if="id === 'emphasis'" :P="live?.P ?? null" :k="mk" :topics="model.topics" :topic-n="model.mineTotal" />
             <OutletCoverage v-else-if="id === 'coverage'" :P="live!.P" :k="live!.k" />
-            <StanceCard
-              v-else-if="id === 'stance'" class="c-12"
-              :rows="[{ label: t('entity.stance.outlet'), color: groupColor(model.group), counts: model.writes.stanceMine }, { label: t('entity.stance.all'), color: NO_GROUP, counts: model.writes.stanceAll }]"
-              :foot="model.writes.stanceN >= 30 ? t('outlet2.how.stance.n', { n: fmtInt(model.writes.stanceN) }) : null"
-            />
-            <OutletStanceByTopic v-else-if="id === 'stanceTopic'" :P="live!.P" :k="live!.k" :limit="OUTLET_STANCE_LIMIT" />
-            <OutletPortrayal v-else-if="id === 'portrayal'" :P="live!.P" :k="live!.k" />
             <OutletVoices v-else-if="id === 'voices'" :P="live!.P" :k="live!.k" />
           </PlegmaCard>
         </div>
