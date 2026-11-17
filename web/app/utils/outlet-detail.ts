@@ -269,16 +269,3 @@ export const outletThemes = (mine: OutletStory[], issues: StoriesData['issues'],
   by.forEach((theme) => { theme.rest = Math.max(0, count.get(theme.issue)! - theme.stories.length) })
   return [...by.values()].sort((a, b) => b.n - a.n).slice(0, o.maxThemes)
 }
-
-// The outlets that wrote the stories of the outlet in the period (the outlet itself too), the largest first: the arcs of the ring of the web of the stories. n is their articles in those stories.
-export const outletPeers = (dd: StoryDetailData, ids: Set<number>, i0: number, i1: number) => {
-  const per = new Map<number, number>()
-  for (const s of dd.stories) {
-    if (!ids.has(s.id)) continue
-    for (let i = 0; i < s.t.length; i += 3) {
-      const day = s.t[i + 1]!
-      if (day >= i0 && day <= i1) per.set(s.t[i]!, (per.get(s.t[i]!) ?? 0) + s.t[i + 2]!)
-    }
-  }
-  return [...per].map(([o, n]) => ({ outlet: dd.outlets[o]!, n })).sort((a, b) => b.n - a.n)
-}

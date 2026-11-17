@@ -73,16 +73,16 @@ const sampleHeadlines = computed(() => (sample.data.value?.slug === props.slug ?
 
 // The cards of the tab in up to two columns, the latest list in the last column and the chart under them (null: none). The cards of the profile are for the outlets of ΜΜΕ & πρόσωπα only (live).
 // The card under the web is the outlet over time and turns with the tab: the articles per day as bars (Επισκόπηση), the lines of its topics (Θέματα), the lines of its stories (Ιστορίες), the
-// mentions of each person (Πρόσωπα). Επισκόπηση: the stance towards the government, the similarity with the other outlets of its group, the latest articles. Θέματα: what it stresses and the stance by topic, the latest topics.
+// mentions of each person (Πρόσωπα). Επισκόπηση: the stance towards the government, the similarity with the other outlets of its group, the latest articles. Θέματα: the stance by topic, the latest topics.
 // Ιστορίες: the big stories it did not run and the ones it pushes, its latest stories. Πρόσωπα: the people it mentions and how it portrays them.
 // An outlet without the profile has no Πρόσωπα, and in Θέματα and Ιστορίες only what the stories file can give.
-type CardId = 'stance' | 'similar' | 'stanceTopic' | 'portrayal' | 'emphasis' | 'skip' | 'push' | 'voices'
+type CardId = 'stance' | 'similar' | 'stanceTopic' | 'portrayal' | 'skip' | 'push' | 'voices'
 type TabId = 'overview' | 'topics' | 'stories' | 'people'
 type LatestId = 'articles' | 'topics' | 'stories'
 interface TabSpec { columns: CardId[][], latest: LatestId | null, under: 'bars' | 'topics' | 'stories' | 'mentions' }
 const SPECS: Record<TabId, { live: TabSpec, plain: TabSpec }> = {
-  overview: { live: { columns: [['stance'], ['similar']], latest: 'articles', under: 'bars' }, plain: { columns: [['stance'], ['similar']], latest: 'articles', under: 'bars' } },
-  topics: { live: { columns: [['emphasis'], ['stanceTopic']], latest: 'topics', under: 'topics' }, plain: { columns: [['emphasis']], latest: 'topics', under: 'topics' } },
+  overview: { live: { columns: [['stance', 'similar']], latest: 'articles', under: 'bars' }, plain: { columns: [['stance', 'similar']], latest: 'articles', under: 'bars' } },
+  topics: { live: { columns: [['stanceTopic']], latest: 'topics', under: 'topics' }, plain: { columns: [], latest: 'topics', under: 'topics' } },
   stories: { live: { columns: [['skip'], ['push']], latest: 'stories', under: 'stories' }, plain: { columns: [], latest: 'stories', under: 'stories' } },
   people: { live: { columns: [['voices'], ['portrayal']], latest: null, under: 'mentions' }, plain: { columns: [], latest: null, under: 'bars' } }
 }
@@ -131,13 +131,8 @@ const periodArticles = computed(() => (model.value ? inPeriod(model.value.collec
 const webThemes = computed(() => (model.value ? outletThemes(model.value.mine, model.value.l.issues, i0.value, i1.value, { ...themeOptions.value, maxThemes: 8, perTheme: 3, skipCatchAll: true }) : []))
 const themeRing = computed<DayRing[]>(() => webThemes.value.map(th => ({ issue: th.issue, name: th.name, slot: th.slot, n: th.n })))
 const webStoryThemes = computed(() => (model.value ? outletThemes(model.value.mine, model.value.l.issues, i0.value, i1.value, { ...themeOptions.value, maxThemes: 10, maxStories: 36 }) : []))
-const storyPeers = computed<DayOutlet[]>(() => {
-  const m = model.value
-  if (!m) return []
-  const ids = new Set(startedOrWritten.value)
-  return outletPeers(m.dd, ids, i0.value, i1.value).map(({ outlet, n }) => ({ name: outlet.name, slot: slotOfColor(groupColor(outlet.group)), n, group: outlet.group }))
-})
-const startedOrWritten = computed(() => (model.value ? model.value.mine.filter(r => r.story && inPeriod(r.days) > 0).map(r => r.story!.id) : []))
+// The ring of the web of the stories: an arc for each theme of the stories shown (the stories are the outlet's own, so the ring is not the outlets).
+const storyRing = computed<DayOutlet[]>(() => webStoryThemes.value.map(th => ({ name: th.name, slot: th.slot, n: th.n, group: null })))
 // The people the outlet quotes in the period: the days of the set of ΜΜΕ & πρόσωπα are its own (mmeRange).
 const mmeRange = computed(() => {
   const l = live.value
@@ -223,8 +218,8 @@ const headlinesShown = computed(() => liveHeadlines.value.filter(x => String(x[0
           :labels="8" grow shares :zoom="1.12" :label="t('outlet.web.label')" @pick="id => navigateTo(storyHref(id))" @pick-theme="k => navigateTo(topicHref(k))"
         />
         <PlegmaDayWeb
-          v-else-if="tab === 'stories'" key="stories" :themes="webStoryThemes" :ring="[]" :outlets="storyPeers" mode="stories" :date="fmtInt(periodArticles)" :sub="model.outlet.name" :lit="null" :picked="null" active
-          :hover-story="plegma.hoverStory" ellipse grouped spread fill titles grow :label="t('outlet.web.label')" @pick="id => navigateTo(storyHref(id))" @pick-theme="k => navigateTo(topicHref(k))"
+          v-else-if="tab === 'stories'" key="stories" :themes="webStoryThemes" :ring="[]" :outlets="storyRing" mode="stories" :date="fmtInt(periodArticles)" :sub="model.outlet.name" :lit="null" :picked="null" active
+          :hover-story="plegma.hoverStory" ellipse grouped spread fill titles grow :zoom="0.82" :label="t('outlet.web.label')" @pick="id => navigateTo(storyHref(id))" @pick-theme="k => navigateTo(topicHref(k))"
         />
         <PlegmaDayWeb
           v-else key="people" :themes="personThemes" :ring="personRing" :outlets="[]" mode="themes" :date="fmtInt(personRows.reduce((a, r) => a + r.n, 0))" :sub="t('outlet.web.quotes')" :lit="null" :picked="null" active
@@ -246,7 +241,6 @@ const headlinesShown = computed(() => liveHeadlines.value.filter(x => String(x[0
             <OutletGroupSimilarity v-else-if="id === 'similar'" :rows="groupSimilar" :color="groupColor(model.group)" :group="model.group" />
             <OutletStanceByTopic v-else-if="id === 'stanceTopic'" :P="live!.P" :k="live!.k" :limit="OUTLET_STANCE_LIMIT" />
             <OutletPortrayal v-else-if="id === 'portrayal'" :P="live!.P" :k="live!.k" />
-            <OutletEmphasis v-else-if="id === 'emphasis'" :P="live?.P ?? null" :k="mk" :topics="model.topics" :topic-n="model.mineTotal" />
             <OutletCoverage v-else-if="id === 'skip' || id === 'push'" :P="live!.P" :k="live!.k" :part="id" />
             <OutletVoices v-else-if="id === 'voices'" :P="live!.P" :k="live!.k" :title="t('mme.o.people.title')" />
           </PlegmaCard>
