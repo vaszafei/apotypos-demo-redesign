@@ -4,6 +4,8 @@ import type { StoryDetailData } from '~/types/story-detail'
 import type { GroupRecord, GroupsData, MediaDaily } from '~/utils/groups'
 import { critShare, netOf, sumPairs, sumRows } from './mme.ts'
 import { outletPairs } from './profiles.ts'
+import { dayDots } from './plegma/plegma-day.ts'
+import type { PlegmaDayTheme } from './plegma/plegma-day.ts'
 
 // The numbers of the page of one outlet (outlet-v2.html and the cards of assets/mme.js 339 to 517): its stories, how it writes, the outlets like it, and the profile cards of ΜΜΕ & πρόσωπα.
 
@@ -212,3 +214,58 @@ export const portrayalOf = (P: MmeProfile, k: number) => {
 
 // The newest headlines of the outlet, newest first.
 export const headlinesOf = (set: MmeSet, k: number) => (set.headlines[k] ?? []).slice().sort((a, b) => String(b[0]).localeCompare(String(a[0])))
+
+// ———— The latest topics, and the mentions over time ————
+
+export const LATEST_TOPICS_DAYS = 7
+export const OUTLET_LINES = 8
+// The topics the outlet wrote in its last 7 days of the period i0 to i1 (topicDays: the articles of the outlet in stories, per day; the days end at its last day with articles, because the period
+// can run on past it), the latest first, the bigger first within a day.
+export const latestTopics = (topicDays: Map<number, number[]>, issues: StoriesData['issues'], i0: number, i1: number) => {
+  const rows = [...topicDays].filter(([issue]) => !issues[issue]!.catchAll).map(([issue, days]) => ({ issue, days, last: days.slice(0, i1 + 1).reduce((at, n, d) => (n > 0 && d >= i0 ? d : at), -1) })).filter(r => r.last >= 0)
+  const end = Math.max(-1, ...rows.map(r => r.last))
+  const from = Math.max(i0, end - LATEST_TOPICS_DAYS + 1)
+  return rows.map(r => ({ issue: r.issue, n: sum(r.days.slice(from, end + 1)), last: r.last })).filter(r => r.n > 0).sort((a, b) => b.last - a.last || b.n - a.n)
+}
+
+// The stories the outlet started to cover in the period i0 to i1, the latest first (the bigger story first on a day).
+export const latestStoriesOf = (mine: OutletStory[], i0: number, i1: number) =>
+  mine.filter(r => r.story && r.first >= i0 && r.first <= i1).sort((a, b) => b.first - a.first || b.reach - a.reach || b.n - a.n).slice(0, OUTLET_STORIES)
+
+// The first and the last index where any of the lines has a value: a chart starts where the data starts and stops where it stops. null when there is none.
+export const dataSpan = (lines: { values: (number | null)[] }[]): [number, number] | null => {
+  let a = -1
+  let b = -1
+  lines.forEach(l => l.values.forEach((v, i) => { if ((v ?? 0) > 0) { if (a < 0 || i < a) a = i; if (i > b) b = i } }))
+  return a < 0 ? null : [a, b]
+}
+
+// The quotes of each person in the articles of the outlet, per day of the set; the people it never quotes are left out, the most quoted first.
+export const mentionsOf = (set: MmeSet, k: number) => set.people.map((p, j) => {
+  const values = new Array<number>(set.dates.length).fill(0)
+  const pairs = set.q[k]![j]!
+  for (let i = 0; i < pairs.length; i += 2) values[pairs[i]!] = pairs[i + 1]!
+  return { p, j, values, total: sum(values) }
+}).filter(r => r.total > 0).sort((a, b) => b.total - a.total)
+
+// ———— The webs of the tabs ————
+
+// The stories of the outlet in the period i0 to i1 grouped by theme, for the web of the Μέσα pages (PlegmaDayWeb): the themes largest first, each with its largest stories as nodes of dots in the
+// color slot of the group of the outlet (media 0: the tooltip does not count the outlets, they are not the page's); the other stories of a theme are its faint dots. perTheme: the most stories of a theme (Θέματα); maxStories: the most stories in all (Ιστορίες).
+export interface OutletThemesOptions { maxThemes: number, perTheme?: number, maxStories?: number, groupSlot: number, slotOf: (issue: number) => number, nameOf: (issue: number) => string, storyName: (s: Story) => string, skipCatchAll?: boolean }
+export const outletThemes = (mine: OutletStory[], issues: StoriesData['issues'], i0: number, i1: number, o: OutletThemesOptions): PlegmaDayTheme[] => {
+  const rows = mine.filter(r => r.story && !(o.skipCatchAll && issues[r.story.issue]!.catchAll)).map(r => ({ r, n: sum(r.days.slice(i0, i1 + 1)) })).filter(x => x.n > 0).sort((a, b) => b.n - a.n)
+  const total = new Map<number, number>()
+  const count = new Map<number, number>()
+  rows.forEach(({ r, n }) => { total.set(r.story!.issue, (total.get(r.story!.issue) ?? 0) + n); count.set(r.story!.issue, (count.get(r.story!.issue) ?? 0) + 1) })
+  const by = new Map<number, PlegmaDayTheme>()
+  for (const { r, n } of o.maxStories ? rows.slice(0, o.maxStories) : rows) {
+    const issue = r.story!.issue
+    let theme = by.get(issue)
+    if (!theme) { theme = { issue, name: o.nameOf(issue), slot: o.slotOf(issue), n: total.get(issue)!, stories: [], rest: 0 }; by.set(issue, theme) }
+    if (o.perTheme && theme.stories.length >= o.perTheme) continue
+    theme.stories.push({ id: r.story!.id, name: o.storyName(r.story!), n, media: 0, dots: dayDots(n, [{ slot: o.groupSlot, n }]) })
+  }
+  by.forEach((theme) => { theme.rest = Math.max(0, count.get(theme.issue)! - theme.stories.length) })
+  return [...by.values()].sort((a, b) => b.n - a.n).slice(0, o.maxThemes)
+}
