@@ -1,7 +1,8 @@
 import { mulberry } from './plegma-world.ts'
 
 // The web of the articles of an outlet grouped by day: one loose cloud for each day with articles, as large as the articles of the day, the clouds spread over a disc of radius 1 in no order
-// (a day is not next to the day after it). Inside a cloud each node is joined to the one before it; the first node of a cloud is joined to the first node of the nearest cloud before it.
+// (a day is not next to the day after it), round a free place at the center for the outlet. Inside a cloud each node is joined to the one before it; `firsts` are the first nodes of the clouds,
+// which the view joins to the center.
 // `counts` are the nodes of each day with articles (at least 1).
 export interface PlegmaCloudWeb {
   n: number
@@ -14,8 +15,9 @@ export interface PlegmaCloudWeb {
   bow: Float32Array
   // The distance between two neighbours on the unit disc.
   gap: number
-  // The cloud (the place of its day in `counts`) of each node.
+  // The cloud (the place of its day in `counts`) of each node, and the first node of each cloud.
   cloud: Uint16Array
+  firsts: Uint32Array
 }
 
 const GOLDEN = Math.PI * (3 - Math.sqrt(5))
@@ -32,7 +34,7 @@ export const cloudWeb = (counts: number[], seed: number): PlegmaCloudWeb => {
   const cx = new Float32Array(days)
   const cy = new Float32Array(days)
   order.forEach((k, place) => {
-    const r = Math.sqrt((place + 0.5) / days) * 0.8
+    const r = 0.2 + Math.sqrt((place + 0.5) / days) * 0.62
     cx[k] = Math.cos(place * GOLDEN) * r
     cy[k] = Math.sin(place * GOLDEN) * r
   })
@@ -53,7 +55,8 @@ export const cloudWeb = (counts: number[], seed: number): PlegmaCloudWeb => {
     for (let a = 0; a < days; a++) {
       const d = Math.hypot(cx[a]!, cy[a]!)
       const room = 0.97 - rho[a]!
-      if (d > room && d > 0) { cx[a] = (cx[a]! / d) * room; cy[a] = (cy[a]! / d) * room }
+      const hole = 0.12 + rho[a]!
+      if (d > room && d > 0) { cx[a] = (cx[a]! / d) * room; cy[a] = (cy[a]! / d) * room } else if (d < hole) { const u = d || 1e-4; cx[a] = (cx[a]! / u) * hole; cy[a] = (cy[a]! / u) * hole }
     }
   }
   const x = new Float32Array(total)
@@ -82,18 +85,7 @@ export const cloudWeb = (counts: number[], seed: number): PlegmaCloudWeb => {
       if (j > 0) { pairs.push(i, i - 1); bows.push((rand() - 0.5) * 0.6) }
       if (j > 1 && rand() < 0.3) { pairs.push(i, at + Math.floor(rand() * (j - 1))); bows.push((rand() - 0.5) * 0.6) }
     }
-    // The cloud is joined to the nearest cloud before it.
-    if (k > 0) {
-      let best = 0
-      let bestD = Infinity
-      for (let p = 0; p < k; p++) {
-        const d = Math.hypot(cx[p]! - cx[k]!, cy[p]! - cy[k]!)
-        if (d < bestD) { bestD = d; best = p }
-      }
-      pairs.push(at, firstOf[best]!)
-      bows.push((rand() - 0.5) * 0.5)
-    }
     at += c
   }
-  return { n: total, x, y, phase, speed, reach, edges: Uint32Array.from(pairs), bow: Float32Array.from(bows), gap, cloud }
+  return { n: total, x, y, phase, speed, reach, edges: Uint32Array.from(pairs), bow: Float32Array.from(bows), gap, cloud, firsts: Uint32Array.from(firstOf) }
 }

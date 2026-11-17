@@ -114,6 +114,8 @@ const i0 = computed(() => Math.max(0, model.value?.m.dates.indexOf(view.value.fr
 const i1 = computed(() => Math.max(i0.value, model.value?.m.dates.indexOf(view.value.to) ?? 0))
 const inPeriod = (days: number[]) => sum(days.slice(i0.value, i1.value + 1))
 // The other outlets of its group with the similarity (the stories they share over the stories of either), for the whole window.
+const hoverPeer = ref<string | null>(null)
+const orbit = ref<HTMLElement>()
 const groupSimilar = computed(() => (model.value ? relatedOutlets(model.value.dd, model.value.kd, props.slug, model.value.group, model.value.record).related.filter(r => r.same) : []))
 const startedHere = computed(() => (model.value ? model.value.mine.filter(r => r.story && r.first >= i0.value && r.first <= i1.value) : []))
 const latestStories = computed(() => (model.value ? latestStoriesOf(model.value.mine, i0.value, i1.value) : []))
@@ -130,7 +132,7 @@ const themeOptions = computed(() => ({
 const periodArticles = computed(() => (model.value ? inPeriod(model.value.collected) : 0))
 const webThemes = computed(() => (model.value ? outletThemes(model.value.mine, model.value.l.issues, i0.value, i1.value, { ...themeOptions.value, maxThemes: 8, perTheme: 3, skipCatchAll: true }) : []))
 const themeRing = computed<DayRing[]>(() => webThemes.value.map(th => ({ issue: th.issue, name: th.name, slot: th.slot, n: th.n })))
-const webStoryThemes = computed(() => (model.value ? outletThemes(model.value.mine, model.value.l.issues, i0.value, i1.value, { ...themeOptions.value, maxThemes: 10, maxStories: 36 }) : []))
+const webStoryThemes = computed(() => (model.value ? outletThemes(model.value.mine, model.value.l.issues, i0.value, i1.value, { ...themeOptions.value, maxThemes: 8, maxStories: 14 }) : []))
 // The ring of the web of the stories: an arc for each theme of the stories shown (the stories are the outlet's own, so the ring is not the outlets).
 const storyRing = computed<DayOutlet[]>(() => webStoryThemes.value.map(th => ({ name: th.name, slot: th.slot, n: th.n, group: null })))
 // The people the outlet quotes in the period: the days of the set of ΜΜΕ & πρόσωπα are its own (mmeRange).
@@ -201,7 +203,8 @@ const headlinesShown = computed(() => liveHeadlines.value.filter(x => String(x[0
     <section class="dcard c-12"><div class="empty-state" data-state="empty"><AppIcon name="inbox" /><p style="margin: 0">{{ t('topics2.empty') }}</p></div></section>
   </div>
   <ErrorPage v-else-if="!model" :status="404" />
-  <div v-else class="plegma-orbit is-outlet" :class="[`cols-${spec.columns.length}`, spec.latest ? 'has-latest' : 'no-latest', { 'is-in': plegma.landed }]">
+  <div v-else ref="orbit" class="plegma-orbit is-outlet" :class="[`tab-${tab}`, `cols-${spec.columns.length}`, spec.latest ? 'has-latest' : 'no-latest', { 'is-in': plegma.landed }]">
+    <OutletPeerLinks v-if="tab === 'overview'" :root="orbit" :count="groupSimilar.length" :hover="groupSimilar.findIndex(r => r.slug === hoverPeer)" :color="groupColor(model.group)" />
     <div class="plegma-title entity-grid">
       <EntityTitle :kind="t('hero.kind.outlet')" :title="model.outlet.name">
         <template #meta>{{ t('entity.fact.group') }}: <EntityLink v-if="model.group && model.record?.slug" type="group" :to="groupPageHref(model.record.slug)">{{ model.group }}</EntityLink><template v-else>{{ model.group ?? t('story.nogroup') }}</template></template>
@@ -212,7 +215,7 @@ const headlinesShown = computed(() => liveHeadlines.value.filter(x => String(x[0
 
     <div class="orbit-map">
       <ClientOnly><div class="outlet-map-web">
-        <OutletArticleWeb v-if="tab === 'overview'" key="overview" :days="bars?.series[0]?.values.map(v => v ?? 0) ?? []" :color-slot="groupSlot" :stance="model.writes.stanceMine" :label="t('outlet.web.label')" />
+        <OutletArticleWeb v-if="tab === 'overview'" key="overview" :days="bars?.series[0]?.values.map(v => v ?? 0) ?? []" :color-slot="groupSlot" :stance="model.writes.stanceMine" :label="t('outlet.web.label')" :name="model.outlet.name" />
         <PlegmaDayWeb
           v-else-if="tab === 'topics'" key="topics" :themes="webThemes" :ring="themeRing" :outlets="[]" mode="themes" :date="fmtInt(periodArticles)" :sub="model.outlet.name" :lit="null" :picked="null" active
           :labels="8" grow shares :zoom="1.12" :label="t('outlet.web.label')" @pick="id => navigateTo(storyHref(id))" @pick-theme="k => navigateTo(topicHref(k))"
@@ -222,8 +225,8 @@ const headlinesShown = computed(() => liveHeadlines.value.filter(x => String(x[0
           :hover-story="plegma.hoverStory" ellipse grouped spread fill titles grow :zoom="0.82" :label="t('outlet.web.label')" @pick="id => navigateTo(storyHref(id))" @pick-theme="k => navigateTo(topicHref(k))"
         />
         <PlegmaDayWeb
-          v-else key="people" :themes="personThemes" :ring="personRing" :outlets="[]" mode="themes" :date="fmtInt(personRows.reduce((a, r) => a + r.n, 0))" :sub="t('outlet.web.quotes')" :lit="null" :picked="null" active
-          :labels="8" grow spread :zoom="1.12" :label="t('outlet.web.label')" @pick-theme="openPerson"
+          v-else key="people" :themes="personThemes" :ring="personRing" :outlets="[]" mode="themes" :date="model.outlet.name" :sub="t('outlet.web.quotesN', { n: fmtInt(personRows.reduce((a, r) => a + r.n, 0)) })" :lit="null" :picked="null" active
+          :labels="8" grow spread shares :zoom="1.12" :label="t('outlet.web.label')" @pick-theme="openPerson"
         />
       </div></ClientOnly>
       <p class="plegma-nodes-note">{{ mapNote }}</p>
@@ -238,7 +241,7 @@ const headlinesShown = computed(() => liveHeadlines.value.filter(x => String(x[0
               :rows="[{ label: t('entity.stance.outlet'), color: groupColor(model.group), counts: model.writes.stanceMine }, { label: t('entity.stance.all'), color: NO_GROUP, counts: model.writes.stanceAll }]"
               :foot="model.writes.stanceN >= 30 ? t('outlet2.how.stance.n', { n: fmtInt(model.writes.stanceN) }) : null"
             />
-            <OutletGroupSimilarity v-else-if="id === 'similar'" :rows="groupSimilar" :color="groupColor(model.group)" :group="model.group" />
+            <OutletGroupSimilarity v-else-if="id === 'similar'" :rows="groupSimilar" :color="groupColor(model.group)" :group="model.group" @hover="hoverPeer = $event" />
             <OutletStanceByTopic v-else-if="id === 'stanceTopic'" :P="live!.P" :k="live!.k" :limit="OUTLET_STANCE_LIMIT" />
             <OutletPortrayal v-else-if="id === 'portrayal'" :P="live!.P" :k="live!.k" />
             <OutletCoverage v-else-if="id === 'skip' || id === 'push'" :P="live!.P" :k="live!.k" :part="id" />

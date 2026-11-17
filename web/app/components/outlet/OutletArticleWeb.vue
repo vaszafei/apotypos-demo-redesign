@@ -5,9 +5,9 @@ import { cloudWeb } from '~/utils/plegma/plegma-clouds'
 import { shareArcs } from '~/utils/plegma/stage/stage-draw-util'
 
 // The web of the outlet's articles on Επισκόπηση: one node for each article, or for several when there are many (each node then stands for `perNode` articles), in a loose cloud for each day
-// (utils/plegma/plegma-clouds.ts), as large as the articles of the day. No date is written. Around it is the ring of the stance towards
+// (utils/plegma/plegma-clouds.ts), as large as the articles of the day. No date is written. The outlet is the center, each cloud joined to it. Around it is the ring of the stance towards
 // the government: an arc each for critical, neutral and supportive, as wide as their share, with the name and the share written outside it.
-const props = defineProps<{ days: number[], colorSlot: number, stance: number[], label: string }>()
+const props = defineProps<{ days: number[], colorSlot: number, stance: number[], label: string, name: string }>()
 const { t } = useI18n()
 const tooltip = useTooltipStore()
 const reduced = useMediaQuery('(prefers-reduced-motion: reduce)')
@@ -47,6 +47,7 @@ const readTokens = () => {
 let px = new Float32Array(0)
 let py = new Float32Array(0)
 let nodeR = 3
+let center = { x: 0, y: 0 }
 let startedAt = 0
 const ease = (v: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, v)), 3)
 
@@ -80,11 +81,19 @@ const draw = (now: number) => {
     px[i] = cx + aw.x[i]! * R * kx * grow + Math.cos(a) * amp * reach
     py[i] = cy + aw.y[i]! * R * grow + Math.sin(a) * amp * reach
   }
+  center = { x: cx, y: cy }
   g.lineCap = 'round'
   g.strokeStyle = mute
   g.globalAlpha = 0.45
   g.lineWidth = 0.8
   g.beginPath()
+  // Each cloud hangs from the outlet at the center.
+  aw.firsts.forEach((i, k) => {
+    const dx = px[i]! - cx
+    const dy = py[i]! - cy
+    g.moveTo(cx, cy)
+    g.quadraticCurveTo((cx + px[i]!) / 2 - dy * (k % 2 ? 0.12 : -0.12), (cy + py[i]!) / 2 + dx * (k % 2 ? 0.12 : -0.12), px[i]!, py[i]!)
+  })
   for (let e = 0; e < aw.edges.length; e += 2) {
     const i = aw.edges[e]!
     const j = aw.edges[e + 1]!
@@ -106,6 +115,24 @@ const draw = (now: number) => {
     g.fill()
     g.globalAlpha = 1
     g.stroke()
+  }
+  // The outlet at the center, as the center of the web of a theme: a dot with a ring and its name.
+  g.fillStyle = ink
+  g.beginPath(); g.arc(cx, cy, 7 * grow, 0, TAU); g.fill()
+  g.strokeStyle = mute
+  g.lineWidth = 1
+  g.beginPath(); g.arc(cx, cy, 11 * grow, 0, TAU); g.stroke()
+  if (grow > 0.8) {
+    g.font = `600 13px ${fontText}`
+    g.textAlign = 'center'
+    g.textBaseline = 'top'
+    g.lineJoin = 'round'
+    g.lineWidth = 4
+    g.strokeStyle = paper
+    g.strokeText(props.name, cx, cy + 17)
+    g.fillStyle = ink
+    g.fillText(props.name, cx, cy + 17)
+    g.textBaseline = 'middle'
   }
   // The ring of the stance and its names. An angle runs from the top, clockwise.
   const arcs = ringArcs.value
@@ -143,6 +170,7 @@ const onMove = (e: PointerEvent) => {
   const r = canvas.value!.getBoundingClientRect()
   const x = e.clientX - r.left
   const y = e.clientY - r.top
+  if ((center.x - x) ** 2 + (center.y - y) ** 2 < 144) { tooltip.show({ title: props.name, rows: [{ label: t('outlet.web.articles'), value: fmtInt(total.value) }] }, e); return }
   let best = -1
   let bestD = (nodeR + 5) ** 2
   for (let i = 0; i < (web.value?.n ?? 0); i++) {

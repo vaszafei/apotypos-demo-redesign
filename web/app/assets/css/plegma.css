@@ -64,6 +64,7 @@
 .plegma-orbit.is-outlet { grid-template-areas: none; grid-template-columns: minmax(0, 5.2fr) minmax(0, 4.8fr); grid-template-rows: auto minmax(0, 1fr) auto; }
 .plegma-orbit.is-outlet .plegma-title { grid-area: auto; grid-row: 1; grid-column: 1 / -1; }
 .plegma-orbit.is-outlet .orbit-map { position: relative; pointer-events: auto; }
+.outlet-links { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .outlet-map-web { position: absolute; inset: 0 0 24px 0; }
 .outlet-article-web { position: absolute; inset: 0; }
 .outlet-article-web canvas { display: block; width: 100%; height: 100%; }
@@ -93,6 +94,7 @@
   .plegma-orbit.is-outlet:is(.cols-0, .cols-1).has-latest .orbit-right > .card-latest { grid-column: 3; }
   .plegma-orbit.is-outlet:is(.cols-0, .cols-1).has-latest .orbit-under { grid-column: 1 / 3; }
   .plegma-orbit.is-outlet.cols-1 .orbit-sub:nth-child(1) { grid-column: 2; }
+  .plegma-orbit.is-outlet.tab-overview.cols-1.has-latest { grid-template-columns: minmax(0, 6.6fr) minmax(0, 2.8fr) minmax(0, 2.6fr); }
   .plegma-orbit.is-outlet.cols-1 .orbit-sub > .plegma-card { max-height: none; }
 }
 

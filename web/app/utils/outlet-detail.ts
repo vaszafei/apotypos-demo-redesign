@@ -251,7 +251,7 @@ export const mentionsOf = (set: MmeSet, k: number) => set.people.map((p, j) => {
 // ———— The webs of the tabs ————
 
 // The stories of the outlet in the period i0 to i1 grouped by theme, for the web of the Μέσα pages (PlegmaDayWeb): the themes largest first, each with its largest stories as nodes of dots in the
-// color slot of the group of the outlet; the other stories of a theme are its faint dots. perTheme: the most stories of a theme (Θέματα); maxStories: the most stories in all (Ιστορίες).
+// color slot of the group of the outlet (media 0: the tooltip does not count the outlets, they are not the page's); the other stories of a theme are its faint dots. perTheme: the most stories of a theme (Θέματα); maxStories: the most stories in all (Ιστορίες).
 export interface OutletThemesOptions { maxThemes: number, perTheme?: number, maxStories?: number, groupSlot: number, slotOf: (issue: number) => number, nameOf: (issue: number) => string, storyName: (s: Story) => string, skipCatchAll?: boolean }
 export const outletThemes = (mine: OutletStory[], issues: StoriesData['issues'], i0: number, i1: number, o: OutletThemesOptions): PlegmaDayTheme[] => {
   const rows = mine.filter(r => r.story && !(o.skipCatchAll && issues[r.story.issue]!.catchAll)).map(r => ({ r, n: sum(r.days.slice(i0, i1 + 1)) })).filter(x => x.n > 0).sort((a, b) => b.n - a.n)
@@ -264,7 +264,7 @@ export const outletThemes = (mine: OutletStory[], issues: StoriesData['issues'],
     let theme = by.get(issue)
     if (!theme) { theme = { issue, name: o.nameOf(issue), slot: o.slotOf(issue), n: total.get(issue)!, stories: [], rest: 0 }; by.set(issue, theme) }
     if (o.perTheme && theme.stories.length >= o.perTheme) continue
-    theme.stories.push({ id: r.story!.id, name: o.storyName(r.story!), n, media: r.reach, dots: dayDots(n, [{ slot: o.groupSlot, n }]) })
+    theme.stories.push({ id: r.story!.id, name: o.storyName(r.story!), n, media: 0, dots: dayDots(n, [{ slot: o.groupSlot, n }]) })
   }
   by.forEach((theme) => { theme.rest = Math.max(0, count.get(theme.issue)! - theme.stories.length) })
   return [...by.values()].sort((a, b) => b.n - a.n).slice(0, o.maxThemes)
