@@ -63,7 +63,7 @@
 /* The articles card does not add to the height of the row: the chart sets it, and the articles scroll inside the card. */
 .plegma-orbit.is-outlet .orbit-under > .card-latest { height: 0; min-height: 100%; }
 @media (min-width: 1280px) {
-  .plegma-orbit.is-outlet { grid-template-columns: minmax(0, 2fr) minmax(0, 5.2fr) minmax(0, 2.4fr) minmax(0, 2.4fr); grid-template-areas: "title title title title" "left map one two" "under under under latest"; }
+  .plegma-orbit.is-outlet { grid-template-columns: minmax(0, 2.4fr) minmax(0, 4.8fr) minmax(0, 2.4fr) minmax(0, 2.4fr); grid-template-areas: "title title title title" "left map one two" "under under latest latest"; }
   .plegma-orbit.is-outlet .orbit-under { display: contents; }
   .plegma-orbit.is-outlet .orbit-under > .card-days { grid-area: under; }
   .plegma-orbit.is-outlet .orbit-under > .card-latest { grid-area: latest; }
