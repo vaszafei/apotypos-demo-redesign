@@ -35,6 +35,7 @@ export default defineNuxtPlugin((nuxtApp) => {
     const blocks: Element[] = []
     for (const child of content.children) {
       if (child.matches(HEAD)) continue
+      if (child.matches('.media-plegma, .media-plegma-below')) continue
       if (child.matches('.dash-grid')) blocks.push(...child.children)
       else blocks.push(child)
     }

@@ -4,6 +4,9 @@ defineProps<{ full?: boolean, variant?: 'topics' | 'stories' | 'groups' | 'un' |
 // tab fills the free area on the left, and the cards of the tab float as glass cards on its right. The cards that do not fit the screen are under it (the default slot).
 // `full`: the web takes the whole width (Στάση, a plot) and the cards float over its empty top right corner. `variant` 'topics' (Θέματα): the web with a card under it (`map`) on the left, a chart (`aside`) on the right, as 2 : 5 : 3, and under the cards and the web (`under`) a card as wide as the two; 'stories' (Ιστορίες): a card (`side`) as tall as the two rows on the left, and the web (`map`) with a card under it (`under`) on the right, as 3 : 5; 'groups' (Ιδιοκτησία): the web (`map`) with the cards of `side` under it on the left, and a card (`aside`) on the right, as 10 : 2; 'similarity' (Ομοιότητα): the web (`map`) on the left with no cards under it, and the cards (`aside`) on the right, as 10 : 2.
 // The web runs only while the screen is in view, and it grows when it comes into view (`active` of the map slot).
+// The cards of the screen (DashCard) arrive one after the other, built from the logo backwards (see PlegmaCard.vue); each asks here for its place in the order.
+let arrivals = 0
+provide('plegmaArrival', { next: () => Math.min(arrivals++, 5) })
 const root = ref<HTMLElement>()
 const inView = ref(false)
 let watcher: IntersectionObserver | null = null

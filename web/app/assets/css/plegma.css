@@ -113,29 +113,34 @@
 .plegma-orbit .orbit-ring-tabs.segmented button[aria-pressed="true"] { border-color: var(--text-primary); background: var(--text-primary); color: var(--on-ink); font-weight: 600; }
 .plegma-nodes-note { position: absolute; left: 0; bottom: 0; margin: 0; font-size: var(--text-caption); color: var(--text-secondary); }
 
-/* A card arrives after the camera lands, built from the logo backwards (the block below, ".is-cut"): the "/" is drawn first, then the card shows cut by it into two parts a row apart, and the parts slide into one row. The card does not scroll; its body does. */
+/* A card arrives after the camera lands (the cards of a screen of Μέσα: when they come into view), built from the logo backwards (the block below, ".is-cut"): the "/" is drawn first, then the card shows cut by it into two parts a row apart, and the parts slide into one row. The card does not scroll; its body does. */
 .plegma-card { --card-pad: var(--space-2) var(--space-3); --card-gap: 4px; --card-at: calc(var(--i) * 110ms); position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; pointer-events: auto; background: var(--card-glass); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: var(--radius); opacity: 0; transition: opacity 140ms var(--ease-out) var(--card-at); }
 .plegma-card-body { flex: 1 1 auto; min-width: 0; min-height: 0; overflow: auto; }
 /* The "/" appears first; then the card, with its content, shows cut by it into two parts that are not in one row (the left one up, the right one down); then the parts move into one row and the card is whole. The two parts are the same card twice (the second only until it is done), each clipped by the "/"; --cw and --ch are the card's size in px, set by PlegmaCard.vue. */
 @property --g { syntax: '<length>'; inherits: true; initial-value: 6.5px; }
-.plegma-card.is-cut { --tx: calc(var(--cw, 400px) / 2 + var(--ch, 300px) * 0.3768); --bx: calc(var(--cw, 400px) / 2 - var(--ch, 300px) * 0.3768); --dy: calc(var(--ch, 300px) * 0.12); background: none; border-width: 0; backdrop-filter: none; }
-.plegma-card.is-cut .cut-sheet { display: flex; flex-direction: column; min-height: 0; }
-.plegma-card.is-cut .cut-a { flex: 1 1 auto; clip-path: polygon(0 0, calc(var(--tx) - var(--g)) 0, calc(var(--bx) - var(--g)) 100%, 0 100%); }
-.plegma-card.is-cut .cut-b { position: absolute; inset: 0; pointer-events: none; clip-path: polygon(calc(var(--tx) + var(--g)) 0, 100% 0, 100% 100%, calc(var(--bx) + var(--g)) 100%); }
-.plegma-card.is-cut .cut-in { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; background: var(--card-glass); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: var(--radius); opacity: 0; }
-.plegma-card.is-cut.cut-done .cut-a { clip-path: none; }
-.plegma-card.is-cut .cut-slash { position: absolute; left: 50%; top: 50%; z-index: 3; width: 5px; height: calc(var(--ch, 300px) * 1.252); margin: calc(var(--ch, 300px) * -0.626) 0 0 -2.5px; background: var(--text-primary); border-radius: var(--radius); rotate: 37deg; clip-path: inset(0 0 100% 0); pointer-events: none; }
-.plegma-orbit.is-in .plegma-card.is-cut { animation: plegma-cut-g 1100ms both var(--card-at); }
-.plegma-orbit.is-in .plegma-card.is-cut .cut-a .cut-in { animation: plegma-cut-a 1100ms both var(--card-at); }
-.plegma-orbit.is-in .plegma-card.is-cut .cut-b .cut-in { animation: plegma-cut-b 1100ms both var(--card-at); }
-.plegma-orbit.is-in .plegma-card.is-cut .cut-slash { animation: plegma-cut-s 1100ms both var(--card-at); }
+.is-cut { --tx: calc(var(--cw, 400px) / 2 + var(--ch, 300px) * 0.3768); --bx: calc(var(--cw, 400px) / 2 - var(--ch, 300px) * 0.3768); --dy: calc(var(--ch, 300px) * 0.12); background: none; border-width: 0; backdrop-filter: none; }
+.is-cut .cut-sheet { display: flex; flex-direction: column; min-height: 0; }
+.is-cut .cut-a { flex: 1 1 auto; clip-path: polygon(0 0, calc(var(--tx) - var(--g)) 0, calc(var(--bx) - var(--g)) 100%, 0 100%); }
+.is-cut .cut-b { position: absolute; inset: 0; pointer-events: none; clip-path: polygon(calc(var(--tx) + var(--g)) 0, 100% 0, 100% 100%, calc(var(--bx) + var(--g)) 100%); }
+.is-cut .cut-in { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; background: var(--card-glass); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: var(--radius); opacity: 0; }
+.is-cut.cut-done .cut-a { clip-path: none; }
+.is-cut .cut-slash { position: absolute; left: 50%; top: 50%; z-index: 3; width: 5px; height: calc(var(--ch, 300px) * 1.252); margin: calc(var(--ch, 300px) * -0.626) 0 0 -2.5px; background: var(--text-primary); border-radius: var(--radius); rotate: 37deg; clip-path: inset(0 0 100% 0); pointer-events: none; }
+:is(.plegma-orbit.is-in .plegma-card, .dcard.cut-go).is-cut { animation: plegma-cut-g 1100ms both var(--card-at); }
+:is(.plegma-orbit.is-in .plegma-card, .dcard.cut-go).is-cut .cut-a .cut-in { animation: plegma-cut-a 1100ms both var(--card-at); }
+:is(.plegma-orbit.is-in .plegma-card, .dcard.cut-go).is-cut .cut-b .cut-in { animation: plegma-cut-b 1100ms both var(--card-at); }
+:is(.plegma-orbit.is-in .plegma-card, .dcard.cut-go).is-cut .cut-slash { animation: plegma-cut-s 1100ms both var(--card-at); }
+/* The same arrival for a DashCard inside a screen of the Plegma (components/ui/DashCard.vue, MediaPlegma.vue): the card keeps its box and its place, and its look (padding, edge, glass and the edge under the pointer) moves to the sheets. */
+.dcard.is-cut { --card-at: calc(var(--i, 0) * 90ms); padding: 0; gap: 0; border-width: 0; background: none; backdrop-filter: none; }
+.media-plegma .dcard.is-cut, .media-plegma-below .dcard.is-cut { background: none; backdrop-filter: none; }
+.dcard.is-cut .cut-in { padding: var(--card-pad); gap: var(--card-gap); border-radius: var(--card-radius); border-color: color-mix(in srgb, var(--border) 55%, transparent); transition: border-color var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out); }
+.dcard.is-cut:is(:hover, :focus-within):not(:has(.dcard)) .cut-in { border-color: color-mix(in srgb, var(--rule) 80%, transparent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 8%, transparent), 0 6px 18px -8px color-mix(in srgb, var(--accent) 30%, transparent); }
 @keyframes plegma-cut-g { 0%, 80% { --g: 6.5px; } 90%, 100% { --g: 0px; } }
 /* the "/" is drawn from the top to the bottom, waits, and is wiped away the same way */
 @keyframes plegma-cut-s { 0% { clip-path: inset(0 0 100% 0); animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); } 22%, 80% { clip-path: inset(0); animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); } 94%, 100% { clip-path: inset(100% 0 0 0); } }
 /* each part comes in from farther away, settles one row off, waits a beat, then both slide into one row */
 @keyframes plegma-cut-a { 0%, 14% { opacity: 0; translate: 0 calc(var(--dy) * -3.5); animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); } 38% { opacity: 1; translate: 0 calc(var(--dy) * -1); } 48% { opacity: 1; translate: 0 calc(var(--dy) * -1); animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); } 84%, 100% { opacity: 1; translate: 0 0; } }
 @keyframes plegma-cut-b { 0%, 20% { opacity: 0; translate: 0 calc(var(--dy) * 3.5); animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); } 44% { opacity: 1; translate: 0 var(--dy); } 48% { opacity: 1; translate: 0 var(--dy); animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); } 84%, 100% { opacity: 1; translate: 0 0; } }
-@media (prefers-reduced-motion: reduce) { .plegma-card.is-cut .cut-b, .plegma-card.is-cut .cut-slash { display: none; } .plegma-card.is-cut .cut-a { clip-path: none; } .plegma-card.is-cut .cut-in { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .is-cut .cut-b, .is-cut .cut-slash { display: none; } .is-cut .cut-a { clip-path: none; } .is-cut .cut-in { opacity: 1; } }
 /* The card of the page has its own edge; the dcard inside has none, also under the pointer (the global hover of a dcard, in app.css, would draw a second, darker edge and a glow inside the first). */
 .plegma-card .plegma-card-body > .dcard, .plegma-card .plegma-card-body > .dcard:is(:hover, :focus-within) { border-color: transparent; box-shadow: none; }
 .plegma-card .dcard-head { min-height: 20px; }
