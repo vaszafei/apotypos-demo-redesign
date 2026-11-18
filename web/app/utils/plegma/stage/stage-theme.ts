@@ -34,6 +34,8 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
   // What is pointed at: a story (in the card of the stories or on the web) or an outlet (on the web: it comes forward in every story that has it). It eases in and out.
   let themeMix = 0
   let themeLit: { story: number, outlet: string | null } = { story: -1, outlet: null }
+  // The story is lit by the pointer on its node: the tooltip names it then, so the web does not write the name again (a story pointed at in a card has no tooltip, and the web names it).
+  let themeLitOnNode = false
   const themeDisc = () => {
     if (!plegma.region) return null
     const box = regionBox(st.width, st.height, plegma.region)
@@ -98,7 +100,7 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
     const node = web && st.hoverNode > 0 && st.hoverNode < web.n ? st.hoverNode : -1
     const cardStory = plegma.hoverStory !== null ? themed.index.get(plegma.hoverStory) ?? -1 : -1
     const lit = node > 0 ? (web!.outlet[node]! >= 0 ? { story: -1, outlet: web!.stories[web!.story[node]!]!.outlets[web!.outlet[node]!]!.name } : { story: web!.story[node]!, outlet: null }) : cardStory >= 0 ? { story: cardStory, outlet: null } : null
-    if (lit) themeLit = lit
+    if (lit) { themeLit = lit; themeLitOnNode = node > 0 }
     themeMix = ease(themeMix, lit ? 1 : 0, dt)
     if (web && plegma.region) {
       const { disc, unit } = layoutTheme(web, sec)
@@ -286,7 +288,7 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
       for (const i of order) {
         const first = themeLit.story === i && mix > 0.5
         // The web is the size of a story's, so there is no room for the names around it: only the story pointed at has its name.
-        if (!first) continue
+        if (!first || themeLitOnNode) continue
         if (fresh) {
           // On a theme's web the whole title of the story is at its circle: beside it, on the side toward the middle of the web, in lines of at most 190 px.
           const nx = hx[1 + i]!
