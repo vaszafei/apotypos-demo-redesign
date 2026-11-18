@@ -15,7 +15,8 @@
     "test": "node --test scripts/*.test.mjs",
     "check:pixel": "node scripts/pixel-diff.mjs",
     "check:load": "node scripts/load-check.mjs",
-    "check:stage": "node scripts/stage-check.mjs"
+    "check:stage": "node scripts/stage-check.mjs",
+    "check:pointer": "node scripts/pointer-check.mjs"
   },
   "dependencies": {
     "@nuxtjs/i18n": "^10.6.0",

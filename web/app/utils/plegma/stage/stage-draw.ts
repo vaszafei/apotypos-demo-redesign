@@ -16,15 +16,13 @@ export interface DrawDeps extends StageDeps { canvas: Ref<HTMLCanvasElement | un
 
 export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore, articles: StageArticles, theme: StageTheme, hero: StageHero) => {
   const { plegma, reduced, canvas, canvasFocus } = deps
-  const { placed, drift, colourOf, focusStory, focusIssue, focusOutlet, behind, coreOf, spokeSet, targetCamera, CLEAR_PAD, visible, arcOf, ease } = core
+  const { placed, drift, colourOf, focusStory, focusIssue, focusOutlet, behind, coreOf, spokeSet, targetCamera, CLEAR_PAD, visible, arcOf, ease, BACK_Z, backFrame, backPoint } = core
   const { drawArticles, articleWorldRadius, articleAspect, ringOf } = articles
   const { drawTheme } = theme
   const { drawHero } = hero
   const EMPTY = new Set<PlegmaStory>()
   // The most lines from a picked story to other stories.
   const SPOKES_MAX = 6
-  // The world behind a view is seen from far away (the page is its background); the web in view is drawn at the camera's own zoom in front of it.
-  const BACK_Z = 0.66
   // A web that comes into view (a story, a theme, an outlet) is not there at once: it grows. Its nodes leave the center and go to their places, the nearer ones first, then its lines
   // and its ring come in. It starts when the camera is half way through its flight (the web would be drawn on a moving map before), and only when the view has measured its
   // free area, so it never grows unseen. With reduced motion it is all at once.
@@ -135,9 +133,7 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
     st.push = story ? { s: story, r: articleWorldRadius(story) * 1.25 * articleAspect() + CLEAR_PAD } : null
     const bz = onHome ? z : BACK_Z
     // The background is seen from the web: the world point at the middle of the map region stays there, and the world around it is drawn at the far zoom.
-    const rb = regionBox(st.width, st.height, plegma.region ?? undefined)
-    const fx = st.cam.x + (rb.cx - st.width / 2) / z
-    const fy = st.cam.y + (rb.cy - st.height / 2) / z
+    const frame = backFrame()
     const dotBuckets: ({ colour: string, alpha: number, path: Path2D } | undefined)[] = []
     const drawn: { s: PlegmaStory, level: 1 | 2, alpha: number, focus: boolean, crisp: boolean }[] = []
 
@@ -162,12 +158,20 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
         const key = s.slot * 3 + (strong ? 2 : sameTheme ? 1 : 0)
         let bucket = dotBuckets[key]
         if (!bucket) { bucket = { colour: colourOf(s), alpha, path: new Path2D() }; dotBuckets[key] = bucket }
-        const where = back ? s : placed(s)
-        const bx = back ? (s.x - fx) * bz : (where.x - st.cam.x) * zz
-        const by = back ? (s.y - fy) * bz : (where.y - st.cam.y) * zz
-        const dd = (onHome || back) && sec ? orbit(bx, by, sec) : null
-        const px = bx + (back ? rb.cx : st.width / 2) + (dd ? dd.x : 0)
-        const py = by + (back ? rb.cy : st.height / 2) + (dd ? dd.y : 0)
+        let px: number
+        let py: number
+        if (back) {
+          const at = backPoint(s, frame, sec)
+          px = at.x
+          py = at.y
+        } else {
+          const where = placed(s)
+          const bx = (where.x - st.cam.x) * zz
+          const by = (where.y - st.cam.y) * zz
+          const dd = onHome && sec ? orbit(bx, by, sec) : null
+          px = bx + st.width / 2 + (dd ? dd.x : 0)
+          py = by + st.height / 2 + (dd ? dd.y : 0)
+        }
         bucket.path.moveTo(px + r, py)
         bucket.path.arc(px, py, r, 0, TAU)
       } else drawn.push({ s, level, alpha, focus: isFocus, crisp })

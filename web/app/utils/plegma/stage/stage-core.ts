@@ -1,4 +1,4 @@
-import { frameHome, framePair, frameStory, frameTheme, toScreen } from '../plegma-camera'
+import { frameHome, framePair, frameStory, frameTheme, regionBox, toScreen } from '../plegma-camera'
 import type { PlegmaCamera, PlegmaPoint } from '../plegma-camera'
 import { themeCore, themeFrameSet } from '../plegma-world'
 import type { PlegmaStory } from '../plegma-world'
@@ -118,6 +118,22 @@ export const createStageCore = (st: StageState, deps: StageDeps) => {
     for (let i = lo; i < st.byX.length && st.byX[i]!.x <= x1; i++) if (st.byX[i]!.y >= y0 && st.byX[i]!.y <= y1) out.push(st.byX[i]!)
     return out
   }
+  // The world behind a view is seen from far away (the page is its background): a story that is not in the web in view is a dot at this zoom, around the middle of the view's free area.
+  // The frame is read once for all the dots, and `backPoint` says where one of them is on the screen: the frame draws the dots there and the pointer looks for them there.
+  const BACK_Z = 0.66
+  const backFrame = () => {
+    const rb = regionBox(st.width, st.height, plegma.region ?? undefined)
+    return { rb, fx: st.cam.x + (rb.cx - st.width / 2) / st.cam.z, fy: st.cam.y + (rb.cy - st.height / 2) / st.cam.z }
+  }
+  const backSpot = { x: 0, y: 0 }
+  const backPoint = (s: PlegmaStory, frame: ReturnType<typeof backFrame>, sec: number) => {
+    const bx = (s.x - frame.fx) * BACK_Z
+    const by = (s.y - frame.fy) * BACK_Z
+    const dd = sec ? orbit(bx, by, sec) : null
+    backSpot.x = bx + frame.rb.cx + (dd ? dd.x : 0)
+    backSpot.y = by + frame.rb.cy + (dd ? dd.y : 0)
+    return backSpot
+  }
   const arcOf = (ctx2: CanvasRenderingContext2D, a: PlegmaStory, b: PlegmaStory, sign: number, sec = 0) => {
     const p = { ...toScreen(st.cam, st.width, st.height, placed(a)) }
     if (sec) { const d = drift(a, sec); p.x += d.x; p.y += d.y }
@@ -128,7 +144,7 @@ export const createStageCore = (st: StageState, deps: StageDeps) => {
     ctx2.moveTo(p.x, p.y)
     ctx2.quadraticCurveTo((p.x + q.x) / 2 - dy * 0.22 * sign, (p.y + q.y) / 2 + dx * 0.22 * sign, q.x, q.y)
   }
-  return { coreOf, spokeSet, name, colourOf, drift, readTokens, behind, focusStory, focusIssue, focusOutlet, webFocus, targetCamera, CLEAR_PAD, placed, gatherTo, gatherR, ease, visible, arcOf }
+  return { coreOf, spokeSet, name, colourOf, drift, readTokens, behind, focusStory, focusIssue, focusOutlet, webFocus, targetCamera, CLEAR_PAD, placed, gatherTo, gatherR, ease, visible, arcOf, BACK_Z, backFrame, backPoint }
 }
 
 export type StageCore = ReturnType<typeof createStageCore>
