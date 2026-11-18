@@ -108,7 +108,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       const reach = i === 0 && aw.arcs.length ? 0 : aw.reach[i]!
       ax[i] = p.x + bx * R * kx + Math.cos(a) * amp * reach
       ay[i] = p.y + by * R + Math.sin(a) * amp * reach
-      if (st.introP < 1) { const at = gatherTo(i, aw.n, ax[i]!, ay[i]!, p.x, p.y, ringOf(R)); ax[i] = at.x; ay[i] = at.y }
+      if (st.introP < 1) { const at = gatherTo(i, aw.n, ax[i]!, ay[i]!); ax[i] = at.x; ay[i] = at.y }
     }
     Object.assign(arts, { aw, id: s.id, cx: p.x, cy: p.y, R, ring: ringOf(R), kx, rWorld, spacing, dr: clamp(spacing * 0.27, 1.2, 4.6) })
     return arts
@@ -130,7 +130,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const ux = (x - a.cx) / a.kx
     if (!aw.arcs.length || morphFrom || Math.abs(Math.hypot(ux, y - a.cy) - a.ring) > 7) return null
     const at = (Math.atan2(y - a.cy, ux) + Math.PI / 2 + TAU) % TAU
-    const inside = (start: number, span: number) => span > 0 && (at - start + TAU) % TAU <= span
+    const inside = (start: number, span: number) => span > 0 && (((at - start) % TAU) + TAU) % TAU <= span
     if (st.ringMix > 0.5) {
       const arcs = shareArcs(plegma.stance)
       if (!arcs) return null

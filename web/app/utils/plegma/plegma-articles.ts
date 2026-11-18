@@ -1,4 +1,5 @@
 import { mulberry } from './plegma-world.ts'
+import { RING_START } from './plegma-ring.ts'
 
 // The web of the picked story: one node for each article. The fixtures hold the articles of a story as counts for each day (stories.json) and for each outlet on
 // each day (storyDetail.json), so a node knows its day and, once the detail is read, its outlet and group; it has no headline of its own.
@@ -44,7 +45,7 @@ const buildSectorWeb = (n: number, seed: number, sectors: ArrayLike<number>): Pl
   const used = count.filter(c => c > 0).length
   const room = used > 1 ? Math.min(SECTOR_GAP, (Math.PI * 0.5) / used) : 0
   const arcs = new Float32Array(count.length * 2)
-  let at = 0
+  let at = RING_START
   for (let g = 0; g < count.length; g++) {
     const span = count[g]! ? (Math.PI * 2 - used * room) * (count[g]! / n) : 0
     arcs[g * 2] = at + (count[g]! ? room / 2 : 0)

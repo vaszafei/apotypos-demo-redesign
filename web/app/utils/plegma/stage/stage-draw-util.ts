@@ -1,4 +1,5 @@
 // Small pure helpers of the drawing of PlegmaStage: numbers, colors, the turn of the field and the arcs of a ring. They hold no state of the stage.
+import { RING_START } from '../plegma-ring'
 export const TAU = Math.PI * 2
 export const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x))
 
@@ -26,7 +27,7 @@ export const orbit = (dx: number, dy: number, sec: number) => {
   return driftSpot
 }
 
-// The arcs of a ring from counts: [start, span] in radians from the top, clockwise, for each count, as wide as its share of the total (the stance: critical, neutral and supportive;
+// The arcs of a ring from counts: [start, span] in radians from the top, clockwise, the first at RING_START, for each count, as wide as its share of the total (the stance: critical, neutral and supportive;
 // on a theme the groups too).
 export const shareArcs = (counts: number[] | null) => {
   const total = counts ? counts.reduce((x, y) => x + y, 0) : 0
@@ -34,7 +35,7 @@ export const shareArcs = (counts: number[] | null) => {
   const used = counts.filter(c => c > 0).length
   const room = used > 1 ? Math.min(0.09, (Math.PI * 0.5) / used) : 0
   const out = new Float32Array(counts.length * 2)
-  let at = 0
+  let at = RING_START
   for (let k = 0; k < counts.length; k++) {
     const span = counts[k]! > 0 ? (TAU - used * room) * (counts[k]! / total) : 0
     out[k * 2] = at + (counts[k]! > 0 ? room / 2 : 0)

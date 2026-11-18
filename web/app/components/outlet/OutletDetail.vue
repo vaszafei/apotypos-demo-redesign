@@ -209,22 +209,25 @@ const headlinesShown = computed(() => liveHeadlines.value.filter(x => String(x[0
       <EntityTitle :kind="t('hero.kind.outlet')" :title="model.outlet.name">
         <template #meta>{{ t('entity.fact.group') }}: <EntityLink v-if="model.group && model.record?.slug" type="group" :to="groupPageHref(model.record.slug)">{{ model.group }}</EntityLink><template v-else>{{ model.group ?? t('story.nogroup') }}</template></template>
       </EntityTitle>
-      <SegmentedControl v-model="tab" class="orbit-ring-tabs" :label="t('mme.o.tab.label')" :options="tabs" />
     </div>
+    <SegmentedControl v-model="tab" class="orbit-ring-tabs" :label="t('mme.o.tab.label')" :options="tabs" />
     <div v-if="allDates.length" class="outlet-period"><DateRange plain :dates="allDates" :from="view.from" :to="view.to" @change="r => (picked = r)" /></div>
 
     <div class="orbit-map">
       <ClientOnly><div class="outlet-map-web">
         <OutletArticleWeb v-if="tab === 'overview'" key="overview" :days="bars?.series[0]?.values.map(v => v ?? 0) ?? []" :color-slot="groupSlot" :stance="model.writes.stanceMine" :label="t('outlet.web.label')" :name="model.outlet.name" />
         <PlegmaDayWeb
+          :ring-start="0.5"
           v-else-if="tab === 'topics'" key="topics" :themes="webThemes" :ring="themeRing" :outlets="[]" mode="themes" :date="fmtInt(periodArticles)" :sub="model.outlet.name" :lit="null" :picked="null" active
           :labels="8" grow shares :zoom="1.12" :label="t('outlet.web.label')" @pick="id => navigateTo(storyHref(id))" @pick-theme="k => navigateTo(topicHref(k))"
         />
         <PlegmaDayWeb
+          :ring-start="0.5"
           v-else-if="tab === 'stories'" key="stories" :themes="webStoryThemes" :ring="[]" :outlets="storyRing" mode="stories" :date="fmtInt(periodArticles)" :sub="model.outlet.name" :lit="null" :picked="null" active
           :hover-story="plegma.hoverStory" ellipse grouped spread fill titles grow :zoom="0.82" :label="t('outlet.web.label')" @pick="id => navigateTo(storyHref(id))" @pick-theme="k => navigateTo(topicHref(k))"
         />
         <PlegmaDayWeb
+          :ring-start="0.5"
           v-else key="people" :themes="personThemes" :ring="personRing" :outlets="[]" mode="themes" :date="model.outlet.name" :sub="t('outlet.web.quotesN', { n: fmtInt(personRows.reduce((a, r) => a + r.n, 0)) })" :lit="null" :picked="null" active
           :labels="8" grow spread shares :zoom="1.12" :label="t('outlet.web.label')" @pick-theme="openPerson"
         />

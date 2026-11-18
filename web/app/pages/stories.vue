@@ -70,10 +70,11 @@ watch(view, async () => { await nextTick(); $motion.replay(document.querySelecto
       </ClientOnly>
     </template>
     <template #map="{ active }">
-      <div class="stories-date dive-fade" :class="{ 'is-leaving': leaving }"><DateRange plain :dates="dates" :from="view.from" :to="view.to" @change="r => period.set(r.from, r.to)" /></div>
+      <div class="stories-date dive-fade" :class="{ 'is-leaving': leaving }">
+        <SegmentedControl v-if="webThemes.length" v-model="ringBy" class="media-map-tabs dive-fade" :class="{ 'is-leaving': leaving }" :label="t('stories.ring.label')" :options="[{ value: 'outlets', label: t('stories.ring.outlets') }, { value: 'groups', label: t('stories.ring.groups') }]" />
+        <DateRange plain :dates="dates" :from="view.from" :to="view.to" @change="r => period.set(r.from, r.to)" /></div>
       <div class="media-map-web">
         <ClientOnly>
-          <SegmentedControl v-if="webThemes.length" v-model="ringBy" class="media-map-tabs dive-fade" :class="{ 'is-leaving': leaving }" :label="t('stories.ring.label')" :options="[{ value: 'outlets', label: t('stories.ring.outlets') }, { value: 'groups', label: t('stories.ring.groups') }]" />
           <PlegmaDayWeb
             v-if="webThemes.length" ref="web" v-model:lit="litIssue" :hover-story="hoverStory" :themes="webThemes" :ring="[]" :outlets="ringBy === 'groups' ? periodWeb!.groupRing.value : periodWeb!.outlets.value" mode="stories" :date="dateText" :sub="t('stories.web.sub', { n: fmtInt(list.length) })"
             :picked="null" ellipse grouped spread fill titles :active="active" grow :label="t('topics2.stories.title')" @pick="id => open({ story: id })" @pick-theme="issue => open({ theme: issue })"
