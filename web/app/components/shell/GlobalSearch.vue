@@ -160,12 +160,12 @@ const choose = async (r: Row) => {
   const text = query.value.trim()
   if (text) remember('queries', text, q => fold(q) === fold(text))
   const target = searchTarget(r.e!)
-  // A story or a theme picked in the large search: the page fades, the field moves up to the top bar and the map flies to the pick.
+  // A story or a theme picked in the large search: the page fades and the map flies to the pick.
   if (props.hero && 'to' in target && PLEGMA_VIEW.test(target.to)) {
     isOpen.value = false
     shown.value = false
     motion.forEach(a => a.cancel())
-    await leaveHome(button.value!, () => navigateTo(target.to), reduceMotion.value)
+    await leaveHome(() => navigateTo(target.to), reduceMotion.value)
     return
   }
   close({ focus: false })
