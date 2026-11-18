@@ -135,7 +135,7 @@ onMounted(() => {
 })
 useEventListener(document, 'visibilitychange', () => { if (document.hidden) halt(); else kick() })
 // The route puts something else in focus: fly there. From a page with no map the flight starts from where the camera was left.
-watch(() => [plegma.focus, plegma.compare], () => fly(), { deep: true })
+watch(() => [plegma.focus, plegma.compare], () => { leave(); fly() }, { deep: true })
 // Home under the hero picked a day (the map steps back to a dim background) or went back to the hero (the camera frames the best of the week again).
 watch(behind, (on, was) => {
   if (!st.world) return

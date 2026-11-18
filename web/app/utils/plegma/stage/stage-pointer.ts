@@ -21,7 +21,7 @@ export interface PointerDeps extends StageDeps {
 
 export const createStagePointer = (st: StageState, deps: PointerDeps, core: StageCore, articles: StageArticles, theme: StageTheme, hero: StageHero) => {
   const { plegma, reduced, locale, pointerFine, phone, canvas, tooltip, t, kick } = deps
-  const { visible, placed, drift, focusStory, focusOutlet, webFocus, behind, name } = core
+  const { visible, placed, drift, focusStory, focusOutlet, webFocus, behind, name, coreOf, spokeSet, BACK_Z, backFrame, backPoint } = core
   const { articleAt, ringAt, sectorOf, byOutlet } = articles
   const { themeNodeAt, themeWebOf, themeRingAt } = theme
   const { explore } = hero
@@ -41,19 +41,45 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
     }
     return best
   }
+  // The stories that are not a dot of the background: the web in view, its pair, the stories of its theme and the webs of the week are drawn at the camera, not at the far zoom of the background.
+  const nearCamera = (s: PlegmaStory) => {
+    const story = focusStory()
+    if (s === story || s.id === plegma.compare) return true
+    if (st.webs.includes(s)) return true
+    const issue = core.focusIssue()
+    return issue !== null ? coreOf(issue).has(s) : !!story?.coded && spokeSet(story.issue).has(s)
+  }
+  // Behind a view the map is dots at the far zoom (stage-core.ts backPoint, which the frame draws them at): the pointer finds one where it is drawn, and only to tell what it is.
+  const pickBack = (x: number, y: number, reach: number) => {
+    const frame = backFrame()
+    const sec = reduced.value ? 0 : performance.now() / 1000
+    let best: PlegmaStory | null = null
+    let bestDistance = reach
+    for (const s of visible(80, Math.min(st.cam.z, BACK_Z))) {
+      if (s.n < PLEGMA_WEB_MIN || nearCamera(s)) continue
+      const at = backPoint(s, frame, sec)
+      const d = Math.hypot(at.x - x, at.y - y)
+      if (d < bestDistance) { bestDistance = d; best = s }
+    }
+    return best
+  }
+  // What the stage has put in the tooltip, so that it is the stage that takes it away (the tooltip is shared with the charts of the cards): every way out of a hover ends in `leave`.
+  let tipOn = false
+  const show = (tip: Parameters<typeof tooltip.show>[0], e: PointerEvent) => { tipOn = true; tooltip.show(tip, e) }
+  const hide = () => { if (!tipOn) return; tipOn = false; tooltip.hide() }
   const local = (e: PointerEvent) => {
     const box = canvas.value!.getBoundingClientRect()
     return { x: e.clientX - box.left, y: e.clientY - box.top }
   }
   const leave = () => {
     st.lantern.on = false
-    if (!st.hover && st.hoverArticle < 0 && st.hoverNode < 0 && !st.hoverRing) return
+    if (!tipOn && !st.hover && st.hoverArticle < 0 && st.hoverNode < 0 && !st.hoverRing) return
     st.hover = null
     st.hoverArticle = -1
     st.hoverNode = -1
     st.hoverRing = ''
     if (st.ringLit) { st.ringLit = false; plegma.setHighlight(null) }
-    tooltip.hide()
+    hide()
     if (reduced.value) kick()
   }
   const onMove = (e: PointerEvent) => {
@@ -80,7 +106,7 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
         if (i === 0) {
           st.hover = null
           if (st.hoverArticle >= 0) { st.hoverArticle = -1; if (reduced.value) kick() }
-          tooltip.show({ title: core.name(story), rows: [{ label: t('entity.fact.articles'), value: fmtInt(story.n) }], field: true }, e)
+          show({ title: core.name(story), rows: [{ label: t('entity.fact.articles'), value: fmtInt(story.n) }], field: true }, e)
           return
         }
         // A node that stands for an article of the sample of headlines (or for several, one of which is in it) has the title of that article, with its outlet and day under it.
@@ -91,7 +117,7 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
         for (let k = from; k < to && !titled; k++) if (list[k]!.title) titled = list[k]
         const group = article.group ?? t('story.nogroup')
         const date = fmtDate(st.world.dates[(titled ?? article).day]!)
-        tooltip.show(titled
+        show(titled
           ? {
               title: titled.title!,
               rows: [
@@ -123,7 +149,7 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
           const mine = list.filter(x => sectorOf(x) === arc.k)
           const first = mine[0]
           if (changed && first) { plegma.setHighlight(byOutlet() ? { group: first.group, outlet: first.outlet } : { group: first.group }); st.ringLit = true }
-          tooltip.show({
+          show({
             title: byOutlet() ? first?.outlet ?? '' : first?.group ?? t('story.nogroup'),
             rows: [{ label: t('home.field.articles'), value: `${fmtInt(mine.length)} · ${fmtPct(mine.length / list.length)}`, color: `var(--cat-${first?.slot ?? 0})` }],
             field: true
@@ -131,7 +157,7 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
         } else {
           const counts = plegma.stance!
           const total = counts.reduce((x, y) => x + y, 0)
-          tooltip.show({
+          show({
             title: t(`stance.${['critical', 'neutral', 'supportive'][arc.k]}`),
             rows: [{ label: t('home.field.articles'), value: `${fmtInt(counts[arc.k]!)} · ${fmtPct(counts[arc.k]! / total)}`, color: `var(--stance-${['critical', 'neutral', 'supportive'][arc.k]})` }],
             field: true
@@ -139,7 +165,7 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
         }
         return
       }
-      if (st.hoverRing) { st.hoverRing = ''; tooltip.hide(); if (reduced.value) kick() }
+      if (st.hoverRing) { st.hoverRing = ''; hide(); if (reduced.value) kick() }
       if (st.ringLit) { st.ringLit = false; plegma.setHighlight(null) }
     }
     // On the web of a theme the pointer finds a story or an outlet of a story; on the web of an outlet, a story or a day of it.
@@ -153,7 +179,7 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
         const s = web.stories[web.story[i]!]!
         const o = web.outlet[i]! >= 0 ? s.outlets[web.outlet[i]!]! : null
         const mineOutlet = focusOutlet() !== null
-        tooltip.show(mineOutlet
+        show(mineOutlet
           ? o
             ? { title: s.name, rows: [{ label: o.name, value: fmtInt(o.n), color: `var(--cat-${s.slot ?? 0})` }], field: true }
             : { title: s.name, rows: [{ label: t('home.field.topic'), value: s.theme ?? '', color: `var(--cat-${s.slot ?? 0})` }, { label: t('home.field.articles'), value: fmtInt(s.n) }], field: true }
@@ -172,7 +198,7 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
         if (arc.kind === 'g') {
           const groups = plegma.themeGroups!
           const mine = groups[arc.k]!
-          tooltip.show({
+          show({
             title: mine.name,
             rows: [{ label: t('home.field.articles'), value: `${fmtInt(mine.n)} · ${fmtPct(mine.n / groups.reduce((x, y) => x + y.n, 0))}`, color: `var(--cat-${mine.slot})` }],
             field: true
@@ -180,7 +206,7 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
         } else {
           const counts = plegma.stance!
           const total = counts.reduce((x, y) => x + y, 0)
-          tooltip.show({
+          show({
             title: t(`stance.${['critical', 'neutral', 'supportive'][arc.k]}`),
             rows: [{ label: t('home.field.articles'), value: `${fmtInt(counts[arc.k]!)} · ${fmtPct(counts[arc.k]! / total)}`, color: `var(--stance-${['critical', 'neutral', 'supportive'][arc.k]})` }],
             field: true
@@ -188,16 +214,16 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
         }
         return
       }
-      if (st.hoverRing) { st.hoverRing = ''; tooltip.hide(); if (reduced.value) kick() }
+      if (st.hoverRing) { st.hoverRing = ''; hide(); if (reduced.value) kick() }
     }
-    const best = pickAt(p.x, p.y, 14)
+    const best = inHero ? pickAt(p.x, p.y, 14) : pickBack(p.x, p.y, 14)
     if (!best) return leave()
     // Ground that is still black has nothing to tell yet.
-    if (inHero && !st.heroCleared && (st.heroRev.get(best.id) ?? 0) < 0.9) { st.hover = null; tooltip.hide(); return }
-    if (st.hover !== best && reduced.value) kick()
-    st.hover = best
+    if (inHero && !st.heroCleared && (st.heroRev.get(best.id) ?? 0) < 0.9) { st.hover = null; hide(); return }
+    // In the hero the story pointed at is lit; behind a view it is a dot of the background, and the tooltip is all it has.
+    if (inHero) { if (st.hover !== best && reduced.value) kick(); st.hover = best } else st.hover = null
     const issueName = (st.world.issues[best.issue]!)
-    tooltip.show({
+    show({
       title: name(best),
       rows: [
         { label: t('home.field.topic'), value: (locale.value === 'en' && issueName.en) || issueName.el, color: best.slot > 0 ? `var(--cat-${best.slot})` : undefined },
@@ -218,13 +244,11 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
     const web = webFocus() ? themeWebOf() : null
     if (web && st.hoverNode > 0 && st.hoverNode < web.n) {
       const id = web.stories[web.story[st.hoverNode]!]!.id
-      tooltip.hide()
+      hide()
       st.hoverNode = -1
       navigateTo(storyHref(id))
       return
     }
-    const best = pickAt(p.x, p.y, 18)
-    if (best) { tooltip.hide(); st.hover = null; navigateTo(storyHref(best.id)) }
   }
   return { onMove, onClick, leave }
 }
