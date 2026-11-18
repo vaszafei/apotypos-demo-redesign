@@ -183,36 +183,10 @@
 /* Αρχική: the hero is a transparent window over the Plegma, which the static page drew as its own field. The page head has no title here: the masthead is the title. The hero is its own block: its line at the bottom and the link to «Η επικαιρότητα» stay, over the Plegma. */
 .shell.is-plegma .home-hero { background: none; }
 .shell.is-hero-page .page-head { display: none; }
-/* The search of the top bar waits while the large one is in the page, and appears when the large one has moved up into it. */
-.header-bar .global-search { transition: opacity var(--motion-base) var(--ease-out); }
-.shell.is-hero-page .header-bar .global-search, html[data-search-fly] .header-bar .global-search { opacity: 0; pointer-events: none; }
-html[data-search-fly] .home-hero-search .search-button { visibility: hidden; }
-/* A story or a theme: the search is not in the top bar but at the middle of the top of the body, under the bar, and stays there. The wrapper takes no room and no pointer; the
-   field is the look of the large one of Αρχική, smaller, so the one that flew down from the hero (utils/home-leave.ts) lands on it. */
-.shell.is-body-search .header-actions { margin-left: auto; }
-:root { --search-float: 0 10px 28px -10px color-mix(in srgb, var(--shade) 55%, transparent), 0 2px 6px -2px color-mix(in srgb, var(--shade) 30%, transparent); }
-.body-search { position: fixed; top: 64px; left: 0; right: 0; z-index: 30; height: 0; pointer-events: none; }
-.body-search .global-search { position: absolute; top: var(--search-land-gap, 8px); left: 50%; width: min(var(--search-land-width, 420px), calc(100vw - 32px)); margin: 0; transform: translateX(-50%); display: block; pointer-events: auto; }
-.body-search .search-button {
-  width: 100%; height: 32px; padding: 0 6px 0 14px; border: 1px solid var(--border); border-radius: var(--pill, 999px); background: var(--surface-raised); color: var(--text-secondary); font-size: 13px;
-  box-shadow: var(--search-float);
-}
-.body-search .search-button:hover, .body-search .search-button:focus-visible { border-color: var(--ink); background: var(--surface-raised); }
-.body-search .search-button-icon { width: 16px; height: 16px; color: var(--ink); }
-.body-search .search-button-label { flex: 1; min-width: 0; padding: 0; overflow: hidden; text-align: left; text-overflow: ellipsis; }
-html[data-search-fly] .body-search { opacity: 0; }
-/* The way out: the text and the figures fade while the field moves up. */
-.home-hero.is-leaving .home-hero-inner > :not(.home-hero-search), .home-hero.is-leaving .home-hero-more { opacity: 0; transition: opacity 200ms var(--ease-out); }
-/* The copy of the field that moves up (utils/home-leave.ts): the look of the large field, since it is in the body and not in the hero. */
-.search-fly {
-  position: fixed; z-index: 65; box-sizing: border-box; display: flex; align-items: center; gap: var(--space-3); margin: 0; padding: 0 6px 0 20px; overflow: hidden; pointer-events: none;
-  border: 1px solid var(--border); border-radius: var(--pill, 999px); background: var(--surface-raised); color: var(--text-secondary); font: 16px var(--font-text);
-  box-shadow: var(--search-float);
-}
-.search-fly { flex-wrap: nowrap; white-space: nowrap; line-height: 1; }
-.search-fly .search-hero-go { display: none; }
-.search-fly .search-button-icon { flex: none; color: var(--ink); }
-.search-fly .search-button-label { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+/* The search of the top bar waits (invisible, keeping its place) while the large one is in the page of Αρχική. */
+.shell.is-hero-page .header-bar .global-search { opacity: 0; pointer-events: none; }
+/* The way out of Αρχική for a story or a theme (utils/home-leave.ts): the page fades, the route changes and the map flies. */
+.home-hero.is-leaving .home-hero-inner, .home-hero.is-leaving .home-hero-more { opacity: 0; transition: opacity 200ms var(--ease-out); }
 
 /* The title of a story view arrives with the cards, after the camera lands, and so do the switch of the ring and the note under the web. */
 .plegma-orbit .plegma-title, .plegma-orbit .orbit-ring-tabs, .plegma-orbit .plegma-nodes-note, .plegma-orbit .outlet-period { opacity: 0; transition: opacity var(--motion-slow, 360ms) var(--ease-out); }
@@ -256,14 +230,6 @@ html[data-search-fly] .body-search { opacity: 0; }
 /* The last frame of a theme, kept when a story of it is picked (PlegmaStage.vue diveInto): it dives into the story's node and fades out. */
 .plegma-dive-snap { pointer-events: none; will-change: transform, opacity; }
 .plegma-dive-snap.is-back { filter: blur(1px); }
-
-/* The field of the body arrives and leaves with a fade, and so does the one of the top bar when it is mounted, so the two looks never swap in one frame. */
-.search-swap-enter-active { transition: opacity 240ms var(--ease-out); }
-.search-swap-leave-active { transition: opacity 140ms var(--ease-out); }
-.search-swap-enter-from, .search-swap-leave-to { opacity: 0; }
-@keyframes search-in { from { opacity: 0; } }
-.header-bar > .global-search { animation: search-in 240ms var(--ease-out) both; }
-@media (prefers-reduced-motion: reduce) { .header-bar > .global-search { animation: none; } .search-swap-enter-active, .search-swap-leave-active { transition: none; } }
 
 /* The list of «Η επικαιρότητα» (HomeToday.vue): a story and, under it, its theme as a link, «Θέμα: title». */
 .home-day-list .home-stories li { display: flex; flex-direction: column; align-items: stretch; gap: 0; padding-bottom: 6px; }
@@ -586,10 +552,10 @@ html[data-search-fly] .body-search { opacity: 0; }
 /* The way down to «Μεθοδολογία» at the end of «Η επικαιρότητα», the same link as the one at the bottom of the hero, above the line that starts the section. */
 .home-today-more { display: flex; justify-content: center; padding: var(--space-3) 0 var(--space-5); }
 .home-today-more .home-hero-more { position: static; transform: none; }
-/* The link of the top bar to it, set like the sections of the bar: left of the search, and on Αρχική (where the search of the bar is not shown) left of the log in. */
+/* The link of the top bar to it, set like the sections of the bar: right of the search, and on Αρχική (where the search of the bar is not shown) left of the log in. */
 .method-link { flex: none; margin-left: auto; margin-right: var(--space-3); display: inline-flex; align-items: center; align-self: stretch; padding: 0 var(--space-3); font-size: var(--text-caption); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); white-space: nowrap; text-decoration: none; }
 .method-link:hover, .method-link:focus-visible { color: var(--ink); }
-.header-bar .method-link + .global-search { margin-left: 0; }
+.header-bar .global-search + .method-link { margin-left: 0; }
 .shell.is-hero-page .header-bar .method-link { order: 1; margin-left: 0; }
 .shell.is-hero-page .header-bar .header-actions { order: 2; }
 @media (max-width: 1023px) { .method-link { display: none; } }
