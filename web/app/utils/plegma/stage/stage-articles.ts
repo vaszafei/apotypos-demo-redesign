@@ -108,7 +108,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       const reach = i === 0 && aw.arcs.length ? 0 : aw.reach[i]!
       ax[i] = p.x + bx * R * kx + Math.cos(a) * amp * reach
       ay[i] = p.y + by * R + Math.sin(a) * amp * reach
-      if (st.introP < 1) { const at = gatherTo(i, aw.n, ax[i]!, ay[i]!, p.x, p.y, ringOf(R)); ax[i] = at.x; ay[i] = at.y }
+      if (st.introP < 1) { const at = gatherTo(i, aw.n, ax[i]!, ay[i]!); ax[i] = at.x; ay[i] = at.y }
     }
     Object.assign(arts, { aw, id: s.id, cx: p.x, cy: p.y, R, ring: ringOf(R), kx, rWorld, spacing, dr: clamp(spacing * 0.27, 1.2, 4.6) })
     return arts

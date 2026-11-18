@@ -89,20 +89,19 @@ export const createStageCore = (st: StageState, deps: StageDeps) => {
   }
   let ge = new Float32Array(0)
   const gatherSpot = { x: 0, y: 0 }
-  // Node `i` of a web whose center is (cx, cy) with radius R and whose place is (tx, ty): how far along it is now (ge[i]) and where it is.
-  const gatherTo = (i: number, n: number, tx: number, ty: number, cx: number, cy: number, R: number) => {
+  // Node `i` of a web whose place is (tx, ty): how far along its appearing it is now (ge[i]). A node stays where it is and appears in its own time, a little after the web has started
+  // (the story looks as if it had been there, not made), each in the order of the golden ratio so that no part of the web fills before another.
+  const gatherTo = (i: number, n: number, tx: number, ty: number) => {
     if (ge.length < n) ge = new Float32Array(n)
-    const reach = Math.min(1, Math.hypot(tx - cx, ty - cy) / Math.max(R, 1))
-    const delay = reach * 0.42 + ((i * 0.618034) % 1) * 0.12
+    const delay = 0.1 + ((i * 0.618034) % 1) * 0.44
     const t = clamp((st.introP - delay) / 0.46, 0, 1)
-    const e = 1 - Math.pow(1 - t, 3)
-    ge[i] = e
-    gatherSpot.x = cx + (tx - cx) * e
-    gatherSpot.y = cy + (ty - cy) * e
+    ge[i] = 1 - Math.pow(1 - t, 3)
+    gatherSpot.x = tx
+    gatherSpot.y = ty
     return gatherSpot
   }
-  // A node's radius on its way: a small dot at first, then its own.
-  const gatherR = (i: number, r: number) => (st.introP < 1 ? r * (0.3 + 0.7 * (ge[i] ?? 1)) : r)
+  // A node's radius while it appears: it grows from nothing to its own.
+  const gatherR = (i: number, r: number) => (st.introP < 1 ? r * (ge[i] ?? 1) : r)
   const ease = (value: number, target: number, dt: number) => (reduced.value ? target : value + (target - value) * (1 - Math.exp(-dt * 9)))
   // The stories inside the screen: the list is sorted by x, so a zoomed camera looks at a small part of it.
   const visible = (margin: number, zz = st.cam.z) => {

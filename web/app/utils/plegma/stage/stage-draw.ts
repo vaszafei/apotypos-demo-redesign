@@ -122,8 +122,8 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
     if (introAt < 0 && key && plegma.region && (!st.flight || (now - st.flight.t0) / Math.max(st.flight.dur, 1) >= INTRO_AT)) introAt = now
     st.introP = !key || reduced.value ? 1 : introAt < 0 ? 0 : clamp((now - introAt) / INTRO_MS, 0, 1)
     st.nodeIn = smooth(0, 0.18, st.introP)
-    st.lineIn = smooth(0.3, 0.85, st.introP)
-    st.ringIn = smooth(0.55, 1, st.introP)
+    st.lineIn = smooth(0.45, 0.95, st.introP)
+    st.ringIn = smooth(0.6, 1, st.introP)
     // The theme that is lit: the one of the story or the theme in focus, or the one under the pointer.
     const lit = st.hover ? st.hover.issue : story ? story.issue : issue
     const litCoded = lit !== null && !st.world.issues[lit]!.catchAll

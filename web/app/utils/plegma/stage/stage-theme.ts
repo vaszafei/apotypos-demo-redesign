@@ -64,7 +64,7 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
       const k = i === 0 ? 0 : web.outlet[i]! < 0 ? 0.7 : web.reach[i]!
       hx[i] = disc.x + web.x[i]! * disc.R + Math.cos(a) * amp * k
       hy[i] = disc.y + web.y[i]! * disc.R + Math.sin(a) * amp * k
-      if (st.introP < 1) { const at = gatherTo(i, web.n, hx[i]!, hy[i]!, disc.x, disc.y, disc.r); hx[i] = at.x; hy[i] = at.y }
+      if (st.introP < 1) { const at = gatherTo(i, web.n, hx[i]!, hy[i]!); hx[i] = at.x; hy[i] = at.y }
     }
     return { disc, unit }
   }
