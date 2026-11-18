@@ -20,7 +20,7 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
     const groups = plegma.themeGroups
     if (!disc || !groups?.length || Math.abs(Math.hypot(x - disc.x, y - disc.y) - disc.r) > 7) return null
     const at = (Math.atan2(y - disc.y, x - disc.x) + Math.PI / 2 + TAU) % TAU
-    const inside = (start: number, span: number) => span > 0 && (at - start + TAU) % TAU <= span
+    const inside = (start: number, span: number) => span > 0 && (((at - start) % TAU) + TAU) % TAU <= span
     const arcs = st.ringMix > 0.5 ? shareArcs(plegma.stance) : shareArcs(groups.map(g => g.n))
     if (!arcs) return null
     for (let k = 0; k < arcs.length / 2; k++) if (inside(arcs[k * 2]!, arcs[k * 2 + 1]!)) return { kind: st.ringMix > 0.5 ? 's' as const : 'g' as const, k }

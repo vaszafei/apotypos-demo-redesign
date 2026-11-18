@@ -21,7 +21,7 @@ export interface DayOutlet { name: string, slot: number, n: number, group?: stri
 // `spread` that many themes go round the center by the golden angle (utils/plegma/plegma-day.ts), `zoom` the share of the area the web fills (the ring included), `shares` that a theme is as large as its share
 // of the ring (the area of its node is its articles), `ellipse` that the ring is an ellipse as wide as the area allows (the web lies in it, and the arcs of the outlets are named with their share outside it), `grouped` that the stories are grouped by their themes (the nodes of the themes and their names) while the ring stays the outlets; and `shares` that a theme is as large as its share
 // of the ring (the area of its node is its articles) and its share is written after its name and in its tooltip, `titles` that the date and the count are not written at the center and the whole title of the story pointed at is written at its circle (as `names` does), `fill` that the stories are drawn out until the web touches the ring all round (utils/plegma/plegma-day.ts), `growMs` how long the growth takes, `hoverStory` the id of a story that is pointed at in a list beside the web (it is lit and its title is written at its circle, as when the pointer is on it), `names` that it has the look of the web of a story and of a theme (components/PlegmaStage.vue: a story is a gray circle as large as its articles, a dot a small ring in the color of its group, no lines from the center to the stories, the names of the arcs in two columns beside the ring), `grow` that the web grows out of the center when it comes into view and again when its data changes, and `label` the name of the picture for a screen reader.
-const props = withDefaults(defineProps<{ themes: PlegmaDayTheme[], ring: DayRing[], outlets: DayOutlet[], mode: 'stories' | 'themes', lit: number | null, date: string, picked: number | null, active: boolean, sub?: string, labels?: number, grow?: boolean, label?: string, spread?: boolean, themeLabel?: string, zoom?: number, shares?: boolean, ellipse?: boolean, grouped?: boolean, names?: boolean, titles?: boolean, fill?: boolean, hoverStory?: number | null, growMs?: number }>(), { sub: undefined, labels: Infinity, grow: false, label: undefined, spread: false, themeLabel: undefined, zoom: 1, shares: false, ellipse: false, grouped: false, names: false, titles: false, fill: false, hoverStory: null, growMs: GROW_MS })
+const props = withDefaults(defineProps<{ themes: PlegmaDayTheme[], ring: DayRing[], outlets: DayOutlet[], mode: 'stories' | 'themes', lit: number | null, date: string, picked: number | null, active: boolean, sub?: string, labels?: number, grow?: boolean, label?: string, spread?: boolean, themeLabel?: string, zoom?: number, shares?: boolean, ellipse?: boolean, grouped?: boolean, names?: boolean, titles?: boolean, fill?: boolean, hoverStory?: number | null, growMs?: number, ringStart?: number }>(), { ringStart: 0, sub: undefined, labels: Infinity, grow: false, label: undefined, spread: false, themeLabel: undefined, zoom: 1, shares: false, ellipse: false, grouped: false, names: false, titles: false, fill: false, hoverStory: null, growMs: GROW_MS })
 const emit = defineEmits<{ pick: [id: number], pickTheme: [issue: number], 'update:lit': [issue: number | null] }>()
 const { t } = useI18n()
 const tooltip = useTooltipStore()
@@ -128,6 +128,9 @@ const paramOf = (frac: number) => {
   const span = cum[hi]! - cum[lo]! || 1
   return ((lo + (target - cum[lo]!) / span) / N) * TAU
 }
+// Where the first arc of the ring starts, as a share of the ring from the top (0.5 is the bottom edge); the arcs go on clockwise from there, so the first runs to the left.
+const atRing = (frac: number) => { const f = frac + props.ringStart; return f - Math.floor(f) }
+const sweepParam = (from: number, to: number): [number, number] => { const a = paramOf(atRing(from)); let b = paramOf(atRing(to)); if (b <= a) b += TAU; return [a, b] }
 const fracOf = (param: number) => {
   const cum = perim.value
   const N = cum.length - 1
@@ -368,11 +371,12 @@ const draw = (sec: number, dt: number) => {
       g.globalAlpha = (0.85 + 0.15 * heat) * alpha
       g.lineWidth = props.names ? 3 + 1.4 * heat : 2 + 2.5 * heat
       g.beginPath()
-      g.ellipse(width / 2, height / 2, ringX, ringR, 0, paramOf(from + pad) - Math.PI / 2, paramOf(Math.min(from + span - pad, sweepFrac)) - Math.PI / 2)
+      const [p0, p1] = sweepParam(from + pad, Math.min(from + span - pad, sweepFrac))
+      g.ellipse(width / 2, height / 2, ringX, ringR, 0, p0 - Math.PI / 2, p1 - Math.PI / 2)
       g.stroke()
       // The name and the share of a large arc, outside the ring.
       if (props.ellipse && tag === 'o' && r.name && span >= 0.035 && grown >= 1) {
-        const m = paramOf(from + span / 2) - Math.PI / 2
+        const m = paramOf(atRing(from + span / 2)) - Math.PI / 2
         const c = Math.cos(m)
         const sn = Math.sin(m)
         const nm = r.name.replace(/^Συμφέροντα\s+/, '')
@@ -390,7 +394,7 @@ const draw = (sec: number, dt: number) => {
         g.fillText(text, tx, ty)
         g.textAlign = 'start'
       }
-      if (props.names && r.name && span > 0) named.push({ mid: (from + span / 2) * TAU, span: span * TAU, text: r.name.length > NAME_MAX ? `${r.name.slice(0, NAME_MAX - 1)}…` : r.name, dot: r.slot > 0 ? groupInk[r.slot] ?? ink : mute, hot: heat > 0.5 })
+      if (props.names && r.name && span > 0) named.push({ mid: atRing(from + span / 2) * TAU, span: span * TAU, text: r.name.length > NAME_MAX ? `${r.name.slice(0, NAME_MAX - 1)}…` : r.name, dot: r.slot > 0 ? groupInk[r.slot] ?? ink : mute, hot: heat > 0.5 })
       from += span
     })
     g.lineCap = 'butt'
@@ -532,7 +536,7 @@ const arcAt = (x: number, y: number) => {
   const ry = ringOf()
   if (Math.abs(Math.hypot(dx / rx, dy / ry) - 1) * Math.min(rx, ry) > 9) return -2
   const param = (((Math.atan2(dy / ry, dx / rx) + Math.PI / 2) % TAU) + TAU) % TAU
-  const angle = fracOf(param) * TAU
+  const angle = (((fracOf(param) - props.ringStart) % 1) + 1) % 1 * TAU
   let from = 0
   for (let k = 0; k < items.length; k++) {
     from += (items[k]!.n / total) * TAU

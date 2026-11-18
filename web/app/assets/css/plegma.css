@@ -357,12 +357,12 @@
 .owner-outlets.sim-rank li { font-size: var(--text-small); line-height: 1.55; }
 .media-plegma.is-groups > .media-plegma-map { grid-column: 1; grid-row: 1; height: max(380px, calc(100svh - 442px)); }
 .media-plegma.is-groups > .media-plegma-map { display: flex; flex-direction: column; }
-.groups-tools { flex: none; margin-bottom: var(--space-3); }
-.groups-tools .media-map-tabs { position: static; }
+.groups-tools { flex: none; margin-bottom: var(--space-3); display: flex; justify-content: center; }
+.groups-tools .media-map-tabs { position: static; translate: none; }
 .groups-web { position: relative; flex: 1 1 0; min-height: 0; }
 .media-plegma.is-groups > .media-plegma-side { grid-column: 1; grid-row: 2; }
-.stories-date { display: flex; margin-bottom: var(--space-3); }
-.stories-date .dr-pop { left: 0; right: auto; }
+.stories-date { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3); }
+.stories-date .media-map-tabs { position: static; translate: none; }
 .media-side-card { position: absolute; inset: 0; overflow-y: auto; scrollbar-width: thin; }
 .home-day-list.media-side-card { overflow: hidden; }
 .dive-fade { transition: opacity 280ms var(--ease-out); }
@@ -395,7 +395,7 @@
   .media-side-card { position: static; }
 }
 /* The tabs that turn the ring and the note under the web (as the story page has them), over the web of a screen. */
-.media-map-tabs { position: absolute; left: 0; top: 0; z-index: 1; }
+.media-map-tabs { position: absolute; left: 50%; top: 0; z-index: 1; translate: -50% 0; }
 .media-map-tabs.segmented { gap: 6px; padding: 0; border: 0; border-radius: 0; background: none; }
 .media-map-tabs.segmented button { min-height: 30px; padding: 0 var(--space-3); border: 1px solid var(--border); border-radius: 6px; background: var(--surface-raised); color: var(--text-primary); font-size: var(--text-small); }
 .media-map-tabs.segmented button[aria-pressed="true"] { border-color: var(--text-primary); background: var(--text-primary); color: var(--on-ink); font-weight: 600; }
@@ -515,11 +515,16 @@
 /* The bar of the outlets (the card with the colored bar and the total) is hidden on the story page for now; the card and its place in PlegmaStoryView.vue stay. */
 .plegma-orbit.is-story .card-strip { display: none; }
 
-/* The switch of the ring of a story or a theme is beside the title card, on its right, and ends where the card ends. */
+/* The switch that turns the web (the ring of a story or a theme, the tabs of an outlet) is the same on every page of the Plegma: on top, in the middle of the web. It is a row of its own of the grid, in the column of the web
+   (the outlet has the web in its first column), over the cards; the title card stays on the left. */
 .plegma-orbit:is(.is-story, .is-theme, .is-outlet) .plegma-title { display: flex; align-items: flex-end; gap: var(--space-3); }
-.plegma-orbit:is(.is-story, .is-theme, .is-outlet) .plegma-title > .orbit-ring-tabs { position: static; flex: none; }
-/* The outlet: the tabs are under the title card. */
-.plegma-orbit.is-outlet .plegma-title { flex-direction: column; align-items: flex-start; gap: var(--space-2); }
+.plegma-orbit:is(.is-story, .is-theme) > .orbit-ring-tabs { position: static; grid-row: 1; grid-column: map-start / map-end; justify-self: center; align-self: start; z-index: 3; }
+.plegma-orbit.is-outlet > .orbit-ring-tabs { position: static; grid-row: 1; grid-column: 1; justify-self: center; align-self: end; z-index: 3; }
+/* The outlet has its tabs in a strip of their own under the title card, in the middle of the web; the title card of a story or a theme is kept short, so it does not run under the tabs. */
+.plegma-orbit.is-outlet .plegma-title { padding-bottom: 38px; }
+.plegma-orbit:is(.is-story, .is-theme) .plegma-title .ecard { max-width: 25vw; overflow: hidden; }
+.plegma-orbit:is(.is-story, .is-theme) .plegma-title .ecard-name > * { overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+@media (max-width: 1023px) { .plegma-orbit > .orbit-ring-tabs { position: absolute; top: 56px; right: 0; } }
 
 /* The theme view: the two columns of cards on the right are 20% narrower (3 parts of 12 become 2.4), so the web has the room. */
 @media (min-width: 1280px) { .plegma-orbit.is-theme { grid-template-columns: minmax(0, 2fr) minmax(0, 5.2fr) minmax(0, 2.4fr) minmax(0, 2.4fr); } }

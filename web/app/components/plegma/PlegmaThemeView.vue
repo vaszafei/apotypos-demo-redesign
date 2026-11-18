@@ -108,8 +108,8 @@ const lineHref = (key: string) => storyHref(Number(key.slice(1)))
         <EntityFact :label="t('entity.fact.articles')" :value="fmtInt(model.total)" />
         <EntityFact :label="t('entity.fact.stories')" :value="fmtInt(model.mine.length)" />
       </EntityTitle>
-      <SegmentedControl v-model="ring" class="orbit-ring-tabs" :label="t('story.ring.label')" :options="[{ value: 'outlets', label: t('story.ring.outlets') }, { value: 'groups', label: t('story.groups.title') }, ...(model.stanceN >= STANCE_MIN ? [{ value: 'stance', label: t('story.ring.stance') }] : [])]" />
     </div>
+    <SegmentedControl v-model="ring" class="orbit-ring-tabs" :label="t('story.ring.label')" :options="[{ value: 'outlets', label: t('story.ring.outlets') }, { value: 'groups', label: t('story.groups.title') }, ...(model.stanceN >= STANCE_MIN ? [{ value: 'stance', label: t('story.ring.stance') }] : [])]" />
 
     <div class="orbit-col orbit-left">
       <PlegmaCard :at="2" :order="3" class="card-stories">

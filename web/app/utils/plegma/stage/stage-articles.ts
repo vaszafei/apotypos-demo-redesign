@@ -130,7 +130,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const ux = (x - a.cx) / a.kx
     if (!aw.arcs.length || morphFrom || Math.abs(Math.hypot(ux, y - a.cy) - a.ring) > 7) return null
     const at = (Math.atan2(y - a.cy, ux) + Math.PI / 2 + TAU) % TAU
-    const inside = (start: number, span: number) => span > 0 && (at - start + TAU) % TAU <= span
+    const inside = (start: number, span: number) => span > 0 && (((at - start) % TAU) + TAU) % TAU <= span
     if (st.ringMix > 0.5) {
       const arcs = shareArcs(plegma.stance)
       if (!arcs) return null
