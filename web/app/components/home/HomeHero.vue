@@ -27,8 +27,9 @@ const period = computed(() => {
   if (!d) return ''
   return t('home.hero.period', { from: fmtMonth(d.dates[0]!, { day: 'numeric', month: 'long' }), to: fmtMonth(d.dates[d.dates.length - 1]!, { day: 'numeric', month: 'long', year: 'numeric' }) })
 })
-const brand = computed(() => t('site.name').toLocaleUpperCase('el'))
-const tail = computed(() => t('home.hero.eyebrow').toLocaleUpperCase(useNuxtApp().$i18n.locale.value))
+const upper = (s: string, locale: string) => s.normalize('NFD').replace(/\u0301/g, '').normalize('NFC').toLocaleUpperCase(locale)
+const brand = computed(() => upper(t('site.name'), 'el'))
+const tail = computed(() => upper(t('home.hero.eyebrow'), useNuxtApp().$i18n.locale.value))
 </script>
 
 <template>

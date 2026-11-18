@@ -332,8 +332,9 @@
 
   // The masthead of the hero: "ΑΠΟΤΥΠΟΣ / ΠΑΡΑΤΗΡΗΤΗΡΙΟ ΕΛΛΗΝΙΚΩΝ ΜΜΕ". On each visit the name rises in, the "/" draws from the top and the line after it follows (CSS).
   function Masthead () {
-    const brand = t('site.name').toLocaleUpperCase('el')
-    const tail = t('home.hero.eyebrow').toLocaleUpperCase(App.locale)
+    const upper = (s, locale) => s.normalize('NFD').replace(/\u0301/g, '').normalize('NFC').toLocaleUpperCase(locale)
+    const brand = upper(t('site.name'), 'el')
+    const tail = upper(t('home.hero.eyebrow'), App.locale)
     return h('h1', { class: 'home-mast', id: 'home-hero-title', 'aria-label': `${t('site.name')} / ${t('home.hero.eyebrow')}` },
       h('span', { class: 'mast-part mast-name', 'aria-hidden': 'true' }, brand),
       h('span', { class: 'mast-slash', 'aria-hidden': 'true' }, '/'),
