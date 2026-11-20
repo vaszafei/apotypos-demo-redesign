@@ -19,6 +19,7 @@ useHead({ title: () => (named.value ? `${named.value} · ${t('site.name')}` : un
 
 // The stories the web shows are the largest of the theme: the card lists the same ones, so a row is the name of a sector of the web.
 const listed = computed(() => (model.value ? model.value.mine.slice(0, PLEGMA_THEME_STORIES) : []))
+const listedRows = computed(() => listed.value.map(s => ({ id: s.id, name: storyName(s), value: fmtInt(s.articles) })))
 // For the map: each of those stories with the outlets that wrote it most and the articles of each (storyDetail.json has them for each outlet and day).
 const themeStories = computed(() => {
   const m = model.value
@@ -114,14 +115,7 @@ const lineHref = (key: string) => storyHref(Number(key.slice(1)))
     <div class="orbit-col orbit-left">
       <PlegmaCard :at="2" :order="3" class="card-stories">
         <DashCard :title="t('topic2.stories.title')" :info="t('topic2.stories.info')">
-          <ul v-if="listed.length" class="rows-related">
-            <li v-for="s in listed" :key="s.id" @pointerenter="plegma.setHoverStory(s.id)" @pointerleave="plegma.setHoverStory(null)" @focusin="plegma.setHoverStory(s.id)" @focusout="plegma.setHoverStory(null)">
-              <span class="related-main">
-                <EntityLink type="story" :to="storyHref(s.id)">{{ storyName(s) }}</EntityLink>
-              </span>
-              <span class="row-value">{{ fmtInt(s.articles) }}</span>
-            </li>
-          </ul>
+          <StoryRows v-if="listed.length" :rows="listedRows" @hover="plegma.setHoverStory($event)" />
           <p v-else class="dcard-empty">{{ t('topic2.stories.empty') }}</p>
         </DashCard>
       </PlegmaCard>

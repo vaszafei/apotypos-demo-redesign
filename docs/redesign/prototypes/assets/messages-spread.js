@@ -127,7 +127,7 @@ Object.assign(window.MESSAGES.el, {
   'story.portrayal.negative': 'Αρνητική',
   'story.portrayal.neutral': 'Ουδέτερη',
   'story.portrayal.positive': 'Θετική',
-  'story.related.title': 'Ιστορίες του θέματος',
+  'story.related.title': 'Σχετικές ιστορίες',
   'story.related.row': '{n} άρθρα'
 })
 Object.assign(window.MESSAGES.en, {
@@ -258,7 +258,7 @@ Object.assign(window.MESSAGES.en, {
   'story.portrayal.negative': 'Negative',
   'story.portrayal.neutral': 'Neutral',
   'story.portrayal.positive': 'Positive',
-  'story.related.title': 'Other stories of the topic',
+  'story.related.title': 'Related stories',
   'story.related.row': '{n} articles'
 })
 

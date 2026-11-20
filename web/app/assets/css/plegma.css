@@ -228,7 +228,7 @@
 .home-today-side { grid-column: 1; grid-row: 1 / 3; justify-self: start; width: min(480px, 100%); margin-left: clamp(48px, 8vw, 160px); min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: var(--space-3); }
 .home-today-side > .home-today-card { flex: none; }
 .home-day-list { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
-.home-day-list .home-stories { flex: 1 1 0; min-height: 0; max-height: none; border-top: 0; }
+.home-day-list .sr-fill { flex: 1 1 0; min-height: 0; }
 .home-today .dcard { background: var(--card-glass); backdrop-filter: blur(10px); }
 .plegma-day { position: absolute; inset: 0; }
 .plegma-day-canvas { display: block; width: 100%; height: 100%; }
@@ -242,7 +242,7 @@
 .home-days-step { align-self: end; margin-bottom: 30px; }
 .home-days-step:disabled { opacity: 0.3; cursor: default; }
 @media (max-width: 1023px) {
-  .home-day-list .home-stories { max-height: 330px; }
+  .home-day-list .sr-fill { max-height: 330px; }
   .home-today-side { margin-left: 0; width: auto; }
   .home-today { display: flex; flex-direction: column; height: auto; min-height: 0; }
   .home-today-map { height: 70vw; min-height: 420px; }
@@ -252,14 +252,19 @@
 .plegma-dive-snap { pointer-events: none; will-change: transform, opacity; }
 .plegma-dive-snap.is-back { filter: blur(1px); }
 
-/* The list of «Η επικαιρότητα» (HomeToday.vue): a story and, under it, its theme as a link, «Θέμα: title». */
-.home-day-list .home-stories li { display: flex; flex-direction: column; align-items: stretch; gap: 0; padding-bottom: 6px; }
-.home-row-theme { align-self: flex-start; max-width: calc(100% - 16px); margin: -2px 0 0 8px; padding: 0; border: 0; background: none; color: var(--text-secondary); font: inherit; font-size: var(--text-caption); line-height: 1.3; text-align: left; cursor: pointer; }
-.home-row-theme-name { color: var(--text-primary); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
-.home-row-theme:hover .home-row-theme-name { color: var(--accent); }
-.home-day-list .home-story-pick { align-items: start; }
-.home-story-num { display: grid; justify-items: end; gap: 2px; }
-.home-story-delta { font-size: 11px; white-space: nowrap; }
+/* The rows of every list of stories (components/ui/StoryRows.vue): the name, on the right the count and its change, under the name the theme as a link «Θέμα: title». One size, one separator, one hover. */
+.sr { margin: 0; padding: 0; list-style: none; }
+.sr-fill { overflow-y: auto; scrollbar-width: thin; padding-right: var(--space-2); }
+.sr > li { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--space-3); align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.sr > li:last-child { border-bottom: 0; }
+.sr-name { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; min-width: 0; padding: 0; border: 0; background: none; color: var(--text-primary); font: inherit; font-size: var(--text-small); line-height: 1.35; text-align: left; text-decoration: none; cursor: pointer; }
+.sr-name:hover, .sr-name:focus-visible { color: var(--accent); }
+.sr-end { display: flex; align-items: center; gap: var(--space-2); justify-self: end; }
+.sr-val { display: grid; justify-items: end; gap: 2px; font-size: var(--text-caption); line-height: 1.35; color: var(--text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sr-delta { font-size: 11px; }
+.sr-theme { grid-column: 1; margin-top: 2px; font-size: var(--text-caption); line-height: 1.3; color: var(--text-secondary); }
+.sr-theme-link { padding: 0; border: 0; background: none; color: var(--text-primary); font: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; cursor: pointer; }
+.sr-theme-link:hover, .sr-theme-link:focus-visible { color: var(--accent); }
 .plegma-day-old { position: absolute; inset: 0; pointer-events: none; }
 
 /* The pager of the tabs (components/TabPager.vue): the end of a tab has a row with the name of the next one, in the type of a card title, over a rule that fills with a pull past the end.
@@ -496,7 +501,6 @@
 @media (min-width: 1600px) {
   .plegma-orbit.is-story, .plegma-orbit.is-story.no-right { grid-template-columns: minmax(0, 2.4fr) minmax(0, 4.6fr) minmax(0, 2.4fr) minmax(0, 2.6fr); }
 }
-.plegma-orbit.is-story .card-related .rows-related li { font-size: var(--text-caption); }
 @media (min-width: 1600px) {
   .plegma-orbit.is-story .card-how .how-panel .bar-list { grid-template-columns: fit-content(54%) minmax(56px, 1fr) auto; }
   .plegma-orbit.is-story .card-people .data-table td:nth-child(2) { white-space: nowrap; }

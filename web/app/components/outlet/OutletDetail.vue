@@ -119,6 +119,7 @@ const orbit = ref<HTMLElement>()
 const groupSimilar = computed(() => (model.value ? relatedOutlets(model.value.dd, model.value.kd, props.slug, model.value.group, model.value.record).related.filter(r => r.same) : []))
 const startedHere = computed(() => (model.value ? model.value.mine.filter(r => r.story && r.first >= i0.value && r.first <= i1.value) : []))
 const latestStories = computed(() => (model.value ? latestStoriesOf(model.value.mine, i0.value, i1.value) : []))
+const latestRows = computed(() => latestStories.value.map(r => ({ id: r.story!.id, name: storyName(r.story!), value: fmtInt(r.n), issue: r.story!.issue, theme: topicName(model.value!.l.issues[r.story!.issue]!) })))
 
 // The stage is only the dim world behind the page. The web of each tab is drawn in the map cell, as the pages of Μέσα do: Επισκόπηση the articles of the outlet with the ring of its stance, Θέματα and
 // Ιστορίες the web of Μέσα › Θέματα and Μέσα › Ιστορίες (PlegmaDayWeb) with the stories of this outlet, Πρόσωπα the people it quotes.
@@ -257,12 +258,7 @@ const headlinesShown = computed(() => liveHeadlines.value.filter(x => String(x[0
         <OutletTopicsLatest v-if="spec.latest === 'topics'" :rows="latestTopicRows" :issues="model.l.issues" :dates="model.m.dates" />
         <DashCard v-else-if="spec.latest === 'stories'" :title="t('outlet2.stories.title')" :info="`${t('outlet2.stories.first', { n: fmtInt(startedHere.filter(r => r.first === r.storyStart).length), total: fmtInt(startedHere.length) })}. ${t('outlet2.stories.info')}`">
           <div v-if="latestStories.length" class="latest-scroll">
-            <ul class="rows-related latest-stories">
-              <li v-for="r in latestStories" :key="r.story!.id" @pointerenter="plegma.setHoverStory(r.story!.id)" @pointerleave="plegma.setHoverStory(null)" @focusin="plegma.setHoverStory(r.story!.id)" @focusout="plegma.setHoverStory(null)">
-                <span class="related-main"><span class="story-line" :title="`${storyName(r.story!)} / ${topicName(model.l.issues[r.story!.issue]!)}`"><EntityLink type="story" :to="storyHref(r.story!.id)">{{ storyName(r.story!) }}</EntityLink><span class="muted-text">{{ ` / ${topicName(model.l.issues[r.story!.issue]!)}` }}</span></span></span>
-                <span class="row-value">{{ fmtDay(model.m.dates[r.first]!) }}</span>
-              </li>
-            </ul>
+            <StoryRows :rows="latestRows" @hover="plegma.setHoverStory($event)" />
           </div>
           <p v-else class="dcard-empty">{{ t('outlet2.stories.empty') }}</p>
         </DashCard>

@@ -43,6 +43,10 @@ const model = computed(() => {
   }
 })
 
+const storyMine = computed(() => (model.value ? model.value.mine.filter(x => x.story).slice(0, GROUP_STORIES) : []))
+const storyRows = computed(() => storyMine.value.map(r => ({ id: r.story!.id, name: storyName(r.story!), value: fmtInt(r.n), issue: r.story!.issue, theme: topicName(model.value!.d.issues[r.story!.issue]!) })))
+const daysOf = computed(() => new Map(storyMine.value.map(r => [r.story!.id, r.days])))
+
 const named = computed(() => group.value?.name ?? null)
 provideDetailTitle(() => named.value)
 useHead({ title: () => (named.value ? `${named.value} · ${t('site.name')}` : undefined) })
@@ -121,16 +125,9 @@ const miniLabel = (o: GroupOutlet) => `${miniStance(o).map(s => `${s.label} ${fm
     <DashCard class="c-4" :title="t('group2.stories.title')" :info="t('group2.stories.info')">
       <template v-if="model.mine.length">
         <p v-if="model.withOthers" class="dcard-sub">{{ t('group2.stories.alone', { n: fmtInt(model.alone), total: fmtInt(model.withOthers) }) }}</p>
-        <ul class="rows-related">
-          <li v-for="r in model.mine.filter(x => x.story).slice(0, GROUP_STORIES)" :key="r.story!.id">
-            <span class="related-main">
-              <EntityLink type="story" :to="storyHref(r.story!.id)">{{ storyName(r.story!) }}</EntityLink>
-              <span class="muted-text">{{ topicName(model.d.issues[r.story!.issue]!) }}</span>
-            </span>
-            <SparkLine :values="r.days" :from="0" :to="model.last" :label="t('media2.spark.articles')" :width="84" :height="20" />
-            <span class="row-value">{{ fmtInt(r.n) }}</span>
-          </li>
-        </ul>
+        <StoryRows :rows="storyRows">
+          <template #aside="{ row }"><SparkLine :values="daysOf.get(row.id)!" :from="0" :to="model.last" :label="t('media2.spark.articles')" :width="84" :height="20" /></template>
+        </StoryRows>
       </template>
       <p v-else class="dcard-empty">{{ t('outlet2.stories.empty') }}</p>
     </DashCard>
