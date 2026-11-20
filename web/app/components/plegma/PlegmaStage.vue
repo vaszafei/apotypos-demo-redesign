@@ -42,6 +42,7 @@ const home = useFixtureLazy<PlegmaHomeFile>('home', { required: ['issues', 'issu
 const file = useFixtureLazy<PlegmaFile>('plegma', { required: ['places', 'world'] })
 
 let raf = 0
+const REGION_EARLY = 0.3
 
 const fly = () => {
   const to = targetCamera()
@@ -147,7 +148,11 @@ watch(behind, (on, was) => {
 watch(() => plegma.region, () => {
   const to = targetCamera()
   if (!to || plegma.focus === null) return
-  if (st.flight) st.flight = redirectFlight(st.flight, st.cam, to, performance.now(), st.width, reduced.value)
+  // The view measures its free area a moment after the flight began: before the web has started (EARLY of the flight) the flight keeps its start and length and only its end moves, so the web is not
+  // held back by a flight that began again; later it flies on from where it is.
+  const now = performance.now()
+  if (st.flight && (now - st.flight.t0) / Math.max(st.flight.dur, 1) < REGION_EARLY) st.flight = { ...st.flight, b: { ...to } }
+  else if (st.flight) st.flight = redirectFlight(st.flight, st.cam, to, now, st.width, reduced.value)
   else Object.assign(st.cam, to)
   kick()
 }, { deep: true })
