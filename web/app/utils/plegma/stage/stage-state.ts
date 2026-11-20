@@ -58,8 +58,9 @@ export interface StageState {
   // The theme web was in the last frame, and where its story nodes were: the place a picked story is dived into from.
   wasTheme: boolean
   diveSpot: Map<number, PlegmaPoint & { r: number }>
-  // The dot of the story picked on a theme, on its way to the center of the story's web: where it started (px), its radius, and when (the clock of the frames); null when there is none.
-  dive: { x: number, y: number, r: number, t0: number, id: number } | null
+  // The dot of the story picked on a theme (or on the web of a day: `plegma.diveFrom`), on its way to the center of the page's web: where it started (px), its radius, its fill (null: a ring of gray), the
+  // page it goes to (`s<story>` or `t<theme>`) and when it began (the clock of the frames); null when there is none.
+  dive: { x: number, y: number, r: number, t0: number, key: string, fill: string | null } | null
   heroCleared: boolean
   heroRev: Map<number, number>
   lantern: HeroSpot

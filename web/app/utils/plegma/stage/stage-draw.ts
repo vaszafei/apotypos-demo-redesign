@@ -82,25 +82,34 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
   }
   // The dot on its way (drawn over the web of the story, which is not there yet): it stays what it was on the theme, a ring of the theme's gray, and only shrinks to the size of the center of the story;
   // once it is there it dissolves while the center of the story (in the color of its theme) grows in its place.
-  const drawDive = (g: CanvasRenderingContext2D, now: number, story: PlegmaStory) => {
+  const drawDive = (g: CanvasRenderingContext2D, now: number, story: PlegmaStory | null) => {
     const d = st.dive!
     const k = reduced.value ? 1 : clamp((now - d.t0) / MOVE_MS, 0, 1)
     const e = k * k * k * (k * (k * 6 - 15) + 10)
     const melt = clamp((now - d.t0 - MOVE_MS) / MELT_MS, 0, 1)
-    const to = toScreen(st.cam, st.width, st.height, placed(story))
+    // The center of a story's web is where the story is; a dot that came from the web of a day goes to the middle of the free area, which is where the page puts its web.
+    const box = plegma.region && !story ? regionBox(st.width, st.height, plegma.region) : null
+    const to = story ? toScreen(st.cam, st.width, st.height, placed(story)) : { x: box?.cx ?? st.width / 2, y: box?.cy ?? st.height / 2 }
     const x = d.x + (to.x - d.x) * e
     const y = d.y + (to.y - d.y) * e
-    const r = d.r + (articles.centerRadius() - d.r) * e
+    const r = d.r + ((story ? articles.centerRadius() : 9) - d.r) * e
     g.globalAlpha = 1 - melt
     g.fillStyle = st.paper
     g.beginPath()
     g.arc(x, y, r + 1.6, 0, TAU)
     g.fill()
-    g.strokeStyle = st.mute
-    g.lineWidth = 2
-    g.beginPath()
-    g.arc(x, y, r, 0, TAU)
-    g.stroke()
+    if (d.fill) {
+      g.fillStyle = d.fill
+      g.beginPath()
+      g.arc(x, y, r, 0, TAU)
+      g.fill()
+    } else {
+      g.strokeStyle = st.mute
+      g.lineWidth = 2
+      g.beginPath()
+      g.arc(x, y, r, 0, TAU)
+      g.stroke()
+    }
     g.globalAlpha = 1
   }
   const draw = (now: number) => {
@@ -117,9 +126,19 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
       if (at && to) {
         // The dot is where it was and the camera is at the story at once; the web of the story waits for the dot, and the cards for the dot to be nearly there.
         diveInto(at)
-        st.dive = { ...at, t0: now, id: picked.id }
+        st.dive = { ...at, t0: now, key: `s${picked.id}`, fill: null }
         Object.assign(st.cam, to)
         st.flight = null
+        window.setTimeout(() => plegma.setLanded(true), MOVE_MS * 0.85)
+      }
+    }
+    // The dot of a story or a theme picked on the web of a day (Home, Ιστορίες): the screen handed its place and the page it goes to (plegma-dive.ts); it is the same dive as the one from a theme, without the picture.
+    const from = plegma.diveFrom
+    if (from && plegma.active && plegma.region && !st.dive) {
+      const here = picked ? `s${picked.id}` : focusIssue() !== null ? `t${focusIssue()}` : ''
+      if (here && here === from.key) {
+        st.dive = { x: from.x, y: from.y, r: from.r, t0: now, key: here, fill: from.fill }
+        plegma.setDiveFrom(null)
         window.setTimeout(() => plegma.setLanded(true), MOVE_MS * 0.85)
       }
     }
@@ -274,8 +293,8 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
     }
 
     // The dot of the story picked on a theme, on its way to the center of the web; the web takes over from it once it has grown there.
-    if (st.dive && (story?.id !== st.dive.id || now - st.dive.t0 > MOVE_MS + MELT_MS)) st.dive = null
-    if (st.dive && story) drawDive(f, now, story)
+    if (st.dive && ((story ? `s${story.id}` : issue !== null ? `t${issue}` : '') !== st.dive.key || now - st.dive.t0 > MOVE_MS + MELT_MS)) st.dive = null
+    if (st.dive) drawDive(f, now, story)
 
     // The dashed arcs of the themes in view: the focus's theme, the theme in focus, the theme under the pointer, and the themes of the Home webs.
     const issues = new Set<number>()

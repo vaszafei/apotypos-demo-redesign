@@ -41,6 +41,9 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const themeStories = ref<PlegmaThemeStory[] | null>(null)
   // The groups that wrote the theme, with their articles, for the arcs of the ring of its web; null until the theme view has them.
   const themeGroups = ref<{ name: string, slot: number, n: number }[] | null>(null)
+  // The dot picked on the web of a day (Home, Ιστορίες) that dives into a page: the page (`s<story>` or `t<theme>`), the dot's place on the stage (px), its radius and fill (null: a ring of gray).
+  // The stage takes it (and sets null) once that page is in view and has its free area (utils/plegma/plegma-dive.ts).
+  const diveFrom = ref<{ key: string, x: number, y: number, r: number, fill: string | null } | null>(null)
   // The color slot of the focused outlet's group, for the center of its web (themeStories then holds the stories of the outlet); 0 for an outlet with no group.
   const outletSlot = ref(0)
   // Home under the hero («Η επικαιρότητα»): the day (an index of the dates) whose best stories are the webs, and the story picked among them. null while the hero is in view:
@@ -89,6 +92,7 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const setRing = (value: 'outlets' | 'groups' | 'stance') => { ring.value = value }
   const setStance = (value: number[] | null) => { stance.value = value }
   const setRelated = (ids: number[]) => { related.value = ids }
+  const setDiveFrom = (value: { key: string, x: number, y: number, r: number, fill: string | null } | null) => { diveFrom.value = value }
   const setThemeGroups = (value: { name: string, slot: number, n: number }[] | null) => { themeGroups.value = value }
   const setOutletSlot = (value: number) => { outletSlot.value = value }
   const setThemeStories = (value: PlegmaThemeStory[] | null) => { themeStories.value = value }
@@ -96,5 +100,5 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const pickHome = (id: number | null) => { homePick.value = id }
   const setHomeDim = (value: boolean) => { homeDim.value = value }
 
-  return { active, backdrop, leaving, setLeaving, focus, day, compare, landed, region, articles, labelRoom, highlight, hoverStory, related, ring, stance, themeStories, themeGroups, outletSlot, homeDay, homePick, homeDim, syncRoute, stepTo, compareWith, setLanded, setRegion, setLabelRoom, setArticles, setHighlight, setHoverStory, setRelated, setRing, setStance, setThemeStories, setThemeGroups, setOutletSlot, setHomeDay, pickHome, setHomeDim }
+  return { active, backdrop, leaving, setLeaving, focus, day, compare, landed, region, articles, labelRoom, highlight, hoverStory, related, ring, stance, themeStories, themeGroups, diveFrom, outletSlot, homeDay, homePick, homeDim, syncRoute, stepTo, compareWith, setLanded, setRegion, setLabelRoom, setArticles, setHighlight, setHoverStory, setRelated, setRing, setStance, setThemeStories, setThemeGroups, setDiveFrom, setOutletSlot, setHomeDay, pickHome, setHomeDim }
 })

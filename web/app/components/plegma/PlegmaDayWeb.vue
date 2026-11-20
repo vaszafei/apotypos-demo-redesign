@@ -691,7 +691,11 @@ onBeforeUnmount(() => loop.pause())
 const spotOf = (target: { story?: number, theme?: number }) => {
   const w = web.value
   const at = w ? Array.from({ length: w.n }, (_, i) => i).find(i => (target.story !== undefined ? w.kind[i] === DAY_STORY && storyOf(w, i).id === target.story : w.kind[i] === DAY_THEME && props.themes[w.theme[i]!]!.issue === target.theme)) : undefined
-  return at !== undefined && (target.story !== undefined || form > 0.5) ? { x: hx[at]!, y: hy[at]! } : { x: width / 2, y: height / 2 }
+  if (w && at !== undefined && (target.story !== undefined || form > 0.5)) {
+    const fill = props.names && w.kind[at] === DAY_STORY ? null : slotColour(props.themes[w.theme[at]!]!.slot)
+    return { x: hx[at]!, y: hy[at]!, r: radius(w, at, scaleOf()), fill }
+  }
+  return { x: width / 2, y: height / 2, r: 9, fill: ink }
 }
 defineExpose({ spotOf, canvas })
 </script>

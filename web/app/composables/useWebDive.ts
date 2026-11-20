@@ -1,9 +1,10 @@
 import { useMediaQuery } from '@vueuse/core'
 import { diveFromDay } from '~/utils/plegma/plegma-dive'
+import type { DiveSpot } from '~/utils/plegma/plegma-dive'
 
 // What a screen with the web of a day or a period (components/plegma/PlegmaDayWeb.vue) and a list of its stories (components/home/DayStoryList.vue) shares: the story pointed at in the list (`hoverStory`),
 // and the dive into the page of a story or a theme picked on the web or in the list (utils/plegma/plegma-dive.ts); `leaving` is true from the pick on, for the screen to fade out its cards.
-export interface DayWebHandle { spotOf: (target: { story?: number, theme?: number }) => { x: number, y: number }, canvas: HTMLCanvasElement | undefined }
+export interface DayWebHandle { spotOf: (target: { story?: number, theme?: number }) => DiveSpot, canvas: HTMLCanvasElement | undefined }
 export const useWebDive = (litIssue: Ref<number | null>) => {
   const plegma = usePlegmaStore()
   const reduced = useMediaQuery('(prefers-reduced-motion: reduce)')
@@ -17,7 +18,7 @@ export const useWebDive = (litIssue: Ref<number | null>) => {
     hoverStory.value = null
     litIssue.value = null
     const to = target.story !== undefined ? storyHref(target.story) : topicHref(String(target.theme))
-    await diveFromDay(w.canvas, w.spotOf(target), { go: () => navigateTo(to), region: () => plegma.region, reduced: reduced.value })
+    await diveFromDay(w.canvas, w.spotOf(target), { go: () => navigateTo(to), reduced: reduced.value, key: target.story !== undefined ? `s${target.story}` : `t${target.theme}`, give: plegma.setDiveFrom, taken: () => plegma.diveFrom === null })
   }
   return { web, leaving, hoverStory, open }
 }
