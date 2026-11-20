@@ -10,13 +10,14 @@ import { NAME_MAX, createStageNames } from './stage-names'
 import type { NameItem } from './stage-names'
 
 // A theme or an outlet in view: its web in the middle of the map region, and what the pointer finds on it.
-// The names of the stories that show while a theme opens: the length of the intro of the web (stage-draw.ts INTRO_MS), how long after its dot a name starts, how long one takes to come, stays and goes, and the longest name in px.
+// The names of the stories that show while a theme opens: the length of the intro of the web (stage-draw.ts INTRO_MS), how long after its dot a name starts, how long one takes to come, stays and goes, and the longest line of a name in px and the height of a line.
 const INTRO_S = 1.1
 const INTRO_NAMES_LAG = 0.05
 const INTRO_NAMES_IN = 0.3
 const INTRO_NAMES_HOLD = 1.0
 const INTRO_NAMES_OUT = 0.4
-const INTRO_NAME_W = 170
+const INTRO_NAME_W = 190
+const INTRO_NAME_LINE = 15
 export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCore) => {
   const { plegma, reduced } = deps
   const { webFocus, focusOutlet, focusIssue, gatherTo, gatherR, ease } = core
@@ -320,28 +321,36 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
         g.stroke()
       }
       // Opening a theme, the names of its stories show beside their dots while the dots come in: one after another, each with its dot (the largest story first, the others a little after, graded), each rising a little as it comes, and each
-      // goes after a moment in the same order. Each is on the side of its dot where there is room (not on another name), in one line; a story with no room has none. The story pointed at
+      // goes after a moment in the same order. Each is on the side of its dot where there is room (not on another name), in lines of at most INTRO_NAME_W px, the whole title; a story with no room has none. The story pointed at
       // has its own name below, so it has none here.
       introNames = st.introP <= 0 ? 0 : introNames + dt
       const namesEnd = INTRO_NAMES_LAG + (0.1 + 0.8 * 0.44) * INTRO_S + INTRO_NAMES_IN + INTRO_NAMES_HOLD + INTRO_NAMES_OUT
       if (fresh && !reduced.value && st.introP > 0 && introNames < namesEnd && st.ringOut < 1) {
-        g.font = `600 12px ${st.fontText}`
+        g.font = `12px ${st.fontText}`
         g.textBaseline = 'middle'
         g.lineJoin = 'round'
         const from = storyArrival(web)
         const boxes: { x0: number, x1: number, y0: number, y1: number }[] = []
         for (let i = 0; i < k; i++) {
-          let text = web.stories[i]!.name
-          while (text.length > 8 && g.measureText(text).width > INTRO_NAME_W) text = `${text.slice(0, -2).trimEnd()}…`
-          const w = g.measureText(text).width
+          // The whole title, in lines of at most INTRO_NAME_W px.
+          const lines: string[] = []
+          let line = ''
+          for (const word of web.stories[i]!.name.split(/\s+/)) {
+            const next = line ? `${line} ${word}` : word
+            if (line && g.measureText(next).width > INTRO_NAME_W) { lines.push(line); line = word } else line = next
+          }
+          if (line) lines.push(line)
+          const w = Math.max(...lines.map(l => g.measureText(l).width))
+          const h = lines.length * INTRO_NAME_LINE
           const nx = hx[1 + i]!
           const ny = hy[1 + i]!
           const gap = themeNodeRadius(web, 1 + i, unit) + 6
           const inward = nx <= disc.x
-          const spot = [[inward, 0], [!inward, 0], [inward, -14], [inward, 14], [!inward, -14], [!inward, 14]].map(([right, dy]) => {
+          const spot = [[inward, 0], [!inward, 0], [inward, -0.6], [inward, 0.6], [!inward, -0.6], [!inward, 0.6], [inward, -1.1], [inward, 1.1], [!inward, -1.1], [!inward, 1.1]].map(([right, k2]) => {
             const x0 = right ? nx + gap : nx - gap - w
-            return { right: right as boolean, x0, x1: x0 + w, y0: ny + (dy as number) - 8, y1: ny + (dy as number) + 8 }
-          }).find(b => !boxes.some(o => b.x0 < o.x1 + 4 && b.x1 > o.x0 - 4 && b.y0 < o.y1 && b.y1 > o.y0) && b.x0 > 8 && b.x1 < st.width - 8)
+            const cy = ny + (k2 as number) * h
+            return { right: right as boolean, x0, x1: x0 + w, y0: cy - h / 2, y1: cy + h / 2 }
+          }).find(b => !boxes.some(o => b.x0 < o.x1 + 4 && b.x1 > o.x0 - 4 && b.y0 < o.y1 + 2 && b.y1 > o.y0 - 2) && b.x0 > disc.x - disc.r && b.x1 < disc.x + disc.r)
           if (!spot) continue
           boxes.push(spot)
           if (themeLit.story === i && mix > 0.5) continue
@@ -351,14 +360,16 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
           if (alpha < 0.01) continue
           g.textAlign = spot.right ? 'left' : 'right'
           const x = spot.right ? spot.x0 : spot.x1
-          const y = (spot.y0 + spot.y1) / 2 + (1 - rise) * 7
-          g.globalAlpha = 0.95 * alpha
-          g.strokeStyle = st.paper
-          g.lineWidth = 4
-          g.strokeText(text, x, y)
-          g.globalAlpha = alpha
-          g.fillStyle = st.ink
-          g.fillText(text, x, y)
+          lines.forEach((text, n) => {
+            const y = spot.y0 + (n + 0.5) * INTRO_NAME_LINE + (1 - rise) * 7
+            g.globalAlpha = 0.95 * alpha
+            g.strokeStyle = st.paper
+            g.lineWidth = 4
+            g.strokeText(text, x, y)
+            g.globalAlpha = alpha
+            g.fillStyle = st.ink
+            g.fillText(text, x, y)
+          })
         }
         g.font = `11px ${st.fontText}`
         g.textBaseline = 'alphabetic'
