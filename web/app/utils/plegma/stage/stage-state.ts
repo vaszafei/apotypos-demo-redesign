@@ -36,6 +36,9 @@ export interface StageState {
   nodeIn: number
   lineIn: number
   ringIn: number
+  // The leave of the view (plegma.leaving): when it began (-1: none) and how far it has come (0 to 1); the ring empties and its names go as it comes.
+  leaveAt: number
+  ringOut: number
   // The story in view keeps a clear space around its web: its place and the radius (in the world) the other stories are pushed out of.
   push: { s: PlegmaStory, r: number } | null
   hoverArticle: number
@@ -85,6 +88,8 @@ export const createStageState = (): StageState => ({
   nodeIn: 1,
   lineIn: 1,
   ringIn: 1,
+  leaveAt: -1,
+  ringOut: 0,
   push: null,
   hoverArticle: -1,
   hoverRing: '',

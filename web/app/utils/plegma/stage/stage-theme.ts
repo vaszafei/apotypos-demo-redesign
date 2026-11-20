@@ -1,4 +1,5 @@
 import { regionBox } from '../plegma-camera'
+import { ringEmptiedTo } from '../plegma-leave'
 import { buildThemeWeb } from '../plegma-theme'
 import type { PlegmaThemeWeb } from '../plegma-theme'
 import { TAU, clamp, shareArcs } from './stage-draw-util'
@@ -206,7 +207,7 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
         g.stroke()
       } else g.fill()
       g.strokeStyle = st.ink
-      g.globalAlpha = 0.5 * st.ringIn
+      g.globalAlpha = 0.5 * st.ringIn * (1 - st.ringOut)
       g.lineWidth = 1
       g.beginPath()
       g.arc(hx[0]!, hy[0]!, themeNodeRadius(web, 0, unit) + 4, 0, TAU)
@@ -218,6 +219,8 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
         const stanceAt = st.ringMix > 0.01 ? shareArcs(plegma.stance) : null
         const groupsOut = stanceAt ? st.ringMix : 0
         const turn = groupsOut * (Math.PI / 2)
+        // Leaving the view: the arcs are emptied from the start of the ring on, the way they filled.
+        const emptied = st.ringOut > 0 ? ringEmptiedTo(st.ringOut) : -Infinity
         g.lineCap = 'round'
         if (groupsOut < 0.99) for (let k = 0; k < groupAt.length / 2; k++) {
           const span = groupAt[k * 2 + 1]!
@@ -228,8 +231,11 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
           g.lineWidth = fresh ? 3 + 1.4 * hot : 2 + 2.5 * hot
           g.globalAlpha = (0.85 + 0.15 * hot) * (1 - groupsOut) * st.ringIn
           const pad = Math.min(span / 2, 3 / disc.r)
+          const from = Math.max(groupAt[k * 2]! + pad, emptied)
+          const to = groupAt[k * 2]! + span - pad
+          if (to <= from) continue
           g.beginPath()
-          g.arc(disc.x, disc.y, disc.r, groupAt[k * 2]! - Math.PI / 2 + pad + turn, groupAt[k * 2]! + span - Math.PI / 2 - pad + turn)
+          g.arc(disc.x, disc.y, disc.r, from - Math.PI / 2 + turn, to - Math.PI / 2 + turn)
           g.stroke()
         }
         if (stanceAt) {
@@ -242,11 +248,16 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
             g.lineWidth = fresh ? 3 + 2.5 * hot : 2 + 2.5 * hot
             g.globalAlpha = (0.9 + 0.1 * hot) * st.ringMix * st.ringIn
             const pad = Math.min(span / 2, 3 / disc.r)
+            const from = Math.max(stanceAt[k * 2]! + pad, emptied)
+            const to = stanceAt[k * 2]! + span - pad
+            if (to <= from) continue
             g.beginPath()
-            g.arc(disc.x, disc.y, disc.r, stanceAt[k * 2]! - Math.PI / 2 + pad - back, stanceAt[k * 2]! + span - Math.PI / 2 - pad - back)
+            g.arc(disc.x, disc.y, disc.r, from - Math.PI / 2 - back, to - Math.PI / 2 - back)
             g.stroke()
           }
         }
+        // The names and their lines go in the first half of the leave, while the arcs empty.
+        const namesLeft = 1 - clamp(st.ringOut * 2, 0, 1)
         if (fresh) {
           const ring = { cx: disc.x, cy: disc.y, ring: disc.r, kx: 1 }
           const total = plegma.themeGroups!.length
@@ -259,13 +270,13 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
               const slot = plegma.themeGroups![k]!.slot
               items.push({ mid: groupAt[k * 2]! + span / 2, span, text: name.length > NAME_MAX ? `${name.slice(0, NAME_MAX - 1)}…` : name, dot: slot > 0 ? st.groupInk[slot] ?? st.ink : st.mute })
             }
-            drawNamesColumns(g, ring, items, 0.9 * (1 - groupsOut * 2) * (1 - 0.35 * mix) * st.ringIn)
+            drawNamesColumns(g, ring, items, 0.9 * (1 - groupsOut * 2) * (1 - 0.35 * mix) * st.ringIn * namesLeft)
           }
-          if (stanceAt && st.ringMix > 0.5) drawNames(g, ring, stanceNames(stanceAt), 0.9 * (st.ringMix * 2 - 1) * st.ringIn, true)
+          if (stanceAt && st.ringMix > 0.5) drawNames(g, ring, stanceNames(stanceAt), 0.9 * (st.ringMix * 2 - 1) * st.ringIn * namesLeft, true)
         }
       } else {
         g.strokeStyle = colour
-        g.globalAlpha = 0.45 * st.ringIn
+        g.globalAlpha = 0.45 * st.ringIn * (1 - st.ringOut)
         g.lineWidth = 1.2
         g.beginPath()
         g.arc(disc.x, disc.y, disc.r, 0, TAU)

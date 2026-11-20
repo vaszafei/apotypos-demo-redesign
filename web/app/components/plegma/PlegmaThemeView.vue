@@ -103,7 +103,7 @@ const lineHref = (key: string) => storyHref(Number(key.slice(1)))
     <section class="dcard c-12"><div class="empty-state" data-state="empty"><AppIcon name="inbox" /><p style="margin: 0">{{ t('topics2.empty') }}</p></div></section>
   </div>
   <ErrorPage v-else-if="!model" :status="404" />
-  <div v-else ref="orbit" class="plegma-orbit is-theme" :class="{ 'is-in': plegma.landed }">
+  <div v-else ref="orbit" class="plegma-orbit is-theme" :class="{ 'is-in': plegma.landed, 'is-leaving': plegma.leaving }">
     <div class="plegma-title entity-grid">
       <EntityTitle :kind="t('hero.kind.topic')" :title="topicName(model.issue)">
         <EntityFact :label="t('entity.fact.articles')" :value="fmtInt(model.total)" />

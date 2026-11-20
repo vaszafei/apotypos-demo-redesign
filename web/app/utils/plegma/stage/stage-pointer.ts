@@ -233,7 +233,7 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
     }, e)
   }
   const onClick = (e: MouseEvent) => {
-    if (!plegma.active || !st.world || e.button !== 0 || e.defaultPrevented) return
+    if (!plegma.active || !st.world || e.button !== 0 || e.defaultPrevented || plegma.leaving) return
     if ((e.target as Element | null)?.closest?.(CAPTURES)) return
     const box = canvas.value!.getBoundingClientRect()
     const p = { x: e.clientX - box.left, y: e.clientY - box.top }

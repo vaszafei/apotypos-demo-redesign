@@ -50,8 +50,13 @@ export const usePlegmaStore = defineStore('plegma', () => {
   // Home's «Μεθοδολογία» (components/home/HomeMethod.vue): the same dim world behind it, with no day.
   const homeDim = ref(false)
 
+  // The view is being left for another page (utils/plegma/plegma-leave.ts): its cards fade and the ring of its web empties before the route changes. Any route change ends it.
+  const leaving = ref(false)
+  const setLeaving = (value: boolean) => { leaving.value = value; if (value) hoverStory.value = null }
+
   const backdrop = ref(false)
   const syncRoute = (route: { path: string, query: Record<string, unknown>, meta: { plegma?: boolean, backdrop?: boolean } }) => {
+    leaving.value = false
     active.value = route.meta.plegma === true || route.meta.backdrop === true
     backdrop.value = route.meta.backdrop === true
     if (!active.value) return
@@ -91,5 +96,5 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const pickHome = (id: number | null) => { homePick.value = id }
   const setHomeDim = (value: boolean) => { homeDim.value = value }
 
-  return { active, backdrop, focus, day, compare, landed, region, articles, labelRoom, highlight, hoverStory, related, ring, stance, themeStories, themeGroups, outletSlot, homeDay, homePick, homeDim, syncRoute, stepTo, compareWith, setLanded, setRegion, setLabelRoom, setArticles, setHighlight, setHoverStory, setRelated, setRing, setStance, setThemeStories, setThemeGroups, setOutletSlot, setHomeDay, pickHome, setHomeDim }
+  return { active, backdrop, leaving, setLeaving, focus, day, compare, landed, region, articles, labelRoom, highlight, hoverStory, related, ring, stance, themeStories, themeGroups, outletSlot, homeDay, homePick, homeDim, syncRoute, stepTo, compareWith, setLanded, setRegion, setLabelRoom, setArticles, setHighlight, setHoverStory, setRelated, setRing, setStance, setThemeStories, setThemeGroups, setOutletSlot, setHomeDay, pickHome, setHomeDim }
 })

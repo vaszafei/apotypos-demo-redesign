@@ -5,6 +5,7 @@ import { PLEGMA_FAR_MIN, PLEGMA_FOCUS_DOTS, arcsOf, drawLevel, webOf } from '../
 import type { PlegmaStory } from '../plegma-world'
 import { TAU, clamp, orbit, withAlpha } from './stage-draw-util'
 import type { StageState } from './stage-state'
+import { LEAVE_RING_MS } from '../plegma-leave'
 import type { Ref } from 'vue'
 import type { StageCore, StageDeps } from './stage-core'
 import type { StageArticles } from './stage-articles'
@@ -94,6 +95,10 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
       }
     }
     st.wasTheme = false
+    if (plegma.leaving) {
+      if (st.leaveAt < 0) st.leaveAt = now
+      st.ringOut = reduced.value ? 1 : clamp((now - st.leaveAt) / LEAVE_RING_MS, 0, 1)
+    } else { st.leaveAt = -1; st.ringOut = 0 }
     for (const g of [c, f]) { g.setTransform(st.dpr, 0, 0, st.dpr, 0, 0); g.clearRect(0, 0, st.width, st.height) }
     const z = st.cam.z
     const sec = reduced.value ? 0 : now / 1000
