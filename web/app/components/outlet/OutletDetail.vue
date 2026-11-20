@@ -7,6 +7,8 @@ import type { Series } from '~/types/topics'
 import type { GroupsData, MediaDaily } from '~/utils/groups'
 import { PERSON_KEYS, personHref } from '~/utils/people'
 import { themeSlots } from '~/utils/plegma/plegma-world'
+import { arriveOutletTravel, offerOutletTravel, withdrawOutletTravel } from '~/utils/plegma/outlet-travel'
+import type { PeerTravel, TravelPoint } from '~/utils/plegma/outlet-travel'
 import type { PlegmaDayTheme } from '~/utils/plegma/plegma-day'
 import type { DayOutlet, DayRing } from '~/components/plegma/PlegmaDayWeb.vue'
 
@@ -115,6 +117,19 @@ const i1 = computed(() => Math.max(i0.value, model.value?.m.dates.indexOf(view.v
 const inPeriod = (days: number[]) => sum(days.slice(i0.value, i1.value + 1))
 // The other outlets of its group with the similarity (the stories they share over the stories of either), for the whole window.
 const hoverPeer = ref<string | null>(null)
+// The move to another outlet of the group goes along the line to its row (utils/plegma/outlet-travel.ts): this page offers the line while the web of Επισκόπηση is shown, and its own web arrives along
+// the line when the move came here.
+const peerLinks = ref<{ lineOf: (i: number) => { c: TravelPoint, q: TravelPoint, e: TravelPoint } | null }>()
+const mapWeb = ref<HTMLElement>()
+const offerLine = (slug: string): PeerTravel | null => {
+  const i = groupSimilar.value.findIndex(r => r.slug === slug)
+  const line = i >= 0 && tab.value === 'overview' ? peerLinks.value?.lineOf(i) : null
+  const canvas = mapWeb.value?.querySelector<HTMLCanvasElement>('.outlet-article-web canvas')
+  return line && canvas && model.value ? { ...line, canvas, color: groupColor(model.value.group) } : null
+}
+onMounted(() => offerOutletTravel(offerLine))
+onBeforeUnmount(() => withdrawOutletTravel(offerLine))
+const stopArrive = watch(mapWeb, (el) => { if (!el) return; arriveOutletTravel(props.slug, el); stopArrive() })
 // When the card of the similarity arrives (its order in its column, as the template gives it): the lines to its rows come in with it.
 const similarOrder = computed(() => { for (const ids of spec.value.columns) { const r = ids.indexOf('similar'); if (r >= 0) return r + 1 } return 0 })
 const orbit = ref<HTMLElement>()
@@ -208,7 +223,7 @@ const headlinesShown = computed(() => liveHeadlines.value.filter(x => String(x[0
   <ErrorPage v-else-if="!model" :status="404" />
   <div v-else ref="orbit" class="plegma-orbit is-outlet" :class="[`tab-${tab}`, `cols-${spec.columns.length}`, spec.latest ? 'has-latest' : 'no-latest', { 'is-in': plegma.landed, 'is-leaving': plegma.leaving }]">
     <OutletPeerLinks
-      v-if="tab === 'overview'" :root="orbit" :count="groupSimilar.length" :hover="groupSimilar.findIndex(r => r.slug === hoverPeer)" :color="groupColor(model.group)" :order="similarOrder"
+      v-if="tab === 'overview'" ref="peerLinks" :root="orbit" :count="groupSimilar.length" :hover="groupSimilar.findIndex(r => r.slug === hoverPeer)" :color="groupColor(model.group)" :order="similarOrder"
       @hover="i => (hoverPeer = i === null ? null : groupSimilar[i]?.slug ?? null)" @open="i => navigateTo(outletHref(groupSimilar[i]!.slug))"
     />
     <div class="plegma-title entity-grid">
@@ -220,7 +235,7 @@ const headlinesShown = computed(() => liveHeadlines.value.filter(x => String(x[0
     <div v-if="allDates.length" class="outlet-period"><DateRange plain :dates="allDates" :from="view.from" :to="view.to" @change="r => (picked = r)" /></div>
 
     <div class="orbit-map">
-      <ClientOnly><div class="outlet-map-web">
+      <ClientOnly><div ref="mapWeb" class="outlet-map-web">
         <OutletArticleWeb v-if="tab === 'overview'" key="overview" :days="bars?.series[0]?.values.map(v => v ?? 0) ?? []" :color-slot="groupSlot" :stance="model.writes.stanceMine" :label="t('outlet.web.label')" :name="model.outlet.name" :leaving="plegma.leaving" />
         <PlegmaDayWeb
           :ring-start="0.5"

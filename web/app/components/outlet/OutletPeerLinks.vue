@@ -8,6 +8,8 @@ const props = defineProps<{ root: HTMLElement | undefined, count: number, hover:
 const emit = defineEmits<{ hover: [index: number | null], open: [index: number] }>()
 interface Line { d: string, hit: string, x: number, y: number }
 const lines = ref<Line[]>([])
+// The lines in the coordinates of the window (null for a row out of view), for the move to the outlet of a row (utils/plegma/outlet-travel.ts).
+let geo: ({ c: { x: number, y: number }, q: { x: number, y: number }, e: { x: number, y: number } } | null)[] = []
 // A point of a quadratic curve (one coordinate), and the start and the control point of its part from t0 to t1.
 const at = (p0: number, p1: number, p2: number, t: number) => (1 - t) ** 2 * p0 + 2 * (1 - t) * t * p1 + t * t * p2
 const split = (x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, t0: number, t1: number) => {
@@ -30,13 +32,15 @@ const { pause, resume } = useRafFn(() => {
   const cy = c.top - base.top + c.height / 2 - 8
   const web = Math.min(c.width, c.height) / 2
   const next: Line[] = []
+  geo = []
   rows.forEach((li) => {
     const r = li.getBoundingClientRect()
-    if (r.bottom > k.bottom || r.top < k.top) { next.push({ d: '', hit: '', x: 0, y: 0 }); return }
+    if (r.bottom > k.bottom || r.top < k.top) { next.push({ d: '', hit: '', x: 0, y: 0 }); geo.push(null); return }
     const x = k.left - base.left
     const y = r.top - base.top + r.height / 2
     const qx = (cx + x) / 2
     const qy = cy + (y - cy) * 0.35 - 28
+    geo.push({ c: { x: cx + base.left, y: cy + base.top }, q: { x: qx + base.left, y: qy + base.top }, e: { x: x + base.left, y: y + base.top } })
     // The part of the line the pointer takes: from where it leaves the web (the web keeps its own pointer) to just before the card.
     let t0 = 0
     while (t0 < 0.9 && Math.hypot((1 - t0) ** 2 * cx + 2 * (1 - t0) * t0 * qx + t0 * t0 * x - cx, (1 - t0) ** 2 * cy + 2 * (1 - t0) * t0 * qy + t0 * t0 * y - cy) < web) t0 += 0.01
@@ -45,6 +49,7 @@ const { pause, resume } = useRafFn(() => {
   })
   if (JSON.stringify(next) !== JSON.stringify(lines.value)) lines.value = next
 }, { immediate: false })
+defineExpose({ lineOf: (i: number) => geo[i] ?? null })
 onMounted(resume)
 onBeforeUnmount(pause)
 </script>
