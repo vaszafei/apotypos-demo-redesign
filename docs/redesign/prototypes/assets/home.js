@@ -312,7 +312,6 @@
     // The label comes first for the list; CSS puts the number above it.
     const stat = (value, label) => h('div', { class: 'home-hero-stat' }, h('dt', {}, label), h('dd', { class: 'kpi-value' }, value))
     const collected = sum(totals.slice(i0, i1 + 1))
-    const period = t('home.hero.period', { from: fmt.date(home.dates[i0], { day: 'numeric', month: 'long' }), to: fmt.date(home.dates[i1], { day: 'numeric', month: 'long', year: 'numeric' }) })
     return h('section', { class: 'home-hero', 'aria-labelledby': 'home-hero-title' },
       ix ? window.HeroField.create({ ix, home, i0, i1 }) : Wave(totals.slice(i0, i1 + 1)),
       h('div', { class: 'home-hero-inner' },
@@ -320,22 +319,20 @@
         h('div', { class: 'home-hero-search' }, search),
         chips.length ? h('div', { class: 'home-hero-try' }, h('span', { class: 'home-hero-try-label' }, t('home.hero.try')),
           chips.map((r) => h('button', { type: 'button', class: 'home-chip', onClick: () => search.open(name(r.x)) }, name(r.x)))) : null,
-        h('div', { class: 'kpi-tile home-hero-stats' },
-          h('dl', { 'aria-label': period },
+        h('div', { class: 'home-hero-stats' },
+          h('dl', {},
             stat(fmt.int(collected), t('home.hero.articles')),
-            stat(fmt.int(home.outlets.length), t('home.hero.outlets')),
             stories != null ? stat(fmt.int(stories), t('home.hero.stories')) : null,
-            stat(fmt.int(i1 - i0 + 1), t('home.hero.days'))),
-          h('p', { class: 'home-hero-period' }, period))),
+            stat(fmt.int(home.issues.length), t('home.hero.topics'))))),
       h('a', { class: 'home-hero-more', href: '#home-today' }, t('home.hero.more'), Icon('chevron-down', 'icon icon-sm')))
   }
 
-  // The masthead of the hero: "ΑΠΟΤΥΠΟΣ / ΠΑΡΑΤΗΡΗΤΗΡΙΟ ΕΛΛΗΝΙΚΩΝ ΜΜΕ". On each visit the name rises in, the "/" draws from the top and the line after it follows (CSS).
+  // The masthead of the hero: "ΑΠΟΤΥΠΟΣ / ΠΑΡΑΤΗΡΗΤΗΡΙΟ ΕΛΛΗΝΙΚΩΝ ΜΜΕ". The name is the real logo (assets/logo.svg inline), built in CSS: a "/" is drawn between ΑΠΟΤ and ΥΠΟΣ, the parts show a row apart as in the logo, ΥΠΟΣ moves up into the row of ΑΠΟΤ, the "/" is wiped away and drawn again beside the name, and the line after it follows, a little smaller.
+  const LOGO_PARTS = '<defs><clipPath id="mast-cl"><path class="mast-cl" d="M-6000 -1600L7142 -1600L2328 4818L-1000 4818Z"/></clipPath><clipPath id="mast-cr"><path class="mast-cr" d="M7618 -1600L20000 -1600L20000 4818L2804 4818Z"/></clipPath></defs><path class="mast-l" clip-path="url(#mast-cl)" d="M684 199 410 942H959ZM570 0H799L1368 1493H1158L1022 1110H349L213 1493H0ZM2724 0V1493H2522V170H1788V1493H1586V0ZM3732 137Q3512 137 3382.5 301.0Q3253 465 3253 748Q3253 1030 3382.5 1194.0Q3512 1358 3732 1358Q3952 1358 4080.5 1194.0Q4209 1030 4209 748Q4209 465 4080.5 301.0Q3952 137 3732 137ZM3732 -27Q4046 -27 4234.0 183.5Q4422 394 4422 748Q4422 1101 4234.0 1311.5Q4046 1522 3732 1522Q3417 1522 3228.5 1312.0Q3040 1102 3040 748Q3040 394 3228.5 183.5Q3417 -27 3732 -27ZM4531 0H5794V170H5264V1493H5061V170H4531Z"/><path class="mast-r" clip-path="url(#mast-cr)" d="M3602 1725H4865V1895H4335V3218H4132V1895H3602ZM4935 1725H5152L5566 2339L5977 1725H6194L5666 2507V3218H5463V2507ZM7529 1725V3218H7327V1895H6593V3218H6391V1725ZM8537 1862Q8317 1862 8187.5 2026Q8058 2190 8058 2473Q8058 2755 8187.5 2919Q8317 3083 8537 3083Q8757 3083 8885.5 2919Q9014 2755 9014 2473Q9014 2190 8885.5 2026Q8757 1862 8537 1862ZM8537 1698Q8851 1698 9039 1908.5Q9227 2119 9227 2473Q9227 2826 9039 3036.5Q8851 3247 8537 3247Q8222 3247 8033.5 3037Q7845 2827 7845 2473Q7845 2119 8033.5 1908.5Q8222 1698 8537 1698ZM9775 3048H10505V3218H9543V3048L10022 2424L9543 1895V1725H10487V1895H9775L10254 2420Z"/><path class="mast-s" d="M6504 -600L6756 -600L3442 3818L3190 3818Z"/>'
   function Masthead () {
-    const brand = t('site.name').toLocaleUpperCase('el')
     const tail = t('home.hero.eyebrow').toLocaleUpperCase(App.locale)
     return h('h1', { class: 'home-mast', id: 'home-hero-title', 'aria-label': `${t('site.name')} / ${t('home.hero.eyebrow')}` },
-      h('span', { class: 'mast-part mast-name', 'aria-hidden': 'true' }, brand),
+      h('span', { class: 'mast-part mast-name', 'aria-hidden': 'true' }, h('svg', { class: 'mast-logo', viewBox: '0 0 11434 1493', focusable: 'false', html: LOGO_PARTS })),
       h('span', { class: 'mast-slash', 'aria-hidden': 'true' }, '/'),
       h('span', { class: 'mast-part mast-tail', 'aria-hidden': 'true' }, tail))
   }

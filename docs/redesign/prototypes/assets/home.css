@@ -137,20 +137,41 @@ a.home-stack-part { cursor: pointer; }
 .home-mast { margin: 0 0 var(--space-3); font: 700 clamp(24px, 3vw, 46px)/1.2 var(--font-heading); letter-spacing: 0.04em; color: var(--ink); text-wrap: balance; }
 .mast-part { display: inline-block; }
 .mast-slash { display: inline-block; margin: 0 0.28em; font-weight: 600; scale: 1.2; }
+.mast-tail { font-size: 0.8em; font-weight: 500; } /* a little lighter than the stroke of the logo (4.75 px at the size of the heading, 4 px at 500, 5.75 px at 700; measured) */
+/* The name is the real logo (assets/logo.svg, drawn inline): ΑΠΟΤ and ΥΠΟΣ a row apart with the "/" between them. The "/" is drawn, the parts show, ΥΠΟΣ moves up into the row of ΑΠΟΤ with the Τ still cut in two, then the two cuts of the logo
+   open and the Τ is whole, and the "/" is wiped away. The box of the svg is the finished word (11434 x 1493 units, the cap height of the heading), so the rest of the line does not move. */
+.mast-name { position: relative; white-space: nowrap; }
+.mast-logo { display: inline-block; width: calc(0.72em * 11434 / 1493); height: 0.72em; overflow: visible; vertical-align: baseline; fill: currentColor; }
+.mast-r { translate: 929px -1725px; }
+.mast-cl { translate: 2000px 0; }
+.mast-cr { translate: -3200px 0; }
+.mast-s { display: none; }
 @media (prefers-reduced-motion: no-preference) {
-  .mast-part { animation: mast-rise 900ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
-  .mast-name { animation-delay: 150ms; }
-  .mast-slash { animation: mast-draw 600ms cubic-bezier(0.65, 0, 0.35, 1) 700ms both; }
-  .mast-tail { animation-delay: 1100ms; }
+  .mast-s { display: inline; clip-path: inset(0 0 100% 0); animation: mast-cut-s 1700ms both; }
+  .mast-l { animation: mast-cut-a 1700ms both; }
+  .mast-r { animation: mast-cut-b 1700ms both; }
+  .mast-cl { animation: mast-cut-cl 1700ms both; }
+  .mast-cr { animation: mast-cut-cr 1700ms both; }
+  .mast-slash { animation: mast-draw 450ms cubic-bezier(0.65, 0, 0.35, 1) 1500ms both; }
+  .mast-tail { animation: mast-rise 800ms cubic-bezier(0.2, 0.7, 0.2, 1) 1800ms both; }
 }
 @keyframes mast-rise { from { opacity: 0; transform: translateY(0.35em); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
 @keyframes mast-draw { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+/* the "/" is drawn from the top to the bottom and waits; while ΥΠΟΣ moves up it is cut from the bottom by the same distance and with the same curve (1725 of its 4418 units), so its lower end follows the line; then it is wiped away from the top to the bottom */
+@keyframes mast-cut-s { 0% { clip-path: inset(0 0 100% 0); animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); } 22%, 48% { clip-path: inset(0); animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); } 76% { clip-path: inset(0 0 39.05% 0); animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); } 92%, 100% { clip-path: inset(60.95% 0 39.05% 0); } }
+/* ΑΠΟΤ comes from above to its place in the logo and stays; ΥΠΟΣ comes from below to its place in the logo, waits, then moves to the row of ΑΠΟΤ */
+@keyframes mast-cut-a { 0%, 14% { opacity: 0; translate: 0 -900px; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); } 38%, 100% { opacity: 1; translate: 0 0; } }
+@keyframes mast-cut-b { 0%, 20% { opacity: 0; translate: 0 1300px; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); } 44%, 48% { opacity: 1; translate: 0 0; animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); } 76%, 100% { opacity: 1; translate: 929px -1725px; } }
+/* the cuts stay closed while ΥΠΟΣ moves (so no second Τ shows); once the halves meet, the cuts open together with the wipe of the "/" and the Τ is whole */
+@keyframes mast-cut-cl { 0%, 76% { translate: 0 0; animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); } 92%, 100% { translate: 2000px 0; } }
+@keyframes mast-cut-cr { 0%, 76% { translate: 0 0; animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); } 92%, 100% { translate: -3200px 0; } }
 
 /* The large search: a pill the width of the column. It opens the panel of the global search over it (shell.js, hero). */
 .home-hero-search { width: 100%; max-width: 720px; margin-top: var(--space-2); }
-.home-hero .global-search.is-hero { display: block; width: 100%; margin: 0; }
+.home-hero .global-search.is-hero { display: flex; align-items: center; gap: var(--space-2); width: 100%; margin: 0; }
+.home-hero .global-search.is-open .search-hero-go { opacity: 0; }
 .home-hero .global-search.is-hero .search-button {
-  display: flex; align-items: center; gap: var(--space-3); width: 100%; min-width: 0; height: 52px; padding: 0 6px 0 20px;
+  display: flex; align-items: center; gap: var(--space-3); flex: 1; width: auto; min-width: 0; height: 46px; padding: 0 16px 0 20px;
   border: 1px solid var(--border); border-radius: var(--pill, 999px); background: var(--surface-raised); color: var(--text-secondary);
   font: 16px var(--font-text); box-shadow: 0 1px 0 color-mix(in srgb, var(--shade) 3%, transparent), 0 18px 40px -22px color-mix(in srgb, var(--shade) 35%, transparent);
   transition: border-color var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out);
@@ -159,7 +180,8 @@ a.home-stack-part { cursor: pointer; }
 .home-hero .is-hero .search-button-icon { width: 20px; height: 20px; color: var(--ink); }
 .home-hero .is-hero .search-button-label { display: block; flex: 1; min-width: 0; padding: 0; overflow: hidden; text-align: left; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); }
 .home-hero .is-hero .global-search-key { display: inline-block; flex: none; }
-.search-hero-go { display: inline-flex; align-items: center; flex: none; height: 40px; padding: 0 20px; border-radius: var(--pill, 999px); background: var(--ink); color: var(--on-ink); font-size: 15px; font-weight: 600; }
+.search-hero-go { display: inline-flex; align-items: center; justify-content: center; flex: none; height: 40px; padding: 0 var(--space-4); border: 1px solid var(--text-primary); border-radius: 8px; background: var(--text-primary); color: var(--on-ink); font: 600 14px var(--font-text); cursor: pointer; white-space: nowrap; transition: background var(--motion-base) var(--ease-out); }
+.search-hero-go:hover, .search-hero-go:focus-visible { background: color-mix(in srgb, var(--text-primary) 85%, var(--accent)); border-color: transparent; }
 /* The open panel keeps the shape of the field: round, with a tall field row. */
 .search-panel.is-hero { border-radius: 28px; }
 .search-panel.is-hero .search-field { min-height: 52px; padding-left: 20px; }
@@ -198,10 +220,13 @@ a.home-stack-part { cursor: pointer; }
 }
 @media (max-width: 719px) {
   .home-hero-inner { gap: var(--space-4); }
-  .home-hero .global-search.is-hero .search-button { height: 48px; padding: 0 5px 0 16px; font-size: 16px; }
-  .search-hero-go { height: 38px; padding: 0 16px; font-size: 14px; }
+  .home-hero .global-search.is-hero .search-button { height: 44px; padding: 0 12px 0 16px; font-size: 16px; }
+  .search-hero-go { height: 34px; padding: 0 var(--space-3); font-size: 13px; }
   .home-hero-stats dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--space-4); width: 100%; }
   .home-hero-stat:nth-child(odd) { border-left: 0; }
+  .home-hero-stats dl:has(> :nth-child(3):last-child) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .home-hero-stats dl:has(> :nth-child(3):last-child) .home-hero-stat:nth-child(odd) { border-left: 1px solid var(--border); }
+  .home-hero-stats dl:has(> :nth-child(3):last-child) .home-hero-stat:first-child { border-left: 0; }
 }
 @media (max-width: 419px) {
   .search-hero-go { display: none; }

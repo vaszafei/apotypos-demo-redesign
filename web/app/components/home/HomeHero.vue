@@ -2,7 +2,7 @@
 import type { StoriesData } from '~/types/stories'
 import type { TopicsData } from '~/types/topics'
 
-// The hero of Αρχική (Home.Hero of assets/home.js): the masthead, the large search, the topics of the last day to search for and the size of the data.
+// The hero of Αρχική (Home.Hero of assets/home.js): the masthead, the large search, the topics of the last day to search for and the size of the data (articles, stories, topics).
 // The Plegma is behind it (PlegmaStage.vue) where the static page drew its own field.
 const { t } = useI18n()
 type HomeData = TopicsData & { outlets: { name: string, daily: (number | null)[] }[] }
@@ -22,12 +22,6 @@ const chips = computed(() => {
     .sort((a, b) => b.n - a.n).slice(0, 4)
 })
 const collected = computed(() => home.value?.outlets.reduce((sum, o) => sum + o.daily.reduce<number>((s, v) => s + (v ?? 0), 0), 0) ?? 0)
-const period = computed(() => {
-  const d = home.value
-  if (!d) return ''
-  return t('home.hero.period', { from: fmtMonth(d.dates[0]!, { day: 'numeric', month: 'long' }), to: fmtMonth(d.dates[d.dates.length - 1]!, { day: 'numeric', month: 'long', year: 'numeric' }) })
-})
-const brand = computed(() => t('site.name').toLocaleUpperCase('el'))
 const tail = computed(() => t('home.hero.eyebrow').toLocaleUpperCase(useNuxtApp().$i18n.locale.value))
 </script>
 
@@ -35,21 +29,19 @@ const tail = computed(() => t('home.hero.eyebrow').toLocaleUpperCase(useNuxtApp(
   <section class="home-hero" aria-labelledby="home-hero-title">
     <div class="home-hero-inner">
       <h1 id="home-hero-title" class="home-mast" :aria-label="`${t('site.name')} / ${t('home.hero.eyebrow')}`">
-        <span class="mast-part mast-name" aria-hidden="true">{{ brand }}</span><span class="mast-slash" aria-hidden="true">/</span><span class="mast-part mast-tail" aria-hidden="true">{{ tail }}</span>
+        <span class="mast-part mast-name" aria-hidden="true"><svg class="mast-logo" viewBox="0 0 11434 1493" focusable="false"><defs><clipPath id="mast-cl"><path class="mast-cl" d="M-6000 -1600L7142 -1600L2328 4818L-1000 4818Z"/></clipPath><clipPath id="mast-cr"><path class="mast-cr" d="M7618 -1600L20000 -1600L20000 4818L2804 4818Z"/></clipPath></defs><path class="mast-l" clip-path="url(#mast-cl)" d="M684 199 410 942H959ZM570 0H799L1368 1493H1158L1022 1110H349L213 1493H0ZM2724 0V1493H2522V170H1788V1493H1586V0ZM3732 137Q3512 137 3382.5 301.0Q3253 465 3253 748Q3253 1030 3382.5 1194.0Q3512 1358 3732 1358Q3952 1358 4080.5 1194.0Q4209 1030 4209 748Q4209 465 4080.5 301.0Q3952 137 3732 137ZM3732 -27Q4046 -27 4234.0 183.5Q4422 394 4422 748Q4422 1101 4234.0 1311.5Q4046 1522 3732 1522Q3417 1522 3228.5 1312.0Q3040 1102 3040 748Q3040 394 3228.5 183.5Q3417 -27 3732 -27ZM4531 0H5794V170H5264V1493H5061V170H4531Z"/><path class="mast-r" clip-path="url(#mast-cr)" d="M3602 1725H4865V1895H4335V3218H4132V1895H3602ZM4935 1725H5152L5566 2339L5977 1725H6194L5666 2507V3218H5463V2507ZM7529 1725V3218H7327V1895H6593V3218H6391V1725ZM8537 1862Q8317 1862 8187.5 2026Q8058 2190 8058 2473Q8058 2755 8187.5 2919Q8317 3083 8537 3083Q8757 3083 8885.5 2919Q9014 2755 9014 2473Q9014 2190 8885.5 2026Q8757 1862 8537 1862ZM8537 1698Q8851 1698 9039 1908.5Q9227 2119 9227 2473Q9227 2826 9039 3036.5Q8851 3247 8537 3247Q8222 3247 8033.5 3037Q7845 2827 7845 2473Q7845 2119 8033.5 1908.5Q8222 1698 8537 1698ZM9775 3048H10505V3218H9543V3048L10022 2424L9543 1895V1725H10487V1895H9775L10254 2420Z"/><path class="mast-s" d="M6504 -600L6756 -600L3442 3818L3190 3818Z"/></svg></span><span class="mast-slash" aria-hidden="true">/</span><span class="mast-part mast-tail" aria-hidden="true">{{ tail }}</span>
       </h1>
       <div class="home-hero-search"><GlobalSearch ref="search" hero /></div>
       <div v-if="chips.length" class="home-hero-try">
         <span class="home-hero-try-label">{{ t('home.hero.try') }}</span>
         <button v-for="r in chips" :key="r.x.el" type="button" class="home-chip" @click="search?.open(topicName(r.x))">{{ topicName(r.x) }}</button>
       </div>
-      <div v-if="home" class="kpi-tile home-hero-stats">
-        <dl :aria-label="period">
+      <div v-if="home" class="home-hero-stats">
+        <dl>
           <div class="home-hero-stat"><dt>{{ t('home.hero.articles') }}</dt><dd class="kpi-value">{{ fmtInt(collected) }}</dd></div>
-          <div class="home-hero-stat"><dt>{{ t('home.hero.outlets') }}</dt><dd class="kpi-value">{{ fmtInt(home.outlets.length) }}</dd></div>
           <div class="home-hero-stat"><dt>{{ t('home.hero.stories') }}</dt><dd class="kpi-value">{{ storyCount === null ? '–' : fmtInt(storyCount) }}</dd></div>
-          <div class="home-hero-stat"><dt>{{ t('home.hero.days') }}</dt><dd class="kpi-value">{{ fmtInt(home.dates.length) }}</dd></div>
+          <div class="home-hero-stat"><dt>{{ t('home.hero.topics') }}</dt><dd class="kpi-value">{{ fmtInt(home.issues.length) }}</dd></div>
         </dl>
-        <p class="home-hero-period">{{ period }}</p>
       </div>
     </div>
     <a class="home-hero-more" href="#home-today">{{ t('home.hero.more') }}<AppIcon name="chevron-down" class="icon icon-sm" /></a>
