@@ -29,6 +29,8 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
   // free area, so it never grows unseen. With reduced motion it is all at once.
   const INTRO_MS = 1100
   const INTRO_AT = 0.3
+  // On a flight from a story to a story the web of the one it comes to starts as the camera nears it.
+  const INTRO_AT_ARC = 0.55
   let introKey = ''
   let introAt = -1
   let lineMix = 0
@@ -112,6 +114,18 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
     }
     g.globalAlpha = 1
   }
+  // The web the camera leaves stays where it is in the world: the picture of its last frame is drawn with the camera of the flight, so it shrinks as the camera pulls back and it fades while the camera is on its way.
+  const drawGhost = (g: CanvasRenderingContext2D, t: number) => {
+    const o = st.ghost!
+    const alpha = 1 - smooth(0.3, 0.75, t)
+    if (alpha <= 0.01) return
+    const k = st.cam.z / o.cam.z
+    g.save()
+    g.setTransform(st.dpr * k, 0, 0, st.dpr * k, st.dpr * (st.width / 2 * (1 - k) + (o.cam.x - st.cam.x) * st.cam.z), st.dpr * (st.height / 2 * (1 - k) + (o.cam.y - st.cam.y) * st.cam.z))
+    g.globalAlpha = alpha
+    g.drawImage(o.img, 0, 0, st.width, st.height)
+    g.restore()
+  }
   const draw = (now: number) => {
     if (!st.ctx || !st.ctxFocus || !st.world) return
     const c = st.ctx
@@ -172,7 +186,7 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
     // The intro of the web in view: it waits for the camera and for the view's free area, then grows (see INTRO_MS).
     const key = story ? `s${story.id}` : outletOn ? `o${focusOutlet()}` : issue !== null ? `t${issue}` : ''
     if (key !== introKey) { introKey = key; introAt = -1 }
-    if (introAt < 0 && key && plegma.region && (!st.flight || (now - st.flight.t0) / Math.max(st.flight.dur, 1) >= INTRO_AT) && (!st.dive || now - st.dive.t0 >= MOVE_MS * DIVE_HOLD)) introAt = now
+    if (introAt < 0 && key && plegma.region && (!st.flight || (now - st.flight.t0) / Math.max(st.flight.dur, 1) >= (st.ghost ? INTRO_AT_ARC : INTRO_AT)) && (!st.dive || now - st.dive.t0 >= MOVE_MS * DIVE_HOLD)) introAt = now
     st.introP = !key || reduced.value ? 1 : introAt < 0 ? 0 : clamp((now - introAt) / INTRO_MS, 0, 1)
     st.nodeIn = smooth(0, 0.18, st.introP)
     st.lineIn = smooth(0.45, 0.95, st.introP)
@@ -295,6 +309,8 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
     // The dot of the story picked on a theme, on its way to the center of the web; the web takes over from it once it has grown there.
     if (st.dive && ((story ? `s${story.id}` : issue !== null ? `t${issue}` : '') !== st.dive.key || now - st.dive.t0 > MOVE_MS + MELT_MS)) st.dive = null
     if (st.dive) drawDive(f, now, story)
+    if (st.ghost && !st.flight) st.ghost = null
+    if (st.ghost && st.flight) drawGhost(f, (now - st.flight.t0) / Math.max(st.flight.dur, 1))
 
     // The dashed arcs of the themes in view: the focus's theme, the theme in focus, the theme under the pointer, and the themes of the Home webs.
     const issues = new Set<number>()

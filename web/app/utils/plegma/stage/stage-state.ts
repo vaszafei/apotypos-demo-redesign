@@ -61,6 +61,8 @@ export interface StageState {
   // The dot of the story picked on a theme (or on the web of a day: `plegma.diveFrom`), on its way to the center of the page's web: where it started (px), its radius, its fill (null: a ring of gray), the
   // page it goes to (`s<story>` or `t<theme>`) and when it began (the clock of the frames); null when there is none.
   dive: { x: number, y: number, r: number, t0: number, key: string, fill: string | null } | null
+  // The web of the story the camera leaves on a story → story flight along an arc: a picture of the frame it was in and the camera of that frame; it stays in the world, shrinks and fades as the camera goes.
+  ghost: { img: HTMLCanvasElement, cam: PlegmaCamera } | null
   heroCleared: boolean
   heroRev: Map<number, number>
   lantern: HeroSpot
@@ -106,6 +108,7 @@ export const createStageState = (): StageState => ({
   wasTheme: false,
   diveSpot: new Map(),
   dive: null,
+  ghost: null,
   heroCleared: false,
   heroRev: new Map(),
   lantern: { x: -9999, y: -9999, v: 0, on: false }

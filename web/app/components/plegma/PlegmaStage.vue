@@ -46,7 +46,7 @@ const file = useFixtureLazy<PlegmaFile>('plegma', { required: ['places', 'world'
 let raf = 0
 const REGION_EARLY = 0.3
 
-// `was`: the focus the view left. From a story to another story of the same theme the camera travels along the dashed arcs that join them (the chain of the theme's largest stories), when both are on it.
+// `was`: the focus the view left. From a story to another story the web of the first stays in the world and goes as the camera goes; of the same theme, the camera travels along the dashed arcs that join them (the chain of the theme's largest stories), when both are on it.
 const fly = (was?: PlegmaFocus) => {
   const to = targetCamera()
   if (!to) return
@@ -59,6 +59,15 @@ const fly = (was?: PlegmaFocus) => {
     const b = st.world.byId.get(now.id)
     const route = a && b && a.issue === b.issue ? arcRoute(st.world, a.issue, a.id, b.id) : null
     if (route) st.flight = flightAlong(st.flight, route)
+    // The web of the story left stays in the world while the camera goes, along an arc or straight.
+    const el = canvasFocus.value
+    if (el) {
+      const img = document.createElement('canvas')
+      img.width = el.width
+      img.height = el.height
+      img.getContext('2d')?.drawImage(el, 0, 0)
+      st.ghost = { img, cam: { ...st.cam } }
+    }
   }
   if (st.flight.dur <= 0) { Object.assign(st.cam, to); st.flight = null }
   plegma.setLanded(!st.flight)
