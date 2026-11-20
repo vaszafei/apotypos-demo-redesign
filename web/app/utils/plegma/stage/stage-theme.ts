@@ -331,7 +331,9 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
       // has its own name below, so it has none here.
       introNames = st.introP <= 0 ? 0 : introNames + dt
       const namesEnd = INTRO_NAMES_LAG + (0.1 + 0.8 * 0.44) * INTRO_S + INTRO_NAMES_IN + INTRO_NAMES_HOLD + INTRO_NAMES_OUT
-      if (fresh && !reduced.value && st.introP > 0 && introNames < namesEnd && st.ringOut < 1) {
+      // The web of a group (every node a link to an outlet) keeps its names: few outlets, so each stays written beside its dot, and they go with the ring when the view is left.
+      const keep = k > 0 && web.stories.every(s => s.href)
+      if ((fresh || keep) && st.introP > 0 && (keep || (!reduced.value && introNames < namesEnd)) && st.ringOut < 1) {
         g.font = `12px ${st.fontText}`
         g.textBaseline = 'middle'
         g.lineJoin = 'round'
@@ -356,13 +358,13 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
             const x0 = right ? nx + gap : nx - gap - w
             const cy = ny + (k2 as number) * h
             return { right: right as boolean, x0, x1: x0 + w, y0: cy - h / 2, y1: cy + h / 2 }
-          }).find(b => !boxes.some(o => b.x0 < o.x1 + 4 && b.x1 > o.x0 - 4 && b.y0 < o.y1 + 2 && b.y1 > o.y0 - 2) && b.x0 > disc.x - disc.r && b.x1 < disc.x + disc.r)
+          }).find(b => !boxes.some(o => b.x0 < o.x1 + 4 && b.x1 > o.x0 - 4 && b.y0 < o.y1 + 2 && b.y1 > o.y0 - 2) && (keep || (b.x0 > disc.x - disc.r && b.x1 < disc.x + disc.r)))
           if (!spot) continue
           boxes.push(spot)
           if (themeLit.story === i && mix > 0.5) continue
           const t0 = INTRO_NAMES_LAG + (0.1 + from[i]! * 0.44) * INTRO_S
-          const rise = smooth(t0, t0 + INTRO_NAMES_IN, introNames)
-          const alpha = rise * (1 - smooth(t0 + INTRO_NAMES_IN + INTRO_NAMES_HOLD, t0 + INTRO_NAMES_IN + INTRO_NAMES_HOLD + INTRO_NAMES_OUT, introNames)) * (1 - st.ringOut)
+          const rise = reduced.value ? 1 : smooth(t0, t0 + INTRO_NAMES_IN, introNames)
+          const alpha = rise * (keep ? 1 - clamp(st.ringOut * 2, 0, 1) : (1 - smooth(t0 + INTRO_NAMES_IN + INTRO_NAMES_HOLD, t0 + INTRO_NAMES_IN + INTRO_NAMES_HOLD + INTRO_NAMES_OUT, introNames)) * (1 - st.ringOut))
           if (alpha < 0.01) continue
           g.textAlign = spot.right ? 'left' : 'right'
           const x = spot.right ? spot.x0 : spot.x1

@@ -75,7 +75,7 @@ onBeforeUnmount(() => { plegma.setThemeStories(null); plegma.setOutletSlot(0) })
 // The map region is the free cell under the title beside the cards, under the title, as on the story, theme and outlet pages.
 const orbit = ref<HTMLElement>()
 const map = ref<HTMLElement>()
-usePlegmaRegion(orbit, map, { side: 440, top: -32, bottom: 28, lean: 0.62, clear: true, ringPerSide: 0.45 })
+usePlegmaRegion(orbit, map, { side: 440, top: -32, bottom: 28, lean: 0.15, clear: true, ringPerSide: 0.45 })
 const { height: windowHeight } = useWindowSize()
 const tall = computed(() => Math.round(Math.min(300, Math.max(110, windowHeight.value * 0.2))))
 </script>
@@ -95,7 +95,6 @@ const tall = computed(() => Math.round(Math.min(300, Math.max(110, windowHeight.
     <div class="plegma-title entity-grid">
       <EntityTitle :kind="t('hero.kind.group')">
         <template #title><span class="group-cell"><span class="dot" :style="`--dot:${model.color}`" aria-hidden="true" />{{ model.grp.name }}</span></template>
-        <EntityFact :label="t('entity.fact.lean')" :value="model.grp.lean || t('groups.lean.none')" />
         <EntityFact :label="t('entity.fact.outlets')" :value="fmtInt(model.grp.outlets.length)" />
         <EntityFact :label="t('entity.fact.articles')" :value="fmtInt(model.grp.collected)" :sub="t('group2.chip.share', { n: fmtPct(model.grp.collected / model.g.totalCollected) })" />
       </EntityTitle>
