@@ -3,11 +3,12 @@ import { useElementSize, useMediaQuery, useRafFn } from '@vueuse/core'
 import { PLEGMA_NODES_MAX } from '~/utils/plegma/plegma-articles'
 import { cloudWeb } from '~/utils/plegma/plegma-clouds'
 import { shareArcs } from '~/utils/plegma/stage/stage-draw-util'
+import { LEAVE_RING_MS, ringEmptiedTo } from '~/utils/plegma/plegma-leave'
 
 // The web of the outlet's articles on Επισκόπηση: one node for each article, or for several when there are many (each node then stands for `perNode` articles), in a loose cloud for each day
 // (utils/plegma/plegma-clouds.ts), as large as the articles of the day. No date is written. The outlet is the center, each cloud joined to it. Around it is the ring of the stance towards
 // the government: an arc each for critical, neutral and supportive, as wide as their share, with the name and the share written outside it.
-const props = defineProps<{ days: number[], colorSlot: number, stance: number[], label: string, name: string }>()
+const props = defineProps<{ days: number[], colorSlot: number, stance: number[], label: string, name: string, leaving?: boolean }>()
 const { t } = useI18n()
 const tooltip = useTooltipStore()
 const reduced = useMediaQuery('(prefers-reduced-motion: reduce)')
@@ -49,6 +50,9 @@ let py = new Float32Array(0)
 let nodeR = 3
 let center = { x: 0, y: 0 }
 let startedAt = 0
+// Leaving the page: the ring empties from its start on, the way it filled, and its names go in the first half (utils/plegma/plegma-leave.ts).
+let leaveAt = -1
+watch(() => props.leaving, (on) => { leaveAt = on ? performance.now() : -1 })
 const ease = (v: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, v)), 3)
 
 const draw = (now: number) => {
@@ -139,6 +143,9 @@ const draw = (now: number) => {
   if (!arcs) return
   const counts = props.stance
   const sum = counts.reduce((a, b) => a + b, 0)
+  const gone = leaveAt < 0 ? 0 : reduced.value ? 1 : Math.min(1, (now - leaveAt) / LEAVE_RING_MS)
+  const emptied = gone > 0 ? ringEmptiedTo(gone) : -Infinity
+  const namesLeft = 1 - Math.min(1, gone * 2)
   g.lineWidth = 2.4
   g.font = `12px ${fontText}`
   g.textBaseline = 'middle'
@@ -147,16 +154,21 @@ const draw = (now: number) => {
     const span = arcs[k * 2 + 1]!
     if (span <= 0) return
     g.strokeStyle = stanceInk[k] ?? mute
-    g.beginPath()
-    g.ellipse(cx, cy, ringR * kx, ringR, 0, from - Math.PI / 2, from + span - Math.PI / 2)
-    g.stroke()
+    if (from + span > emptied) {
+      g.beginPath()
+      g.ellipse(cx, cy, ringR * kx, ringR, 0, Math.max(from, emptied) - Math.PI / 2, from + span - Math.PI / 2)
+      g.stroke()
+    }
+    if (namesLeft <= 0) return
     const mid = from + span / 2
     const lx = cx + Math.sin(mid) * (ringR * kx + 12)
     const ly = cy - Math.cos(mid) * (ringR + 12)
     const text = `${t(`stance.${key}`)} · ${fmtPct(counts[k]! / sum)}`
     g.textAlign = Math.sin(mid) >= 0 ? 'left' : 'right'
     g.fillStyle = ink
+    g.globalAlpha = namesLeft
     g.fillText(text, lx + (Math.sin(mid) >= 0 ? 6 : -6), ly)
+    g.globalAlpha = 1
   })
 }
 

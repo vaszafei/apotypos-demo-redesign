@@ -3,6 +3,7 @@ import { useEventListener, useMediaQuery, useRafFn } from '@vueuse/core'
 import { blendHex } from '~/utils/ink'
 import { buildDayWeb, DAY_DATE, DAY_DOT, DAY_REST, DAY_STORY, DAY_THEME, matchWebs, storiesAsThemes } from '~/utils/plegma/plegma-day'
 import type { PlegmaDayTheme, PlegmaDayWeb } from '~/utils/plegma/plegma-day'
+import { LEAVE_RING_MS } from '~/utils/plegma/plegma-leave'
 import { NAME_MAX, drawColumns } from '~/utils/plegma/stage/stage-names'
 import type { NameItem } from '~/utils/plegma/stage/stage-names'
 
@@ -21,7 +22,7 @@ export interface DayOutlet { name: string, slot: number, n: number, group?: stri
 // `spread` that many themes go round the center by the golden angle (utils/plegma/plegma-day.ts), `zoom` the share of the area the web fills (the ring included), `shares` that a theme is as large as its share
 // of the ring (the area of its node is its articles), `ellipse` that the ring is an ellipse as wide as the area allows (the web lies in it, and the arcs of the outlets are named with their share outside it), `grouped` that the stories are grouped by their themes (the nodes of the themes and their names) while the ring stays the outlets; and `shares` that a theme is as large as its share
 // of the ring (the area of its node is its articles) and its share is written after its name and in its tooltip, `titles` that the date and the count are not written at the center and the whole title of the story pointed at is written at its circle (as `names` does), `fill` that the stories are drawn out until the web touches the ring all round (utils/plegma/plegma-day.ts), `growMs` how long the growth takes, `hoverStory` the id of a story that is pointed at in a list beside the web (it is lit and its title is written at its circle, as when the pointer is on it), `names` that it has the look of the web of a story and of a theme (components/PlegmaStage.vue: a story is a gray circle as large as its articles, a dot a small ring in the color of its group, no lines from the center to the stories, the names of the arcs in two columns beside the ring), `grow` that the web grows out of the center when it comes into view and again when its data changes, and `label` the name of the picture for a screen reader.
-const props = withDefaults(defineProps<{ themes: PlegmaDayTheme[], ring: DayRing[], outlets: DayOutlet[], mode: 'stories' | 'themes', lit: number | null, date: string, picked: number | null, active: boolean, sub?: string, labels?: number, grow?: boolean, label?: string, spread?: boolean, themeLabel?: string, zoom?: number, shares?: boolean, ellipse?: boolean, grouped?: boolean, names?: boolean, titles?: boolean, fill?: boolean, hoverStory?: number | null, growMs?: number, ringStart?: number }>(), { ringStart: 0, sub: undefined, labels: Infinity, grow: false, label: undefined, spread: false, themeLabel: undefined, zoom: 1, shares: false, ellipse: false, grouped: false, names: false, titles: false, fill: false, hoverStory: null, growMs: GROW_MS })
+const props = withDefaults(defineProps<{ themes: PlegmaDayTheme[], ring: DayRing[], outlets: DayOutlet[], mode: 'stories' | 'themes', lit: number | null, date: string, picked: number | null, active: boolean, sub?: string, labels?: number, grow?: boolean, label?: string, spread?: boolean, themeLabel?: string, zoom?: number, shares?: boolean, ellipse?: boolean, grouped?: boolean, names?: boolean, titles?: boolean, fill?: boolean, hoverStory?: number | null, growMs?: number, ringStart?: number, leaving?: boolean }>(), { leaving: false, ringStart: 0, sub: undefined, labels: Infinity, grow: false, label: undefined, spread: false, themeLabel: undefined, zoom: 1, shares: false, ellipse: false, grouped: false, names: false, titles: false, fill: false, hoverStory: null, growMs: GROW_MS })
 const emit = defineEmits<{ pick: [id: number], pickTheme: [issue: number], 'update:lit': [issue: number | null] }>()
 const { t } = useI18n()
 const tooltip = useTooltipStore()
@@ -168,6 +169,9 @@ const layout = (w: PlegmaDayWeb, sec: number) => {
 
 // A change of day: the old picture fades away without its ring (fadeOld), the ring of the old day empties in the direction it filled (drawOutRing), and then the new web grows and its ring fills (startGrow).
 const OUT_MS = 520
+// Leaving the page (`leaving`): the ring empties from its start on, the way it filled, and its names go in the first half (utils/plegma/plegma-leave.ts).
+let leaveAt = -1
+watch(() => props.leaving, (on) => { leaveAt = on ? performance.now() : -1 })
 let outAt = -1
 let outItems: DayOutlet[] = []
 let outHi = 1
@@ -392,6 +396,9 @@ const draw = (sec: number, dt: number) => {
   const ringX = ringRx()
   const per = perim.value[perim.value.length - 1]!
   const sweepFrac = grown < 1 ? 1 - (1 - clamp(grown / 0.8, 0, 1)) ** 3 : 1
+  const gone = leaveAt < 0 ? 0 : reduced.value ? 1 : clamp((performance.now() - leaveAt) / LEAVE_RING_MS, 0, 1)
+  const emptyFrac = gone > 0 ? 1 - (1 - gone) ** 3 : 0
+  const namesLeft = 1 - clamp(gone * 2, 0, 1)
   const arcs = (items: { slot: number, n: number, name?: string }[], tag: string, alpha: number, hotOf: (k: number) => boolean) => {
     const total = items.reduce((sum, r) => sum + r.n, 0)
     if (total <= 0 || alpha < 0.01) return
@@ -408,17 +415,17 @@ const draw = (sec: number, dt: number) => {
       if (from + pad >= sweepFrac) { from += span; return }
       const heat = arcHot.get(key) ?? 0
       // An arc as short as its two gaps (an outlet with a few articles) has no length: sweepParam would turn it into the whole circle in its color, so it is not drawn.
-      if (Math.min(from + span - pad, sweepFrac) > from + pad) {
+      if (Math.min(from + span - pad, sweepFrac) > Math.max(from + pad, emptyFrac)) {
         g.strokeStyle = props.names ? (heat > 0.01 ? slotColour(r.slot) : softInk[r.slot] ?? mute) : slotColour(r.slot)
         g.globalAlpha = (0.85 + 0.15 * heat) * alpha
         g.lineWidth = props.names ? 3 + 1.4 * heat : 2 + 2.5 * heat
         g.beginPath()
-        const [p0, p1] = sweepParam(from + pad, Math.min(from + span - pad, sweepFrac))
+        const [p0, p1] = sweepParam(Math.max(from + pad, emptyFrac), Math.min(from + span - pad, sweepFrac))
         g.ellipse(width / 2, height / 2, ringX, ringR, 0, p0 - Math.PI / 2, p1 - Math.PI / 2)
         g.stroke()
       }
       // The name and the share of a large arc, outside the ring.
-      if (props.ellipse && tag === 'o' && r.name && span >= 0.035 && grown >= 1) {
+      if (props.ellipse && tag === 'o' && r.name && span >= 0.035 && grown >= 1 && namesLeft > 0) {
         const m = paramOf(atRing(from + span / 2)) - Math.PI / 2
         const c = Math.cos(m)
         const sn = Math.sin(m)
@@ -428,12 +435,12 @@ const draw = (sec: number, dt: number) => {
         g.textAlign = c > 0.25 ? 'left' : c < -0.25 ? 'right' : 'center'
         g.lineWidth = 3.5
         g.strokeStyle = paper
-        g.globalAlpha = 0.9
+        g.globalAlpha = 0.9 * namesLeft
         const tx = width / 2 + (ringX + 10) * c
         const ty = height / 2 + (ringR + 10) * sn + (Math.abs(c) <= 0.25 ? (sn > 0 ? 8 : -2) : 4)
         g.strokeText(text, tx, ty)
         g.fillStyle = mute
-        g.globalAlpha = 1
+        g.globalAlpha = namesLeft
         g.fillText(text, tx, ty)
         g.textAlign = 'start'
       }
@@ -442,7 +449,7 @@ const draw = (sec: number, dt: number) => {
     })
     g.lineCap = 'butt'
     g.globalAlpha = 1
-    if (named.length && grown >= 1) drawColumns(g, { fontText, paper, ink, mute }, { x0: 0, y0: 0, x1: width, y1: height }, { cx: width / 2, cy: height / 2, ring: ringR, kx: 1 }, named, 0.9 * alpha)
+    if (named.length && grown >= 1 && namesLeft > 0) drawColumns(g, { fontText, paper, ink, mute }, { x0: 0, y0: 0, x1: width, y1: height }, { cx: width / 2, cy: height / 2, ring: ringR, kx: 1 }, named, 0.9 * alpha * namesLeft)
   }
   arcs(props.outlets, 'o', props.grouped ? 1 : 1 - form, k => (props.grouped || form < 0.5) && hoverRing === k)
   shownOutlets = props.outlets

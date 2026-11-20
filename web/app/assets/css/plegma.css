@@ -228,7 +228,7 @@
 .shell.is-backdrop.is-leaving #content > :not(.page-head), .shell.is-backdrop.is-leaving .page-head-actions { opacity: 0; pointer-events: none; transition: opacity 240ms var(--ease-out); }
 /* Leaving the view (utils/plegma/plegma-leave.ts): the title, the tabs, the note and the cards fade while the ring empties; the route changes after. */
 .plegma-orbit.is-leaving .plegma-card { opacity: 0; pointer-events: none; transition: opacity 240ms var(--ease-out); }
-.plegma-orbit.is-in.is-leaving .plegma-title, .plegma-orbit.is-in.is-leaving .orbit-ring-tabs, .plegma-orbit.is-in.is-leaving .plegma-nodes-note { opacity: 0; pointer-events: none; transition-duration: 240ms; }
+.plegma-orbit.is-in.is-leaving .plegma-title, .plegma-orbit.is-in.is-leaving .orbit-ring-tabs, .plegma-orbit.is-in.is-leaving .plegma-nodes-note, .plegma-orbit.is-in.is-leaving .outlet-period { opacity: 0; pointer-events: none; transition-duration: 240ms; }
 @media (prefers-reduced-motion: reduce) { .plegma-orbit .plegma-title, .plegma-orbit .orbit-ring-tabs, .plegma-orbit .plegma-nodes-note, .plegma-stage { transition: none; } }
 
 /* A small card lists the related stories by name and articles; the picture of each would leave the name no room. */

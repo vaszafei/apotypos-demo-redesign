@@ -204,7 +204,7 @@ const headlinesShown = computed(() => liveHeadlines.value.filter(x => String(x[0
     <section class="dcard c-12"><div class="empty-state" data-state="empty"><AppIcon name="inbox" /><p style="margin: 0">{{ t('topics2.empty') }}</p></div></section>
   </div>
   <ErrorPage v-else-if="!model" :status="404" />
-  <div v-else ref="orbit" class="plegma-orbit is-outlet" :class="[`tab-${tab}`, `cols-${spec.columns.length}`, spec.latest ? 'has-latest' : 'no-latest', { 'is-in': plegma.landed }]">
+  <div v-else ref="orbit" class="plegma-orbit is-outlet" :class="[`tab-${tab}`, `cols-${spec.columns.length}`, spec.latest ? 'has-latest' : 'no-latest', { 'is-in': plegma.landed, 'is-leaving': plegma.leaving }]">
     <OutletPeerLinks v-if="tab === 'overview'" :root="orbit" :count="groupSimilar.length" :hover="groupSimilar.findIndex(r => r.slug === hoverPeer)" :color="groupColor(model.group)" />
     <div class="plegma-title entity-grid">
       <EntityTitle :kind="t('hero.kind.outlet')" :title="model.outlet.name">
@@ -216,21 +216,21 @@ const headlinesShown = computed(() => liveHeadlines.value.filter(x => String(x[0
 
     <div class="orbit-map">
       <ClientOnly><div class="outlet-map-web">
-        <OutletArticleWeb v-if="tab === 'overview'" key="overview" :days="bars?.series[0]?.values.map(v => v ?? 0) ?? []" :color-slot="groupSlot" :stance="model.writes.stanceMine" :label="t('outlet.web.label')" :name="model.outlet.name" />
+        <OutletArticleWeb v-if="tab === 'overview'" key="overview" :days="bars?.series[0]?.values.map(v => v ?? 0) ?? []" :color-slot="groupSlot" :stance="model.writes.stanceMine" :label="t('outlet.web.label')" :name="model.outlet.name" :leaving="plegma.leaving" />
         <PlegmaDayWeb
           :ring-start="0.5"
           v-else-if="tab === 'topics'" key="topics" :themes="webThemes" :ring="themeRing" :outlets="[]" mode="themes" :date="fmtInt(periodArticles)" :sub="model.outlet.name" :lit="null" :picked="null" active
-          :labels="8" grow shares :zoom="1.12" :label="t('outlet.web.label')" @pick="id => navigateTo(storyHref(id))" @pick-theme="k => navigateTo(topicHref(k))"
+          :labels="8" grow shares :zoom="1.12" :leaving="plegma.leaving" :label="t('outlet.web.label')" @pick="id => navigateTo(storyHref(id))" @pick-theme="k => navigateTo(topicHref(k))"
         />
         <PlegmaDayWeb
           :ring-start="0.5"
           v-else-if="tab === 'stories'" key="stories" :themes="webStoryThemes" :ring="[]" :outlets="storyRing" mode="stories" :date="fmtInt(periodArticles)" :sub="model.outlet.name" :lit="null" :picked="null" active
-          :hover-story="plegma.hoverStory" ellipse grouped spread fill titles grow :zoom="0.82" :label="t('outlet.web.label')" @pick="id => navigateTo(storyHref(id))" @pick-theme="k => navigateTo(topicHref(k))"
+          :hover-story="plegma.hoverStory" ellipse grouped spread fill titles grow :zoom="0.82" :leaving="plegma.leaving" :label="t('outlet.web.label')" @pick="id => navigateTo(storyHref(id))" @pick-theme="k => navigateTo(topicHref(k))"
         />
         <PlegmaDayWeb
           :ring-start="0.5"
           v-else key="people" :themes="personThemes" :ring="personRing" :outlets="[]" mode="themes" :date="model.outlet.name" :sub="t('outlet.web.quotesN', { n: fmtInt(personRows.reduce((a, r) => a + r.n, 0)) })" :lit="null" :picked="null" active
-          :labels="8" grow spread shares :zoom="1.12" :label="t('outlet.web.label')" @pick-theme="openPerson"
+          :labels="8" grow spread shares :zoom="1.12" :leaving="plegma.leaving" :label="t('outlet.web.label')" @pick-theme="openPerson"
         />
       </div></ClientOnly>
       <p class="plegma-nodes-note">{{ mapNote }}</p>

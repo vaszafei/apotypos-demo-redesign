@@ -1,7 +1,7 @@
 import { plegmaFocusOf, samePlegmaFocus } from '~/utils/plegma/plegma-route'
 import { LEAVE_FADE_MS, LEAVE_HOLD_MS } from '~/utils/plegma/plegma-leave'
 
-// The way a theme, a group or a story is left (a click on a story, an outlet, another theme or a tab): the page and the ring leave first (stores/plegma.ts `leaving`), then the route changes. The Back and Forward
+// The way a theme, a group, a story or an outlet is left (a click on a story, an outlet, another theme or a tab): the page and the ring leave first (stores/plegma.ts `leaving`), then the route changes. The Back and Forward
 // buttons, a change of the same theme (a tab of the ring) and reduced motion change the route at once. A theme leaves with its ring (LEAVE_HOLD_MS); a screen of Μέσα (a page with the map as its
 // backdrop) leaves for a story, a theme or an outlet with its content faded (the CSS of `.shell.is-leaving`), except Ιστορίες, which dives from its web (composables/useWebDive.ts).
 export default defineNuxtPlugin(() => {
@@ -16,7 +16,7 @@ export default defineNuxtPlugin(() => {
     if (back || reduce.matches || !plegma.active || !plegma.landed) return
     const here = plegmaFocusOf(from.path, from.query)
     const next = plegmaFocusOf(to.path, to.query)
-    const hold = (here?.kind === 'theme' || here?.kind === 'group' || here?.kind === 'story') && !samePlegmaFocus(here, next)
+    const hold = (here?.kind === 'theme' || here?.kind === 'group' || here?.kind === 'story' || here?.kind === 'outlet') && !samePlegmaFocus(here, next)
       ? LEAVE_HOLD_MS
       : from.meta.backdrop === true && from.path.replace(/\/+$/, '') !== '/stories' && next ? LEAVE_FADE_MS + 40 : 0
     if (!hold) return
