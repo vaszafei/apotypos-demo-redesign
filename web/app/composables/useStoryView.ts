@@ -140,7 +140,7 @@ export const useStoryView = (id: MaybeRefOrGetter<number>) => {
     const m = model.value
     if (!m) return []
     const days = m.last + 1
-    return relatedStories(m.d.stories.filter(s => !s.generic), m.story, s => dailyOf(s, days)).map(r => ({ ...r, articles: articlesOf(r.s), values: dailyOf(r.s, days) }))
+    return relatedStories(m.d.stories.filter(s => !s.generic), m.story, s => dailyOf(s, days), { issue: m.story.issue, words: !!m.d.issues[m.story.issue]?.catchAll }).map(r => ({ ...r, articles: articlesOf(r.s), values: dailyOf(r.s, days) }))
   })
 
   return { loading, problem, retry, model, series, articles, shown, dailyTip, tree, outletParts, groupParts, stance, how, related, dayLabel }

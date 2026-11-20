@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { StoryView } from '~/composables/useStoryView'
 
-// The stories with title words or days in common; it exists for every story, also one with no theme.
+// The stories of the same theme with title words or days in common; for a story in the catch-all theme only title words count.
 const props = defineProps<{ view: StoryView }>()
 const { t } = useI18n()
 const m = computed(() => props.view.model.value!)

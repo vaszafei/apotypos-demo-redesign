@@ -19,13 +19,13 @@ export const dailyOf = (s: Story, days: number) => {
 }
 export const articlesOf = (s: Story) => s.days.reduce((total, v, i) => (i % 2 ? total + v : total), 0)
 
-// Related stories. The topic is too general: the topic "Θάνατος Μαζωνάκη" holds 11 other deaths. A story is related when its title has rare words in common
+// Related stories of the same theme (`only`: its issue; `words`: the theme is the catch-all, which says nothing, so only title words count and the days do not). The topic is too general: the topic "Θάνατος Μαζωνάκη" holds 11 other deaths. A story is related when its title has rare words in common
 // (the stem is the first 6 letters, so the endings of Greek words do not matter) or when it has articles on the same days. Common words have no weight.
 const stem = (w: string) => w.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').slice(0, 6)
 const wordsOf = (name: string): [string, string][] =>
   [...new Set((name.match(/[\p{L}]{4,}/gu) || []).map(w => [stem(w), w] as const).map(([s, w]) => `${s}|${w}`))].map(x => x.split('|') as [string, string])
 export interface Related { s: Story, shared: string[], nameScore: number, cosine: number, score: number }
-export const relatedStories = (stories: Story[], target: Story, daysOf: (s: Story) => number[]): Related[] => {
+export const relatedStories = (stories: Story[], target: Story, daysOf: (s: Story) => number[], only?: { issue: number, words: boolean }): Related[] => {
   const df = new Map<string, number>()
   const bag = new Map(stories.map(s => [s.id, new Map(wordsOf(s.el))]))
   bag.forEach(words => words.forEach((_, k) => df.set(k, (df.get(k) || 0) + 1)))
@@ -37,13 +37,13 @@ export const relatedStories = (stories: Story[], target: Story, daysOf: (s: Stor
   const myDays = daysOf(target)
   const myNorm = norm(myDays)
   const weight = mineRare.reduce((s, k) => s + idf(k), 0) || 1
-  return stories.filter(s => s.id !== target.id).map((s) => {
+  return stories.filter(s => s.id !== target.id && (!only || s.issue === only.issue)).map((s) => {
     const shared = mineRare.filter(k => bag.get(s.id)!.has(k))
     const nameScore = shared.reduce((total, k) => total + idf(k), 0) / weight
     const other = daysOf(s)
     const cosine = other.reduce((total, v, i) => total + v * myDays[i]!, 0) / (norm(other) * myNorm)
     return { s, shared: shared.map(k => mine.get(k)!), nameScore, cosine, score: 0.65 * nameScore + 0.35 * cosine }
-  }).filter(r => r.nameScore > 0 || r.cosine >= 0.8).sort((a, b) => b.score - a.score).slice(0, RELATED)
+  }).filter(r => r.nameScore > 0 || (!only?.words && r.cosine >= 0.8)).sort((a, b) => b.score - a.score).slice(0, RELATED)
 }
 
 // The most ownership groups that wrote the story on one day (reach of Spread.profiles). An outlet with no group does not count.
