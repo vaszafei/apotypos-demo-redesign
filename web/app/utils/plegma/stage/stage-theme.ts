@@ -1,5 +1,6 @@
 import { regionBox } from '../plegma-camera'
 import { ringEmptiedTo } from '../plegma-leave'
+import { smooth } from '../plegma-hero'
 import { buildThemeWeb } from '../plegma-theme'
 import type { PlegmaThemeWeb } from '../plegma-theme'
 import { TAU, clamp, shareArcs } from './stage-draw-util'
@@ -9,6 +10,9 @@ import { NAME_MAX, createStageNames } from './stage-names'
 import type { NameItem } from './stage-names'
 
 // A theme or an outlet in view: its web in the middle of the map region, and what the pointer finds on it.
+// The names of the stories that show while a theme opens: how long they stay (s) once the dots are in, and the longest name in px.
+const INTRO_NAMES_HOLD = 1.6
+const INTRO_NAME_W = 170
 export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCore) => {
   const { plegma, reduced } = deps
   const { webFocus, focusOutlet, focusIssue, gatherTo, gatherR, ease } = core
@@ -37,6 +41,8 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
   let themeLit: { story: number, outlet: string | null } = { story: -1, outlet: null }
   // The story is lit by the pointer on its node: the tooltip names it then, so the web does not write the name again (a story pointed at in a card has no tooltip, and the web names it).
   let themeLitOnNode = false
+  // How long (s) the names of the stories have been in view since the dots of a theme came in (see the block before «The name of the story pointed at»).
+  let introNames = 0
   const themeDisc = () => {
     if (!plegma.region) return null
     const box = regionBox(st.width, st.height, plegma.region)
@@ -290,6 +296,45 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
         g.beginPath()
         g.arc(hx[node]!, hy[node]!, themeNodeRadius(web, node, unit) + rim + 2.5, 0, TAU)
         g.stroke()
+      }
+      // Opening a theme, the names of its stories show beside their dots while the dots come in, and go after a moment. Each goes on the side of its dot where there is room (not on another name),
+      // in one line; a story with no room has none. The story pointed at has its own name below, so it has none here.
+      introNames = st.introP < 0.3 ? 0 : st.introP < 0.55 ? introNames : introNames + dt
+      const namesOn = fresh && !reduced.value ? smooth(0.3, 0.55, st.introP) * (1 - smooth(INTRO_NAMES_HOLD, INTRO_NAMES_HOLD + 0.6, introNames)) * (1 - st.ringOut) : 0
+      if (namesOn > 0.01) {
+        g.font = `600 12px ${st.fontText}`
+        g.textBaseline = 'middle'
+        g.lineJoin = 'round'
+        const placed: { x0: number, x1: number, y0: number, y1: number }[] = []
+        for (let i = 0; i < k; i++) {
+          if (themeLit.story === i && mix > 0.5) continue
+          let text = web.stories[i]!.name
+          while (text.length > 8 && g.measureText(text).width > INTRO_NAME_W) text = `${text.slice(0, -2).trimEnd()}…`
+          const w = g.measureText(text).width
+          const nx = hx[1 + i]!
+          const ny = hy[1 + i]!
+          const gap = themeNodeRadius(web, 1 + i, unit) + 6
+          const inward = nx <= disc.x
+          const spot = [[inward, 0], [!inward, 0], [inward, -14], [inward, 14], [!inward, -14], [!inward, 14]].map(([right, dy]) => {
+            const x0 = right ? nx + gap : nx - gap - w
+            return { right: right as boolean, x0, x1: x0 + w, y0: ny + (dy as number) - 8, y1: ny + (dy as number) + 8 }
+          }).find(b => !placed.some(o => b.x0 < o.x1 + 4 && b.x1 > o.x0 - 4 && b.y0 < o.y1 && b.y1 > o.y0) && b.x0 > 8 && b.x1 < st.width - 8)
+          if (!spot) continue
+          placed.push(spot)
+          g.textAlign = spot.right ? 'left' : 'right'
+          const x = spot.right ? spot.x0 : spot.x1
+          const y = (spot.y0 + spot.y1) / 2
+          g.globalAlpha = 0.95 * namesOn
+          g.strokeStyle = st.paper
+          g.lineWidth = 4
+          g.strokeText(text, x, y)
+          g.globalAlpha = namesOn
+          g.fillStyle = st.ink
+          g.fillText(text, x, y)
+        }
+        g.font = `11px ${st.fontText}`
+        g.textBaseline = 'alphabetic'
+        g.globalAlpha = 1
       }
       // The name of the story pointed at, outside the ring.
       const order = web.stories.map((_, i) => i)
