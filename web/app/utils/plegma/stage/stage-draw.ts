@@ -34,6 +34,11 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
   const INTRO_AT_TRAVEL = 0.8
   let introKey = ''
   let introAt = -1
+  // The lines from a story to other stories come in with the card that lists those stories (Σχετικές ιστορίες, PlegmaStoryView.vue: order 3, so 3 × 110 ms after the camera lands),
+  // as that card shows and settles (assets/css/plegma.css, plegma-cut-a: from 14% to 84% of its 1100 ms).
+  const LINKS_AFTER = 3 * 110
+  const CARD_MS = 1100
+  let landedAt = -1
   let lineMix = 0
   let lineLast: number | null = null
   let lastNow = 0
@@ -186,7 +191,10 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
     if (onHome) { st.push = null; introKey = ''; introAt = -1; drawHero(now, sec, dt); return }
     // The intro of the web in view: it waits for the camera and for the view's free area, then grows (see INTRO_MS).
     const key = story ? `s${story.id}` : outletOn ? `o${focusOutlet()}` : issue !== null ? `t${issue}` : ''
-    if (key !== introKey) { introKey = key; introAt = -1 }
+    if (key !== introKey) { introKey = key; introAt = -1; landedAt = -1 }
+    if (!plegma.landed) landedAt = -1
+    else if (landedAt < 0) landedAt = now
+    const linkIn = reduced.value ? 1 : landedAt < 0 ? 0 : smooth(0.14, 0.84, (now - landedAt - LINKS_AFTER) / CARD_MS)
     if (introAt < 0 && key && plegma.region && (!st.flight || (now - st.flight.t0) / Math.max(st.flight.dur, 1) >= (st.flight.level ? INTRO_AT_TRAVEL : st.ghost ? INTRO_AT_ARC : INTRO_AT)) && (!st.dive || now - st.dive.t0 >= MOVE_MS * DIVE_HOLD)) introAt = now
     st.introP = !key || reduced.value ? 1 : introAt < 0 ? 0 : clamp((now - introAt) / INTRO_MS, 0, 1)
     st.nodeIn = smooth(0, 0.18, st.introP)
@@ -332,11 +340,11 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
     }
     a.setLineDash([])
     if (issue !== null || outletOn) drawTheme(f, sec, dt)
-    // The line the camera travels along (from the story it left to the story in view): lit while the camera goes, it fades as the web of the story in view grows its own lines.
-    if (st.travel && !st.flight && st.lineIn >= 1) st.travel = null
+    // The line the camera travels along (from the story it left to the story in view): lit while the camera goes, it fades as the lines of the story in view come in.
+    if (st.travel && !st.flight && linkIn >= 1) st.travel = null
     if (st.travel) {
       const o = st.travel
-      const k = st.flight ? 1 : 1 - st.lineIn
+      const k = st.flight ? 1 : 1 - linkIn
       const ps = toScreen(st.cam, st.width, st.height, o.s)
       const pc = toScreen(st.cam, st.width, st.height, o.c)
       const pe = toScreen(st.cam, st.width, st.height, o.e)
@@ -383,8 +391,7 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
       // Two lines that leave the same way are moved apart a little on the ring, so each one has a start of its own.
       const starts = lines.map(l => l.angle)
       for (let pass = 0; pass < 4; pass++) for (let k = 1; k < starts.length; k++) if (starts[k]! - starts[k - 1]! < 0.11) { starts[k - 1]! -= 0.02; starts[k]! += 0.02 }
-      // The lines come in with the web (after its nodes), not before it.
-      const dim = (1 - 0.65 * lineMix) * (st.dive ? smooth(0.9, 1.3, (now - st.dive.t0) / MOVE_MS) : 1) * st.lineIn
+      const dim = (1 - 0.65 * lineMix) * (st.dive ? smooth(0.9, 1.3, (now - st.dive.t0) / MOVE_MS) : 1) * linkIn
       const still = !st.flight && st.introP >= 1
       if (still) st.links = { from: story.id, to: new Map() }
       const keep = (b: PlegmaStory, sx: number, sy: number, cx: number, cy: number) => {
@@ -427,7 +434,7 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
         const path = () => { f.beginPath(); f.moveTo(sx, sy); f.quadraticCurveTo((sx + on.q.x) / 2 - uy * bend, (sy + on.q.y) / 2 + ux * bend, on.q.x, on.q.y) }
         keep(on.b, sx, sy, (sx + on.q.x) / 2 - uy * bend, (sy + on.q.y) / 2 + ux * bend)
         f.save()
-        f.globalAlpha = lineMix * st.lineIn
+        f.globalAlpha = lineMix * linkIn
         f.strokeStyle = colour
         f.shadowColor = colour
         f.shadowBlur = 12 * lineMix
@@ -436,7 +443,7 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
         f.stroke()
         f.shadowBlur = 0
         f.strokeStyle = st.ink
-        f.globalAlpha = 0.55 * lineMix * st.lineIn
+        f.globalAlpha = 0.55 * lineMix * linkIn
         f.lineWidth = 1
         f.setLineDash([2, 12])
         f.lineDashOffset = -sec * 36
@@ -445,7 +452,7 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
         // The other story is ringed where it is on the screen.
         f.setLineDash([])
         f.strokeStyle = colour
-        f.globalAlpha = lineMix * st.lineIn
+        f.globalAlpha = lineMix * linkIn
         f.lineWidth = 1.5
         f.beginPath()
         f.arc(on.q.x, on.q.y, 9 + 2.5 * Math.sin(sec * 5), 0, TAU)
