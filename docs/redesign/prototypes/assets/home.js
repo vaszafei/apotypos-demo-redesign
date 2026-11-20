@@ -334,7 +334,7 @@
     return h('h1', { class: 'home-mast', id: 'home-hero-title', 'aria-label': `${t('site.name')} / ${t('home.hero.eyebrow')}` },
       h('span', { class: 'mast-part mast-name', 'aria-hidden': 'true' }, h('svg', { class: 'mast-logo', viewBox: '0 0 11434 1493', focusable: 'false', html: LOGO_PARTS })),
       h('span', { class: 'mast-slash', 'aria-hidden': 'true' }, '/'),
-      h('span', { class: 'mast-part mast-tail', 'aria-hidden': 'true' }, tail))
+      h('span', { class: 'mast-part mast-tail', 'aria-hidden': 'true' }, h('span', { class: 'mast-tail-in' }, tail)))
   }
 
   // The silhouette of the hero: the articles of each day as a smooth area along the bottom. It only decorates.
