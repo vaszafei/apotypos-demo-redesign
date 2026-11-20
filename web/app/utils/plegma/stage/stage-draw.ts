@@ -52,28 +52,59 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
     requestAnimationFrame(() => requestAnimationFrame(() => copies.forEach(copy => copy.classList.add('is-out'))))
     window.setTimeout(() => copies.forEach(copy => copy.remove()), HERO_SNAP_MS + 100)
   }
-  // Picking a story on a theme (its card or its node), the web of the theme is not cut: a copy of the last frame dives into the story's node, which comes to the middle of the map
-  // region and grows, and fades out as the web of the story grows in its place. `st.wasTheme` is the theme in view in the last frame; `st.diveSpot` is its story nodes' places.
-  const DIVE_MS = 900
-  const DIVE_SCALE = 3.4
-  const diveInto = (at: PlegmaPoint) => {
+  // Picking a story on a theme (its card or its node), the dot of the story is the story: it stays, live, and goes to the center of the map region, where the web of the story grows out of it.
+  // The rest of the theme web is the last frame as a picture (with a hole where the dot was) that fades out where it is, with no zoom. `st.wasTheme` is the theme in view in the last frame;
+  // `st.diveSpot` is its story dots' places and radii. The web of the story waits until the dot is there (DIVE_HOLD).
+  const MOVE_MS = 700
+  const FADE_MS = 420
+  const DIVE_HOLD = 0.75
+  const diveInto = (at: { x: number, y: number, r: number }) => {
     const stage = canvas.value?.parentElement
-    if (!stage || !canvas.value || !canvasFocus.value || reduced.value || !plegma.region) return
-    const rb = regionBox(st.width, st.height, plegma.region)
+    if (!stage || !canvas.value || !canvasFocus.value) return
     ;[canvas.value, canvasFocus.value].forEach((source, i) => {
       const copy = document.createElement('canvas')
       copy.width = source.width
       copy.height = source.height
-      copy.getContext('2d')?.drawImage(source, 0, 0)
+      const g = copy.getContext('2d')
+      g?.drawImage(source, 0, 0)
+      if (g && i === 1) {
+        g.globalCompositeOperation = 'destination-out'
+        g.beginPath()
+        g.arc(at.x * st.dpr, at.y * st.dpr, (at.r + 4) * st.dpr, 0, TAU)
+        g.fill()
+      }
       copy.className = `plegma-canvas plegma-dive-snap${i === 0 ? ' is-back' : ''}`
-      copy.style.transformOrigin = `${at.x}px ${at.y}px`
       stage.append(copy)
-      copy.animate([
-        { transform: 'translate(0, 0) scale(1)', opacity: i === 0 ? 0.7 : 1 },
-        { transform: `translate(${(rb.cx - at.x) * 0.7}px, ${(rb.cy - at.y) * 0.7}px) scale(${1 + (DIVE_SCALE - 1) * 0.6})`, opacity: i === 0 ? 0.7 : 1, offset: 0.55 },
-        { transform: `translate(${rb.cx - at.x}px, ${rb.cy - at.y}px) scale(${DIVE_SCALE})`, opacity: 0, offset: 1 }
-      ], { duration: DIVE_MS, easing: 'cubic-bezier(0.55, 0, 0.25, 1)', fill: 'forwards' }).finished.then(() => copy.remove(), () => copy.remove())
+      copy.animate([{ opacity: i === 0 ? 0.7 : 1 }, { opacity: 0 }], { duration: FADE_MS, easing: 'cubic-bezier(0.4, 0, 0.6, 1)', fill: 'forwards' }).finished.then(() => copy.remove(), () => copy.remove())
     })
+  }
+  // The dot on its way (drawn over the web of the story, which is not there yet): a ring of the theme's gray, becoming the disc of the story in its color.
+  const drawDive = (g: CanvasRenderingContext2D, now: number, story: PlegmaStory) => {
+    const d = st.dive!
+    const k = reduced.value ? 1 : clamp((now - d.t0) / MOVE_MS, 0, 1)
+    const e = k < 0.5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2
+    const to = toScreen(st.cam, st.width, st.height, placed(story))
+    const x = d.x + (to.x - d.x) * e
+    const y = d.y + (to.y - d.y) * e
+    const r = d.r + (articles.centerRadius() - d.r) * e
+    const col = story.slot > 0 ? colourOf(story) : st.cats[0] ?? st.mute
+    g.globalAlpha = 1
+    g.fillStyle = st.paper
+    g.beginPath()
+    g.arc(x, y, r + 1.6, 0, TAU)
+    g.fill()
+    g.globalAlpha = 1 - e
+    g.strokeStyle = st.mute
+    g.lineWidth = 2
+    g.beginPath()
+    g.arc(x, y, r, 0, TAU)
+    g.stroke()
+    g.globalAlpha = e
+    g.fillStyle = col
+    g.beginPath()
+    g.arc(x, y, r, 0, TAU)
+    g.fill()
+    g.globalAlpha = 1
   }
   const draw = (now: number) => {
     if (!st.ctx || !st.ctxFocus || !st.world) return
@@ -87,11 +118,12 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
       const at = st.diveSpot.get(picked.id)
       const to = at && !reduced.value && plegma.region ? targetCamera() : null
       if (at && to) {
-        // The copy covers the cut: the camera is at the story at once, so its web grows under the dive, and the cards wait for the dive to be half done.
+        // The dot is where it was and the camera is at the story at once; the web of the story waits for the dot, and the cards for the dot to be nearly there.
         diveInto(at)
+        st.dive = { ...at, t0: now, id: picked.id }
         Object.assign(st.cam, to)
         st.flight = null
-        window.setTimeout(() => plegma.setLanded(true), DIVE_MS * 0.5)
+        window.setTimeout(() => plegma.setLanded(true), MOVE_MS * 0.7)
       }
     }
     st.wasTheme = false
@@ -124,7 +156,7 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
     // The intro of the web in view: it waits for the camera and for the view's free area, then grows (see INTRO_MS).
     const key = story ? `s${story.id}` : outletOn ? `o${focusOutlet()}` : issue !== null ? `t${issue}` : ''
     if (key !== introKey) { introKey = key; introAt = -1 }
-    if (introAt < 0 && key && plegma.region && (!st.flight || (now - st.flight.t0) / Math.max(st.flight.dur, 1) >= INTRO_AT)) introAt = now
+    if (introAt < 0 && key && plegma.region && (!st.flight || (now - st.flight.t0) / Math.max(st.flight.dur, 1) >= INTRO_AT) && (!st.dive || now - st.dive.t0 >= MOVE_MS * DIVE_HOLD)) introAt = now
     st.introP = !key || reduced.value ? 1 : introAt < 0 ? 0 : clamp((now - introAt) / INTRO_MS, 0, 1)
     st.nodeIn = smooth(0, 0.18, st.introP)
     st.lineIn = smooth(0.45, 0.95, st.introP)
@@ -244,6 +276,10 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
       }
     }
 
+    // The dot of the story picked on a theme, on its way to the center of the web; the web takes over from it once it has grown there.
+    if (st.dive && (story?.id !== st.dive.id || st.introP >= 0.6 || now - st.dive.t0 > 4000)) st.dive = null
+    if (st.dive && story) drawDive(f, now, story)
+
     // The dashed arcs of the themes in view: the focus's theme, the theme in focus, the theme under the pointer, and the themes of the Home webs.
     const issues = new Set<number>()
     if (st.hover && !(story && st.hover.issue === story.issue)) issues.add(st.hover.issue)
@@ -287,7 +323,7 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
       // Two lines that leave the same way are moved apart a little on the ring, so each one has a start of its own.
       const starts = lines.map(l => l.angle)
       for (let pass = 0; pass < 4; pass++) for (let k = 1; k < starts.length; k++) if (starts[k]! - starts[k - 1]! < 0.11) { starts[k - 1]! -= 0.02; starts[k]! += 0.02 }
-      const dim = 1 - 0.65 * lineMix
+      const dim = (1 - 0.65 * lineMix) * (st.dive ? smooth(0.7, 1, (now - st.dive.t0) / MOVE_MS) : 1)
       let litLine: (typeof lines)[number] | null = null
       f.lineWidth = 1
       lines.forEach((l, k) => {

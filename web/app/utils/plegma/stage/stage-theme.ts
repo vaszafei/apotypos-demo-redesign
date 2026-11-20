@@ -109,7 +109,7 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
       const mix = themeMix
       st.wasTheme = true
       st.diveSpot.clear()
-      for (let i = 0; i < k; i++) st.diveSpot.set(web.stories[i]!.id, { x: hx[1 + i]!, y: hy[1 + i]! })
+      for (let i = 0; i < k; i++) st.diveSpot.set(web.stories[i]!.id, { x: hx[1 + i]!, y: hy[1 + i]!, r: themeNodeRadius(web, 1 + i, unit) })
       const on = (i: number) => (i === 0 ? false : themeLit.outlet !== null ? web.outlet[i]! >= 0 && web.stories[web.story[i]!]!.outlets[web.outlet[i]!]!.name === themeLit.outlet : web.story[i] === themeLit.story)
       const back = 1 - 0.7 * mix
       const curve = (path: Path2D, i: number, j: number, bow: number) => {

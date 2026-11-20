@@ -322,7 +322,9 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     }
     g.globalAlpha = 1
   }
-  return { drawArticles, articleAt, ringAt, articleWorldRadius, articleAspect, ringOf, sectorOf, byOutlet }
+  // The radius of the disc at the center of the web of the story, as drawn in the last frame (the dot of a theme comes to it, stage-draw.ts).
+  const centerRadius = () => Math.max(5, arts.dr * 2.3)
+  return { drawArticles, articleAt, ringAt, articleWorldRadius, articleAspect, ringOf, sectorOf, byOutlet, centerRadius }
 }
 
 export type StageArticles = ReturnType<typeof createStageArticles>

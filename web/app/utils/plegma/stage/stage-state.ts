@@ -57,7 +57,9 @@ export interface StageState {
   walk: PlegmaCamera | null
   // The theme web was in the last frame, and where its story nodes were: the place a picked story is dived into from.
   wasTheme: boolean
-  diveSpot: Map<number, PlegmaPoint>
+  diveSpot: Map<number, PlegmaPoint & { r: number }>
+  // The dot of the story picked on a theme, on its way to the center of the story's web: where it started (px), its radius, and when (the clock of the frames); null when there is none.
+  dive: { x: number, y: number, r: number, t0: number, id: number } | null
   heroCleared: boolean
   heroRev: Map<number, number>
   lantern: HeroSpot
@@ -102,6 +104,7 @@ export const createStageState = (): StageState => ({
   walk: null,
   wasTheme: false,
   diveSpot: new Map(),
+  dive: null,
   heroCleared: false,
   heroRev: new Map(),
   lantern: { x: -9999, y: -9999, v: 0, on: false }
