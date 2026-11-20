@@ -6,7 +6,8 @@ export interface PlegmaCamera { x: number, y: number, z: number }
 export interface PlegmaPoint { x: number, y: number }
 export interface PlegmaBox { cx: number, cy: number, w: number, h: number }
 // `path`: the way the camera goes over the world (points the framed story passes), instead of a straight line from a to b; the zoom is the same.
-export interface PlegmaFlight { a: PlegmaCamera, b: PlegmaCamera, t0: number, dur: number, path?: PlegmaPoint[] }
+// `level`: the zoom does not dip, it only goes from a's to b's, and the path is walked with a softer ease (a travel along a line, not a jump).
+export interface PlegmaFlight { a: PlegmaCamera, b: PlegmaCamera, t0: number, dur: number, path?: PlegmaPoint[], level?: boolean }
 
 // The part of the screen the cards leave free, as fractions of its width and height: the top-left area. It is the default: a story view measures the free
 // area it really has (PlegmaStoryView.vue, stores/plegma.ts `region`) and the camera frames that.
@@ -24,6 +25,7 @@ export const PLEGMA_FLIGHT_MAX = 2200
 
 const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x))
 const easeInOut = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+const easeSoft = (t: number) => (1 - Math.cos(Math.PI * t)) / 2
 
 export const regionBox = (w: number, h: number, region: PlegmaRegion = PLEGMA_REGION): PlegmaBox => ({
   cx: (region.x0 + region.x1) / 2 * w,
@@ -96,14 +98,14 @@ const poseOnPath = (f: PlegmaFlight, t: number, w: number): PlegmaCamera => {
   const path = f.path!
   const cum = [0]
   for (let i = 1; i < path.length; i++) cum.push(cum[i - 1]! + Math.hypot(path[i]!.x - path[i - 1]!.x, path[i]!.y - path[i - 1]!.y))
-  const p = easeInOut(clamp(t, 0, 1))
+  const p = (f.level ? easeSoft : easeInOut)(clamp(t, 0, 1))
   const target = p * cum[cum.length - 1]!
   let k = 1
   while (k < path.length - 1 && cum[k]! < target) k++
   const seg = cum[k]! - cum[k - 1]! || 1
   const u = clamp((target - cum[k - 1]!) / seg, 0, 1)
   const at = { x: path[k - 1]!.x + (path[k]!.x - path[k - 1]!.x) * u, y: path[k - 1]!.y + (path[k]!.y - path[k - 1]!.y) * u }
-  const z = poseAt(f.a, f.b, t, w).z
+  const z = f.level ? Math.exp(Math.log(f.a.z) + (Math.log(f.b.z) - Math.log(f.a.z)) * p) : poseAt(f.a, f.b, t, w).z
   const offX = (path[0]!.x - f.a.x) * f.a.z
   const offY = (path[0]!.y - f.a.y) * f.a.z
   // The end of the path and the target may differ a little (the free area was measured again): the difference is taken up over the flight.
@@ -120,6 +122,16 @@ export const flightAlong = (f: PlegmaFlight, path: PlegmaPoint[]): PlegmaFlight 
   return { ...f, path, dur: f.dur <= 0 ? 0 : Math.round(Math.min(3200, f.dur * clamp(length / straight, 1, 2.5))) }
 }
 
-// A new flight asked while one runs starts from where the camera is, not from where the old one began.
+// A travel along a line: the camera follows the path at the zoom it has (no pull back), however far it goes; a longer way takes longer, gently.
+export const travelAlong = (f: PlegmaFlight, path: PlegmaPoint[], w: number): PlegmaFlight => {
+  let length = 0
+  for (let i = 1; i < path.length; i++) length += Math.hypot(path[i]!.x - path[i - 1]!.x, path[i]!.y - path[i - 1]!.y)
+  const screen = length * Math.min(f.a.z, f.b.z)
+  return { ...f, path, level: true, dur: f.dur <= 0 ? 0 : Math.round(clamp(900 + 480 * Math.log2(1 + screen / w), 1000, 2600)) }
+}
+
+// A new flight asked while one runs starts from where the camera is, not from where the old one began. A travel along a line keeps its way and only its end moves.
 export const redirectFlight = (current: PlegmaFlight | null, camera: PlegmaCamera, to: PlegmaCamera, now: number, w: number, reduced = false): PlegmaFlight =>
-  startFlight(current && !flightDone(current, now) ? cameraAt(current, now, w) : camera, to, now, w, reduced)
+  current?.level && !flightDone(current, now) && !reduced
+    ? { ...current, b: { ...to } }
+    : startFlight(current && !flightDone(current, now) ? cameraAt(current, now, w) : camera, to, now, w, reduced)

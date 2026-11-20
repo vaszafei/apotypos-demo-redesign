@@ -1,4 +1,4 @@
-import { regionBox, toScreen } from '../plegma-camera'
+import { regionBox, toScreen, toWorld } from '../plegma-camera'
 import type { PlegmaPoint } from '../plegma-camera'
 import { smooth } from '../plegma-hero'
 import { PLEGMA_FAR_MIN, PLEGMA_FOCUS_DOTS, arcsOf, drawLevel, webOf } from '../plegma-world'
@@ -29,8 +29,9 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
   // free area, so it never grows unseen. With reduced motion it is all at once.
   const INTRO_MS = 1100
   const INTRO_AT = 0.3
-  // On a flight from a story to a story the web of the one it comes to starts as the camera nears it.
+  // On a flight from a story to a story the web of the one it comes to starts as the camera nears it; on a travel along a line, as it arrives.
   const INTRO_AT_ARC = 0.55
+  const INTRO_AT_TRAVEL = 0.8
   let introKey = ''
   let introAt = -1
   let lineMix = 0
@@ -186,7 +187,7 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
     // The intro of the web in view: it waits for the camera and for the view's free area, then grows (see INTRO_MS).
     const key = story ? `s${story.id}` : outletOn ? `o${focusOutlet()}` : issue !== null ? `t${issue}` : ''
     if (key !== introKey) { introKey = key; introAt = -1 }
-    if (introAt < 0 && key && plegma.region && (!st.flight || (now - st.flight.t0) / Math.max(st.flight.dur, 1) >= (st.ghost ? INTRO_AT_ARC : INTRO_AT)) && (!st.dive || now - st.dive.t0 >= MOVE_MS * DIVE_HOLD)) introAt = now
+    if (introAt < 0 && key && plegma.region && (!st.flight || (now - st.flight.t0) / Math.max(st.flight.dur, 1) >= (st.flight.level ? INTRO_AT_TRAVEL : st.ghost ? INTRO_AT_ARC : INTRO_AT)) && (!st.dive || now - st.dive.t0 >= MOVE_MS * DIVE_HOLD)) introAt = now
     st.introP = !key || reduced.value ? 1 : introAt < 0 ? 0 : clamp((now - introAt) / INTRO_MS, 0, 1)
     st.nodeIn = smooth(0, 0.18, st.introP)
     st.lineIn = smooth(0.45, 0.95, st.introP)
@@ -331,6 +332,33 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
     }
     a.setLineDash([])
     if (issue !== null || outletOn) drawTheme(f, sec, dt)
+    // The line the camera travels along (from the story it left to the story in view): lit while the camera goes, it fades as the web of the story in view grows its own lines.
+    if (st.travel && !st.flight && st.lineIn >= 1) st.travel = null
+    if (st.travel) {
+      const o = st.travel
+      const k = st.flight ? 1 : 1 - st.lineIn
+      const ps = toScreen(st.cam, st.width, st.height, o.s)
+      const pc = toScreen(st.cam, st.width, st.height, o.c)
+      const pe = toScreen(st.cam, st.width, st.height, o.e)
+      const path = () => { f.beginPath(); f.moveTo(ps.x, ps.y); f.quadraticCurveTo(pc.x, pc.y, pe.x, pe.y) }
+      f.save()
+      f.globalAlpha = k
+      f.strokeStyle = o.colour
+      f.shadowColor = o.colour
+      f.shadowBlur = 12
+      f.lineWidth = 2.6
+      path()
+      f.stroke()
+      f.shadowBlur = 0
+      f.strokeStyle = st.ink
+      f.globalAlpha = 0.55 * k
+      f.lineWidth = 1
+      f.setLineDash([2, 12])
+      f.lineDashOffset = -sec * 36
+      path()
+      f.stroke()
+      f.restore()
+    }
     // A story with a theme of its own is joined, by curved lines, to the largest stories of that theme and to the stories its card lists; they leave from the edge of its web,
     // spread around it by the direction they go in, and fade toward the other story. The story a card of other stories points at has its line lit: solid, glowing, flowing.
     const pointed = lineLast !== null && lineMix > 0.01 ? st.world.byId.get(lineLast) ?? null : null
@@ -355,7 +383,13 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
       // Two lines that leave the same way are moved apart a little on the ring, so each one has a start of its own.
       const starts = lines.map(l => l.angle)
       for (let pass = 0; pass < 4; pass++) for (let k = 1; k < starts.length; k++) if (starts[k]! - starts[k - 1]! < 0.11) { starts[k - 1]! -= 0.02; starts[k]! += 0.02 }
-      const dim = (1 - 0.65 * lineMix) * (st.dive ? smooth(0.9, 1.3, (now - st.dive.t0) / MOVE_MS) : 1)
+      // The lines come in with the web (after its nodes), not before it.
+      const dim = (1 - 0.65 * lineMix) * (st.dive ? smooth(0.9, 1.3, (now - st.dive.t0) / MOVE_MS) : 1) * st.lineIn
+      const still = !st.flight && st.introP >= 1
+      if (still) st.links = { from: story.id, to: new Map() }
+      const keep = (b: PlegmaStory, sx: number, sy: number, cx: number, cy: number) => {
+        if (still) st.links!.to.set(b.id, { s: toWorld(st.cam, st.width, st.height, { x: sx, y: sy }), c: toWorld(st.cam, st.width, st.height, { x: cx, y: cy }) })
+      }
       let litLine: (typeof lines)[number] | null = null
       f.lineWidth = 1
       lines.forEach((l, k) => {
@@ -374,6 +408,7 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
         f.beginPath()
         f.moveTo(sx, sy)
         f.quadraticCurveTo((sx + l.q.x) / 2 - uy * bend, (sy + l.q.y) / 2 + ux * bend, l.q.x, l.q.y)
+        keep(l.b, sx, sy, (sx + l.q.x) / 2 - uy * bend, (sy + l.q.y) / 2 + ux * bend)
         f.stroke()
         // Where a line leaves: a small dot outside the ring.
         f.fillStyle = colour
@@ -390,17 +425,18 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
         const uy = (on.q.y - sy) / (on.len || 1)
         const bend = clamp(on.len * 0.14, 24, 160)
         const path = () => { f.beginPath(); f.moveTo(sx, sy); f.quadraticCurveTo((sx + on.q.x) / 2 - uy * bend, (sy + on.q.y) / 2 + ux * bend, on.q.x, on.q.y) }
+        keep(on.b, sx, sy, (sx + on.q.x) / 2 - uy * bend, (sy + on.q.y) / 2 + ux * bend)
         f.save()
+        f.globalAlpha = lineMix * st.lineIn
         f.strokeStyle = colour
         f.shadowColor = colour
         f.shadowBlur = 12 * lineMix
-        f.globalAlpha = lineMix
         f.lineWidth = 1 + 1.6 * lineMix
         path()
         f.stroke()
         f.shadowBlur = 0
         f.strokeStyle = st.ink
-        f.globalAlpha = 0.55 * lineMix
+        f.globalAlpha = 0.55 * lineMix * st.lineIn
         f.lineWidth = 1
         f.setLineDash([2, 12])
         f.lineDashOffset = -sec * 36
@@ -409,7 +445,7 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
         // The other story is ringed where it is on the screen.
         f.setLineDash([])
         f.strokeStyle = colour
-        f.globalAlpha = lineMix
+        f.globalAlpha = lineMix * st.lineIn
         f.lineWidth = 1.5
         f.beginPath()
         f.arc(on.q.x, on.q.y, 9 + 2.5 * Math.sin(sec * 5), 0, TAU)

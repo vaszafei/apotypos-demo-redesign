@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useEventListener, useMediaQuery } from '@vueuse/core'
-import { cameraAt, flightAlong, flightDone, redirectFlight } from '~/utils/plegma/plegma-camera'
+import { cameraAt, flightAlong, flightDone, redirectFlight, toScreen, toWorld, travelAlong } from '~/utils/plegma/plegma-camera'
+import type { PlegmaPoint } from '~/utils/plegma/plegma-camera'
 import { arcRoute } from '~/utils/plegma/plegma-world'
 import type { PlegmaFocus } from '~/utils/plegma/plegma-route'
 import { buildWorld, homeWebs } from '~/utils/plegma/plegma-world'
-import type { PlegmaFile, PlegmaHomeFile, PlegmaStoriesFile } from '~/utils/plegma/plegma-world'
+import type { PlegmaFile, PlegmaHomeFile, PlegmaStoriesFile, PlegmaStory } from '~/utils/plegma/plegma-world'
 import { homeIndex, HOME_WEBS, HOME_WEBS_PHONE } from '~/utils/home'
 import { createStageState } from '~/utils/plegma/stage/stage-state'
 import { createStageCore } from '~/utils/plegma/stage/stage-core'
@@ -45,8 +46,27 @@ const file = useFixtureLazy<PlegmaFile>('plegma', { required: ['places', 'world'
 
 let raf = 0
 const REGION_EARLY = 0.3
+// A story nearer than this (screens away) with no line drawn to it (too near for one) is still reached along a line made like the lit one.
+const TRAVEL_NEAR = 3
 
-// `was`: the focus the view left. From a story to another story the web of the first stays in the world and goes as the camera goes; of the same theme, the camera travels along the dashed arcs that join them (the chain of the theme's largest stories), when both are on it.
+// The line from story a to story b the camera travels along: the one drawn from a's web to b (st.links), or, for a story too near for a line, a curve from a's center bent as the lit line is.
+const travelLine = (a: PlegmaStory, b: PlegmaStory): { s: PlegmaPoint, c: PlegmaPoint } | null => {
+  const drawn = st.links?.from === a.id ? st.links.to.get(b.id) : undefined
+  if (drawn) return drawn
+  const p = toScreen(st.cam, st.width, st.height, a)
+  const q = toScreen(st.cam, st.width, st.height, b)
+  const len = Math.hypot(q.x - p.x, q.y - p.y)
+  if (!len || len > TRAVEL_NEAR * st.width) return null
+  const bend = Math.min(160, Math.max(24, len * 0.14))
+  return { s: { x: a.x, y: a.y }, c: toWorld(st.cam, st.width, st.height, { x: (p.x + q.x) / 2 - (q.y - p.y) / len * bend, y: (p.y + q.y) / 2 + (q.x - p.x) / len * bend }) }
+}
+// Points along a quadratic curve, from its start to its end.
+const curve = (s: PlegmaPoint, c: PlegmaPoint, e: PlegmaPoint, n = 24): PlegmaPoint[] =>
+  Array.from({ length: n + 1 }, (_, i) => { const t = i / n, u = 1 - t; return { x: u * u * s.x + 2 * u * t * c.x + t * t * e.x, y: u * u * s.y + 2 * u * t * c.y + t * t * e.y } })
+
+// `was`: the focus the view left. From a story to another story the web of the first stays in the world and goes as the camera goes. When a line joins them (the story is one the
+// first's lines go to, or a near one), the camera travels along that line at the zoom it has, and the line stays lit on the way; else, of the same theme, it travels along the dashed arcs that
+// join them (the chain of the theme's largest stories), when both are on it.
 const fly = (was?: PlegmaFocus) => {
   const to = targetCamera()
   if (!to) return
@@ -57,8 +77,13 @@ const fly = (was?: PlegmaFocus) => {
   if (!running && st.flight.dur > 0 && st.world && was?.kind === 'story' && now?.kind === 'story' && plegma.compare === null) {
     const a = st.world.byId.get(was.id)
     const b = st.world.byId.get(now.id)
-    const route = a && b && a.issue === b.issue ? arcRoute(st.world, a.issue, a.id, b.id) : null
-    if (route) st.flight = flightAlong(st.flight, route)
+    const line = a && b ? travelLine(a, b) : null
+    const route = !line && a && b && a.issue === b.issue ? arcRoute(st.world, a.issue, a.id, b.id) : null
+    if (line && a && b) {
+      const e = { x: b.x, y: b.y }
+      st.flight = travelAlong(st.flight, [{ x: a.x, y: a.y }, ...curve(line.s, line.c, e)], st.width)
+      st.travel = { ...line, e, colour: a.slot > 0 ? st.cats[a.slot - 1] ?? st.mute : st.cats[0] ?? st.mute }
+    } else if (route) st.flight = flightAlong(st.flight, route)
     // The web of the story left stays in the world while the camera goes, along an arc or straight.
     const el = canvasFocus.value
     if (el) {

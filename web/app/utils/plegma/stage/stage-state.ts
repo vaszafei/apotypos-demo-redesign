@@ -63,6 +63,10 @@ export interface StageState {
   dive: { x: number, y: number, r: number, t0: number, key: string, fill: string | null } | null
   // The web of the story the camera leaves on a story → story flight along an arc: a picture of the frame it was in and the camera of that frame; it stays in the world, shrinks and fades as the camera goes.
   ghost: { img: HTMLCanvasElement, cam: PlegmaCamera } | null
+  // The lines from the story in view to other stories, as they were last drawn at rest (in the world: where each leaves the web and the point it bends toward), so a move to one of those stories follows its line.
+  links: { from: number, to: Map<number, { s: PlegmaPoint, c: PlegmaPoint }> } | null
+  // The line the camera travels along from a story to another: it stays lit while the camera goes and fades as the web of the other story grows.
+  travel: { s: PlegmaPoint, c: PlegmaPoint, e: PlegmaPoint, colour: string } | null
   heroCleared: boolean
   heroRev: Map<number, number>
   lantern: HeroSpot
@@ -109,6 +113,8 @@ export const createStageState = (): StageState => ({
   diveSpot: new Map(),
   dive: null,
   ghost: null,
+  links: null,
+  travel: null,
   heroCleared: false,
   heroRev: new Map(),
   lantern: { x: -9999, y: -9999, v: 0, on: false }
