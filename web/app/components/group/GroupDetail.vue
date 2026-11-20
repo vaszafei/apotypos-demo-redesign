@@ -103,7 +103,7 @@ const tall = computed(() => Math.round(Math.min(300, Math.max(110, windowHeight.
     <section class="dcard c-12"><div class="empty-state" data-state="empty"><AppIcon name="inbox" /><p style="margin: 0">{{ t('topics2.empty') }}</p></div></section>
   </div>
   <ErrorPage v-else-if="!model" :status="404" />
-  <div v-else ref="orbit" class="plegma-orbit is-group" :class="{ 'is-in': plegma.landed }">
+  <div v-else ref="orbit" class="plegma-orbit is-group" :class="{ 'is-in': plegma.landed, 'is-leaving': plegma.leaving }">
     <div class="plegma-title entity-grid">
       <EntityTitle :kind="t('hero.kind.group')">
         <template #title><span class="group-cell"><span class="dot" :style="`--dot:${model.color}`" aria-hidden="true" />{{ model.grp.name }}</span></template>

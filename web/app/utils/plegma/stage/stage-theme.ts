@@ -1,5 +1,6 @@
 import { regionBox } from '../plegma-camera'
 import { ringEmptiedTo } from '../plegma-leave'
+import { RING_START } from '../plegma-ring'
 import { smooth } from '../plegma-hero'
 import { buildThemeWeb } from '../plegma-theme'
 import type { PlegmaThemeWeb } from '../plegma-theme'
@@ -304,12 +305,17 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
           if (stanceAt && st.ringMix > 0.5) drawNames(g, ring, stanceNames(stanceAt), 0.9 * (st.ringMix * 2 - 1) * st.ringIn * namesLeft, true)
         }
       } else {
-        g.strokeStyle = colour
-        g.globalAlpha = 0.45 * st.ringIn * (1 - st.ringOut)
-        g.lineWidth = 1.2
-        g.beginPath()
-        g.arc(disc.x, disc.y, disc.r, 0, TAU)
-        g.stroke()
+        // The thin ring (a group, an outlet): it fills from the start of the ring clockwise as the web comes in, and empties from the start on while the view is left.
+        const filled = RING_START + TAU * st.ringIn
+        const emptied = st.ringOut > 0 ? ringEmptiedTo(st.ringOut) : RING_START
+        if (filled > emptied + 0.001) {
+          g.strokeStyle = colour
+          g.globalAlpha = 0.45
+          g.lineWidth = 1.2
+          g.beginPath()
+          g.arc(disc.x, disc.y, disc.r, emptied - Math.PI / 2, filled - Math.PI / 2)
+          g.stroke()
+        }
       }
       g.lineCap = 'butt'
       if (node > 0) {
