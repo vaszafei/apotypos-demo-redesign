@@ -10,8 +10,12 @@ import { NAME_MAX, createStageNames } from './stage-names'
 import type { NameItem } from './stage-names'
 
 // A theme or an outlet in view: its web in the middle of the map region, and what the pointer finds on it.
-// The names of the stories that show while a theme opens: how long they stay (s) once the dots are in, and the longest name in px.
-const INTRO_NAMES_HOLD = 1.6
+// The names of the stories that show while a theme opens: when the first one comes (s after the dots start to come in), the gap between two, how long one takes to come, stays and goes, and the longest name in px.
+const INTRO_NAMES_FROM = 0.15
+const INTRO_NAMES_STEP = 0.24
+const INTRO_NAMES_IN = 0.45
+const INTRO_NAMES_HOLD = 1.5
+const INTRO_NAMES_OUT = 0.6
 const INTRO_NAME_W = 170
 export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCore) => {
   const { plegma, reduced } = deps
@@ -297,17 +301,18 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
         g.arc(hx[node]!, hy[node]!, themeNodeRadius(web, node, unit) + rim + 2.5, 0, TAU)
         g.stroke()
       }
-      // Opening a theme, the names of its stories show beside their dots while the dots come in, and go after a moment. Each goes on the side of its dot where there is room (not on another name),
-      // in one line; a story with no room has none. The story pointed at has its own name below, so it has none here.
-      introNames = st.introP < 0.3 ? 0 : st.introP < 0.55 ? introNames : introNames + dt
-      const namesOn = fresh && !reduced.value ? smooth(0.3, 0.55, st.introP) * (1 - smooth(INTRO_NAMES_HOLD, INTRO_NAMES_HOLD + 0.6, introNames)) * (1 - st.ringOut) : 0
-      if (namesOn > 0.01) {
+      // Opening a theme, the names of its stories show beside their dots while the dots come in: one after another, in the order the dots appear, each rising a little as it comes, and each
+      // goes after a moment in the same order. Each is on the side of its dot where there is room (not on another name), in one line; a story with no room has none. The story pointed at
+      // has its own name below, so it has none here.
+      introNames = st.introP < 0.3 ? 0 : introNames + dt
+      const namesEnd = INTRO_NAMES_FROM + (k - 1) * INTRO_NAMES_STEP + INTRO_NAMES_IN + INTRO_NAMES_HOLD + INTRO_NAMES_OUT
+      if (fresh && !reduced.value && st.introP >= 0.3 && introNames < namesEnd && st.ringOut < 1) {
         g.font = `600 12px ${st.fontText}`
         g.textBaseline = 'middle'
         g.lineJoin = 'round'
-        const placed: { x0: number, x1: number, y0: number, y1: number }[] = []
-        for (let i = 0; i < k; i++) {
-          if (themeLit.story === i && mix > 0.5) continue
+        const rank = Array.from({ length: k }, (_, i) => i).sort((x, y) => ((1 + x) * 0.618034) % 1 - ((1 + y) * 0.618034) % 1)
+        const boxes: { x0: number, x1: number, y0: number, y1: number }[] = []
+        for (const [at, i] of rank.entries()) {
           let text = web.stories[i]!.name
           while (text.length > 8 && g.measureText(text).width > INTRO_NAME_W) text = `${text.slice(0, -2).trimEnd()}…`
           const w = g.measureText(text).width
@@ -318,17 +323,22 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
           const spot = [[inward, 0], [!inward, 0], [inward, -14], [inward, 14], [!inward, -14], [!inward, 14]].map(([right, dy]) => {
             const x0 = right ? nx + gap : nx - gap - w
             return { right: right as boolean, x0, x1: x0 + w, y0: ny + (dy as number) - 8, y1: ny + (dy as number) + 8 }
-          }).find(b => !placed.some(o => b.x0 < o.x1 + 4 && b.x1 > o.x0 - 4 && b.y0 < o.y1 && b.y1 > o.y0) && b.x0 > 8 && b.x1 < st.width - 8)
+          }).find(b => !boxes.some(o => b.x0 < o.x1 + 4 && b.x1 > o.x0 - 4 && b.y0 < o.y1 && b.y1 > o.y0) && b.x0 > 8 && b.x1 < st.width - 8)
           if (!spot) continue
-          placed.push(spot)
+          boxes.push(spot)
+          if (themeLit.story === i && mix > 0.5) continue
+          const t0 = INTRO_NAMES_FROM + at * INTRO_NAMES_STEP
+          const rise = smooth(t0, t0 + INTRO_NAMES_IN, introNames)
+          const alpha = rise * (1 - smooth(t0 + INTRO_NAMES_IN + INTRO_NAMES_HOLD, t0 + INTRO_NAMES_IN + INTRO_NAMES_HOLD + INTRO_NAMES_OUT, introNames)) * (1 - st.ringOut)
+          if (alpha < 0.01) continue
           g.textAlign = spot.right ? 'left' : 'right'
           const x = spot.right ? spot.x0 : spot.x1
-          const y = (spot.y0 + spot.y1) / 2
-          g.globalAlpha = 0.95 * namesOn
+          const y = (spot.y0 + spot.y1) / 2 + (1 - rise) * 7
+          g.globalAlpha = 0.95 * alpha
           g.strokeStyle = st.paper
           g.lineWidth = 4
           g.strokeText(text, x, y)
-          g.globalAlpha = namesOn
+          g.globalAlpha = alpha
           g.fillStyle = st.ink
           g.fillText(text, x, y)
         }

@@ -82,7 +82,7 @@ const back = () => {
 </script>
 
 <template>
-  <div class="shell" :class="{ 'drawer-open': drawer, 'is-plegma': plegma.active, 'is-backdrop': plegma.backdrop, 'is-hero-page': route.meta.hero === true }">
+  <div class="shell" :class="{ 'drawer-open': drawer, 'is-plegma': plegma.active, 'is-backdrop': plegma.backdrop, 'is-leaving': plegma.leaving, 'is-hero-page': route.meta.hero === true }">
     <ClientOnly><PlegmaStage /></ClientOnly>
     <nav id="sidebar" class="sidebar" :aria-label="t('shell.nav')" :inert="smallScreen && !drawer">
       <div class="sidebar-logo">
