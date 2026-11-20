@@ -90,10 +90,10 @@ export const createStageCore = (st: StageState, deps: StageDeps) => {
   let ge = new Float32Array(0)
   const gatherSpot = { x: 0, y: 0 }
   // Node `i` of a web whose place is (tx, ty): how far along its appearing it is now (ge[i]). A node stays where it is and appears in its own time, a little after the web has started
-  // (the story looks as if it had been there, not made), each in the order of the golden ratio so that no part of the web fills before another.
-  const gatherTo = (i: number, n: number, tx: number, ty: number) => {
+  // (the story looks as if it had been there, not made), each in the order of the golden ratio so that no part of the web fills before another (or in the `order` the caller gives, 0 to 1: a theme's web comes in by the size of its stories).
+  const gatherTo = (i: number, n: number, tx: number, ty: number, order?: number) => {
     if (ge.length < n) ge = new Float32Array(n)
-    const delay = 0.1 + ((i * 0.618034) % 1) * 0.44
+    const delay = 0.1 + (order ?? ((i * 0.618034) % 1)) * 0.44
     const t = clamp((st.introP - delay) / 0.46, 0, 1)
     ge[i] = 1 - Math.pow(1 - t, 3)
     gatherSpot.x = tx

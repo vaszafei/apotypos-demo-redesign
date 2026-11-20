@@ -10,12 +10,12 @@ import { NAME_MAX, createStageNames } from './stage-names'
 import type { NameItem } from './stage-names'
 
 // A theme or an outlet in view: its web in the middle of the map region, and what the pointer finds on it.
-// The names of the stories that show while a theme opens: when the first one comes (s after the dots start to come in), the gap between two, how long one takes to come, stays and goes, and the longest name in px.
-const INTRO_NAMES_FROM = 0.15
-const INTRO_NAMES_STEP = 0.24
-const INTRO_NAMES_IN = 0.45
-const INTRO_NAMES_HOLD = 1.5
-const INTRO_NAMES_OUT = 0.6
+// The names of the stories that show while a theme opens: the length of the intro of the web (stage-draw.ts INTRO_MS), how long after its dot a name starts, how long one takes to come, stays and goes, and the longest name in px.
+const INTRO_S = 1.1
+const INTRO_NAMES_LAG = 0.05
+const INTRO_NAMES_IN = 0.3
+const INTRO_NAMES_HOLD = 1.0
+const INTRO_NAMES_OUT = 0.4
 const INTRO_NAME_W = 170
 export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCore) => {
   const { plegma, reduced } = deps
@@ -65,6 +65,24 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
   // On a theme's web a story is as large as its articles (the area follows them), from 3.5 to 12 px; on an outlet's web the stories keep their small size.
   const themeNodeRadius = (web: PlegmaThemeWeb, i: number, unit: number) =>
     gatherR(i, i === 0 ? 8 : web.outlet[i]! < 0 ? (focusOutlet() === null ? 3.5 + 8.5 * web.size[i]! : 4.2 + 3.2 * web.size[i]!) : clamp(unit * (0.13 + 0.12 * web.size[i]!), 1.6, 5))
+  // When each node of the web comes in (0 to 1, as gatherTo takes it): the stories by their size, the largest first, then each of its outlets a little after it; the center first of all.
+  const arrival = new WeakMap<PlegmaThemeWeb, number[]>()
+  const storyArrival = (web: PlegmaThemeWeb) => {
+    let list = arrival.get(web)
+    if (!list) {
+      const k = web.stories.length
+      const bySize = Array.from({ length: k }, (_, i) => i).sort((a, b) => web.size[1 + b]! - web.size[1 + a]! || a - b)
+      list = new Array<number>(k)
+      bySize.forEach((story, rank) => { list![story] = k > 1 ? (rank / (k - 1)) * 0.8 : 0 })
+      arrival.set(web, list)
+    }
+    return list
+  }
+  const arrivalOf = (web: PlegmaThemeWeb, i: number) => {
+    if (i === 0) return 0
+    const o = storyArrival(web)[web.story[i]!] ?? 0
+    return web.outlet[i]! < 0 ? o : Math.min(1, o + 0.04 + 0.12 * ((i * 0.618034) % 1))
+  }
   const layoutTheme = (web: PlegmaThemeWeb, sec: number) => {
     const disc = themeDisc()!
     if (hx.length < web.n) { hx = new Float32Array(web.n); hy = new Float32Array(web.n) }
@@ -75,7 +93,7 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
       const k = i === 0 ? 0 : web.outlet[i]! < 0 ? 0.7 : web.reach[i]!
       hx[i] = disc.x + web.x[i]! * disc.R + Math.cos(a) * amp * k
       hy[i] = disc.y + web.y[i]! * disc.R + Math.sin(a) * amp * k
-      if (st.introP < 1) { const at = gatherTo(i, web.n, hx[i]!, hy[i]!); hx[i] = at.x; hy[i] = at.y }
+      if (st.introP < 1) { const at = gatherTo(i, web.n, hx[i]!, hy[i]!, arrivalOf(web, i)); hx[i] = at.x; hy[i] = at.y }
     }
     return { disc, unit }
   }
@@ -301,18 +319,18 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
         g.arc(hx[node]!, hy[node]!, themeNodeRadius(web, node, unit) + rim + 2.5, 0, TAU)
         g.stroke()
       }
-      // Opening a theme, the names of its stories show beside their dots while the dots come in: one after another, in the order the dots appear, each rising a little as it comes, and each
+      // Opening a theme, the names of its stories show beside their dots while the dots come in: one after another, each with its dot (the largest story first, the others a little after, graded), each rising a little as it comes, and each
       // goes after a moment in the same order. Each is on the side of its dot where there is room (not on another name), in one line; a story with no room has none. The story pointed at
       // has its own name below, so it has none here.
-      introNames = st.introP < 0.3 ? 0 : introNames + dt
-      const namesEnd = INTRO_NAMES_FROM + (k - 1) * INTRO_NAMES_STEP + INTRO_NAMES_IN + INTRO_NAMES_HOLD + INTRO_NAMES_OUT
-      if (fresh && !reduced.value && st.introP >= 0.3 && introNames < namesEnd && st.ringOut < 1) {
+      introNames = st.introP <= 0 ? 0 : introNames + dt
+      const namesEnd = INTRO_NAMES_LAG + (0.1 + 0.8 * 0.44) * INTRO_S + INTRO_NAMES_IN + INTRO_NAMES_HOLD + INTRO_NAMES_OUT
+      if (fresh && !reduced.value && st.introP > 0 && introNames < namesEnd && st.ringOut < 1) {
         g.font = `600 12px ${st.fontText}`
         g.textBaseline = 'middle'
         g.lineJoin = 'round'
-        const rank = Array.from({ length: k }, (_, i) => i).sort((x, y) => ((1 + x) * 0.618034) % 1 - ((1 + y) * 0.618034) % 1)
+        const from = storyArrival(web)
         const boxes: { x0: number, x1: number, y0: number, y1: number }[] = []
-        for (const [at, i] of rank.entries()) {
+        for (let i = 0; i < k; i++) {
           let text = web.stories[i]!.name
           while (text.length > 8 && g.measureText(text).width > INTRO_NAME_W) text = `${text.slice(0, -2).trimEnd()}…`
           const w = g.measureText(text).width
@@ -327,7 +345,7 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
           if (!spot) continue
           boxes.push(spot)
           if (themeLit.story === i && mix > 0.5) continue
-          const t0 = INTRO_NAMES_FROM + at * INTRO_NAMES_STEP
+          const t0 = INTRO_NAMES_LAG + (0.1 + from[i]! * 0.44) * INTRO_S
           const rise = smooth(t0, t0 + INTRO_NAMES_IN, introNames)
           const alpha = rise * (1 - smooth(t0 + INTRO_NAMES_IN + INTRO_NAMES_HOLD, t0 + INTRO_NAMES_IN + INTRO_NAMES_HOLD + INTRO_NAMES_OUT, introNames)) * (1 - st.ringOut)
           if (alpha < 0.01) continue
