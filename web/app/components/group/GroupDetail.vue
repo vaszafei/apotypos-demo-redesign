@@ -3,22 +3,19 @@ import { useWindowSize } from '@vueuse/core'
 import type { StoriesData } from '~/types/stories'
 import type { StoryDetailData } from '~/types/story-detail'
 import type { GroupOutlet, GroupsData, MediaDaily } from '~/utils/groups'
-import { PLEGMA_THEME_OUTLETS, PLEGMA_THEME_STORIES } from '~/utils/plegma/plegma-theme'
-import { themeSlots } from '~/utils/plegma/plegma-world'
+import { PLEGMA_THEME_STORIES } from '~/utils/plegma/plegma-theme'
 
 // The group on the Plegma, laid out as the outlet page is: the title card, its stories in a narrow column on the left, the web in the free cell (the group at the center, its largest stories
 // around it in the color of their theme, and around each story the outlets of the group that wrote it: the stage draws it), the cards of the stance, how the group writes and its topics in two columns,
 // and under them the daily articles with the outlets of the group beside them.
-interface HomeThemes { issues: StoriesData['issues'], issueDaily: (number | null)[][] }
 const props = defineProps<{ slug: string }>()
 const { t } = useI18n()
 const media = useFixtureLazy<MediaDaily>('media', { required: ['dates', 'outlets', 'outletDaily'], isEmpty: b => b.outlets.length === 0 })
 const list = useFixtureLazy<StoriesData>('stories', { required: ['issues', 'stories'], isEmpty: b => b.stories.length === 0 })
 const detail = useFixtureLazy<StoryDetailData>('storyDetail', { required: ['outlets', 'stories'], isEmpty: b => b.stories.length === 0 })
 const groupsData = useFixtureLazy<GroupsData>('groups', { required: ['groups', 'issues', 'topicsAll'], isEmpty: b => b.groups.length === 0 })
-const home = useFixtureLazy<HomeThemes>('home', { required: ['issues', 'issueDaily'], isEmpty: b => b.issues.length === 0 })
 const plegma = usePlegmaStore()
-const fixtures = [media, list, detail, groupsData, home]
+const fixtures = [media, list, detail, groupsData]
 const loading = computed(() => fixtures.some(f => f.status.value === 'loading'))
 const problem = computed(() => fixtures.map(f => f.status.value).find(s => s !== 'ready'))
 const retry = () => fixtures.forEach(f => f.refresh())
@@ -65,26 +62,17 @@ const columns = computed(() => [
 const miniStance = (o: GroupOutlet) => STANCES.map((nm, i) => ({ label: t(`stance.${nm}`), value: o.stance[i]!, color: `var(--stance-${nm})` }))
 const miniLabel = (o: GroupOutlet) => `${miniStance(o).map(s => `${s.label} ${fmtPct(totalOf(o.stance) ? s.value / totalOf(o.stance) : 0)}`).join(', ')} · n = ${fmtInt(totalOf(o.stance))}`
 
-const storyRows = computed(() => (model.value ? model.value.mine.filter(x => x.story).slice(0, PLEGMA_THEME_STORIES).map(r => ({ id: r.story!.id, name: storyName(r.story!), value: fmtInt(r.n), issue: r.story!.issue, theme: topicName(model.value!.d.issues[r.story!.issue]!) })) : []))
-
-// The web: the largest stories of the group, each with the outlets of the group that wrote it (the stage reads them from the store).
-const slots = computed(() => (home.data.value ? themeSlots(home.data.value) : new Map<number, number>()))
+// The web: the group at the center and the outlets that belong to it around it, each as large as its articles; a click on one opens the outlet. An outlet with no group is in no web.
 const webStories = computed(() => {
   const m = model.value
-  const dd = detail.data.value
-  if (!m || !dd) return null
-  return m.mine.filter(r => r.story).slice(0, PLEGMA_THEME_STORIES).map((r) => {
-    const story = r.story!
-    const slot = slots.value.get(story.issue) ?? 0
-    const outlets = groupOutletsOfStory(dd, m.grp, story.id)
-    return { id: story.id, name: storyName(story), n: r.n, media: outlets.length, slot, theme: topicName(m.d.issues[story.issue]!), outlets: outlets.slice(0, PLEGMA_THEME_OUTLETS).map(o => ({ name: o.name, group: null, slot, n: o.n })) }
-  })
+  if (!m) return null
+  return m.grp.outlets.filter(o => o.collected > 0).slice(0, PLEGMA_THEME_STORIES).map((o, i) => ({ id: i + 1, name: o.name, n: o.collected, media: 0, outlets: [], href: outletHref(o.slug) }))
 })
 watch(webStories, list => plegma.setThemeStories(list?.length ? list : null), { immediate: true })
 watch(() => (model.value ? slotOfColor(model.value.color) : 0), slot => plegma.setOutletSlot(slot), { immediate: true })
-onBeforeUnmount(() => { plegma.setThemeStories(null); plegma.setOutletSlot(0); plegma.setHoverStory(null) })
+onBeforeUnmount(() => { plegma.setThemeStories(null); plegma.setOutletSlot(0) })
 
-// The map region is the free cell between the stories and the cards, under the title, as on the story, theme and outlet pages.
+// The map region is the free cell under the title beside the cards, under the title, as on the story, theme and outlet pages.
 const orbit = ref<HTMLElement>()
 const map = ref<HTMLElement>()
 usePlegmaRegion(orbit, map, { side: 440, top: -32, bottom: 28, lean: 0.62, clear: true, ringPerSide: 0.45 })
@@ -107,23 +95,10 @@ const tall = computed(() => Math.round(Math.min(300, Math.max(110, windowHeight.
     <div class="plegma-title entity-grid">
       <EntityTitle :kind="t('hero.kind.group')">
         <template #title><span class="group-cell"><span class="dot" :style="`--dot:${model.color}`" aria-hidden="true" />{{ model.grp.name }}</span></template>
-        <template #meta>{{ t('entity.fact.owner') }}: {{ model.grp.owner }}</template>
         <EntityFact :label="t('entity.fact.lean')" :value="model.grp.lean || t('groups.lean.none')" />
         <EntityFact :label="t('entity.fact.outlets')" :value="fmtInt(model.grp.outlets.length)" />
         <EntityFact :label="t('entity.fact.articles')" :value="fmtInt(model.grp.collected)" :sub="t('group2.chip.share', { n: fmtPct(model.grp.collected / model.g.totalCollected) })" />
       </EntityTitle>
-    </div>
-
-    <div class="orbit-col orbit-left">
-      <PlegmaCard :at="2" :order="3" class="card-stories">
-        <DashCard :title="t('group2.stories.title')" :info="t('group2.stories.info')">
-          <template v-if="model.mine.length">
-            <p v-if="model.withOthers" class="dcard-sub">{{ t('group2.stories.alone', { n: fmtInt(model.alone), total: fmtInt(model.withOthers) }) }}</p>
-            <StoryRows :rows="storyRows" @hover="plegma.setHoverStory($event)" />
-          </template>
-          <p v-else class="dcard-empty">{{ t('outlet2.stories.empty') }}</p>
-        </DashCard>
-      </PlegmaCard>
     </div>
 
     <div ref="map" class="orbit-map">

@@ -59,8 +59,9 @@
 .plegma-orbit:is(.is-story, .is-theme, .is-outlet, .is-group) .orbit-left > :is(.card-related, .card-stories) { flex: 0 1 auto; max-height: none; }
 .plegma-orbit:is(.is-story, .is-theme, .is-outlet, .is-group) .orbit-under { grid-area: under; }
 .plegma-orbit:is(.is-story, .is-theme, .is-outlet, .is-group) .orbit-under > .card-days { flex: none; }
-/* The group view (components/group/GroupDetail.vue) has the layout of the story and the theme: its stories on the left, the web, two columns of cards, and under them its daily articles with
+/* The group view (components/group/GroupDetail.vue) has the layout of the story and the theme without the column of stories: the web, two columns of cards, and under them its daily articles with
    its outlets beside them (the column of the right edge; under 1280px the two share the row). */
+.plegma-orbit.is-group { grid-template-areas: "title title title" "map map right" "under under under"; }
 .plegma-orbit.is-group .orbit-sub { overflow-y: auto; pointer-events: auto; scrollbar-width: thin; }
 .plegma-orbit.is-group .orbit-sub > .plegma-card { flex: none; max-height: 46%; }
 .plegma-orbit.is-group .orbit-sub > .plegma-card:only-child { max-height: 100%; }
@@ -69,7 +70,7 @@
 /* The articles card does not add to the height of the row: the chart sets it, and the articles scroll inside the card. */
 .plegma-orbit.is-group .orbit-under > .card-latest { height: 0; min-height: 100%; }
 @media (min-width: 1280px) {
-  .plegma-orbit.is-group { grid-template-columns: minmax(0, 2.4fr) minmax(0, 4.8fr) minmax(0, 2.4fr) minmax(0, 2.4fr); grid-template-areas: "title title title title" "left map one two" "under under latest latest"; }
+  .plegma-orbit.is-group { grid-template-columns: minmax(0, 2.4fr) minmax(0, 4.8fr) minmax(0, 2.4fr) minmax(0, 2.4fr); grid-template-areas: "title title title title" "map map one two" "under under latest latest"; }
   .plegma-orbit.is-group .orbit-under { display: contents; }
   .plegma-orbit.is-group .orbit-under > .card-days { grid-area: under; }
   .plegma-orbit.is-group .orbit-under > .card-latest { grid-area: latest; }

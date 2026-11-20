@@ -179,7 +179,9 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
         const s = web.stories[web.story[i]!]!
         const o = web.outlet[i]! >= 0 ? s.outlets[web.outlet[i]!]! : null
         const mineOutlet = focusOutlet() !== null
-        show(mineOutlet
+        show(s.href
+          ? { title: s.name, rows: [{ label: t('home.field.articles'), value: fmtInt(s.n) }], field: true }
+          : mineOutlet
           ? o
             ? { title: s.name, rows: [{ label: o.name, value: fmtInt(o.n), color: `var(--cat-${s.slot ?? 0})` }], field: true }
             : { title: s.name, rows: [{ label: t('home.field.topic'), value: s.theme ?? '', color: `var(--cat-${s.slot ?? 0})` }, { label: t('home.field.articles'), value: fmtInt(s.n) }], field: true }
@@ -240,13 +242,13 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
     // In the hero a click explores: it opens no story (any pointer, a phone too).
     if (plegma.focus === null && !behind()) { explore(p.x, p.y); return }
     if (!pointerFine.value || phone.value || st.hoverArticle >= 0 || st.hoverRing) return
-    // A story of the web of a theme opens that story.
+    // A story of the web of a theme opens that story; an outlet of the web of a group opens that outlet.
     const web = webFocus() ? themeWebOf() : null
     if (web && st.hoverNode > 0 && st.hoverNode < web.n) {
-      const id = web.stories[web.story[st.hoverNode]!]!.id
+      const picked = web.stories[web.story[st.hoverNode]!]!
       hide()
       st.hoverNode = -1
-      navigateTo(storyHref(id))
+      navigateTo(picked.href ?? storyHref(picked.id))
       return
     }
   }
