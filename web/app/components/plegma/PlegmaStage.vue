@@ -46,10 +46,10 @@ const file = useFixtureLazy<PlegmaFile>('plegma', { required: ['places', 'world'
 
 let raf = 0
 const REGION_EARLY = 0.3
-// A story nearer than this (screens away) with no line drawn to it (too near for one) is still reached along a line made like the lit one.
+// A story nearer than this (screens away) with no line drawn to it (too near for one) is still reached along a gentle curve.
 const TRAVEL_NEAR = 3
 
-// The line from story a to story b the camera travels along: the one drawn from a's web to b (st.links), or, for a story too near for a line, a curve from a's center bent as the lit line is.
+// The line from story a to story b the camera travels along: the one drawn from a's web to b (st.links), or, for a story too near for a line, a curve from a's center with a gentle bend.
 const travelLine = (a: PlegmaStory, b: PlegmaStory): { s: PlegmaPoint, c: PlegmaPoint } | null => {
   const drawn = st.links?.from === a.id ? st.links.to.get(b.id) : undefined
   if (drawn) return drawn

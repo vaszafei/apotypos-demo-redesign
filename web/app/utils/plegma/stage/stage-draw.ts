@@ -397,16 +397,22 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
       const keep = (b: PlegmaStory, sx: number, sy: number, cx: number, cy: number) => {
         if (still) st.links!.to.set(b.id, { s: toWorld(st.cam, st.width, st.height, { x: sx, y: sy }), c: toWorld(st.cam, st.width, st.height, { x: cx, y: cy }) })
       }
-      let litLine: (typeof lines)[number] | null = null
-      f.lineWidth = 1
-      lines.forEach((l, k) => {
-        if (l.b === pointed) { litLine = l; return }
+      // Each line has one shape, lit or not, so the line under the pointer stays where it is when it lights.
+      const shapes = lines.map((l, k) => {
         const sx = here.x + Math.cos(starts[k]!) * edge * kx
         const sy = here.y + Math.sin(starts[k]!) * edge
         const run = Math.hypot(l.q.x - sx, l.q.y - sy) || 1
-        const ux = (l.q.x - sx) / run
-        const uy = (l.q.y - sy) / run
         const bend = clamp(run * (0.07 + ((l.b.id * 7) % 10) * 0.01), 8, 90) * (l.b.id % 2 ? -1 : 1)
+        const cx = (sx + l.q.x) / 2 - (l.q.y - sy) / run * bend
+        const cy = (sy + l.q.y) / 2 + (l.q.x - sx) / run * bend
+        keep(l.b, sx, sy, cx, cy)
+        return { sx, sy, cx, cy }
+      })
+      let litLine: { l: (typeof lines)[number], sx: number, sy: number, cx: number, cy: number } | null = null
+      f.lineWidth = 1
+      lines.forEach((l, k) => {
+        const { sx, sy, cx, cy } = shapes[k]!
+        if (l.b === pointed) { litLine = { l, sx, sy, cx, cy }; return }
         const grad = f.createLinearGradient(sx, sy, l.q.x, l.q.y)
         grad.addColorStop(0, withAlpha(colour, 0.6))
         grad.addColorStop(1, withAlpha(colour, 0.12))
@@ -414,8 +420,7 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
         f.strokeStyle = grad
         f.beginPath()
         f.moveTo(sx, sy)
-        f.quadraticCurveTo((sx + l.q.x) / 2 - uy * bend, (sy + l.q.y) / 2 + ux * bend, l.q.x, l.q.y)
-        keep(l.b, sx, sy, (sx + l.q.x) / 2 - uy * bend, (sy + l.q.y) / 2 + ux * bend)
+        f.quadraticCurveTo(cx, cy, l.q.x, l.q.y)
         f.stroke()
         // Where a line leaves: a small dot outside the ring.
         f.fillStyle = colour
@@ -424,15 +429,10 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
         f.arc(sx, sy, 1.8, 0, TAU)
         f.fill()
       })
-      const on = litLine as (typeof lines)[number] | null
-      if (on) {
-        const sx = here.x + Math.cos(on.angle) * edge * kx
-        const sy = here.y + Math.sin(on.angle) * edge
-        const ux = (on.q.x - sx) / (on.len || 1)
-        const uy = (on.q.y - sy) / (on.len || 1)
-        const bend = clamp(on.len * 0.14, 24, 160)
-        const path = () => { f.beginPath(); f.moveTo(sx, sy); f.quadraticCurveTo((sx + on.q.x) / 2 - uy * bend, (sy + on.q.y) / 2 + ux * bend, on.q.x, on.q.y) }
-        keep(on.b, sx, sy, (sx + on.q.x) / 2 - uy * bend, (sy + on.q.y) / 2 + ux * bend)
+      const lit = litLine as { l: (typeof lines)[number], sx: number, sy: number, cx: number, cy: number } | null
+      if (lit) {
+        const on = lit.l
+        const path = () => { f.beginPath(); f.moveTo(lit.sx, lit.sy); f.quadraticCurveTo(lit.cx, lit.cy, on.q.x, on.q.y) }
         f.save()
         f.globalAlpha = lineMix * linkIn
         f.strokeStyle = colour

@@ -71,8 +71,46 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
     const box = canvas.value!.getBoundingClientRect()
     return { x: e.clientX - box.left, y: e.clientY - box.top }
   }
+  // A line from the story in view to another story (as the frame last drew it at rest, st.links): the pointer near it lights it as the row of the card does, and a click opens that story.
+  const LINK_REACH = 6
+  let hoverLink: number | null = null
+  const linkAt = (story: PlegmaStory, x: number, y: number) => {
+    if (!st.world || st.links?.from !== story.id) return null
+    let best: number | null = null
+    let bestDistance = LINK_REACH
+    for (const [id, l] of st.links.to) {
+      const b = st.world.byId.get(id)
+      if (!b) continue
+      const a = toScreen(st.cam, st.width, st.height, l.s)
+      const c = toScreen(st.cam, st.width, st.height, l.c)
+      const e = toScreen(st.cam, st.width, st.height, placed(b))
+      let px = a.x
+      let py = a.y
+      for (let i = 1; i <= 32; i++) {
+        const t = i / 32
+        const u = 1 - t
+        const qx = u * u * a.x + 2 * u * t * c.x + t * t * e.x
+        const qy = u * u * a.y + 2 * u * t * c.y + t * t * e.y
+        const dx = qx - px
+        const dy = qy - py
+        const k = Math.max(0, Math.min(1, ((x - px) * dx + (y - py) * dy) / (dx * dx + dy * dy || 1)))
+        const d = Math.hypot(px + dx * k - x, py + dy * k - y)
+        if (d < bestDistance) { bestDistance = d; best = id }
+        px = qx
+        py = qy
+      }
+    }
+    return best
+  }
+  const dropLink = () => {
+    if (hoverLink === null) return
+    if (plegma.hoverStory === hoverLink) plegma.setHoverStory(null)
+    hoverLink = null
+    document.documentElement.style.cursor = ''
+  }
   const leave = () => {
     st.lantern.on = false
+    dropLink()
     if (!tipOn && !st.hover && st.hoverArticle < 0 && st.hoverNode < 0 && !st.hoverRing) return
     st.hover = null
     st.hoverArticle = -1
@@ -168,6 +206,15 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
       if (st.hoverRing) { st.hoverRing = ''; hide(); if (reduced.value) kick() }
       if (st.ringLit) { st.ringLit = false; plegma.setHighlight(null) }
     }
+    const linked = story && plegma.landed && !plegma.leaving ? linkAt(story, p.x, p.y) : null
+    if (linked !== null) {
+      const b = st.world.byId.get(linked)!
+      st.hover = null
+      if (hoverLink !== linked) { dropLink(); hoverLink = linked; plegma.setHoverStory(linked); document.documentElement.style.cursor = 'pointer' }
+      show({ title: name(b), rows: [{ label: t('home.field.articles'), value: fmtInt(b.n) }], field: true }, e)
+      return
+    }
+    dropLink()
     // On the web of a theme the pointer finds a story or an outlet of a story; on the web of an outlet, a story or a day of it.
     if (webFocus()) {
       const i = themeNodeAt(p.x, p.y)
@@ -242,6 +289,16 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
     // In the hero a click explores: it opens no story (any pointer, a phone too).
     if (plegma.focus === null && !behind()) { explore(p.x, p.y); return }
     if (!pointerFine.value || phone.value || st.hoverArticle >= 0 || st.hoverRing) return
+    // A line from the story in view opens the story it goes to.
+    if (hoverLink !== null) {
+      // The line stays lit (the route change clears it), so the camera travels along the line that was clicked.
+      const id = hoverLink
+      hide()
+      hoverLink = null
+      document.documentElement.style.cursor = ''
+      navigateTo(storyHref(id))
+      return
+    }
     // A story of the web of a theme opens that story; an outlet of the web of a group opens that outlet.
     const web = webFocus() ? themeWebOf() : null
     if (web && st.hoverNode > 0 && st.hoverNode < web.n) {
