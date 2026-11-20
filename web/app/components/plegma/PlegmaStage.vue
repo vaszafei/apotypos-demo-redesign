@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useEventListener, useMediaQuery } from '@vueuse/core'
-import { cameraAt, flightDone, redirectFlight } from '~/utils/plegma/plegma-camera'
+import { cameraAt, flightAlong, flightDone, redirectFlight } from '~/utils/plegma/plegma-camera'
+import { arcRoute } from '~/utils/plegma/plegma-world'
+import type { PlegmaFocus } from '~/utils/plegma/plegma-route'
 import { buildWorld, homeWebs } from '~/utils/plegma/plegma-world'
 import type { PlegmaFile, PlegmaHomeFile, PlegmaStoriesFile } from '~/utils/plegma/plegma-world'
 import { homeIndex, HOME_WEBS, HOME_WEBS_PHONE } from '~/utils/home'
@@ -44,11 +46,20 @@ const file = useFixtureLazy<PlegmaFile>('plegma', { required: ['places', 'world'
 let raf = 0
 const REGION_EARLY = 0.3
 
-const fly = () => {
+// `was`: the focus the view left. From a story to another story of the same theme the camera travels along the dashed arcs that join them (the chain of the theme's largest stories), when both are on it.
+const fly = (was?: PlegmaFocus) => {
   const to = targetCamera()
   if (!to) return
   st.walk = null
+  const running = !!st.flight
   st.flight = redirectFlight(st.flight, st.cam, to, performance.now(), st.width, reduced.value)
+  const now = plegma.focus
+  if (!running && st.flight.dur > 0 && st.world && was?.kind === 'story' && now?.kind === 'story' && plegma.compare === null) {
+    const a = st.world.byId.get(was.id)
+    const b = st.world.byId.get(now.id)
+    const route = a && b && a.issue === b.issue ? arcRoute(st.world, a.issue, a.id, b.id) : null
+    if (route) st.flight = flightAlong(st.flight, route)
+  }
   if (st.flight.dur <= 0) { Object.assign(st.cam, to); st.flight = null }
   plegma.setLanded(!st.flight)
   kick()
@@ -136,7 +147,7 @@ onMounted(() => {
 })
 useEventListener(document, 'visibilitychange', () => { if (document.hidden) halt(); else kick() })
 // The route puts something else in focus: fly there. From a page with no map the flight starts from where the camera was left.
-watch(() => [plegma.focus, plegma.compare], () => { leave(); fly() }, { deep: true })
+watch(() => [plegma.focus, plegma.compare], (_now, was) => { leave(); fly((was?.[0] as PlegmaFocus | null | undefined) ?? undefined) }, { deep: true })
 // Home under the hero picked a day (the map steps back to a dim background) or went back to the hero (the camera frames the best of the week again).
 watch(behind, (on, was) => {
   if (!st.world) return

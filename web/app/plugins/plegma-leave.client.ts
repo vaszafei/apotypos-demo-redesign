@@ -16,7 +16,8 @@ export default defineNuxtPlugin(() => {
     if (back || reduce.matches || !plegma.active || !plegma.landed) return
     const here = plegmaFocusOf(from.path, from.query)
     const next = plegmaFocusOf(to.path, to.query)
-    const hold = (here?.kind === 'theme' || here?.kind === 'group' || here?.kind === 'story' || here?.kind === 'outlet') && !samePlegmaFocus(here, next)
+    // A story to another story keeps the world in view: the camera travels along the arcs between them (components/plegma/PlegmaStage.vue), so the view does not leave first.
+    const hold = !(here?.kind === 'story' && next?.kind === 'story') && (here?.kind === 'theme' || here?.kind === 'group' || here?.kind === 'story' || here?.kind === 'outlet') && !samePlegmaFocus(here, next)
       ? LEAVE_HOLD_MS
       : from.meta.backdrop === true && from.path.replace(/\/+$/, '') !== '/stories' && next ? LEAVE_FADE_MS + 40 : 0
     if (!hold) return

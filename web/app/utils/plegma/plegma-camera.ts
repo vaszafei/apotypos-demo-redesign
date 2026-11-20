@@ -5,7 +5,8 @@
 export interface PlegmaCamera { x: number, y: number, z: number }
 export interface PlegmaPoint { x: number, y: number }
 export interface PlegmaBox { cx: number, cy: number, w: number, h: number }
-export interface PlegmaFlight { a: PlegmaCamera, b: PlegmaCamera, t0: number, dur: number }
+// `path`: the way the camera goes over the world (points the framed story passes), instead of a straight line from a to b; the zoom is the same.
+export interface PlegmaFlight { a: PlegmaCamera, b: PlegmaCamera, t0: number, dur: number, path?: PlegmaPoint[] }
 
 // The part of the screen the cards leave free, as fractions of its width and height: the top-left area. It is the default: a story view measures the free
 // area it really has (PlegmaStoryView.vue, stores/plegma.ts `region`) and the camera frames that.
@@ -87,7 +88,37 @@ export const startFlight = (from: PlegmaCamera, to: PlegmaCamera, now: number, w
 
 export const flightDone = (f: PlegmaFlight, now: number) => now - f.t0 >= f.dur
 export const cameraAt = (f: PlegmaFlight, now: number, w: number): PlegmaCamera =>
-  f.dur <= 0 || flightDone(f, now) ? { ...f.b } : poseAt(f.a, f.b, (now - f.t0) / f.dur, w)
+  f.dur <= 0 || flightDone(f, now) ? { ...f.b } : f.path ? poseOnPath(f, (now - f.t0) / f.dur, w) : poseAt(f.a, f.b, (now - f.t0) / f.dur, w)
+
+// A flight that follows a path: the camera frames the point of the path at each moment (the point is the same place of the screen all the way, so the offset from the camera is the one at the start, over
+// the zoom); the path is walked by its length, eased as a flight is, and the zoom is the zoom of the straight flight.
+const poseOnPath = (f: PlegmaFlight, t: number, w: number): PlegmaCamera => {
+  const path = f.path!
+  const cum = [0]
+  for (let i = 1; i < path.length; i++) cum.push(cum[i - 1]! + Math.hypot(path[i]!.x - path[i - 1]!.x, path[i]!.y - path[i - 1]!.y))
+  const p = easeInOut(clamp(t, 0, 1))
+  const target = p * cum[cum.length - 1]!
+  let k = 1
+  while (k < path.length - 1 && cum[k]! < target) k++
+  const seg = cum[k]! - cum[k - 1]! || 1
+  const u = clamp((target - cum[k - 1]!) / seg, 0, 1)
+  const at = { x: path[k - 1]!.x + (path[k]!.x - path[k - 1]!.x) * u, y: path[k - 1]!.y + (path[k]!.y - path[k - 1]!.y) * u }
+  const z = poseAt(f.a, f.b, t, w).z
+  const offX = (path[0]!.x - f.a.x) * f.a.z
+  const offY = (path[0]!.y - f.a.y) * f.a.z
+  // The end of the path and the target may differ a little (the free area was measured again): the difference is taken up over the flight.
+  const endX = path[path.length - 1]!.x - offX / f.b.z
+  const endY = path[path.length - 1]!.y - offY / f.b.z
+  return { x: at.x - offX / z + (f.b.x - endX) * p, y: at.y - offY / z + (f.b.y - endY) * p, z }
+}
+
+// The same flight along a path; a longer way takes longer (as much as the path is longer than the straight line, at most twice and a half more).
+export const flightAlong = (f: PlegmaFlight, path: PlegmaPoint[]): PlegmaFlight => {
+  let length = 0
+  for (let i = 1; i < path.length; i++) length += Math.hypot(path[i]!.x - path[i - 1]!.x, path[i]!.y - path[i - 1]!.y)
+  const straight = Math.hypot(path[path.length - 1]!.x - path[0]!.x, path[path.length - 1]!.y - path[0]!.y) || 1
+  return { ...f, path, dur: f.dur <= 0 ? 0 : Math.round(Math.min(3200, f.dur * clamp(length / straight, 1, 2.5))) }
+}
 
 // A new flight asked while one runs starts from where the camera is, not from where the old one began.
 export const redirectFlight = (current: PlegmaFlight | null, camera: PlegmaCamera, to: PlegmaCamera, now: number, w: number, reduced = false): PlegmaFlight =>

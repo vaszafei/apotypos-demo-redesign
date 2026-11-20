@@ -1,4 +1,5 @@
 import type { Story, StoryIssue } from '~/types/stories'
+import type { PlegmaPoint } from './plegma-camera'
 import type { HomeIndex } from '../home.ts'
 import { bestOfWeek } from '../home.ts'
 
@@ -154,6 +155,34 @@ export const arcsOf = (world: PlegmaWorld, issue: number): PlegmaArc[] => {
     world.chains.set(issue, arcs)
   }
   return arcs
+}
+
+// The way along the dashed arcs of a theme from one of its stories to another (world points, `steps` to an arc), the arcs of the chain between them one after the other, each from the story the camera
+// leaves to the one it comes to; null when one of the two is not a core story of the theme or they are the same.
+export const arcRoute = (world: PlegmaWorld, issue: number, fromId: number, toId: number, steps = 24): PlegmaPoint[] | null => {
+  const arcs = arcsOf(world, issue)
+  const chain = arcs.length ? [arcs[0]!.a, ...arcs.map(x => x.b)] : []
+  const i = chain.findIndex(s => s.id === fromId)
+  const j = chain.findIndex(s => s.id === toId)
+  if (i < 0 || j < 0 || i === j) return null
+  const points: PlegmaPoint[] = []
+  const along = (arc: PlegmaArc, reverse: boolean) => {
+    const dx = arc.b.x - arc.a.x
+    const dy = arc.b.y - arc.a.y
+    const cx = (arc.a.x + arc.b.x) / 2 - dy * 0.22 * arc.sign
+    const cy = (arc.a.y + arc.b.y) / 2 + dx * 0.22 * arc.sign
+    const row: PlegmaPoint[] = []
+    for (let k = 0; k <= steps; k++) {
+      const t = k / steps
+      const u = 1 - t
+      row.push({ x: u * u * arc.a.x + 2 * u * t * cx + t * t * arc.b.x, y: u * u * arc.a.y + 2 * u * t * cy + t * t * arc.b.y })
+    }
+    if (reverse) row.reverse()
+    points.push(...(points.length ? row.slice(1) : row))
+  }
+  if (i < j) for (let k = i; k < j; k++) along(arcs[k]!, false)
+  else for (let k = i - 1; k >= j; k--) along(arcs[k]!, true)
+  return points
 }
 
 // The stories a theme view frames and shows as webs: the largest of the theme, coded or not (the catch-all has no core, so it frames its largest).
