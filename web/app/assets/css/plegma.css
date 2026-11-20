@@ -76,7 +76,12 @@
 .plegma-orbit.is-outlet { grid-template-areas: none; grid-template-columns: minmax(0, 5.2fr) minmax(0, 4.8fr); grid-template-rows: auto minmax(0, 1fr) auto; }
 .plegma-orbit.is-outlet .plegma-title { grid-area: auto; grid-row: 1; grid-column: 1 / -1; }
 .plegma-orbit.is-outlet .orbit-map { position: relative; pointer-events: auto; }
-.outlet-links { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.outlet-links { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; overflow: visible; pointer-events: none; opacity: 0; }
+/* the lines to the rows of the similarity come in with that card: as its first part shows and settles (plegma-cut-a, 14% to 84%), after the same delay */
+.plegma-orbit.is-in .outlet-links { animation: plegma-links-in 1100ms both calc(var(--i) * 110ms); }
+.plegma-orbit.is-in.is-leaving .outlet-links { animation: none; opacity: 0; transition: opacity 240ms var(--ease-out); }
+@keyframes plegma-links-in { 0%, 14% { opacity: 0; } 84%, 100% { opacity: 1; } }
+.outlet-link-hit { pointer-events: stroke; cursor: pointer; }
 .outlet-map-web { position: absolute; inset: 0 0 24px 0; }
 .outlet-article-web { position: absolute; inset: 0; }
 .outlet-article-web canvas { display: block; width: 100%; height: 100%; }

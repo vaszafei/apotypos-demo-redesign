@@ -115,6 +115,8 @@ const i1 = computed(() => Math.max(i0.value, model.value?.m.dates.indexOf(view.v
 const inPeriod = (days: number[]) => sum(days.slice(i0.value, i1.value + 1))
 // The other outlets of its group with the similarity (the stories they share over the stories of either), for the whole window.
 const hoverPeer = ref<string | null>(null)
+// When the card of the similarity arrives (its order in its column, as the template gives it): the lines to its rows come in with it.
+const similarOrder = computed(() => { for (const ids of spec.value.columns) { const r = ids.indexOf('similar'); if (r >= 0) return r + 1 } return 0 })
 const orbit = ref<HTMLElement>()
 const groupSimilar = computed(() => (model.value ? relatedOutlets(model.value.dd, model.value.kd, props.slug, model.value.group, model.value.record).related.filter(r => r.same) : []))
 const startedHere = computed(() => (model.value ? model.value.mine.filter(r => r.story && r.first >= i0.value && r.first <= i1.value) : []))
@@ -205,7 +207,10 @@ const headlinesShown = computed(() => liveHeadlines.value.filter(x => String(x[0
   </div>
   <ErrorPage v-else-if="!model" :status="404" />
   <div v-else ref="orbit" class="plegma-orbit is-outlet" :class="[`tab-${tab}`, `cols-${spec.columns.length}`, spec.latest ? 'has-latest' : 'no-latest', { 'is-in': plegma.landed, 'is-leaving': plegma.leaving }]">
-    <OutletPeerLinks v-if="tab === 'overview'" :root="orbit" :count="groupSimilar.length" :hover="groupSimilar.findIndex(r => r.slug === hoverPeer)" :color="groupColor(model.group)" />
+    <OutletPeerLinks
+      v-if="tab === 'overview'" :root="orbit" :count="groupSimilar.length" :hover="groupSimilar.findIndex(r => r.slug === hoverPeer)" :color="groupColor(model.group)" :order="similarOrder"
+      @hover="i => (hoverPeer = i === null ? null : groupSimilar[i]?.slug ?? null)" @open="i => navigateTo(outletHref(groupSimilar[i]!.slug))"
+    />
     <div class="plegma-title entity-grid">
       <EntityTitle :kind="t('hero.kind.outlet')" :title="model.outlet.name">
         <template #meta>{{ t('entity.fact.group') }}: <EntityLink v-if="model.group && model.record?.slug" type="group" :to="groupPageHref(model.record.slug)">{{ model.group }}</EntityLink><template v-else>{{ model.group ?? t('story.nogroup') }}</template></template>
