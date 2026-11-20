@@ -543,9 +543,7 @@
       'aria-haspopup': 'dialog', 'aria-expanded': 'false', 'aria-controls': panelId, 'aria-keyshortcuts': '/'
     }, Icon('magnifying-glass', 'icon search-button-icon'), h('span', { class: 'search-button-label', 'aria-hidden': 'true' }, t(hero ? 'shell.search.placeholder' : 'shell.search')),
     h('kbd', { class: 'global-search-key', 'aria-hidden': 'true' }, '/'))
-    // In the hero the Αναζήτηση button stands beside the field, outside of it; it opens the same panel.
-    const go = hero ? h('button', { type: 'button', class: 'search-hero-go', tabindex: '-1', 'aria-hidden': 'true' }, t('shell.search')) : null
-    const box = h('div', { class: hero ? 'global-search is-hero' : 'global-search' }, button, go)
+    const box = h('div', { class: hero ? 'global-search is-hero' : 'global-search' }, button)
 
     // Open: the field, the results and a short line of keys, over a light scrim.
     const input = h('input', {
@@ -666,8 +664,7 @@
       if (hero && window.innerHeight - button.getBoundingClientRect().top < 420) {
         window.scrollBy({ top: button.getBoundingClientRect().top - (parseFloat(token('--navbar-height')) || 56) - 24, behavior: 'instant' })
       }
-      // The hero has the Αναζήτηση button beside the field: the panel is centered on the whole row.
-      const b = (hero ? box : button).getBoundingClientRect()
+      const b = button.getBoundingClientRect()
       if (hero) panel.style.maxHeight = `${window.innerHeight - Math.max(8, b.top - 4) - 16}px`
       const width = Math.min(hero ? Math.max(640, b.width + 8) : 640, window.innerWidth - 32)
       panel.style.width = `${width}px`
@@ -743,7 +740,6 @@
     }
 
     button.addEventListener('click', () => open())
-    go?.addEventListener('click', () => open())
     closeButton.addEventListener('click', () => close())
     scrim.addEventListener('click', () => close({ focus: false }))
     input.addEventListener('input', () => { expanded = new Set(); render() })

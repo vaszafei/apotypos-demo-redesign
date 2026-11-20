@@ -136,8 +136,11 @@ a.home-stack-part { cursor: pointer; }
    On each visit the name rises in, the "/" draws from the top, then the line after it rises in. Only opacity, transform and clip-path move. */
 .home-mast { margin: 0 0 var(--space-3); font: 700 clamp(24px, 3vw, 46px)/1.2 var(--font-heading); letter-spacing: 0.04em; color: var(--ink); text-wrap: balance; }
 .mast-part { display: inline-block; }
-/* On a wide screen the masthead stands 10% of the height of the screen higher; the rest of the hero keeps its place. */
-@media (min-width: 720px) { .home-mast { translate: 0 -10vh; } }
+/* On a wide screen the masthead stands 10% of the height of the screen higher, and the search, the topics and the numbers 5% (top, not translate, which their entrance uses). */
+@media (min-width: 720px) {
+  .home-mast { translate: 0 -10vh; }
+  .home-hero-search, .home-hero-try, .home-hero-stats { position: relative; top: -5vh; }
+}
 .mast-slash { display: inline-block; margin: 0 0.28em; font-weight: 600; scale: 1.2; vertical-align: 0.075em; }
 .mast-tail { font-size: 0.8em; font-weight: 500; vertical-align: 0.157em; clip-path: inset(0 -0.2em); }
 .mast-tail-in { display: block; } /* raised so the center of its capitals is the center of the capitals of the logo (measured at three widths); the "/" the same */ /* a little lighter than the stroke of the logo (4.75 px at the size of the heading, 4 px at 500, 5.75 px at 700; measured) */
@@ -180,10 +183,9 @@ a.home-stack-part { cursor: pointer; }
 
 /* The large search: a pill the width of the column. It opens the panel of the global search over it (shell.js, hero). */
 .home-hero-search { width: 100%; max-width: 720px; margin-top: var(--space-2); }
-.home-hero .global-search.is-hero { display: flex; align-items: center; gap: var(--space-2); width: 100%; margin: 0; }
-.home-hero .global-search.is-open .search-hero-go { opacity: 0; }
+.home-hero .global-search.is-hero { display: block; width: 100%; margin: 0; }
 .home-hero .global-search.is-hero .search-button {
-  display: flex; align-items: center; gap: var(--space-3); flex: 1; width: auto; min-width: 0; height: 46px; padding: 0 16px 0 20px;
+  display: flex; align-items: center; gap: var(--space-3); width: 100%; min-width: 0; height: 46px; padding: 0 16px 0 20px;
   border: 1px solid var(--border); border-radius: var(--pill, 999px); background: var(--surface-raised); color: var(--text-secondary);
   font: 16px var(--font-text); box-shadow: 0 1px 0 color-mix(in srgb, var(--shade) 3%, transparent), 0 18px 40px -22px color-mix(in srgb, var(--shade) 35%, transparent);
   transition: border-color var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out);
@@ -192,8 +194,6 @@ a.home-stack-part { cursor: pointer; }
 .home-hero .is-hero .search-button-icon { width: 20px; height: 20px; color: var(--ink); }
 .home-hero .is-hero .search-button-label { display: block; flex: 1; min-width: 0; padding: 0; overflow: hidden; text-align: left; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); }
 .home-hero .is-hero .global-search-key { display: inline-block; flex: none; }
-.search-hero-go { display: inline-flex; align-items: center; justify-content: center; flex: none; height: 40px; padding: 0 var(--space-4); border: 1px solid var(--text-primary); border-radius: 8px; background: var(--text-primary); color: var(--on-ink); font: 600 14px var(--font-text); cursor: pointer; white-space: nowrap; transition: background var(--motion-base) var(--ease-out); }
-.search-hero-go:hover, .search-hero-go:focus-visible { background: color-mix(in srgb, var(--text-primary) 85%, var(--accent)); border-color: transparent; }
 /* The open panel keeps the shape of the field: round, with a tall field row. */
 .search-panel.is-hero { border-radius: 28px; }
 .search-panel.is-hero .search-field { min-height: 52px; padding-left: 20px; }
@@ -233,7 +233,6 @@ a.home-stack-part { cursor: pointer; }
 @media (max-width: 719px) {
   .home-hero-inner { gap: var(--space-4); }
   .home-hero .global-search.is-hero .search-button { height: 44px; padding: 0 12px 0 16px; font-size: 16px; }
-  .search-hero-go { height: 34px; padding: 0 var(--space-3); font-size: 13px; }
   .home-hero-stats dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--space-4); width: 100%; }
   .home-hero-stat:nth-child(odd) { border-left: 0; }
   .home-hero-stats dl:has(> :nth-child(3):last-child) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -241,7 +240,6 @@ a.home-stack-part { cursor: pointer; }
   .home-hero-stats dl:has(> :nth-child(3):last-child) .home-hero-stat:first-child { border-left: 0; }
 }
 @media (max-width: 419px) {
-  .search-hero-go { display: none; }
   .home-hero-try-label { flex-basis: 100%; margin: 0; }
 }
 
