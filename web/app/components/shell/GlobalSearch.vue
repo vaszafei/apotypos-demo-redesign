@@ -93,7 +93,8 @@ const place = () => {
   const el = panel.value!
   el.style.maxHeight = ''
   if (smallScreen.value) { el.style.left = el.style.top = el.style.width = ''; return }
-  const b = button.value!.getBoundingClientRect()
+  // The hero has the Αναζήτηση button beside the field: the panel is centered on the whole row.
+  const b = (props.hero ? button.value!.parentElement! : button.value!).getBoundingClientRect()
   if (props.hero) el.style.maxHeight = `${window.innerHeight - Math.max(8, b.top - 4) - 16}px`
   const width = Math.min(props.hero ? Math.max(640, b.width + 8) : 640, window.innerWidth - 32)
   el.style.width = `${width}px`
@@ -207,8 +208,8 @@ defineExpose({ open })
   <div class="global-search" :class="{ 'is-open': isOpen, 'is-hero': hero }" :inert="disabled">
     <button ref="button" type="button" class="search-button" :class="{ 'search-hero': hero }" :tabindex="disabled ? -1 : undefined" :aria-label="t('shell.search')" :title="t('shell.search')" aria-haspopup="dialog" :aria-expanded="tf(isOpen)" :aria-controls="panelId" aria-keyshortcuts="/" @click="open()">
       <AppIcon name="magnifying-glass" class="icon search-button-icon" /><span class="search-button-label" aria-hidden="true">{{ hero ? t('shell.search.placeholder') : t('shell.search') }}</span><kbd class="global-search-key" aria-hidden="true">/</kbd>
-      <span v-if="hero" class="search-hero-go" aria-hidden="true">{{ t('shell.search') }}</span>
     </button>
+    <button v-if="hero" type="button" class="search-hero-go" tabindex="-1" aria-hidden="true" @click="open()">{{ t('shell.search') }}</button>
   </div>
   <ClientOnly>
     <Teleport to="body">
