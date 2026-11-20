@@ -166,6 +166,40 @@ const layout = (w: PlegmaDayWeb, sec: number) => {
   return R
 }
 
+// A change of day: the old picture fades away without its ring (fadeOld), the ring of the old day empties in the direction it filled (drawOutRing), and then the new web grows and its ring fills (startGrow).
+const OUT_MS = 520
+let outAt = -1
+let outItems: DayOutlet[] = []
+let outHi = 1
+let shownOutlets: DayOutlet[] = []
+const drawOutRing = (g: CanvasRenderingContext2D, items: DayOutlet[], lo: number, hi: number) => {
+  const total = items.reduce((sum, r) => sum + r.n, 0)
+  if (total <= 0) return
+  const per = perim.value[perim.value.length - 1]!
+  const ringR = ringOf()
+  const ringX = ringRx()
+  g.lineCap = 'round'
+  g.lineWidth = props.names ? 3 : 2
+  g.globalAlpha = 0.85
+  let from = 0
+  for (const r of items) {
+    const span = r.n / total
+    const pad = Math.min(span / 2, 3 / per)
+    const a = Math.max(from + pad, lo)
+    const z = Math.min(from + span - pad, hi)
+    if (z > a) {
+      g.strokeStyle = props.names ? softInk[r.slot] ?? mute : slotColour(r.slot)
+      g.beginPath()
+      const [p0, p1] = sweepParam(a, z)
+      g.ellipse(width / 2, height / 2, ringX, ringR, 0, p0 - Math.PI / 2, p1 - Math.PI / 2)
+      g.stroke()
+    }
+    from += span
+  }
+  g.lineCap = 'butt'
+  g.globalAlpha = 1
+}
+
 const draw = (sec: number, dt: number) => {
   const w = web.value
   if (!ctx || !w || !width) return
@@ -173,6 +207,12 @@ const draw = (sec: number, dt: number) => {
   const dpr = Math.min(window.devicePixelRatio || 1, 2)
   g.setTransform(dpr, 0, 0, dpr, 0, 0)
   g.clearRect(0, 0, width, height)
+  if (outAt >= 0) {
+    const t = clamp((performance.now() - outAt) / OUT_MS, 0, 1)
+    if (t < 1) { drawOutRing(g, outItems, 1 - (1 - t) ** 3, outHi); return }
+    outAt = -1
+    outItems = []
+  }
   grown = growAt < 0 ? (props.grow && !reduced.value ? 0 : 1) : clamp((performance.now() - growAt) / props.growMs, 0, 1)
   g.globalAlpha = 1
   const goal = props.mode === 'themes' || props.grouped ? 1 : 0
@@ -367,13 +407,16 @@ const draw = (sec: number, dt: number) => {
       const pad = Math.min(span / 2, 3 / per)
       if (from + pad >= sweepFrac) { from += span; return }
       const heat = arcHot.get(key) ?? 0
-      g.strokeStyle = props.names ? (heat > 0.01 ? slotColour(r.slot) : softInk[r.slot] ?? mute) : slotColour(r.slot)
-      g.globalAlpha = (0.85 + 0.15 * heat) * alpha
-      g.lineWidth = props.names ? 3 + 1.4 * heat : 2 + 2.5 * heat
-      g.beginPath()
-      const [p0, p1] = sweepParam(from + pad, Math.min(from + span - pad, sweepFrac))
-      g.ellipse(width / 2, height / 2, ringX, ringR, 0, p0 - Math.PI / 2, p1 - Math.PI / 2)
-      g.stroke()
+      // An arc as short as its two gaps (an outlet with a few articles) has no length: sweepParam would turn it into the whole circle in its color, so it is not drawn.
+      if (Math.min(from + span - pad, sweepFrac) > from + pad) {
+        g.strokeStyle = props.names ? (heat > 0.01 ? slotColour(r.slot) : softInk[r.slot] ?? mute) : slotColour(r.slot)
+        g.globalAlpha = (0.85 + 0.15 * heat) * alpha
+        g.lineWidth = props.names ? 3 + 1.4 * heat : 2 + 2.5 * heat
+        g.beginPath()
+        const [p0, p1] = sweepParam(from + pad, Math.min(from + span - pad, sweepFrac))
+        g.ellipse(width / 2, height / 2, ringX, ringR, 0, p0 - Math.PI / 2, p1 - Math.PI / 2)
+        g.stroke()
+      }
       // The name and the share of a large arc, outside the ring.
       if (props.ellipse && tag === 'o' && r.name && span >= 0.035 && grown >= 1) {
         const m = paramOf(atRing(from + span / 2)) - Math.PI / 2
@@ -402,6 +445,7 @@ const draw = (sec: number, dt: number) => {
     if (named.length && grown >= 1) drawColumns(g, { fontText, paper, ink, mute }, { x0: 0, y0: 0, x1: width, y1: height }, { cx: width / 2, cy: height / 2, ring: ringR, kx: 1 }, named, 0.9 * alpha)
   }
   arcs(props.outlets, 'o', props.grouped ? 1 : 1 - form, k => (props.grouped || form < 0.5) && hoverRing === k)
+  shownOutlets = props.outlets
   arcs(props.ring, 't', props.grouped ? 0 : form, k => form >= 0.5 && (props.lit === props.ring[k]!.issue || hoverRing === k))
   // The date at the center and the name of each theme beside its node: the only words on the web.
   g.font = `600 14px ${fontText}`
@@ -594,7 +638,7 @@ const loop = useRafFn(({ timestamp }) => {
   draw(now, Math.min(0.1, last ? now - last : 0.016))
   last = now
 }, { immediate: false })
-const startGrow = () => { if (props.grow && !reduced.value && web.value) growAt = performance.now() }
+const startGrow = (delay = 0) => { if (props.grow && !reduced.value && web.value) growAt = performance.now() + delay }
 watch(() => [props.active, !!web.value] as const, ([on, ready]) => { if (on && ready && growAt < 0) startGrow() }, { immediate: true })
 // The same web again for another day (not for the same stories with other colors): the old picture fades and swells away over the new web, which grows out of the center.
 const storiesKey = (themes: PlegmaDayTheme[]) => themes.map(th => th.stories.map(s => `${s.id}:${s.n}`).join(',')).join('|')
@@ -605,12 +649,28 @@ const fadeOld = () => {
   const copy = document.createElement('canvas')
   copy.width = el.width
   copy.height = el.height
-  copy.getContext('2d')?.drawImage(el, 0, 0)
+  const cg = copy.getContext('2d')
+  cg?.drawImage(el, 0, 0)
+  if (cg) {
+    const dpr = el.width / Math.max(1, width)
+    cg.setTransform(dpr, 0, 0, dpr, 0, 0)
+    cg.globalCompositeOperation = 'destination-out'
+    cg.lineWidth = 10
+    cg.beginPath()
+    cg.ellipse(width / 2, height / 2, ringRx(), ringOf(), 0, 0, TAU)
+    cg.stroke()
+  }
   copy.className = 'plegma-day-canvas plegma-day-old'
   holder.append(copy)
-  copy.animate([{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(1.05)' }], { duration: 380, easing: 'ease-out', fill: 'forwards' }).finished.then(() => copy.remove(), () => copy.remove())
+  copy.animate([{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(1.05)' }], { duration: OUT_MS, easing: 'ease-out', fill: 'forwards' }).finished.then(() => copy.remove(), () => copy.remove())
 }
-watch(() => storiesKey(props.themes), (now, was) => { if (props.grow && props.active && was && now !== was && web.value) { fadeOld(); startGrow() } })
+watch(() => storiesKey(props.themes), (now, was) => { if (props.grow && props.active && was && now !== was && web.value) {
+  outHi = grown < 1 ? 1 - (1 - clamp(grown / 0.8, 0, 1)) ** 3 : 1
+  outItems = shownOutlets
+  fadeOld()
+  if (!reduced.value) outAt = performance.now()
+  startGrow(OUT_MS)
+} })
 watch(() => [props.active, reduced.value] as const, ([on, still]) => {
   last = 0
   if (on && !still) loop.resume()

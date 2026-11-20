@@ -5,7 +5,7 @@ import { homeIndex, homeOutletsOf } from '~/utils/home'
 import { dayTotals, lastCounted } from '~/utils/home-days'
 import { groupColors, NO_GROUP, slotOfColor } from '~/utils/groups'
 import type { GroupsData } from '~/utils/groups'
-import { dayDots, PLEGMA_DAY_STORIES, PLEGMA_DAY_THEMES } from '~/utils/plegma/plegma-day'
+import { dayDots, PLEGMA_DAY_STORIES } from '~/utils/plegma/plegma-day'
 import type { PlegmaDayTheme } from '~/utils/plegma/plegma-day'
 import type { DayOutlet, DayRing } from '~/components/plegma/PlegmaDayWeb.vue'
 import type { DayStoryRow } from '~/components/home/DayStoryList.vue'
@@ -95,7 +95,7 @@ const themes = computed<PlegmaDayTheme[]>(() => {
     const counts = [...bySlot].map(([slot, n]) => ({ slot, n })).sort((a, b) => b.n - a.n)
     theme.stories.push({ id: r.s.id, name: storyName(r.s), n: r.n, media: outlets.length || r.s.outlets, dots: dayDots(r.n, counts) })
   }
-  return [...byIssue.values()].sort((a, b) => b.n - a.n).slice(0, PLEGMA_DAY_THEMES)
+  return [...byIssue.values()].sort((a, b) => b.n - a.n)
 })
 
 // Picking a story or a theme (on the web or in the list) dives into its page (composables/useWebDive.ts).
@@ -120,7 +120,7 @@ onBeforeUnmount(() => { watcher?.disconnect(); plegma.setHomeDay(null); plegma.p
   <section id="home-today" ref="root" class="home-today" :class="{ 'is-leaving': leaving }" :aria-label="t('home.today.title')">
     <template v-if="home.data.value && day !== null">
       <div class="home-today-days"><HomeCalendar v-model="day" :dates="home.data.value.dates" :totals="totals" /></div>
-      <div class="home-today-map"><PlegmaDayWeb ref="web" v-model:lit="litIssue" names grow :grow-ms="1000" :hover-story="hoverStory" :themes="themes" :ring="ring" :outlets="dayOutlets"  mode="stories" grouped :date="fmtDate(home.data.value.dates[day]!)" :picked="null" :active="inView" @pick="open({ story: $event })" @pick-theme="open({ theme: $event })" /></div>
+      <div class="home-today-map"><PlegmaDayWeb ref="web" v-model:lit="litIssue" names grow :grow-ms="1400" :hover-story="hoverStory" :themes="themes" :ring="ring" :outlets="dayOutlets" mode="stories" grouped :ring-start="0.5" :zoom="0.85" :date="fmtDate(home.data.value.dates[day]!)" :picked="null" :active="inView" @pick="open({ story: $event })" @pick-theme="open({ theme: $event })" /></div>
       <div class="home-today-side">
         <DayStoryList :rows="rows" :title="t('home.daylist.title')" :info="t('home.daylist.info')" :empty="ix ? t('home.day.empty') : undefined" @hover="hoverStory = $event" @hover-theme="litIssue = $event" @open="open" />
       </div>

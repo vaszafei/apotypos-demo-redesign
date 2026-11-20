@@ -8,8 +8,7 @@ export interface PlegmaDayStory { id: number, name: string, n: number, media: nu
 export interface PlegmaDayTheme { issue: number, name: string, slot: number, n: number, stories: PlegmaDayStory[], rest: number }
 
 // The most stories of a day the web shows, themes, and dots of a story.
-export const PLEGMA_DAY_STORIES = 14
-export const PLEGMA_DAY_THEMES = 7
+export const PLEGMA_DAY_STORIES = 40
 export const PLEGMA_DAY_DOTS = 12
 // The most faint dots a theme has for the stories that are not shown.
 const REST_MAX = 14
