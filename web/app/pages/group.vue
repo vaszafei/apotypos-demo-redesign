@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// Μέσα › Ιδιοκτησία › one ownership group (group-v2.html?g=): its outlets, its daily articles, the topics it writes more or less than all outlets. A detail page of the tab Ιδιοκτησία.
-definePageMeta({ detail: '/groups' })
+// Μέσα › Ιδιοκτησία › one ownership group (group-v2.html?g=): its outlets, its daily articles, the topics it writes more or less than all outlets, on the Plegma. A detail page of the tab Ιδιοκτησία.
+definePageMeta({ detail: '/groups', plegma: true })
 const { t } = useI18n()
 useHead({ title: () => `${t('nav.media')} · ${t('site.name')}` })
 const route = useRoute()

@@ -33,13 +33,13 @@
 @media (max-width: 1279px) { .orbit-subs { grid-template-columns: minmax(0, 1fr); overflow: auto; } }
 /* The story and the theme view: the other stories of the theme (the stories of the theme) are a column of their own on the left (a narrow one, 2 of 12 parts), the map and the stance, people and how
    cards are a row, and the days of the story are a card under that row. */
-.plegma-orbit:is(.is-story, .is-theme, .is-outlet) { grid-template-columns: minmax(0, 2fr) minmax(0, 4fr) minmax(0, 6fr); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "title title title" "left map right" "under under under"; }
+.plegma-orbit:is(.is-story, .is-theme, .is-outlet, .is-group) { grid-template-columns: minmax(0, 2fr) minmax(0, 4fr) minmax(0, 6fr); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "title title title" "left map right" "under under under"; }
 /* From a wide screen the two columns of the right are columns of the page grid, so the days card under the row runs from the left edge to the end of the people card. */
 @media (min-width: 1280px) {
-  .plegma-orbit:is(.is-story, .is-theme, .is-outlet) { grid-template-columns: minmax(0, 2fr) minmax(0, 4fr) minmax(0, 3fr) minmax(0, 3fr); grid-template-areas: "title title title title" "left map one two" "under under under ."; }
-  .plegma-orbit:is(.is-story, .is-theme, .is-outlet) .orbit-right, .plegma-orbit:is(.is-story, .is-theme, .is-outlet) .orbit-subs { display: contents; }
-  .plegma-orbit:is(.is-story, .is-theme, .is-outlet) .orbit-sub:nth-child(1) { grid-area: one; }
-  .plegma-orbit:is(.is-story, .is-theme, .is-outlet) .orbit-sub:nth-child(2) { grid-area: two; }
+  .plegma-orbit:is(.is-story, .is-theme, .is-outlet, .is-group) { grid-template-columns: minmax(0, 2fr) minmax(0, 4fr) minmax(0, 3fr) minmax(0, 3fr); grid-template-areas: "title title title title" "left map one two" "under under under ."; }
+  .plegma-orbit:is(.is-story, .is-theme, .is-outlet, .is-group) .orbit-right, .plegma-orbit:is(.is-story, .is-theme, .is-outlet, .is-group) .orbit-subs { display: contents; }
+  .plegma-orbit:is(.is-story, .is-theme, .is-outlet, .is-group) .orbit-sub:nth-child(1) { grid-area: one; }
+  .plegma-orbit:is(.is-story, .is-theme, .is-outlet, .is-group) .orbit-sub:nth-child(2) { grid-area: two; }
 }
 /* The bar of the outlets or the groups that ran the story is the top of the two columns of the right: a row of its own over the stance and how the story was written; the people are under it, beside the days. */
 .orbit-right > .card-strip { flex: none; padding: var(--space-2) var(--space-3); }
@@ -55,10 +55,26 @@
 }
 .plegma-orbit.is-story.no-right { grid-template-areas: "title title title" "left map map" "under under under"; }
 @media (min-width: 1280px) { .plegma-orbit.is-story.no-right { grid-template-columns: minmax(0, 2fr) minmax(0, 4fr) minmax(0, 6fr); grid-template-areas: "title title title" "left map map" "under under under"; } }
-.plegma-orbit:is(.is-story, .is-theme, .is-outlet) .orbit-map { grid-area: map; }
-.plegma-orbit:is(.is-story, .is-theme, .is-outlet) .orbit-left > :is(.card-related, .card-stories) { flex: 0 1 auto; max-height: none; }
-.plegma-orbit:is(.is-story, .is-theme, .is-outlet) .orbit-under { grid-area: under; }
-.plegma-orbit:is(.is-story, .is-theme, .is-outlet) .orbit-under > .card-days { flex: none; }
+.plegma-orbit:is(.is-story, .is-theme, .is-outlet, .is-group) .orbit-map { grid-area: map; }
+.plegma-orbit:is(.is-story, .is-theme, .is-outlet, .is-group) .orbit-left > :is(.card-related, .card-stories) { flex: 0 1 auto; max-height: none; }
+.plegma-orbit:is(.is-story, .is-theme, .is-outlet, .is-group) .orbit-under { grid-area: under; }
+.plegma-orbit:is(.is-story, .is-theme, .is-outlet, .is-group) .orbit-under > .card-days { flex: none; }
+/* The group view (components/group/GroupDetail.vue) has the layout of the story and the theme: its stories on the left, the web, two columns of cards, and under them its daily articles with
+   its outlets beside them (the column of the right edge; under 1280px the two share the row). */
+.plegma-orbit.is-group .orbit-sub { overflow-y: auto; pointer-events: auto; scrollbar-width: thin; }
+.plegma-orbit.is-group .orbit-sub > .plegma-card { flex: none; max-height: 46%; }
+.plegma-orbit.is-group .orbit-sub > .plegma-card:only-child { max-height: 100%; }
+.plegma-orbit.is-group .orbit-under { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--space-3); }
+.plegma-orbit.is-group .orbit-under > .plegma-card { flex: none; }
+/* The articles card does not add to the height of the row: the chart sets it, and the articles scroll inside the card. */
+.plegma-orbit.is-group .orbit-under > .card-latest { height: 0; min-height: 100%; }
+@media (min-width: 1280px) {
+  .plegma-orbit.is-group { grid-template-columns: minmax(0, 2.4fr) minmax(0, 4.8fr) minmax(0, 2.4fr) minmax(0, 2.4fr); grid-template-areas: "title title title title" "left map one two" "under under latest latest"; }
+  .plegma-orbit.is-group .orbit-under { display: contents; }
+  .plegma-orbit.is-group .orbit-under > .card-days { grid-area: under; }
+  .plegma-orbit.is-group .orbit-under > .card-latest { grid-area: latest; }
+}
+@media (min-width: 1024px) and (max-width: 1279px) { .plegma-orbit.is-group { grid-template-columns: minmax(0, 2fr) minmax(0, 5.2fr) minmax(0, 4.8fr); } }
 /* The outlet view (components/outlet/OutletDetail.vue): the web first under the title, then the cards of the tab in up to two columns, and the latest list of the tab in the last column (not on Πρόσωπα).
    The outlet over time (bars, lines of the topics or of the stories, the mentions: it turns with the tab) is a row under the web and the cards. The modifiers cols-0/1/2 (cards of the tab) and has-latest set the cells; the items are placed by line. */
 .plegma-orbit.is-outlet { grid-template-areas: none; grid-template-columns: minmax(0, 5.2fr) minmax(0, 4.8fr); grid-template-rows: auto minmax(0, 1fr) auto; }
@@ -526,10 +542,10 @@
 
 /* The switch that turns the web (the ring of a story or a theme, the tabs of an outlet) is the same on every page of the Plegma: in the middle of the web, right over it, not in the row of the title card. It is the first line of the
    cell of the web (the outlet has the web in its first column), and the web starts under it. */
-.plegma-orbit:is(.is-story, .is-theme, .is-outlet) .plegma-title { display: flex; align-items: flex-end; gap: var(--space-3); }
+.plegma-orbit:is(.is-story, .is-theme, .is-outlet, .is-group) .plegma-title { display: flex; align-items: flex-end; gap: var(--space-3); }
 .plegma-orbit:is(.is-story, .is-theme) > .orbit-ring-tabs { position: static; grid-row: 2; grid-column: map-start / map-end; justify-self: center; align-self: start; z-index: 3; }
 .plegma-orbit.is-outlet > .orbit-ring-tabs { position: static; grid-row: 2; grid-column: 1; justify-self: center; align-self: start; z-index: 3; }
-.plegma-orbit:is(.is-story, .is-theme, .is-outlet) .orbit-map { margin-top: 40px; }
+.plegma-orbit:is(.is-story, .is-theme, .is-outlet, .is-group) .orbit-map { margin-top: 40px; }
 @media (max-width: 1023px) { .plegma-orbit > .orbit-ring-tabs { position: absolute; top: 56px; right: 0; } .plegma-orbit .orbit-map { margin-top: 0; } }
 
 /* The theme view: the two columns of cards on the right are 20% narrower (3 parts of 12 become 2.4), so the web has the room. */

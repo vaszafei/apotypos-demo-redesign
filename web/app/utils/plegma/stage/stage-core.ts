@@ -44,12 +44,13 @@ export const createStageCore = (st: StageState, deps: StageDeps) => {
   const behind = () => plegma.homeDay !== null || plegma.homeDim || plegma.backdrop
   const focusStory = () => (st.world && plegma.focus?.kind === 'story' ? st.world.byId.get(plegma.focus.id) ?? null : null)
   const focusIssue = () => (plegma.focus?.kind === 'theme' ? plegma.focus.issue : null)
-  const focusOutlet = () => (plegma.focus?.kind === 'outlet' ? plegma.focus.slug : null)
+  // The outlet or the group in focus: a group's web is an outlet's (its stories around it), with the outlets of the group where an outlet's has its days.
+  const focusOutlet = () => (plegma.focus?.kind === 'outlet' || plegma.focus?.kind === 'group' ? plegma.focus.slug : null)
   // The web in the middle of the map: a theme's or an outlet's (both are built by utils/plegma-theme.ts); `seed` shapes it and `kind` keeps the two apart.
   const webFocus = () => {
     const f = plegma.focus
     if (f?.kind === 'theme') return { kind: 'theme' as const, seed: f.issue + 1 }
-    if (f?.kind === 'outlet') return { kind: 'outlet' as const, seed: [...f.slug].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 9973, 7) }
+    if (f?.kind === 'outlet' || f?.kind === 'group') return { kind: 'outlet' as const, seed: [...f.slug].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 9973, 7) }
     return null
   }
   // The camera that shows the focus: Home's best webs, a story in the map region, or a theme's largest stories.

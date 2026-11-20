@@ -1,8 +1,10 @@
-// What a route puts in focus on the Plegma: a story (/story?id=), a theme (/topic?i=), an outlet (/outlet?slug=) or nothing (Home and the pages that only show the map).
-export type PlegmaFocus = { kind: 'story', id: number } | { kind: 'theme', issue: number } | { kind: 'outlet', slug: string } | null
+// What a route puts in focus on the Plegma: a story (/story?id=), a theme (/topic?i=), an outlet (/outlet?slug=), a group (/group?g=) or nothing (Home and the pages that only show the map).
+export type PlegmaFocus = { kind: 'story', id: number } | { kind: 'theme', issue: number } | { kind: 'outlet', slug: string } | { kind: 'group', slug: string } | null
 
 // The outlet the page shows when the address has no slug (Rosa.gr).
 export const DEFAULT_OUTLET = '17661f5754'
+// The group the page shows when the address has no slug (Politis Group).
+export const DEFAULT_GROUP = 'politis'
 
 const whole = (value: unknown) => {
   const text = Array.isArray(value) ? value[0] : value
@@ -15,6 +17,7 @@ export const plegmaFocusOf = (rawPath: string, query: Record<string, unknown>): 
   if (path === '/story') { const id = whole(query.id); return id === null ? null : { kind: 'story', id } }
   if (path === '/topic') { const issue = whole(query.i); return issue === null ? null : { kind: 'theme', issue } }
   if (path === '/outlet') { const raw = Array.isArray(query.slug) ? query.slug[0] : query.slug; return { kind: 'outlet', slug: typeof raw === 'string' && raw ? raw : DEFAULT_OUTLET } }
+  if (path === '/group') { const raw = Array.isArray(query.g) ? query.g[0] : query.g; return { kind: 'group', slug: typeof raw === 'string' && raw ? raw : DEFAULT_GROUP } }
   return null
 }
 
@@ -22,7 +25,7 @@ export const samePlegmaFocus = (a: PlegmaFocus, b: PlegmaFocus) => {
   if (a === b) return true
   if (!a || !b || a.kind !== b.kind) return false
   if (a.kind === 'story') return a.id === (b as { id: number }).id
-  if (a.kind === 'outlet') return a.slug === (b as { slug: string }).slug
+  if (a.kind === 'outlet' || a.kind === 'group') return a.slug === (b as { slug: string }).slug
   return a.issue === (b as { issue: number }).issue
 }
 
