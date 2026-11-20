@@ -55,9 +55,11 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
   // Picking a story on a theme (its card or its node), the dot of the story is the story: it stays, live, and goes to the center of the map region, where the web of the story grows out of it.
   // The rest of the theme web is the last frame as a picture (with a hole where the dot was) that fades out where it is, with no zoom. `st.wasTheme` is the theme in view in the last frame;
   // `st.diveSpot` is its story dots' places and radii. The web of the story waits until the dot is there (DIVE_HOLD).
-  const MOVE_MS = 700
-  const FADE_MS = 420
-  const DIVE_HOLD = 0.75
+  const MOVE_MS = 1400
+  const FADE_MS = 700
+  const DIVE_HOLD = 0.92
+  // After it has arrived the dot dissolves while the center of the story's web grows in its place.
+  const MELT_MS = 500
   const diveInto = (at: { x: number, y: number, r: number }) => {
     const stage = canvas.value?.parentElement
     if (!stage || !canvas.value || !canvasFocus.value) return
@@ -78,32 +80,27 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
       copy.animate([{ opacity: i === 0 ? 0.7 : 1 }, { opacity: 0 }], { duration: FADE_MS, easing: 'cubic-bezier(0.4, 0, 0.6, 1)', fill: 'forwards' }).finished.then(() => copy.remove(), () => copy.remove())
     })
   }
-  // The dot on its way (drawn over the web of the story, which is not there yet): a ring of the theme's gray, becoming the disc of the story in its color.
+  // The dot on its way (drawn over the web of the story, which is not there yet): it stays what it was on the theme, a ring of the theme's gray, and only shrinks to the size of the center of the story;
+  // once it is there it dissolves while the center of the story (in the color of its theme) grows in its place.
   const drawDive = (g: CanvasRenderingContext2D, now: number, story: PlegmaStory) => {
     const d = st.dive!
     const k = reduced.value ? 1 : clamp((now - d.t0) / MOVE_MS, 0, 1)
-    const e = k < 0.5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2
+    const e = k * k * k * (k * (k * 6 - 15) + 10)
+    const melt = clamp((now - d.t0 - MOVE_MS) / MELT_MS, 0, 1)
     const to = toScreen(st.cam, st.width, st.height, placed(story))
     const x = d.x + (to.x - d.x) * e
     const y = d.y + (to.y - d.y) * e
     const r = d.r + (articles.centerRadius() - d.r) * e
-    const col = story.slot > 0 ? colourOf(story) : st.cats[0] ?? st.mute
-    g.globalAlpha = 1
+    g.globalAlpha = 1 - melt
     g.fillStyle = st.paper
     g.beginPath()
     g.arc(x, y, r + 1.6, 0, TAU)
     g.fill()
-    g.globalAlpha = 1 - e
     g.strokeStyle = st.mute
     g.lineWidth = 2
     g.beginPath()
     g.arc(x, y, r, 0, TAU)
     g.stroke()
-    g.globalAlpha = e
-    g.fillStyle = col
-    g.beginPath()
-    g.arc(x, y, r, 0, TAU)
-    g.fill()
     g.globalAlpha = 1
   }
   const draw = (now: number) => {
@@ -123,7 +120,7 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
         st.dive = { ...at, t0: now, id: picked.id }
         Object.assign(st.cam, to)
         st.flight = null
-        window.setTimeout(() => plegma.setLanded(true), MOVE_MS * 0.7)
+        window.setTimeout(() => plegma.setLanded(true), MOVE_MS * 0.85)
       }
     }
     st.wasTheme = false
@@ -277,7 +274,7 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
     }
 
     // The dot of the story picked on a theme, on its way to the center of the web; the web takes over from it once it has grown there.
-    if (st.dive && (story?.id !== st.dive.id || st.introP >= 0.6 || now - st.dive.t0 > 4000)) st.dive = null
+    if (st.dive && (story?.id !== st.dive.id || now - st.dive.t0 > MOVE_MS + MELT_MS)) st.dive = null
     if (st.dive && story) drawDive(f, now, story)
 
     // The dashed arcs of the themes in view: the focus's theme, the theme in focus, the theme under the pointer, and the themes of the Home webs.
@@ -323,7 +320,7 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
       // Two lines that leave the same way are moved apart a little on the ring, so each one has a start of its own.
       const starts = lines.map(l => l.angle)
       for (let pass = 0; pass < 4; pass++) for (let k = 1; k < starts.length; k++) if (starts[k]! - starts[k - 1]! < 0.11) { starts[k - 1]! -= 0.02; starts[k]! += 0.02 }
-      const dim = (1 - 0.65 * lineMix) * (st.dive ? smooth(0.7, 1, (now - st.dive.t0) / MOVE_MS) : 1)
+      const dim = (1 - 0.65 * lineMix) * (st.dive ? smooth(0.9, 1.3, (now - st.dive.t0) / MOVE_MS) : 1)
       let litLine: (typeof lines)[number] | null = null
       f.lineWidth = 1
       lines.forEach((l, k) => {
