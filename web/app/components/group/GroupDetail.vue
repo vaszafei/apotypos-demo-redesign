@@ -2,12 +2,13 @@
 import { useWindowSize } from '@vueuse/core'
 import type { StoriesData } from '~/types/stories'
 import type { StoryDetailData } from '~/types/story-detail'
-import type { GroupOutlet, GroupsData, MediaDaily } from '~/utils/groups'
+import type { Series } from '~/types/topics'
+import type { GroupsData, MediaDaily } from '~/utils/groups'
 import { PLEGMA_THEME_STORIES } from '~/utils/plegma/plegma-theme'
 
-// The group on the Plegma, laid out as the outlet page is: the title card, its stories in a narrow column on the left, the web in the free cell (the group at the center, its largest stories
-// around it in the color of their theme, and around each story the outlets of the group that wrote it: the stage draws it), the cards of the stance, how the group writes and its topics in two columns,
-// and under them the daily articles with the outlets of the group beside them.
+// The group on the Plegma, laid out as the story and the theme pages are: the title card, its outlets (the table) in the narrow column on the left, the web in the free cell (the group at the
+// center and its outlets around it; the ring is an arc for each outlet as wide as its articles, and the tabs turn it to the stance), the cards of the stance, how the group writes and its topics
+// in two columns, and under them the analysed articles per day, a line for each outlet.
 const props = defineProps<{ slug: string }>()
 const { t } = useI18n()
 const media = useFixtureLazy<MediaDaily>('media', { required: ['dates', 'outlets', 'outletDaily'], isEmpty: b => b.outlets.length === 0 })
@@ -23,7 +24,6 @@ const retry = () => fixtures.forEach(f => f.refresh())
 const diffKey = computed(() => [{ label: t('story.how.more'), color: 'var(--emph-more)' }, { label: t('story.how.less'), color: 'var(--emph-less)' }])
 const group = computed(() => groupsData.data.value?.groups.find(g => g.slug === props.slug) ?? null)
 const colorOfGroup = computed(() => groupColors(groupsData.data.value?.groups ?? []))
-const STANCES = ['critical', 'neutral', 'supportive'] as const
 
 // null when the slug is not one of the groups (the 404 page).
 const model = computed(() => {
@@ -51,16 +51,28 @@ const named = computed(() => group.value?.name ?? null)
 provideDetailTitle(() => named.value)
 useHead({ title: () => (named.value ? `${named.value} · ${t('site.name')}` : undefined) })
 
+// The column on the left is narrow (2 of 12 parts): the share of the group's articles is the arc of the ring and the stance is its other tab, and the news share and the stance are in the cards, so the table keeps the outlet and its articles.
 const columns = computed(() => [
   { key: 'outlet', label: t('group.col.outlet') },
-  { key: 'collected', label: t('group.col.collected'), num: true },
-  { key: 'bar', label: '', phone: false },
-  { key: 'news', label: t('group.col.news'), num: true },
-  { key: 'stance', label: t('group.col.stance'), phone: false },
-  { key: 'clickbait', label: t('group.col.clickbait'), num: true }
+  { key: 'collected', label: t('home.field.articles'), num: true }
 ])
-const miniStance = (o: GroupOutlet) => STANCES.map((nm, i) => ({ label: t(`stance.${nm}`), value: o.stance[i]!, color: `var(--stance-${nm})` }))
-const miniLabel = (o: GroupOutlet) => `${miniStance(o).map(s => `${s.label} ${fmtPct(totalOf(o.stance) ? s.value / totalOf(o.stance) : 0)}`).join(', ')} · n = ${fmtInt(totalOf(o.stance))}`
+
+// A line for each outlet of the group: its analysed articles each day, from the first day to the last that any outlet has.
+const lines = computed(() => {
+  const m = model.value
+  if (!m) return null
+  const members = new Set(m.grp.outlets.map(o => o.slug))
+  const rows = m.m.outlets
+    .map((o, k) => ({ o, k }))
+    .filter(({ o }) => members.has(o.slug))
+    .map(({ o, k }) => ({ key: o.slug, name: o.name, values: m.m.dates.map((_, i) => (m.m.outletDaily[k]![i] as [number | null, number | null])[0] ?? 0) }))
+    .map(r => ({ ...r, total: r.values.reduce((a, v) => a + v, 0) }))
+    .filter(r => r.total > 0)
+    .sort((a, b) => b.total - a.total)
+  const span = dataSpan(rows)
+  if (!span) return null
+  return { dates: m.m.dates.slice(span[0], span[1] + 1), series: rows.map((r, i) => ({ key: r.key, name: r.name, color: `var(--cat-${i + 1})`, values: r.values.slice(span[0], span[1] + 1) })) as Series[] }
+})
 
 // The web: the group at the center and the outlets that belong to it around it, each as large as its articles; a click on one opens the outlet. An outlet with no group is in no web.
 const webStories = computed(() => {
@@ -70,7 +82,22 @@ const webStories = computed(() => {
 })
 watch(webStories, list => plegma.setThemeStories(list?.length ? list : null), { immediate: true })
 watch(() => (model.value ? slotOfColor(model.value.color) : 0), slot => plegma.setOutletSlot(slot), { immediate: true })
-onBeforeUnmount(() => { plegma.setThemeStories(null); plegma.setOutletSlot(0) })
+
+// The ring: an arc for each outlet of the group, as wide as its articles (the share of the outlets), or the arcs of the stance of the group. The stance card gives no row under 30 rated articles,
+// so the ring has no stance under it either, and then there are no tabs.
+const STANCE_MIN = 30
+const ring = computed({ get: () => (plegma.ring === 'stance' ? 'stance' : 'groups'), set: (v: string) => plegma.setRing(v === 'stance' ? 'stance' : 'groups') })
+const ringArcs = computed(() => {
+  const m = model.value
+  if (!m) return null
+  const slot = slotOfColor(m.color)
+  const arcs = m.grp.outlets.filter(o => o.collected > 0).sort((a, b) => b.collected - a.collected).map(o => ({ name: o.name, slot, n: o.collected }))
+  return arcs.length ? arcs : null
+})
+const stanceOfGroup = computed(() => (model.value && model.value.writes.stanceN >= STANCE_MIN ? model.value.writes.stanceMine : null))
+watch(ringArcs, list => plegma.setThemeGroups(list), { immediate: true })
+watch(stanceOfGroup, counts => { plegma.setStance(counts); if (!counts && plegma.ring === 'stance') plegma.setRing('groups') }, { immediate: true })
+onBeforeUnmount(() => { plegma.setThemeStories(null); plegma.setThemeGroups(null); plegma.setStance(null); plegma.setOutletSlot(0) })
 
 // The map region is the free cell under the title beside the cards, under the title, as on the story, theme and outlet pages.
 const orbit = ref<HTMLElement>()
@@ -100,6 +127,19 @@ const tall = computed(() => Math.round(Math.min(300, Math.max(110, windowHeight.
       </EntityTitle>
     </div>
 
+    <SegmentedControl v-if="stanceOfGroup" v-model="ring" class="orbit-ring-tabs" :label="t('group.ring.label')" :options="[{ value: 'groups', label: t('group.ring.outlets') }, { value: 'stance', label: t('story.ring.stance') }]" />
+
+    <div class="orbit-col orbit-left">
+      <PlegmaCard :at="0" :order="1" class="card-members">
+        <DashCard :title="t('group2.outlets.title')" :info="t('group2.outlets.info')">
+          <DataTable :rows="model.grp.outlets" :columns="columns" :page-size="100" :empty-text="t('group.empty')">
+            <template #cell-outlet="{ row }"><EntityLink type="outlet" :to="outletHref(row.slug)">{{ row.name }}</EntityLink></template>
+            <template #cell-collected="{ row }">{{ fmtInt(row.collected) }}</template>
+          </DataTable>
+        </DashCard>
+      </PlegmaCard>
+    </div>
+
     <div ref="map" class="orbit-map">
       <p class="plegma-nodes-note">{{ t('group.map.note') }}</p>
     </div>
@@ -125,10 +165,10 @@ const tall = computed(() => Math.round(Math.min(300, Math.max(110, windowHeight.
         <div class="orbit-sub">
           <PlegmaCard :at="0" :order="3" class="card-topics">
             <DashCard :title="t('group2.topics.title')" :info="t('group2.topics.info')">
-              <template #tools><ChartLegend :items="diffKey" /></template>
               <template v-if="model.topics.rows.length">
                 <DiffList :rows="model.topics.rows" :scale="model.topicScale" tip-key="group2.how.tip" />
                 <p class="dcard-sub">{{ t('group2.topics.sub', { n: fmtInt(model.topics.nGroup) }) }}</p>
+                <ChartLegend :items="diffKey" />
               </template>
               <p v-else class="dcard-empty">{{ t('outlet2.topics.empty') }}</p>
             </DashCard>
@@ -139,18 +179,9 @@ const tall = computed(() => Math.round(Math.min(300, Math.max(110, windowHeight.
 
     <div class="orbit-col orbit-under">
       <PlegmaCard :at="4" :order="2" class="card-days">
-        <DailyCard :dates="model.m.dates" :daily="model.daily" :topic-days="model.topicDays" :issues="model.d.issues" :info="t('group2.daily.info')" :height="tall" />
-      </PlegmaCard>
-      <PlegmaCard :at="4" :order="3" class="card-latest">
-        <DashCard :title="t('group2.outlets.title')" :info="t('group2.outlets.info')">
-          <DataTable :rows="model.grp.outlets" :columns="columns" rank-column :page-size="100" :empty-text="t('group.empty')">
-            <template #cell-outlet="{ row }"><EntityLink type="outlet" :to="outletHref(row.slug)">{{ row.name }}</EntityLink></template>
-            <template #cell-collected="{ row }">{{ fmtInt(row.collected) }}</template>
-            <template #cell-bar="{ row }"><HBar :value="row.collected / model.grp.collected" :max="1" /></template>
-            <template #cell-news="{ row }">{{ row.analysed ? fmtPct(row.news / row.analysed) : '' }}</template>
-            <template #cell-stance="{ row }"><StackedBar :segments="miniStance(row)" :min-n="30" :label="miniLabel(row)" /></template>
-            <template #cell-clickbait="{ row }"><template v-if="row.cbKnown">{{ fmtPct(row.cbYes / row.cbKnown) }}</template><span v-else class="mini-empty">{{ t('group.clickbait.none') }}</span></template>
-          </DataTable>
+        <DashCard :title="t('group.daily.title')" :info="t('group.daily.info')">
+          <LinesChart v-if="lines" :dates="lines.dates" :series="lines.series" :tall="tall" :caption="t('group.daily.title')" :href-of="s => outletHref(s.key)" />
+          <p v-else class="dcard-empty">{{ t('outlet2.topics.empty') }}</p>
         </DashCard>
       </PlegmaCard>
     </div>

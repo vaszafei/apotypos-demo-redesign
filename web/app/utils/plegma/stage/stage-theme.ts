@@ -288,10 +288,11 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
         }
         // The names and their lines go in the first half of the leave, while the arcs empty.
         const namesLeft = 1 - clamp(st.ringOut * 2, 0, 1)
-        if (fresh) {
+        // The stance arcs are named on every web with a ring of arcs; the arcs of the outlets or groups only on the web of a theme (the web of a group names its outlets beside their dots).
+        {
           const ring = { cx: disc.x, cy: disc.y, ring: disc.r, kx: 1 }
           const total = plegma.themeGroups!.length
-          if (groupsOut < 0.5) {
+          if (fresh && groupsOut < 0.5) {
             const items: NameItem[] = []
             for (let k = 0; k < total; k++) {
               const span = groupAt[k * 2 + 1]!

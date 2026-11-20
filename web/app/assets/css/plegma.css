@@ -59,22 +59,17 @@
 .plegma-orbit:is(.is-story, .is-theme, .is-outlet, .is-group) .orbit-left > :is(.card-related, .card-stories) { flex: 0 1 auto; max-height: none; }
 .plegma-orbit:is(.is-story, .is-theme, .is-outlet, .is-group) .orbit-under { grid-area: under; }
 .plegma-orbit:is(.is-story, .is-theme, .is-outlet, .is-group) .orbit-under > .card-days { flex: none; }
-/* The group view (components/group/GroupDetail.vue) has the layout of the story and the theme without the column of stories: the web, two columns of cards, and under them its daily articles with
-   its outlets beside them (the column of the right edge; under 1280px the two share the row). */
-.plegma-orbit.is-group { grid-template-areas: "title title title" "map map right" "under under under"; }
-.plegma-orbit.is-group .orbit-sub { overflow-y: auto; pointer-events: auto; scrollbar-width: thin; }
+/* The group view (components/group/GroupDetail.vue) has the layout of the story and the theme: its outlets (the table) are the narrow column on the left (2 of 12 parts), then the web, two columns of
+   cards, and under them one card as wide as the page, the analysed articles per day with a line for each outlet. The cards of the columns scroll inside. */
+.plegma-orbit.is-group .orbit-sub, .plegma-orbit.is-group .orbit-left { overflow-y: auto; pointer-events: auto; scrollbar-width: thin; }
 .plegma-orbit.is-group .orbit-sub > .plegma-card { flex: none; max-height: 46%; }
 .plegma-orbit.is-group .orbit-sub > .plegma-card:only-child { max-height: 100%; }
-.plegma-orbit.is-group .orbit-under { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--space-3); }
+.plegma-orbit.is-group .orbit-left > .card-members { flex: none; max-height: 100%; }
 .plegma-orbit.is-group .orbit-under > .plegma-card { flex: none; }
-/* The articles card does not add to the height of the row: the chart sets it, and the articles scroll inside the card. */
-.plegma-orbit.is-group .orbit-under > .card-latest { height: 0; min-height: 100%; }
 @media (min-width: 1280px) {
-  .plegma-orbit.is-group { grid-template-columns: minmax(0, 2.4fr) minmax(0, 4.8fr) minmax(0, 2.4fr) minmax(0, 2.4fr); grid-template-areas: "title title title title" "map map one two" "under under latest latest"; }
-  .plegma-orbit.is-group .orbit-under { display: contents; }
-  .plegma-orbit.is-group .orbit-under > .card-days { grid-area: under; }
-  .plegma-orbit.is-group .orbit-under > .card-latest { grid-area: latest; }
+  .plegma-orbit.is-group { grid-template-columns: minmax(0, 2fr) minmax(0, 4.8fr) minmax(0, 2.6fr) minmax(0, 2.6fr); grid-template-areas: "title title title title" "left map one two" "under under under under"; }
 }
+.plegma-orbit.is-group > .orbit-ring-tabs { position: static; grid-row: 2; grid-column: 2; justify-self: center; align-self: start; z-index: 3; }
 @media (min-width: 1024px) and (max-width: 1279px) { .plegma-orbit.is-group { grid-template-columns: minmax(0, 2fr) minmax(0, 5.2fr) minmax(0, 4.8fr); } }
 /* The outlet view (components/outlet/OutletDetail.vue): the web first under the title, then the cards of the tab in up to two columns, and the latest list of the tab in the last column (not on Πρόσωπα).
    The outlet over time (bars, lines of the topics or of the stories, the mentions: it turns with the tab) is a row under the web and the cards. The modifiers cols-0/1/2 (cards of the tab) and has-latest set the cells; the items are placed by line. */
