@@ -1,6 +1,8 @@
 import { articleOfNode, articleRadius, articleWebOf, matchesHighlight, nodeCount } from '../plegma-articles'
 import type { PlegmaHighlight } from '../plegma-articles'
 import { PLEGMA_REGION, frameStory, regionBox, toScreen } from '../plegma-camera'
+import { ringEmptiedTo } from '../plegma-leave'
+import { RING_START } from '../plegma-ring'
 import type { PlegmaStory } from '../plegma-world'
 import { TAU, clamp, shareArcs } from './stage-draw-util'
 import type { StageState } from './stage-state'
@@ -265,6 +267,9 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     }
     // The ring: a thin line with nothing inside it. With the groups known it is an arc for each group, over the sector of its articles.
     g.lineCap = 'round'
+    // Leaving the view: the arcs and their names go from the start of the ring on, the way they filled (stores/plegma.ts `leaving`, utils/plegma/plegma-leave.ts).
+    const emptied = st.ringOut > 0 ? ringEmptiedTo(st.ringOut) : -Infinity
+    const namesLeft = 1 - clamp(st.ringOut * 2, 0, 1)
     if (aw.arcs.length && !morphFrom) {
       g.lineWidth = 3
       // Turning to the stance the arcs of the groups go a quarter turn on and fade; the arcs of the stance come in from a quarter turn back.
@@ -282,12 +287,15 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
         g.strokeStyle = on || hot > 0.01 ? (slot > 0 ? st.groupInk[slot] ?? st.ink : st.mute) : st.softInk[slot] ?? st.mute
         g.lineWidth = 3 + 1.4 * hot
         g.globalAlpha = (rest + (1 - rest) * hot) * (1 - groupsOut) * st.ringIn
+        const from = Math.max(aw.arcs[k * 2]! + pad, emptied)
+        const to = aw.arcs[k * 2]! + span - pad
+        if (to <= from) continue
         g.beginPath()
-        g.ellipse(a.cx, a.cy, a.ring * a.kx, a.ring, 0, aw.arcs[k * 2]! - Math.PI / 2 + pad + turn, aw.arcs[k * 2]! + span - Math.PI / 2 - pad + turn)
+        g.ellipse(a.cx, a.cy, a.ring * a.kx, a.ring, 0, from - Math.PI / 2 + turn, to - Math.PI / 2 + turn)
         g.stroke()
       }
-      if (articles && groupsOut < 0.5) drawNames(g, a, ringNames(a, articles), 0.9 * (1 - groupsOut * 2) * (1 - 0.35 * mix) * st.ringIn)
-      if (stanceAt && st.ringMix > 0.5) drawNames(g, a, stanceNames(stanceAt), 0.9 * (st.ringMix * 2 - 1) * st.ringIn, true)
+      if (articles && groupsOut < 0.5) drawNames(g, a, ringNames(a, articles), 0.9 * (1 - groupsOut * 2) * (1 - 0.35 * mix) * st.ringIn * namesLeft)
+      if (stanceAt && st.ringMix > 0.5) drawNames(g, a, stanceNames(stanceAt), 0.9 * (st.ringMix * 2 - 1) * st.ringIn * namesLeft, true)
       if (stanceAt) {
         const back = (1 - st.ringMix) * (Math.PI / 2)
         for (let k = 0; k < 3; k++) {
@@ -298,8 +306,11 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
           g.strokeStyle = st.stanceInk[k] ?? st.mute
           g.lineWidth = 3 + 2.5 * hot
           g.globalAlpha = (0.9 + 0.1 * hot) * st.ringMix * st.ringIn
+          const from = Math.max(stanceAt[k * 2]! + pad, emptied)
+          const to = stanceAt[k * 2]! + span - pad
+          if (to <= from) continue
           g.beginPath()
-          g.ellipse(a.cx, a.cy, a.ring * a.kx, a.ring, 0, stanceAt[k * 2]! - Math.PI / 2 + pad - back, stanceAt[k * 2]! + span - Math.PI / 2 - pad - back)
+          g.ellipse(a.cx, a.cy, a.ring * a.kx, a.ring, 0, from - Math.PI / 2 - back, to - Math.PI / 2 - back)
           g.stroke()
         }
       }
@@ -308,7 +319,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       g.strokeStyle = articles ? st.mute : col
       g.lineWidth = 1.2
       g.beginPath()
-      g.ellipse(a.cx, a.cy, a.ring * a.kx, a.ring, 0, 0, TAU)
+      g.ellipse(a.cx, a.cy, a.ring * a.kx, a.ring, 0, st.ringOut > 0 ? emptied - Math.PI / 2 : 0, st.ringOut > 0 ? RING_START + TAU - Math.PI / 2 : TAU)
       g.stroke()
     }
     g.lineCap = 'butt'
