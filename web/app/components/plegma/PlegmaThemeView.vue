@@ -129,7 +129,7 @@ const lineHref = (key: string) => storyHref(Number(key.slice(1)))
       <div class="orbit-subs">
         <div class="orbit-sub">
           <!-- One card for the ring: the outlets, the groups or the stance, as the tab says (the tabs beside the title). -->
-          <PlegmaCard :at="0" :order="1" :class="`card-ring is-${ring}`">
+          <PlegmaCard :at="0" :order="1" :class="[`card-ring is-${ring}`, { 'is-gone': ring === 'groups' }]" :aria-hidden="ring === 'groups' ? 'true' : undefined" :inert="ring === 'groups'">
             <StanceCard
               v-if="ring === 'stance'"
               :rows="[{ label: t('entity.stance.topic'), color: 'var(--series-news)', counts: model.det.s.slice(1) }, { label: t('entity.stance.all'), color: NO_GROUP, counts: model.dd.base.s.slice(1) }]"

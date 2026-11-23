@@ -124,6 +124,8 @@
 .plegma-title .hero-kicker { color: var(--ink); font-size: var(--text-caption); letter-spacing: 0.08em; }
 .orbit-map { position: relative; flex: 1 1 0; min-height: 260px; }
 .orbit-ring-tabs { position: absolute; left: 0; top: 0; pointer-events: auto; }
+/* The card of the groups is not shown (the ring names them), but it keeps its place, so the map does not move when the tab changes. */
+.plegma-orbit .card-ring.is-gone { visibility: hidden; }
 /* The switch of the ring is two rectangular buttons, the look of Σύνδεση and Εγγραφή (6px corners), not a pill with tabs: the pressed one is filled like Εγγραφή. */
 .plegma-orbit .orbit-ring-tabs.segmented { gap: 6px; padding: 0; border: 0; border-radius: 0; background: none; }
 .plegma-orbit .orbit-ring-tabs.segmented button { min-height: 30px; padding: 0 var(--space-3); border: 1px solid var(--border); border-radius: 6px; background: var(--surface-raised); color: var(--text-primary); font-size: var(--text-small); }

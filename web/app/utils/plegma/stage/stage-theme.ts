@@ -4,7 +4,7 @@ import { RING_START } from '../plegma-ring'
 import { smooth } from '../plegma-hero'
 import { buildThemeWeb } from '../plegma-theme'
 import type { PlegmaThemeWeb } from '../plegma-theme'
-import { TAU, clamp, shareArcs } from './stage-draw-util'
+import { TAU, arcThick, clamp, shareArcs } from './stage-draw-util'
 import type { StageState } from './stage-state'
 import type { StageCore, StageDeps } from './stage-core'
 import { NAME_MAX, createStageNames } from './stage-names'
@@ -29,7 +29,7 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
   const themeRingAt = (x: number, y: number) => {
     const disc = themeDisc()
     const groups = plegma.themeGroups
-    if (!disc || !groups?.length || Math.abs(Math.hypot(x - disc.x, y - disc.y) - disc.r) > 7) return null
+    if (!disc || !groups?.length || ringTurn.from || Math.abs(Math.hypot(x - disc.x, y - disc.y) - disc.r) > 7) return null
     const at = (Math.atan2(y - disc.y, x - disc.x) + Math.PI / 2 + TAU) % TAU
     const inside = (start: number, span: number) => span > 0 && (((at - start) % TAU) + TAU) % TAU <= span
     const arcs = st.ringMix > 0.5 ? shareArcs(plegma.stance) : shareArcs(groups.map(g => g.n))
@@ -49,6 +49,26 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
   let themeLitOnNode = false
   // How long (s) the names of the stories have been in view since the dots of a theme came in (see the block before «The name of the story pointed at»).
   let introNames = 0
+  // Turning the ring from the outlets to the groups (or back) the old arcs go a quarter turn on and fade while the new ones come in from a quarter turn back, as on the web of a story.
+  const RING_MORPH_MS = 900
+  type ThemeGroups = NonNullable<typeof plegma.themeGroups>
+  const ringTurn = { key: '', tab: '', list: null as ThemeGroups | null, from: null as ThemeGroups | null, at: 0 }
+  const ringBlend = () => {
+    const list = plegma.themeGroups
+    const key = list?.map(x => x.name).join('|') ?? ''
+    if (key !== ringTurn.key) {
+      // Not from the stance: the arcs of the groups were not on the screen then, the arcs of the stance were.
+      ringTurn.from = ringTurn.list?.length && list?.length && !reduced.value && ringTurn.tab !== 'stance' ? ringTurn.list : null
+      ringTurn.at = performance.now()
+      ringTurn.key = key
+    }
+    ringTurn.list = list
+    ringTurn.tab = plegma.ring
+    if (!ringTurn.from) return { from: null, blend: 1 }
+    const k = (performance.now() - ringTurn.at) / RING_MORPH_MS
+    if (k >= 1) { ringTurn.from = null; return { from: null, blend: 1 } }
+    return { from: ringTurn.from, blend: 1 - Math.pow(1 - k, 3) }
+  }
   const themeDisc = () => {
     if (!plegma.region) return null
     const box = regionBox(st.width, st.height, plegma.region)
@@ -252,32 +272,46 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
         // Leaving the view: the arcs are emptied from the start of the ring on, the way they filled.
         const emptied = st.ringOut > 0 ? ringEmptiedTo(st.ringOut) : -Infinity
         g.lineCap = 'round'
-        if (groupsOut < 0.99) for (let k = 0; k < groupAt.length / 2; k++) {
-          const span = groupAt[k * 2 + 1]!
-          if (span <= 0) continue
-          const slot = plegma.themeGroups![k]!.slot
-          const hot = st.ringHot.get(`g${k}`) ?? 0
-          g.strokeStyle = hot > 0.01 ? (slot > 0 ? st.groupInk[slot] ?? st.ink : st.mute) : st.softInk[slot] ?? st.mute
-          g.lineWidth = fresh ? 3 + 1.4 * hot : 2 + 2.5 * hot
-          g.globalAlpha = (0.85 + 0.15 * hot) * (1 - groupsOut) * st.ringIn
-          const pad = Math.min(span / 2, 3 / disc.r)
-          const from = Math.max(groupAt[k * 2]! + pad, emptied)
-          const to = groupAt[k * 2]! + span - pad
-          if (to <= from) continue
-          g.beginPath()
-          g.arc(disc.x, disc.y, disc.r, from - Math.PI / 2 + turn, to - Math.PI / 2 + turn)
-          g.stroke()
+        const { from: oldGroups, blend } = ringBlend()
+        const oldAt = oldGroups ? shareArcs(oldGroups.map(x => x.n)) : null
+        const arcSet = (list: ThemeGroups, arcs: Float32Array, extra: number, fade: number, hotOn: boolean) => {
+          const top = Math.max(1, ...list.map(x => x.n))
+          for (let k = 0; k < arcs.length / 2; k++) {
+            const span = arcs[k * 2 + 1]!
+            if (span <= 0) continue
+            const slot = list[k]!.slot
+            // As thick as its articles against the largest arc's: ARC_MIN px for the smallest to ARC_MAX px for the largest (a theme's web only; the web of a group or an outlet keeps its look).
+            const thick = fresh ? arcThick(list[k]!.n, top) : 2
+            const hot = hotOn ? st.ringHot.get(`g${k}`) ?? 0 : 0
+            g.strokeStyle = hot > 0.01 ? (slot > 0 ? st.groupInk[slot] ?? st.ink : st.mute) : st.softInk[slot] ?? st.mute
+            g.lineWidth = fresh ? thick + 1.4 * hot : thick + 2.5 * hot
+            g.globalAlpha = (0.85 + 0.15 * hot) * fade * st.ringIn
+            const pad = Math.min(span / 2, (fresh ? thick / 2 + 1.5 : 3) / disc.r)
+            const from = Math.max(arcs[k * 2]! + pad, emptied)
+            const to = arcs[k * 2]! + span - pad
+            if (to <= from) continue
+            g.beginPath()
+            g.arc(disc.x, disc.y, disc.r, from - Math.PI / 2 + extra, to - Math.PI / 2 + extra)
+            g.stroke()
+          }
+        }
+        if (groupsOut < 0.99) {
+          if (oldAt) arcSet(oldGroups!, oldAt, blend * (Math.PI / 2) + turn, (1 - blend) * (1 - groupsOut), false)
+          arcSet(plegma.themeGroups!, groupAt, turn - (oldAt ? (1 - blend) * (Math.PI / 2) : 0), (1 - groupsOut) * blend, true)
         }
         if (stanceAt) {
           const back = (1 - st.ringMix) * (Math.PI / 2)
+          const counts = plegma.stance ?? []
+          const topStance = Math.max(1, ...counts)
           for (let k = 0; k < 3; k++) {
             const span = stanceAt[k * 2 + 1]!
             if (span <= 0) continue
             const hot = st.ringHot.get(`s${k}`) ?? 0
+            const thick = fresh ? arcThick(counts[k] ?? 0, topStance) : 2
             g.strokeStyle = st.stanceInk[k] ?? st.mute
-            g.lineWidth = fresh ? 3 + 2.5 * hot : 2 + 2.5 * hot
+            g.lineWidth = thick + 2.5 * hot
             g.globalAlpha = (0.9 + 0.1 * hot) * st.ringMix * st.ringIn
-            const pad = Math.min(span / 2, 3 / disc.r)
+            const pad = Math.min(span / 2, (fresh ? thick / 2 + 1.5 : 3) / disc.r)
             const from = Math.max(stanceAt[k * 2]! + pad, emptied)
             const to = stanceAt[k * 2]! + span - pad
             if (to <= from) continue
@@ -291,17 +325,16 @@ export const createStageTheme = (st: StageState, deps: StageDeps, core: StageCor
         // The stance arcs are named on every web with a ring of arcs; the arcs of the outlets or groups only on the web of a theme (the web of a group names its outlets beside their dots).
         {
           const ring = { cx: disc.x, cy: disc.y, ring: disc.r, kx: 1 }
-          const total = plegma.themeGroups!.length
           if (fresh && groupsOut < 0.5) {
-            const items: NameItem[] = []
-            for (let k = 0; k < total; k++) {
-              const span = groupAt[k * 2 + 1]!
-              const name = plegma.themeGroups![k]!.name
-              if (span <= 0 || !name) continue
-              const slot = plegma.themeGroups![k]!.slot
-              items.push({ mid: groupAt[k * 2]! + span / 2, span, text: name.length > NAME_MAX ? `${name.slice(0, NAME_MAX - 1)}…` : name, dot: slot > 0 ? st.groupInk[slot] ?? st.ink : st.mute })
-            }
-            drawNamesColumns(g, ring, items, 0.9 * (1 - groupsOut * 2) * (1 - 0.35 * mix) * st.ringIn * namesLeft)
+            const namesOf = (list: ThemeGroups, arcs: Float32Array): NameItem[] => list.flatMap((x, k) => {
+              const total = list.reduce((sum, y) => sum + y.n, 0)
+              const span = arcs[k * 2 + 1] ?? 0
+              if (span <= 0 || !x.name) return []
+              return [{ mid: arcs[k * 2]! + span / 2, span, text: `${x.name.length > NAME_MAX ? `${x.name.slice(0, NAME_MAX - 1)}…` : x.name} · ${fmtPct(x.n / total)}`, dot: x.slot > 0 ? st.groupInk[x.slot] ?? st.ink : st.mute }]
+            })
+            const names = 0.9 * (1 - groupsOut * 2) * (1 - 0.35 * mix) * st.ringIn * namesLeft
+            if (oldAt) drawNamesColumns(g, ring, namesOf(oldGroups!, oldAt), names * clamp(1 - blend * 2, 0, 1))
+            drawNamesColumns(g, ring, namesOf(plegma.themeGroups!, groupAt), names * (oldAt ? clamp(blend * 2 - 1, 0, 1) : 1))
           }
           if (stanceAt && st.ringMix > 0.5) drawNames(g, ring, stanceNames(stanceAt), 0.9 * (st.ringMix * 2 - 1) * st.ringIn * namesLeft, true)
         }
