@@ -55,8 +55,8 @@ export const useStoryView = (id: MaybeRefOrGetter<number>) => {
     for (let i = 0; i < m.det.t.length; i += 3) rows.push({ outlet: m.det.t[i]!, day: m.det.t[i + 1]!, n: m.det.t[i + 2]! })
     rows.sort((a, b) => a.day - b.day || a.outlet - b.outlet)
     const order = new Map(m.groups.map((g, i) => [g.group ?? null, i]))
-    // The outlets in the order of the ring of the outlets: group by group (as the groups' ring), the largest outlet of a group first.
-    const outletOrder = new Map(m.outlets.map(r => ({ name: m.dd.outlets[r.outlet]!.name, g: order.get(m.dd.outlets[r.outlet]!.group ?? null) ?? 0, n: r.n })).sort((a, b) => a.g - b.g || b.n - a.n).map((o, i) => [o.name, i]))
+    // The outlets in the order of the ring of the outlets: by the articles of the story, the largest first, whatever the group (the groups have their own ring).
+    const outletOrder = new Map(m.outlets.map(r => ({ name: m.dd.outlets[r.outlet]!.name, n: r.n })).sort((a, b) => b.n - a.n || a.name.localeCompare(b.name)).map((o, i) => [o.name, i]))
     // The sampled headlines of this story, for each outlet and day: the first articles of that outlet and day carry them.
     const dates = m.d.dates
     const titles = new Map<string, { title: string, url: string | null }[]>()
