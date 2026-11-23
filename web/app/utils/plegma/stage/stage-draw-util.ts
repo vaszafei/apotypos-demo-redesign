@@ -29,6 +29,10 @@ export const orbit = (dx: number, dy: number, sec: number) => {
 
 // The arcs of a ring from counts: [start, span] in radians from the top, clockwise, the first at RING_START, for each count, as wide as its share of the total (the stance: critical, neutral and supportive;
 // on a theme the groups too).
+// How thick an arc of a ring is: its articles against the largest arc's, from ARC_MIN px for none to ARC_MAX px for the largest.
+export const ARC_MIN = 2.5
+export const ARC_MAX = 9
+export const arcThick = (n: number, top: number) => ARC_MIN + (ARC_MAX - ARC_MIN) * (top > 0 ? clamp(n / top, 0, 1) : 0)
 export const shareArcs = (counts: number[] | null) => {
   const total = counts ? counts.reduce((x, y) => x + y, 0) : 0
   if (!counts || !total) return null

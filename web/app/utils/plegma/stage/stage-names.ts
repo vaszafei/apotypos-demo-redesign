@@ -76,6 +76,8 @@ export const createStageNames = (st: StageState, deps: StageDeps) => {
   // The names of the ring: every arc with a name, widest first, each outside the ring at the middle of its arc with a dot in its color; the outlet on the ring of the outlets, the group on the
   // ring of the groups. A name that meets another one is moved along the ring a step at a time (with a thin line back to its arc), and left out only when no step fits. A name that would
   // leave the room the view gave it (plegma.labelRoom) or touch a box it keeps out of does not fit.
+  // How far a name starts from its ring: the thickest arc (stage-draw-util.ts ARC_MAX) is half this thick, and a little air is left.
+  const NAME_OFF = 15
   const NUDGES = [0, 15, -15, 30, -30, 45, -45, 60, -60]
   const ALONG = [0, -0.2, 0.2, -0.35, 0.35]
   const drawNames = (g: CanvasRenderingContext2D, a: RingAt, items: NameItem[], alpha: number, inside = false) => {
@@ -104,10 +106,10 @@ export const createStageNames = (st: StageState, deps: StageDeps) => {
           const sn = Math.sin(ang)
           const ex = a.cx + c * a.ring * a.kx
           const ey = a.cy + sn * a.ring
-          const x = ex + c * 12 * side
+          const x = ex + c * NAME_OFF * side
           const right = (c >= -0.05) === (side === 1)
           for (const d of NUDGES) {
-            const y = ey + sn * 12 * side + d
+            const y = ey + sn * NAME_OFF * side + d
             const box = { x0: (right ? x : x - w) - 2, x1: (right ? x + w : x) + 2, y0: y - 8, y1: y + 8 }
             if (fits(box) && !taken.some(o => meets(box, o))) { at = { y, box, moved: side === 1 && (d !== 0 || along !== 0), ex, ey, x, right }; break }
           }
