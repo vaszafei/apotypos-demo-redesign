@@ -4,6 +4,7 @@ import { blendHex } from '~/utils/ink'
 import { buildDayWeb, DAY_DATE, DAY_DOT, DAY_REST, DAY_STORY, DAY_THEME, matchWebs, storiesAsThemes } from '~/utils/plegma/plegma-day'
 import type { PlegmaDayTheme, PlegmaDayWeb } from '~/utils/plegma/plegma-day'
 import { LEAVE_RING_MS } from '~/utils/plegma/plegma-leave'
+import { arcThick } from '~/utils/plegma/stage/stage-draw-util'
 import { NAME_MAX, drawColumns } from '~/utils/plegma/stage/stage-names'
 import type { NameItem } from '~/utils/plegma/stage/stage-names'
 
@@ -183,12 +184,15 @@ const drawOutRing = (g: CanvasRenderingContext2D, items: DayOutlet[], lo: number
   const ringR = ringOf()
   const ringX = ringRx()
   g.lineCap = 'round'
-  g.lineWidth = props.names ? 3 : 2
   g.globalAlpha = 0.85
+  const top = Math.max(1, ...items.map(r => r.n))
   let from = 0
   for (const r of items) {
     const span = r.n / total
-    const pad = Math.min(span / 2, 3 / per)
+    // With `names` an arc is as thick as its articles against the largest arc's (stage-draw-util.ts arcThick), as on the web of a story.
+    const thick = props.names ? arcThick(r.n, top) : 2
+    g.lineWidth = thick
+    const pad = Math.min(span / 2, (props.names ? thick / 2 + 1.5 : 3) / per)
     const a = Math.max(from + pad, lo)
     const z = Math.min(from + span - pad, hi)
     if (z > a) {
@@ -402,6 +406,7 @@ const draw = (sec: number, dt: number) => {
   const arcs = (items: { slot: number, n: number, name?: string }[], tag: string, alpha: number, hotOf: (k: number) => boolean) => {
     const total = items.reduce((sum, r) => sum + r.n, 0)
     if (total <= 0 || alpha < 0.01) return
+    const top = Math.max(1, ...items.map(r => r.n))
     let from = 0
     g.lineCap = 'round'
     const named: NameItem[] = []
@@ -411,14 +416,16 @@ const draw = (sec: number, dt: number) => {
       const hot = arcHot.get(key) ?? 0
       const goal = hotOf(k) ? 1 : 0
       arcHot.set(key, reduced.value ? goal : hot + (goal - hot) * (1 - Math.exp(-dt * 9)))
-      const pad = Math.min(span / 2, 3 / per)
+      // With `names` an arc is as thick as its articles against the largest arc's, and its gaps follow its thickness.
+      const thick = props.names ? arcThick(r.n, top) : 2
+      const pad = Math.min(span / 2, (props.names ? thick / 2 + 1.5 : 3) / per)
       if (from + pad >= sweepFrac) { from += span; return }
       const heat = arcHot.get(key) ?? 0
       // An arc as short as its two gaps (an outlet with a few articles) has no length: sweepParam would turn it into the whole circle in its color, so it is not drawn.
       if (Math.min(from + span - pad, sweepFrac) > Math.max(from + pad, emptyFrac)) {
         g.strokeStyle = props.names ? (heat > 0.01 ? slotColour(r.slot) : softInk[r.slot] ?? mute) : slotColour(r.slot)
         g.globalAlpha = (0.85 + 0.15 * heat) * alpha
-        g.lineWidth = props.names ? 3 + 1.4 * heat : 2 + 2.5 * heat
+        g.lineWidth = props.names ? thick + 1.4 * heat : 2 + 2.5 * heat
         g.beginPath()
         const [p0, p1] = sweepParam(Math.max(from + pad, emptyFrac), Math.min(from + span - pad, sweepFrac))
         g.ellipse(width / 2, height / 2, ringX, ringR, 0, p0 - Math.PI / 2, p1 - Math.PI / 2)
@@ -444,7 +451,7 @@ const draw = (sec: number, dt: number) => {
         g.fillText(text, tx, ty)
         g.textAlign = 'start'
       }
-      if (props.names && r.name && span > 0) named.push({ mid: atRing(from + span / 2) * TAU, span: span * TAU, text: r.name.length > NAME_MAX ? `${r.name.slice(0, NAME_MAX - 1)}…` : r.name, dot: r.slot > 0 ? groupInk[r.slot] ?? ink : mute, hot: heat > 0.5 })
+      if (props.names && r.name && span > 0) named.push({ mid: atRing(from + span / 2) * TAU, span: span * TAU, text: `${r.name.length > NAME_MAX ? `${r.name.slice(0, NAME_MAX - 1)}…` : r.name} · ${fmtPct(span)}`, dot: r.slot > 0 ? groupInk[r.slot] ?? ink : mute, hot: heat > 0.5 })
       from += span
     })
     g.lineCap = 'butt'
