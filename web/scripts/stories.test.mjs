@@ -3,8 +3,9 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { runInNewContext } from 'node:vm'
 import { storiesByDay, storiesOfPeriod, storyLines, LINE_STORIES } from '../app/utils/stories.ts'
+import { fullData } from './lib/full-data.mjs'
 
-const data = JSON.parse(readFileSync(new URL('../public/data/stories.json', import.meta.url), 'utf8'))
+const data = fullData('stories')
 
 // The static code (assets/home.js) is the reference: it is loaded with stubs for the parts that draw.
 const reference = () => {

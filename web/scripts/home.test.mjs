@@ -3,8 +3,9 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { runInNewContext } from 'node:vm'
 import { homeIndex, homeRange, homeOutletsOf, bestOfWeek, HOME_WEBS } from '../app/utils/home.ts'
+import { fullData } from './lib/full-data.mjs'
 
-const read = name => JSON.parse(readFileSync(new URL(`../public/data/${name}.json`, import.meta.url), 'utf8'))
+const read = fullData
 const stories = read('stories')
 const detail = read('storyDetail')
 const plain = value => JSON.parse(JSON.stringify(value))

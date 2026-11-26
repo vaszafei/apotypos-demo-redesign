@@ -1,9 +1,9 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
 import { embed, SIM_MAJOR, neighbours, similarityOf } from '../app/utils/similarity.ts'
+import { fullData } from './lib/full-data.mjs'
 
-const detail = JSON.parse(readFileSync(new URL('../public/data/storyDetail.json', import.meta.url), 'utf8'))
+const detail = fullData('storyDetail')
 const sim = similarityOf(detail)
 const at = name => sim.outlets.findIndex(o => o.name === name)
 

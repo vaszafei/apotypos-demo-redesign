@@ -2,8 +2,9 @@ import { test, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { PAGE_TREE, FOOTER, fold, match, pageEntries, indexEntries, placeOf, readRecent, remember } from '../app/utils/search.ts'
+import { fullData } from './lib/full-data.mjs'
 
-const index = JSON.parse(readFileSync(new URL('../public/data/search.json', import.meta.url), 'utf8'))
+const index = fullData('search')
 const t = (key, named) => (named ? `${key} ${JSON.stringify(named)}` : key)
 const first = (entries, q) => match(entries, q)[0]
 const entities = indexEntries(index, 'el', t)

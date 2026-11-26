@@ -1,11 +1,11 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
 import { createPinia, setActivePinia } from 'pinia'
 import { articleDays, articleRadius, articleWebOf, buildArticleWeb } from '../app/utils/plegma/plegma-articles.ts'
 import { usePlegmaStore } from '../app/stores/plegma.ts'
+import { fullData } from './lib/full-data.mjs'
 
-const read = name => JSON.parse(readFileSync(new URL(`../public/data/${name}.json`, import.meta.url), 'utf8'))
+const read = fullData
 
 test('a web has one node for each article, inside the unit disc, the first article at the center', () => {
   for (const n of [1, 2, 44, 1183, 3219]) {
