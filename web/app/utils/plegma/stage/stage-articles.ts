@@ -104,7 +104,14 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
   }
   // Κλαδιά (utils/plegma/plegma-branches.ts) or Σύννεφα (plegma-story-clouds.ts), as `plegma.spread`: a story whose articles have their time is its web spread by time,
   // in the whole free cell, with no ring. One node for each article. The web and its names are made once for a story and a size of the region, in pixels of the framing; the frame scales them with the camera.
-  const branch = { key: '', list: null as unknown, web: null as PlegmaBranchWeb | null, aw: null as ReturnType<typeof articleWebOf> | null, names: [] as BranchName[], fz: 1, w: 0, h: 0, threads: 0 }
+  const branch = { key: '', list: null as unknown, web: null as PlegmaBranchWeb | null, aw: null as ReturnType<typeof articleWebOf> | null, names: [] as BranchName[], fz: 1, w: 0, h: 0, threads: 0, from: null as { x: Float32Array, y: Float32Array } | null, at: 0 }
+  // Switching between Κλαδιά and Σύννεφα the nodes glide from one layout to the other (MORPH_MS); the names of the new one come in over the second half.
+  const branchGlide = () => {
+    if (!branch.from) return 1
+    const k = (performance.now() - branch.at) / MORPH_MS
+    if (k >= 1) { branch.from = null; return 1 }
+    return 1 - Math.pow(1 - k, 3)
+  }
   const measure = (text: string, size: number, weight: number) => {
     const g = st.ctxFocus
     if (!g) return text.length * size * 0.54
@@ -147,8 +154,9 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       for (const i of web.firsts.slice(0, web.n < 12 ? 9 : 4)) asks.push({ x: web.x[i]! + 8, y: web.y[i]! - 7, text: `${list[i]!.outlet} ${lagText(times[i]! - times[0]!)}` })
       for (const end of web.ends) asks.push({ x: web.x[end.node]! + 12, y: web.y[end.node]! + 4, text: endText(end.group), dot: list[end.node]!.slot })
     }
+    const glide = !reduced.value && branch.web && branch.list === list && branch.w === box.w && branch.h === box.h && branch.web.n === web.n ? { x: branch.web.x, y: branch.web.y } : null
     Object.assign(branch, {
-      key, list, web, names: placeBranchNames(web, asks, box, measure), fz: frameStory(s, st.width, st.height, plegma.region).z, w: box.w, h: box.h, threads: clouds?.threads ?? 0,
+      from: glide, at: performance.now(), key, list, web, names: placeBranchNames(web, asks, box, measure), fz: frameStory(s, st.width, st.height, plegma.region).z, w: box.w, h: box.h, threads: clouds?.threads ?? 0,
       aw: { n: web.n, x: web.x, y: web.y, phase: web.phase, speed: web.speed, reach: web.reach, edges: web.edges, bow: web.bow, gap: 0, arcs: new Float32Array(0) }
     })
     return branch
@@ -158,12 +166,16 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const p = toScreen(st.cam, st.width, st.height, placed(s))
     const k = st.cam.z / b.fz
     const amp = clamp(web.r * 0.5, 0.8, 2.2)
+    const e = branchGlide()
+    const from = b.from
     if (ax.length < web.n) { ax = new Float32Array(web.n); ay = new Float32Array(web.n) }
     for (let i = 0; i < web.n; i++) {
       const a = sec * web.speed[i]! + web.phase[i]!
       const reach = i === 0 ? 0 : web.reach[i]!
-      ax[i] = p.x + web.x[i]! * k + Math.cos(a) * amp * reach
-      ay[i] = p.y + web.y[i]! * k + Math.sin(a) * amp * reach
+      const bx = from ? from.x[i]! + (web.x[i]! - from.x[i]!) * e : web.x[i]!
+      const by = from ? from.y[i]! + (web.y[i]! - from.y[i]!) * e : web.y[i]!
+      ax[i] = p.x + bx * k + Math.cos(a) * amp * reach
+      ay[i] = p.y + by * k + Math.sin(a) * amp * reach
       // The branches grow out of the start node: the early articles first.
       if (st.introP < 1) { const at = gatherTo(i, web.n, ax[i]!, ay[i]!, web.n > 1 ? i / (web.n - 1) : 0); ax[i] = at.x; ay[i] = at.y }
     }
@@ -460,7 +472,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
   }
   // The names of Κλαδιά: the start node's, the marks of the axis, the first articles of the first groups and the ends of the branches (of Σύννεφα: the labels of the clouds). They come in last and go first when the view is left.
   const drawBranchNames = (g: CanvasRenderingContext2D, a: typeof arts) => {
-    const alpha = st.ringIn * (1 - clamp(st.ringOut * 2, 0, 1))
+    const alpha = st.ringIn * (1 - clamp(st.ringOut * 2, 0, 1)) * (branch.from ? clamp(branchGlide() * 2 - 1, 0, 1) : 1)
     if (alpha <= 0.01) return
     const web = branch.web!
     const X = (x: number) => a.cx + x * a.k

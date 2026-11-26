@@ -16,6 +16,8 @@ const { loading, problem, retry, model: m, dayLabel } = view
 // The map draws one node for each article of the story.
 watch(view.articles, list => plegma.setArticles(list.length ? list : null), { immediate: true })
 watch(view.related, list => plegma.setRelated(list.map(r => r.s.id)), { immediate: true })
+// How the web of a story with article times is spread: Κλαδιά (default) or Σύννεφα; the switch is at the left of the map cell.
+const spread = computed({ get: () => plegma.spread, set: (v: string) => plegma.setSpread(v === 'clouds' ? 'clouds' : 'branches') })
 const ring = computed({ get: () => plegma.ring, set: (v: string) => plegma.setRing(v === 'stance' || v === 'outlets' ? v : 'groups') })
 // The bar at the end of the row is the outlets while the ring is the outlets, and the groups otherwise.
 // A part of the bar under the pointer lights its nodes on the map, softly (the outlet on the ring of the outlets, the group otherwise).
@@ -66,6 +68,7 @@ const nodesNote = computed(() => {
         <EntityFact :label="t('entity.fact.outlets')" :value="fmtInt(m.outlets.length)" :sub="t('entity.fact.of', { n: m.dd.outlets.length })" />
       </EntityTitle>
     </div>
+    <SegmentedControl v-if="view.timed.value" v-model="spread" class="orbit-ring-tabs is-spread" :label="t('story.spread.label')" :options="[{ value: 'branches', label: t('story.spread.branches') }, { value: 'clouds', label: t('story.spread.clouds') }]" />
     <SegmentedControl v-if="m.labelled" v-model="ring" class="orbit-ring-tabs" :label="t('story.ring.label')" :options="[{ value: 'outlets', label: t('story.ring.outlets') }, { value: 'groups', label: t('story.groups.title') }, { value: 'stance', label: t('story.ring.stance') }]" />
     <div v-if="columns.left.length" class="orbit-col orbit-left">
       <PlegmaCard v-for="(key, i) in columns.left" :key="key" :at="2" :order="3 + i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>

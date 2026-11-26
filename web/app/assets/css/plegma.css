@@ -559,6 +559,8 @@
    cell of the web (the outlet has the web in its first column), and the web starts under it. */
 .plegma-orbit:is(.is-story, .is-theme, .is-outlet, .is-group) .plegma-title { display: flex; align-items: flex-end; gap: var(--space-3); }
 .plegma-orbit:is(.is-story, .is-theme) > .orbit-ring-tabs { position: static; grid-row: 2; grid-column: map-start / map-end; justify-self: center; align-self: start; z-index: 3; }
+/* The switch of the spread of a story (Κλαδιά, Σύννεφα) is at the left of the map cell, over the start of the web. */
+.plegma-orbit.is-story > .orbit-ring-tabs.is-spread { justify-self: start; }
 .plegma-orbit.is-outlet > .orbit-ring-tabs { position: static; grid-row: 2; grid-column: 1; justify-self: center; align-self: start; z-index: 3; }
 .plegma-orbit:is(.is-story, .is-theme, .is-outlet, .is-group) .orbit-map { margin-top: 40px; }
 @media (max-width: 1023px) { .plegma-orbit > .orbit-ring-tabs { position: absolute; top: 56px; right: 0; } .plegma-orbit .orbit-map { margin-top: 0; } }
