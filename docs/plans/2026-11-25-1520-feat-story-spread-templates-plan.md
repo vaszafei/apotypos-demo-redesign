@@ -11,21 +11,21 @@ execution: code
 
 Target repo: `apotypos-demo-redesign`. Epic #221 with #215 to #220. #222 (zoom) is outside this plan. Branch `claude/story-spread`, small commits.
 
-## Changed 2026-11-26 (owner): the circle leaves the story page
+## Changed 2026-11-26 (owner): no circle on a story with article times
 
 This section wins over everything below it. The rest of the plan is not yet rewritten to match.
 
 Owner's choices, 2026-11-26:
 - The switch sits **on the left of the map cell**, not at the top right. Order: **Κλαδιά (default), Σύννεφα**.
-- "we have to drop the circle entirely from this page": **Κύκλος is not on the story page.** The ring tabs Μέσα / Όμιλοι / Στάση only recoloured the circle, so they go with it.
+- "we have to drop the circle entirely from this page": **Κύκλος is not in the switch.** On a story with times, the ring tabs Μέσα / Όμιλοι / Στάση go too (they only recoloured the circle). A story without times keeps the circle (see the last point).
 - The zoom of #222 is built on Κλαδιά after this plan: option **M**. A mouse notch glides one level (1, 2.4, 5). A trackpad or a pinch zooms smoothly, then settles on the next level in the direction it went. The point under the pointer stays where it is, and the cards stay. Each article has one label; the first of a group reads "Outlet · date · +N μ.". Mock: `docs/prompts/2026-11-26-plegma-zoom/mock/`.
 - Branch: `claude/story-branches` from `main` (the story-page layout was merged as `9dbd13a`).
 
 What this replaces, and my reading of what follows from it (not the owner's words):
-- Replaced: Key Decision "The circle stays the default", and R5, R6 (opening starts on the circle), R7, R14 (opens from the circle), A3, KTD8 (`spread` defaults to 'branches'; there is no 'circle').
+- Replaced: Key Decision "The circle stays the default", and R5, R6's "opening starts on the circle", R7, R14 (opens from the circle), A3, KTD8 (`spread` defaults to 'branches'; there is no 'circle' tab). R7 now reads: a story without times looks the same as before.
 - My reading: with no circle, the templates are the page's web and **no longer temporary**, so R8 (built to be removed) and the Key Decision "temporary" lapse.
 - My reading: the dot that arrives from a theme (20 Nov transitions, "the dot is the story") becomes the start node of Κλαδιά, and the branches unfold from it.
-- **Open, ask the owner:** R4 and R6 say an August or September story (no article times) looks as today and shows no switch. With no circle, it needs Κλαδιά by day: the days are real, and inside a day the articles are spread evenly with no order claimed.
+- **Settled later the same day (owner):** "lets just keep the circle for the non article dates". A story with article times (October, 14–27 Oct) has Κλαδιά and Σύννεφα and no circle. A story with no times (August, September) keeps the circle as today, with its ring tabs and no switch. So R4 and R6 stand. August and September are not dropped. Reasons: the Aug–Sep times exist only in the Mac crawl database, which nobody here can reach; the AWS box, the colleague's VM and `old_corpus.tar` do not have them; and October stories have no stance, frames or people (the LLM tagging covered Aug–Sep only).
 
 ## Goal Capsule
 
