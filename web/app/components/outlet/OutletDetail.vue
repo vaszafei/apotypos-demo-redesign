@@ -249,7 +249,7 @@ const headlinesShown = computed(() => liveHeadlines.value.filter(x => String(x[0
         <PlegmaDayWeb
           :ring-start="0.5"
           v-else-if="tab === 'stories'" key="stories" :themes="webStoryThemes" :ring="[]" :outlets="storyRing" mode="stories" :date="fmtInt(periodArticles)" :sub="model.outlet.name" :lit="null" :picked="null" active
-          :hover-story="plegma.hoverStory" ellipse grouped spread fill titles grow :zoom="0.82" :leaving="plegma.leaving" :label="t('outlet.web.label')" @pick="id => navigateTo(storyHref(id))" @pick-theme="k => navigateTo(topicHref(k))"
+          :hover-story="plegma.hoverStory" ellipse :grouped="topicsShown" spread fill titles grow :zoom="0.82" :leaving="plegma.leaving" :label="t('outlet.web.label')" @pick="id => navigateTo(storyHref(id))" @pick-theme="k => navigateTo(topicHref(k))"
         />
         <PlegmaDayWeb
           :ring-start="0.5"

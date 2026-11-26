@@ -120,7 +120,7 @@ onBeforeUnmount(() => { watcher?.disconnect(); plegma.setHomeDay(null); plegma.p
   <section id="home-today" ref="root" class="home-today" :class="{ 'is-leaving': leaving }" :aria-label="t('home.today.title')">
     <template v-if="home.data.value && day !== null">
       <div class="home-today-days"><HomeCalendar v-model="day" :dates="home.data.value.dates" :totals="totals" /></div>
-      <div class="home-today-map"><PlegmaDayWeb ref="web" v-model:lit="litIssue" names grow :grow-ms="1400" :hover-story="hoverStory" :themes="themes" :ring="ring" :outlets="dayOutlets" mode="stories" grouped :ring-start="0.5" :zoom="0.85" :date="fmtDate(home.data.value.dates[day]!)" :picked="null" :active="inView" @pick="open({ story: $event })" @pick-theme="open({ theme: $event })" /></div>
+      <div class="home-today-map"><PlegmaDayWeb ref="web" v-model:lit="litIssue" names grow :grow-ms="1400" :hover-story="hoverStory" :themes="themes" :ring="ring" :outlets="dayOutlets" mode="stories" :grouped="topicsShown" :ring-start="0.5" :zoom="0.85" :date="fmtDate(home.data.value.dates[day]!)" :picked="null" :active="inView" @pick="open({ story: $event })" @pick-theme="open({ theme: $event })" /></div>
       <div class="home-today-side">
         <DayStoryList :rows="rows" :title="t('home.daylist.title')" :info="t('home.daylist.info')" :empty="ix ? t('home.day.empty') : undefined" @hover="hoverStory = $event" @hover-theme="litIssue = $event" @open="open" />
       </div>
