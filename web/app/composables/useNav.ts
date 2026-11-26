@@ -1,18 +1,22 @@
 import { isHidden } from '../utils/window-pages.ts'
 
 // The text of a section is t(`nav.${key}`) and of a tab t(`tab.${section.key}.${key}`) (the keys of assets/shell.js NAV); a footer link is t(`nav.${key}`).
-export interface NavTab { key: string, to: string, icon: string, children?: NavTab[] }
-export interface NavSection { key: string, to: string, icon: string, tabs: NavTab[] }
+// `soon`: a tab of a page that is hidden for now (utils/window-pages.ts): it is in the menus, not a link, and no move or pager goes to it.
+export interface NavTab { key: string, to: string, icon: string, children?: NavTab[], soon?: boolean }
+// `menu`: what the menus list, the hidden tabs among them in their place; `tabs` is only the tabs that can be opened.
+export interface NavSection { key: string, to: string, icon: string, tabs: NavTab[], menu?: NavTab[] }
+
+const MEDIA_TABS: NavTab[] = [
+  { key: 'ownership', to: '/groups', icon: 'account_balance' },
+  { key: 'topics', to: '/trends', icon: 'sell' },
+  { key: 'stories', to: '/stories', icon: 'sensors' },
+  { key: 'writing', to: '/media/writing', icon: 'edit' }
+]
 
 // The sections and tabs of NAV in assets/shell.js, (the routes that are not ported yet link to their static page, see NavLink).
 export const NAV: NavSection[] = [
   { key: 'home', to: '/', icon: 'home', tabs: [] },
-  { key: 'media', to: '/groups', icon: 'tv', tabs: [
-    { key: 'ownership', to: '/groups', icon: 'account_balance' },
-    { key: 'topics', to: '/trends', icon: 'sell' },
-    { key: 'stories', to: '/stories', icon: 'sensors' },
-    { key: 'writing', to: '/media/writing', icon: 'edit' }
-  ].filter(tab => !isHidden(tab.to)) },
+  { key: 'media', to: '/groups', icon: 'tv', tabs: MEDIA_TABS.filter(tab => !isHidden(tab.to)), menu: MEDIA_TABS.map(tab => (isHidden(tab.to) ? { ...tab, soon: true } : tab)) },
   { key: 'world', to: '/speeches', icon: 'bar_chart', tabs: [
     // The sub-tabs of a tab are listed under it while it is the current one (the Israel–Palestine page of the speeches is not ported yet, so its link is the static page).
     { key: 'speeches', to: '/speeches', icon: 'mic', children: [{ key: 'speeches.all', to: '/speeches', icon: 'mic' }, { key: 'speeches.pi', to: '/un-israel-palestine', icon: 'flag' }] },

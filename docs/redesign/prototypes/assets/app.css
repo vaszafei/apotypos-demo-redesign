@@ -855,6 +855,11 @@ details[open] > :not(summary) { animation: m-rise var(--motion-base) var(--ease-
 .segmented button.is-landing { background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: var(--text-primary); }
 /* The "/" of the current tab glides from the tab of the last page (motion.js). */
 .section-tabs, .section-nav { position: relative; }
+/* A tab of a page that is hidden for now (`soon` in web/app/composables/useNav.ts): listed in its place, not a link. */
+.section-nav-link.is-soon, .section-tabs .is-soon { cursor: default; color: var(--text-secondary); opacity: 0.55; }
+.section-nav-link.is-soon:hover { background: none; color: var(--text-secondary); }
+.section-tabs .is-soon { display: block; padding: 7px 14px; font-size: var(--text-small); }
+.nav-soon { margin-left: 0.6em; font-size: 9px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
 .tab-glide { position: absolute; pointer-events: none; white-space: pre; }
 .section-tabs a.is-landing::before, .section-nav a.is-landing::before { opacity: 0; }
 
