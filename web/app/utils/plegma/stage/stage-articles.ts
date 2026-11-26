@@ -1,5 +1,7 @@
 import { articleOfNode, articleRadius, articleWebOf, matchesHighlight, nodeCount } from '../plegma-articles'
-import type { PlegmaHighlight } from '../plegma-articles'
+import type { PlegmaArticle, PlegmaHighlight } from '../plegma-articles'
+import { branchLag, branchRadius, buildBranchWeb, placeBranchNames } from '../plegma-branches'
+import type { BranchName, BranchNameAsk, PlegmaBranchWeb } from '../plegma-branches'
 import { PLEGMA_REGION, frameStory, regionBox, toScreen } from '../plegma-camera'
 import { ringEmptiedTo } from '../plegma-leave'
 import { RING_START } from '../plegma-ring'
@@ -17,7 +19,8 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
   const { drawNames, stanceNames } = createStageNames(st, deps)
   // The web is the story's articles (utils/plegma/plegma-articles.ts). Its size on the screen is that of the free map region, so it is the same at any window; in the world it is
   // a disc of `Rt / zt` where zt is the zoom of the framing, so it grows and shrinks with the camera in a flight. The nodes go round on small circles, each its own way.
-  const arts = { aw: null as ReturnType<typeof articleWebOf> | null, tab: '', fromTab: '', by: 'group' as By, from: null as ReturnType<typeof articleWebOf> | null, fromBy: 'group' as By, blend: 1, id: -1, cx: 0, cy: 0, R: 0, ring: 0, kx: 1, rWorld: 0, dr: 1, spacing: 0 }
+  // `branch`: the web is Κλαδιά (below), and `k` its scale against the framing of the story.
+  const arts = { aw: null as ReturnType<typeof articleWebOf> | null, tab: '', fromTab: '', by: 'group' as By, from: null as ReturnType<typeof articleWebOf> | null, fromBy: 'group' as By, blend: 1, id: -1, cx: 0, cy: 0, R: 0, ring: 0, kx: 1, rWorld: 0, dr: 1, spacing: 0, branch: false, k: 1 }
   // When the outlets of the story are read the web changes from the plain disc to the sectors of its groups: the nodes move there, they do not jump.
   const MORPH_MS = 900
   let morphFrom: ReturnType<typeof articleWebOf> | null = null
@@ -29,9 +32,8 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
   let hlMatch = new Uint8Array(0)
   let hlKey = ''
   // The nodes whose articles are in the highlight: a node of a story of many articles stands for several, and comes forward if one of them does.
-  const matchNodes = (s: PlegmaStory, h: PlegmaHighlight, list: NonNullable<typeof plegma.articles>) => {
-    const nodes = nodeCount(s.n)
-    const key = `${s.id}|${h.group}|${h.outlet ?? ''}|${list.length}`
+  const matchNodes = (s: PlegmaStory, h: PlegmaHighlight, list: NonNullable<typeof plegma.articles>, nodes: number) => {
+    const key = `${s.id}|${h.group}|${h.outlet ?? ''}|${list.length}|${nodes}`
     if (key === hlKey) return hlMatch
     hlKey = key
     hlMatch = new Uint8Array(nodes)
@@ -99,11 +101,71 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const box = regionBox(st.width, st.height, region)
     return clamp(box.w / Math.max(1, box.h), 1, 1.6)
   }
+  // Κλαδιά (utils/plegma/plegma-branches.ts): a story whose articles have their time is its web uncurled by time, in the whole free cell, with no ring.
+  // One node for each article. The web and its names are made once for a story and a size of the region, in pixels of the framing; the frame scales them with the camera.
+  const branch = { key: '', list: null as unknown, web: null as PlegmaBranchWeb | null, aw: null as ReturnType<typeof articleWebOf> | null, names: [] as BranchName[], fz: 1, w: 0, h: 0 }
+  const measure = (text: string, size: number, weight: number) => {
+    const g = st.ctxFocus
+    if (!g) return text.length * size * 0.54
+    g.font = `${weight === 400 ? '' : `${weight} `}${size}px ${st.fontText}`
+    return g.measureText(text).width
+  }
+  const shortGroup = (group: string | null) => (group ?? deps.t('story.nogroup')).replace(/^(Συμφέροντα|Όμιλος)\s+/, '')
+  const lagText = (m: number) => { const lag = branchLag(m); return deps.t(lag.key, { n: lag.n }) }
+  const whenText = (minute: number) => `${fmtDay(athensDate(minute))}, ${athensClock(minute)}`
+  const branchOf = (s: PlegmaStory) => {
+    const list = plegma.articles
+    if (!list || !list.length || list.length !== s.n || list[0]!.time === undefined || !plegma.region) return null
+    const box = regionBox(st.width, st.height, plegma.region)
+    const key = `${s.id}|${Math.round(box.w)}|${Math.round(box.h)}|${deps.locale.value}`
+    if (key === branch.key && list === branch.list) return branch
+    const times = list.map(a => a.time!)
+    const first = list[0]!
+    const starts: [string, number, number][] = [[deps.t('story.branches.started'), 11.5, 400], [first.outlet, 14, 600], [whenText(times[0]!), 11.5, 400]]
+    // The names of the start node keep clear of its thin ring (centerRadius, at the framing).
+    const pad = Math.max(5, (branchRadius(list.length) / NODE_SCALE) * 2.3) * 1.7 + 8
+    const left = Math.max(...starts.map(([text, size, weight]) => measure(text, size, weight))) + pad + 14
+    const byGroup = new Map<number, { a: PlegmaArticle, n: number }>()
+    for (const a of list) { const g = byGroup.get(a.order); if (g) g.n++; else byGroup.set(a.order, { a, n: 1 }) }
+    const endText = (g: number) => { const row = byGroup.get(g)!; return `${shortGroup(row.a.group)} · ${fmtPct(row.n / list.length)}` }
+    const right = Math.max(0, ...[...byGroup.keys()].map(g => measure(endText(g), 11.5, 400))) + 34
+    const web = buildBranchWeb({ times, groups: list.map(a => a.order), seed: s.id, w: box.w, h: box.h, left, right })
+    const asks: BranchNameAsk[] = starts.map(([text, size, weight], k) => ({ x: web.x[0]! - pad, y: web.y[0]! + [-13, 5, 21][k]!, text, size, weight, anchor: 'end', mute: k !== 1, fixed: true }))
+    for (const tick of web.ticks) asks.push({ x: tick.x, y: web.axisY, text: tick.kind === 'hour' ? athensClock(tick.minute) : fmtDay(athensDate(tick.minute)), size: 11, anchor: 'middle', mute: tick.kind === 'hour', fixed: true })
+    for (const i of web.firsts.slice(0, web.n < 12 ? 9 : 4)) asks.push({ x: web.x[i]! + 8, y: web.y[i]! - 7, text: `${list[i]!.outlet} ${lagText(times[i]! - times[0]!)}` })
+    for (const end of web.ends) asks.push({ x: web.x[end.node]! + 12, y: web.y[end.node]! + 4, text: endText(end.group), dot: list[end.node]!.slot })
+    Object.assign(branch, {
+      key, list, web, names: placeBranchNames(web, asks, box, measure), fz: frameStory(s, st.width, st.height, plegma.region).z, w: box.w, h: box.h,
+      aw: { n: web.n, x: web.x, y: web.y, phase: web.phase, speed: web.speed, reach: web.reach, edges: web.edges, bow: web.bow, gap: 0, arcs: new Float32Array(0) }
+    })
+    return branch
+  }
+  const layoutBranches = (s: PlegmaStory, b: typeof branch, sec: number) => {
+    const web = b.web!
+    const p = toScreen(st.cam, st.width, st.height, placed(s))
+    const k = st.cam.z / b.fz
+    const amp = clamp(web.r * 0.5, 0.8, 2.2)
+    if (ax.length < web.n) { ax = new Float32Array(web.n); ay = new Float32Array(web.n) }
+    for (let i = 0; i < web.n; i++) {
+      const a = sec * web.speed[i]! + web.phase[i]!
+      const reach = i === 0 ? 0 : web.reach[i]!
+      ax[i] = p.x + web.x[i]! * k + Math.cos(a) * amp * reach
+      ay[i] = p.y + web.y[i]! * k + Math.sin(a) * amp * reach
+      // The branches grow out of the start node: the early articles first.
+      if (st.introP < 1) { const at = gatherTo(i, web.n, ax[i]!, ay[i]!, web.n > 1 ? i / (web.n - 1) : 0); ax[i] = at.x; ay[i] = at.y }
+    }
+    morphFrom = null
+    const dr = (web.r / NODE_SCALE) * Math.pow(k, 0.45)
+    Object.assign(arts, { aw: b.aw, tab: plegma.ring, fromTab: plegma.ring, by: curBy(), from: null, fromBy: curBy(), blend: 1, id: s.id, cx: p.x, cy: p.y, R: (b.h / 2) * k, ring: 0, kx: 1, rWorld: b.h / 2 / b.fz, spacing: web.r * 2 + (web.n > 400 ? 2.2 : 4), dr, branch: true, k })
+    return arts
+  }
   const layoutArticles = (s: PlegmaStory, sec: number) => {
+    const b = branchOf(s)
+    if (b) return layoutBranches(s, b, sec)
     const sectors = sectorsOf(s)
     const aw = articleWebOf(s.id, nodeCount(s.n), sectors ?? undefined, byOutlet() ? 'outlet' : 'group')
     if (aw !== arts.aw) {
-      morphFrom = arts.aw && arts.id === s.id && arts.aw.n === aw.n && !reduced.value ? arts.aw : null
+      morphFrom = arts.aw && !arts.branch && arts.id === s.id && arts.aw.n === aw.n && !reduced.value ? arts.aw : null
       morphBy = arts.by
       morphTab = arts.tab
       morphAt = performance.now()
@@ -145,7 +207,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       ay[i] = p.y + by * R + Math.sin(a) * amp * reach
       if (st.introP < 1) { const at = gatherTo(i, aw.n, ax[i]!, ay[i]!); ax[i] = at.x; ay[i] = at.y }
     }
-    Object.assign(arts, { aw, tab: plegma.ring, fromTab: morphTab, by: curBy(), from, fromBy: morphBy, blend, id: s.id, cx: p.x, cy: p.y, R, ring: ringOf(R), kx, rWorld, spacing, dr: clamp(spacing * 0.27, 1.2, 4.6) })
+    Object.assign(arts, { aw, tab: plegma.ring, fromTab: morphTab, by: curBy(), from, fromBy: morphBy, blend, id: s.id, cx: p.x, cy: p.y, R, ring: ringOf(R), kx, rWorld, spacing, dr: clamp(spacing * 0.27, 1.2, 4.6), branch: false, k: 1 })
     return arts
   }
   const articleAt = (s: PlegmaStory, x: number, y: number) => {
@@ -193,10 +255,10 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const aw = a.aw!
     const col = colourOf(s)
     const articles = plegma.articles && plegma.articles.length === s.n ? plegma.articles : null
-    const slotOf = (i: number) => (articles ? articles[articleOfNode(i, articles.length)]!.slot : -1)
+    const slotOf = (i: number) => (articles ? articles[nodeArticle(i, articles.length)]!.slot : -1)
     const inkOf = (slot: number) => (slot < 0 ? col : st.softInk[slot] ?? st.mute)
     const mix = st.hlMix
-    const lit = articles && st.hlLast && mix > 0.01 ? matchNodes(s, st.hlLast, articles) : null
+    const lit = articles && st.hlLast && mix > 0.01 ? matchNodes(s, st.hlLast, articles, aw.n) : null
     const rOf = (i: number) => gatherR(i, i === 0 ? a.dr * 1.7 : a.dr)
     if (level === 2) {
       const lines = new Map<number, Path2D>()
@@ -291,83 +353,86 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       g.arc(ax[0]!, ay[0]!, er, 0, TAU)
       g.fill()
     }
+    if (a.branch) drawBranchNames(g, a)
     // The ring: a thin line with nothing inside it. With the groups known it is an arc for each group, over the sector of its articles.
-    g.lineCap = 'round'
-    // Leaving the view: the arcs and their names go from the start of the ring on, the way they filled (stores/plegma.ts `leaving`, utils/plegma/plegma-leave.ts).
-    const emptied = st.ringOut > 0 ? ringEmptiedTo(st.ringOut) : -Infinity
-    const namesLeft = 1 - clamp(st.ringOut * 2, 0, 1)
-    if (aw.arcs.length || a.from?.arcs.length) {
-      g.lineWidth = 3
-      // Turning to the stance the arcs of the groups go a quarter turn on and fade; the arcs of the stance come in from a quarter turn back.
-      const stanceAt = st.ringMix > 0.01 ? shareArcs(plegma.stance) : null
-      const groupsOut = stanceAt ? st.ringMix : 0
-      const turn = groupsOut * (Math.PI / 2)
-      // Turning from the outlets to the groups, or back, the arcs go the same way: the old ones a quarter turn on and fade, the new ones come in from a quarter turn back (nodes move meanwhile).
-      const morphing = !!a.from && a.blend < 1
-      // The arcs of the groups under the stance were not on the screen (the stance arcs were), so they do not go out; and they do not come in when the stance is where the ring goes.
-      const out = morphing && a.fromBy !== a.by && a.fromTab !== 'stance' && a.from!.arcs.length ? a.blend : -1
-      const arcSet = (arcs: Float32Array, by: By, extra: number, fade: number) => {
-        const info = articles ? infoOf(by, articles) : null
-        const top = info ? Math.max(1, ...[...info.values()].map(v => v.n)) : 1
-        for (let k = 0; k < arcs.length / 2; k++) {
-          const span = arcs[k * 2 + 1]!
-          if (span <= 0) continue
-          const slot = info?.get(k)?.slot ?? 0
-          const on = by === a.by && !!st.hlLast && mix > 0.01 && (() => { const first = articles?.find(x => sectorBy(by, x) === k); return !!first && matchesHighlight(first, st.hlLast) })()
-          const thick = arcThick(info?.get(k)?.n ?? 0, top)
-          const pad = Math.min(span / 2, (thick / 2 + 1.5) / a.ring)
-          const hot = by === a.by ? st.ringHot.get(`g${k}`) ?? 0 : 0
-          const rest = on ? 1 : 0.85 * (1 - 0.35 * mix)
-          g.strokeStyle = on || hot > 0.01 ? (slot > 0 ? st.groupInk[slot] ?? st.ink : st.mute) : st.softInk[slot] ?? st.mute
-          g.lineWidth = thick + 1.4 * hot
-          g.globalAlpha = (rest + (1 - rest) * hot) * fade * st.ringIn
-          const from = Math.max(arcs[k * 2]! + pad, emptied)
-          const to = arcs[k * 2]! + span - pad
-          if (to <= from) continue
-          g.beginPath()
-          g.ellipse(a.cx, a.cy, a.ring * a.kx, a.ring, 0, from - Math.PI / 2 + extra, to - Math.PI / 2 + extra)
-          g.stroke()
+    else {
+      g.lineCap = 'round'
+      // Leaving the view: the arcs and their names go from the start of the ring on, the way they filled (stores/plegma.ts `leaving`, utils/plegma/plegma-leave.ts).
+      const emptied = st.ringOut > 0 ? ringEmptiedTo(st.ringOut) : -Infinity
+      const namesLeft = 1 - clamp(st.ringOut * 2, 0, 1)
+      if (aw.arcs.length || a.from?.arcs.length) {
+        g.lineWidth = 3
+        // Turning to the stance the arcs of the groups go a quarter turn on and fade; the arcs of the stance come in from a quarter turn back.
+        const stanceAt = st.ringMix > 0.01 ? shareArcs(plegma.stance) : null
+        const groupsOut = stanceAt ? st.ringMix : 0
+        const turn = groupsOut * (Math.PI / 2)
+        // Turning from the outlets to the groups, or back, the arcs go the same way: the old ones a quarter turn on and fade, the new ones come in from a quarter turn back (nodes move meanwhile).
+        const morphing = !!a.from && a.blend < 1
+        // The arcs of the groups under the stance were not on the screen (the stance arcs were), so they do not go out; and they do not come in when the stance is where the ring goes.
+        const out = morphing && a.fromBy !== a.by && a.fromTab !== 'stance' && a.from!.arcs.length ? a.blend : -1
+        const arcSet = (arcs: Float32Array, by: By, extra: number, fade: number) => {
+          const info = articles ? infoOf(by, articles) : null
+          const top = info ? Math.max(1, ...[...info.values()].map(v => v.n)) : 1
+          for (let k = 0; k < arcs.length / 2; k++) {
+            const span = arcs[k * 2 + 1]!
+            if (span <= 0) continue
+            const slot = info?.get(k)?.slot ?? 0
+            const on = by === a.by && !!st.hlLast && mix > 0.01 && (() => { const first = articles?.find(x => sectorBy(by, x) === k); return !!first && matchesHighlight(first, st.hlLast) })()
+            const thick = arcThick(info?.get(k)?.n ?? 0, top)
+            const pad = Math.min(span / 2, (thick / 2 + 1.5) / a.ring)
+            const hot = by === a.by ? st.ringHot.get(`g${k}`) ?? 0 : 0
+            const rest = on ? 1 : 0.85 * (1 - 0.35 * mix)
+            g.strokeStyle = on || hot > 0.01 ? (slot > 0 ? st.groupInk[slot] ?? st.ink : st.mute) : st.softInk[slot] ?? st.mute
+            g.lineWidth = thick + 1.4 * hot
+            g.globalAlpha = (rest + (1 - rest) * hot) * fade * st.ringIn
+            const from = Math.max(arcs[k * 2]! + pad, emptied)
+            const to = arcs[k * 2]! + span - pad
+            if (to <= from) continue
+            g.beginPath()
+            g.ellipse(a.cx, a.cy, a.ring * a.kx, a.ring, 0, from - Math.PI / 2 + extra, to - Math.PI / 2 + extra)
+            g.stroke()
+          }
         }
-      }
-      const comeIn = morphing ? a.blend : 1
-      if (out >= 0) arcSet(a.from!.arcs, a.fromBy, out * (Math.PI / 2) + turn, (1 - out) * (1 - groupsOut))
-      if (groupsOut < 0.99 && aw.arcs.length && !(morphing && plegma.ring === 'stance')) arcSet(aw.arcs, a.by, turn - (out >= 0 ? (1 - a.blend) * (Math.PI / 2) : 0), (1 - groupsOut) * comeIn)
-      if (articles && groupsOut < 0.5) {
-        const names = 0.9 * (1 - groupsOut * 2) * (1 - 0.35 * mix) * st.ringIn * namesLeft
-        if (out >= 0) drawNames(g, a, ringNames(a.from!.arcs, infoOf(a.fromBy, articles), articles.length), names * clamp(1 - out * 2, 0, 1))
-        if (aw.arcs.length) drawNames(g, a, ringNames(aw.arcs, infoOf(a.by, articles), articles.length), names * (morphing ? clamp(a.blend * 2 - 1, 0, 1) : 1))
-      }
-      if (stanceAt && st.ringMix > 0.5) drawNames(g, a, stanceNames(stanceAt), 0.9 * (st.ringMix * 2 - 1) * st.ringIn * namesLeft, true)
-      if (stanceAt) {
-        const back = (1 - st.ringMix) * (Math.PI / 2)
-        const counts = plegma.stance ?? []
-        const topStance = Math.max(1, ...counts)
-        for (let k = 0; k < 3; k++) {
-          const span = stanceAt[k * 2 + 1]!
-          if (span <= 0) continue
-          const thick = arcThick(counts[k] ?? 0, topStance)
-          const pad = Math.min(span / 2, (thick / 2 + 1.5) / a.ring)
-          const hot = st.ringHot.get(`s${k}`) ?? 0
-          g.strokeStyle = st.stanceInk[k] ?? st.mute
-          g.lineWidth = thick + 2.5 * hot
-          g.globalAlpha = (0.9 + 0.1 * hot) * st.ringMix * st.ringIn
-          const from = Math.max(stanceAt[k * 2]! + pad, emptied)
-          const to = stanceAt[k * 2]! + span - pad
-          if (to <= from) continue
-          g.beginPath()
-          g.ellipse(a.cx, a.cy, a.ring * a.kx, a.ring, 0, from - Math.PI / 2 - back, to - Math.PI / 2 - back)
-          g.stroke()
+        const comeIn = morphing ? a.blend : 1
+        if (out >= 0) arcSet(a.from!.arcs, a.fromBy, out * (Math.PI / 2) + turn, (1 - out) * (1 - groupsOut))
+        if (groupsOut < 0.99 && aw.arcs.length && !(morphing && plegma.ring === 'stance')) arcSet(aw.arcs, a.by, turn - (out >= 0 ? (1 - a.blend) * (Math.PI / 2) : 0), (1 - groupsOut) * comeIn)
+        if (articles && groupsOut < 0.5) {
+          const names = 0.9 * (1 - groupsOut * 2) * (1 - 0.35 * mix) * st.ringIn * namesLeft
+          if (out >= 0) drawNames(g, a, ringNames(a.from!.arcs, infoOf(a.fromBy, articles), articles.length), names * clamp(1 - out * 2, 0, 1))
+          if (aw.arcs.length) drawNames(g, a, ringNames(aw.arcs, infoOf(a.by, articles), articles.length), names * (morphing ? clamp(a.blend * 2 - 1, 0, 1) : 1))
         }
+        if (stanceAt && st.ringMix > 0.5) drawNames(g, a, stanceNames(stanceAt), 0.9 * (st.ringMix * 2 - 1) * st.ringIn * namesLeft, true)
+        if (stanceAt) {
+          const back = (1 - st.ringMix) * (Math.PI / 2)
+          const counts = plegma.stance ?? []
+          const topStance = Math.max(1, ...counts)
+          for (let k = 0; k < 3; k++) {
+            const span = stanceAt[k * 2 + 1]!
+            if (span <= 0) continue
+            const thick = arcThick(counts[k] ?? 0, topStance)
+            const pad = Math.min(span / 2, (thick / 2 + 1.5) / a.ring)
+            const hot = st.ringHot.get(`s${k}`) ?? 0
+            g.strokeStyle = st.stanceInk[k] ?? st.mute
+            g.lineWidth = thick + 2.5 * hot
+            g.globalAlpha = (0.9 + 0.1 * hot) * st.ringMix * st.ringIn
+            const from = Math.max(stanceAt[k * 2]! + pad, emptied)
+            const to = stanceAt[k * 2]! + span - pad
+            if (to <= from) continue
+            g.beginPath()
+            g.ellipse(a.cx, a.cy, a.ring * a.kx, a.ring, 0, from - Math.PI / 2 - back, to - Math.PI / 2 - back)
+            g.stroke()
+          }
+        }
+      } else {
+        g.globalAlpha = 0.45 * st.ringIn
+        g.strokeStyle = articles ? st.mute : col
+        g.lineWidth = 1.2
+        g.beginPath()
+        g.ellipse(a.cx, a.cy, a.ring * a.kx, a.ring, 0, st.ringOut > 0 ? emptied - Math.PI / 2 : 0, st.ringOut > 0 ? RING_START + TAU - Math.PI / 2 : TAU)
+        g.stroke()
       }
-    } else {
-      g.globalAlpha = 0.45 * st.ringIn
-      g.strokeStyle = articles ? st.mute : col
-      g.lineWidth = 1.2
-      g.beginPath()
-      g.ellipse(a.cx, a.cy, a.ring * a.kx, a.ring, 0, st.ringOut > 0 ? emptied - Math.PI / 2 : 0, st.ringOut > 0 ? RING_START + TAU - Math.PI / 2 : TAU)
-      g.stroke()
+      g.lineCap = 'butt'
     }
-    g.lineCap = 'butt'
     if (st.hoverArticle >= 0 && st.hoverArticle < aw.n) {
       g.globalAlpha = 0.85
       g.strokeStyle = st.ink
@@ -378,9 +443,61 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     }
     g.globalAlpha = 1
   }
+  // The names of Κλαδιά: the start node's, the marks of the axis, the first articles of the first groups and the ends of the branches. They come in last and go first when the view is left.
+  const drawBranchNames = (g: CanvasRenderingContext2D, a: typeof arts) => {
+    const alpha = st.ringIn * (1 - clamp(st.ringOut * 2, 0, 1))
+    if (alpha <= 0.01) return
+    const web = branch.web!
+    const X = (x: number) => a.cx + x * a.k
+    const Y = (y: number) => a.cy + y * a.k
+    g.strokeStyle = st.mute
+    g.lineWidth = 1
+    g.globalAlpha = 0.5 * alpha
+    g.beginPath()
+    for (const tick of web.ticks) { g.moveTo(X(tick.x), Y(web.axisY) - 18); g.lineTo(X(tick.x), Y(web.axisY) - 12) }
+    g.stroke()
+    g.textBaseline = 'alphabetic'
+    g.lineJoin = 'round'
+    for (const name of branch.names) {
+      const x = X(name.x)
+      const y = Y(name.y)
+      g.globalAlpha = alpha
+      if (name.dot >= 0) {
+        g.fillStyle = name.dot > 0 ? st.groupInk[name.dot] ?? st.mute : st.mute
+        g.beginPath()
+        g.arc(name.anchor === 'end' ? x : x + 3, y - 4, 3.2, 0, TAU)
+        g.fill()
+      }
+      const tx = name.dot >= 0 ? (name.anchor === 'end' ? x - 9 : x + 10) : x
+      g.font = `${name.weight === 400 ? '' : `${name.weight} `}${name.size}px ${st.fontText}`
+      g.textAlign = name.anchor === 'middle' ? 'center' : name.anchor === 'end' ? 'right' : 'left'
+      g.lineWidth = 3.5
+      g.strokeStyle = st.paper
+      g.strokeText(name.text, tx, y)
+      g.fillStyle = name.mute ? st.mute : st.ink
+      g.fillText(name.text, tx, y)
+    }
+    g.textAlign = 'left'
+  }
+  // The article that node i of the web stands for, of `len` articles: itself when the web has one node for each article (Κλαδιά, or a small story).
+  const nodeArticle = (i: number, len: number) => (arts.aw?.n === len ? i : articleOfNode(i, len))
   // The radius of the disc at the center of the web of the story, as drawn in the last frame (the dot of a theme comes to it, stage-draw.ts).
   const centerRadius = () => Math.max(5, arts.dr * 2.3)
-  return { drawArticles, articleAt, ringAt, articleWorldRadius, articleAspect, ringOf, sectorOf, byOutlet, centerRadius }
+  // Where the center of the story's web was drawn in the last frame (the start node of Κλαδιά, at the left of its region); null before the story's web is laid out.
+  const centerPoint = (s: PlegmaStory) => (arts.id === s.id && ax.length ? { x: ax[0]!, y: ay[0]! } : null)
+  // How far around the story (in the world) the other stories are pushed out: the ring of the circle web, or the corners of Κλαδιά's region.
+  const clearRadius = (s: PlegmaStory) => {
+    const b = branchOf(s)
+    return b ? Math.hypot(b.w, b.h) / 2 / b.fz : articleWorldRadius(s) * 1.25 * articleAspect()
+  }
+  // Where the lines to other stories leave the web: the ring of the circle web, or around the start node of Κλαδιά (the dot that is the story).
+  const linkFrom = (s: PlegmaStory) => {
+    if (branchOf(s) && arts.id === s.id) return { x: ax[0]!, y: ay[0]!, edge: centerRadius() * 1.7 + 8, kx: 1 }
+    const here = toScreen(st.cam, st.width, st.height, placed(s))
+    return { x: here.x, y: here.y, edge: ringOf(articleWorldRadius(s) * st.cam.z) + 9, kx: articleAspect() }
+  }
+  const isBranch = (s: PlegmaStory) => !!branchOf(s)
+  return { lagText, drawArticles, articleAt, ringAt, articleWorldRadius, articleAspect, ringOf, sectorOf, byOutlet, centerRadius, centerPoint, clearRadius, linkFrom, nodeArticle, isBranch }
 }
 
 export type StageArticles = ReturnType<typeof createStageArticles>

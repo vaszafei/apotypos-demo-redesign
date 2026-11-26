@@ -34,7 +34,7 @@ const map = ref<HTMLElement>()
 const STORY_MAP_SIDE = 455
 // How much wider than tall the web is: 1 is a circle (the user did not like the ellipse, 1.25).
 const STORY_ASPECT = 1
-usePlegmaRegion(orbit, map, { side: STORY_MAP_SIDE, top: -32, bottom: 28, lean: 0.75, names: true, clear: true, aspect: STORY_ASPECT })
+usePlegmaRegion(orbit, map, { side: STORY_MAP_SIDE, top: -32, bottom: 28, lean: 0.75, names: true, clear: true, aspect: STORY_ASPECT, fill: () => view.timed.value })
 // How many articles a node of the map stands for: one while the story is small enough to show each article (utils/plegma/plegma-articles.ts).
 const perNode = computed(() => (m.value ? articlesPerNode(m.value.articles) : 1))
 </script>
@@ -63,7 +63,7 @@ const perNode = computed(() => (m.value ? articlesPerNode(m.value.articles) : 1)
       <PlegmaCard v-for="(key, i) in columns.left" :key="key" :at="2" :order="3 + i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
     </div>
     <div ref="map" class="orbit-map">
-      <p class="plegma-nodes-note">{{ perNode > 1 ? t('story.nodes.many', { n: fmtInt(perNode) }) : t('story.nodes.one') }}</p></div>
+      <p class="plegma-nodes-note">{{ view.timed.value ? t('story.branches.note') : perNode > 1 ? t('story.nodes.many', { n: fmtInt(perNode) }) : t('story.nodes.one') }}</p></div>
     <div v-if="columns.right.length" class="orbit-col orbit-right">
       <PlegmaCard :at="0" :order="3" class="card-strip"><OutletStack :parts="stripParts" @hover="lightPart" :caption="plegma.ring === 'outlets' ? undefined : t('story.strip.groups', { n: stripParts.length })" /></PlegmaCard>
       <div class="orbit-subs">

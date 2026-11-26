@@ -10,6 +10,8 @@ const REGION_GAP_RIGHT = 44
 const RING_PER_SIDE = 0.492
 const RING_EXTRA = 14
 const SIDE_MIN = 180
+// The room a filled region keeps from the edges of its cell and from the note under it.
+const FILL_GAP = 6
 const BLOCKS = '.plegma-card, .plegma-title .ecard, .orbit-ring-tabs, .plegma-nodes-note'
 // The Plegma has no card over it: the biggest region (up to `maxSide` high, `aspect` times as wide) in the cell and the free space above it whose ring (an ellipse) touches no card, no switch of the
 // ring, no title and no note, as near as it can be to `want`. Returns its center and its height, or null when nothing of at least SIDE_MIN fits.
@@ -44,7 +46,8 @@ const clearEllipse = (orbit: HTMLElement, stage: DOMRect, cell: DOMRect, maxSide
   return null
 }
 
-export const usePlegmaRegion = (orbit: Ref<HTMLElement | undefined>, map: Ref<HTMLElement | undefined>, room: { side?: number, top?: number, bottom?: number, lean?: number, names?: boolean, clear?: boolean, aspect?: number, ringPerSide?: number } = {}) => {
+// `fill`: while it is true the region is the whole cell, above the note under it (Κλαδιά of a story, utils/plegma/plegma-branches.ts), not a square.
+export const usePlegmaRegion = (orbit: Ref<HTMLElement | undefined>, map: Ref<HTMLElement | undefined>, room: { side?: number, top?: number, bottom?: number, lean?: number, names?: boolean, clear?: boolean, aspect?: number, ringPerSide?: number, fill?: () => boolean } = {}) => {
   const aspect = room.aspect ?? 1
   const maxSide = room.side ?? REGION_SIDE
   const gapTop = room.top ?? REGION_GAP_TOP
@@ -58,6 +61,16 @@ export const usePlegmaRegion = (orbit: Ref<HTMLElement | undefined>, map: Ref<HT
     const stage = o.getBoundingClientRect()
     const box = cell.getBoundingClientRect()
     if (!stage.width || !stage.height || box.height < 40) return
+    if (room.fill?.()) {
+      const note = cell.querySelector('.plegma-nodes-note')?.getBoundingClientRect()
+      const y0 = box.top - stage.top + FILL_GAP
+      const y1 = (note && note.height ? note.top : box.bottom) - stage.top - FILL_GAP
+      const x0 = box.left + FILL_GAP
+      const x1 = box.right - FILL_GAP
+      plegma.setRegion({ x0: x0 / stage.width, y0: y0 / stage.height, x1: x1 / stage.width, y1: y1 / stage.height })
+      setNames(o, stage, box)
+      return
+    }
     const w = box.width - REGION_GAP_RIGHT
     const h = box.height - gapTop - gapBottom
     let side = Math.min(w, h, maxSide)
@@ -71,6 +84,9 @@ export const usePlegmaRegion = (orbit: Ref<HTMLElement | undefined>, map: Ref<HT
     }
     const half = (side * aspect) / 2
     plegma.setRegion({ x0: (cx - half) / stage.width, y0: (cy - side / 2) / stage.height, x1: (cx + half) / stage.width, y1: (cy + side / 2) / stage.height })
+    setNames(o, stage, box)
+  }
+  const setNames = (o: HTMLElement, stage: DOMRect, box: DOMRect) => {
     if (room.names) {
       // The room for the names of the ring: the cell, a little above it (beside the title), but not over the cards or the switch of the ring that lie in it.
       const frac = (r: { left: number, top: number, right: number, bottom: number }) => ({ x0: (r.left - 4) / stage.width, y0: (r.top - stage.top - 4) / stage.height, x1: (r.right + 4) / stage.width, y1: (r.bottom - stage.top + 4) / stage.height })
@@ -79,6 +95,7 @@ export const usePlegmaRegion = (orbit: Ref<HTMLElement | undefined>, map: Ref<HT
     }
   }
   let watcher: ResizeObserver | null = null
+  if (room.fill) watch(room.fill, () => nextTick(measure))
   watch(map, (el) => {
     watcher?.disconnect()
     if (!el) return

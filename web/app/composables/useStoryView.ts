@@ -17,7 +17,7 @@ export const useStoryView = (id: MaybeRefOrGetter<number>) => {
   const groupsData = useFixtureLazy<GroupsData>('groups', { required: ['groups'] })
   // The sample of headlines of the snapshot (mme.json): a few articles of a story with their title and link. It is not needed to show the story, so it is not part of loading.
   const mme = useFixtureLazy<MmeData>('mme', { required: ['sets'], isEmpty: b => Object.keys(b.sets).length === 0 })
-  const times = useStoryTimes(id, () => detail.data.value?.dbStoryFrom)
+  const { times, pending: timesPending } = useStoryTimes(id, () => detail.data.value?.dbStoryFrom)
   const loading = computed(() => list.status.value === 'loading' || detail.status.value === 'loading')
   const problem = computed(() => [list.status.value, detail.status.value].find(s => s !== 'ready'))
   const retry = () => { list.refresh(); detail.refresh() }
@@ -51,7 +51,8 @@ export const useStoryView = (id: MaybeRefOrGetter<number>) => {
   // The articles of the story, first day first: the fixtures count them for each outlet and day, so each one has its day, outlet and group (the map draws one node for each).
   const articles = computed<PlegmaArticle[]>(() => {
     const m = model.value
-    if (!m) return []
+    // The map waits for the times of a story that has them, so its web is drawn once, as Κλαδιά.
+    if (!m || timesPending.value) return []
     const rows: { day: number, outlet: number, n: number }[] = []
     for (let i = 0; i < m.det.t.length; i += 3) rows.push({ outlet: m.det.t[i]!, day: m.det.t[i + 1]!, n: m.det.t[i + 2]! })
     rows.sort((a, b) => a.day - b.day || a.outlet - b.outlet)
@@ -149,7 +150,10 @@ export const useStoryView = (id: MaybeRefOrGetter<number>) => {
     return relatedStories(m.d.stories.filter(s => !s.generic), m.story, s => dailyOf(s, days), { issue: m.story.issue, words: !!m.d.issues[m.story.issue]?.catchAll }).map(r => ({ ...r, articles: articlesOf(r.s), values: dailyOf(r.s, days) }))
   })
 
-  return { loading, problem, retry, model, series, articles, shown, dailyTip, tree, outletParts, groupParts, stance, how, related, dayLabel }
+  // The story has the time of each article: its web is Κλαδιά (utils/plegma/plegma-branches.ts).
+  const timed = computed(() => !!times.value)
+
+  return { loading, problem, retry, model, series, articles, timed, shown, dailyTip, tree, outletParts, groupParts, stance, how, related, dayLabel }
 }
 
 export type StoryView = ReturnType<typeof useStoryView>
