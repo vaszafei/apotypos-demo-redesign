@@ -1,5 +1,6 @@
 // The matching and the index of the global search, from assets/shell.js (fold, latin, pageEntries, indexEntries, keysOf, match, readRecent, remember).
 // It takes the text function and the storage as arguments, so a node test can run it.
+import { HIDDEN_KINDS } from './window-pages.ts'
 export type Translate = (key: string, named?: Record<string, string | number>) => string
 export type Kind = 'pages' | 'outlets' | 'groups' | 'topics' | 'stories' | 'cases' | 'people' | 'statements' | 'parties' | 'bylines' | 'speeches'
 
@@ -39,9 +40,7 @@ type Tab = [key: string, route: string, subs?: [string, string][]]
 interface Item { key: string, tabs: Tab[], details?: [string, string][] }
 export const PAGE_TREE: Item[] = [
   { key: 'home', tabs: [['home', '/']] },
-  { key: 'media', tabs: [['ownership', '/groups'], ['topics', '/trends'], ['stories', '/stories'], ['writing', '/media/writing']],
-    details: [['/outlet', '/media'], ['/group', '/groups'], ['/topic', '/trends'], ['/story', '/stories']] },
-  { key: 'people', tabs: [['overview', '/fingerprints'], ['spread', '/fingerprints/spread']], details: [['/person', '/fingerprints']] },
+  { key: 'media', tabs: [['ownership', '/groups'], ['stories', '/stories']], details: [['/outlet', '/media'], ['/group', '/groups'], ['/story', '/stories']] },
   { key: 'world', tabs: [
     ['speeches', '/speeches', [['speeches.all', '/speeches'], ['speeches.pi', '/un-israel-palestine']]],
     ['pi', '/narrative', [['pi.overview', '/narrative'], ['gaza', '/gaza'], ['israel', '/israel'], ['language', '/gaza-language']]],
@@ -81,10 +80,10 @@ export const pageEntries = (t: Translate, hrefOf: (route: string) => string): En
 // The entries of the index, in the language of the page. The place of an entry is the page that lists it.
 export const indexEntries = (index: SearchIndex, locale: string, t: Translate) => {
   const name = (x: { n: string, en?: string }) => (locale === 'en' && x.en) || x.n
-  const topics = index.kinds.topics ?? []
+  const topics = HIDDEN_KINDS.includes('topics') ? [] : index.kinds.topics ?? []
   const where = (x: RawEntity) => [placeOf(t, x.r), x.s && t(`shell.search.set.${x.s}`)].filter(Boolean).join(' · ')
   const out = {} as Record<Kind, Entry[]>
-  for (const kind of KINDS.slice(1)) out[kind] = (index.kinds[kind] ?? []).map((x): Entry => ({ kind, n: name(x), d: x.d, h: x.h, where: where(x), alt: [x.n, x.en, ...(x.a ?? [])] }))
+  for (const kind of KINDS.slice(1)) out[kind] = (HIDDEN_KINDS.includes(kind) ? [] : index.kinds[kind] ?? []).map((x): Entry => ({ kind, n: name(x), d: x.d, h: x.h, where: where(x), alt: [x.n, x.en, ...(x.a ?? [])] }))
   const storyWhere = placeOf(t, '/stories') ?? ''
   out.stories.unshift(...index.storyRows.map(([id, el, issue, outlets, en]): Entry =>
     ({ kind: 'stories', n: (locale === 'en' && en) || el, d: topics[issue] ? name(topics[issue]) : undefined, h: `story-v2.html?id=${id}`, where: storyWhere, alt: [el, en], outlets })))
