@@ -2,8 +2,8 @@
 import { useElementSize } from '@vueuse/core'
 import { stepParts, type StoryStep } from '~/utils/plegma/story-steps'
 
-// The articles of a story per step of time (utils/plegma/story-steps.ts): one line, or stacked columns by group or by outlet in the group colours.
-// A click on a step picks it (a second click lets it go): the step is tinted, or its column stays in full colour while the others fade.
+// The articles of a story per step of time (utils/plegma/story-steps.ts): one line, with stacked columns by group or by outlet in the group colours under it.
+// A click on a step picks it (a second click lets it go): the step is tinted and gets a dot, and its column stays in full colour while the others fade.
 const props = defineProps<{ steps: StoryStep[], step: number, mode: 'line' | 'groups' | 'outlets', picked: number | null, tall: number, caption: string, groupName: (g: string | null) => string }>()
 const emit = defineEmits<{ pick: [k: number | null] }>()
 const { t } = useI18n()
@@ -23,9 +23,9 @@ const peak = computed(() => Math.max(...props.steps.map(s => s.n), 1))
 const tickStep = computed(() => niceStep(peak.value / 4))
 const yMax = computed(() => Math.ceil(peak.value / tickStep.value) * tickStep.value)
 const ticks = computed(() => { const out: number[] = []; for (let v = 0; v <= yMax.value; v += tickStep.value) out.push(v); return out })
-// The line runs from the first step at the left edge to the last at the right; a column sits in the middle of its slot.
-const slotW = computed(() => (bars.value ? plotW.value / Math.max(n.value, 1) : plotW.value / Math.max(n.value - 1, 1)))
-const X = (k: number) => pad.left + (bars.value ? (k + 0.5) * slotW.value : (k / Math.max(n.value - 1, 1)) * plotW.value)
+// Each step has a slot; the line passes through the middle of each slot, over the top of its column.
+const slotW = computed(() => plotW.value / Math.max(n.value, 1))
+const X = (k: number) => pad.left + (k + 0.5) * slotW.value
 const Y = (v: number) => pad.top + plotH.value - (v / yMax.value) * plotH.value
 
 const day = computed(() => props.step >= 1440)
@@ -48,7 +48,7 @@ const xTicks = computed(() => {
   return out
 })
 
-const linePath = computed(() => (bars.value ? '' : smoothPath(props.steps.map(s => [X(s.k), Y(s.n)] as [number, number]))))
+const linePath = computed(() => smoothPath(props.steps.map(s => [X(s.k), Y(s.n)] as [number, number])))
 const colourOf = (slot: number) => `var(--cat-${slot})`
 const colW = computed(() => Math.min(18, Math.max(2, slotW.value * 0.72)))
 const columns = computed(() => {
@@ -74,7 +74,7 @@ const band = computed(() => {
 const stepAt = (e: PointerEvent | MouseEvent) => {
   const box = (e.currentTarget as SVGElement).ownerSVGElement!.getBoundingClientRect()
   const x = e.clientX - box.left - pad.left
-  const k = bars.value ? Math.floor(x / slotW.value) : Math.round(x / slotW.value)
+  const k = Math.floor(x / slotW.value)
   return Math.max(0, Math.min(n.value - 1, k))
 }
 const hover = ref<number | null>(null)
@@ -94,24 +94,22 @@ const click = (e: MouseEvent) => { const k = stepAt(e); emit('pick', props.steps
 
 <template>
   <div ref="holder" class="fit">
-    <svg :key="mode" class="chart line-draw" :width="width" :height="height" :viewBox="`0 0 ${width} ${height}`" role="img" :aria-label="caption">
+    <svg class="chart line-draw" :width="width" :height="height" :viewBox="`0 0 ${width} ${height}`" role="img" :aria-label="caption">
       <template v-for="v in ticks" :key="v">
         <line class="grid-line" :x1="pad.left" :x2="width - pad.right" :y1="Y(v)" :y2="Y(v)" />
         <text :x="pad.left - 6" :y="Y(v) + 4" text-anchor="end">{{ fmtInt(v) }}</text>
       </template>
       <text v-for="x in xTicks" :key="x.k" :x="X(x.k)" :y="height - 6" text-anchor="middle">{{ x.text }}</text>
       <rect v-if="band" class="line-band" :x="band.x" :y="pad.top" :width="band.width" :height="plotH" />
-      <template v-if="bars">
-        <g v-for="c in columns" :key="c.k" :opacity="picked !== null && picked !== c.k ? 0.35 : 0.85">
+      <g v-if="bars">
+        <g v-for="c in columns" :key="c.k" :opacity="picked !== null && picked !== c.k ? 0.3 : 0.75">
           <rect v-for="r in c.rects" :key="r.key" :x="X(c.k) - colW / 2" :y="r.y" :width="colW" :height="r.h" :fill="r.fill" />
         </g>
-      </template>
-      <template v-else>
-        <path class="line-series" :d="linePath" stroke="var(--cat-1)" stroke-width="1.5" fill="none" pathLength="1" />
-        <circle v-if="band" :cx="X(picked!)" :cy="Y(steps[picked!]!.n)" r="4" fill="var(--cat-1)" stroke="var(--surface-page)" stroke-width="1.5" />
-        <line class="hover-rule" :y1="pad.top" :y2="pad.top + plotH" stroke="var(--rule)" stroke-width="1" :x1="hover !== null ? X(hover) : 0" :x2="hover !== null ? X(hover) : 0" :visibility="hover !== null ? 'visible' : 'hidden'" />
-        <circle r="3.5" fill="var(--cat-1)" stroke="var(--surface-page)" stroke-width="1.5" :cx="hover !== null ? X(hover) : 0" :cy="hover !== null ? Y(steps[hover]!.n) : 0" :visibility="hover !== null ? 'visible' : 'hidden'" />
-      </template>
+      </g>
+      <path class="line-series" :d="linePath" stroke="var(--cat-1)" stroke-width="1.5" fill="none" pathLength="1" />
+      <circle v-if="band" :cx="X(picked!)" :cy="Y(steps[picked!]!.n)" r="4" fill="var(--cat-1)" stroke="var(--surface-page)" stroke-width="1.5" />
+      <line class="hover-rule" :y1="pad.top" :y2="pad.top + plotH" stroke="var(--rule)" stroke-width="1" :x1="hover !== null ? X(hover) : 0" :x2="hover !== null ? X(hover) : 0" :visibility="hover !== null ? 'visible' : 'hidden'" />
+      <circle r="3.5" fill="var(--cat-1)" stroke="var(--surface-page)" stroke-width="1.5" :cx="hover !== null ? X(hover) : 0" :cy="hover !== null ? Y(steps[hover]!.n) : 0" :visibility="hover !== null ? 'visible' : 'hidden'" />
       <rect :x="pad.left" :y="pad.top" :width="plotW" :height="plotH" fill="transparent" style="cursor: pointer" @pointermove="read" @pointerenter="read" @pointerleave="leave" @click="click" />
     </svg>
     <div class="visually-hidden">
