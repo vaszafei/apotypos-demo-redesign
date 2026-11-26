@@ -213,8 +213,11 @@ export const articleDays = (days: number[]) => {
 export const articleRadius = (n: number, max: number) => max * Math.min(1, Math.max(0.5, 0.5 + 0.5 * Math.sqrt(nodeCount(n) / 250)))
 
 // The group, or the outlet of a group, that the pointer is on in a card: the articles of it come forward on the map. A group of null is the articles with no group.
-export interface PlegmaHighlight { group: string | null, outlet?: string }
-export const matchesHighlight = (a: { group: string | null, outlet: string }, h: PlegmaHighlight) => a.group === h.group && (h.outlet === undefined || a.outlet === h.outlet)
+// Or a stretch of time picked on the chart of the story (#219): the articles published from `from` to `to` (minutes since 1970 UTC).
+export type PlegmaHighlight = { group: string | null, outlet?: string } | { from: number, to: number }
+export const matchesHighlight = (a: { group: string | null, outlet: string, time?: number }, h: PlegmaHighlight) => ('from' in h
+  ? a.time !== undefined && a.time >= h.from && a.time <= h.to
+  : a.group === h.group && (h.outlet === undefined || a.outlet === h.outlet))
 
 // An article as the stage keeps it for its tooltip and its color: the day, the outlet, and the slot of its group's color (0 is no group).
 // `title` and `url` are there only for the articles of the sample of headlines of the snapshot (mme.json). `order` is the place of its group among the groups of the story, largest first, as the groups card lists them.
