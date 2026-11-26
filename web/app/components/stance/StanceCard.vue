@@ -3,7 +3,8 @@ import type { BarRow } from '~/components/charts/BarList.vue'
 
 // Entity.StanceCard of assets/entity-cards.js: the neutral share in the center of a bar, the critical share to the left, the supportive share to the right.
 // rows: counts are [critical, neutral, supportive]. A row needs 30 articles with a stance, and the card needs two rows to compare.
-const props = defineProps<{ rows: { label: string, color: string, counts: number[] }[], foot?: string | null }>()
+// legend: 'bottom' puts the legend under the bars and the foot (the story page).
+const props = defineProps<{ rows: { label: string, color: string, counts: number[] }[], foot?: string | null, legend?: 'top' | 'bottom' }>()
 const { t } = useI18n()
 const STANCES = ['critical', 'neutral', 'supportive'] as const
 
@@ -13,6 +14,7 @@ const shown = computed(() => props.rows.map((r) => {
 }).filter(r => r.n >= 30))
 const scale = computed(() => Math.max(...shown.value.map(r => Math.max(r.crit + r.neu / 2, r.sup + r.neu / 2))))
 type StanceRow = BarRow & { row: (typeof shown.value)[number] }
+const legendItems = computed(() => STANCES.map(nm => ({ label: t(`stance.${nm}`), color: `var(--stance-${nm})` })))
 const rows = computed<StanceRow[]>(() => shown.value.map(r => ({ key: r.label, label: '', text: `${fmtPct(r.crit)} · ${fmtPct(r.sup)}`, value: 0, color: '', row: r })))
 </script>
 
@@ -20,7 +22,7 @@ const rows = computed<StanceRow[]>(() => shown.value.map(r => ({ key: r.label, l
   <DashCard :title="t('entity.stance.title')" :info="t('entity.stance.info')">
     <p v-if="shown.length < 2" class="dcard-empty">{{ t('entity.stance.none') }}</p>
     <template v-else>
-      <ChartLegend :items="STANCES.map(nm => ({ label: t(`stance.${nm}`), color: `var(--stance-${nm})` }))" />
+      <ChartLegend v-if="legend !== 'bottom'" :items="legendItems" />
       <BarList :rows="rows">
         <template #label="{ row }"><span class="dot" :style="`--dot:${row.row.color}`" aria-hidden="true" />{{ row.row.label }}</template>
         <template #bar="{ row }">
@@ -31,6 +33,7 @@ const rows = computed<StanceRow[]>(() => shown.value.map(r => ({ key: r.label, l
         </template>
       </BarList>
       <p v-if="foot" class="dcard-sub">{{ foot }}</p>
+      <ChartLegend v-if="legend === 'bottom'" :items="legendItems" />
     </template>
   </DashCard>
 </template>

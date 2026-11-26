@@ -10,6 +10,7 @@ const total = computed(() => props.view.stance.value?.total ?? 0)
 
 <template>
   <StanceCard
+    legend="bottom"
     :rows="[{ label: t('entity.stance.story'), color: 'var(--series-news)', counts: m.det.s!.slice(1) }, { label: t('entity.stance.all'), color: NO_GROUP, counts: m.dd.base.s.slice(1) }]"
     :foot="total ? t('story.how.stance.n', { n: fmtInt(total), total: fmtInt(m.articles) }) : null"
   />
