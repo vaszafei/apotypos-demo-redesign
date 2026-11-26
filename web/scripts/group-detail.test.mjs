@@ -4,8 +4,9 @@ import { readFileSync } from 'node:fs'
 import { runInNewContext } from 'node:vm'
 import { storyProfiles } from '../app/utils/profiles.ts'
 import { groupDaily, groupWindow, storiesOfGroup, groupTopics, groupWrites, groupOutletsOfStory } from '../app/utils/group-detail.ts'
+import { fullData } from './lib/full-data.mjs'
 
-const read = name => JSON.parse(readFileSync(new URL(`../public/data/${name}.json`, import.meta.url), 'utf8'))
+const read = fullData
 const media = read('media')
 const list = read('stories')
 const dd = read('storyDetail')

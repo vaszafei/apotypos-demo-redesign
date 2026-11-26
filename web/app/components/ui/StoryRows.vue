@@ -31,7 +31,7 @@ const { t } = useI18n()
           </span>
         </span>
       </span>
-      <span v-if="r.theme && r.issue !== undefined" class="sr-theme" @pointerenter="emit('hoverTheme', r.issue)" @pointerleave="emit('hoverTheme', null)" @focusin="emit('hoverTheme', r.issue)" @focusout="emit('hoverTheme', null)">
+      <span v-if="topicsShown && r.theme && r.issue !== undefined" class="sr-theme" @pointerenter="emit('hoverTheme', r.issue)" @pointerleave="emit('hoverTheme', null)" @focusin="emit('hoverTheme', r.issue)" @focusout="emit('hoverTheme', null)">
         {{ t('home.day.topic') }}
         <button v-if="pick" type="button" class="sr-theme-link" @click="emit('open', { theme: r.issue })">{{ r.theme }}</button>
         <NuxtLink v-else class="sr-theme-link" :to="topicHref(r.issue)">{{ r.theme }}</NuxtLink>

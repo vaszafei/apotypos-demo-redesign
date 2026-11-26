@@ -77,7 +77,7 @@ watch(view, async () => { await nextTick(); $motion.replay(document.querySelecto
         <ClientOnly>
           <PlegmaDayWeb
             v-if="webThemes.length" ref="web" v-model:lit="litIssue" :hover-story="hoverStory" :themes="webThemes" :ring="[]" :outlets="ringBy === 'groups' ? periodWeb!.groupRing.value : periodWeb!.outlets.value" mode="stories" :date="dateText" :sub="t('stories.web.sub', { n: fmtInt(list.length) })"
-            :picked="null" ellipse grouped spread fill titles :active="active" grow :label="t('topics2.stories.title')" @pick="id => open({ story: id })" @pick-theme="issue => open({ theme: issue })"
+            :picked="null" ellipse :grouped="topicsShown" spread fill titles :active="active" grow :label="t('topics2.stories.title')" @pick="id => open({ story: id })" @pick-theme="issue => open({ theme: issue })"
           />
           <p v-if="webThemes.length" class="media-map-note dive-fade" :class="{ 'is-leaving': leaving }">{{ t('stories.web.note') }}</p>
         </ClientOnly>

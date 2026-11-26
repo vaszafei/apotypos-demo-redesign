@@ -5,6 +5,7 @@ import { cpSync, rmSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { runInNewContext } from 'node:vm'
 import { buildFixtures } from './build-fixtures.mjs'
+import { trimDataDir } from './trim-window.mjs'
 import { buildMessages } from './build-messages.mjs'
 import { writePlegmaLayout } from './build-plegma-layout.mjs'
 
@@ -30,6 +31,9 @@ cpSync(from, to, {
 // Every data/*.js of the prototype also as data/<key>.json, for the Nuxt pages (useFixture).
 const fixtureCount = buildFixtures(`${from}data/`, `${to}data/`).length
 
+// The app shows only the days the database covers, the days whose articles have times.
+const trimmed = trimDataDir(`${to}data/`)
+
 // The permanent place of every story on the Plegma, as data/plegma.json.
 const placeCount = writePlegmaLayout(`${to}data/stories.json`, `${to}data/plegma.json`)
 
@@ -50,4 +54,4 @@ if (!source) throw new Error('PROTOTYPES not found in assets/shell.js')
 mkdirSync(generated, { recursive: true })
 writeFileSync(`${generated}prototypes.json`, `${JSON.stringify(runInNewContext(`(${source[1]})`), null, 2)}\n`)
 
-console.log(`Prototype copied to public/ (${ported.length} ported page${ported.length === 1 ? '' : 's'} skipped, ${fixtureCount} fixtures converted, ${placeCount} Plegma places, ${messageCount.el} el and ${messageCount.en} en messages)`)
+console.log(`Prototype copied to public/ (${ported.length} ported page${ported.length === 1 ? '' : 's'} skipped, ${fixtureCount} fixtures converted, days from ${trimmed?.from ?? 'the start'}, ${placeCount} Plegma places, ${messageCount.el} el and ${messageCount.en} en messages)`)

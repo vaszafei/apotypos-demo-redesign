@@ -3,8 +3,8 @@ import assert from 'node:assert/strict'
 import { directionOf, stepOf } from '../app/utils/move.ts'
 
 test('a move to another section slides sideways, in the order of the navbar', () => {
-  assert.equal(directionOf('/trends', '/fingerprints', true), 'right')
-  assert.equal(directionOf('/fingerprints', '/trends', false), 'left')
+  assert.equal(directionOf('/stories', '/speeches', true), 'right')
+  assert.equal(directionOf('/speeches', '/stories', false), 'left')
 })
 test('a move to another tab slides down or up on a wide screen and sideways on a phone', () => {
   assert.equal(directionOf('/media', '/trends', true), 'down')

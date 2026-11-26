@@ -4,8 +4,9 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { buildPlegmaLayout, writePlegmaLayout, placeOf, WORLD, DX } from './build-plegma-layout.mjs'
+import { fullData } from './lib/full-data.mjs'
 
-const stories = JSON.parse(readFileSync(new URL('../public/data/stories.json', import.meta.url), 'utf8'))
+const stories = fullData('stories')
 const placesOf = (layout) => new Map(Array.from({ length: layout.places.length / 3 }, (_, i) => [layout.places[i * 3], layout.places.slice(i * 3 + 1, i * 3 + 3)]))
 const inside = ([x, y]) => x >= WORLD.x0 && x <= WORLD.x1 && y >= WORLD.y0 && y <= WORLD.y1
 

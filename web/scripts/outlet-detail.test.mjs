@@ -5,8 +5,9 @@ import { runInNewContext } from 'node:vm'
 import { mmeProfile } from '../app/utils/mme.ts'
 import { outletPairs } from '../app/utils/profiles.ts'
 import { outletFacts, weeklyAgenda, coverageOf, stanceByTopic, emphasisOf, voicesOf, portrayalOf, headlinesOf, relatedOutlets } from '../app/utils/outlet-detail.ts'
+import { fullData } from './lib/full-data.mjs'
 
-const read = name => JSON.parse(readFileSync(new URL(`../public/data/${name}.json`, import.meta.url), 'utf8'))
+const read = fullData
 const set = read('mme').sets.gr
 const dd = read('storyDetail')
 const plain = v => JSON.parse(JSON.stringify(v))

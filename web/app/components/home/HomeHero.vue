@@ -60,7 +60,7 @@ const tail = computed(() => t('home.hero.eyebrow').toLocaleUpperCase(useNuxtApp(
         <dl>
           <div class="home-hero-stat"><dt>{{ t('home.hero.articles') }}</dt><dd class="kpi-value">{{ fmtInt(collected) }}</dd></div>
           <div class="home-hero-stat"><dt>{{ t('home.hero.stories') }}</dt><dd class="kpi-value">{{ storyCount === null ? '–' : fmtInt(storyCount) }}</dd></div>
-          <div class="home-hero-stat"><dt>{{ t('home.hero.topics') }}</dt><dd class="kpi-value">{{ fmtInt(home.issues.length) }}</dd></div>
+          <div v-if="topicsShown" class="home-hero-stat"><dt>{{ t('home.hero.topics') }}</dt><dd class="kpi-value">{{ fmtInt(home.issues.length) }}</dd></div>
         </dl>
       </div>
     </div>

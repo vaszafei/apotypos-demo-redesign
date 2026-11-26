@@ -83,14 +83,17 @@ type TabId = 'overview' | 'topics' | 'stories' | 'people'
 type LatestId = 'articles' | 'topics' | 'stories'
 interface TabSpec { columns: CardId[][], latest: LatestId | null, under: 'bars' | 'topics' | 'stories' | 'mentions' }
 const SPECS: Record<TabId, { live: TabSpec, plain: TabSpec }> = {
-  overview: { live: { columns: [['stance', 'similar']], latest: 'articles', under: 'bars' }, plain: { columns: [['stance', 'similar']], latest: 'articles', under: 'bars' } },
+  overview: analysedShown
+    ? { live: { columns: [['stance', 'similar']], latest: 'articles', under: 'bars' }, plain: { columns: [['stance', 'similar']], latest: 'articles', under: 'bars' } }
+    // Without the Aug–Sep set only the similarity is of the window; the latest articles are a sample of Aug–Sep.
+    : { live: { columns: [['similar']], latest: null, under: 'bars' }, plain: { columns: [['similar']], latest: null, under: 'bars' } },
   topics: { live: { columns: [['stanceTopic']], latest: 'topics', under: 'topics' }, plain: { columns: [], latest: 'topics', under: 'topics' } },
   stories: { live: { columns: [['skip'], ['push']], latest: 'stories', under: 'stories' }, plain: { columns: [], latest: 'stories', under: 'stories' } },
   people: { live: { columns: [['voices'], ['portrayal']], latest: null, under: 'mentions' }, plain: { columns: [], latest: null, under: 'bars' } }
 }
 const tab = ref<TabId>('overview')
 const spec = computed(() => SPECS[tab.value][live.value ? 'live' : 'plain'])
-const tabs = computed(() => (['overview', 'topics', 'stories', ...(live.value ? ['people'] : [])] as TabId[]).map(value => ({ value, label: t(`mme.o.tab.${value}`) })))
+const tabs = computed(() => (['overview', ...(topicsShown ? ['topics'] : []), 'stories'] as TabId[]).map(value => ({ value, label: t(`mme.o.tab.${value}`) })))
 
 // A slug that is not an outlet has the name of the section, as the static page.
 const named = computed(() => (model.value ? model.value.outlet.name : !loading.value && !problem.value ? t('nav.media') : null))
@@ -179,7 +182,8 @@ const openPerson = (j: number) => {
 const mapNote = computed(() => {
   if (tab.value === 'overview') {
     const n = Math.ceil(periodArticles.value / Math.max(1, Math.min(periodArticles.value, 250)))
-    return n > 1 ? t('outlet.web.note.overview', { n: fmtInt(n) }) : t('outlet.web.note.overview1')
+    const key = analysedShown ? 'overview' : 'overviewBare'
+    return n > 1 ? t(`outlet.web.note.${key}`, { n: fmtInt(n) }) : t(`outlet.web.note.${key}1`)
   }
   return t(`outlet.web.note.${tab.value}`)
 })
@@ -236,7 +240,7 @@ const headlinesShown = computed(() => liveHeadlines.value.filter(x => String(x[0
 
     <div class="orbit-map">
       <ClientOnly><div ref="mapWeb" class="outlet-map-web">
-        <OutletArticleWeb v-if="tab === 'overview'" key="overview" :days="bars?.series[0]?.values.map(v => v ?? 0) ?? []" :color-slot="groupSlot" :stance="model.writes.stanceMine" :label="t('outlet.web.label')" :name="model.outlet.name" :leaving="plegma.leaving" />
+        <OutletArticleWeb v-if="tab === 'overview'" key="overview" :days="bars?.series[0]?.values.map(v => v ?? 0) ?? []" :color-slot="groupSlot" :stance="analysedShown ? model.writes.stanceMine : []" :label="t('outlet.web.label')" :name="model.outlet.name" :leaving="plegma.leaving" />
         <PlegmaDayWeb
           :ring-start="0.5"
           v-else-if="tab === 'topics'" key="topics" :themes="webThemes" :ring="themeRing" :outlets="[]" mode="themes" :date="fmtInt(periodArticles)" :sub="model.outlet.name" :lit="null" :picked="null" active
@@ -245,7 +249,7 @@ const headlinesShown = computed(() => liveHeadlines.value.filter(x => String(x[0
         <PlegmaDayWeb
           :ring-start="0.5"
           v-else-if="tab === 'stories'" key="stories" :themes="webStoryThemes" :ring="[]" :outlets="storyRing" mode="stories" :date="fmtInt(periodArticles)" :sub="model.outlet.name" :lit="null" :picked="null" active
-          :hover-story="plegma.hoverStory" ellipse grouped spread fill titles grow :zoom="0.82" :leaving="plegma.leaving" :label="t('outlet.web.label')" @pick="id => navigateTo(storyHref(id))" @pick-theme="k => navigateTo(topicHref(k))"
+          :hover-story="plegma.hoverStory" ellipse :grouped="topicsShown" spread fill titles grow :zoom="0.82" :leaving="plegma.leaving" :label="t('outlet.web.label')" @pick="id => navigateTo(storyHref(id))" @pick-theme="k => navigateTo(topicHref(k))"
         />
         <PlegmaDayWeb
           :ring-start="0.5"

@@ -2,8 +2,9 @@ import { test, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { PAGE_TREE, FOOTER, fold, match, pageEntries, indexEntries, placeOf, readRecent, remember } from '../app/utils/search.ts'
+import { fullData } from './lib/full-data.mjs'
 
-const index = JSON.parse(readFileSync(new URL('../public/data/search.json', import.meta.url), 'utf8'))
+const index = fullData('search')
 const t = (key, named) => (named ? `${key} ${JSON.stringify(named)}` : key)
 const first = (entries, q) => match(entries, q)[0]
 const entities = indexEntries(index, 'el', t)
@@ -22,9 +23,14 @@ test('a Greek query with accents or without them gives the same result', () => {
 })
 test('a Greek query finds a Latin name and a Latin query finds a Greek one', () => {
   assert.ok(match(entities.outlets, 'πολιτ').some(e => e.n === 'Parapolitika'))
-  const greek = entities.people.find(e => /Τσίπρας/.test(e.n))
-  assert.ok(greek, 'the index has Τσίπρας')
-  assert.ok(match(entities.people, 'tsipras').includes(greek))
+  const greek = entities.groups.find(e => /ΣΚΑΪ/.test(e.n))
+  assert.ok(greek, 'the index has Όμιλος ΣΚΑΪ')
+  assert.ok(match(entities.groups, 'skai').includes(greek))
+})
+test('the topics and the people are not in the results while their pages are hidden', () => {
+  assert.deepEqual(entities.topics, [])
+  assert.deepEqual(entities.people, [])
+  assert.ok(entities.stories.every(e => e.d === undefined))
 })
 test('a name that starts with the query comes before a word inside another name', () => {
   const entries = [
@@ -34,20 +40,19 @@ test('a name that starts with the query comes before a word inside another name'
   assert.deepEqual(match(entries, 'alpha').map(e => e.h), ['b', 'a'])
 })
 test('the English locale shows the English name where there is one', () => {
-  const withEnglish = index.kinds.topics.find(x => x.en)
-  assert.ok(withEnglish, 'the index has an English topic name')
+  const withEnglish = index.kinds.outlets.find(x => x.en && x.en !== x.n) ?? index.kinds.groups.find(x => x.en && x.en !== x.n)
   const en = indexEntries(index, 'en', t)
-  assert.ok(en.topics.some(e => e.n === withEnglish.en))
-  assert.ok(entities.topics.some(e => e.n === withEnglish.n))
+  if (withEnglish) assert.ok([...en.outlets, ...en.groups].some(e => e.n === withEnglish.en))
   const story = index.storyRows.find(r => r[4])
   assert.ok(story, 'the index has an English story title')
   assert.ok(en.stories.some(e => e.n === story[4]))
 })
 test('a page is found by its name and by its section, and has its route', () => {
   const pages = pageEntries(t, r => `file${r}`)
-  const hit = first(pages, 'tab.media.topics')
-  assert.equal(hit.route, '/trends')
-  assert.equal(hit.h, 'file/trends')
+  const hit = first(pages, 'tab.media.stories')
+  assert.equal(hit.route, '/stories')
+  assert.equal(hit.h, 'file/stories')
+  assert.ok(!pages.some(p => p.route === '/trends' || p.route === '/fingerprints'))
   assert.ok(pages.some(p => p.route === '/methodology'))
   assert.equal(placeOf(t, '/stories'), 'nav.media › tab.media.stories')
   assert.equal(placeOf(t, '/story'), 'nav.media')
@@ -57,7 +62,9 @@ test('the page tree has the routes of NAV in assets/shell.js', () => {
   const shell = readFileSync(new URL('../../docs/redesign/prototypes/assets/shell.js', import.meta.url), 'utf8')
   const block = shell.slice(shell.indexOf('const NAV = ['), shell.indexOf('const FOOTER'))
   const routesOf = (text, quote) => [...new Set(text.match(new RegExp(`${quote}/[a-z0-9/-]*${quote}`, 'g')).map(r => r.slice(1, -1)))].sort()
-  assert.deepEqual(routesOf(JSON.stringify(PAGE_TREE), '"'), routesOf(block, "'"))
+  // Less the pages hidden or removed while the app shows only the days with article times (utils/window-pages.ts).
+  const off = ['/trends', '/topic', '/media/writing', '/fingerprints', '/fingerprints/spread', '/person']
+  assert.deepEqual(routesOf(JSON.stringify(PAGE_TREE), '"'), routesOf(block, "'").filter(r => !off.includes(r)))
 })
 
 let storage

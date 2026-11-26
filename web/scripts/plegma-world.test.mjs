@@ -3,8 +3,9 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { buildWorld, webOf, dotsOf, arcsOf, themeCore, themeFrameSet, themeSlots, homeWebs, drawLevel, PLEGMA_THEME_ARCS, PLEGMA_FOCUS_DOTS } from '../app/utils/plegma/plegma-world.ts'
 import { homeIndex } from '../app/utils/home.ts'
+import { fullData } from './lib/full-data.mjs'
 
-const read = name => JSON.parse(readFileSync(new URL(`../public/data/${name}.json`, import.meta.url), 'utf8'))
+const read = fullData
 const stories = read('stories')
 const home = read('home')
 const world = buildWorld(stories, home, read('plegma'))
