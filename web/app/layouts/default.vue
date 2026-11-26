@@ -129,8 +129,9 @@ const back = () => {
         <nav v-if="section.tabs.length && (!plegma.active || plegma.backdrop)" class="section-nav" :aria-label="t(`nav.${section.key}`)">
           <div class="section-nav-inner">
             <ul class="section-nav-list">
-              <li v-for="tab in section.tabs" :key="tab.to">
-                <NavLink class="section-nav-link" :class="{ 'is-pull': pager.to === tab.to, 'is-parent': inTab(tab) && tab.children, 'is-leaving': !tab.children && leavingTab === tab.to }" :style="pager.to === tab.to ? { '--pull': pager.pull } : undefined" :to="tab.to" :aria-current="tabCurrent(tab)"><AppIcon :name="tab.icon" glyph /><span class="nav-label">{{ t(`tab.${section.key}.${tab.key}`) }}</span></NavLink>
+              <li v-for="tab in section.menu ?? section.tabs" :key="tab.to">
+                <span v-if="tab.soon" class="section-nav-link is-soon" aria-disabled="true"><AppIcon :name="tab.icon" glyph /><span class="nav-label">{{ t(`tab.${section.key}.${tab.key}`) }}</span><span class="nav-soon">{{ t('nav.soon') }}</span></span>
+                <NavLink v-else class="section-nav-link" :class="{ 'is-pull': pager.to === tab.to, 'is-parent': inTab(tab) && tab.children, 'is-leaving': !tab.children && leavingTab === tab.to }" :style="pager.to === tab.to ? { '--pull': pager.pull } : undefined" :to="tab.to" :aria-current="tabCurrent(tab)"><AppIcon :name="tab.icon" glyph /><span class="nav-label">{{ t(`tab.${section.key}.${tab.key}`) }}</span></NavLink>
                 <ul v-if="tab.children && inTab(tab)" class="section-nav-sub">
                   <li v-for="child in tab.children" :key="child.to"><NavLink class="section-nav-link" :class="{ 'is-leaving': leavingTab === child.to }" :to="child.to" :aria-current="subCurrent(child.to)"><AppIcon :name="child.icon" glyph /><span class="nav-label">{{ t(`tab.${section.key}.${child.key}`) }}</span></NavLink></li>
                 </ul>
@@ -157,7 +158,7 @@ const back = () => {
               </div>
               <div v-if="section.tabs.length && !gated" class="page-tabs">
                 <nav class="section-tabs" :aria-label="t(`nav.${section.key}`)">
-                  <ul><li v-for="tab in section.tabs" :key="tab.to"><NavLink :to="tab.to" :aria-current="current(tab.to)"><AppIcon :name="tab.icon" glyph /><span class="nav-label">{{ t(`tab.${section.key}.${tab.key}`) }}</span></NavLink></li></ul>
+                  <ul><li v-for="tab in section.menu ?? section.tabs" :key="tab.to"><span v-if="tab.soon" class="is-soon" aria-disabled="true"><AppIcon :name="tab.icon" glyph /><span class="nav-label">{{ t(`tab.${section.key}.${tab.key}`) }}</span><span class="nav-soon">{{ t('nav.soon') }}</span></span><NavLink v-else :to="tab.to" :aria-current="current(tab.to)"><AppIcon :name="tab.icon" glyph /><span class="nav-label">{{ t(`tab.${section.key}.${tab.key}`) }}</span></NavLink></li></ul>
                 </nav>
               </div>
             </header>
