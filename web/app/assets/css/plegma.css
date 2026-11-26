@@ -142,6 +142,9 @@
 .plegma-orbit .orbit-ring-tabs.segmented { gap: 6px; padding: 0; border: 0; border-radius: 0; background: none; }
 .plegma-orbit .orbit-ring-tabs.segmented button { min-height: 30px; padding: 0 var(--space-3); border: 1px solid var(--border); border-radius: 6px; background: var(--surface-raised); color: var(--text-primary); font-size: var(--text-small); }
 .plegma-orbit .orbit-ring-tabs.segmented button[aria-pressed="true"] { border-color: var(--text-primary); background: var(--text-primary); color: var(--on-ink); font-weight: 600; }
+/* The same buttons, smaller, in the head of the card of the story over time (Γραμμή | Όμιλοι | Μέσα). */
+.plegma-orbit .orbit-ring-tabs.is-chart { position: static; }
+.plegma-orbit .orbit-ring-tabs.is-chart.segmented button { min-height: 24px; padding: 0 10px; font-size: var(--text-caption); }
 .plegma-nodes-note { position: absolute; left: 0; bottom: 0; margin: 0; font-size: var(--text-caption); color: var(--text-secondary); }
 
 /* A card arrives after the camera lands (the cards of a screen of Μέσα: when they come into view), built from the logo backwards (the block below, ".is-cut"): the "/" is drawn first, then the card shows cut by it into two parts a row apart, and the parts slide into one row. The card does not scroll; its body does. */
