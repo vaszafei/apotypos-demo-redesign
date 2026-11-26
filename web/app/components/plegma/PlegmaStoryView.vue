@@ -5,6 +5,7 @@ import PlegmaRelatedCard from './PlegmaRelatedCard.vue'
 import PlegmaStanceCard from './PlegmaStanceCard.vue'
 import PlegmaPeopleCard from './PlegmaPeopleCard.vue'
 import { articlesPerNode } from '~/utils/plegma/plegma-articles'
+import { cloudUnit } from '~/utils/plegma/plegma-story-clouds'
 
 // The story view: the title, under it the other stories of the theme, the free cell for the map and the cards beside it, and the days under that row. The web itself is the stage's (PlegmaStage.vue).
 const props = defineProps<{ id: number }>()
@@ -15,6 +16,8 @@ const { loading, problem, retry, model: m, dayLabel } = view
 // The map draws one node for each article of the story.
 watch(view.articles, list => plegma.setArticles(list.length ? list : null), { immediate: true })
 watch(view.related, list => plegma.setRelated(list.map(r => r.s.id)), { immediate: true })
+// How the web of a story with article times is spread: Κλαδιά (default) or Σύννεφα; the switch is at the left of the map cell.
+const spread = computed({ get: () => plegma.spread, set: (v: string) => plegma.setSpread(v === 'clouds' ? 'clouds' : 'branches') })
 const ring = computed({ get: () => plegma.ring, set: (v: string) => plegma.setRing(v === 'stance' || v === 'outlets' ? v : 'groups') })
 // The bar at the end of the row is the outlets while the ring is the outlets, and the groups otherwise.
 // A part of the bar under the pointer lights its nodes on the map, softly (the outlet on the ring of the outlets, the group otherwise).
@@ -34,9 +37,16 @@ const map = ref<HTMLElement>()
 const STORY_MAP_SIDE = 455
 // How much wider than tall the web is: 1 is a circle (the user did not like the ellipse, 1.25).
 const STORY_ASPECT = 1
-usePlegmaRegion(orbit, map, { side: STORY_MAP_SIDE, top: -32, bottom: 28, lean: 0.75, names: true, clear: true, aspect: STORY_ASPECT })
+usePlegmaRegion(orbit, map, { side: STORY_MAP_SIDE, top: -32, bottom: 28, lean: 0.75, names: true, clear: true, aspect: STORY_ASPECT, fill: () => view.timed.value })
 // How many articles a node of the map stands for: one while the story is small enough to show each article (utils/plegma/plegma-articles.ts).
 const perNode = computed(() => (m.value ? articlesPerNode(m.value.articles) : 1))
+// The note under the map: what a node is, and for Σύννεφα how long a cloud is.
+const unitText = (unit: number) => unit >= 10080 ? t('story.clouds.unit.week') : unit >= 1440 ? t('story.clouds.unit.day') : unit > 60 ? t('story.clouds.unit.hours', { n: unit / 60 }) : unit === 60 ? t('story.clouds.unit.hour') : t('story.clouds.unit.min', { n: unit })
+const nodesNote = computed(() => {
+  if (!view.timed.value) return perNode.value > 1 ? t('story.nodes.many', { n: fmtInt(perNode.value) }) : t('story.nodes.one')
+  if (plegma.spread !== 'clouds') return t('story.branches.note')
+  return t('story.clouds.note', { unit: unitText(cloudUnit(view.articles.value.map(a => a.time!))) })
+})
 </script>
 
 <template>
@@ -50,7 +60,7 @@ const perNode = computed(() => (m.value ? articlesPerNode(m.value.articles) : 1)
     <section class="dcard c-12"><div class="empty-state" data-state="empty"><AppIcon name="inbox" /><p style="margin: 0">{{ t('topics2.empty') }}</p></div></section>
   </div>
   <ErrorPage v-else-if="!m" :status="404" />
-  <div v-else ref="orbit" class="plegma-orbit is-story" :class="{ 'is-in': plegma.landed, 'is-leaving': plegma.leaving, 'no-right': !columns.right.length, 'no-left': !columns.left.length, 'has-strip': columns.right.length }">
+  <div v-else ref="orbit" class="plegma-orbit is-story" :class="{ 'is-in': plegma.landed, 'is-leaving': plegma.leaving, 'no-right': !columns.right.length, 'no-left': !columns.left.length, 'has-strip': m.labelled && columns.right.length }">
     <div class="plegma-title entity-grid">
       <EntityTitle :kind="t('hero.kind.story')" :title="storyName(m.story)">
         <template v-if="topicsShown" #meta><EntityLink type="topic" :to="topicHref(String(m.story.issue))">{{ topicName(m.issue) }}</EntityLink></template>
@@ -58,14 +68,15 @@ const perNode = computed(() => (m.value ? articlesPerNode(m.value.articles) : 1)
         <EntityFact :label="t('entity.fact.outlets')" :value="fmtInt(m.outlets.length)" :sub="t('entity.fact.of', { n: m.dd.outlets.length })" />
       </EntityTitle>
     </div>
+    <SegmentedControl v-if="view.timed.value" v-model="spread" class="orbit-ring-tabs is-spread" :label="t('story.spread.label')" :options="[{ value: 'branches', label: t('story.spread.branches') }, { value: 'clouds', label: t('story.spread.clouds') }]" />
     <SegmentedControl v-if="m.labelled" v-model="ring" class="orbit-ring-tabs" :label="t('story.ring.label')" :options="[{ value: 'outlets', label: t('story.ring.outlets') }, { value: 'groups', label: t('story.groups.title') }, { value: 'stance', label: t('story.ring.stance') }]" />
     <div v-if="columns.left.length" class="orbit-col orbit-left">
       <PlegmaCard v-for="(key, i) in columns.left" :key="key" :at="2" :order="3 + i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
     </div>
     <div ref="map" class="orbit-map">
-      <p class="plegma-nodes-note">{{ perNode > 1 ? t('story.nodes.many', { n: fmtInt(perNode) }) : t('story.nodes.one') }}</p></div>
+      <p class="plegma-nodes-note">{{ nodesNote }}</p></div>
     <div v-if="columns.right.length" class="orbit-col orbit-right">
-      <PlegmaCard :at="0" :order="3" class="card-strip"><OutletStack :parts="stripParts" @hover="lightPart" :caption="plegma.ring === 'outlets' ? undefined : t('story.strip.groups', { n: stripParts.length })" /></PlegmaCard>
+      <PlegmaCard v-if="m.labelled" :at="0" :order="3" class="card-strip"><OutletStack :parts="stripParts" @hover="lightPart" :caption="plegma.ring === 'outlets' ? undefined : t('story.strip.groups', { n: stripParts.length })" /></PlegmaCard>
       <div class="orbit-subs">
         <div v-for="(column, c) in columns.right" :key="c" class="orbit-sub">
           <PlegmaCard v-for="(key, i) in column" :key="key" :at="0" :order="1 + c + i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>

@@ -1,4 +1,4 @@
-import { articleOfNode, articlesPerNode, nodeCount } from '../plegma-articles'
+import { articlesPerNode, nodeCount } from '../plegma-articles'
 import { toScreen } from '../plegma-camera'
 import { PLEGMA_WEB_MIN } from '../plegma-world'
 import type { PlegmaStory } from '../plegma-world'
@@ -19,14 +19,15 @@ export interface PointerDeps extends StageDeps {
   kick: () => void
 }
 
+// The stage is behind the page, so the pointer is read on the window; a card, a link or a control under it is not the map.
+export const CAPTURES = 'a, button, input, select, textarea, [role="dialog"], .dcard, .plegma-card, .plegma-day, .plegma-title, .plegma-dock, .kpi-tile, .page-head, .section-nav, .trail-bar, .header-bar, .sidebar, .page-footer, .tooltip, .outlet-link-hit'
+
 export const createStagePointer = (st: StageState, deps: PointerDeps, core: StageCore, articles: StageArticles, theme: StageTheme, hero: StageHero) => {
   const { plegma, reduced, locale, pointerFine, phone, canvas, tooltip, t, kick } = deps
   const { visible, placed, drift, focusStory, focusOutlet, webFocus, behind, name, coreOf, spokeSet, BACK_Z, backFrame, backPoint } = core
-  const { articleAt, ringAt, sectorOf, byOutlet } = articles
+  const { articleAt, ringAt, sectorOf, byOutlet, nodeArticle, isBranch, lagText } = articles
   const { themeNodeAt, themeWebOf, themeRingAt } = theme
   const { explore } = hero
-  // The stage is behind the page, so the pointer is read on the window; a card, a link or a control under it is not the map.
-  const CAPTURES = 'a, button, input, select, textarea, [role="dialog"], .dcard, .plegma-card, .plegma-day, .plegma-title, .plegma-dock, .kpi-tile, .page-head, .section-nav, .trail-bar, .header-bar, .sidebar, .page-footer, .tooltip, .outlet-link-hit'
   const pickAt = (x: number, y: number, reach: number) => {
     if (!st.world) return null
     let best: PlegmaStory | null = null
@@ -133,8 +134,26 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
     const list = plegma.articles
     if (story && list && list.length === story.n && plegma.landed) {
       const i = articleAt(story, p.x, p.y)
+      if (i >= 0 && isBranch(story)) {
+        // On Κλαδιά a node is one article with its time: its outlet, group, day and hour, and how long after the first it came (the start node is the first).
+        const article = list[i]!
+        if (st.hoverArticle !== i && reduced.value) kick()
+        st.hover = null
+        st.hoverArticle = i
+        if (st.ringLit) { st.ringLit = false; plegma.setHighlight(null) }
+        show({
+          title: article.title ?? article.outlet,
+          rows: [
+            ...(article.title ? [{ label: article.outlet, value: '' }] : []),
+            { label: article.group ?? t('story.nogroup'), value: `${fmtDate(athensDate(article.time!))}, ${athensClock(article.time!)}`, color: `var(--cat-${article.slot})` },
+            i === 0 ? { label: t('story.branches.first'), value: '' } : { label: t('story.branches.after'), value: lagText(article.time! - list[0]!.time!) }
+          ],
+          field: true
+        }, e)
+        return
+      }
       if (i >= 0) {
-        const article = list[articleOfNode(i, list.length)]!
+        const article = list[nodeArticle(i, list.length)]!
         const per = articlesPerNode(story.n)
         if (st.hoverArticle !== i && reduced.value) kick()
         st.hover = null

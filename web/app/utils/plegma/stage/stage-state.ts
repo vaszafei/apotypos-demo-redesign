@@ -1,6 +1,8 @@
 import type { PlegmaCamera, PlegmaFlight, PlegmaPoint } from '../plegma-camera'
 import type { PlegmaHighlight } from '../plegma-articles'
 import type { PlegmaStory, PlegmaWorld } from '../plegma-world'
+import { createWebZoom } from '../plegma-zoom'
+import type { WebZoom } from '../plegma-zoom'
 
 // What the parts of PlegmaStage share: the canvases and their size, the camera, the colors, and the state of the pointer and of the intro. One object, made once by the stage;
 // what only one part uses stays inside that part.
@@ -70,6 +72,9 @@ export interface StageState {
   heroCleared: boolean
   heroRev: Map<number, number>
   lantern: HeroSpot
+  // The zoom of the story web of Κλαδιά and Σύννεφα (utils/plegma/plegma-zoom.ts), and when it last stepped.
+  zoom: WebZoom
+  zoomAt: number
 }
 
 export const createStageState = (): StageState => ({
@@ -117,5 +122,7 @@ export const createStageState = (): StageState => ({
   travel: null,
   heroCleared: false,
   heroRev: new Map(),
-  lantern: { x: -9999, y: -9999, v: 0, on: false }
+  lantern: { x: -9999, y: -9999, v: 0, on: false },
+  zoom: createWebZoom(),
+  zoomAt: 0
 })

@@ -18,7 +18,7 @@ export interface DrawDeps extends StageDeps { canvas: Ref<HTMLCanvasElement | un
 export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore, articles: StageArticles, theme: StageTheme, hero: StageHero) => {
   const { plegma, reduced, canvas, canvasFocus } = deps
   const { placed, drift, colourOf, focusStory, focusIssue, focusOutlet, behind, coreOf, spokeSet, targetCamera, CLEAR_PAD, visible, arcOf, ease, BACK_Z, backFrame, backPoint } = core
-  const { drawArticles, articleWorldRadius, articleAspect, ringOf } = articles
+  const { drawArticles, clearRadius, linkFrom } = articles
   const { drawTheme } = theme
   const { drawHero } = hero
   const EMPTY = new Set<PlegmaStory>()
@@ -97,7 +97,8 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
     const melt = clamp((now - d.t0 - MOVE_MS) / MELT_MS, 0, 1)
     // The center of a story's web is where the story is; a dot that came from the web of a day goes to the middle of the free area, which is where the page puts its web.
     const box = plegma.region && !story ? regionBox(st.width, st.height, plegma.region) : null
-    const to = story ? toScreen(st.cam, st.width, st.height, placed(story)) : { x: box?.cx ?? st.width / 2, y: box?.cy ?? st.height / 2 }
+    // On Κλαδιά the center is the start node, at the left of the region: the dot becomes it.
+    const to = story ? articles.centerPoint(story) ?? toScreen(st.cam, st.width, st.height, placed(story)) : { x: box?.cx ?? st.width / 2, y: box?.cy ?? st.height / 2 }
     const x = d.x + (to.x - d.x) * e
     const y = d.y + (to.y - d.y) * e
     const r = d.r + ((story ? articles.centerRadius() : 9) - d.r) * e
@@ -195,7 +196,9 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
     if (!plegma.landed) landedAt = -1
     else if (landedAt < 0) landedAt = now
     const linkIn = reduced.value ? 1 : landedAt < 0 ? 0 : smooth(0.14, 0.84, (now - landedAt - LINKS_AFTER) / CARD_MS)
-    if (introAt < 0 && key && plegma.region && (!st.flight || (now - st.flight.t0) / Math.max(st.flight.dur, 1) >= (st.flight.level ? INTRO_AT_TRAVEL : st.ghost ? INTRO_AT_ARC : INTRO_AT)) && (!st.dive || now - st.dive.t0 >= MOVE_MS * DIVE_HOLD)) introAt = now
+    // A story's web waits for its articles (Κλαδιά needs their times), so it is drawn once.
+    const articlesIn = !story || plegma.articles?.length === story.n
+    if (introAt < 0 && key && plegma.region && articlesIn && (!st.flight || (now - st.flight.t0) / Math.max(st.flight.dur, 1) >= (st.flight.level ? INTRO_AT_TRAVEL : st.ghost ? INTRO_AT_ARC : INTRO_AT)) && (!st.dive || now - st.dive.t0 >= MOVE_MS * DIVE_HOLD)) introAt = now
     st.introP = !key || reduced.value ? 1 : introAt < 0 ? 0 : clamp((now - introAt) / INTRO_MS, 0, 1)
     st.nodeIn = smooth(0, 0.18, st.introP)
     st.lineIn = smooth(0.45, 0.95, st.introP)
@@ -206,7 +209,7 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
     const core = issue !== null ? coreOf(issue) : story?.coded ? spokeSet(story.issue) : EMPTY
     const homeSet = new Set(st.webs)
     const dim = onHome ? 0.38 : issue !== null || outletOn ? 0.13 : 0.2
-    st.push = story ? { s: story, r: articleWorldRadius(story) * 1.25 * articleAspect() + CLEAR_PAD } : null
+    st.push = story ? { s: story, r: clearRadius(story) + CLEAR_PAD } : null
     const bz = onHome ? z : BACK_Z
     // The background is seen from the web: the world point at the middle of the map region stays there, and the world around it is drawn at the far zoom.
     const frame = backFrame()
@@ -371,10 +374,7 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
     // spread around it by the direction they go in, and fade toward the other story. The story a card of other stories points at has its line lit: solid, glowing, flowing.
     const pointed = lineLast !== null && lineMix > 0.01 ? st.world.byId.get(lineLast) ?? null : null
     if (story && !onHome && (story.coded || pointed)) {
-      const here = toScreen(st.cam, st.width, st.height, placed(story))
-      const ring = ringOf(articleWorldRadius(story) * st.cam.z)
-      const edge = ring + 9
-      const kx = articleAspect()
+      const { edge, kx, ...here } = linkFrom(story)
       const colour = story.slot > 0 ? colourOf(story) : st.cats[0] ?? st.mute
       const listed: PlegmaStory[] = []
       for (const id of plegma.related) { const b = st.world.byId.get(id); if (b && b !== story) listed.push(b) }
