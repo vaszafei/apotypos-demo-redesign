@@ -50,14 +50,16 @@ const xTicks = computed(() => {
 
 const linePath = computed(() => smoothPath(props.steps.map(s => [X(s.k), Y(s.n)] as [number, number])))
 const colourOf = (slot: number) => `var(--cat-${slot})`
-const colW = computed(() => Math.min(18, Math.max(2, slotW.value * 0.72)))
+const colW = computed(() => Math.min(8, Math.max(2, slotW.value * 0.4)))
+// Each column is cut to a rounded bar; its parts are stacked inside it.
+const clip = useId()
 const columns = computed(() => {
   if (!bars.value) return []
   const by = props.mode === 'groups' ? 'groups' : 'outlets'
   return props.steps.filter(s => s.n).map((s) => {
     let acc = 0
     const list = stepParts(s, by)
-    return { k: s.k, rects: list.map((p) => {
+    return { k: s.k, top: Y(s.n), rects: list.map((p) => {
       const y1 = Y(acc)
       acc += p.n
       const y0 = Y(acc)
@@ -102,7 +104,12 @@ const click = (e: MouseEvent) => { const k = stepAt(e); emit('pick', props.steps
       <text v-for="x in xTicks" :key="x.k" :x="X(x.k)" :y="height - 6" text-anchor="middle">{{ x.text }}</text>
       <rect v-if="band" class="line-band" :x="band.x" :y="pad.top" :width="band.width" :height="plotH" />
       <g v-if="bars">
-        <g v-for="c in columns" :key="c.k" :opacity="picked !== null && picked !== c.k ? 0.3 : 0.75">
+        <defs>
+          <clipPath v-for="c in columns" :id="`${clip}-${c.k}`" :key="c.k">
+            <rect :x="X(c.k) - colW / 2" :y="c.top" :width="colW" :height="Y(0) - c.top" :rx="colW / 2" />
+          </clipPath>
+        </defs>
+        <g v-for="c in columns" :key="c.k" :clip-path="`url(#${clip}-${c.k})`" :opacity="picked !== null && picked !== c.k ? 0.3 : 0.75">
           <rect v-for="r in c.rects" :key="r.key" :x="X(c.k) - colW / 2" :y="r.y" :width="colW" :height="r.h" :fill="r.fill" />
         </g>
       </g>
