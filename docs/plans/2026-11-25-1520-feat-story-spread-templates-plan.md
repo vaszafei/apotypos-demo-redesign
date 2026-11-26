@@ -27,6 +27,8 @@ What this replaces, and my reading of what follows from it (not the owner's word
 - My reading: the dot that arrives from a theme (20 Nov transitions, "the dot is the story") becomes the start node of Κλαδιά, and the branches unfold from it.
 - **Settled later the same day (owner):** "lets just keep the circle for the non article dates". A story with article times (October, 14–27 Oct) has Κλαδιά and Σύννεφα and no circle. A story with no times (August, September) keeps the circle as today, with its ring tabs and no switch. So R4 and R6 stand. August and September are not dropped. Reasons: the Aug–Sep times exist only in the Mac crawl database, which nobody here can reach; the AWS box, the colleague's VM and `old_corpus.tar` do not have them; and October stories have no stance, frames or people (the LLM tagging covered Aug–Sep only).
 
+- **Settled again, 26 Nov evening (owner), and this wins over the point above:** August and September are dropped from the whole app; only 14–27 Oct stays (PR #223, merged). Every story has article times, so **no story page has the circle**: Κλαδιά (default) and Σύννεφα only. R4, R6 and the "story without times" branches of R7 no longer apply. Owner: "dont consider that we loose stance for now".
+
 ## Goal Capsule
 
 - **Objective:** A reader of an October story sees how it spread in time and which outlet started it first, while the circle web they know stays as it is.
