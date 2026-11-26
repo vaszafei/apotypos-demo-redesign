@@ -8,3 +8,7 @@ export const isHidden = (path: string) => HIDDEN_ROUTES.includes(bare(path))
 export const isGone = (path: string) => GONE_ROUTES.includes(bare(path))
 // The kinds of the search index that lead to those pages.
 export const HIDDEN_KINDS = ['topics', 'people']
+// The topic of a story, a topic count or link anywhere in the app.
+export const topicsShown = !HIDDEN_KINDS.includes('topics')
+// The labels of the analysed Aug–Sep set: the stance towards the government, the news share and the clickbait (no October labels yet, #204).
+export const analysedShown = false

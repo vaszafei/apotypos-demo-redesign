@@ -2,12 +2,12 @@
 // articles have times. docs/redesign/prototypes/data/ keeps every day, so make-db-fixtures.py still has its base. Run by sync-prototype.mjs.
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 
-const KEYS = ['home', 'media', 'stories', 'storyDetail', 'search']
+const KEYS = ['home', 'media', 'stories', 'storyDetail', 'search', 'groups']
 
 const later = (a, b) => (a > b ? a : b)
 
 export const trimWindow = (fx) => {
-  const { home, media, stories, storyDetail: detail, search } = fx
+  const { home, media, stories, storyDetail: detail, search, groups } = fx
   const from = stories.dbCovered?.[0]
   if (!from) return null
   for (const [name, f] of [['home', home], ['media', media], ['stories', stories], ['storyDetail', detail]]) {
@@ -58,6 +58,21 @@ export const trimWindow = (fx) => {
   marks(home)
 
   if (search) search.storyRows = search.storyRows.filter(([id]) => kept.has(id))
+
+  // The articles of each outlet and group are counted again in the window; the rest of groups (analysed, stance, topics) is Aug–Sep, and the app hides it.
+  if (groups) {
+    const bySlug = new Map(media.outlets.map((o) => [o.slug, articles.get(o.name) ?? 0]))
+    const recount = (o) => { o.collected = bySlug.get(o.slug) ?? 0 }
+    for (const g of groups.groups) {
+      g.outlets.forEach(recount)
+      g.outlets.sort((a, b) => b.collected - a.collected)
+      g.collected = g.outlets.reduce((a, o) => a + o.collected, 0)
+    }
+    groups.ungrouped.forEach(recount)
+    groups.ungrouped.sort((a, b) => b.collected - a.collected)
+    groups.totalCollected = groups.groups.reduce((a, g) => a + g.collected, 0) + groups.ungrouped.reduce((a, o) => a + o.collected, 0)
+    groups.window = [from, stories.window[1]]
+  }
   return { from, cut, stories: stories.stories.length }
 }
 

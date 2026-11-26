@@ -94,7 +94,7 @@ const ringArcs = computed(() => {
   const arcs = m.grp.outlets.filter(o => o.collected > 0).sort((a, b) => b.collected - a.collected).map(o => ({ name: o.name, slot, n: o.collected }))
   return arcs.length ? arcs : null
 })
-const stanceOfGroup = computed(() => (model.value && model.value.writes.stanceN >= STANCE_MIN ? model.value.writes.stanceMine : null))
+const stanceOfGroup = computed(() => (analysedShown && model.value && model.value.writes.stanceN >= STANCE_MIN ? model.value.writes.stanceMine : null))
 watch(ringArcs, list => plegma.setThemeGroups(list), { immediate: true })
 watch(stanceOfGroup, counts => { plegma.setStance(counts); if (!counts && plegma.ring === 'stance') plegma.setRing('groups') }, { immediate: true })
 onBeforeUnmount(() => { plegma.setThemeStories(null); plegma.setThemeGroups(null); plegma.setStance(null); plegma.setOutletSlot(0) })
@@ -118,7 +118,7 @@ const tall = computed(() => Math.round(Math.min(300, Math.max(110, windowHeight.
     <section class="dcard c-12"><div class="empty-state" data-state="empty"><AppIcon name="inbox" /><p style="margin: 0">{{ t('topics2.empty') }}</p></div></section>
   </div>
   <ErrorPage v-else-if="!model" :status="404" />
-  <div v-else ref="orbit" class="plegma-orbit is-group" :class="{ 'is-in': plegma.landed, 'is-leaving': plegma.leaving }">
+  <div v-else ref="orbit" class="plegma-orbit is-group" :class="{ 'is-in': plegma.landed, 'is-leaving': plegma.leaving, 'no-right': !(analysedShown || topicsShown) }">
     <div class="plegma-title entity-grid">
       <EntityTitle :kind="t('hero.kind.group')">
         <template #title><span class="group-cell"><span class="dot" :style="`--dot:${model.color}`" aria-hidden="true" />{{ model.grp.name }}</span></template>
@@ -144,9 +144,9 @@ const tall = computed(() => Math.round(Math.min(300, Math.max(110, windowHeight.
       <p class="plegma-nodes-note">{{ t('group.map.note') }}</p>
     </div>
 
-    <div class="orbit-col orbit-right">
+    <div v-if="analysedShown || topicsShown" class="orbit-col orbit-right">
       <div class="orbit-subs">
-        <div class="orbit-sub">
+        <div v-if="analysedShown" class="orbit-sub">
           <PlegmaCard :at="0" :order="1" class="card-stance">
             <StanceCard
               :rows="[{ label: t('entity.stance.group'), color: model.color, counts: model.writes.stanceMine }, { label: t('entity.stance.all'), color: NO_GROUP, counts: model.writes.stanceAll }]"
@@ -162,7 +162,7 @@ const tall = computed(() => Math.round(Math.min(300, Math.max(110, windowHeight.
             </DashCard>
           </PlegmaCard>
         </div>
-        <div class="orbit-sub">
+        <div v-if="topicsShown" class="orbit-sub">
           <PlegmaCard :at="0" :order="3" class="card-topics">
             <DashCard :title="t('group2.topics.title')" :info="t('group2.topics.info')">
               <template v-if="model.topics.rows.length">

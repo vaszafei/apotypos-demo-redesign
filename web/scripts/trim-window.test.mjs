@@ -8,12 +8,13 @@ const marks = { dates, window: [dates[0], dates[3]], volumeFrom: dates[1], dbCov
 const fixtures = () => ({
   home: { ...marks, outlets: [{ name: 'A', daily: [1, 2, 3, 4] }], issueDaily: [[5, 6, null, null]] },
   media: {
-    ...marks, outlets: [{ name: 'A' }], outletDaily: [[[1, 0, 0, 0], [2, 0, 0, 0], [3, null, null, null], [4, null, null, null]]], issueDaily: [[1, 1, null, null]],
+    ...marks, outlets: [{ name: 'A', slug: 'a' }], outletDaily: [[[1, 0, 0, 0], [2, 0, 0, 0], [3, null, null, null], [4, null, null, null]]], issueDaily: [[1, 1, null, null]],
     stories: [{ el: 'old', daily: [3, 1, 0, 0] }, { el: 'new', daily: [0, 0, 2, 0] }], storyDays: []
   },
   stories: { ...marks, stories: [{ id: 1, days: [0, 3, 1, 1] }, { id: 2, days: [1, 2, 3, 5] }, { id: 3, days: [2, 4] }] },
   storyDetail: { ...marks, outlets: [{ name: 'A', total: 99 }], stories: [{ id: 1, t: [0, 0, 3] }, { id: 2, t: [0, 1, 2, 0, 3, 5] }, { id: 3, t: [0, 2, 4] }] },
-  search: { storyRows: [[1, 'a', 0, 1], [2, 'b', 0, 1], [3, 'c', 0, 1]] }
+  search: { storyRows: [[1, 'a', 0, 1], [2, 'b', 0, 1], [3, 'c', 0, 1]] },
+  groups: { window: [dates[0], dates[3]], totalCollected: 99, groups: [{ collected: 99, outlets: [{ slug: 'a', collected: 99 }] }], ungrouped: [{ slug: 'b', collected: 5 }] }
 })
 
 test('every daily fixture starts on the first day the database covers', () => {
@@ -43,6 +44,15 @@ test('the named stories of media keep only the ones with articles in the window,
   trimWindow(fx)
   assert.deepEqual(fx.media.stories, [{ el: 'new', daily: [2, 0] }])
   assert.equal(fx.storyDetail.outlets[0].total, 7)
+})
+
+test('the articles of each outlet and group are counted again in the window', () => {
+  const fx = fixtures()
+  trimWindow(fx)
+  assert.deepEqual(fx.groups.groups[0], { collected: 7, outlets: [{ slug: 'a', collected: 7 }] })
+  assert.deepEqual(fx.groups.ungrouped, [{ slug: 'b', collected: 0 }])
+  assert.equal(fx.groups.totalCollected, 7)
+  assert.deepEqual(fx.groups.window, ['2026-10-14', '2026-10-15'])
 })
 
 test('fixtures without a database range are left as they are', () => {
