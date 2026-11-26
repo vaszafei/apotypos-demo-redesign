@@ -53,6 +53,10 @@
   .plegma-orbit.is-story.has-strip .orbit-under > .card-people { grid-area: people; max-height: 200px; }
   .plegma-orbit.is-story.has-strip .card-people .data-table :is(th, td) { padding-block: 2px; }
 }
+/* A story with no left column: the map takes its room. */
+.plegma-orbit.is-story.no-left { grid-template-areas: "title title title" "map map right" "under under under"; }
+/* The stance card is 40% narrower than a column of the right (1.8 of 3 parts); the map takes the rest. */
+@media (min-width: 1280px) { .plegma-orbit.is-story.no-left.has-strip { grid-template-columns: minmax(0, 2fr) minmax(0, 5.2fr) minmax(0, 1.8fr) minmax(0, 3fr); grid-template-areas: "title title title title" "map map one two" "under under under people"; } }
 .plegma-orbit.is-story.no-right { grid-template-areas: "title title title" "left map map" "under under under"; }
 @media (min-width: 1280px) { .plegma-orbit.is-story.no-right { grid-template-columns: minmax(0, 2fr) minmax(0, 4fr) minmax(0, 6fr); grid-template-areas: "title title title" "left map map" "under under under"; } }
 .plegma-orbit:is(.is-story, .is-theme, .is-outlet, .is-group) .orbit-map { grid-area: map; }

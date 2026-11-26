@@ -50,7 +50,7 @@ const perNode = computed(() => (m.value ? articlesPerNode(m.value.articles) : 1)
     <section class="dcard c-12"><div class="empty-state" data-state="empty"><AppIcon name="inbox" /><p style="margin: 0">{{ t('topics2.empty') }}</p></div></section>
   </div>
   <ErrorPage v-else-if="!m" :status="404" />
-  <div v-else ref="orbit" class="plegma-orbit is-story" :class="{ 'is-in': plegma.landed, 'is-leaving': plegma.leaving, 'no-right': !columns.right.length, 'has-strip': columns.right.length }">
+  <div v-else ref="orbit" class="plegma-orbit is-story" :class="{ 'is-in': plegma.landed, 'is-leaving': plegma.leaving, 'no-right': !columns.right.length, 'no-left': !columns.left.length, 'has-strip': columns.right.length }">
     <div class="plegma-title entity-grid">
       <EntityTitle :kind="t('hero.kind.story')" :title="storyName(m.story)">
         <template #meta><EntityLink type="topic" :to="topicHref(String(m.story.issue))">{{ topicName(m.issue) }}</EntityLink></template>
@@ -59,7 +59,7 @@ const perNode = computed(() => (m.value ? articlesPerNode(m.value.articles) : 1)
       </EntityTitle>
     </div>
     <SegmentedControl v-if="m.labelled" v-model="ring" class="orbit-ring-tabs" :label="t('story.ring.label')" :options="[{ value: 'outlets', label: t('story.ring.outlets') }, { value: 'groups', label: t('story.groups.title') }, { value: 'stance', label: t('story.ring.stance') }]" />
-    <div class="orbit-col orbit-left">
+    <div v-if="columns.left.length" class="orbit-col orbit-left">
       <PlegmaCard v-for="(key, i) in columns.left" :key="key" :at="2" :order="3 + i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
     </div>
     <div ref="map" class="orbit-map">
