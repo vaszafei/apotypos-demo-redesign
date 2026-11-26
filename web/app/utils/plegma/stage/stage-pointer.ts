@@ -19,14 +19,15 @@ export interface PointerDeps extends StageDeps {
   kick: () => void
 }
 
+// The stage is behind the page, so the pointer is read on the window; a card, a link or a control under it is not the map.
+export const CAPTURES = 'a, button, input, select, textarea, [role="dialog"], .dcard, .plegma-card, .plegma-day, .plegma-title, .plegma-dock, .kpi-tile, .page-head, .section-nav, .trail-bar, .header-bar, .sidebar, .page-footer, .tooltip, .outlet-link-hit'
+
 export const createStagePointer = (st: StageState, deps: PointerDeps, core: StageCore, articles: StageArticles, theme: StageTheme, hero: StageHero) => {
   const { plegma, reduced, locale, pointerFine, phone, canvas, tooltip, t, kick } = deps
   const { visible, placed, drift, focusStory, focusOutlet, webFocus, behind, name, coreOf, spokeSet, BACK_Z, backFrame, backPoint } = core
   const { articleAt, ringAt, sectorOf, byOutlet, nodeArticle, isBranch, lagText } = articles
   const { themeNodeAt, themeWebOf, themeRingAt } = theme
   const { explore } = hero
-  // The stage is behind the page, so the pointer is read on the window; a card, a link or a control under it is not the map.
-  const CAPTURES = 'a, button, input, select, textarea, [role="dialog"], .dcard, .plegma-card, .plegma-day, .plegma-title, .plegma-dock, .kpi-tile, .page-head, .section-nav, .trail-bar, .header-bar, .sidebar, .page-footer, .tooltip, .outlet-link-hit'
   const pickAt = (x: number, y: number, reach: number) => {
     if (!st.world) return null
     let best: PlegmaStory | null = null

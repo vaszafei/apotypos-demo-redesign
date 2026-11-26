@@ -37,6 +37,8 @@ export interface PlegmaBranchWeb {
   firsts: number[]
   // The marks of the axis under the branches: the day the story began, the next days, and the hours while it is mostly inside a day. The most important first.
   ticks: BranchTick[]
+  // Every mark the axis could have, the most important first: the zoom (plegma-zoom.ts) shows those that find room as the web opens.
+  marks: BranchTick[]
   axisY: number
 }
 
@@ -87,7 +89,7 @@ export const buildBranchWeb = (input: BranchInput): PlegmaBranchWeb => {
   const yBottom = h / 2 - BRANCH_AXIS - 6
   const mid = (yTop + yBottom) / 2
   const H = yBottom - yTop
-  if (!n) return { n, x, y, phase, speed, reach, edges: new Uint32Array(0), bow: new Float32Array(0), r, ends: [], firsts: [], ticks: [], axisY: yBottom + 22 }
+  if (!n) return { n, x, y, phase, speed, reach, edges: new Uint32Array(0), bow: new Float32Array(0), r, ends: [], firsts: [], ticks: [], marks: [], axisY: yBottom + 22 }
   const t0 = times[0]!
   const lag = (i: number) => times[i]! - t0
   const last = Math.max(1, lag(n - 1))
@@ -219,18 +221,22 @@ export const buildBranchWeb = (input: BranchInput): PlegmaBranchWeb => {
     used.push(c.x)
     ticks.push(c)
   }
-  return { n, x, y, phase, speed, reach, edges: Uint32Array.from(pairs), bow: Float32Array.from(bows), r, ends, firsts, ticks, axisY: yBottom + 22 }
+  return { n, x, y, phase, speed, reach, edges: Uint32Array.from(pairs), bow: Float32Array.from(bows), r, ends, firsts, ticks, marks: [ticks[0]!, ...cand], axisY: yBottom + 22 }
 }
 
-// A name on the branches: where it is (px, from the middle of the region, as the nodes), its text, size and weight, how it is anchored, the slot of the dot before it (-1: none) and whether it is muted.
-export interface BranchName { x: number, y: number, text: string, size: number, weight: number, anchor: 'start' | 'end' | 'middle', dot: number, mute: boolean }
-export interface BranchNameAsk { x: number, y: number, text: string, size?: number, weight?: number, anchor?: 'start' | 'end' | 'middle', dot?: number, mute?: boolean, fixed?: boolean }
+// A name on the branches: where it is (px, from the middle of the region, as the nodes), its text, size and weight, how it is anchored, the slot of the dot before it (-1: none),
+// whether it is muted, and how much it shows (the names of the deeper zoom come in over a band of zoom).
+export interface BranchName { x: number, y: number, text: string, size: number, weight: number, anchor: 'start' | 'end' | 'middle', dot: number, mute: boolean, alpha: number }
+export interface BranchNameAsk { x: number, y: number, text: string, size?: number, weight?: number, anchor?: 'start' | 'end' | 'middle', dot?: number, mute?: boolean, fixed?: boolean, alpha?: number }
 
 // The names are placed in order: each takes the first place, from where it was asked and then a line up or down, that meets no node, no name before it and
-// does not leave the region; a fixed name takes its place as it is. `width` measures a text at a size and weight.
-export const placeBranchNames = (web: PlegmaBranchWeb, asks: BranchNameAsk[], box: { w: number, h: number }, width: (text: string, size: number, weight: number) => number): BranchName[] => {
+// does not leave the region; a fixed name takes its place as it is. `width` measures a text at a size and weight. A node outside the region meets no name (the names keep inside it).
+export const placeBranchNames = (web: Pick<PlegmaBranchWeb, 'n' | 'x' | 'y' | 'r'>, asks: BranchNameAsk[], box: { w: number, h: number }, width: (text: string, size: number, weight: number) => number): BranchName[] => {
   const taken: { x0: number, y0: number, x1: number, y1: number }[] = []
-  for (let i = 0; i < web.n; i++) taken.push({ x0: web.x[i]! - web.r - 2, x1: web.x[i]! + web.r + 2, y0: web.y[i]! - web.r - 1, y1: web.y[i]! + web.r + 1 })
+  for (let i = 0; i < web.n; i++) {
+    if (Math.abs(web.x[i]!) > box.w / 2 + web.r + 2 || Math.abs(web.y[i]!) > box.h / 2 + web.r + 1) continue
+    taken.push({ x0: web.x[i]! - web.r - 2, x1: web.x[i]! + web.r + 2, y0: web.y[i]! - web.r - 1, y1: web.y[i]! + web.r + 1 })
+  }
   const out: BranchName[] = []
   for (const ask of asks) {
     const size = ask.size ?? 11.5
@@ -243,7 +249,7 @@ export const placeBranchNames = (web: PlegmaBranchWeb, asks: BranchNameAsk[], bo
       const b = { x0: left - 2, x1: left + tw + 2, y0: ask.y + d - size * 0.8, y1: ask.y + d + size * 0.45 }
       if (!ask.fixed && (b.x1 > box.w / 2 || b.x0 < -box.w / 2 || b.y0 < -box.h / 2 || b.y1 > box.h / 2 || taken.some(q => b.x0 < q.x1 && b.x1 > q.x0 && b.y0 < q.y1 && b.y1 > q.y0))) continue
       taken.push(b)
-      out.push({ x: ask.x, y: ask.y + d, text: ask.text, size, weight, anchor, dot, mute: !!ask.mute })
+      out.push({ x: ask.x, y: ask.y + d, text: ask.text, size, weight, anchor, dot, mute: !!ask.mute, alpha: ask.alpha ?? 1 })
       break
     }
   }

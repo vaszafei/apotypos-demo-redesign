@@ -94,7 +94,7 @@ export const buildCloudWeb = (input: BranchInput): StoryCloudWeb => {
   const mid = (yTop + yBottom) / 2
   const H = yBottom - yTop
   const unit = cloudUnit(times)
-  const empty = { n, x, y, phase, speed, reach, r, ends: [], firsts: [], ticks: [], axisY: yBottom + 22, unit }
+  const empty = { n, x, y, phase, speed, reach, r, ends: [], firsts: [], ticks: [], marks: [], axisY: yBottom + 22, unit }
   if (!n) return { ...empty, edges: new Uint32Array(0), bow: new Float32Array(0), clouds: [], threads: 0 }
   const local = Array.from(times, athensLocal)
   const base = local[0]! - (local[0]! % DAY)

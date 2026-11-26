@@ -14,6 +14,8 @@ import { createStageTheme } from '~/utils/plegma/stage/stage-theme'
 import { createStageHero } from '~/utils/plegma/stage/stage-hero'
 import { createStageDraw } from '~/utils/plegma/stage/stage-draw'
 import { createStagePointer } from '~/utils/plegma/stage/stage-pointer'
+import { createStageZoom } from '~/utils/plegma/stage/stage-zoom'
+import { zoomMoving } from '~/utils/plegma/plegma-zoom'
 
 // The Plegma: one canvas behind the pages, in the layout, so it outlives a page change and a flight can end on another page (KTD1). It draws every story of the
 // fixtures at its permanent place (plegma.json), with the look of the home hero: a web for a story, a dot for the rest, dashed arcs along a theme. The route says what
@@ -39,6 +41,7 @@ const hero = createStageHero(st, { reduced, tooltip, fogged, kick: () => kick() 
 const draw = createStageDraw(st, { ...deps, canvas, canvasFocus }, core, articles, theme, hero).draw
 const pointer = createStagePointer(st, { ...deps, pointerFine, phone, canvas, tooltip, t, kick: () => kick() }, core, articles, theme, hero)
 const { leave } = pointer
+const zoom = createStageZoom(st, { ...deps, pointerFine, canvas, kick: () => kick() }, core, articles)
 
 const stories = useFixtureLazy<PlegmaStoriesFile>('stories', { required: ['dates', 'issues', 'stories'] })
 const home = useFixtureLazy<PlegmaHomeFile>('home', { required: ['issues', 'issueDaily'] })
@@ -119,8 +122,9 @@ const frame = (now: number) => {
     if (Math.abs(st.walk.x - st.cam.x) < 0.5 && Math.abs(st.walk.y - st.cam.y) < 0.5 && Math.abs(st.walk.z / st.cam.z - 1) < 0.002) { Object.assign(st.cam, st.walk); st.walk = null }
   }
   walkAt = now
+  const zooming = articles.stepWebZoom(now) && zoomMoving(st.zoom)
   draw(now)
-  if (!reduced.value || st.flight || st.walk) raf = requestAnimationFrame(frame)
+  if (!reduced.value || st.flight || st.walk || zooming) raf = requestAnimationFrame(frame)
 }
 function kick () { if (!raf && running()) raf = requestAnimationFrame(frame) }
 const halt = () => { if (raf) cancelAnimationFrame(raf); raf = 0 }
@@ -152,6 +156,14 @@ const resize = () => {
 useEventListener(window, 'pointermove', pointer.onMove)
 useEventListener(document, 'pointerleave', leave)
 useEventListener(window, 'click', pointer.onClick)
+// ---- the zoom of the story web ----
+useEventListener(window, 'wheel', zoom.onWheel, { passive: false })
+useEventListener(window, 'pointerdown', zoom.onDown)
+useEventListener(window, 'pointermove', zoom.onMove)
+useEventListener(window, 'pointerup', zoom.onUp)
+useEventListener(window, 'pointercancel', zoom.onUp)
+useEventListener(window, 'click', zoom.onClickCapture, { capture: true })
+useEventListener(window, 'dblclick', zoom.onDouble)
 
 // ---- start ----
 const ready = computed(() => !!stories.data.value && !!home.data.value && !!file.data.value)

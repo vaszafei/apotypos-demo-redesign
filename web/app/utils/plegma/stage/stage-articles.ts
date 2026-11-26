@@ -3,6 +3,7 @@ import type { PlegmaArticle, PlegmaHighlight } from '../plegma-articles'
 import { branchLag, branchRadius, buildBranchWeb, placeBranchNames } from '../plegma-branches'
 import type { BranchName, BranchNameAsk, PlegmaBranchWeb } from '../plegma-branches'
 import { buildCloudWeb, cloudLabel } from '../plegma-story-clouds'
+import { isZoomed, resetWebZoom, stepZoom } from '../plegma-zoom'
 import { PLEGMA_REGION, frameStory, regionBox, toScreen } from '../plegma-camera'
 import { ringEmptiedTo } from '../plegma-leave'
 import { RING_START } from '../plegma-ring'
@@ -104,7 +105,8 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
   }
   // Κλαδιά (utils/plegma/plegma-branches.ts) or Σύννεφα (plegma-story-clouds.ts), as `plegma.spread`: a story whose articles have their time is its web spread by time,
   // in the whole free cell, with no ring. One node for each article. The web and its names are made once for a story and a size of the region, in pixels of the framing; the frame scales them with the camera.
-  const branch = { key: '', list: null as unknown, web: null as PlegmaBranchWeb | null, aw: null as ReturnType<typeof articleWebOf> | null, names: [] as BranchName[], fz: 1, w: 0, h: 0, threads: 0, from: null as { x: Float32Array, y: Float32Array } | null, at: 0 }
+  const branch = { key: '', list: null as unknown, web: null as PlegmaBranchWeb | null, aw: null as ReturnType<typeof articleWebOf> | null, names: [] as BranchName[], fz: 1, w: 0, h: 0, threads: 0, from: null as { x: Float32Array, y: Float32Array } | null, at: 0,
+    asks: null as ((X: ArrayLike<number>, Y: ArrayLike<number>, z: number, cam: { x: number, y: number }) => { asks: BranchNameAsk[], ticks: number[] }) | null, ticks: [] as number[] }
   // Switching between Κλαδιά and Σύννεφα the nodes glide from one layout to the other (MORPH_MS); the names of the new one come in over the second half.
   const branchGlide = () => {
     if (!branch.from) return 1
@@ -139,27 +141,94 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const input = { times, groups: list.map(a => a.order), seed: s.id, w: box.w, h: box.h, left }
     const clouds = plegma.spread === 'clouds' ? buildCloudWeb({ ...input, right: 24 }) : null
     const web = clouds ?? buildBranchWeb({ ...input, right: Math.max(0, ...[...byGroup.keys()].map(g => measure(endText(g), 11.5, 400))) + 34 })
-    const asks: BranchNameAsk[] = starts.map(([text, size, weight], k) => ({ x: web.x[0]! - pad, y: web.y[0]! + [-13, 5, 21][k]!, text, size, weight, anchor: 'end', mute: k !== 1, fixed: true }))
-    if (clouds) {
-      // Under each cloud its stretch of time; then the first article of each new outlet, the first few.
-      const dayOf = (local: number) => fmtDay(new Date(local * 60000).toISOString().slice(0, 10))
-      const days = new Intl.DateTimeFormat(deps.locale.value === 'en' ? 'en-GB' : 'el-GR', { day: 'numeric', month: 'short', timeZone: 'UTC' })
-      const range = (from: number, to: number) => days.formatRange(new Date(from * 60000), new Date(to * 60000))
-      clouds.clouds.forEach((c, k) => asks.push({ x: c.cx, y: c.labelY, text: cloudLabel(clouds.clouds, k, clouds.unit, dayOf, range), size: 11, anchor: 'middle', mute: true, fixed: true }))
-      const seen = new Set([first.outlet])
-      const firstOf = list.map((a, i) => (seen.has(a.outlet) ? -1 : (seen.add(a.outlet), i))).filter(i => i > 0)
-      for (const i of firstOf.slice(0, web.n < 12 ? 7 : 4)) asks.push({ x: web.x[i]! + 8, y: web.y[i]! - 7, text: `${list[i]!.outlet} ${lagText(times[i]! - times[0]!)}` })
-    } else {
-      for (const tick of web.ticks) asks.push({ x: tick.x, y: web.axisY, text: tick.kind === 'hour' ? athensClock(tick.minute) : fmtDay(athensDate(tick.minute)), size: 11, anchor: 'middle', mute: tick.kind === 'hour', fixed: true })
-      for (const i of web.firsts.slice(0, web.n < 12 ? 9 : 4)) asks.push({ x: web.x[i]! + 8, y: web.y[i]! - 7, text: `${list[i]!.outlet} ${lagText(times[i]! - times[0]!)}` })
-      for (const end of web.ends) asks.push({ x: web.x[end.node]! + 12, y: web.y[end.node]! + 4, text: endText(end.group), dot: list[end.node]!.slot })
+    const dayOf = (local: number) => fmtDay(new Date(local * 60000).toISOString().slice(0, 10))
+    const days = new Intl.DateTimeFormat(deps.locale.value === 'en' ? 'en-GB' : 'el-GR', { day: 'numeric', month: 'short', timeZone: 'UTC' })
+    const range = (from: number, to: number) => days.formatRange(new Date(from * 60000), new Date(to * 60000))
+    const cloudText = clouds ? clouds.clouds.map((_, k) => cloudLabel(clouds.clouds, k, clouds.unit, dayOf, range)) : []
+    const seen = new Set([first.outlet])
+    const outletFirsts = list.map((a, i) => (seen.has(a.outlet) ? -1 : (seen.add(a.outlet), i))).filter(i => i > 0)
+    const firsts = clouds ? outletFirsts.slice(0, web.n < 12 ? 7 : 4) : web.firsts.slice(0, web.n < 12 ? 9 : 4)
+    const lagOf = (i: number) => lagText(times[i]! - times[0]!)
+    const dayText = (i: number) => fmtDay(athensDate(times[i]!))
+    // The names at a zoom (utils/plegma/plegma-zoom.ts): the nodes as drawn (X, Y, in px of the region from its middle) and the camera of the zoom. At the whole web (z 1) the start node, the
+    // axis or the labels of the clouds, the first articles and the ends of the branches. Deeper, from 1.6 to 1.9, each outlet where it first shows; from 3.1 to 3.4 every article in view with
+    // its outlet and day, the first of a group also how long after the first article it came.
+    const band = (z: number, a: number, b: number) => clamp((z - a) / (b - a), 0, 1)
+    const asksAt = (X: ArrayLike<number>, Y: ArrayLike<number>, z: number, cam: { x: number, y: number }) => {
+      const rz = web.r * Math.pow(z, 0.45)
+      const inBox = (i: number) => Math.abs(X[i]!) < box.w / 2 && Math.abs(Y[i]!) < box.h / 2
+      const o2 = band(z, 1.6, 1.9)
+      const o3 = band(z, 3.1, 3.4)
+      const asks: BranchNameAsk[] = []
+      const ticks: number[] = []
+      const startPad = pad * Math.pow(z, 0.45)
+      if (inBox(0)) starts.forEach(([text, size, weight], k) => asks.push({ x: X[0]! - startPad, y: Y[0]! + [-13, 5, 21][k]!, text, size, weight, anchor: 'end', mute: k !== 1, fixed: true }))
+      if (clouds) {
+        clouds.clouds.forEach((c, k) => {
+          const x = (c.cx - cam.x) * z
+          if (Math.abs(x) > box.w / 2 - 20) return
+          asks.push({ x, y: Math.min(web.axisY, (c.labelY - 22 - cam.y) * z + 22), text: cloudText[k]!, size: 11, anchor: 'middle', mute: true, fixed: true })
+        })
+      } else {
+        // The axis stays under the branches; more marks find room as the web opens.
+        for (const [m, mark] of web.marks.entries()) {
+          const x = m ? (mark.x - cam.x) * z : X[0]!
+          if (Math.abs(x) > box.w / 2 - 10 || ticks.some(u => Math.abs(u - x) < (mark.kind === 'hour' ? 62 : 46)) || (m && x < X[0]! + 64 * z)) continue
+          ticks.push(x)
+          asks.push({ x, y: web.axisY, text: mark.kind === 'hour' ? athensClock(mark.minute) : fmtDay(athensDate(mark.minute)), size: 11, anchor: 'middle', mute: mark.kind === 'hour', fixed: true })
+        }
+      }
+      const asked = new Set<number>()
+      for (const i of firsts) {
+        if (!inBox(i)) continue
+        asked.add(i)
+        asks.push({ x: X[i]! + rz + 4, y: Y[i]! + (o3 > 0 ? 4 : -7), text: o3 > 0 ? `${list[i]!.outlet} · ${dayText(i)} · ${lagOf(i)}` : `${list[i]!.outlet} ${lagOf(i)}` })
+      }
+      for (const end of web.ends) if (inBox(end.node)) asks.push({ x: X[end.node]! + rz + 8, y: Y[end.node]! + 4, text: endText(end.group), dot: list[end.node]!.slot })
+      if (o3 > 0) { for (let i = 1; i < web.n; i++) if (!asked.has(i) && inBox(i)) asks.push({ x: X[i]! + rz + 4, y: Y[i]! + 4, text: `${list[i]!.outlet} · ${dayText(i)}`, size: 10.5, alpha: o3 }) }
+      else if (o2 > 0) {
+        const shown = new Set<string>()
+        for (let i = 1; i < web.n; i++) {
+          if (asked.has(i) || !inBox(i) || shown.has(list[i]!.outlet)) continue
+          shown.add(list[i]!.outlet)
+          asks.push({ x: X[i]! + rz + 4, y: Y[i]! + 4, text: list[i]!.outlet, size: 11, alpha: o2 })
+        }
+      }
+      return { asks, ticks }
     }
+    const whole = asksAt(web.x, web.y, 1, { x: 0, y: 0 })
     const glide = !reduced.value && branch.web && branch.list === list && branch.w === box.w && branch.h === box.h && branch.web.n === web.n ? { x: branch.web.x, y: branch.web.y } : null
+    // A new layout begins at its whole web.
+    resetWebZoom(st.zoom)
+    zoomNames.key = ''
     Object.assign(branch, {
-      from: glide, at: performance.now(), key, list, web, names: placeBranchNames(web, asks, box, measure), fz: frameStory(s, st.width, st.height, plegma.region).z, w: box.w, h: box.h, threads: clouds?.threads ?? 0,
+      from: glide, at: performance.now(), key, list, web, names: placeBranchNames(web, whole.asks, box, measure), ticks: whole.ticks, asks: asksAt, fz: frameStory(s, st.width, st.height, plegma.region).z, w: box.w, h: box.h, threads: clouds?.threads ?? 0,
       aw: { n: web.n, x: web.x, y: web.y, phase: web.phase, speed: web.speed, reach: web.reach, edges: web.edges, bow: web.bow, gap: 0, arcs: new Float32Array(0) }
     })
     return branch
+  }
+  // The names as the zoom has them: those of the whole web, or placed again for the zoom and the camera (once for each).
+  const zoomNames = { key: '', names: [] as BranchName[], ticks: [] as number[] }
+  const namesNow = () => {
+    const web = branch.web!
+    const zs = st.zoom
+    if (!isZoomed(zs) || !branch.asks) return { names: branch.names, ticks: branch.ticks }
+    const key = `${branch.key}|${zs.z.toFixed(3)}|${zs.cam.x.toFixed(1)}|${zs.cam.y.toFixed(1)}`
+    if (key === zoomNames.key) return zoomNames
+    const X = new Float32Array(web.n)
+    const Y = new Float32Array(web.n)
+    for (let i = 0; i < web.n; i++) { X[i] = (web.x[i]! - zs.cam.x) * zs.z; Y[i] = (web.y[i]! - zs.cam.y) * zs.z }
+    const { asks, ticks } = branch.asks(X, Y, zs.z, zs.cam)
+    Object.assign(zoomNames, { key, names: placeBranchNames({ n: web.n, x: X, y: Y, r: web.r * Math.pow(zs.z, 0.45) }, asks, { w: branch.w, h: branch.h }, measure), ticks })
+    return zoomNames
+  }
+  // One step of the zoom for a frame (PlegmaStage.vue); whether it still moves.
+  const stepWebZoom = (now: number) => {
+    const dt = Math.min(64, Math.max(0, now - st.zoomAt))
+    st.zoomAt = now
+    if (!branch.web || !isZoomed(st.zoom)) return false
+    stepZoom(st.zoom, now, dt, { w: branch.w, h: branch.h }, reduced.value)
+    return true
   }
   const layoutBranches = (s: PlegmaStory, b: typeof branch, sec: number) => {
     const web = b.web!
@@ -168,19 +237,21 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const amp = clamp(web.r * 0.5, 0.8, 2.2)
     const e = branchGlide()
     const from = b.from
+    // The zoom: a node is drawn at (its place - the camera of the zoom) * the zoom (utils/plegma/plegma-zoom.ts).
+    const { z, cam } = st.zoom
     if (ax.length < web.n) { ax = new Float32Array(web.n); ay = new Float32Array(web.n) }
     for (let i = 0; i < web.n; i++) {
       const a = sec * web.speed[i]! + web.phase[i]!
       const reach = i === 0 ? 0 : web.reach[i]!
-      const bx = from ? from.x[i]! + (web.x[i]! - from.x[i]!) * e : web.x[i]!
-      const by = from ? from.y[i]! + (web.y[i]! - from.y[i]!) * e : web.y[i]!
+      const bx = ((from ? from.x[i]! + (web.x[i]! - from.x[i]!) * e : web.x[i]!) - cam.x) * z
+      const by = ((from ? from.y[i]! + (web.y[i]! - from.y[i]!) * e : web.y[i]!) - cam.y) * z
       ax[i] = p.x + bx * k + Math.cos(a) * amp * reach
       ay[i] = p.y + by * k + Math.sin(a) * amp * reach
       // The branches grow out of the start node: the early articles first.
       if (st.introP < 1) { const at = gatherTo(i, web.n, ax[i]!, ay[i]!, web.n > 1 ? i / (web.n - 1) : 0); ax[i] = at.x; ay[i] = at.y }
     }
     morphFrom = null
-    const dr = (web.r / NODE_SCALE) * Math.pow(k, 0.45)
+    const dr = (web.r / NODE_SCALE) * Math.pow(k * z, 0.45)
     Object.assign(arts, { aw: b.aw, tab: plegma.ring, fromTab: plegma.ring, by: curBy(), from: null, fromBy: curBy(), blend: 1, id: s.id, cx: p.x, cy: p.y, R: (b.h / 2) * k, ring: 0, kx: 1, rWorld: b.h / 2 / b.fz, spacing: web.r * 2 + (web.n > 400 ? 2.2 : 4), dr, branch: true, k, threads: b.threads })
     return arts
   }
@@ -275,7 +346,52 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
   // The picked web. Its nodes are solid and each has a rim of the page's color, so a line never muddies a node and two nodes that touch stay two; a node and the line
   // to the article before it have the calm color of their group, and the ring is the groups' ring: an arc for each group over its sector. The articles of a group or an
   // outlet that a card points at come forward in the full color, larger and pulsing, and the others step back.
+  // Zoomed, the web goes past the map cell: it is drawn on a layer of its own and, outside the cell, shows faintly behind the cards, with a soft edge (the mock of #222).
+  let layer: HTMLCanvasElement | null = null
+  let mask: HTMLCanvasElement | null = null
+  let maskKey = ''
+  const OUTSIDE = 0.3
+  const maskOf = (w: number, h: number) => {
+    const r = plegma.region!
+    const key = `${w}|${h}|${r.x0}|${r.y0}|${r.x1}|${r.y1}`
+    if (mask && key === maskKey) return mask
+    mask ??= document.createElement('canvas')
+    mask.width = w
+    mask.height = h
+    const m = mask.getContext('2d')!
+    m.fillStyle = `rgba(0,0,0,${OUTSIDE})`
+    m.fillRect(0, 0, w, h)
+    m.filter = `blur(${14 * st.dpr}px)`
+    m.fillStyle = '#000'
+    const pad = 8 * st.dpr
+    m.fillRect(r.x0 * w - pad, r.y0 * h - pad, (r.x1 - r.x0) * w + 2 * pad, (r.y1 - r.y0) * h + 2 * pad)
+    m.filter = 'none'
+    maskKey = key
+    return mask
+  }
   const drawArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2, sec: number) => {
+    if (!isZoomed(st.zoom) || !branchOf(s)) return paintArticles(g, s, level, sec)
+    const w = g.canvas.width
+    const h = g.canvas.height
+    layer ??= document.createElement('canvas')
+    if (layer.width !== w || layer.height !== h) { layer.width = w; layer.height = h }
+    const lg = layer.getContext('2d')!
+    lg.setTransform(1, 0, 0, 1, 0, 0)
+    lg.clearRect(0, 0, w, h)
+    lg.setTransform(st.dpr, 0, 0, st.dpr, 0, 0)
+    paintArticles(lg, s, level, sec)
+    lg.setTransform(1, 0, 0, 1, 0, 0)
+    lg.globalAlpha = 1
+    lg.globalCompositeOperation = 'destination-in'
+    lg.drawImage(maskOf(w, h), 0, 0)
+    lg.globalCompositeOperation = 'source-over'
+    g.save()
+    g.setTransform(1, 0, 0, 1, 0, 0)
+    g.globalAlpha = 1
+    g.drawImage(layer, 0, 0)
+    g.restore()
+  }
+  const paintArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2, sec: number) => {
     const a = layoutArticles(s, sec)
     const aw = a.aw!
     const col = colourOf(s)
@@ -477,18 +593,19 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const web = branch.web!
     const X = (x: number) => a.cx + x * a.k
     const Y = (y: number) => a.cy + y * a.k
+    const { names, ticks } = namesNow()
     g.strokeStyle = st.mute
     g.lineWidth = 1
     g.globalAlpha = 0.5 * alpha
     g.beginPath()
-    for (const tick of web.ticks) { g.moveTo(X(tick.x), Y(web.axisY) - 18); g.lineTo(X(tick.x), Y(web.axisY) - 12) }
+    for (const x of ticks) { g.moveTo(X(x), Y(web.axisY) - 18); g.lineTo(X(x), Y(web.axisY) - 12) }
     g.stroke()
     g.textBaseline = 'alphabetic'
     g.lineJoin = 'round'
-    for (const name of branch.names) {
+    for (const name of names) {
       const x = X(name.x)
       const y = Y(name.y)
-      g.globalAlpha = alpha
+      g.globalAlpha = alpha * name.alpha
       if (name.dot >= 0) {
         g.fillStyle = name.dot > 0 ? st.groupInk[name.dot] ?? st.mute : st.mute
         g.beginPath()
@@ -524,7 +641,9 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     return { x: here.x, y: here.y, edge: ringOf(articleWorldRadius(s) * st.cam.z) + 9, kx: articleAspect() }
   }
   const isBranch = (s: PlegmaStory) => !!branchOf(s)
-  return { lagText, drawArticles, articleAt, ringAt, articleWorldRadius, articleAspect, ringOf, sectorOf, byOutlet, centerRadius, centerPoint, clearRadius, linkFrom, nodeArticle, isBranch }
+  // Where the story web of Κλαδιά or Σύννεφα was last drawn: its middle on the screen and its scale against the framing (the zoom's points are in px of the framing, from that middle).
+  const zoomFrame = (s: PlegmaStory) => (arts.branch && arts.id === s.id ? { cx: arts.cx, cy: arts.cy, k: arts.k } : null)
+  return { lagText, stepWebZoom, zoomFrame, drawArticles, articleAt, ringAt, articleWorldRadius, articleAspect, ringOf, sectorOf, byOutlet, centerRadius, centerPoint, clearRadius, linkFrom, nodeArticle, isBranch }
 }
 
 export type StageArticles = ReturnType<typeof createStageArticles>
