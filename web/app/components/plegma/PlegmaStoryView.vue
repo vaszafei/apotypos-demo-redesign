@@ -58,7 +58,7 @@ const nodesNote = computed(() => {
     <section class="dcard c-12"><div class="empty-state" data-state="empty"><AppIcon name="inbox" /><p style="margin: 0">{{ t('topics2.empty') }}</p></div></section>
   </div>
   <ErrorPage v-else-if="!m" :status="404" />
-  <div v-else ref="orbit" class="plegma-orbit is-story" :class="{ 'is-in': plegma.landed, 'is-leaving': plegma.leaving, 'no-right': !columns.right.length, 'no-left': !columns.left.length, 'has-strip': columns.right.length }">
+  <div v-else ref="orbit" class="plegma-orbit is-story" :class="{ 'is-in': plegma.landed, 'is-leaving': plegma.leaving, 'no-right': !columns.right.length, 'no-left': !columns.left.length, 'has-strip': m.labelled && columns.right.length }">
     <div class="plegma-title entity-grid">
       <EntityTitle :kind="t('hero.kind.story')" :title="storyName(m.story)">
         <template v-if="topicsShown" #meta><EntityLink type="topic" :to="topicHref(String(m.story.issue))">{{ topicName(m.issue) }}</EntityLink></template>
@@ -73,7 +73,7 @@ const nodesNote = computed(() => {
     <div ref="map" class="orbit-map">
       <p class="plegma-nodes-note">{{ nodesNote }}</p></div>
     <div v-if="columns.right.length" class="orbit-col orbit-right">
-      <PlegmaCard :at="0" :order="3" class="card-strip"><OutletStack :parts="stripParts" @hover="lightPart" :caption="plegma.ring === 'outlets' ? undefined : t('story.strip.groups', { n: stripParts.length })" /></PlegmaCard>
+      <PlegmaCard v-if="m.labelled" :at="0" :order="3" class="card-strip"><OutletStack :parts="stripParts" @hover="lightPart" :caption="plegma.ring === 'outlets' ? undefined : t('story.strip.groups', { n: stripParts.length })" /></PlegmaCard>
       <div class="orbit-subs">
         <div v-for="(column, c) in columns.right" :key="c" class="orbit-sub">
           <PlegmaCard v-for="(key, i) in column" :key="key" :at="0" :order="1 + c + i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
