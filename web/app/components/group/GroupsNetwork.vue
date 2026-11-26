@@ -89,8 +89,7 @@ const groupTip = (g: NetGroup) => {
       ...(g.key === null ? [] : [{ label: t('groups.col.owner'), value: g.owner ?? '' }, { label: t('groups.col.lean'), value: g.lean || t('groups.lean.none') }]),
       { label: t('groups.col.articles'), value: `${fmtInt(g.value)} · ${fmtPct(g.value / props.total)}` },
       { label: t('groups.col.outlets'), value: fmtInt(g.outlets.length) },
-      { label: t('media.col.news'), value: fmtPct(news) },
-      ...stanceRows(stance)
+      ...(analysedShown ? [{ label: t('media.col.news'), value: fmtPct(news) }, ...stanceRows(stance)] : [])
     ]
   }
 }
@@ -99,8 +98,7 @@ const outletTip = (o: NetOutlet, g: NetGroup) => ({
   rows: [
     { label: t('groups.col.articles'), value: `${fmtInt(o.value)} · ${fmtPct(o.value / props.total)}` },
     { label: t('g2.bubble.ofgroup', { share: '' }).trim(), value: fmtPct(o.value / g.value) },
-    { label: t('media.col.news'), value: fmtPct(o.news / (o.analysed || 1)) },
-    ...stanceRows(o.stance)
+    ...(analysedShown ? [{ label: t('media.col.news'), value: fmtPct(o.news / (o.analysed || 1)) }, ...stanceRows(o.stance)] : [])
   ]
 })
 const plain = (tip: { title: string, rows: { label: string, value: string }[] }) => `${tip.title}: ${tip.rows.map(r => `${r.label} ${r.value}`).join(', ')}`

@@ -28,7 +28,7 @@ const legend = computed(() => treeGroups.value.map(g => ({ key: g.key ?? 'none',
   </template>
   <MediaPlegma v-else variant="groups">
     <template #map="{ active }">
-      <div v-if="hasData" class="groups-tools">
+      <div v-if="hasData && analysedShown" class="groups-tools">
         <div class="media-map-tabs segmented" role="group" :aria-label="t('story.ring.label')">
           <button type="button" :aria-pressed="stance" @click="stance = !stance">{{ t('story.ring.stance') }}</button>
         </div>
