@@ -55,7 +55,7 @@ test('nodes keep apart: no two are nearer than twice their radius', () => {
   }
 })
 
-test('the lines: a thread from the start node through the first node of each cloud, and every other node to an earlier node of its cloud', () => {
+test('the lines: a thread from the start node through each cloud, in at its first article (its leftmost node) and out at its last (its rightmost), and every other node to an earlier node of its cloud', () => {
   for (const id of SAMPLES) {
     const story = storyOf(id)
     const web = build(story, id)
@@ -64,7 +64,10 @@ test('the lines: a thread from the start node through the first node of each clo
     assert.equal(web.threads, web.clouds.length)
     web.clouds.forEach((c, k) => {
       assert.equal(web.edges[k * 2], c.node)
-      assert.equal(web.edges[k * 2 + 1], k ? web.clouds[k - 1].node : 0)
+      assert.equal(web.edges[k * 2 + 1], k ? web.clouds[k - 1].last : 0)
+      const xs = [...Array(web.n).keys()].filter(i => i && local[i] >= c.from && local[i] < c.to).map(i => web.x[i])
+      assert.equal(web.x[c.node], Math.min(...xs), `story ${id}: cloud ${k} starts at its left`)
+      assert.equal(web.x[c.last], Math.max(...xs), `story ${id}: cloud ${k} ends at its right`)
     })
     const into = new Set()
     for (let e = web.threads; e < web.edges.length / 2; e++) {
@@ -80,7 +83,7 @@ test('the lines: a thread from the start node through the first node of each clo
 test('the labels: days, weeks, clock times with the day when it changes', () => {
   const day = m => `d${Math.floor(m / DAY) % 100}`
   const range = (a, b) => `${day(a)}–${day(b)}`
-  const c = (from, unit) => ({ node: 1, cx: 0, labelY: 0, from, to: from + unit })
+  const c = (from, unit) => ({ node: 1, last: 1, cx: 0, labelY: 0, from, to: from + unit })
   const d0 = Date.UTC(2026, 9, 26) / 60000
   assert.equal(cloudLabel([c(d0, DAY)], 0, DAY, day, range), day(d0))
   assert.equal(cloudLabel([c(d0, 7 * DAY)], 0, 7 * DAY, day, range), `${day(d0)}–${day(d0 + 6 * DAY)}`)

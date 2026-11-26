@@ -5,6 +5,7 @@ import PlegmaRelatedCard from './PlegmaRelatedCard.vue'
 import PlegmaStanceCard from './PlegmaStanceCard.vue'
 import PlegmaPeopleCard from './PlegmaPeopleCard.vue'
 import { articlesPerNode } from '~/utils/plegma/plegma-articles'
+import { cloudUnit } from '~/utils/plegma/plegma-story-clouds'
 
 // The story view: the title, under it the other stories of the theme, the free cell for the map and the cards beside it, and the days under that row. The web itself is the stage's (PlegmaStage.vue).
 const props = defineProps<{ id: number }>()
@@ -37,6 +38,13 @@ const STORY_ASPECT = 1
 usePlegmaRegion(orbit, map, { side: STORY_MAP_SIDE, top: -32, bottom: 28, lean: 0.75, names: true, clear: true, aspect: STORY_ASPECT, fill: () => view.timed.value })
 // How many articles a node of the map stands for: one while the story is small enough to show each article (utils/plegma/plegma-articles.ts).
 const perNode = computed(() => (m.value ? articlesPerNode(m.value.articles) : 1))
+// The note under the map: what a node is, and for Σύννεφα how long a cloud is.
+const unitText = (unit: number) => unit >= 10080 ? t('story.clouds.unit.week') : unit >= 1440 ? t('story.clouds.unit.day') : unit > 60 ? t('story.clouds.unit.hours', { n: unit / 60 }) : unit === 60 ? t('story.clouds.unit.hour') : t('story.clouds.unit.min', { n: unit })
+const nodesNote = computed(() => {
+  if (!view.timed.value) return perNode.value > 1 ? t('story.nodes.many', { n: fmtInt(perNode.value) }) : t('story.nodes.one')
+  if (plegma.spread !== 'clouds') return t('story.branches.note')
+  return t('story.clouds.note', { unit: unitText(cloudUnit(view.articles.value.map(a => a.time!))) })
+})
 </script>
 
 <template>
@@ -63,7 +71,7 @@ const perNode = computed(() => (m.value ? articlesPerNode(m.value.articles) : 1)
       <PlegmaCard v-for="(key, i) in columns.left" :key="key" :at="2" :order="3 + i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
     </div>
     <div ref="map" class="orbit-map">
-      <p class="plegma-nodes-note">{{ view.timed.value ? t('story.branches.note') : perNode > 1 ? t('story.nodes.many', { n: fmtInt(perNode) }) : t('story.nodes.one') }}</p></div>
+      <p class="plegma-nodes-note">{{ nodesNote }}</p></div>
     <div v-if="columns.right.length" class="orbit-col orbit-right">
       <PlegmaCard :at="0" :order="3" class="card-strip"><OutletStack :parts="stripParts" @hover="lightPart" :caption="plegma.ring === 'outlets' ? undefined : t('story.strip.groups', { n: stripParts.length })" /></PlegmaCard>
       <div class="orbit-subs">

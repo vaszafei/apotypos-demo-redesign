@@ -36,6 +36,8 @@ export const usePlegmaStore = defineStore('plegma', () => {
   // What the ring of the story web shows: the outlets or the groups (an arc for each) or the stance towards the government (an arc each for critical, neutral and supportive, wide as their share).
   // The stance is a count for the whole story, not for each article, so it is a ring and the nodes keep their sectors. `stance` holds [critical, neutral, supportive].
   const ring = ref<'outlets' | 'groups' | 'stance'>('outlets')
+  // How the web of a story whose articles have their time is spread: Κλαδιά (utils/plegma/plegma-branches.ts) or Σύννεφα (plegma-story-clouds.ts).
+  const spread = ref<'branches' | 'clouds'>('branches')
   const stance = ref<number[] | null>(null)
   // The largest stories of the focused theme with the outlets that wrote each, which the theme view reads from the fixtures; null until it has them. The stage draws its web from them.
   const themeStories = ref<PlegmaThemeStory[] | null>(null)
@@ -75,6 +77,7 @@ export const usePlegmaStore = defineStore('plegma', () => {
       related.value = []
       // A story or a theme opens on its outlets (the tab Μέσα); an outlet on the groups.
       ring.value = next?.kind === 'story' || next?.kind === 'theme' ? 'outlets' : 'groups'
+      spread.value = 'branches'
       stance.value = null
       themeStories.value = null
       themeGroups.value = null
@@ -90,6 +93,7 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const setHighlight = (value: PlegmaHighlight | null) => { highlight.value = value }
   const setHoverStory = (id: number | null) => { hoverStory.value = id }
   const setRing = (value: 'outlets' | 'groups' | 'stance') => { ring.value = value }
+  const setSpread = (value: 'branches' | 'clouds') => { spread.value = value }
   const setStance = (value: number[] | null) => { stance.value = value }
   const setRelated = (ids: number[]) => { related.value = ids }
   const setDiveFrom = (value: { key: string, x: number, y: number, r: number, fill: string | null } | null) => { diveFrom.value = value }
@@ -100,5 +104,5 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const pickHome = (id: number | null) => { homePick.value = id }
   const setHomeDim = (value: boolean) => { homeDim.value = value }
 
-  return { active, backdrop, leaving, setLeaving, focus, day, compare, landed, region, articles, labelRoom, highlight, hoverStory, related, ring, stance, themeStories, themeGroups, diveFrom, outletSlot, homeDay, homePick, homeDim, syncRoute, stepTo, compareWith, setLanded, setRegion, setLabelRoom, setArticles, setHighlight, setHoverStory, setRelated, setRing, setStance, setThemeStories, setThemeGroups, setDiveFrom, setOutletSlot, setHomeDay, pickHome, setHomeDim }
+  return { active, backdrop, leaving, setLeaving, focus, day, compare, landed, region, articles, labelRoom, highlight, hoverStory, related, ring, spread, stance, themeStories, themeGroups, diveFrom, outletSlot, homeDay, homePick, homeDim, syncRoute, stepTo, compareWith, setLanded, setRegion, setLabelRoom, setArticles, setHighlight, setHoverStory, setRelated, setRing, setSpread, setStance, setThemeStories, setThemeGroups, setDiveFrom, setOutletSlot, setHomeDay, pickHome, setHomeDim }
 })

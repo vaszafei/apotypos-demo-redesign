@@ -4,12 +4,14 @@ import type { BranchInput, PlegmaBranchWeb } from './plegma-branches.ts'
 
 // Σύννεφα (#218): the web of a story as clouds of time, left to right, joined by a thread. The first article is the start node at the left. A cloud is the articles
 // of one stretch of time (minutes to a week, cloudUnit), a loose web with the groups side by side and an uneven outline, its size by its count; the free room goes
-// to the quiet before each cloud. Inside a cloud a node is joined to the nearest earlier one, of its group if near. Same units as Κλαδιά: px of the region at the
+// to the quiet before each cloud. Inside a cloud a node is joined to the nearest earlier one, of its group if near; the thread joins the last article of a cloud
+// to the first of the next. Same units as Κλαδιά: px of the region at the
 // framing zoom, from the middle of the region.
 
 export interface StoryCloud {
-  // The first node of the cloud (the thread joins it to the one before), the middle of the cloud, and the y of its label.
+  // The first and the last node of the cloud (the thread comes in at the first, at its left, and leaves from the last, at its right), its middle and the y of its label.
   node: number
+  last: number
   cx: number
   labelY: number
   // The stretch, in Athens wall-clock minutes (minutes since 1970 as if Athens were UTC): from and to (exclusive).
@@ -17,7 +19,7 @@ export interface StoryCloud {
   to: number
 }
 
-export interface PlegmaCloudWeb extends PlegmaBranchWeb {
+export interface StoryCloudWeb extends PlegmaBranchWeb {
   clouds: StoryCloud[]
   unit: number
   // The first `threads` edges are the thread between the clouds; the rest are the lines inside them.
@@ -25,10 +27,18 @@ export interface PlegmaCloudWeb extends PlegmaBranchWeb {
 }
 
 const athensParts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Athens', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+// The minutes Athens is ahead of UTC, for each UTC hour asked (the offset changes only on an hour).
+const offsets = new Map<number, number>()
 // A minute (since 1970 UTC) as the same moment on the Athens wall clock.
 export const athensLocal = (minute: number) => {
-  const p = Object.fromEntries(athensParts.formatToParts(new Date(minute * 60000)).map(q => [q.type, q.value]))
-  return Date.UTC(+p.year!, +p.month! - 1, +p.day!, +p.hour!, +p.minute!) / 60000
+  const hour = Math.floor(minute / 60)
+  let off = offsets.get(hour)
+  if (off === undefined) {
+    const p = Object.fromEntries(athensParts.formatToParts(new Date(hour * 3600000)).map(q => [q.type, q.value]))
+    off = Date.UTC(+p.year!, +p.month! - 1, +p.day!, +p.hour!, +p.minute!) / 60000 - hour * 60
+    offsets.set(hour, off)
+  }
+  return minute + off
 }
 
 const UNITS = [5, 10, 30, 60, 180, 360, 1440]
@@ -62,7 +72,7 @@ export const cloudLabel = (clouds: StoryCloud[], k: number, unit: number, day: (
   return sameDay ? clock : `${day(c.from)}, ${clock}`
 }
 
-export const buildCloudWeb = (input: BranchInput): PlegmaCloudWeb => {
+export const buildCloudWeb = (input: BranchInput): StoryCloudWeb => {
   const { times, groups, seed, w, h } = input
   const n = times.length
   const rand = mulberry(seed * 31 + 11)
@@ -141,6 +151,11 @@ export const buildCloudWeb = (input: BranchInput): PlegmaCloudWeb => {
       y[i] = c.cy + Math.sin(th) * rad * 0.98
     })
     relax(x, y, c.list, min, 60, yTop, yBottom)
+    // The thread goes through time: the earliest article of the cloud takes the leftmost place, the latest the rightmost.
+    const swap = (i: number, j: number) => { const tx = x[i]!; const ty = y[i]!; x[i] = x[j]!; y[i] = y[j]!; x[j] = tx; y[j] = ty }
+    const edge = (sign: number) => c.list.reduce((b, i) => (x[i]! * sign > x[b]! * sign ? i : b), c.list[0]!)
+    swap(c.list[0]!, edge(-1))
+    if (c.list.length > 1) swap(c.list[c.list.length - 1]!, edge(1))
     // Inside the cloud: each node to the nearest earlier one, an earlier one of another group counting as farther.
     c.list.forEach((i, q) => {
       if (!q) return
@@ -148,13 +163,15 @@ export const buildCloudWeb = (input: BranchInput): PlegmaCloudWeb => {
       let bd = Infinity
       for (let p = 0; p < q; p++) {
         const j = c.list[p]!
-        const d = Math.hypot(x[i]! - x[j]!, y[i]! - y[j]!) + (groups[j] === groups[i] ? 0 : sp * 1.6)
+        const dx = x[i]! - x[j]!
+        const dy = y[i]! - y[j]!
+        const d = Math.sqrt(dx * dx + dy * dy) + (groups[j] === groups[i] ? 0 : sp * 1.6)
         if (d < bd) { bd = d; best = j }
       }
       inner.push(i, best)
       innerBows.push((rand() - 0.5) * 0.5)
     })
-    pairs.push(c.list[0]!, k ? cl[k - 1]!.list[0]! : 0)
+    pairs.push(c.list[0]!, k ? cl[k - 1]!.list[cl[k - 1]!.list.length - 1]! : 0)
     bows.push(0.14)
   })
   y[0] = mid + (cl[0]!.cy - mid) * 0.5
@@ -162,7 +179,7 @@ export const buildCloudWeb = (input: BranchInput): PlegmaCloudWeb => {
     let low = -Infinity
     for (const i of c.list) low = Math.max(low, y[i]!)
     const from = base + c.q * unit
-    return { node: c.list[0]!, cx: c.cx, labelY: Math.min(yBottom + 22, low + 22), from, to: from + unit }
+    return { node: c.list[0]!, last: c.list[c.list.length - 1]!, cx: c.cx, labelY: Math.min(yBottom + 22, low + 22), from, to: from + unit }
   })
   return { ...empty, edges: Uint32Array.from([...pairs, ...inner]), bow: Float32Array.from([...bows, ...innerBows]), clouds, threads: cl.length }
 }
@@ -198,8 +215,9 @@ const relax = (x: Float32Array, y: Float32Array, list: number[], min: number, st
             const j = list[p]!
             const dx = x[i]! - x[j]!
             const dy = y[i]! - y[j]!
-            const d = Math.hypot(dx, dy) || 0.1
-            if (d >= min) continue
+            const d2 = dx * dx + dy * dy
+            if (d2 >= min * min) continue
+            const d = Math.sqrt(d2) || 0.1
             const f = ((min - d) / d) * 0.4
             x[i]! += dx * f; y[i]! += dy * f
             x[j]! -= dx * f; y[j]! -= dy * f
