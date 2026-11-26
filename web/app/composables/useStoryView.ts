@@ -17,6 +17,7 @@ export const useStoryView = (id: MaybeRefOrGetter<number>) => {
   const groupsData = useFixtureLazy<GroupsData>('groups', { required: ['groups'] })
   // The sample of headlines of the snapshot (mme.json): a few articles of a story with their title and link. It is not needed to show the story, so it is not part of loading.
   const mme = useFixtureLazy<MmeData>('mme', { required: ['sets'], isEmpty: b => Object.keys(b.sets).length === 0 })
+  const times = useStoryTimes(id, () => detail.data.value?.dbStoryFrom)
   const loading = computed(() => list.status.value === 'loading' || detail.status.value === 'loading')
   const problem = computed(() => [list.status.value, detail.status.value].find(s => s !== 'ready'))
   const retry = () => { list.refresh(); detail.refresh() }
@@ -66,10 +67,15 @@ export const useStoryView = (id: MaybeRefOrGetter<number>) => {
       const key = `${set.outlets[k]!.name}|${dates.indexOf(date)}`
       titles.set(key, [...(titles.get(key) ?? []), { title, url }])
     }))
-    return rows.flatMap(({ day, outlet, n }) => {
+    const baseOf = (outlet: number, day: number): PlegmaArticle => {
       const o = m.dd.outlets[outlet]!
-      const base: PlegmaArticle = { day, outlet: o.name, group: o.group, slot: slotOfColor(groupColor(o.group)), order: Math.max(0, order.get(o.group ?? null) ?? 0), outletOrder: outletOrder.get(o.name) ?? 0 }
-      const known = titles.get(`${o.name}|${day}`)
+      return { day, outlet: o.name, group: o.group, slot: slotOfColor(groupColor(o.group)), order: Math.max(0, order.get(o.group ?? null) ?? 0), outletOrder: outletOrder.get(o.name) ?? 0 }
+    }
+    // A story of the database has the time of each article: one node for each, in order of time (the same articles as the counts).
+    if (times.value) return times.value.map(a => ({ ...baseOf(a.outlet, dates.indexOf(athensDate(a.time))), time: a.time }))
+    return rows.flatMap(({ day, outlet, n }) => {
+      const base = baseOf(outlet, day)
+      const known = titles.get(`${m.dd.outlets[outlet]!.name}|${day}`)
       return Array.from({ length: n }, (_, i) => (known?.[i] ? { ...base, ...known[i]! } : base))
     })
   })

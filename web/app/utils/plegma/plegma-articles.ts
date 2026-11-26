@@ -218,4 +218,5 @@ export const matchesHighlight = (a: { group: string | null, outlet: string }, h:
 
 // An article as the stage keeps it for its tooltip and its color: the day, the outlet, and the slot of its group's color (0 is no group).
 // `title` and `url` are there only for the articles of the sample of headlines of the snapshot (mme.json). `order` is the place of its group among the groups of the story, largest first, as the groups card lists them.
-export interface PlegmaArticle { day: number, outlet: string, group: string | null, slot: number, order: number, outletOrder: number, title?: string, url?: string | null }
+// `time`: the minute it was published (since 1970 UTC), for a story of the database (useStoryTimes); the others have only their day.
+export interface PlegmaArticle { day: number, outlet: string, group: string | null, slot: number, order: number, outletOrder: number, title?: string, url?: string | null, time?: number }

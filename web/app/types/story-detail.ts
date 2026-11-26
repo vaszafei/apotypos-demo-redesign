@@ -14,4 +14,6 @@ export interface StoryDetailData {
   base: { f: number[], s: number[], c: number[], k: number[] }
   stories: DetailRow[]
   volumeFrom: string
+  // The first id of the stories from the database: only they have article times (data/story-times/).
+  dbStoryFrom?: number
 }
