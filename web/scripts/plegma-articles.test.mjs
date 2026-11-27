@@ -82,7 +82,9 @@ test('with the groups known each node is inside the sector of its group, in orde
   const angle = i => { const a = Math.atan2(web.x[i], -web.y[i]); return a < 0 ? a + Math.PI * 2 : a }
   for (let i = 1; i < n; i++) {
     const g = sectors[i]
-    assert.ok(angle(i) >= web.arcs[g * 2] - 1e-3 && angle(i) <= web.arcs[g * 2] + web.arcs[g * 2 + 1] + 1e-3, `node ${i} in its sector`)
+    // The ring starts at RING_START, so a sector can run past a full turn: the angle is measured from the start of the sector.
+    const from = ((angle(i) - web.arcs[g * 2]) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2)
+    assert.ok(from <= web.arcs[g * 2 + 1] + 1e-3 || from >= Math.PI * 2 - 1e-3, `node ${i} in its sector`)
     assert.ok(Math.hypot(web.x[i], web.y[i]) <= 1 + 1e-6)
   }
   // The last articles are farther out than the first ones.

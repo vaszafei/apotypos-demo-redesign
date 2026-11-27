@@ -55,6 +55,33 @@ test('the articles of each outlet and group are counted again in the window', ()
   assert.deepEqual(fx.groups.window, ['2026-10-14', '2026-10-15'])
 })
 
+test('only the topics with articles in the window stay, and every index of a topic is renumbered', () => {
+  const fx = fixtures()
+  const issues = [{ el: 'old' }, { el: 'new1' }, { el: 'new2', en: 'New 2' }]
+  fx.media.issues = issues.map(x => ({ ...x }))
+  fx.home.issues = issues.map(x => ({ ...x }))
+  fx.stories.issues = issues.map(x => ({ ...x }))
+  fx.media.issueDaily = [[1, 1, null, null], [null, null, 2, 0], [null, null, 0, 3]]
+  fx.home.issueDaily = [[5, 6, null, null], [null, null, 2, 0], [null, null, 0, 3]]
+  fx.media.issueOutlet = [null, [2], [3]]
+  fx.stories.stories = [{ id: 1, days: [0, 3], issue: 0 }, { id: 2, days: [2, 2], issue: 2 }, { id: 3, days: [3, 3], issue: 1 }]
+  fx.storyDetail.stories = [{ id: 2, t: [0, 2, 2] }, { id: 3, t: [0, 3, 3] }]
+  fx.search = { storyRows: [[2, 'b', 2, 1], [3, 'c', 1, 1]], kinds: { topics: issues.map((x, i) => ({ n: x.el, h: `topic-v2.html?i=${i}`, r: '/trends' })) } }
+  fx.groups.issues = issues
+  fx.groups.topicsAll = [9, 9, 9]
+  fx.groups.groups[0].topics = [9, 9, 9]
+  assert.equal(trimWindow(fx).topics, 2)
+  for (const key of ['media', 'home', 'stories', 'groups']) assert.deepEqual(fx[key].issues.map(x => x.el), ['new1', 'new2'], key)
+  assert.deepEqual(fx.media.issueDaily, [[2, 0], [0, 3]])
+  assert.deepEqual(fx.home.issueDaily, [[2, 0], [0, 3]])
+  assert.deepEqual(fx.media.issueOutlet, [[2], [3]])
+  assert.deepEqual(fx.stories.stories.map(s => [s.id, s.issue]), [[2, 1], [3, 0]])
+  assert.deepEqual(fx.search.storyRows.map(r => [r[0], r[2]]), [[2, 1], [3, 0]])
+  assert.deepEqual(fx.search.kinds.topics, [{ n: 'new1', h: 'topic-v2.html?i=0', r: '/trends' }, { n: 'new2', en: 'New 2', h: 'topic-v2.html?i=1', r: '/trends' }])
+  assert.deepEqual(fx.groups.topicsAll, [2, 3])
+  assert.deepEqual(fx.groups.groups[0].topics, [2, 3])
+})
+
 test('fixtures without a database range are left as they are', () => {
   const fx = fixtures()
   delete fx.stories.dbCovered
@@ -69,4 +96,7 @@ test('on the real fixtures the window is 14 to 27 Oct and every story keeps its 
   assert.deepEqual([fx.stories.dates[0], fx.stories.dates.at(-1)], ['2026-10-14', '2026-10-27'])
   assert.equal(fx.stories.stories.length, 2453)
   for (const s of fx.storyDetail.stories) assert.equal(s.t.filter((_, i) => i % 3 === 2).reduce((a, n) => a + n, 0), before.get(s.id), `story ${s.id}`)
+  assert.equal(fx.stories.issues.length, 40)
+  assert.ok(fx.stories.stories.every(s => s.issue >= 0 && s.issue < 40))
+  assert.equal(fx.media.issueDaily.flat().reduce((a, n) => a + n, 0), 48099)
 })

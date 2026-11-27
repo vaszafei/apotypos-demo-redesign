@@ -111,6 +111,7 @@
   "dayTimeZone": "Europe/Athens",
   "outlets": "26 of 36",
   "articles": 48146,
-  "stories": 2453
+  "stories": 2453,
+  "topics": "40 from october-topics.json, 48099 of 48146 articles"
  }
 }
