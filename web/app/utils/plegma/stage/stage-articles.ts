@@ -111,7 +111,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
   }
   // Κλαδιά (utils/plegma/plegma-branches.ts): a story whose articles have their time is its web spread by time,
   // in the whole free cell, with no ring. One node for each article. The web and its names are made once for a story and a size of the region, in pixels of the framing; the frame scales them with the camera.
-  const branch = { band: null as { x: Float32Array, n: Float32Array, top: number } | null, key: '', list: null as unknown, web: null as PlegmaBranchWeb | null, aw: null as ReturnType<typeof articleWebOf> | null, names: [] as BranchName[], fz: 1, w: 0, h: 0,
+  const branch = { band: null as { x: Float32Array, n: Float32Array, top: number, half: { x: number, text: string } | null } | null, key: '', list: null as unknown, web: null as PlegmaBranchWeb | null, aw: null as ReturnType<typeof articleWebOf> | null, names: [] as BranchName[], fz: 1, w: 0, h: 0,
     asks: null as ((X: ArrayLike<number>, Y: ArrayLike<number>, z: number, cam: { x: number, y: number }) => { asks: BranchNameAsk[], ticks: number[] }) | null, ticks: [] as number[] }
   const measure = (text: string, size: number, weight: number) => {
     const g = st.ctxFocus
@@ -208,8 +208,18 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     bx[0] = xm[0]!
     for (let b = 0; b < bins; b++) { bx[b + 1] = xAt(t0 + (b + 0.5) * step); bn[b + 1] = counts[b]! }
     bx[bins + 1] = xm[web.n - 1]!
+    // Ταχύτητα on the band: when half of the outlets of the story had written it (the first article of the outlet that made it half).
+    const seen = new Set<string>()
+    const outletFirsts: number[] = []
+    list.forEach((a, i) => { if (!seen.has(a.outlet)) { seen.add(a.outlet); outletFirsts.push(i) } })
+    const halfAt = outletFirsts.length > 2 ? outletFirsts[Math.ceil(outletFirsts.length / 2) - 1]! : -1
+    const spanText = (m: number) => {
+      const [unit, n] = m < 60 ? ['min', Math.max(1, Math.round(m))] : m < 1440 ? ['hours', Math.floor(m / 60)] : ['days', Math.floor(m / 1440)]
+      return deps.t(`story.speed.${unit}${n === 1 ? '1' : ''}`, { n })
+    }
+    const half = halfAt > 0 ? { x: xm[halfAt]!, text: deps.t('story.speed.mark', { span: spanText(times[halfAt]! - t0) }) } : null
     Object.assign(branch, {
-      band: web.n > 2 ? { x: bx, n: bn, top: Math.max(1, ...counts) } : null,
+      band: web.n > 2 ? { x: bx, n: bn, top: Math.max(1, ...counts), half } : null,
       key, list, web, names: placeBranchNames(web, whole.asks, box, measure), ticks: whole.ticks, asks: asksAt, fz: frameStory(s, st.width, st.height, plegma.region).z, w: box.w, h: box.h,
       aw: { n: web.n, x: web.x, y: web.y, phase: web.phase, speed: web.speed, reach: web.reach, edges: web.edges, bow: web.bow, gap: 0, arcs: new Float32Array(0) }
     })
@@ -443,6 +453,34 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       g.lineWidth = 2
       g.stroke(line)
       g.restore()
+      // The mark of half of the outlets: a dashed line across the band and its words above it.
+      if (band.half) {
+        const hx = X(band.half.x)
+        const y0 = Y(base)
+        const y1 = Y(base - tall) - 4
+        g.save()
+        g.globalAlpha = 0.7 * st.lineIn
+        g.strokeStyle = st.ink
+        g.lineWidth = 1
+        g.setLineDash([3, 3])
+        g.beginPath()
+        g.moveTo(hx, y0)
+        g.lineTo(hx, y1)
+        g.stroke()
+        g.setLineDash([])
+        g.globalAlpha = 0.85 * st.lineIn
+        g.font = `11.5px ${st.fontText}`
+        g.textBaseline = 'alphabetic'
+        g.textAlign = hx > a.cx + (branch.w / 2) * a.k * z - 180 ? 'right' : 'left'
+        const tx = g.textAlign === 'right' ? hx - 6 : hx + 6
+        g.lineJoin = 'round'
+        g.lineWidth = 3.5
+        g.strokeStyle = st.paper
+        g.strokeText(band.half.text, tx, y1 + 9)
+        g.fillStyle = st.ink
+        g.fillText(band.half.text, tx, y1 + 9)
+        g.restore()
+      }
     }
     if (level === 2) {
       const lines = new Map<number, Path2D>()
