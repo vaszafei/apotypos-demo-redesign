@@ -48,7 +48,7 @@ with conn.cursor(name="emb") as cur:
     cur.execute(f"""select a.id, s.domain, {day_of}::text, a.title, e.embedding::text
       from articles a join sources s on s.id = a.source_id
       join article_embeddings e on e.article_id = a.id and e.chunk_no = 0
-      where s.domain = any(%s) and a.moved_to_id is null and {day_of} between %s and %s""", (domains, FIRST, LAST))
+      where s.domain = any(%s) and a.moved_to_id is null and {day_of} between %s and %s order by a.id""", (domains, FIRST, LAST))
     ids, dom, day, title, vecs = [], [], [], [], []
     for i, d, dy, t, v in cur:
         ids.append(i); dom.append(d); day.append(dy); title.append(html.unescape(t or ""))
@@ -109,6 +109,8 @@ OUT.mkdir(exist_ok=True)
     "window": [FIRST, LAST], "domains": domains, "in_scope": in_scope, "embedded": len(X), "misc": misc,
     "params": {"over": OVER, "themes": THEMES, "umap_dims": UMAP_DIMS, "outlier_std": OUT_STD, "sample": len(fit), "outlier_dist": thr},
     "seconds": round(time.time() - t0, 1), "topics": topics}, ensure_ascii=False, indent=1))
+np.save(OUT / f"X-{TAG}.npy", X); np.save(OUT / f"best-{TAG}.npy", best); np.save(OUT / f"C-{TAG}.npy", C)
+(OUT / f"meta-{TAG}.json").write_text(json.dumps({"ids": [int(i) for i in ids], "dom": dom, "day": day, "title": title}, ensure_ascii=False))
 stamp(f"wrote {len(topics)} topics, misc {misc}")
 for tp in topics:
     print(f"{tp['id']:3d} {tp['share']:5.1f}% {tp['n']:6d} {tp['outlets']:2d} {', '.join(tp['keywords'][:6])}")

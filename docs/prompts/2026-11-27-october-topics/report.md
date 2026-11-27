@@ -86,3 +86,10 @@ Clean 22, mostly 5, mixed 9.
 1. **Hand-named clusters.** Keep k=36, split or merge the 9 mixed topics, and the user approves the names. No API cost. The names stay fixed for the demo.
 2. **The old method again** (`media_lens.py`: LLM taxonomy, then a tag per article). Same method as the old list, and it would also give stance and frames for October. It needs an OpenRouter key with credit (estimated $2–3 plus half a day to adapt; none on this machine).
 3. **Clusters plus LLM names.** Run 1, with an LLM naming each cluster from its titles (36 calls).
+
+## Option 1 chosen: hand-named topics (2026-11-27)
+
+- Stability, measured with `stab.py` on the same 48,099 vectors, 3 seeds each (adjusted Rand index between runs, 1 = identical): MiniBatchKMeans (the run above) 0.41–0.49, about 11 s a run; full KMeans (3 inits, 100 iterations) 0.65–0.70, about 50 s a run. Changing only the row order changed the MiniBatch topics, so the names are fixed to one frozen run: full KMeans, seed 1, rows ordered by article id.
+- The 8 mixed topics of that run were split in 3 each (`sub.py`) and each part sent to a clean topic or kept as a small concrete one (`names.py` holds the mapping).
+- Result: **40 topics**, 0.4%–5.5%, every article has one. Four are still broad catch-alls: Επιχειρήσεις και επενδύσεις, Θεσμοί δικαιοσύνη και διοίκηση, Διεθνή πρόσωπα, Ανά τον κόσμο.
+- Names are mine and wait for the user's approval.
