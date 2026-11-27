@@ -14,6 +14,10 @@ import { NAME_MAX, createStageNames } from './stage-names'
 import type { NameItem } from './stage-names'
 
 // The picked story: one node for each article, the ring of its groups or outlets or stance, what the pointer finds on it.
+// The start node of Κλαδιά: a little smaller than the center of a circle web (2.3), and its names (the start, the outlet, the time) above it or under it, not on its left.
+const startRadius = (dr: number) => Math.max(4, dr * 1.9)
+const START_NAMES: 'above' | 'under' = 'above'
+
 export const createStageArticles = (st: StageState, deps: StageDeps, core: StageCore) => {
   const { plegma, reduced } = deps
   const { placed, gatherTo, gatherR, colourOf } = core
@@ -124,9 +128,9 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const times = list.map(a => a.time!)
     const first = list[0]!
     const starts: [string, number, number][] = [[deps.t('story.branches.started'), 11.5, 400], [first.outlet, 14, 600], [whenText(times[0]!), 11.5, 400]]
-    // The names of the start node keep clear of its thin ring (centerRadius, at the framing).
-    const pad = Math.max(5, (branchRadius(list.length) / NODE_SCALE) * 2.3) * 1.7 + 8
-    const left = Math.max(...starts.map(([text, size, weight]) => measure(text, size, weight))) + pad + 14
+    // The names of the start node keep clear of its thin ring (centerRadius, at the framing). They are above it (or under it, START_NAMES), so the web needs room on its left only for the node.
+    const pad = startRadius(branchRadius(list.length) / NODE_SCALE) * 1.7 + 8
+    const left = pad
     const byGroup = new Map<number, { a: PlegmaArticle, n: number }>()
     for (const a of list) { const g = byGroup.get(a.order); if (g) g.n++; else byGroup.set(a.order, { a, n: 1 }) }
     const endText = (g: number) => { const row = byGroup.get(g)!; return `${shortGroup(row.a.group)} · ${fmtPct(row.n / list.length)}` }
@@ -147,7 +151,8 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       const asks: BranchNameAsk[] = []
       const ticks: number[] = []
       const startPad = pad * Math.pow(z, 0.45)
-      if (inBox(0)) starts.forEach(([text, size, weight], k) => asks.push({ x: X[0]! - startPad, y: Y[0]! + [-13, 5, 21][k]!, text, size, weight, anchor: 'end', mute: k !== 1, fixed: true }))
+      const startY = START_NAMES === 'above' ? [-(startPad + 33), -(startPad + 16), -startPad] : [startPad + 7, startPad + 24, startPad + 40]
+      if (inBox(0)) starts.forEach(([text, size, weight], k) => asks.push({ x: X[0]! - 6, y: Y[0]! + startY[k]!, text, size, weight, anchor: 'start', mute: k !== 1, fixed: true }))
       // The axis stays under the branches; more marks find room as the web opens.
       for (const [m, mark] of web.marks.entries()) {
         const x = m ? (mark.x - cam.x) * z : X[0]!
@@ -443,8 +448,10 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       }
     }
     // The center is the story, in the color of its theme: a disc with a soft light around it and a thin ring. The lines of the first articles of the groups begin at it.
+    // On Κλαδιά it is the first article: the color of its group, as the other nodes.
     {
-      const er = gatherR(0, Math.max(5, a.dr * 2.3))
+      const er = gatherR(0, centerRadius())
+      const col = a.branch && articles ? (slotOf(0) < 0 ? colourOf(s) : st.groupInk[slotOf(0)] ?? st.mute) : colourOf(s)
       for (const [k, alpha] of [[3, 0.07], [2.2, 0.1]] as const) {
         g.globalAlpha = alpha * st.nodeIn
         g.fillStyle = col
@@ -598,7 +605,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
   // The article that node i of the web stands for, of `len` articles: itself when the web has one node for each article (Κλαδιά, or a small story).
   const nodeArticle = (i: number, len: number) => (arts.aw?.n === len ? i : articleOfNode(i, len))
   // The radius of the disc at the center of the web of the story, as drawn in the last frame (the dot of a theme comes to it, stage-draw.ts).
-  const centerRadius = () => Math.max(5, arts.dr * 2.3)
+  const centerRadius = () => (arts.branch ? startRadius(arts.dr) : Math.max(5, arts.dr * 2.3))
   // Where the center of the story's web was drawn in the last frame (the start node of Κλαδιά, at the left of its region); null before the story's web is laid out.
   const centerPoint = (s: PlegmaStory) => (arts.id === s.id && ax.length ? { x: ax[0]!, y: ay[0]! } : null)
   // How far around the story (in the world) the other stories are pushed out: the ring of the circle web, or the corners of Κλαδιά's region.
