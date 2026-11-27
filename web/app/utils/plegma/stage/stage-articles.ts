@@ -216,7 +216,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
   }
   // The names as the zoom has them: those of the whole web, or placed again for the zoom and the camera (once for each).
   const zoomNames = { key: '', names: [] as BranchName[], ticks: [] as number[] }
-  const namesNow = () => {
+  const zoomedNames = () => {
     const web = branch.web!
     const zs = st.zoom
     if (!isZoomed(zs) || !branch.asks) return { names: branch.names, ticks: branch.ticks }
@@ -228,6 +228,54 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const { asks, ticks } = branch.asks(X, Y, zs.z, zs.cam)
     Object.assign(zoomNames, { key, names: placeBranchNames({ n: web.n, x: X, y: Y, r: web.r * Math.pow(zs.z, 0.45) }, asks, { w: branch.w, h: branch.h }, measure), ticks })
     return zoomNames
+  }
+  // While an outlet of Αντίγραφα is pointed at (plegma.articleLinks with its copies hot): the title of each of its copies by the copy, and the outlet it copies by the article copied.
+  // They are placed first; the other names stay where none of them is.
+  const COPY_TITLE_MAX = 300
+  const copyNames = { links: null as unknown, base: null as unknown, names: [] as BranchName[], ticks: [] as number[] }
+  const boxOf = (n: BranchName) => {
+    const tw = measure(n.text, n.size, n.weight)
+    const x0 = n.anchor === 'end' ? n.x - tw : n.anchor === 'middle' ? n.x - tw / 2 : n.x
+    return { x0, x1: x0 + tw, y0: n.y - n.size, y1: n.y + 3 }
+  }
+  const namesNow = () => {
+    const base = zoomedNames()
+    const links = plegma.articleLinks
+    const list = plegma.articles
+    if (!links?.hot?.size || !list || !branch.web) return base
+    if (copyNames.links === links && copyNames.base === base.names) return copyNames
+    const web = branch.web
+    const { z, cam } = st.zoom
+    const X = new Float32Array(web.n)
+    const Y = new Float32Array(web.n)
+    for (let i = 0; i < web.n; i++) { X[i] = (web.x[i]! - cam.x) * z; Y[i] = (web.y[i]! - cam.y) * z }
+    const r = web.r * Math.pow(z, 0.45)
+    const cut = (text: string, size: number, weight: number) => { let t = text; while (t.length > 8 && measure(t, size, weight) > COPY_TITLE_MAX) t = `${t.slice(0, -2).trimEnd()}…`; return t }
+    const ask = (i: number, text: string, size: number, weight: number, mute: boolean): BranchNameAsk => {
+      const tw = measure(text, size, weight)
+      const end = X[i]! + r + 4 + tw > branch.w / 2
+      return { x: end ? X[i]! - r - 4 : X[i]! + r + 4, y: Y[i]! + 4, text, size, weight, anchor: end ? 'end' : 'start', mute }
+    }
+    const titles: BranchNameAsk[] = []
+    const outlets: BranchNameAsk[] = []
+    const sources = new Set<number>()
+    for (const k of links.hot) {
+      const [c, src] = links.pairs[k]!
+      if (c >= web.n || src >= web.n) continue
+      titles.push(ask(c, cut(list[c]!.title || list[c]!.outlet, 11.5, 600), 11.5, 600, false))
+      sources.add(src)
+    }
+    for (const src of sources) outlets.push(ask(src, list[src]!.outlet, 11, 400, true))
+    // A title may lie over the nodes (its halo keeps it readable), so every copy has its title; it keeps clear of the other titles only.
+    const none = { n: 0, x: X, y: Y, r }
+    const box = { w: branch.w, h: branch.h }
+    const placedTitles = placeBranchNames(none, titles, box, measure)
+    const titleBoxes = placedTitles.map(boxOf)
+    const placed = [...placedTitles, ...placeBranchNames({ n: web.n, x: X, y: Y, r }, outlets, box, measure).filter(n => { const b = boxOf(n); return !titleBoxes.some(o => b.x0 < o.x1 && b.x1 > o.x0 && b.y0 < o.y1 && b.y1 > o.y0) })]
+    const boxes = placed.map(boxOf)
+    const meets = (b: ReturnType<typeof boxOf>) => boxes.some(o => b.x0 < o.x1 + 4 && b.x1 > o.x0 - 4 && b.y0 < o.y1 && b.y1 > o.y0)
+    Object.assign(copyNames, { links, base: base.names, names: [...placed, ...base.names.filter(n => !meets(boxOf(n)))], ticks: base.ticks })
+    return copyNames
   }
   // One step of the zoom for a frame (PlegmaStage.vue); whether it still moves.
   const stepWebZoom = (now: number) => {
