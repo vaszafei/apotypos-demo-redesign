@@ -6,9 +6,10 @@ import { RING_START } from '~/utils/plegma/plegma-ring'
 // The ring of the circle web, alone (no web inside it, no names): an arc for each part, from the start of the ring, as wide as its weight (`w`, else its count) and as thick as its count
 // against the largest's, in the calm color of its group (a silent part, which has no articles, is a thin dashed arc). Not in a card: it lies on the Plegma. An arc under the pointer
 // (its band, wider than the arc) is the part pointed at (`hover`). In the middle: a big number and a line under it (`middle`), or those of the part pointed at (`pointed`).
+// With `labels`, each part's name beside the ring, on the side of its arc, with a thin line to it; the ring leaves them room on both sides.
 export interface RingPart { key: string, name: string, group: string | null, n: number, color: string, w?: number, silent?: boolean }
 export interface RingMiddle { big: string, bigCap: string, line: string, cap: string }
-const props = withDefaults(defineProps<{ parts: RingPart[], middle: RingMiddle, pointed: (p: RingPart) => RingMiddle, sorted?: boolean }>(), { sorted: true })
+const props = withDefaults(defineProps<{ parts: RingPart[], middle: RingMiddle, pointed: (p: RingPart) => RingMiddle, sorted?: boolean, labels?: boolean }>(), { sorted: true, labels: false })
 const emit = defineEmits<{ hover: [part: RingPart | null] }>()
 const box = ref<HTMLElement>()
 const w = ref(0)
@@ -25,12 +26,16 @@ const width = (text: string, font: string) => { if (!ctx) return text.length * 6
 // A text cut to a width (with …).
 const fit = (text: string, font: string, room: number) => { let s = text; while (s.length > 4 && width(s, font) > room) s = `${s.slice(0, -2).trimEnd()}…`; return s }
 
+const NAME_FONT = '11.5px'
+const NAME_LINE = 14
 const soft = (color: string) => `color-mix(in srgb, ${color} 70%, var(--cat-0))`
 const ring = computed(() => {
   const parts = props.sorted ? [...props.parts].filter(p => p.n > 0).sort((a, b) => b.n - a.n) : props.parts
   const weight = (p: RingPart) => p.w ?? p.n
   const total = parts.reduce((s, p) => s + weight(p), 0)
-  const R = Math.min(h.value / 2 - 6, w.value / 2 - 6, 90)
+  const room = props.labels ? Math.max(0, ...parts.map(p => width(p.name, NAME_FONT))) + 18 : 0
+  const named = props.labels && Math.min(h.value / 2 - 6, w.value / 2 - 6 - room) >= 60
+  const R = Math.min(h.value / 2 - 6, w.value / 2 - 6 - (named ? room : 0), 90)
   if (!total || R < 40) return null
   const cx = w.value / 2
   const cy = h.value / 2
@@ -46,10 +51,26 @@ const ring = computed(() => {
     start += span
     const p0 = at(a0)
     const p1 = at(a1)
-    return { p, thick, d: a1 > a0 ? `M ${p0.x} ${p0.y} A ${R} ${R} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${p1.x} ${p1.y}` : '' }
+    return { p, thick, mid: (a0 + a1) / 2, d: a1 > a0 ? `M ${p0.x} ${p0.y} A ${R} ${R} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${p1.x} ${p1.y}` : '' }
   })
+  // The names: on each side, in the order of their arcs from the top, pushed apart a line at least; when a side has more names than lines, the smallest parts lose theirs.
+  const names: { p: RingPart, x: number, y: number, end: boolean, d: string }[] = []
+  if (named) {
+    const lines = Math.max(1, Math.floor((h.value - 8) / NAME_LINE))
+    for (const end of [false, true]) {
+      const side = arcs.filter(a => a.d && (Math.cos(a.mid - Math.PI / 2) < 0) === end)
+        .sort((a, b) => b.p.n - a.p.n).slice(0, lines)
+        .map(a => ({ a, ay: cy + Math.sin(a.mid - Math.PI / 2) * (R + a.thick / 2 + 2), ax: cx + Math.cos(a.mid - Math.PI / 2) * (R + a.thick / 2 + 2) }))
+        .sort((u, v) => u.ay - v.ay)
+      const ys = side.map(u => u.ay)
+      for (let i = 0; i < ys.length; i++) ys[i] = Math.max(ys[i]!, i ? ys[i - 1]! + NAME_LINE : 4 + NAME_LINE / 2)
+      for (let i = ys.length - 1; i >= 0; i--) ys[i] = Math.min(ys[i]!, i < ys.length - 1 ? ys[i + 1]! - NAME_LINE : h.value - 4 - NAME_LINE / 2)
+      const x = cx + (end ? -1 : 1) * (R + 14)
+      side.forEach((u, i) => names.push({ p: u.a.p, x, y: ys[i]!, end, d: `M ${u.ax} ${u.ay} L ${x + (end ? 3 : -3)} ${ys[i]}` }))
+    }
+  }
   // The middle holds a number and a line when the ring leaves them room; a line is as wide as the inside of the ring at its height.
-  return { arcs, cx, cy, middle: R >= 60, room: 2 * Math.sqrt(Math.max(0, (R - 8) ** 2 - 34 ** 2)) - 8 }
+  return { arcs, names, cx, cy, middle: R >= 60, room: 2 * Math.sqrt(Math.max(0, (R - 8) ** 2 - 34 ** 2)) - 8 }
 })
 const middle = computed(() => {
   const r = ring.value
@@ -63,6 +84,10 @@ const middle = computed(() => {
     <svg v-if="ring" :width="w" :height="h">
       <path v-for="a in ring.arcs" :key="a.p.key" class="por-arc" :class="{ 'is-on': on === a.p, 'is-silent': a.p.silent }" :d="a.d" :stroke="a.p.silent ? undefined : on === a.p ? a.p.color : soft(a.p.color)" :stroke-width="a.thick + (on === a.p ? 1.4 : 0)" />
       <path v-for="a in ring.arcs" :key="`h${a.p.key}`" class="por-hit" :d="a.d" @pointerenter="on = a.p" @pointerleave="on = null" />
+      <g v-for="l in ring.names" :key="`n${l.p.key}`" class="por-name" :class="{ 'is-on': on === l.p }">
+        <path class="por-lead" :d="l.d" />
+        <text :x="l.x" :y="l.y" :text-anchor="l.end ? 'end' : 'start'" @pointerenter="on = l.p" @pointerleave="on = null">{{ l.p.name }}</text>
+      </g>
       <g v-if="ring.middle" class="por-middle">
         <text :x="ring.cx" :y="ring.cy - 22" class="por-big">{{ middle.big }}</text>
         <text :x="ring.cx" :y="ring.cy - 2" class="por-cap">{{ middle.bigCap }}</text>

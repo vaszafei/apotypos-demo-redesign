@@ -4,6 +4,7 @@ import PlegmaHowCard from './PlegmaHowCard.vue'
 import PlegmaRelatedCard from './PlegmaRelatedCard.vue'
 import PlegmaStanceCard from './PlegmaStanceCard.vue'
 import PlegmaPeopleCard from './PlegmaPeopleCard.vue'
+import PlegmaStoryPick from './PlegmaStoryPick.vue'
 import PlegmaStoryViews from './PlegmaStoryViews.vue'
 import { articlesPerNode } from '~/utils/plegma/plegma-articles'
 
@@ -64,6 +65,7 @@ const nodesNote = computed(() => {
         <EntityFact :label="t('entity.fact.outlets')" :value="fmtInt(m.outlets.length)" :sub="t('entity.fact.of', { n: m.dd.outlets.length })" />
       </EntityTitle>
     </div>
+    <PlegmaStoryPick v-if="!m.labelled" :view="view" />
     <SegmentedControl v-if="m.labelled" v-model="ring" class="orbit-ring-tabs" :label="t('story.ring.label')" :options="[{ value: 'outlets', label: t('story.ring.outlets') }, { value: 'groups', label: t('story.groups.title') }, { value: 'stance', label: t('story.ring.stance') }]" />
     <div v-if="columns.left.length" class="orbit-col orbit-left">
       <PlegmaCard v-for="(key, i) in columns.left" :key="key" :at="2" :order="3 + i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
