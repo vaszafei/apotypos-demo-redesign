@@ -672,3 +672,30 @@
 .plegma-view { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .plegma-view-title { margin: 0; font-size: var(--text-caption); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); }
 .plegma-view-title::before { content: "/ "; }
+
+/* The pick of outlets (PlegmaStoryPick.vue): at the top right of a story, on the row of its title; it opens as the date picker does. */
+.story-pick { grid-area: title; justify-self: end; align-self: center; position: relative; z-index: 3; pointer-events: auto; }
+@media (max-width: 1279px) { .story-pick { display: none; } }
+.story-pick-trigger { border-radius: 6px; background: var(--card-glass); backdrop-filter: blur(10px); }
+.story-pick-trigger.is-picked { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
+.story-pick-dots { display: inline-flex; }
+.story-pick-dots i { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 0 1.5px var(--surface-raised); }
+.story-pick-dots i + i { margin-left: -3px; }
+.story-pick-pop { grid-template-columns: 200px 380px; border-radius: 8px; }
+.story-pick-head { margin: 0 0 4px; padding: 0 10px; font-size: var(--text-caption); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); }
+.story-pick-head::before { content: "/ "; }
+.story-pick-group { display: flex; align-items: center; gap: var(--space-2); }
+.story-pick-swatch { flex: none; width: 8px; height: 8px; border-radius: 50%; }
+.story-pick-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+.story-pick-n { flex: none; color: var(--text-secondary); font-size: var(--text-caption); font-variant-numeric: tabular-nums; }
+.story-pick-main { display: flex; flex-direction: column; min-height: 0; padding: var(--space-3) var(--space-2) var(--space-2); }
+.story-pick-outlets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px var(--space-2); max-height: 360px; margin: 0; padding: 0; overflow-y: auto; list-style: none; scrollbar-width: thin; }
+.story-pick-outlet { display: flex; align-items: center; gap: var(--space-2); width: 100%; min-height: 28px; padding: 0 8px; border: 0; border-radius: 6px; background: none; color: var(--text-primary); font: inherit; font-size: var(--text-caption); cursor: pointer; }
+.story-pick-outlet:hover { background: var(--surface-card); }
+.story-pick-outlet[aria-pressed="true"] { color: var(--ink); font-weight: 600; }
+.story-pick-check { position: relative; flex: none; width: 14px; height: 14px; border: 1.5px solid var(--c); border-radius: 4px; }
+.story-pick-outlet[aria-pressed="true"] .story-pick-check { background: var(--c); }
+.story-pick-outlet[aria-pressed="true"] .story-pick-check::after { content: ""; position: absolute; left: 3.5px; top: 0.5px; width: 4px; height: 8px; border: solid var(--surface-raised); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
+.story-pick-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-top: var(--space-2); padding: var(--space-2) 8px 0; border-top: 1px solid var(--border); font-size: var(--text-caption); color: var(--text-secondary); }
+.story-pick .story-pick-clear { flex: none; min-height: 28px; padding: 0 10px; border-radius: 6px; font-size: var(--text-caption); }
+
