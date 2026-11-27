@@ -58,10 +58,10 @@
 /* The stance card is 40% narrower than a column of the right (1.8 of 3 parts); the map takes the rest. */
 /* A story with no profile (October): the other stories alone on the right, as wide as in a story with one (3 of 12 parts); the map takes the rest. */
 .plegma-orbit.is-story.no-left:not(.has-strip) { grid-template-columns: minmax(0, 2fr) minmax(0, 7fr) minmax(0, 3fr); }
-/* The other stories go down to the end of the row of the days, which is as wide as the map. */
+/* The other stories end with the row of the days, which is as wide as the map; the card is as tall as its list, so its top comes down. */
 @media (min-width: 1280px) {
   .plegma-orbit.is-story.no-left:not(.has-strip) { grid-template-areas: "title title title" "map map one" "under under one"; }
-  .plegma-orbit.is-story.no-left:not(.has-strip) .orbit-sub > .card-related { flex: 1 1 auto; }
+  .plegma-orbit.is-story.no-left:not(.has-strip) .orbit-sub:has(> .card-related) { justify-content: flex-end; }
 }
 @media (min-width: 1280px) { .plegma-orbit.is-story.no-left.has-strip { grid-template-columns: minmax(0, 2fr) minmax(0, 5.2fr) minmax(0, 1.8fr) minmax(0, 3fr); grid-template-areas: "title title title title" "map map one two" "under under under people"; } }
 .plegma-orbit.is-story.no-right { grid-template-areas: "title title title" "left map map" "under under under"; }
