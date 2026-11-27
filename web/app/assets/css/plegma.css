@@ -58,7 +58,11 @@
 /* The stance card is 40% narrower than a column of the right (1.8 of 3 parts); the map takes the rest. */
 /* A story with no profile (October): the other stories alone on the right, as wide as in a story with one (3 of 12 parts); the map takes the rest. */
 .plegma-orbit.is-story.no-left:not(.has-strip) { grid-template-columns: minmax(0, 2fr) minmax(0, 7fr) minmax(0, 3fr); }
-@media (min-width: 1280px) { .plegma-orbit.is-story.no-left:not(.has-strip) { grid-template-areas: "title title title" "map map one" "under under under"; } }
+/* The other stories go down to the end of the row of the days, which is as wide as the map. */
+@media (min-width: 1280px) {
+  .plegma-orbit.is-story.no-left:not(.has-strip) { grid-template-areas: "title title title" "map map one" "under under one"; }
+  .plegma-orbit.is-story.no-left:not(.has-strip) .orbit-sub > .card-related { flex: 1 1 auto; }
+}
 @media (min-width: 1280px) { .plegma-orbit.is-story.no-left.has-strip { grid-template-columns: minmax(0, 2fr) minmax(0, 5.2fr) minmax(0, 1.8fr) minmax(0, 3fr); grid-template-areas: "title title title title" "map map one two" "under under under people"; } }
 .plegma-orbit.is-story.no-right { grid-template-areas: "title title title" "left map map" "under under under"; }
 @media (min-width: 1280px) { .plegma-orbit.is-story.no-right { grid-template-columns: minmax(0, 2fr) minmax(0, 4fr) minmax(0, 6fr); grid-template-areas: "title title title" "left map map" "under under under"; } }
@@ -564,6 +568,8 @@
 .plegma-orbit:is(.is-story, .is-theme) > .orbit-ring-tabs { position: static; grid-row: 2; grid-column: map-start / map-end; justify-self: center; align-self: start; z-index: 3; }
 .plegma-orbit.is-outlet > .orbit-ring-tabs { position: static; grid-row: 2; grid-column: 1; justify-self: center; align-self: start; z-index: 3; }
 .plegma-orbit:is(.is-story, .is-theme, .is-outlet, .is-group) .orbit-map { margin-top: 40px; }
+/* A story with no switch (no profile) keeps no room for one: its web starts at the top of its cell. */
+.plegma-orbit.is-story:not(:has(> .orbit-ring-tabs)) .orbit-map { margin-top: 0; }
 @media (max-width: 1023px) { .plegma-orbit > .orbit-ring-tabs { position: absolute; top: 56px; right: 0; } .plegma-orbit .orbit-map { margin-top: 0; } }
 
 /* The theme view: the two columns of cards on the right are 20% narrower (3 parts of 12 become 2.4), so the web has the room. */
