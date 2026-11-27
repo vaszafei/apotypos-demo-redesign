@@ -34,14 +34,14 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
   let hlKey = ''
   // The nodes whose articles are in the highlight: a node of a story of many articles stands for several, and comes forward if one of them does.
   const matchNodes = (s: PlegmaStory, h: PlegmaHighlight, list: NonNullable<typeof plegma.articles>, nodes: number) => {
-    const key = `${s.id}|${'from' in h ? `${h.from}-${h.to}` : `${h.group}|${h.outlet ?? ''}`}|${list.length}|${nodes}`
+    const key = `${s.id}|${'picks' in h ? `p${h.story}` : 'from' in h ? `${h.from}-${h.to}` : `${h.group}|${h.outlet ?? ''}`}|${list.length}|${nodes}`
     if (key === hlKey) return hlMatch
     hlKey = key
     hlMatch = new Uint8Array(nodes)
     for (let i = 0; i < nodes; i++) {
       const from = Math.floor((i * s.n) / nodes)
       const to = Math.max(from + 1, Math.floor(((i + 1) * s.n) / nodes))
-      for (let k = from; k < to; k++) if (matchesHighlight(list[k]!, h)) { hlMatch[i] = 1; break }
+      for (let k = from; k < to; k++) if (matchesHighlight(list[k]!, h, k)) { hlMatch[i] = 1; break }
     }
     return hlMatch
   }

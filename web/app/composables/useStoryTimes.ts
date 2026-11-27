@@ -4,8 +4,11 @@ import type { MaybeRefOrGetter } from 'vue'
 // docs/redesign/prototypes/scripts/make-article-times.py. A row is [t0, outlet, minutes, outlet, minutes, ...]: t0 in minutes since 1970 UTC, each
 // minutes counted from it, in order of time. Read in the browser only, when a story page opens; each file once.
 // data/story-titles/<same shard>.json has the title of each article, in the same order ("" when it has none).
+// data/story-related/<same shard>.json has the stories about the same thing, by the vectors of the articles (make-story-related.py): for each, the cosine
+// of the two stories (x 1000) and the places, in this order, of the articles about it.
 export const STORY_TIME_SHARDS = 50
 export type StoryTimes = { outlet: number, time: number, title?: string }[]
+export type StoryLinks = { id: number, cosine: number, picks: number[] }[]
 
 // The day of a minute (since 1970 UTC) in Athens, as the dates of the fixtures (YYYY-MM-DD): a story's day is an Athens day.
 const athens = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Athens' })
@@ -31,19 +34,23 @@ export const storyTimesOf = (row: number[] | undefined, titles?: string[]): Stor
   return out
 }
 
-// `times` is null for a story with no times (`from`: the first id that has them); `pending` is true while its file loads.
+// `times` and `links` are null for a story with no times (`from`: the first id that has them); `pending` is true while its files load.
 export const useStoryTimes = (id: MaybeRefOrGetter<number>, from: MaybeRefOrGetter<number | undefined>) => {
   const times = ref<StoryTimes | null>(null)
+  const links = ref<StoryLinks | null>(null)
   const pending = ref(false)
   watch(() => [toValue(id), toValue(from)] as const, async ([sid, first]) => {
     times.value = null
+    links.value = null
     pending.value = false
     if (!import.meta.client || first === undefined || sid < first) return
     pending.value = true
-    const [shard, titled] = await Promise.all([shardOf<number>('story-times', sid % STORY_TIME_SHARDS), shardOf<string>('story-titles', sid % STORY_TIME_SHARDS)])
+    const k = sid % STORY_TIME_SHARDS
+    const [shard, titled, linked] = await Promise.all([shardOf<number>('story-times', k), shardOf<string>('story-titles', k), shardOf<[number, number, number[]]>('story-related', k)])
     if (toValue(id) !== sid) return
     times.value = storyTimesOf(shard[String(sid)], titled[String(sid)])
+    links.value = times.value ? (linked[String(sid)] ?? []).map(([other, cosine, picks]) => ({ id: other, cosine: cosine / 1000, picks })) : null
     pending.value = false
   }, { immediate: true })
-  return { times, pending }
+  return { times, links, pending }
 }

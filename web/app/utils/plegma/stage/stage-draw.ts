@@ -18,7 +18,7 @@ export interface DrawDeps extends StageDeps { canvas: Ref<HTMLCanvasElement | un
 export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore, articles: StageArticles, theme: StageTheme, hero: StageHero) => {
   const { plegma, reduced, canvas, canvasFocus } = deps
   const { placed, drift, colourOf, focusStory, focusIssue, focusOutlet, behind, coreOf, spokeSet, targetCamera, CLEAR_PAD, visible, arcOf, ease, BACK_Z, backFrame, backPoint } = core
-  const { drawArticles, clearRadius, linkFrom } = articles
+  const { drawArticles, clearRadius, linkFrom, isBranch } = articles
   const { drawTheme } = theme
   const { drawHero } = hero
   const EMPTY = new Set<PlegmaStory>()
@@ -373,7 +373,8 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
     // A story with a theme of its own is joined, by curved lines, to the largest stories of that theme and to the stories its card lists; they leave from the edge of its web,
     // spread around it by the direction they go in, and fade toward the other story. The story a card of other stories points at has its line lit: solid, glowing, flowing.
     const pointed = lineLast !== null && lineMix > 0.01 ? st.world.byId.get(lineLast) ?? null : null
-    if (story && !onHome && (story.coded || pointed)) {
+    // Κλαδιά has no lines to other stories: a row of «Σχετικές ιστορίες» lights the articles about that story (PlegmaRelatedCard.vue).
+    if (story && !onHome && (story.coded || pointed) && !isBranch(story)) {
       const { edge, kx, ...here } = linkFrom(story)
       const colour = story.slot > 0 ? colourOf(story) : st.cats[0] ?? st.mute
       const listed: PlegmaStory[] = []
