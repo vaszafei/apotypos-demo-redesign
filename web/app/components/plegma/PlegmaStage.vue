@@ -123,6 +123,7 @@ const frame = (now: number) => {
   }
   walkAt = now
   const zooming = articles.stepWebZoom(now) && zoomMoving(st.zoom)
+  if (!zooming) articles.publishWindow()
   draw(now)
   if (!reduced.value || st.flight || st.walk || zooming) raf = requestAnimationFrame(frame)
 }

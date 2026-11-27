@@ -26,7 +26,16 @@ const light = (h: PlegmaHighlight | null) => {
 const inPick = (name: string | undefined) => !plegma.outletPick.size || (name !== undefined && plegma.outletPick.has(name))
 // An outlet of no group picked with others of no group has a color of its own (stores/plegma.ts pickSlots).
 const inkOf = (name: string, color: string) => { const slot = plegma.pickSlots.get(name); return slot ? `var(--cat-${slot})` : color }
-const outletParts = computed<RingPart[]>(() => props.view.outletParts.value.filter(p => inPick(p.name)).map(p => ({ key: p.name, name: p.name, group: p.group, n: p.n, color: inkOf(p.name, p.color) })))
+// While the web is zoomed, only the articles in view (stores/plegma.ts viewSpan) count.
+const inSpan = (time: number | undefined) => !plegma.viewSpan || (time !== undefined && time >= plegma.viewSpan.from && time <= plegma.viewSpan.to)
+const spanCounts = computed(() => {
+  if (!plegma.viewSpan) return null
+  const by = new Map<string, number>()
+  for (const a of props.view.articles.value) if (inSpan(a.time)) by.set(a.outlet, (by.get(a.outlet) ?? 0) + 1)
+  return by
+})
+const outletParts = computed<RingPart[]>(() => props.view.outletParts.value.filter(p => inPick(p.name))
+  .map(p => ({ key: p.name, name: p.name, group: p.group, n: spanCounts.value ? spanCounts.value.get(p.name) ?? 0 : p.n, color: inkOf(p.name, p.color) })).filter(p => p.n > 0))
 const total = computed(() => outletParts.value.reduce((s, p) => s + p.n, 0))
 const storyTotal = computed(() => props.view.outletParts.value.reduce((s, p) => s + p.n, 0))
 const articlesFact = computed(() => fmtInt(total.value))
@@ -50,7 +59,7 @@ const groups = {
 }
 // Αντίγραφα: the outlets that published a copy of an earlier article of another outlet, by their copies; under the pointer, their copies and the articles they copy are lit, with the lines between them.
 let seq = 0
-const copyPairs = computed(() => (props.view.copies.value ?? []).filter(([c]) => inPick(props.view.articles.value[c]?.outlet)))
+const copyPairs = computed(() => (props.view.copies.value ?? []).filter(([c]) => inPick(props.view.articles.value[c]?.outlet) && inSpan(props.view.articles.value[c]?.time)))
 const copyParts = computed<RingPart[]>(() => {
   const list = props.view.articles.value
   const colors = new Map(outletParts.value.map(p => [p.name, p.color]))

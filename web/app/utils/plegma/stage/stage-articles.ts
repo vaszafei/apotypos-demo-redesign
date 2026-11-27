@@ -111,7 +111,9 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
   }
   // Κλαδιά (utils/plegma/plegma-branches.ts): a story whose articles have their time is its web spread by time,
   // in the whole free cell, with no ring. One node for each article. The web and its names are made once for a story and a size of the region, in pixels of the framing; the frame scales them with the camera.
-  const branch = { band: null as { x: Float32Array, n: Float32Array, top: number, spans: { from: number, to: number }[], step: number } | null, key: '', list: null as unknown, web: null as PlegmaBranchWeb | null, aw: null as ReturnType<typeof articleWebOf> | null, names: [] as BranchName[], fz: 1, w: 0, h: 0,
+  type Band = { x: Float32Array, n: Float32Array, top: number, spans: { from: number, to: number }[], step: number }
+  const branch = { band: null as Band | null, bandOf: null as ((lo: number, hi: number) => Band | null) | null, within: null as ((a: number, b: number) => { lo: number, hi: number }) | null,
+    zoomBand: null as Band | null, zoomKey: '', key: '', list: null as unknown, web: null as PlegmaBranchWeb | null, aw: null as ReturnType<typeof articleWebOf> | null, names: [] as BranchName[], fz: 1, w: 0, h: 0,
     asks: null as ((X: ArrayLike<number>, Y: ArrayLike<number>, z: number, cam: { x: number, y: number }) => { asks: BranchNameAsk[], ticks: number[] }) | null, ticks: [] as number[] }
   const measure = (text: string, size: number, weight: number) => {
     const g = st.ctxFocus
@@ -193,14 +195,6 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     // The articles over time, under the branches (the line of «Ιστορία στον χρόνο», drawn in the Plegma): the articles of each step of time (the step the chart had), at the place of
     // that time on the branches (between the articles around it), so a peak is under the articles that make it.
     // The steps are those of the chart: on the Athens clock (a day step is an Athens day), each with its start and end as times of the articles.
-    const { step, steps } = storySteps(list)
-    const spans = steps.map((u) => {
-      const wall = Date.parse(`${u.date}T${u.clock}:00Z`) / 60000
-      const from = wall - (athensWall(wall) - wall)
-      return { from, to: from + step - 1 }
-    })
-    const bins = Math.max(1, steps.length)
-    const counts = Float32Array.from(steps, u => u.n)
     const xm = new Float32Array(web.n)
     for (let i = 0; i < web.n; i++) xm[i] = i ? Math.max(xm[i - 1]!, web.x[i]!) : web.x[0]!
     const xAt = (m: number) => {
@@ -212,13 +206,33 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       const f = times[hi]! === times[lo]! ? 0 : (m - times[lo]!) / (times[hi]! - times[lo]!)
       return xm[lo]! + (xm[hi]! - xm[lo]!) * f
     }
-    const bx = new Float32Array(bins + 2)
-    const bn = new Float32Array(bins + 2)
-    bx[0] = xm[0]!
-    for (let b = 0; b < steps.length; b++) { bx[b + 1] = xAt(spans[b]!.from + step / 2); bn[b + 1] = counts[b]! }
-    bx[bins + 1] = xm[web.n - 1]!
+    // The band of the articles from `lo` to `hi` (places in the list): the whole story, or the articles in view while the web is zoomed, in finer steps as they span less time.
+    const bandOf = (lo: number, hi: number) => {
+      const { step, steps } = storySteps(list.slice(lo, hi + 1))
+      const spans = steps.map((u) => {
+        const wall = Date.parse(`${u.date}T${u.clock}:00Z`) / 60000
+        const from = wall - (athensWall(wall) - wall)
+        return { from, to: from + step - 1 }
+      })
+      const bins = Math.max(1, steps.length)
+      const counts = Float32Array.from(steps, u => u.n)
+      const bx = new Float32Array(bins + 2)
+      const bn = new Float32Array(bins + 2)
+      bx[0] = xm[lo]!
+      for (let b = 0; b < steps.length; b++) { bx[b + 1] = xAt(spans[b]!.from + step / 2); bn[b + 1] = counts[b]! }
+      bx[bins + 1] = xm[hi]!
+      return hi - lo > 1 ? { x: bx, n: bn, top: Math.max(1, ...counts), spans, step } : null
+    }
+    // The articles whose places are between two x of the web (the window of the zoom).
+    const within = (a: number, b: number) => {
+      let lo = 0
+      while (lo < web.n - 1 && xm[lo]! < a) lo++
+      let hi = web.n - 1
+      while (hi > lo && xm[hi]! > b) hi--
+      return { lo, hi }
+    }
     Object.assign(branch, {
-      band: web.n > 2 ? { x: bx, n: bn, top: Math.max(1, ...counts), spans, step } : null,
+      band: web.n > 2 ? bandOf(0, web.n - 1) : null, bandOf, within, zoomBand: null, zoomKey: '',
       key, list, web, names: placeBranchNames(web, whole.asks, box, measure), ticks: whole.ticks, asks: asksAt, fz: frameStory(s, st.width, st.height, plegma.region).z, w: box.w, h: box.h,
       aw: { n: web.n, x: web.x, y: web.y, phase: web.phase, speed: web.speed, reach: web.reach, edges: web.edges, bow: web.bow, gap: 0, arcs: new Float32Array(0) }
     })
@@ -241,6 +255,29 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     return zoomNames
   }
   const namesNow = zoomedNames
+  // The articles in view while the web is zoomed (the x of the region at the camera of the zoom), as places in the list; null at the whole web.
+  const inView = () => {
+    if (!branch.web || !branch.within || !isZoomed(st.zoom)) return null
+    const { z, cam } = st.zoom
+    const r = branch.within(cam.x - branch.w / 2 / z, cam.x + branch.w / 2 / z)
+    return r.hi > r.lo ? r : null
+  }
+  // The band as it is drawn: the whole story's, or that of the articles in view (once for each window).
+  const bandNow = () => {
+    const v = inView()
+    if (!v || !branch.bandOf) return branch.band
+    const key = `${branch.key}|${v.lo}|${v.hi}`
+    if (key !== branch.zoomKey) { branch.zoomKey = key; branch.zoomBand = branch.bandOf(v.lo, v.hi) }
+    return branch.zoomBand ?? branch.band
+  }
+  // The time window of the articles in view, for the cards (stores/plegma.ts viewSpan): set when the zoom comes to rest.
+  const publishWindow = () => {
+    const v = inView()
+    const list = branch.list as NonNullable<typeof plegma.articles> | null
+    const next = v && list && list === plegma.articles ? { from: list[v.lo]!.time!, to: list[v.hi]!.time! } : null
+    const now = plegma.viewSpan
+    if ((next?.from ?? -1) !== (now?.from ?? -1) || (next?.to ?? -1) !== (now?.to ?? -1)) plegma.setViewSpan(next)
+  }
   // One step of the zoom for a frame (PlegmaStage.vue); whether it still moves.
   const stepWebZoom = (now: number) => {
     const dt = Math.min(64, Math.max(0, now - st.zoomAt))
@@ -413,15 +450,15 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
   // The articles of each picked outlet in each step of the band (the same steps, with a 0 at each end as the band has), once for each pick.
   let pickBandKey = ''
   let pickBandOf: { by: Map<string, Float32Array>, top: number } = { by: new Map(), top: 1 }
-  const pickBand = (list: NonNullable<typeof plegma.articles>, pick: Set<string>, band: NonNullable<typeof branch.band>) => {
-    const key = `${branch.key}|${[...pick].join('|')}`
+  const pickBand = (list: NonNullable<typeof plegma.articles>, pick: Set<string>, band: Band) => {
+    const key = `${branch.key}|${band === branch.band ? '' : branch.zoomKey}|${[...pick].join('|')}`
     if (key === pickBandKey) return pickBandOf
     const by = new Map<string, Float32Array>()
     for (const name of pick) by.set(name, new Float32Array(band.spans.length + 2))
     let b = 0
     for (const x of list) {
       const counts = by.get(x.outlet)
-      if (!counts || x.time === undefined) continue
+      if (!counts || x.time === undefined || x.time < band.spans[0]!.from || x.time > band.spans[band.spans.length - 1]!.to) continue
       while (b < band.spans.length - 1 && x.time > band.spans[b]!.to) b++
       counts[b + 1] = counts[b + 1]! + 1
     }
@@ -447,12 +484,13 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const faded = 1 - 0.85 * st.pickMix
     const lit = articles && st.hlLast && mix > 0.01 ? matchNodes(s, st.hlLast, articles, aw.n) : null
     const rOf = (i: number) => gatherR(i, i === 0 ? a.dr * 1.7 : a.dr * DOT_GROW)
-    if (level === 2 && a.branch && branch.band && branch.web) {
+    const band = level === 2 && a.branch ? bandNow() : null
+    if (band && branch.web) {
       // The articles over time, soft and a little blurred, in the lower part of the web, over the axis: a backdrop, not a chart to read.
       const { z, cam } = st.zoom
-      const band = branch.band
       const X = (v: number) => a.cx + (v - cam.x) * z * a.k
-      const Y = (v: number) => a.cy + (v - cam.y) * z * a.k
+      // The band keeps to the bottom of the region, over the axis, as the zoom opens the web: only its x follows the zoom.
+      const Y = (v: number) => a.cy + v * a.k
       const base = branch.web.axisY - 14
       const tall = bandRoom(branch.h) + 6
       const pts = Array.from(band.x, (v, i) => ({ x: X(v), y: Y(base - (band.n[i]! / band.top) * tall) }))
@@ -902,12 +940,12 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
   const isBranch = (s: PlegmaStory) => !!branchOf(s)
   // The step of the band of the days (Κλαδιά) under a point of the screen, as the last frame drew it: its place, its time and its articles.
   const bandAt = (s: PlegmaStory, x: number, y: number) => {
-    const band = branch.band
+    const band = bandNow()
     const web = branch.web
     if (!arts.branch || arts.id !== s.id || !band || !web || band.x.length < 3) return null
     const { z, cam } = st.zoom
     const X = (v: number) => arts.cx + (v - cam.x) * z * arts.k
-    const Y = (v: number) => arts.cy + (v - cam.y) * z * arts.k
+    const Y = (v: number) => arts.cy + v * arts.k
     const base = web.axisY - 14
     if (y < Y(base - bandRoom(branch.h) - 6) - 6 || y > Y(web.axisY) + 6) return null
     if (x < X(band.x[0]!) - 4 || x > X(band.x[band.x.length - 1]!) + 4) return null
@@ -920,7 +958,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
   }
   // Where the story web of Κλαδιά was last drawn: its middle on the screen and its scale against the framing (the zoom's points are in px of the framing, from that middle).
   const zoomFrame = (s: PlegmaStory) => (arts.branch && arts.id === s.id ? { cx: arts.cx, cy: arts.cy, k: arts.k } : null)
-  return { lagText, bandAt, stepWebZoom, zoomFrame, drawArticles, articleAt, ringAt, articleWorldRadius, articleAspect, ringOf, sectorOf, byOutlet, centerRadius, centerPoint, clearRadius, linkFrom, nodeArticle, isBranch }
+  return { lagText, bandAt, publishWindow, stepWebZoom, zoomFrame, drawArticles, articleAt, ringAt, articleWorldRadius, articleAspect, ringOf, sectorOf, byOutlet, centerRadius, centerPoint, clearRadius, linkFrom, nodeArticle, isBranch }
 }
 
 export type StageArticles = ReturnType<typeof createStageArticles>

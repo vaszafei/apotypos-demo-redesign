@@ -47,6 +47,8 @@ export const usePlegmaStore = defineStore('plegma', () => {
   })
   // The color slot an article (or an outlet) is drawn in: its group's, or its own while it is picked among other outlets of no group.
   const inkSlot = (a: { outlet: string, slot: number }) => pickSlots.value.get(a.outlet) ?? a.slot
+  // The time window (minutes) of the articles in view while the story web is zoomed: the rings count only them. null: the whole story.
+  const viewSpan = ref<{ from: number, to: number } | null>(null)
   // The article of the focused story open in the drawer (PlegmaArticleDrawer.vue), as a place in `articles`; null: closed.
   const reading = ref<number | null>(null)
   // What the ring of the story web shows: the outlets or the groups (an arc for each) or the stance towards the government (an arc each for critical, neutral and supportive, wide as their share).
@@ -90,6 +92,7 @@ export const usePlegmaStore = defineStore('plegma', () => {
       hoverStory.value = null
       related.value = []
       reading.value = null
+      viewSpan.value = null
       // A story or a theme opens on its outlets (the tab Μέσα); an outlet on the groups.
       ring.value = next?.kind === 'story' || next?.kind === 'theme' ? 'outlets' : 'groups'
       stance.value = null
@@ -112,6 +115,7 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const setArticleLinks = (value: { pairs: [number, number][], hot: Set<number> | null } | null) => { articleLinks.value = value }
   const setOutletPick = (value: Set<string>) => { outletPick.value = value }
   const read = (value: number | null) => { reading.value = value }
+  const setViewSpan = (value: { from: number, to: number } | null) => { viewSpan.value = value }
   const setDiveFrom = (value: { key: string, x: number, y: number, r: number, fill: string | null } | null) => { diveFrom.value = value }
   const setThemeGroups = (value: { name: string, slot: number, n: number }[] | null) => { themeGroups.value = value }
   const setOutletSlot = (value: number) => { outletSlot.value = value }
@@ -120,5 +124,5 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const pickHome = (id: number | null) => { homePick.value = id }
   const setHomeDim = (value: boolean) => { homeDim.value = value }
 
-  return { active, backdrop, leaving, setLeaving, focus, day, compare, landed, region, articles, labelRoom, highlight, hoverStory, related, articleLinks, outletPick, pickSlots, inkSlot, reading, read, ring, stance, themeStories, themeGroups, diveFrom, outletSlot, homeDay, homePick, homeDim, syncRoute, stepTo, compareWith, setLanded, setRegion, setLabelRoom, setArticles, setHighlight, setHoverStory, setRelated, setArticleLinks, setOutletPick, setRing, setStance, setThemeStories, setThemeGroups, setDiveFrom, setOutletSlot, setHomeDay, pickHome, setHomeDim }
+  return { active, backdrop, leaving, setLeaving, focus, day, compare, landed, region, articles, labelRoom, highlight, hoverStory, related, articleLinks, outletPick, pickSlots, inkSlot, reading, read, viewSpan, setViewSpan, ring, stance, themeStories, themeGroups, diveFrom, outletSlot, homeDay, homePick, homeDim, syncRoute, stepTo, compareWith, setLanded, setRegion, setLabelRoom, setArticles, setHighlight, setHoverStory, setRelated, setArticleLinks, setOutletPick, setRing, setStance, setThemeStories, setThemeGroups, setDiveFrom, setOutletSlot, setHomeDay, pickHome, setHomeDim }
 })
