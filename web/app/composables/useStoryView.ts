@@ -73,7 +73,7 @@ export const useStoryView = (id: MaybeRefOrGetter<number>) => {
       return { day, outlet: o.name, group: o.group, slot: slotOfColor(groupColor(o.group)), order: Math.max(0, order.get(o.group ?? null) ?? 0), outletOrder: outletOrder.get(o.name) ?? 0 }
     }
     // A story of the database has the time of each article: one node for each, in order of time (the same articles as the counts).
-    if (times.value) return times.value.map(a => ({ ...baseOf(a.outlet, dates.indexOf(athensDate(a.time))), time: a.time }))
+    if (times.value) return times.value.map(a => ({ ...baseOf(a.outlet, dates.indexOf(athensDate(a.time))), time: a.time, ...(a.title ? { title: a.title } : {}) }))
     return rows.flatMap(({ day, outlet, n }) => {
       const base = baseOf(outlet, day)
       const known = titles.get(`${m.dd.outlets[outlet]!.name}|${day}`)
