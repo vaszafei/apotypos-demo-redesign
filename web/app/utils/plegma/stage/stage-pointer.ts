@@ -122,6 +122,22 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
     hide()
     if (reduced.value) kick()
   }
+  // On Κλαδιά a node is one article with its time: its outlet, group, day and hour, and how long after the first it came (the start node is the first).
+  // The eye opens the article in the drawer (a click on the node pins the tooltip, so the eye can be reached).
+  const branchTip = (i: number) => {
+    const list = plegma.articles!
+    const article = list[i]!
+    return {
+      title: article.title ?? article.outlet,
+      rows: [
+        ...(article.title ? [{ label: article.outlet, value: '' }] : []),
+        { label: article.group ?? t('story.nogroup'), value: `${fmtDate(athensDate(article.time!))}, ${athensClock(article.time!)}`, color: `var(--cat-${plegma.inkSlot(article)})` },
+        i === 0 ? { label: t('story.branches.first'), value: '' } : { label: t('story.branches.after'), value: lagText(article.time! - list[0]!.time!) }
+      ],
+      field: true,
+      action: { label: t('story.article.open'), icon: 'eye', run: () => plegma.read(i) }
+    }
+  }
   const onMove = (e: PointerEvent) => {
     if (!plegma.active || !st.world || e.pointerType === 'touch' || !pointerFine.value || phone.value) return
     if ((e.target as Element | null)?.closest?.(CAPTURES)) return leave()
@@ -136,21 +152,11 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
     if (story && list && list.length === story.n && plegma.landed) {
       const i = articleAt(story, p.x, p.y)
       if (i >= 0 && isBranch(story)) {
-        // On Κλαδιά a node is one article with its time: its outlet, group, day and hour, and how long after the first it came (the start node is the first).
-        const article = list[i]!
         if (st.hoverArticle !== i && reduced.value) kick()
         st.hover = null
         st.hoverArticle = i
         if (st.ringLit) { st.ringLit = false; plegma.setHighlight(null) }
-        show({
-          title: article.title ?? article.outlet,
-          rows: [
-            ...(article.title ? [{ label: article.outlet, value: '' }] : []),
-            { label: article.group ?? t('story.nogroup'), value: `${fmtDate(athensDate(article.time!))}, ${athensClock(article.time!)}`, color: `var(--cat-${plegma.inkSlot(article)})` },
-            i === 0 ? { label: t('story.branches.first'), value: '' } : { label: t('story.branches.after'), value: lagText(article.time! - list[0]!.time!) }
-          ],
-          field: true
-        }, e)
+        show(branchTip(i), e)
         return
       }
       if (i >= 0) {
@@ -326,6 +332,8 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
     const p = { x: e.clientX - box.left, y: e.clientY - box.top }
     // In the hero a click explores: it opens no story (any pointer, a phone too).
     if (plegma.focus === null && !behind()) { explore(p.x, p.y); return }
+    const story = focusStory()
+    if (pointerFine.value && !phone.value && story && st.hoverArticle >= 0 && isBranch(story) && plegma.articles?.length === story.n) { tooltip.pin(branchTip(st.hoverArticle), e); return }
     if (!pointerFine.value || phone.value || st.hoverArticle >= 0 || st.hoverRing) return
     // A line from the story in view opens the story it goes to.
     if (hoverLink !== null) {

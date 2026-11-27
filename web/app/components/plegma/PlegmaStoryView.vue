@@ -5,6 +5,7 @@ import PlegmaRelatedCard from './PlegmaRelatedCard.vue'
 import PlegmaStanceCard from './PlegmaStanceCard.vue'
 import PlegmaPeopleCard from './PlegmaPeopleCard.vue'
 import PlegmaStoryPick from './PlegmaStoryPick.vue'
+import PlegmaArticleDrawer from './PlegmaArticleDrawer.vue'
 import PlegmaStoryViews from './PlegmaStoryViews.vue'
 import { articlesPerNode } from '~/utils/plegma/plegma-articles'
 
@@ -84,6 +85,7 @@ const nodesNote = computed(() => {
     <div class="orbit-col orbit-under">
       <PlegmaCard v-for="(key, i) in columns.under" :key="key" :at="4" :order="2 + i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
     </div>
+    <PlegmaArticleDrawer v-if="view.timed.value" :id="id" :view="view" />
   </div>
   <p v-if="problem && problem !== 'loading'" class="proto-note">{{ t('proto.states') }}</p>
 </template>
