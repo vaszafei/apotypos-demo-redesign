@@ -60,7 +60,8 @@
 .plegma-orbit.is-story.no-left:not(.has-strip) { grid-template-columns: minmax(0, 2fr) minmax(0, 7fr) minmax(0, 3fr); }
 /* The other stories end with the row of the days, which is as wide as the map; the card is as tall as its list, so its top comes down. */
 @media (min-width: 1280px) {
-  .plegma-orbit.is-story.no-left:not(.has-strip) { grid-template-areas: "title title title" "map map one" "under under one"; }
+  .plegma-orbit.is-story.no-left:not(.has-strip) { grid-template-areas: "title title title" "map map one" "under under under"; }
+  .plegma-orbit.is-story.has-ring .orbit-under { height: 200px; }
   .plegma-orbit.is-story.no-left:not(.has-strip) .orbit-sub:has(> .card-related) { justify-content: flex-end; }
 }
 /* The ring of the outlets, alone, in the room above the other stories (PlegmaOutletRing.vue): no card, it lies on the Plegma. */
@@ -666,3 +667,11 @@
 .plegma-speed .ps-half { stroke: var(--text-secondary); stroke-dasharray: 2 3; stroke-opacity: 0.6; }
 .plegma-speed .ps-rule { stroke: var(--ink); stroke-opacity: 0.35; }
 .plegma-speed .ps-dot { stroke: var(--surface-page); stroke-width: 1.5; transition: r 120ms var(--ease-out); }
+
+/* The views of a story in the row under the map, side by side, on the Plegma (no cards); the speed is wider, as a chart. */
+.plegma-views.is-row { flex-direction: row; gap: var(--space-5); height: 100%; }
+.plegma-view { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.plegma-view.is-speed { flex: 1.4 1 0; }
+.plegma-view-title { margin: 0; font-size: var(--text-caption); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); }
+.plegma-view-title::before { content: "/ "; }
+.plegma-ring .por-more { font-size: 11px; fill: var(--text-secondary); }

@@ -10,7 +10,8 @@ import { NAME_MAX } from '~/utils/plegma/stage/stage-names'
 // In the middle: a big number and a line under it (`middle`), or those of the part pointed at (`pointed`).
 export interface RingPart { key: string, name: string, group: string | null, n: number, color: string, w?: number, silent?: boolean }
 export interface RingMiddle { big: string, bigCap: string, line: string, cap: string }
-const props = withDefaults(defineProps<{ parts: RingPart[], middle: RingMiddle, pointed: (p: RingPart) => RingMiddle, sorted?: boolean, named?: (p: RingPart) => boolean, label?: (p: RingPart, total: number) => string }>(), { sorted: true })
+// `compact`: the ring on the left of its room and the names in one list beside it, the largest first, as many as fit (and how many more), with no lines to the arcs.
+const props = withDefaults(defineProps<{ parts: RingPart[], middle: RingMiddle, pointed: (p: RingPart) => RingMiddle, sorted?: boolean, named?: (p: RingPart) => boolean, label?: (p: RingPart, total: number) => string, compact?: boolean }>(), { sorted: true, compact: false })
 const emit = defineEmits<{ hover: [part: RingPart | null] }>()
 const box = ref<HTMLElement>()
 const w = ref(0)
@@ -36,9 +37,9 @@ const ring = computed(() => {
   const total = parts.reduce((s, p) => s + weight(p), 0)
   const count = parts.reduce((s, p) => s + p.n, 0)
   // The names need a column of about 130 px on each side.
-  const R = Math.min(h.value / 2 - 12, (w.value - 2 * (LINE_OUT + 130)) / 2, 110)
+  const R = props.compact ? Math.min(h.value / 2 - 6, (w.value - 140) / 2, 90) : Math.min(h.value / 2 - 12, (w.value - 2 * (LINE_OUT + 130)) / 2, 110)
   if (!total || R < 40) return null
-  const cx = w.value / 2
+  const cx = props.compact ? R + 6 : w.value / 2
   const cy = h.value / 2
   const top = Math.max(1, ...parts.map(p => p.n))
   const at = (a: number, r = R) => ({ x: cx + Math.cos(a - Math.PI / 2) * r, y: cy + Math.sin(a - Math.PI / 2) * r })
@@ -58,6 +59,17 @@ const ring = computed(() => {
   })
   // The names: two columns, on the right the arcs of the right half and on the left the others, each at the height of its arc as far as the names around it allow.
   const names: { p: RingPart, d: string, x: number, y: number, side: 1 | -1, text: string }[] = []
+  let more = 0
+  if (props.compact) {
+    const list = arcs.filter(a => !props.named || props.named(a.p)).sort((u, v) => v.p.n - u.p.n)
+    const lines = Math.max(1, Math.floor((h.value - 4) / 16))
+    const shown = list.length > lines ? list.slice(0, lines - 1) : list
+    more = list.length - shown.length
+    const x = 2 * R + 30
+    const top = cy - ((shown.length + (more ? 1 : 0)) * 16) / 2 + 8
+    shown.forEach((a, k) => names.push({ p: a.p, d: '', x, y: top + k * 16, side: 1, text: fit(props.label ? props.label(a.p, count) : `${a.p.name} · ${fmtPct(a.p.n / count)}`, '11.5px', w.value - x - 14) }))
+    return { arcs, names, cx, cy, middle: R >= 64, room: 2 * Math.sqrt(Math.max(0, (R - 8) ** 2 - 34 ** 2)) - 8, more: more ? { x: x + 9, y: top + shown.length * 16 } : null, moreN: more }
+  }
   for (const side of [1, -1] as const) {
     const colx = cx + side * (R + LINE_OUT)
     const room = side === 1 ? w.value - (colx + 9) - 4 : colx - 9 - 4
@@ -79,7 +91,7 @@ const ring = computed(() => {
     })
   }
   // The middle holds a number and a line when the ring leaves them room; a line is as wide as the inside of the ring at its height.
-  return { arcs, names, cx, cy, middle: R >= 64, room: 2 * Math.sqrt(Math.max(0, (R - 8) ** 2 - 34 ** 2)) - 8 }
+  return { arcs, names, cx, cy, middle: R >= 64, room: 2 * Math.sqrt(Math.max(0, (R - 8) ** 2 - 34 ** 2)) - 8, more: null, moreN: 0 }
 })
 const middle = computed(() => {
   const r = ring.value
@@ -91,7 +103,8 @@ const middle = computed(() => {
 <template>
   <div ref="box" class="plegma-ring">
     <svg v-if="ring" :width="w" :height="h" :class="{ 'has-hover': on }">
-      <path v-for="n in ring.names" :key="`l${n.p.key}`" class="por-line" :d="n.d" />
+      <template v-for="n in ring.names" :key="`l${n.p.key}`"><path v-if="n.d" class="por-line" :d="n.d" /></template>
+      <text v-if="ring.more" :x="ring.more.x" :y="ring.more.y" class="por-more" dominant-baseline="middle">{{ $t('story.views.more', { n: ring.moreN }) }}</text>
       <path v-for="a in ring.arcs" :key="a.p.key" class="por-arc" :class="{ 'is-on': on === a.p, 'is-silent': a.p.silent }" :d="a.d" :stroke="a.p.silent ? undefined : on === a.p ? a.p.color : soft(a.p.color)" :stroke-width="a.thick + (on === a.p ? 1.4 : 0)" />
       <path v-for="a in ring.arcs" :key="`h${a.p.key}`" class="por-hit" :d="a.d" @pointerenter="on = a.p" @pointerleave="on = null" />
       <g v-if="ring.middle" class="por-middle">
