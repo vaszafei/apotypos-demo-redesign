@@ -61,7 +61,11 @@
 /* The other stories end with the row of the days, which is as wide as the map; the card is as tall as its list, so its top comes down. */
 @media (min-width: 1280px) {
   .plegma-orbit.is-story.no-left:not(.has-strip) { grid-template-areas: "title title title" "map map one" "under under under"; }
-  .plegma-orbit.is-story.has-ring .orbit-under { height: 200px; }
+  /* The rings two by two on top of the right column and the other stories under them, to the bottom (their list scrolls); no row under the map. */
+  .plegma-orbit.is-story.has-ring { grid-template-rows: auto minmax(0, 1fr) 0; }
+  .plegma-orbit.is-story.has-ring .orbit-under { display: none; }
+  .plegma-orbit.is-story.has-ring .orbit-sub:has(> .card-related) { justify-content: flex-start; }
+  .plegma-orbit.is-story.has-ring .orbit-sub > .card-related { flex: 1 1 0; }
   .plegma-orbit.is-story.no-left:not(.has-strip) .orbit-sub:has(> .card-related) { justify-content: flex-end; }
 }
 /* The ring of the outlets, alone, in the room above the other stories (PlegmaOutletRing.vue): no card, it lies on the Plegma. */
@@ -668,8 +672,8 @@
 .plegma-speed .ps-rule { stroke: var(--ink); stroke-opacity: 0.35; }
 .plegma-speed .ps-dot { stroke: var(--surface-page); stroke-width: 1.5; transition: r 120ms var(--ease-out); }
 
-/* The views of a story in the row under the map, side by side, on the Plegma (no cards); the speed is wider, as a chart. */
-.plegma-views.is-row { flex-direction: row; gap: var(--space-5); height: 100%; }
+/* The four rings of a story, two by two, on the Plegma (no cards). */
+.plegma-views.is-grid { flex: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(150px, 18vh); gap: var(--space-3) var(--space-4); }
 .plegma-view { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .plegma-view.is-speed { flex: 1.4 1 0; }
 .plegma-view-title { margin: 0; font-size: var(--text-caption); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); }

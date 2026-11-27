@@ -16,6 +16,8 @@ export interface BranchInput {
   h: number
   left: number
   right: number
+  // The room (px) kept between the branches and the axis, for the articles over time drawn there (stage-articles.ts).
+  band?: number
 }
 
 export interface BranchTick { x: number, minute: number, kind: 'start' | 'day' | 'hour' }
@@ -86,10 +88,11 @@ export const buildBranchWeb = (input: BranchInput): PlegmaBranchWeb => {
   const x0 = -w / 2 + input.left
   const x1 = Math.max(x0 + HUB + 40, w / 2 - input.right)
   const yTop = -h / 2 + 6
-  const yBottom = h / 2 - BRANCH_AXIS - 6
+  const yBottom = h / 2 - BRANCH_AXIS - 6 - (input.band ?? 0)
+  const axisY = h / 2 - BRANCH_AXIS + 16
   const mid = (yTop + yBottom) / 2
   const H = yBottom - yTop
-  if (!n) return { n, x, y, phase, speed, reach, edges: new Uint32Array(0), bow: new Float32Array(0), r, ends: [], firsts: [], ticks: [], marks: [], axisY: yBottom + 22 }
+  if (!n) return { n, x, y, phase, speed, reach, edges: new Uint32Array(0), bow: new Float32Array(0), r, ends: [], firsts: [], ticks: [], marks: [], axisY }
   const t0 = times[0]!
   const lag = (i: number) => times[i]! - t0
   const last = Math.max(1, lag(n - 1))
@@ -221,7 +224,7 @@ export const buildBranchWeb = (input: BranchInput): PlegmaBranchWeb => {
     used.push(c.x)
     ticks.push(c)
   }
-  return { n, x, y, phase, speed, reach, edges: Uint32Array.from(pairs), bow: Float32Array.from(bows), r, ends, firsts, ticks, marks: [ticks[0]!, ...cand], axisY: yBottom + 22 }
+  return { n, x, y, phase, speed, reach, edges: Uint32Array.from(pairs), bow: Float32Array.from(bows), r, ends, firsts, ticks, marks: [ticks[0]!, ...cand], axisY }
 }
 
 // A name on the branches: where it is (px, from the middle of the region, as the nodes), its text, size and weight, how it is anchored, the slot of the dot before it (-1: none),

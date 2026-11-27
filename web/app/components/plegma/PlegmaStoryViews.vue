@@ -8,8 +8,8 @@ import PlegmaSpeedChart from './PlegmaSpeedChart.vue'
 // The views of a story above the other stories (a story with no profile), not in a card, one at a time under a switch: the ring of its outlets, the ring of its groups, the ring of all
 // outlets with those that did not write it (Σιωπή), the ring of the outlets that copied an earlier article of the story (Αντίγραφα, with the copies as lines on the map) and how fast it
 // spread (Ταχύτητα). What the pointer is on lights its articles on the map.
-// `row`: all of them side by side, each under its name (the row under the map), with no switch.
-const props = defineProps<{ view: StoryView, row?: boolean }>()
+// `grid`: the four rings two by two, each under its name (above the other stories), with no switch.
+const props = defineProps<{ view: StoryView, grid?: boolean }>()
 const { t } = useI18n()
 const plegma = usePlegmaStore()
 const m = computed(() => props.view.model.value!)
@@ -83,26 +83,26 @@ const copies = {
     const hot = new Set<number>()
     const picks = new Set<number>()
     if (p) copyPairs.value.forEach(([c, s], k) => { if (list[c]?.outlet === p.name) { hot.add(k); picks.add(c); picks.add(s) } })
-    plegma.setArticleLinks(props.row && !p ? null : { pairs: copyPairs.value, hot: p ? hot : null })
+    plegma.setArticleLinks(props.grid && !p ? null : { pairs: copyPairs.value, hot: p ? hot : null })
     // Each outlet's picks are a highlight of their own (the map keys its lit nodes by `story`).
     light(p ? { story: -(++seq), picks } : null)
   }
 }
 // The lines of the copies are on the map while their view shows (in the row, while an outlet of it is pointed at).
-watch([which, copyPairs], ([v]) => plegma.setArticleLinks(!props.row && v === 'copies' && copyPairs.value.length ? { pairs: copyPairs.value, hot: null } : null), { immediate: true })
+watch([which, copyPairs], ([v]) => plegma.setArticleLinks(!props.grid && v === 'copies' && copyPairs.value.length ? { pairs: copyPairs.value, hot: null } : null), { immediate: true })
 onBeforeUnmount(() => { plegma.setArticleLinks(null); light(null) })
 const colorOf = (outlet: string) => outletParts.value.find(p => p.name === outlet)?.color ?? 'var(--cat-0)'
 </script>
 
 <template>
-  <div v-if="row" class="plegma-views is-row">
-    <section v-for="o in options" :key="o.value" class="plegma-view" :class="`is-${o.value}`">
+  <div v-if="grid" class="plegma-views is-grid">
+    <section v-for="o in options.filter(x => x.value !== 'speed')" :key="o.value" class="plegma-view" :class="`is-${o.value}`">
       <h3 class="plegma-view-title">{{ o.label }}</h3>
-      <PlegmaRing v-if="o.value === 'outlets'" compact :parts="outletParts" :middle="outlets.middle.value" :pointed="outlets.pointed" @hover="outlets.hover" />
-      <PlegmaRing v-else-if="o.value === 'groups'" compact :parts="groupParts" :middle="groups.middle.value" :pointed="groups.pointed" :label="groups.label" @hover="groups.hover" />
-      <PlegmaRing v-else-if="o.value === 'silence'" compact :parts="silenceParts" :sorted="false" :middle="silence.middle.value" :pointed="silence.pointed" :named="silence.named" :label="silence.label" @hover="silence.hover" />
+      <PlegmaRing v-if="o.value === 'outlets'" bare :parts="outletParts" :middle="outlets.middle.value" :pointed="outlets.pointed" @hover="outlets.hover" />
+      <PlegmaRing v-else-if="o.value === 'groups'" bare :parts="groupParts" :middle="groups.middle.value" :pointed="groups.pointed" :label="groups.label" @hover="groups.hover" />
+      <PlegmaRing v-else-if="o.value === 'silence'" bare :parts="silenceParts" :sorted="false" :middle="silence.middle.value" :pointed="silence.pointed" :named="silence.named" :label="silence.label" @hover="silence.hover" />
       <template v-else-if="o.value === 'copies'">
-        <PlegmaRing v-if="copyParts.length" compact :parts="copyParts" :middle="copies.middle.value" :pointed="copies.pointed" :label="copies.label" @hover="copies.hover" />
+        <PlegmaRing v-if="copyParts.length" bare :parts="copyParts" :middle="copies.middle.value" :pointed="copies.pointed" :label="copies.label" @hover="copies.hover" />
         <p v-else class="plegma-views-empty">{{ t('story.copies.none') }}</p>
       </template>
       <PlegmaSpeedChart v-else :articles="view.articles.value" :color-of="colorOf" @hover="s => light(s)" />

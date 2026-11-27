@@ -18,6 +18,8 @@ import type { NameItem } from './stage-names'
 // The start node of Κλαδιά: a little smaller than the center of a circle web (2.3), and its names (the start, the outlet, the time) above it or under it, not on its left.
 const startRadius = (dr: number) => Math.max(4, dr * 1.9)
 const START_NAMES: 'above' | 'under' = 'above'
+// The strip between the branches and the axis where the articles over time are drawn: low and flat, so it reads as the ground of the web.
+const bandRoom = (h: number) => Math.round(Math.min(90, Math.max(48, h * 0.11)))
 
 export const createStageArticles = (st: StageState, deps: StageDeps, core: StageCore) => {
   const { plegma, reduced } = deps
@@ -135,7 +137,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const byGroup = new Map<number, { a: PlegmaArticle, n: number }>()
     for (const a of list) { const g = byGroup.get(a.order); if (g) g.n++; else byGroup.set(a.order, { a, n: 1 }) }
     const endText = (g: number) => { const row = byGroup.get(g)!; return `${shortGroup(row.a.group)} · ${fmtPct(row.n / list.length)}` }
-    const input = { times, groups: list.map(a => a.order), seed: s.id, w: box.w, h: box.h, left }
+    const input = { times, groups: list.map(a => a.order), seed: s.id, w: box.w, h: box.h, left, band: bandRoom(box.h) }
     const web = buildBranchWeb({ ...input, right: Math.max(0, ...[...byGroup.keys()].map(g => measure(endText(g), 11.5, 400))) + 34 })
     const firsts = web.firsts.slice(0, web.n < 12 ? 9 : 4)
     const lagOf = (i: number) => lagText(times[i]! - times[0]!)
@@ -411,8 +413,8 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       const band = branch.band
       const X = (v: number) => a.cx + (v - cam.x) * z * a.k
       const Y = (v: number) => a.cy + (v - cam.y) * z * a.k
-      const base = branch.web.axisY - 16
-      const tall = branch.h * 0.28
+      const base = branch.web.axisY - 14
+      const tall = bandRoom(branch.h) + 6
       const pts = Array.from(band.x, (v, i) => ({ x: X(v), y: Y(base - (band.n[i]! / band.top) * tall) }))
       const curve = (path: Path2D) => {
         path.moveTo(pts[0]!.x, pts[0]!.y)
