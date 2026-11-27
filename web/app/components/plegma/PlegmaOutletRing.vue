@@ -7,8 +7,10 @@ import { NAME_MAX } from '~/utils/plegma/stage/stage-names'
 
 // The ring of the outlets of the circle web, alone (no web inside it): an arc for each outlet, the largest first from the start of the ring, as thick as its articles against the largest's,
 // in the calm color of its group; the names in two columns beside it, each joined to its arc by a thin line (utils/plegma/stage/stage-names.ts drawColumns). Not in a card: it lies on the Plegma.
-// An arc or a name under the pointer lights the articles of its outlet on the map.
-const props = defineProps<{ parts: StackPart[] }>()
+// An arc (its band, wider than the arc, so a thin one is easy to point at) or a name under the pointer lights the articles of its outlet on the map.
+// In the middle: the articles of the story and its outlets of all (the facts of the title card, which leaves them out while the ring shows).
+const props = defineProps<{ parts: StackPart[], articles: number, outlets: number, of: number }>()
+const { t } = useI18n()
 const emit = defineEmits<{ hover: [part: StackPart | null] }>()
 const box = ref<HTMLElement>()
 const w = ref(0)
@@ -72,7 +74,8 @@ const ring = computed(() => {
       names.push({ p: a.p, d: `M ${a.end.x} ${a.end.y} L ${colx - side * 14} ${y} L ${colx} ${y}`, x: colx, y, side, text })
     })
   }
-  return { arcs, names }
+  // The middle holds the two facts when the ring leaves them room.
+  return { arcs, names, cx, cy, middle: R >= 64 }
 })
 </script>
 
@@ -80,8 +83,14 @@ const ring = computed(() => {
   <div ref="box" class="plegma-outlet-ring">
     <svg v-if="ring" :width="w" :height="h" role="group" :aria-label="$t('story.ring.outlets')" :class="{ 'has-hover': on }">
       <path v-for="n in ring.names" :key="`l${n.p.name}`" class="por-line" :d="n.d" />
-      <path v-for="a in ring.arcs" :key="a.p.name" class="por-arc" :class="{ 'is-on': on === a.p }" :d="a.d" :stroke="on === a.p ? a.p.color : soft(a.p.color)" :stroke-width="a.thick + (on === a.p ? 1.4 : 0)"
-            @pointerenter="on = a.p" @pointerleave="on = null" />
+      <path v-for="a in ring.arcs" :key="a.p.name" class="por-arc" :class="{ 'is-on': on === a.p }" :d="a.d" :stroke="on === a.p ? a.p.color : soft(a.p.color)" :stroke-width="a.thick + (on === a.p ? 1.4 : 0)" />
+      <path v-for="a in ring.arcs" :key="`h${a.p.name}`" class="por-hit" :d="a.d" @pointerenter="on = a.p" @pointerleave="on = null" />
+      <g v-if="ring.middle" class="por-middle">
+        <text :x="ring.cx" :y="ring.cy - 22" class="por-big">{{ fmtInt(articles) }}</text>
+        <text :x="ring.cx" :y="ring.cy - 2" class="por-cap">{{ t('entity.fact.articles') }}</text>
+        <text :x="ring.cx" :y="ring.cy + 24"><tspan class="por-mid">{{ fmtInt(outlets) }}</tspan><tspan class="por-cap" dx="5">{{ t('entity.fact.of', { n: of }) }}</tspan></text>
+        <text :x="ring.cx" :y="ring.cy + 42" class="por-cap">{{ t('entity.fact.outlets') }}</text>
+      </g>
       <g v-for="n in ring.names" :key="`n${n.p.name}`" class="por-name" :class="{ 'is-on': on === n.p }" @pointerenter="on = n.p" @pointerleave="on = null">
         <circle :cx="n.x" :cy="n.y" r="3.2" :fill="n.p.color" />
         <text :x="n.x + n.side * 9" :y="n.y" :text-anchor="n.side === 1 ? 'start' : 'end'" dominant-baseline="middle">{{ n.text }}</text>
