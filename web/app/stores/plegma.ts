@@ -35,6 +35,8 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const related = ref<number[]>([])
   // Lines between articles of the story web (Κλαδιά): the copies and the earlier articles they copy, as places in `articles` ([copy, source]); `hot` the pairs drawn strong (an outlet under the pointer).
   const articleLinks = ref<{ pairs: [number, number][], hot: Set<number> | null } | null>(null)
+  // The outlets picked on a story (PlegmaStoryPick.vue): the rings show only them; empty, all the outlets.
+  const outletPick = ref<Set<string>>(new Set())
   // What the ring of the story web shows: the outlets or the groups (an arc for each) or the stance towards the government (an arc each for critical, neutral and supportive, wide as their share).
   // The stance is a count for the whole story, not for each article, so it is a ring and the nodes keep their sectors. `stance` holds [critical, neutral, supportive].
   const ring = ref<'outlets' | 'groups' | 'stance'>('outlets')
@@ -95,6 +97,7 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const setStance = (value: number[] | null) => { stance.value = value }
   const setRelated = (ids: number[]) => { related.value = ids }
   const setArticleLinks = (value: { pairs: [number, number][], hot: Set<number> | null } | null) => { articleLinks.value = value }
+  const setOutletPick = (value: Set<string>) => { outletPick.value = value }
   const setDiveFrom = (value: { key: string, x: number, y: number, r: number, fill: string | null } | null) => { diveFrom.value = value }
   const setThemeGroups = (value: { name: string, slot: number, n: number }[] | null) => { themeGroups.value = value }
   const setOutletSlot = (value: number) => { outletSlot.value = value }
@@ -103,5 +106,5 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const pickHome = (id: number | null) => { homePick.value = id }
   const setHomeDim = (value: boolean) => { homeDim.value = value }
 
-  return { active, backdrop, leaving, setLeaving, focus, day, compare, landed, region, articles, labelRoom, highlight, hoverStory, related, articleLinks, ring, stance, themeStories, themeGroups, diveFrom, outletSlot, homeDay, homePick, homeDim, syncRoute, stepTo, compareWith, setLanded, setRegion, setLabelRoom, setArticles, setHighlight, setHoverStory, setRelated, setArticleLinks, setRing, setStance, setThemeStories, setThemeGroups, setDiveFrom, setOutletSlot, setHomeDay, pickHome, setHomeDim }
+  return { active, backdrop, leaving, setLeaving, focus, day, compare, landed, region, articles, labelRoom, highlight, hoverStory, related, articleLinks, outletPick, ring, stance, themeStories, themeGroups, diveFrom, outletSlot, homeDay, homePick, homeDim, syncRoute, stepTo, compareWith, setLanded, setRegion, setLabelRoom, setArticles, setHighlight, setHoverStory, setRelated, setArticleLinks, setOutletPick, setRing, setStance, setThemeStories, setThemeGroups, setDiveFrom, setOutletSlot, setHomeDay, pickHome, setHomeDim }
 })

@@ -9,7 +9,6 @@ import type { RingMiddle, RingPart } from './PlegmaRing.vue'
 const props = defineProps<{ view: StoryView }>()
 const { t } = useI18n()
 const plegma = usePlegmaStore()
-const m = computed(() => props.view.model.value!)
 const options = computed(() => [
   { value: 'outlets', label: t('story.ring.outlets') },
   { value: 'groups', label: t('story.groups.title') },
@@ -23,22 +22,29 @@ const light = (h: PlegmaHighlight | null) => {
   else if (lit && toRaw(plegma.highlight) === lit) { lit = null; plegma.setHighlight(null) }
 }
 
-const articlesFact = computed(() => fmtInt(m.value.articles))
-const outletParts = computed<RingPart[]>(() => props.view.outletParts.value.map(p => ({ key: p.name, name: p.name, group: p.group, n: p.n, color: p.color })))
+// The outlets picked at the top right (PlegmaStoryPick.vue): the rings show only them, and their articles; none picked, all.
+const inPick = (name: string | undefined) => !plegma.outletPick.size || (name !== undefined && plegma.outletPick.has(name))
+const outletParts = computed<RingPart[]>(() => props.view.outletParts.value.filter(p => inPick(p.name)).map(p => ({ key: p.name, name: p.name, group: p.group, n: p.n, color: p.color })))
+const total = computed(() => outletParts.value.reduce((s, p) => s + p.n, 0))
+const articlesFact = computed(() => fmtInt(total.value))
 const outlets = {
   middle: computed<RingMiddle>(() => ({ big: articlesFact.value, bigCap: t('entity.fact.articles'), line: fmtInt(outletParts.value.length), cap: t('entity.fact.outlets') })),
   pointed: (p: RingPart): RingMiddle => ({ big: fmtInt(p.n), bigCap: t('entity.fact.articles'), line: p.name, cap: short(p.group) }),
   hover: (p: RingPart | null) => light(p ? { group: p.group, outlet: p.name } : null)
 }
-const groupParts = computed<RingPart[]>(() => props.view.groupParts.value.map(p => ({ key: p.name, name: p.name, group: p.group, n: p.n, color: p.color })))
+const groupParts = computed<RingPart[]>(() => {
+  const by = new Map<string | null, number>()
+  for (const p of outletParts.value) by.set(p.group, (by.get(p.group) ?? 0) + p.n)
+  return props.view.groupParts.value.filter(p => by.has(p.group)).map(p => ({ key: p.name, name: p.name, group: p.group, n: by.get(p.group)!, color: p.color }))
+})
 const groups = {
   middle: computed<RingMiddle>(() => ({ big: articlesFact.value, bigCap: t('entity.fact.articles'), line: fmtInt(groupParts.value.length), cap: t('story.groups.title') })),
-  pointed: (p: RingPart): RingMiddle => ({ big: fmtInt(p.n), bigCap: t('entity.fact.articles'), line: short(p.name), cap: fmtPct(p.n / m.value.articles) }),
+  pointed: (p: RingPart): RingMiddle => ({ big: fmtInt(p.n), bigCap: t('entity.fact.articles'), line: short(p.name), cap: fmtPct(p.n / total.value) }),
   hover: (p: RingPart | null) => light(p ? { group: p.group } : null)
 }
 // Αντίγραφα: the outlets that published a copy of an earlier article of another outlet, by their copies; under the pointer, their copies and the articles they copy are lit, with the lines between them.
 let seq = 0
-const copyPairs = computed(() => props.view.copies.value ?? [])
+const copyPairs = computed(() => (props.view.copies.value ?? []).filter(([c]) => inPick(props.view.articles.value[c]?.outlet)))
 const copyParts = computed<RingPart[]>(() => {
   const list = props.view.articles.value
   const colors = new Map(outletParts.value.map(p => [p.name, p.color]))
@@ -53,7 +59,7 @@ const copyParts = computed<RingPart[]>(() => {
   return [...by.values()]
 })
 const copies = {
-  middle: computed<RingMiddle>(() => ({ big: fmtInt(copyPairs.value.length), bigCap: t('story.copies.big'), line: fmtPct(copyPairs.value.length / m.value.articles), cap: t('story.copies.share') })),
+  middle: computed<RingMiddle>(() => ({ big: fmtInt(copyPairs.value.length), bigCap: t('story.copies.big'), line: fmtPct(copyPairs.value.length / Math.max(1, total.value)), cap: t('story.copies.share') })),
   pointed: (p: RingPart): RingMiddle => ({ big: fmtInt(p.n), bigCap: t('story.copies.big'), line: p.name, cap: short(p.group) }),
   hover: (p: RingPart | null) => {
     const list = props.view.articles.value

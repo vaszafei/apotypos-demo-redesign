@@ -699,3 +699,4 @@
 .story-pick-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-top: var(--space-2); padding: var(--space-2) 8px 0; border-top: 1px solid var(--border); font-size: var(--text-caption); color: var(--text-secondary); }
 .story-pick .story-pick-clear { flex: none; min-height: 28px; padding: 0 10px; border-radius: 6px; font-size: var(--text-caption); }
 
+.story-pick-chip { flex: none; padding: 0 6px; border-radius: 4px; background: color-mix(in srgb, var(--accent) 14%, var(--surface-raised)); color: var(--ink); font-size: var(--text-caption); font-weight: 600; font-variant-numeric: tabular-nums; line-height: 18px; }

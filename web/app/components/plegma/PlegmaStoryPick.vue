@@ -4,22 +4,24 @@ import type { PlegmaHighlight } from '~/utils/plegma/plegma-articles'
 
 // The outlets picked to follow on the Plegma: one, a few from anywhere, or all those of a group (a group on the left picks or drops its outlets at once).
 // Their articles stay lit on the map while they are picked; what the pointer lights for a moment (a ring, a related story) comes back to them when it leaves.
-// It opens as the date picker does (assets/date-range.css), from the top right of the story.
+// The rings show only the picked outlets (plegma.outletPick). A group shows how many of its outlets are picked. It opens as the date picker does (assets/date-range.css), from the top right of the story.
 const props = defineProps<{ view: StoryView }>()
 const { t } = useI18n()
 const plegma = usePlegmaStore()
 const open = ref(false)
-const picked = ref(new Set<string>())
+const picked = computed(() => plegma.outletPick)
 const short = (g: string | null) => (g ?? t('story.nogroup')).replace(/^(Συμφέροντα|Όμιλος)\s+/, '')
 
 const outlets = computed(() => props.view.outletParts.value)
 const groups = computed(() => props.view.groupParts.value.map(g => ({ ...g, outlets: outlets.value.filter(o => o.group === g.group).map(o => o.name) })).filter(g => g.outlets.length))
 const has = (name: string) => picked.value.has(name)
 const allOf = (names: string[]) => names.every(has)
-const set = (next: Set<string>) => { picked.value = next }
+const set = (next: Set<string>) => plegma.setOutletPick(next)
 const toggleOutlet = (name: string) => { const next = new Set(picked.value); if (!next.delete(name)) next.add(name); set(next) }
 const toggleGroup = (names: string[]) => { const next = new Set(picked.value); const all = allOf(names); for (const n of names) if (all) next.delete(n); else next.add(n); set(next) }
 const clear = () => set(new Set())
+const pickedOf = (names: string[]) => names.filter(has).length
+watch(() => props.view.model.value?.story.id, clear)
 
 const chosen = computed(() => outlets.value.filter(o => has(o.name)))
 const label = computed(() => (chosen.value.length === 0 ? t('story.pick.button') : chosen.value.length === 1 ? chosen.value[0]!.name : t('story.pick.count', { n: fmtInt(chosen.value.length) })))
@@ -40,7 +42,7 @@ const apply = (h: PlegmaHighlight | null) => {
 }
 watch(lit, apply)
 watch(() => plegma.highlight, (h) => { if (!h && last) plegma.setHighlight(last) })
-onBeforeUnmount(() => { if (last && toRaw(plegma.highlight) === last) plegma.setHighlight(null) })
+onBeforeUnmount(() => { clear(); if (last && toRaw(plegma.highlight) === last) plegma.setHighlight(null) })
 
 const root = ref<HTMLElement | null>(null)
 onMounted(() => {
@@ -65,7 +67,7 @@ onMounted(() => {
         <div class="dr-presets story-pick-groups">
           <p class="story-pick-head">{{ t('story.groups.title') }}</p>
           <button v-for="g in groups" :key="g.name" type="button" class="dr-preset story-pick-group" :aria-pressed="tf(allOf(g.outlets))" @click="toggleGroup(g.outlets)">
-            <i class="story-pick-swatch" :style="{ background: g.color }" /><span class="story-pick-name">{{ short(g.group) }}</span><span class="story-pick-n">{{ fmtInt(g.outlets.length) }}</span>
+            <i class="story-pick-swatch" :style="{ background: g.color }" /><span class="story-pick-name">{{ short(g.group) }}</span><span v-if="pickedOf(g.outlets)" class="story-pick-chip">{{ fmtInt(pickedOf(g.outlets)) }}/{{ fmtInt(g.outlets.length) }}</span><span v-else class="story-pick-n">{{ fmtInt(g.outlets.length) }}</span>
           </button>
         </div>
         <div class="story-pick-main">
