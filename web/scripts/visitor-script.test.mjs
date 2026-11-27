@@ -5,10 +5,10 @@ import { visitorScript, MOVE_HOLD } from '../app/utils/visitorScript.ts'
 import { NAV } from '../app/composables/useNav.ts'
 
 const nav = NAV.map(s => ({ to: s.to, tabs: s.tabs.map(t => t.to) }))
-const ported = [{ html: 'topics-v2.html', route: '/trends' }]
+const ported = [{ html: 'stories-v2.html', route: '/stories' }]
 
 // Runs the inline script of the <head> against a stand-in browser.
-const run = ({ search = '', pathname = '/trends', local = {}, session = {}, reduce = false, wide = true, now = 5, navType = 'navigate', activation, date = 1000 } = {}) => {
+const run = ({ search = '', pathname = '/stories', local = {}, session = {}, reduce = false, wide = true, now = 5, navType = 'navigate', activation, date = 1000 } = {}) => {
   const classes = new Set()
   const style = new Map()
   const root = { dataset: {}, classList: { add: c => classes.add(c) }, style: { setProperty: (k, v) => style.set(k, v), removeProperty: k => style.delete(k) } }
@@ -71,30 +71,30 @@ test('a pending move holds the first frame; a page opened directly does not', ()
   assert.ok(run({ session: { 'm-move': 'not json' } }).waitedUntil < MOVE_HOLD)
 })
 
-const kept = (o = {}) => JSON.stringify({ from: '/media', nav: true, href: 'http://x.test/topics-v2.html', top: 331, time: 900, ...o })
+const kept = (o = {}) => JSON.stringify({ from: '/groups', nav: true, href: 'http://x.test/stories-v2.html', top: 331, time: 900, ...o })
 test('the link that led here slides the page in, from the old picture\'s place', () => {
-  const r = run({ pathname: '/trends', session: { 'm-move': kept() } }).reveal()
+  const r = run({ pathname: '/stories', session: { 'm-move': kept() } }).reveal()
   assert.equal(r.vt, 'down')
   assert.equal(r.oldY, '275px')
   assert.deepEqual(r.calls, ['finished.finally'])
   assert.equal(r.session['m-move'], undefined, 'the kept move is used once')
 })
 test('on a phone a move to the next tab slides sideways', () => {
-  assert.equal(run({ pathname: '/trends', wide: false, session: { 'm-move': kept() } }).reveal().vt, 'right')
+  assert.equal(run({ pathname: '/stories', wide: false, session: { 'm-move': kept() } }).reveal().vt, 'right')
 })
 test('a move that did not come from the link of this page does not slide', () => {
-  const r = run({ pathname: '/trends', session: { 'm-move': kept({ href: 'http://x.test/fingerprints-v2.html' }) } }).reveal()
+  const r = run({ pathname: '/stories', session: { 'm-move': kept({ href: 'http://x.test/fingerprints-v2.html' }) } }).reveal()
   assert.equal(r.vt, undefined)
   assert.deepEqual(r.calls, ['ready.catch', 'skip'])
 })
 test('back and forward slide too, whatever link was kept', () => {
-  assert.equal(run({ pathname: '/trends', activation: 'traverse', session: { 'm-move': kept({ nav: false, href: undefined }) } }).reveal().vt, 'down')
-  assert.equal(run({ pathname: '/trends', navType: 'back_forward', session: { 'm-move': kept({ nav: false, href: undefined }) } }).reveal().vt, 'down')
+  assert.equal(run({ pathname: '/stories', activation: 'traverse', session: { 'm-move': kept({ nav: false, href: undefined }) } }).reveal().vt, 'down')
+  assert.equal(run({ pathname: '/stories', navType: 'back_forward', session: { 'm-move': kept({ nav: false, href: undefined }) } }).reveal().vt, 'down')
 })
 test('a page with no kept move, an old one, or the same page is shown without a slide', () => {
   assert.deepEqual(run().reveal().calls, ['ready.catch', 'skip'])
   assert.deepEqual(run({ session: { 'm-move': kept({ time: 100 }) }, date: 10000 }).reveal().calls, ['ready.catch', 'skip'])
-  assert.deepEqual(run({ session: { 'm-move': kept({ from: '/trends' }) } }).reveal().calls, ['ready.catch', 'skip'])
+  assert.deepEqual(run({ session: { 'm-move': kept({ from: '/stories' }) } }).reveal().calls, ['ready.catch', 'skip'])
 })
 test('a reveal with no view transition does nothing', () => {
   const env = run({ session: { 'm-move': kept() } })
