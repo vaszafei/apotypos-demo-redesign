@@ -66,6 +66,12 @@
   .plegma-orbit.is-story.has-ring .orbit-under { display: none; }
   .plegma-orbit.is-story.has-ring .orbit-sub:has(> .card-related) { justify-content: flex-start; }
   .plegma-orbit.is-story.has-ring .orbit-sub > .card-related { flex: 1 1 0; }
+  /* The other stories under the rings: a room apart from them, no glass, only a light border, with the small text of the rows. */
+  .plegma-orbit.is-story.has-ring .orbit-sub > .card-related { margin-top: var(--space-5); background: none; backdrop-filter: none; border-color: transparent; }
+  .plegma-orbit.is-story.has-ring .card-related .cut-in { background: none; backdrop-filter: none; border-color: color-mix(in srgb, var(--border) 70%, transparent) !important; box-shadow: none !important; }
+  .plegma-orbit.is-story.has-ring .card-related .dcard { padding: var(--space-3) var(--space-3); }
+  .plegma-orbit.is-story.has-ring .card-related .dcard-title { font-weight: 600; }
+  .plegma-orbit.is-story.has-ring .card-related li { font-size: var(--text-small); }
   .plegma-orbit.is-story.no-left:not(.has-strip) .orbit-sub:has(> .card-related) { justify-content: flex-end; }
 }
 /* The ring of the outlets, alone, in the room above the other stories (PlegmaOutletRing.vue): no card, it lies on the Plegma. */
@@ -75,6 +81,10 @@
 .plegma-ring svg { display: block; overflow: visible; }
 .plegma-ring .por-arc { fill: none; stroke-linecap: round; pointer-events: none; transition: stroke-width 160ms var(--ease-out); }
 .plegma-ring .por-hit { fill: none; stroke: transparent; stroke-width: 16px; pointer-events: stroke; cursor: default; }
+.plegma-ring .por-name text { dominant-baseline: middle; fill: var(--text-secondary); pointer-events: auto; cursor: default; }
+.plegma-ring .por-name.is-on text { fill: var(--ink); }
+.plegma-ring .por-lead { fill: none; stroke: var(--rule); stroke-width: 1; }
+.plegma-ring .por-name.is-on .por-lead { stroke: var(--text-secondary); }
 .plegma-ring .por-middle text { text-anchor: middle; dominant-baseline: middle; stroke: none; font-variant-numeric: tabular-nums; }
 .plegma-ring .por-big { font-size: var(--text-heading); font-weight: 600; fill: var(--strong); }
 .plegma-ring .por-mid { font-size: var(--text-title); font-weight: 600; fill: var(--strong); }
@@ -656,7 +666,9 @@
 .plegma-ring .por-arc.is-silent { stroke: var(--text-secondary); stroke-dasharray: 2 4; stroke-opacity: 0.7; stroke-linecap: butt; }
 
 /* The four rings of a story, two by two, on the Plegma (no cards). */
-.plegma-views { flex: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(150px, 18vh); gap: var(--space-3) var(--space-4); }
+.plegma-views { flex: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: minmax(190px, 26vh) minmax(160px, 18vh); gap: var(--space-3) var(--space-4); }
+/* The ring of the outlets alone on the first row, bigger; the groups and the copies under it. */
+.plegma-view.is-outlets { grid-column: 1 / -1; }
 .plegma-view { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .plegma-view-title { margin: 0; font-size: var(--text-caption); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); }
 .plegma-view-title::before { content: "/ "; }

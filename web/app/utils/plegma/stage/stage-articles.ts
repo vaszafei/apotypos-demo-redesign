@@ -142,14 +142,13 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const firsts = web.firsts.slice(0, web.n < 12 ? 9 : 4)
     const lagOf = (i: number) => lagText(times[i]! - times[0]!)
     const dayText = (i: number) => fmtDay(athensDate(times[i]!))
-    // The names at a zoom (utils/plegma/plegma-zoom.ts): the nodes as drawn (X, Y, in px of the region from its middle) and the camera of the zoom. At the whole web (z 1) the start node, the
-    // axis, the first articles and the ends of the branches. Deeper, from 1.6 to 1.9, each outlet where it first shows; from 3.1 to 3.4 every article in view with
-    // its outlet and day, the first of a group also how long after the first article it came.
+    // The names at a zoom (utils/plegma/plegma-zoom.ts): the nodes as drawn (X, Y, in px of the region from its middle) and the camera of the zoom. At every zoom the start node, the
+    // axis, the first articles, the ends of the branches and each other outlet where it first shows; from 3.1 to 3.4 every article in view with
+    // its outlet and day in place of the outlets, the first of a group also how long after the first article it came.
     const band = (z: number, a: number, b: number) => clamp((z - a) / (b - a), 0, 1)
     const asksAt = (X: ArrayLike<number>, Y: ArrayLike<number>, z: number, cam: { x: number, y: number }) => {
       const rz = web.r * Math.pow(z, 0.45)
       const inBox = (i: number) => Math.abs(X[i]!) < box.w / 2 && Math.abs(Y[i]!) < box.h / 2
-      const o2 = band(z, 1.6, 1.9)
       const o3 = band(z, 3.1, 3.4)
       const asks: BranchNameAsk[] = []
       const ticks: number[] = []
@@ -171,12 +170,12 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       }
       for (const end of web.ends) if (inBox(end.node)) asks.push({ x: X[end.node]! + rz + 8, y: Y[end.node]! + 4, text: endText(end.group), dot: list[end.node]!.slot })
       if (o3 > 0) { for (let i = 1; i < web.n; i++) if (!asked.has(i) && inBox(i)) asks.push({ x: X[i]! + rz + 4, y: Y[i]! + 4, text: `${list[i]!.outlet} · ${dayText(i)}`, size: 10.5, alpha: o3 }) }
-      else if (o2 > 0) {
-        const shown = new Set<string>()
+      else {
+        const shown = new Set([...asked].map(i => list[i]!.outlet))
         for (let i = 1; i < web.n; i++) {
           if (asked.has(i) || !inBox(i) || shown.has(list[i]!.outlet)) continue
           shown.add(list[i]!.outlet)
-          asks.push({ x: X[i]! + rz + 4, y: Y[i]! + 4, text: list[i]!.outlet, size: 11, alpha: o2 })
+          asks.push({ x: X[i]! + rz + 4, y: Y[i]! + 4, text: list[i]!.outlet, size: 11 })
         }
       }
       return { asks, ticks }

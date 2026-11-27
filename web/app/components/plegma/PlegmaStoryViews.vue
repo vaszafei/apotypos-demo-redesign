@@ -4,7 +4,7 @@ import type { PlegmaHighlight } from '~/utils/plegma/plegma-articles'
 import PlegmaRing from './PlegmaRing.vue'
 import type { RingMiddle, RingPart } from './PlegmaRing.vue'
 
-// The views of a story (a story with no profile), above the other stories, each under its name, not in a card: the ring of its outlets, the ring of its groups and the ring of the
+// The views of a story (a story with no profile), above the other stories, each under its name, not in a card: the ring of its outlets alone on the first row, with their names, then the ring of its groups and the ring of the
 // outlets that copied an earlier article of the story (Αντίγραφα, with the copies as lines on the map while one is pointed at). What the pointer is on lights its articles on the map.
 const props = defineProps<{ view: StoryView }>()
 const { t } = useI18n()
@@ -72,7 +72,7 @@ onBeforeUnmount(() => { plegma.setArticleLinks(null); light(null) })
   <div class="plegma-views">
     <section v-for="o in options" :key="o.value" class="plegma-view" :class="`is-${o.value}`">
       <h3 class="plegma-view-title">{{ o.label }}</h3>
-      <PlegmaRing v-if="o.value === 'outlets'" :parts="outletParts" :middle="outlets.middle.value" :pointed="outlets.pointed" @hover="outlets.hover" />
+      <PlegmaRing v-if="o.value === 'outlets'" labels :parts="outletParts" :middle="outlets.middle.value" :pointed="outlets.pointed" @hover="outlets.hover" />
       <PlegmaRing v-else-if="o.value === 'groups'" :parts="groupParts" :middle="groups.middle.value" :pointed="groups.pointed" @hover="groups.hover" />
       <template v-else>
         <PlegmaRing v-if="copyParts.length" :parts="copyParts" :middle="copies.middle.value" :pointed="copies.pointed" @hover="copies.hover" />
