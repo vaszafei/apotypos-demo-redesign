@@ -345,6 +345,8 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
   }
   // The size of a node against the spacing of the web.
   const NODE_SCALE = 0.82
+  // The articles' nodes are drawn a little larger than their spacing gives (the center keeps its size).
+  const DOT_GROW = 1.25
   // The names of the arcs of the ring of the outlets or the groups: every arc with a name, the outlet or the group of its articles and the dot of its color.
   const ringNames = (arcs: Float32Array, info: ArcInfo, total: number): NameItem[] =>
     [...info.entries()].filter(([k, v]) => (arcs[k * 2 + 1] ?? 0) > 0 && v.name).map(([k, v]) => ({
@@ -410,7 +412,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const inkOf = (slot: number) => (slot < 0 ? col : st.softInk[slot] ?? st.mute)
     const mix = st.hlMix
     const lit = articles && st.hlLast && mix > 0.01 ? matchNodes(s, st.hlLast, articles, aw.n) : null
-    const rOf = (i: number) => gatherR(i, i === 0 ? a.dr * 1.7 : a.dr)
+    const rOf = (i: number) => gatherR(i, i === 0 ? a.dr * 1.7 : a.dr * DOT_GROW)
     if (level === 2 && a.branch && branch.band && branch.web) {
       // The articles over time, soft and a little blurred, in the lower part of the web, over the axis: a backdrop, not a chart to read.
       const { z, cam } = st.zoom
