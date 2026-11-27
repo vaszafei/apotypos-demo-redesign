@@ -76,7 +76,7 @@ const nodesNote = computed(() => {
       <PlegmaCard v-if="m.labelled" :at="0" :order="3" class="card-strip"><OutletStack :parts="stripParts" @hover="lightPart" :caption="plegma.ring === 'outlets' ? undefined : t('story.strip.groups', { n: stripParts.length })" /></PlegmaCard>
       <div class="orbit-subs">
         <div v-for="(column, c) in columns.right" :key="c" class="orbit-sub">
-          <PlegmaOutletRing v-if="!m.labelled && column.includes('related')" :parts="view.outletParts.value" :articles="m.articles" :outlets="m.outlets.length" :of="m.dd.outlets.length" @hover="lightOutlet" />
+          <PlegmaOutletRing v-if="!m.labelled && column.includes('related')" :parts="view.outletParts.value" :articles="m.articles" :outlets="m.outlets.length" @hover="lightOutlet" />
           <PlegmaCard v-for="(key, i) in column" :key="key" :at="0" :order="1 + c + i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
         </div>
       </div>

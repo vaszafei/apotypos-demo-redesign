@@ -8,8 +8,9 @@ import { NAME_MAX } from '~/utils/plegma/stage/stage-names'
 // The ring of the outlets of the circle web, alone (no web inside it): an arc for each outlet, the largest first from the start of the ring, as thick as its articles against the largest's,
 // in the calm color of its group; the names in two columns beside it, each joined to its arc by a thin line (utils/plegma/stage/stage-names.ts drawColumns). Not in a card: it lies on the Plegma.
 // An arc (its band, wider than the arc, so a thin one is easy to point at) or a name under the pointer lights the articles of its outlet on the map.
-// In the middle: the articles of the story and its outlets of all (the facts of the title card, which leaves them out while the ring shows).
-const props = defineProps<{ parts: StackPart[], articles: number, outlets: number, of: number }>()
+// In the middle: the articles and the outlets of the story (the facts of the title card, which leaves them out while the ring shows); with an outlet under the pointer,
+// its articles in the story, its name and its group.
+const props = defineProps<{ parts: StackPart[], articles: number, outlets: number }>()
 const { t } = useI18n()
 const emit = defineEmits<{ hover: [part: StackPart | null] }>()
 const box = ref<HTMLElement>()
@@ -22,9 +23,11 @@ watch(on, part => emit('hover', part))
 const GAP = 15
 const LINE_OUT = 24
 let ctx: CanvasRenderingContext2D | null = null
-const font = ref('')
-onMounted(() => { font.value = `11.5px ${getComputedStyle(box.value!).fontFamily}`; ctx = document.createElement('canvas').getContext('2d') })
-const width = (text: string) => { if (!ctx) return text.length * 6; ctx.font = font.value; return ctx.measureText(text).width }
+const family = ref('')
+onMounted(() => { family.value = getComputedStyle(box.value!).fontFamily; ctx = document.createElement('canvas').getContext('2d') })
+const width = (text: string, font = '11.5px') => { if (!ctx) return text.length * 6; ctx.font = `${font} ${family.value}`; return ctx.measureText(text).width }
+// A text cut to a width (with …).
+const fit = (text: string, font: string, room: number) => { let s = text; while (s.length > 4 && width(s, font) > room) s = `${s.slice(0, -2).trimEnd()}…`; return s }
 
 const soft = (color: string) => `color-mix(in srgb, ${color} 70%, var(--cat-0))`
 const ring = computed(() => {
@@ -74,8 +77,15 @@ const ring = computed(() => {
       names.push({ p: a.p, d: `M ${a.end.x} ${a.end.y} L ${colx - side * 14} ${y} L ${colx} ${y}`, x: colx, y, side, text })
     })
   }
-  // The middle holds the two facts when the ring leaves them room.
-  return { arcs, names, cx, cy, middle: R >= 64 }
+  // The middle holds the two facts when the ring leaves them room; a line is as wide as the inside of the ring at its height.
+  return { arcs, names, cx, cy, middle: R >= 64, room: 2 * Math.sqrt(Math.max(0, (R - 8) ** 2 - 34 ** 2)) - 8 }
+})
+const middle = computed(() => {
+  const r = ring.value
+  if (!r) return null
+  const p = on.value
+  if (!p) return { big: fmtInt(props.articles), line: fmtInt(props.outlets), cap: t('entity.fact.outlets') }
+  return { big: fmtInt(p.n), line: fit(p.name, '600 20px', r.room), cap: fit((p.group ?? t('story.nogroup')).replace(/^(Συμφέροντα|Όμιλος)\s+/, ''), '12px', r.room) }
 })
 </script>
 
@@ -86,10 +96,10 @@ const ring = computed(() => {
       <path v-for="a in ring.arcs" :key="a.p.name" class="por-arc" :class="{ 'is-on': on === a.p }" :d="a.d" :stroke="on === a.p ? a.p.color : soft(a.p.color)" :stroke-width="a.thick + (on === a.p ? 1.4 : 0)" />
       <path v-for="a in ring.arcs" :key="`h${a.p.name}`" class="por-hit" :d="a.d" @pointerenter="on = a.p" @pointerleave="on = null" />
       <g v-if="ring.middle" class="por-middle">
-        <text :x="ring.cx" :y="ring.cy - 22" class="por-big">{{ fmtInt(articles) }}</text>
+        <text :x="ring.cx" :y="ring.cy - 22" class="por-big">{{ middle!.big }}</text>
         <text :x="ring.cx" :y="ring.cy - 2" class="por-cap">{{ t('entity.fact.articles') }}</text>
-        <text :x="ring.cx" :y="ring.cy + 24"><tspan class="por-mid">{{ fmtInt(outlets) }}</tspan><tspan class="por-cap" dx="5">{{ t('entity.fact.of', { n: of }) }}</tspan></text>
-        <text :x="ring.cx" :y="ring.cy + 42" class="por-cap">{{ t('entity.fact.outlets') }}</text>
+        <text :x="ring.cx" :y="ring.cy + 24" class="por-mid">{{ middle!.line }}</text>
+        <text :x="ring.cx" :y="ring.cy + 42" class="por-cap">{{ middle!.cap }}</text>
       </g>
       <g v-for="n in ring.names" :key="`n${n.p.name}`" class="por-name" :class="{ 'is-on': on === n.p }" @pointerenter="on = n.p" @pointerleave="on = null">
         <circle :cx="n.x" :cy="n.y" r="3.2" :fill="n.p.color" />
