@@ -29,7 +29,11 @@ const fit = (text: string, font: string, room: number) => { let s = text; while 
 const NAME_FONT = '11.5px'
 const NAME_LINE = 14
 const soft = (color: string) => `color-mix(in srgb, ${color} 70%, var(--cat-0))`
-const ring = computed(() => {
+// The arcs as angles: where each part goes (`layout`), and where it is drawn (`shown`), which moves there in FILL_MS when the parts change: a new part grows out of the place
+// it takes, a part that goes shrinks to nothing between its neighbours, the others slide. The first parts fill the ring from its start.
+interface Arc { p: RingPart, thick: number, a0: number, a1: number }
+const FILL_MS = 650
+const layout = computed(() => {
   const parts = props.sorted ? [...props.parts].filter(p => p.n > 0).sort((a, b) => b.n - a.n) : props.parts
   const weight = (p: RingPart) => p.w ?? p.n
   const total = parts.reduce((s, p) => s + weight(p), 0)
@@ -37,28 +41,60 @@ const ring = computed(() => {
   const named = props.labels && Math.min(h.value / 2 - 6, w.value / 2 - 6 - room) >= 60
   const R = Math.min(h.value / 2 - 6, w.value / 2 - 6 - (named ? room : 0), 90)
   if (!total || R < 40) return null
-  const cx = w.value / 2
-  const cy = h.value / 2
   const top = Math.max(1, ...parts.map(p => p.n))
-  const at = (a: number) => ({ x: cx + Math.cos(a - Math.PI / 2) * R, y: cy + Math.sin(a - Math.PI / 2) * R })
   let start = RING_START
-  const arcs = parts.map((p) => {
+  const arcs: Arc[] = parts.map((p) => {
     const span = (weight(p) / total) * Math.PI * 2
     const thick = p.silent ? 1.5 : Math.max(ARC_MIN, arcThick(p.n, top))
     const pad = Math.min(span / 2 - 0.001, (Math.max(thick, ARC_MIN) / 2 + 1.5) / R)
-    const a0 = start + pad
-    const a1 = start + span - pad
+    const arc = { p, thick, a0: start + pad, a1: start + span - pad }
     start += span
-    const p0 = at(a0)
-    const p1 = at(a1)
-    return { p, thick, mid: (a0 + a1) / 2, d: a1 > a0 ? `M ${p0.x} ${p0.y} A ${R} ${R} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${p1.x} ${p1.y}` : '' }
+    return arc
   })
-  // The names: on each side, in the order of their arcs from the top, pushed apart a line at least; when a side has more names than lines, the smallest parts lose theirs.
+  return { arcs, named, R, cx: w.value / 2, cy: h.value / 2 }
+})
+const shown = shallowRef<Arc[]>([])
+let raf = 0
+const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches
+const ease = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2)
+watch(() => layout.value?.arcs, (to) => {
+  cancelAnimationFrame(raf)
+  if (!to) { shown.value = []; return }
+  const from = shown.value
+  if (still()) { shown.value = to; return }
+  const next = new Map(to.map(a => [a.p.key, a]))
+  const was = new Map(from.map(a => [a.p.key, a]))
+  // Where a part that comes or goes is a point: at the next part that stays (in the old order for one that goes, in the new for one that comes), else at an end of the ring.
+  const pointAt = (list: Arc[], k: number, other: Map<string, Arc>, side: Map<string, Arc>) => {
+    for (let j = k + 1; j < list.length; j++) { const o = side.get(list[j]!.p.key); if (o && other.has(list[j]!.p.key)) return o.a0 }
+    return from.length ? RING_START + Math.PI * 2 : RING_START
+  }
+  const moves = to.map((a, k) => ({ p: a.p, s: was.get(a.p.key) ?? { thick: a.thick, a0: pointAt(to, k, was, was), a1: pointAt(to, k, was, was) }, e: a }))
+  from.forEach((a, k) => { if (!next.has(a.p.key)) { const at = pointAt(from, k, next, next); moves.push({ p: a.p, s: a, e: { ...a, a0: at, a1: at } }) } })
+  const t0 = performance.now()
+  const step = (now: number) => {
+    const t = Math.min(1, (now - t0) / FILL_MS)
+    const f = ease(t)
+    const mix = (x: number, y: number) => x + (y - x) * f
+    shown.value = t < 1 ? moves.map(m => ({ p: m.p, thick: mix(m.s.thick, m.e.thick), a0: mix(m.s.a0, m.e.a0), a1: mix(m.s.a1, m.e.a1) })) : to
+    if (t < 1) raf = requestAnimationFrame(step)
+  }
+  raf = requestAnimationFrame(step)
+}, { immediate: true })
+onBeforeUnmount(() => cancelAnimationFrame(raf))
+const ring = computed(() => {
+  const l = layout.value
+  if (!l) return null
+  const { R, cx, cy } = l
+  const at = (a: number) => ({ x: cx + Math.cos(a - Math.PI / 2) * R, y: cy + Math.sin(a - Math.PI / 2) * R })
+  const path = (a0: number, a1: number) => { const p0 = at(a0); const p1 = at(a1); return a1 - a0 > 0.002 ? `M ${p0.x} ${p0.y} A ${R} ${R} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${p1.x} ${p1.y}` : '' }
+  const arcs = shown.value.map(a => ({ p: a.p, thick: a.thick, d: path(a.a0, a.a1) }))
+  // The names (at the places their arcs go to): on each side, in the order of their arcs from the top, pushed apart a line at least; when a side has more names than lines, the smallest parts lose theirs.
   const names: { p: RingPart, x: number, y: number, end: boolean, d: string }[] = []
-  if (named) {
+  if (l.named) {
     const lines = Math.max(1, Math.floor((h.value - 8) / NAME_LINE))
     for (const end of [false, true]) {
-      const side = arcs.filter(a => a.d && (Math.cos(a.mid - Math.PI / 2) < 0) === end)
+      const side = l.arcs.map(a => ({ ...a, mid: (a.a0 + a.a1) / 2 })).filter(a => a.a1 > a.a0 && (Math.cos(a.mid - Math.PI / 2) < 0) === end)
         .sort((a, b) => b.p.n - a.p.n).slice(0, lines)
         .map(a => ({ a, ay: cy + Math.sin(a.mid - Math.PI / 2) * (R + a.thick / 2 + 2), ax: cx + Math.cos(a.mid - Math.PI / 2) * (R + a.thick / 2 + 2) }))
         .sort((u, v) => u.ay - v.ay)
@@ -69,7 +105,7 @@ const ring = computed(() => {
       side.forEach((u, i) => names.push({ p: u.a.p, x, y: ys[i]!, end, d: `M ${u.ax} ${u.ay} L ${x + (end ? 3 : -3)} ${ys[i]}` }))
     }
   }
-  // The middle holds a number and a line when the ring leaves them room; a line is as wide as the inside of the ring at its height.
+  // The middle holds a number and a line when the ring leaves them room.
   return { arcs, names, cx, cy, R, middle: R >= 60 }
 })
 // The middle: each line as wide as the inside of the ring at its height; a long line takes a smaller size before it is cut (a name of an outlet or a group is read whole).

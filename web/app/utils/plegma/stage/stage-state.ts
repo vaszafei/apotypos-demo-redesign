@@ -59,6 +59,9 @@ export interface StageState {
   // What the cards point at (stores/plegma.ts): the articles of a group or an outlet come forward. It eases in and out, so the map answers the pointer instead of jumping; with reduced motion it jumps.
   hlMix: number
   hlLast: PlegmaHighlight | null
+  // The outlets picked on a story (stores/plegma.ts outletPick): the articles of the others fade back as it eases to 1. `pickLast` is the pick that fades, kept while it eases out.
+  pickMix: number
+  pickLast: Set<string> | null
   // The ring of the story web turns from the arcs of the groups to the arcs of the stance and back: 0 is the groups, 1 the stance.
   ringMix: number
   hoverNode: number
@@ -123,6 +126,8 @@ export const createStageState = (): StageState => ({
   ringHot: new Map(),
   hlMix: 0,
   hlLast: null,
+  pickMix: 0,
+  pickLast: null,
   ringMix: 0,
   hoverNode: -1,
   walk: null,

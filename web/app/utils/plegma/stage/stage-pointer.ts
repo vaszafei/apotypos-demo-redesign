@@ -146,7 +146,7 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
           title: article.title ?? article.outlet,
           rows: [
             ...(article.title ? [{ label: article.outlet, value: '' }] : []),
-            { label: article.group ?? t('story.nogroup'), value: `${fmtDate(athensDate(article.time!))}, ${athensClock(article.time!)}`, color: `var(--cat-${article.slot})` },
+            { label: article.group ?? t('story.nogroup'), value: `${fmtDate(athensDate(article.time!))}, ${athensClock(article.time!)}`, color: `var(--cat-${plegma.inkSlot(article)})` },
             i === 0 ? { label: t('story.branches.first'), value: '' } : { label: t('story.branches.after'), value: lagText(article.time! - list[0]!.time!) }
           ],
           field: true
@@ -179,7 +179,7 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
           ? {
               title: titled.title!,
               rows: [
-                { label: titled.outlet, value: date, color: `var(--cat-${titled.slot})` },
+                { label: titled.outlet, value: date, color: `var(--cat-${plegma.inkSlot(titled)})` },
                 { label: titled.group ?? t('story.nogroup'), value: '' },
                 ...(per > 1 ? [{ label: t('story.nodes.per'), value: fmtInt(per) }] : [])
               ],
@@ -188,7 +188,7 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
           : {
               title: article.outlet,
               rows: [
-                { label: group, value: date, color: `var(--cat-${article.slot})` },
+                { label: group, value: date, color: `var(--cat-${plegma.inkSlot(article)})` },
                 ...(per > 1 ? [{ label: t('story.nodes.per'), value: fmtInt(per) }] : [])
               ],
               field: true

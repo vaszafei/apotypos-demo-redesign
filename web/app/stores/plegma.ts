@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { PlegmaRegion } from '../utils/plegma/plegma-camera.ts'
 import type { PlegmaArticle, PlegmaHighlight } from '../utils/plegma/plegma-articles.ts'
 import type { PlegmaThemeStory } from '../utils/plegma/plegma-theme.ts'
@@ -37,6 +37,16 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const articleLinks = ref<{ pairs: [number, number][], hot: Set<number> | null } | null>(null)
   // The outlets picked on a story (PlegmaStoryPick.vue): the rings show only them; empty, all the outlets.
   const outletPick = ref<Set<string>>(new Set())
+  // The picked outlets of no group (Ανεξάρτητα) all have its gray: two or more of them picked, each gets a color slot of its own (1 to 14, the largest first), so they can be compared.
+  const pickSlots = computed(() => {
+    const slots = new Map<string, number>()
+    const gray = new Map<string, number>()
+    for (const a of articles.value ?? []) if (a.slot === 0 && outletPick.value.has(a.outlet)) gray.set(a.outlet, a.outletOrder)
+    if (gray.size > 1) [...gray].sort((a, b) => a[1] - b[1]).forEach(([name], k) => slots.set(name, (k % 14) + 1))
+    return slots
+  })
+  // The color slot an article (or an outlet) is drawn in: its group's, or its own while it is picked among other outlets of no group.
+  const inkSlot = (a: { outlet: string, slot: number }) => pickSlots.value.get(a.outlet) ?? a.slot
   // What the ring of the story web shows: the outlets or the groups (an arc for each) or the stance towards the government (an arc each for critical, neutral and supportive, wide as their share).
   // The stance is a count for the whole story, not for each article, so it is a ring and the nodes keep their sectors. `stance` holds [critical, neutral, supportive].
   const ring = ref<'outlets' | 'groups' | 'stance'>('outlets')
@@ -106,5 +116,5 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const pickHome = (id: number | null) => { homePick.value = id }
   const setHomeDim = (value: boolean) => { homeDim.value = value }
 
-  return { active, backdrop, leaving, setLeaving, focus, day, compare, landed, region, articles, labelRoom, highlight, hoverStory, related, articleLinks, outletPick, ring, stance, themeStories, themeGroups, diveFrom, outletSlot, homeDay, homePick, homeDim, syncRoute, stepTo, compareWith, setLanded, setRegion, setLabelRoom, setArticles, setHighlight, setHoverStory, setRelated, setArticleLinks, setOutletPick, setRing, setStance, setThemeStories, setThemeGroups, setDiveFrom, setOutletSlot, setHomeDay, pickHome, setHomeDim }
+  return { active, backdrop, leaving, setLeaving, focus, day, compare, landed, region, articles, labelRoom, highlight, hoverStory, related, articleLinks, outletPick, pickSlots, inkSlot, ring, stance, themeStories, themeGroups, diveFrom, outletSlot, homeDay, homePick, homeDim, syncRoute, stepTo, compareWith, setLanded, setRegion, setLabelRoom, setArticles, setHighlight, setHoverStory, setRelated, setArticleLinks, setOutletPick, setRing, setStance, setThemeStories, setThemeGroups, setDiveFrom, setOutletSlot, setHomeDay, pickHome, setHomeDim }
 })

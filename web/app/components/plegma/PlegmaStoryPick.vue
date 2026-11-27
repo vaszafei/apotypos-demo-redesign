@@ -21,6 +21,7 @@ const toggleOutlet = (name: string) => { const next = new Set(picked.value); if 
 const toggleGroup = (names: string[]) => { const next = new Set(picked.value); const all = allOf(names); for (const n of names) if (all) next.delete(n); else next.add(n); set(next) }
 const clear = () => set(new Set())
 const pickedOf = (names: string[]) => names.filter(has).length
+const colorOf = (o: { name: string, color: string }) => { const slot = plegma.pickSlots.get(o.name); return slot ? `var(--cat-${slot})` : o.color }
 watch(() => props.view.model.value?.story.id, clear)
 
 const chosen = computed(() => outlets.value.filter(o => has(o.name)))
@@ -58,7 +59,7 @@ onMounted(() => {
   <div ref="root" class="story-pick">
     <button type="button" class="dr-trigger story-pick-trigger" :class="{ 'is-picked': chosen.length }" aria-haspopup="dialog" :aria-expanded="tf(open)" @click="open = !open">
       <AppIcon name="arrows-right-left" class="icon dr-icon" />
-      <span v-if="chosen.length" class="story-pick-dots" aria-hidden="true"><i v-for="o in chosen.slice(0, 6)" :key="o.name" :style="{ background: o.color }" /></span>
+      <span v-if="chosen.length" class="story-pick-dots" aria-hidden="true"><i v-for="o in chosen.slice(0, 6)" :key="o.name" :style="{ background: colorOf(o) }" /></span>
       <span class="dr-text">{{ label }}</span>
       <AppIcon name="chevron-down" class="icon icon-sm dr-chev" />
     </button>
@@ -75,7 +76,7 @@ onMounted(() => {
           <ul class="story-pick-outlets">
             <li v-for="o in outlets" :key="o.name">
               <button type="button" class="story-pick-outlet" :aria-pressed="tf(has(o.name))" @click="toggleOutlet(o.name)">
-                <i class="story-pick-check" :style="{ '--c': o.color }" />
+                <i class="story-pick-check" :style="{ '--c': colorOf(o) }" />
                 <span class="story-pick-name">{{ o.name }}</span><span class="story-pick-n">{{ fmtInt(o.n) }}</span>
               </button>
             </li>

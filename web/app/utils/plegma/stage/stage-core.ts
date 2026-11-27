@@ -40,7 +40,7 @@ export const createStageCore = (st: StageState, deps: StageDeps) => {
     st.shade = style.getPropertyValue('--shade').trim() || st.shade
     st.fontText = style.getPropertyValue('--font-text').trim() || st.fontText
     st.cats = Array.from({ length: 8 }, (_, i) => style.getPropertyValue(`--cat-${i + 1}`).trim() || st.mute)
-    st.groupInk = Array.from({ length: 10 }, (_, i) => style.getPropertyValue(`--cat-${i}`).trim() || st.mute)
+    st.groupInk = Array.from({ length: 15 }, (_, i) => style.getPropertyValue(`--cat-${i}`).trim() || st.mute)
     st.stanceInk = ['critical', 'neutral', 'supportive'].map(k => style.getPropertyValue(`--stance-${k}`).trim() || st.mute)
     st.softInk = st.groupInk.map(c => mixHex(c, st.groupInk[0] ?? st.mute, 0.3))
   }

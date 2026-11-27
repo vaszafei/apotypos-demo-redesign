@@ -175,6 +175,8 @@ export const createStageDraw = (st: StageState, deps: DrawDeps, core: StageCore,
     lastNow = now
     if (plegma.highlight) st.hlLast = plegma.highlight
     st.hlMix = ease(st.hlMix, plegma.highlight ? 1 : 0, dt)
+    if (plegma.outletPick.size) st.pickLast = plegma.outletPick
+    st.pickMix = ease(st.pickMix, plegma.outletPick.size ? 1 : 0, dt)
     st.ringMix = reduced.value ? (plegma.ring === 'stance' ? 1 : 0) : st.ringMix + ((plegma.ring === 'stance' ? 1 : 0) - st.ringMix) * (1 - Math.exp(-dt * 4))
     for (const [key, v] of st.ringHot) {
       const next = ease(v, key === st.hoverRing ? 1 : 0, dt)

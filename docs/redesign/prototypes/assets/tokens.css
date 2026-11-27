@@ -169,6 +169,8 @@
   --cat-0: #9a978f;
   --cat-1: #2a78d6; --cat-2: #eb6834; --cat-3: #1baf7a; --cat-4: #eda100;
   --cat-5: #e87ba4; --cat-6: #008300; --cat-7: #6250d6; --cat-8: #e34948; --cat-9: #4b5d73;
+  /* Slots 10 to 14 only tell apart outlets of no group picked together on a story (they are not groups). */
+  --cat-10: #a0672d; --cat-11: #0e8f8c; --cat-12: #8a8a14; --cat-13: #a23d96; --cat-14: #2b4c8c;
   /* A dark gray for a fixed "own" category (the domestic affairs of a speech). */
   --cat-strong: #5c5a55;
   /* Parties (Εκλογές). */
@@ -276,6 +278,7 @@
   --series-1: #38b6cf; --series-other: #2a5c68;
   /* Three slots fail 3 to 1 on a dark card, so they are lighter here. */
   --cat-6: #1f8f1f; --cat-7: #8a7cf0; --cat-9: #7d8ea6; --cat-strong: #b5b2aa;
+  --cat-10: #c08a52; --cat-13: #c46ab8; --cat-14: #6f8fd0;
   --notice-text: #f0d29a; --success-text: #4cc38a; --success-bg: #18281f; --success-edge: #2f5a40;
   --status-ok: #4cc38a; --status-over: #e3a43c; --status-open: #9fb0c6; --status-no: #f07c7c;
   --emph-more: #3fc2bd; --emph-less: #f08a45; --side-b: #e0803a;

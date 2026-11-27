@@ -24,8 +24,11 @@ const light = (h: PlegmaHighlight | null) => {
 
 // The outlets picked at the top right (PlegmaStoryPick.vue): the rings show only them, and their articles; none picked, all.
 const inPick = (name: string | undefined) => !plegma.outletPick.size || (name !== undefined && plegma.outletPick.has(name))
-const outletParts = computed<RingPart[]>(() => props.view.outletParts.value.filter(p => inPick(p.name)).map(p => ({ key: p.name, name: p.name, group: p.group, n: p.n, color: p.color })))
+// An outlet of no group picked with others of no group has a color of its own (stores/plegma.ts pickSlots).
+const inkOf = (name: string, color: string) => { const slot = plegma.pickSlots.get(name); return slot ? `var(--cat-${slot})` : color }
+const outletParts = computed<RingPart[]>(() => props.view.outletParts.value.filter(p => inPick(p.name)).map(p => ({ key: p.name, name: p.name, group: p.group, n: p.n, color: inkOf(p.name, p.color) })))
 const total = computed(() => outletParts.value.reduce((s, p) => s + p.n, 0))
+const storyTotal = computed(() => props.view.outletParts.value.reduce((s, p) => s + p.n, 0))
 const articlesFact = computed(() => fmtInt(total.value))
 const outlets = {
   middle: computed<RingMiddle>(() => ({ big: articlesFact.value, bigCap: t('entity.fact.articles'), line: fmtInt(outletParts.value.length), cap: t('entity.fact.outlets') })),
@@ -38,7 +41,10 @@ const groupParts = computed<RingPart[]>(() => {
   return props.view.groupParts.value.filter(p => by.has(p.group)).map(p => ({ key: p.name, name: p.name, group: p.group, n: by.get(p.group)!, color: p.color }))
 })
 const groups = {
-  middle: computed<RingMiddle>(() => ({ big: articlesFact.value, bigCap: t('entity.fact.articles'), line: fmtInt(groupParts.value.length), cap: t('story.groups.title') })),
+  // The pick within one group: the middle names it, with its share of the story.
+  middle: computed<RingMiddle>(() => (plegma.outletPick.size && groupParts.value.length === 1
+    ? { big: articlesFact.value, bigCap: t('entity.fact.articles'), line: short(groupParts.value[0]!.group), cap: fmtPct(total.value / Math.max(1, storyTotal.value)) }
+    : { big: articlesFact.value, bigCap: t('entity.fact.articles'), line: fmtInt(groupParts.value.length), cap: t('story.groups.title') })),
   pointed: (p: RingPart): RingMiddle => ({ big: fmtInt(p.n), bigCap: t('entity.fact.articles'), line: short(p.name), cap: fmtPct(p.n / total.value) }),
   hover: (p: RingPart | null) => light(p ? { group: p.group } : null)
 }

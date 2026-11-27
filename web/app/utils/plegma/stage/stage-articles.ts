@@ -162,20 +162,26 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
         ticks.push(x)
         asks.push({ x, y: web.axisY, text: mark.kind === 'hour' ? athensClock(mark.minute) : fmtDay(athensDate(mark.minute)), size: 11, anchor: 'middle', mute: mark.kind === 'hour', fixed: true })
       }
+      // Outlets picked to compare: only theirs are named (with the dot of their color), and the others' first articles are not.
+      const pick = plegma.outletPick.size ? plegma.outletPick : null
+      const named = (i: number) => !pick || pick.has(list[i]!.outlet)
+      const dotOf = (i: number) => (pick ? plegma.inkSlot(list[i]!) : undefined)
       const asked = new Set<number>()
       for (const i of firsts) {
-        if (!inBox(i)) continue
+        if (!inBox(i) || !named(i)) continue
         asked.add(i)
-        asks.push({ x: X[i]! + rz + 4, y: Y[i]! + (o3 > 0 ? 4 : -7), text: o3 > 0 ? `${list[i]!.outlet} · ${dayText(i)} · ${lagOf(i)}` : `${list[i]!.outlet} ${lagOf(i)}` })
+        asks.push({ x: X[i]! + rz + 4, y: Y[i]! + (o3 > 0 ? 4 : -7), text: o3 > 0 ? `${list[i]!.outlet} · ${dayText(i)} · ${lagOf(i)}` : `${list[i]!.outlet} ${lagOf(i)}`, dot: dotOf(i) })
       }
-      for (const end of web.ends) if (inBox(end.node)) asks.push({ x: X[end.node]! + rz + 8, y: Y[end.node]! + 4, text: endText(end.group), dot: list[end.node]!.slot })
-      if (o3 > 0) { for (let i = 1; i < web.n; i++) if (!asked.has(i) && inBox(i)) asks.push({ x: X[i]! + rz + 4, y: Y[i]! + 4, text: `${list[i]!.outlet} · ${dayText(i)}`, size: 10.5, alpha: o3 }) }
+      // A branch with no picked outlet keeps its name, faded as its articles are.
+      const groupPicked = (g: number) => !pick || list.some(x => x.order === g && pick.has(x.outlet))
+      for (const end of web.ends) if (inBox(end.node)) asks.push({ x: X[end.node]! + rz + 8, y: Y[end.node]! + 4, text: endText(end.group), dot: list[end.node]!.slot, alpha: groupPicked(end.group) ? 1 : 0.3 })
+      if (o3 > 0) { for (let i = 1; i < web.n; i++) if (!asked.has(i) && inBox(i) && named(i)) asks.push({ x: X[i]! + rz + 4, y: Y[i]! + 4, text: `${list[i]!.outlet} · ${dayText(i)}`, size: 10.5, alpha: o3 }) }
       else {
         const shown = new Set([...asked].map(i => list[i]!.outlet))
         for (let i = 1; i < web.n; i++) {
-          if (asked.has(i) || !inBox(i) || shown.has(list[i]!.outlet)) continue
+          if (asked.has(i) || !inBox(i) || shown.has(list[i]!.outlet) || !named(i)) continue
           shown.add(list[i]!.outlet)
-          asks.push({ x: X[i]! + rz + 4, y: Y[i]! + 4, text: list[i]!.outlet, size: 11 })
+          asks.push({ x: X[i]! + rz + 4, y: Y[i]! + 4, text: list[i]!.outlet, size: 11, dot: dotOf(i) })
         }
       }
       return { asks, ticks }
@@ -223,8 +229,9 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
   const zoomedNames = () => {
     const web = branch.web!
     const zs = st.zoom
-    if (!isZoomed(zs) || !branch.asks) return { names: branch.names, ticks: branch.ticks }
-    const key = `${branch.key}|${zs.z.toFixed(3)}|${zs.cam.x.toFixed(1)}|${zs.cam.y.toFixed(1)}`
+    const picked = [...plegma.outletPick].join('|')
+    if ((!isZoomed(zs) && !picked) || !branch.asks) return { names: branch.names, ticks: branch.ticks }
+    const key = `${branch.key}|${zs.z.toFixed(3)}|${zs.cam.x.toFixed(1)}|${zs.cam.y.toFixed(1)}|${picked}`
     if (key === zoomNames.key) return zoomNames
     const X = new Float32Array(web.n)
     const Y = new Float32Array(web.n)
@@ -408,9 +415,15 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const aw = a.aw!
     const col = colourOf(s)
     const articles = plegma.articles && plegma.articles.length === s.n ? plegma.articles : null
-    const slotOf = (i: number) => (articles ? articles[nodeArticle(i, articles.length)]!.slot : -1)
+    const slots = plegma.pickSlots
+    const articleOf = (i: number) => articles![nodeArticle(i, articles!.length)]!
+    const slotOf = (i: number) => (articles ? slots.get(articleOf(i).outlet) ?? articleOf(i).slot : -1)
     const inkOf = (slot: number) => (slot < 0 ? col : st.softInk[slot] ?? st.mute)
     const mix = st.hlMix
+    // The outlets picked to compare: the articles of the others (and their lines) fade back.
+    const pick = articles && st.pickLast && st.pickMix > 0.01 ? st.pickLast : null
+    const out = (i: number) => !!pick && !pick.has(articleOf(i).outlet)
+    const faded = 1 - 0.85 * st.pickMix
     const lit = articles && st.hlLast && mix > 0.01 ? matchNodes(s, st.hlLast, articles, aw.n) : null
     const rOf = (i: number) => gatherR(i, i === 0 ? a.dr * 1.7 : a.dr * DOT_GROW)
     if (level === 2 && a.branch && branch.band && branch.web) {
@@ -474,19 +487,19 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       for (let e = 0; e < aw.bow.length; e++) {
         const i = aw.edges[e * 2]!
         const j = aw.edges[e * 2 + 1]!
-        const slot = slotOf(i)
-        let path = lines.get(slot)
-        if (!path) { path = new Path2D(); lines.set(slot, path) }
+        const key = slotOf(i) * 2 + (out(i) || out(j) ? 1 : 0)
+        let path = lines.get(key)
+        if (!path) { path = new Path2D(); lines.set(key, path) }
         const dx = ax[j]! - ax[i]!
         const dy = ay[j]! - ay[i]!
         path.moveTo(ax[i]!, ay[i]!)
         path.quadraticCurveTo((ax[i]! + ax[j]!) / 2 - dy * aw.bow[e]!, (ay[i]! + ay[j]!) / 2 + dx * aw.bow[e]!, ax[j]!, ay[j]!)
       }
       g.lineCap = 'round'
-      for (const [slot, path] of lines) {
-        g.strokeStyle = inkOf(slot)
+      for (const [key, path] of lines) {
+        g.strokeStyle = inkOf(Math.floor(key / 2))
         g.lineWidth = a.spacing < 7 ? 0.7 : 1
-        g.globalAlpha = (a.spacing < 7 ? 0.4 : 0.55) * (1 - 0.35 * mix) * st.lineIn
+        g.globalAlpha = (a.spacing < 7 ? 0.4 : 0.55) * (1 - 0.35 * mix) * st.lineIn * (key & 1 ? faded : 1)
         g.stroke(path)
       }
       // The copies on Κλαδιά: a dashed line from each copy back to the article it copies, straight across the branches; those of an outlet under the pointer strong.
@@ -513,25 +526,30 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const rim = clamp(a.dr * 0.4, 0.8, 1.6)
     // A node is a small ring in the color of its group, with nothing inside it (the page shows through); the ones a card points at (below) are solid, so they stand out.
     const rims = new Path2D()
+    const rimsOut = new Path2D()
     const fills = new Map<number, Path2D>()
     for (let i = 1; i < aw.n; i++) {
       if (lit && lit[i]) continue
       const r = rOf(i) * NODE_SCALE
-      rims.moveTo(ax[i]! + r + rim, ay[i]!)
-      rims.arc(ax[i]!, ay[i]!, r + rim, 0, TAU)
-      const slot = slotOf(i)
-      let path = fills.get(slot)
-      if (!path) { path = new Path2D(); fills.set(slot, path) }
+      const under = out(i) ? rimsOut : rims
+      under.moveTo(ax[i]! + r + rim, ay[i]!)
+      under.arc(ax[i]!, ay[i]!, r + rim, 0, TAU)
+      const key = slotOf(i) * 2 + (out(i) ? 1 : 0)
+      let path = fills.get(key)
+      if (!path) { path = new Path2D(); fills.set(key, path) }
       path.moveTo(ax[i]! + r, ay[i]!)
       path.arc(ax[i]!, ay[i]!, r, 0, TAU)
     }
     g.globalAlpha = st.nodeIn
     g.fillStyle = st.paper
     g.fill(rims)
+    g.globalAlpha = st.nodeIn * faded
+    g.fill(rimsOut)
     g.lineWidth = clamp(a.dr * 0.34, 1, 1.6)
-    for (const [slot, path] of fills) {
+    for (const [key, path] of fills) {
+      const slot = Math.floor(key / 2)
       g.strokeStyle = slot < 0 ? col : st.groupInk[slot] ?? st.mute
-      g.globalAlpha = (1 - 0.35 * mix) * st.nodeIn
+      g.globalAlpha = (1 - 0.35 * mix) * st.nodeIn * (key & 1 ? faded : 1)
       g.stroke(path)
     }
     if (lit) {
@@ -781,8 +799,8 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
         g.fillStyle = strong ? st.ink : st.mute
         g.fillText(text, x + CARD_PAD + 16, ry)
       }
-      row(0, copy.slot, true, copy.outlet, whenText(copy.time!), true)
-      row(1, source.slot, false, deps.t('story.copies.of', { outlet: source.outlet }), source.time === undefined ? '' : whenText(source.time), false)
+      row(0, plegma.inkSlot(copy), true, copy.outlet, whenText(copy.time!), true)
+      row(1, plegma.inkSlot(source), false, deps.t('story.copies.of', { outlet: source.outlet }), source.time === undefined ? '' : whenText(source.time), false)
     }
     g.restore()
   }
