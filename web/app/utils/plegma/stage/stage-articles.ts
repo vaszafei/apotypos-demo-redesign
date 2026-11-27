@@ -602,7 +602,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
         g.strokeStyle = st.ink
         links.pairs.forEach(([i, j], k) => {
           if (i >= aw.n || j >= aw.n) return
-          const strong = !links.hot || links.hot.has(k)
+          const strong = (!links.hot || links.hot.has(k)) && (links.focus == null || links.focus === k)
           g.globalAlpha = (strong ? (links.hot ? 0.85 : 0.5) : 0.1) * st.lineIn
           // A little bow, so the line reads as a link between two articles, not a branch.
           const dx = ax[i]! - ax[j]!
@@ -785,35 +785,52 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     g.globalAlpha = 1
   }
   // While an outlet of Αντίγραφα is pointed at (plegma.articleLinks with its copies hot): a numbered badge on each of its copies (the dashed line runs from it to the article
-  // it copies) and one list of them, in the app's tooltip style, numbered the same, on the side of the region its copies leave freer: the title, the outlet and its time,
-  // and the outlet and time of the article it copies. Nothing lies by the copies themselves, so nothing hides the lines.
-  const LIST_W = 330
-  const LIST_PAD = 12
-  const LIST_ROW = 40
-  const LIST_HEAD = 26
+  // it copies), numbered as the list of them beside the ring (PlegmaStoryViews.vue), and the name of its outlet beside each article copied. With one copy of the list pointed at
+  // (`focus`), the others step back.
   const BADGE_R = 8
-  const ellipsis = (text: string, size: number, weight: number, room: number) => {
-    let out = text
-    while (out.length > 4 && measure(out, size, weight) > room) out = `${out.slice(0, -2).trimEnd()}…`
-    return out
-  }
-  const drawCopyCards = (g: CanvasRenderingContext2D, a: typeof arts, alpha: number) => {
+  const drawCopyMarks = (g: CanvasRenderingContext2D, alpha: number) => {
     const links = plegma.articleLinks
     const list = plegma.articles
     if (!links?.hot?.size || !list || !branch.web) return
-    const left = a.cx - (branch.w / 2) * a.k
-    const right = a.cx + (branch.w / 2) * a.k
-    const top = a.cy - (branch.h / 2) * a.k
-    const bottom = a.cy + (branch.h / 2) * a.k
-    const pairs = [...links.hot].map(k => links.pairs[k]!).filter(([c, src]) => c < ax.length && src < ax.length && list[c]?.time !== undefined).sort((u, v) => u[0] - v[0])
-    if (!pairs.length) return
+    const order = [...links.hot].filter(k => { const [c, src] = links.pairs[k]!; return c < ax.length && src < ax.length && list[c]?.time !== undefined }).sort((u, v) => links.pairs[u]![0] - links.pairs[v]![0])
+    if (!order.length) return
+    const focus = links.focus ?? null
     const ink = (x: PlegmaArticle) => st.groupInk[plegma.inkSlot(x)] ?? st.mute
     g.save()
-    g.globalAlpha = alpha
     g.textBaseline = 'middle'
-    g.textAlign = 'center'
+    // The names of the outlets copied, beside their articles: right of the node, else left, else above or below, where no other name or badge is.
+    const taken: { x0: number, y0: number, x1: number, y1: number }[] = order.map(k => { const c = links.pairs[k]![0]; return { x0: ax[c]! - BADGE_R - 2, y0: ay[c]! - BADGE_R - 2, x1: ax[c]! + BADGE_R + 2, y1: ay[c]! + BADGE_R + 2 } })
+    const free = (b: typeof taken[number]) => !taken.some(o => b.x0 < o.x1 && b.x1 > o.x0 && b.y0 < o.y1 && b.y1 > o.y0)
+    const named = new Set<number>()
+    g.font = `600 11px ${st.fontText}`
+    g.lineJoin = 'round'
+    for (const k of order) {
+      const src = links.pairs[k]![1]
+      if (named.has(src)) continue
+      named.add(src)
+      const source = list[src]!
+      const w = g.measureText(source.outlet).width
+      const r = arts.dr * DOT_GROW + 4
+      const x = ax[src]!
+      const y = ay[src]!
+      const tries = [{ x: x + r, y, align: 'left' }, { x: x - r, y, align: 'right' }, { x: x - w / 2, y: y - r - 6, align: 'left' }, { x: x - w / 2, y: y + r + 6, align: 'left' }] as const
+      const at = tries.find(p => free(p.align === 'left' ? { x0: p.x, y0: p.y - 7, x1: p.x + w, y1: p.y + 7 } : { x0: p.x - w, y0: p.y - 7, x1: p.x, y1: p.y + 7 })) ?? tries[0]
+      taken.push(at.align === 'left' ? { x0: at.x, y0: at.y - 7, x1: at.x + w, y1: at.y + 7 } : { x0: at.x - w, y0: at.y - 7, x1: at.x, y1: at.y + 7 })
+      const dim = focus !== null && links.pairs[focus]![1] !== src
+      g.globalAlpha = alpha * (dim ? 0.3 : 1)
+      g.textAlign = at.align
+      g.lineWidth = 3.5
+      g.strokeStyle = st.paper
+      g.strokeText(source.outlet, at.x, at.y)
+      g.fillStyle = ink(source)
+      g.fillText(source.outlet, at.x, at.y)
+    }
     // The badges: the number of each copy on its node, in the color of its outlet.
-    pairs.forEach(([c], k) => {
+    g.textAlign = 'center'
+    g.font = `600 10.5px ${st.fontText}`
+    order.forEach((k, n) => {
+      const c = links.pairs[k]![0]
+      g.globalAlpha = alpha * (focus !== null && focus !== k ? 0.3 : 1)
       g.fillStyle = st.paper
       g.beginPath()
       g.arc(ax[c]!, ay[c]!, BADGE_R + 2, 0, TAU)
@@ -822,68 +839,9 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       g.beginPath()
       g.arc(ax[c]!, ay[c]!, BADGE_R, 0, TAU)
       g.fill()
-      g.font = `600 10.5px ${st.fontText}`
       g.fillStyle = st.paper
-      g.fillText(String(k + 1), ax[c]!, ay[c]! + 0.5)
+      g.fillText(String(n + 1), ax[c]!, ay[c]! + 0.5)
     })
-    // The list, on the half of the region with fewer of the copies and their sources, from its top (under the tabs).
-    const xs = pairs.flatMap(([c, src]) => [ax[c]!, ax[src]!])
-    const onLeft = xs.filter(x => x < (left + right) / 2).length <= xs.length / 2
-    const x = onLeft ? left + 4 : right - LIST_W - 4
-    const y = top + 48
-    const rows = Math.max(1, Math.min(pairs.length, Math.floor((bottom - y - LIST_HEAD - LIST_PAD * 2) / LIST_ROW)))
-    const more = pairs.length - rows
-    const h = LIST_PAD * 2 + LIST_HEAD + rows * LIST_ROW + (more > 0 ? 18 : 0)
-    g.shadowColor = `color-mix(in srgb, ${st.shade} 24%, transparent)`
-    g.shadowBlur = 22
-    g.shadowOffsetY = 8
-    g.fillStyle = st.raised
-    g.beginPath()
-    g.roundRect(x, y, LIST_W, h, 10)
-    g.fill()
-    g.shadowColor = 'transparent'
-    g.strokeStyle = st.border
-    g.lineWidth = 1
-    g.stroke()
-    const copier = list[pairs[0]![0]]!
-    g.textAlign = 'left'
-    g.font = `600 12px ${st.fontText}`
-    g.fillStyle = st.strong
-    g.fillText(`${copier.outlet} · ${fmtInt(pairs.length)} ${deps.t('story.copies.big')}`, x + LIST_PAD, y + LIST_PAD + 8)
-    g.strokeStyle = st.border
-    g.beginPath()
-    g.moveTo(x + LIST_PAD, y + LIST_PAD + LIST_HEAD - 4)
-    g.lineTo(x + LIST_W - LIST_PAD, y + LIST_PAD + LIST_HEAD - 4)
-    g.stroke()
-    const room = LIST_W - LIST_PAD * 2 - BADGE_R * 2 - 10
-    pairs.slice(0, rows).forEach(([c, src], k) => {
-      const copy = list[c]!
-      const source = list[src]!
-      const ry = y + LIST_PAD + LIST_HEAD + k * LIST_ROW
-      const tx = x + LIST_PAD + BADGE_R * 2 + 10
-      g.fillStyle = ink(copy)
-      g.beginPath()
-      g.arc(x + LIST_PAD + BADGE_R, ry + 11, BADGE_R, 0, TAU)
-      g.fill()
-      g.textAlign = 'center'
-      g.font = `600 10.5px ${st.fontText}`
-      g.fillStyle = st.paper
-      g.fillText(String(k + 1), x + LIST_PAD + BADGE_R, ry + 11.5)
-      g.textAlign = 'left'
-      g.font = `600 12px ${st.fontText}`
-      g.fillStyle = st.strong
-      g.fillText(ellipsis(copy.title || copy.outlet, 12, 600, room), tx, ry + 11)
-      const sameDay = source.time !== undefined && athensDate(source.time) === athensDate(copy.time!)
-      const from = `${deps.t('story.copies.of', { outlet: source.outlet })}${source.time === undefined ? '' : `, ${sameDay ? athensClock(source.time) : whenText(source.time)}`}`
-      g.font = `11px ${st.fontText}`
-      g.fillStyle = st.mute
-      g.fillText(ellipsis(`${whenText(copy.time!)} · ${from}`, 11, 400, room), tx, ry + 27)
-    })
-    if (more > 0) {
-      g.font = `11px ${st.fontText}`
-      g.fillStyle = st.mute
-      g.fillText(deps.t('story.copies.more', { n: fmtInt(more) }), x + LIST_PAD, y + h - LIST_PAD - 4)
-    }
     g.restore()
   }
   // The names of Κλαδιά: the start node's, the marks of the axis, the first articles of the first groups and the ends of the branches. They come in last and go first when the view is left.
@@ -922,7 +880,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       g.fillText(name.text, tx, y)
     }
     g.textAlign = 'left'
-    drawCopyCards(g, a, alpha)
+    drawCopyMarks(g, alpha)
   }
   // The article that node i of the web stands for, of `len` articles: itself when the web has one node for each article (Κλαδιά, or a small story).
   const nodeArticle = (i: number, len: number) => (arts.aw?.n === len ? i : articleOfNode(i, len))
@@ -942,6 +900,8 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     return { x: here.x, y: here.y, edge: ringOf(articleWorldRadius(s) * st.cam.z) + 9, kx: articleAspect() }
   }
   const isBranch = (s: PlegmaStory) => !!branchOf(s)
+  // Where node i was last drawn (in px of the canvas) and how far its ring reaches, so a tooltip can stand beside it.
+  const nodePoint = (i: number) => (i < ax.length ? { x: ax[i]!, y: ay[i]!, r: (i === 0 ? arts.dr * 1.7 : arts.dr * DOT_GROW) + 3 } : null)
   // The step of the band of the days (Κλαδιά) under a point of the screen, as the last frame drew it: its place, its time and its articles.
   const bandAt = (s: PlegmaStory, x: number, y: number) => {
     const band = bandNow()
@@ -962,7 +922,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
   }
   // Where the story web of Κλαδιά was last drawn: its middle on the screen and its scale against the framing (the zoom's points are in px of the framing, from that middle).
   const zoomFrame = (s: PlegmaStory) => (arts.branch && arts.id === s.id ? { cx: arts.cx, cy: arts.cy, k: arts.k } : null)
-  return { lagText, bandAt, publishWindow, stepWebZoom, zoomFrame, drawArticles, articleAt, ringAt, articleWorldRadius, articleAspect, ringOf, sectorOf, byOutlet, centerRadius, centerPoint, clearRadius, linkFrom, nodeArticle, isBranch }
+  return { lagText, bandAt, publishWindow, stepWebZoom, zoomFrame, drawArticles, articleAt, ringAt, articleWorldRadius, articleAspect, ringOf, sectorOf, byOutlet, centerRadius, centerPoint, clearRadius, linkFrom, nodeArticle, isBranch, nodePoint }
 }
 
 export type StageArticles = ReturnType<typeof createStageArticles>

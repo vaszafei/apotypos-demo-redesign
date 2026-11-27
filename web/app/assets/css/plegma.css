@@ -672,6 +672,19 @@
 .plegma-view { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .plegma-view-title { margin: 0; font-size: var(--text-caption); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); }
 .plegma-view-title::before { content: "/ "; }
+/* The copies of the outlet pointed at on the ring of Αντίγραφα, in the tooltip's look, right above the ring (over the ring of the outlets, as wide as the column) so the pointer can go up into it: numbered as their badges on the map; a copy pointed at lights
+   only it and the article it copies, and a click opens it in the article drawer. */
+.plegma-view.is-copies { position: relative; }
+.tooltip.copy-list { position: absolute; right: 0; bottom: calc(100% - 18px); z-index: 5; width: calc(200% + var(--space-4)); max-width: none; max-height: var(--room, 360px); display: flex; flex-direction: column; pointer-events: auto; background: color-mix(in srgb, var(--surface-card) 94%, transparent); }
+.copy-list-rows { flex: 1 1 auto; min-height: 0; margin: 0 -6px; padding: 0; overflow-y: auto; list-style: none; scrollbar-width: thin; }
+.copy-list-row { display: flex; align-items: flex-start; gap: var(--space-2); width: 100%; padding: 6px; border: 0; border-radius: 6px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.copy-list-row:hover, .copy-list-row.is-on, .copy-list-row:focus-visible { background: var(--surface-card); }
+.copy-list-n { flex: none; display: grid; place-items: center; width: 16px; height: 16px; margin-top: 1px; border-radius: 50%; color: var(--surface-raised); font-size: 10.5px; font-weight: 600; }
+.copy-list-body { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+.copy-list-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-weight: 600; color: var(--strong); }
+.copy-list-meta, .copy-list-source { color: var(--text-secondary); }
+.copy-list-source { display: flex; align-items: center; gap: 6px; }
+.copy-list-clip { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-style: italic; }
 
 /* The pick of outlets (PlegmaStoryPick.vue): at the top right of a story, on the row of its title; it opens as the date picker does. */
 .story-pick { grid-area: title; justify-self: end; align-self: center; position: relative; z-index: 3; pointer-events: auto; }
@@ -702,12 +715,12 @@
 .story-pick-chip { flex: none; padding: 0 6px; border-radius: 4px; background: color-mix(in srgb, var(--accent) 14%, var(--surface-raised)); color: var(--ink); font-size: var(--text-caption); font-weight: 600; font-variant-numeric: tabular-nums; line-height: 18px; }
 
 /* The article drawer of a story (PlegmaArticleDrawer.vue): the log in drawer (.auth-drawer, assets/app.css), wider, with the article's facts, the opening of its text and its copies.
-   The tooltip of an article pinned by a click (stores/tooltip.ts) can be pointed at, and has the eye that opens it. */
+   The tooltip of an article, beside its node (held) or pinned by a click (stores/tooltip.ts), can be pointed at, and has the eye that opens it. */
 .tooltip.has-action { padding-right: 40px; }
-.tooltip.is-pinned { pointer-events: auto; }
+.tooltip.is-pinned, .tooltip.is-held { pointer-events: auto; }
 .tooltip-action { position: absolute; top: 4px; right: 4px; min-width: 30px; min-height: 30px; padding: 0; color: var(--text-secondary); }
-.tooltip.is-pinned .tooltip-action { color: var(--ink); border-color: var(--border); background: var(--surface-raised); }
-.tooltip.is-pinned .tooltip-action:hover { border-color: var(--text-primary); }
+.tooltip.is-pinned .tooltip-action, .tooltip.is-held .tooltip-action { color: var(--ink); border-color: var(--border); background: var(--surface-raised); }
+.tooltip.is-pinned .tooltip-action:hover, .tooltip.is-held .tooltip-action:hover { border-color: var(--text-primary); }
 .art-drawer { width: min(480px, 100%); }
 .art-head { display: flex; flex: none; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-3) 0 var(--space-5); }
 .art-outlet { display: flex; flex: 1; align-items: center; gap: 8px; min-width: 0; margin: 0; font-size: var(--text-small); font-weight: 600; color: var(--ink); }

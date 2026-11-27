@@ -8,6 +8,7 @@ import type { StageCore, StageDeps } from './stage-core'
 import type { StageArticles } from './stage-articles'
 import type { StageTheme } from './stage-theme'
 import type { StageHero } from './stage-hero'
+import type { TipAnchor } from '~/stores/tooltip'
 
 // The pointer: the stage is behind the page, so it is read on the window; what it finds on the map (a story, an article, an arc of the ring) and what a click does.
 export interface PointerDeps extends StageDeps {
@@ -25,7 +26,7 @@ export const CAPTURES = 'a, button, input, select, textarea, [role="dialog"], .d
 export const createStagePointer = (st: StageState, deps: PointerDeps, core: StageCore, articles: StageArticles, theme: StageTheme, hero: StageHero) => {
   const { plegma, reduced, locale, pointerFine, phone, canvas, tooltip, t, kick } = deps
   const { visible, placed, drift, focusStory, focusOutlet, webFocus, behind, name, coreOf, spokeSet, BACK_Z, backFrame, backPoint } = core
-  const { articleAt, ringAt, sectorOf, byOutlet, nodeArticle, isBranch, lagText, bandAt } = articles
+  const { articleAt, ringAt, sectorOf, byOutlet, nodeArticle, isBranch, lagText, bandAt, nodePoint } = articles
   const { themeNodeAt, themeWebOf, themeRingAt } = theme
   const { explore } = hero
   const pickAt = (x: number, y: number, reach: number) => {
@@ -66,7 +67,7 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
   }
   // What the stage has put in the tooltip, so that it is the stage that takes it away (the tooltip is shared with the charts of the cards): every way out of a hover ends in `leave`.
   let tipOn = false
-  const show = (tip: Parameters<typeof tooltip.show>[0], e: PointerEvent) => { tipOn = true; tooltip.show(tip, e) }
+  const show = (tip: Parameters<typeof tooltip.show>[0], e: PointerEvent, at?: TipAnchor) => { tipOn = true; tooltip.show(tip, e, at) }
   const hide = () => { if (!tipOn) return; tipOn = false; tooltip.hide() }
   const local = (e: PointerEvent) => {
     const box = canvas.value!.getBoundingClientRect()
@@ -122,8 +123,15 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
     hide()
     if (reduced.value) kick()
   }
+  // A node in the window: the tooltip of an article stands on its right, so the pointer can go into it.
+  const anchorOf = (i: number): TipAnchor | undefined => {
+    const n = nodePoint(i)
+    if (!n) return undefined
+    const box = canvas.value!.getBoundingClientRect()
+    return { x: box.left + n.x, y: box.top + n.y, r: n.r }
+  }
   // On Κλαδιά a node is one article with its time: its outlet, group, day and hour, and how long after the first it came (the start node is the first).
-  // The eye opens the article in the drawer (a click on the node pins the tooltip, so the eye can be reached).
+  // The eye opens the article in the drawer (the tooltip is held beside the node, and a click on the node pins it).
   const branchTip = (i: number) => {
     const list = plegma.articles!
     const article = list[i]!
@@ -140,6 +148,8 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
   }
   const onMove = (e: PointerEvent) => {
     if (!plegma.active || !st.world || e.pointerType === 'touch' || !pointerFine.value || phone.value) return
+    // The pointer in a held tooltip: what it tells about stays lit.
+    if (tooltip.over) return
     if ((e.target as Element | null)?.closest?.(CAPTURES)) return leave()
     const p = local(e)
     // In the hero the pointer is a lantern: a small patch of the ground under it clears.
@@ -156,7 +166,7 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
         st.hover = null
         st.hoverArticle = i
         if (st.ringLit) { st.ringLit = false; plegma.setHighlight(null) }
-        show(branchTip(i), e)
+        show(branchTip(i), e, anchorOf(i))
         return
       }
       if (i >= 0) {
@@ -333,7 +343,7 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
     // In the hero a click explores: it opens no story (any pointer, a phone too).
     if (plegma.focus === null && !behind()) { explore(p.x, p.y); return }
     const story = focusStory()
-    if (pointerFine.value && !phone.value && story && st.hoverArticle >= 0 && isBranch(story) && plegma.articles?.length === story.n) { tooltip.pin(branchTip(st.hoverArticle), e); return }
+    if (pointerFine.value && !phone.value && story && st.hoverArticle >= 0 && isBranch(story) && plegma.articles?.length === story.n) { tooltip.pin(branchTip(st.hoverArticle), e, anchorOf(st.hoverArticle)); return }
     if (!pointerFine.value || phone.value || st.hoverArticle >= 0 || st.hoverRing) return
     // A line from the story in view opens the story it goes to.
     if (hoverLink !== null) {
