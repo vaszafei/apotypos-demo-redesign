@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import type { ComponentPublicInstance } from 'vue'
 import type { StoryView } from '~/composables/useStoryView'
-import type { PlegmaHighlight } from '~/utils/plegma/plegma-articles'
+import type { PlegmaArticle, PlegmaHighlight } from '~/utils/plegma/plegma-articles'
 import PlegmaRing from './PlegmaRing.vue'
 import type { RingMiddle, RingPart } from './PlegmaRing.vue'
 
@@ -73,20 +74,52 @@ const copyParts = computed<RingPart[]>(() => {
   }
   return [...by.values()]
 })
+// The outlet of Αντίγραφα pointed at stays while the pointer goes from the ring to the list of its copies beside it (and while it is on the list).
+const copyOn = ref<RingPart | null>(null)
+const focus = ref<number | null>(null)
+let overList = false
+let copyTimer: ReturnType<typeof setTimeout> | undefined
+// Its copies, in the order of the badges on the map (stage-articles.ts drawCopyMarks): each with the article it copies.
+const copyRows = computed(() => {
+  const p = copyOn.value
+  if (!p) return []
+  const list = props.view.articles.value
+  return copyPairs.value.map(([c, s], k) => ({ k, c, s, copy: list[c]!, source: list[s]! }))
+    .filter(r => r.copy?.outlet === p.name && r.source && r.copy.time !== undefined).sort((u, v) => u.c - v.c)
+})
+const when = (m: number | undefined) => (m === undefined ? '' : `${fmtDay(athensDate(m))}, ${athensClock(m)}`)
+const ink = (a: PlegmaArticle) => `var(--cat-${plegma.inkSlot(a)})`
 const copies = {
   middle: computed<RingMiddle>(() => ({ big: fmtInt(copyPairs.value.length), bigCap: t('story.copies.big'), line: fmtPct(copyPairs.value.length / Math.max(1, total.value)), cap: t('story.copies.share') })),
   pointed: (p: RingPart): RingMiddle => ({ big: fmtInt(p.n), bigCap: t('story.copies.big'), line: p.name, cap: '' }),
   hover: (p: RingPart | null) => {
-    const list = props.view.articles.value
-    const hot = new Set<number>()
-    const picks = new Set<number>()
-    if (p) copyPairs.value.forEach(([c, s], k) => { if (list[c]?.outlet === p.name) { hot.add(k); picks.add(c); picks.add(s) } })
-    plegma.setArticleLinks(p ? { pairs: copyPairs.value, hot } : null)
-    // Each outlet's picks are a highlight of their own (the map keys its lit nodes by `story`).
-    light(p ? { story: -(++seq), picks } : null)
+    clearTimeout(copyTimer)
+    if (p) { copyOn.value = p; return }
+    copyTimer = setTimeout(() => { if (!overList) copyOn.value = null }, 300)
   }
 }
-onBeforeUnmount(() => { plegma.setArticleLinks(null); light(null) })
+const enterList = () => { overList = true; clearTimeout(copyTimer) }
+const leaveList = () => { overList = false; focus.value = null; copyOn.value = null }
+watch([copyOn, focus], ([p, f]) => {
+  const list = props.view.articles.value
+  const hot = new Set<number>()
+  const picks = new Set<number>()
+  // All its copies stay hot (the badges keep their numbers); the one pointed at in the list alone is lit.
+  if (p) copyPairs.value.forEach(([c, s], k) => { if (list[c]?.outlet !== p.name) return; hot.add(k); if (f === null || f === k) { picks.add(c); picks.add(s) } })
+  plegma.setArticleLinks(p ? { pairs: copyPairs.value, hot, focus: f } : null)
+  // Each outlet's picks are a highlight of their own (the map keys its lit nodes by `story`).
+  light(p ? { story: -(++seq), picks } : null)
+})
+watch(copyParts, () => { copyOn.value = null; focus.value = null })
+const open = (c: number) => { leaveList(); plegma.read(c) }
+// The list goes up from the ring as far as the top bar.
+const fitList = (el: Element | ComponentPublicInstance | null) => {
+  if (!(el instanceof HTMLElement)) return
+  const top = el.parentElement!.getBoundingClientRect().top + 18
+  const bar = document.querySelector('.header-bar')?.getBoundingClientRect().bottom ?? 0
+  el.style.setProperty('--room', `${Math.max(160, top - bar - 8)}px`)
+}
+onBeforeUnmount(() => { clearTimeout(copyTimer); plegma.setArticleLinks(null); light(null) })
 </script>
 
 <template>
@@ -98,6 +131,22 @@ onBeforeUnmount(() => { plegma.setArticleLinks(null); light(null) })
       <template v-else>
         <PlegmaRing v-if="copyParts.length" :parts="copyParts" :middle="copies.middle.value" :pointed="copies.pointed" @hover="copies.hover" />
         <p v-else class="plegma-views-empty">{{ t('story.copies.none') }}</p>
+        <div v-if="copyOn && copyRows.length" :ref="fitList" class="tooltip is-rich is-field copy-list" @pointerenter="enterList" @pointerleave="leaveList">
+          <div class="tooltip-title">{{ copyOn.name }} · {{ fmtInt(copyRows.length) }} {{ t('story.copies.big') }}</div>
+          <ol class="copy-list-rows">
+            <li v-for="(r, n) in copyRows" :key="r.k">
+              <button type="button" class="copy-list-row" :class="{ 'is-on': focus === r.k }" :title="t('story.article.open')" @pointerenter="focus = r.k" @pointerleave="focus = null" @click="open(r.c)">
+                <span class="copy-list-n" :style="{ background: ink(r.copy) }">{{ n + 1 }}</span>
+                <span class="copy-list-body">
+                  <span class="copy-list-title">{{ r.copy.title || r.copy.outlet }}</span>
+                  <span class="copy-list-meta">{{ when(r.copy.time) }}</span>
+                  <span class="copy-list-source"><span class="swatch" :style="{ background: ink(r.source) }" />{{ t('story.copies.of', { outlet: r.source.outlet }) }}, {{ when(r.source.time) }}</span>
+                  <span v-if="r.source.title" class="copy-list-meta copy-list-clip">{{ r.source.title }}</span>
+                </span>
+              </button>
+            </li>
+          </ol>
+        </div>
       </template>
     </section>
   </div>

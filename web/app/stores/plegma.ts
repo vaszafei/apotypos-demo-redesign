@@ -6,6 +6,8 @@ import type { PlegmaThemeStory } from '../utils/plegma/plegma-theme.ts'
 import { plegmaFocusOf, samePlegmaFocus } from '../utils/plegma/plegma-route.ts'
 import type { PlegmaFocus } from '../utils/plegma/plegma-route.ts'
 
+export interface ArticleLinks { pairs: [number, number][], hot: Set<number> | null, focus?: number | null }
+
 // `hero`: the page has the large search of Αρχική, so the search of the top bar waits.
 // `backdrop`: a page of tabs (Μέσα) that draws its own web over the map: the stage is only the dim world behind it, and the tabs and the top bar stay.
 declare module '#app' { interface PageMeta { plegma?: boolean, hero?: boolean, backdrop?: boolean } }
@@ -33,8 +35,9 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const highlight = ref<PlegmaHighlight | null>(null)
   const hoverStory = ref<number | null>(null)
   const related = ref<number[]>([])
-  // Lines between articles of the story web (Κλαδιά): the copies and the earlier articles they copy, as places in `articles` ([copy, source]); `hot` the pairs drawn strong (an outlet under the pointer).
-  const articleLinks = ref<{ pairs: [number, number][], hot: Set<number> | null } | null>(null)
+  // Lines between articles of the story web (Κλαδιά): the copies and the earlier articles they copy, as places in `articles` ([copy, source]); `hot` the pairs drawn strong (an outlet under the pointer),
+  // `focus` the one of them pointed at in the list of its copies.
+  const articleLinks = ref<ArticleLinks | null>(null)
   // The outlets picked on a story (PlegmaStoryPick.vue): the rings show only them; empty, all the outlets.
   const outletPick = ref<Set<string>>(new Set())
   // The picked outlets of no group (Ανεξάρτητα) all have its gray: two or more of them picked, each gets a color slot of its own (1 to 14, the largest first), so they can be compared.
@@ -114,7 +117,7 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const setRing = (value: 'outlets' | 'groups' | 'stance') => { ring.value = value }
   const setStance = (value: number[] | null) => { stance.value = value }
   const setRelated = (ids: number[]) => { related.value = ids }
-  const setArticleLinks = (value: { pairs: [number, number][], hot: Set<number> | null } | null) => { articleLinks.value = value }
+  const setArticleLinks = (value: ArticleLinks | null) => { articleLinks.value = value }
   const setOutletPick = (value: Set<string>) => { outletPick.value = value }
   const read = (value: number | null) => { reading.value = value }
   const setLanes = (value: 'outlets' | 'groups') => { lanes.value = value }
