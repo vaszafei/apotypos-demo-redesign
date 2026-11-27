@@ -29,7 +29,7 @@ def minute(stamp):
 
 
 def chains_with_times(dsn, outlet_of_domain, dates, first, last):
-    """The chains of database_stories in make-db-fixtures.py, in its order, each with its articles: (name, [(minute, outlet, day index)])."""
+    """The chains of database_stories in make-db-fixtures.py, in its order, each with its articles: (name, [(minute, outlet, day index, title, article id)])."""
     day_of = f"(coalesce(a.published_at, a.first_seen_at) at time zone '{db.DAY_TZ}')::date"
     listed = ",".join(f"'{d}'" for d in sorted(outlet_of_domain))
     nodes = [int(r["id"]) for r in db.query(dsn, f"select id from daily_stories where day between '{first}' and '{last}'")]
@@ -59,7 +59,7 @@ def chains_with_times(dsn, outlet_of_domain, dates, first, last):
         titled = sorted((r["article_time"], int(r["article"]), db.clean_title(r["title"])) for r in articles.values() if db.clean_title(r["title"]))
         if not titled:
             continue
-        arts = sorted((minute(r["at"] + "+00:00"), outlet_of_domain[r["domain"]], index[r["day"]], db.clean_title(r["title"]) or "") for r in articles.values())
+        arts = sorted((minute(r["at"] + "+00:00"), outlet_of_domain[r["domain"]], index[r["day"]], db.clean_title(r["title"]) or "", int(r["article"])) for r in articles.values())
         built.append((titled[0][0], min(articles), titled[0][2], arts))
     built.sort(key=lambda x: (x[0], x[1]))
     return [(name, arts) for _t, _a, name, arts in built]
@@ -91,8 +91,8 @@ def main():
         if by_id[sid]["el"] != name:
             raise SystemExit(f"story {sid}: the chain is named {name!r}, stories.js has {by_id[sid]['el']!r}")
         t0 = arts[0][0]
-        shards[sid % args.shards][str(sid)] = [t0] + [x for m, o, _d, _h in arts for x in (o, m - t0)]
-        titles[sid % args.shards][str(sid)] = [h for _m, _o, _d, h in arts]
+        shards[sid % args.shards][str(sid)] = [t0] + [x for m, o, _d, _h, _a in arts for x in (o, m - t0)]
+        titles[sid % args.shards][str(sid)] = [h for _m, _o, _d, h, _a in arts]
 
     for folder, parts, ascii_only in (("story-times", shards, True), ("story-titles", titles, False)):
         out = root / "data" / folder
