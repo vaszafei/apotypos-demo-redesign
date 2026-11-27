@@ -3,24 +3,19 @@ import type { StoryView } from '~/composables/useStoryView'
 import type { PlegmaHighlight } from '~/utils/plegma/plegma-articles'
 import PlegmaRing from './PlegmaRing.vue'
 import type { RingMiddle, RingPart } from './PlegmaRing.vue'
-import PlegmaSpeedChart from './PlegmaSpeedChart.vue'
 
-// The views of a story above the other stories (a story with no profile), not in a card, one at a time under a switch: the ring of its outlets, the ring of its groups, the ring of all
-// outlets with those that did not write it (Σιωπή), the ring of the outlets that copied an earlier article of the story (Αντίγραφα, with the copies as lines on the map) and how fast it
-// spread (Ταχύτητα). What the pointer is on lights its articles on the map.
-// `grid`: the four rings two by two, each under its name (above the other stories), with no switch.
-const props = defineProps<{ view: StoryView, grid?: boolean }>()
+// The views of a story (a story with no profile), two by two above the other stories, each under its name, not in a card: the ring of its outlets, the ring of its groups, the ring of
+// all outlets with those that did not write it (Σιωπή) and the ring of the outlets that copied an earlier article of the story (Αντίγραφα, with the copies as lines on the map while one
+// is pointed at). What the pointer is on lights its articles on the map.
+const props = defineProps<{ view: StoryView }>()
 const { t } = useI18n()
 const plegma = usePlegmaStore()
 const m = computed(() => props.view.model.value!)
-const which = ref<'outlets' | 'groups' | 'silence' | 'copies' | 'speed'>('outlets')
-const whichModel = computed({ get: () => which.value, set: (v: string) => { which.value = v as typeof which.value } })
 const options = computed(() => [
   { value: 'outlets', label: t('story.ring.outlets') },
   { value: 'groups', label: t('story.groups.title') },
   { value: 'silence', label: t('story.views.silence') },
-  { value: 'copies', label: t('story.views.copies') },
-  { value: 'speed', label: t('story.views.speed') }
+  { value: 'copies', label: t('story.views.copies') }
 ])
 const short = (g: string | null) => (g ?? t('story.nogroup')).replace(/^(Συμφέροντα|Όμιλος)\s+/, '')
 
@@ -29,7 +24,6 @@ const light = (h: PlegmaHighlight | null) => {
   if (h) { lit = h; plegma.setHighlight(h) }
   else if (lit && toRaw(plegma.highlight) === lit) { lit = null; plegma.setHighlight(null) }
 }
-watch(which, () => light(null))
 
 const articlesFact = computed(() => fmtInt(m.value.articles))
 const outletParts = computed<RingPart[]>(() => props.view.outletParts.value.map(p => ({ key: p.name, name: p.name, group: p.group, n: p.n, color: p.color })))
@@ -42,10 +36,9 @@ const groupParts = computed<RingPart[]>(() => props.view.groupParts.value.map(p 
 const groups = {
   middle: computed<RingMiddle>(() => ({ big: articlesFact.value, bigCap: t('entity.fact.articles'), line: fmtInt(groupParts.value.length), cap: t('story.groups.title') })),
   pointed: (p: RingPart): RingMiddle => ({ big: fmtInt(p.n), bigCap: t('entity.fact.articles'), line: short(p.name), cap: fmtPct(p.n / m.value.articles) }),
-  hover: (p: RingPart | null) => light(p ? { group: p.group } : null),
-  label: (p: RingPart, total: number) => `${short(p.name)} · ${fmtPct(p.n / total)}`
+  hover: (p: RingPart | null) => light(p ? { group: p.group } : null)
 }
-// Σιωπή: every outlet, as equal arcs, by group; those that wrote the story in the color of their group, the others dashed and named.
+// Σιωπή: every outlet, as equal arcs, by group; those that wrote the story in the color of their group, the others dashed.
 const silenceParts = computed<RingPart[]>(() => {
   const wrote = new Map(outletParts.value.map(p => [p.name, p]))
   return [...m.value.dd.outlets].sort((a, b) => (a.group ?? '￿').localeCompare(b.group ?? '￿') || Number(wrote.has(b.name)) - Number(wrote.has(a.name)) || a.name.localeCompare(b.name))
@@ -54,9 +47,7 @@ const silenceParts = computed<RingPart[]>(() => {
 const silence = {
   middle: computed<RingMiddle>(() => ({ big: fmtInt(silenceParts.value.filter(p => p.silent).length), bigCap: t('story.silence.big'), line: t('story.silence.line', { n: fmtInt(outletParts.value.length), total: fmtInt(m.value.dd.outlets.length) }), cap: t('story.silence.wrote') })),
   pointed: (p: RingPart): RingMiddle => ({ big: fmtInt(p.n), bigCap: t('entity.fact.articles'), line: p.name, cap: short(p.group) }),
-  hover: (p: RingPart | null) => light(p && !p.silent ? { group: p.group, outlet: p.name } : null),
-  named: (p: RingPart) => !!p.silent,
-  label: (p: RingPart) => p.name
+  hover: (p: RingPart | null) => light(p && !p.silent ? { group: p.group, outlet: p.name } : null)
 }
 // Αντίγραφα: the outlets that published a copy of an earlier article of another outlet, by their copies; under the pointer, their copies and the articles they copy are lit, with the lines between them.
 let seq = 0
@@ -77,46 +68,30 @@ const copyParts = computed<RingPart[]>(() => {
 const copies = {
   middle: computed<RingMiddle>(() => ({ big: fmtInt(copyPairs.value.length), bigCap: t('story.copies.big'), line: fmtPct(copyPairs.value.length / m.value.articles), cap: t('story.copies.share') })),
   pointed: (p: RingPart): RingMiddle => ({ big: fmtInt(p.n), bigCap: t('story.copies.big'), line: p.name, cap: short(p.group) }),
-  label: (p: RingPart) => `${p.name} · ${fmtInt(p.n)}`,
   hover: (p: RingPart | null) => {
     const list = props.view.articles.value
     const hot = new Set<number>()
     const picks = new Set<number>()
     if (p) copyPairs.value.forEach(([c, s], k) => { if (list[c]?.outlet === p.name) { hot.add(k); picks.add(c); picks.add(s) } })
-    plegma.setArticleLinks(props.grid && !p ? null : { pairs: copyPairs.value, hot: p ? hot : null })
+    plegma.setArticleLinks(p ? { pairs: copyPairs.value, hot } : null)
     // Each outlet's picks are a highlight of their own (the map keys its lit nodes by `story`).
     light(p ? { story: -(++seq), picks } : null)
   }
 }
-// The lines of the copies are on the map while their view shows (in the row, while an outlet of it is pointed at).
-watch([which, copyPairs], ([v]) => plegma.setArticleLinks(!props.grid && v === 'copies' && copyPairs.value.length ? { pairs: copyPairs.value, hot: null } : null), { immediate: true })
 onBeforeUnmount(() => { plegma.setArticleLinks(null); light(null) })
-const colorOf = (outlet: string) => outletParts.value.find(p => p.name === outlet)?.color ?? 'var(--cat-0)'
 </script>
 
 <template>
-  <div v-if="grid" class="plegma-views is-grid">
-    <section v-for="o in options.filter(x => x.value !== 'speed')" :key="o.value" class="plegma-view" :class="`is-${o.value}`">
+  <div class="plegma-views">
+    <section v-for="o in options" :key="o.value" class="plegma-view" :class="`is-${o.value}`">
       <h3 class="plegma-view-title">{{ o.label }}</h3>
-      <PlegmaRing v-if="o.value === 'outlets'" bare :parts="outletParts" :middle="outlets.middle.value" :pointed="outlets.pointed" @hover="outlets.hover" />
-      <PlegmaRing v-else-if="o.value === 'groups'" bare :parts="groupParts" :middle="groups.middle.value" :pointed="groups.pointed" :label="groups.label" @hover="groups.hover" />
-      <PlegmaRing v-else-if="o.value === 'silence'" bare :parts="silenceParts" :sorted="false" :middle="silence.middle.value" :pointed="silence.pointed" :named="silence.named" :label="silence.label" @hover="silence.hover" />
-      <template v-else-if="o.value === 'copies'">
-        <PlegmaRing v-if="copyParts.length" bare :parts="copyParts" :middle="copies.middle.value" :pointed="copies.pointed" :label="copies.label" @hover="copies.hover" />
+      <PlegmaRing v-if="o.value === 'outlets'" :parts="outletParts" :middle="outlets.middle.value" :pointed="outlets.pointed" @hover="outlets.hover" />
+      <PlegmaRing v-else-if="o.value === 'groups'" :parts="groupParts" :middle="groups.middle.value" :pointed="groups.pointed" @hover="groups.hover" />
+      <PlegmaRing v-else-if="o.value === 'silence'" :parts="silenceParts" :sorted="false" :middle="silence.middle.value" :pointed="silence.pointed" @hover="silence.hover" />
+      <template v-else>
+        <PlegmaRing v-if="copyParts.length" :parts="copyParts" :middle="copies.middle.value" :pointed="copies.pointed" @hover="copies.hover" />
         <p v-else class="plegma-views-empty">{{ t('story.copies.none') }}</p>
       </template>
-      <PlegmaSpeedChart v-else :articles="view.articles.value" :color-of="colorOf" @hover="s => light(s)" />
     </section>
-  </div>
-  <div v-else class="plegma-views">
-    <SegmentedControl v-model="whichModel" class="orbit-ring-tabs is-chart plegma-views-switch" :label="t('story.views.label')" :options="options" />
-    <PlegmaRing v-if="which === 'outlets'" :parts="outletParts" :middle="outlets.middle.value" :pointed="outlets.pointed" @hover="outlets.hover" />
-    <PlegmaRing v-else-if="which === 'groups'" :parts="groupParts" :middle="groups.middle.value" :pointed="groups.pointed" :label="groups.label" @hover="groups.hover" />
-    <PlegmaRing v-else-if="which === 'silence'" :parts="silenceParts" :sorted="false" :middle="silence.middle.value" :pointed="silence.pointed" :named="silence.named" :label="silence.label" @hover="silence.hover" />
-    <template v-else-if="which === 'copies'">
-      <PlegmaRing v-if="copyParts.length" :parts="copyParts" :middle="copies.middle.value" :pointed="copies.pointed" :label="copies.label" @hover="copies.hover" />
-      <p v-else class="plegma-views-empty">{{ t('story.copies.none') }}</p>
-    </template>
-    <PlegmaSpeedChart v-else :articles="view.articles.value" :color-of="colorOf" @hover="s => light(s)" />
   </div>
 </template>
