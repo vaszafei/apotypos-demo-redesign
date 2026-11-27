@@ -1,7 +1,7 @@
 import { articleOfNode, articleRadius, articleWebOf, matchesHighlight, nodeCount } from '../plegma-articles'
 import type { PlegmaArticle, PlegmaHighlight } from '../plegma-articles'
 import { branchLag, branchRadius, buildBranchWeb, placeBranchNames } from '../plegma-branches'
-import { storySteps } from '../story-steps'
+import { athensWall, storySteps } from '../story-steps'
 import type { BranchName, BranchNameAsk, PlegmaBranchWeb } from '../plegma-branches'
 import { isZoomed, resetWebZoom, stepZoom } from '../plegma-zoom'
 import { PLEGMA_REGION, frameStory, regionBox, toScreen } from '../plegma-camera'
@@ -111,7 +111,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
   }
   // Κλαδιά (utils/plegma/plegma-branches.ts): a story whose articles have their time is its web spread by time,
   // in the whole free cell, with no ring. One node for each article. The web and its names are made once for a story and a size of the region, in pixels of the framing; the frame scales them with the camera.
-  const branch = { band: null as { x: Float32Array, n: Float32Array, top: number } | null, key: '', list: null as unknown, web: null as PlegmaBranchWeb | null, aw: null as ReturnType<typeof articleWebOf> | null, names: [] as BranchName[], fz: 1, w: 0, h: 0,
+  const branch = { band: null as { x: Float32Array, n: Float32Array, top: number, spans: { from: number, to: number }[], step: number } | null, key: '', list: null as unknown, web: null as PlegmaBranchWeb | null, aw: null as ReturnType<typeof articleWebOf> | null, names: [] as BranchName[], fz: 1, w: 0, h: 0,
     asks: null as ((X: ArrayLike<number>, Y: ArrayLike<number>, z: number, cam: { x: number, y: number }) => { asks: BranchNameAsk[], ticks: number[] }) | null, ticks: [] as number[] }
   const measure = (text: string, size: number, weight: number) => {
     const g = st.ctxFocus
@@ -186,11 +186,15 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     zoomNames.key = ''
     // The articles over time, under the branches (the line of «Ιστορία στον χρόνο», drawn in the Plegma): the articles of each step of time (the step the chart had), at the place of
     // that time on the branches (between the articles around it), so a peak is under the articles that make it.
-    const step = storySteps(list).step
-    const t0 = times[0]!
-    const bins = Math.max(1, Math.floor((times[times.length - 1]! - t0) / step) + 1)
-    const counts = new Float32Array(bins)
-    for (const tm of times) counts[Math.floor((tm - t0) / step)]!++
+    // The steps are those of the chart: on the Athens clock (a day step is an Athens day), each with its start and end as times of the articles.
+    const { step, steps } = storySteps(list)
+    const spans = steps.map((u) => {
+      const wall = Date.parse(`${u.date}T${u.clock}:00Z`) / 60000
+      const from = wall - (athensWall(wall) - wall)
+      return { from, to: from + step - 1 }
+    })
+    const bins = Math.max(1, steps.length)
+    const counts = Float32Array.from(steps, u => u.n)
     const xm = new Float32Array(web.n)
     for (let i = 0; i < web.n; i++) xm[i] = i ? Math.max(xm[i - 1]!, web.x[i]!) : web.x[0]!
     const xAt = (m: number) => {
@@ -205,10 +209,10 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const bx = new Float32Array(bins + 2)
     const bn = new Float32Array(bins + 2)
     bx[0] = xm[0]!
-    for (let b = 0; b < bins; b++) { bx[b + 1] = xAt(t0 + (b + 0.5) * step); bn[b + 1] = counts[b]! }
+    for (let b = 0; b < steps.length; b++) { bx[b + 1] = xAt(spans[b]!.from + step / 2); bn[b + 1] = counts[b]! }
     bx[bins + 1] = xm[web.n - 1]!
     Object.assign(branch, {
-      band: web.n > 2 ? { x: bx, n: bn, top: Math.max(1, ...counts) } : null,
+      band: web.n > 2 ? { x: bx, n: bn, top: Math.max(1, ...counts), spans, step } : null,
       key, list, web, names: placeBranchNames(web, whole.asks, box, measure), ticks: whole.ticks, asks: asksAt, fz: frameStory(s, st.width, st.height, plegma.region).z, w: box.w, h: box.h,
       aw: { n: web.n, x: web.x, y: web.y, phase: web.phase, speed: web.speed, reach: web.reach, edges: web.edges, bow: web.bow, gap: 0, arcs: new Float32Array(0) }
     })
@@ -229,54 +233,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     Object.assign(zoomNames, { key, names: placeBranchNames({ n: web.n, x: X, y: Y, r: web.r * Math.pow(zs.z, 0.45) }, asks, { w: branch.w, h: branch.h }, measure), ticks })
     return zoomNames
   }
-  // While an outlet of Αντίγραφα is pointed at (plegma.articleLinks with its copies hot): the title of each of its copies by the copy, and the outlet it copies by the article copied.
-  // They are placed first; the other names stay where none of them is.
-  const COPY_TITLE_MAX = 300
-  const copyNames = { links: null as unknown, base: null as unknown, names: [] as BranchName[], ticks: [] as number[] }
-  const boxOf = (n: BranchName) => {
-    const tw = measure(n.text, n.size, n.weight)
-    const x0 = n.anchor === 'end' ? n.x - tw : n.anchor === 'middle' ? n.x - tw / 2 : n.x
-    return { x0, x1: x0 + tw, y0: n.y - n.size, y1: n.y + 3 }
-  }
-  const namesNow = () => {
-    const base = zoomedNames()
-    const links = plegma.articleLinks
-    const list = plegma.articles
-    if (!links?.hot?.size || !list || !branch.web) return base
-    if (copyNames.links === links && copyNames.base === base.names) return copyNames
-    const web = branch.web
-    const { z, cam } = st.zoom
-    const X = new Float32Array(web.n)
-    const Y = new Float32Array(web.n)
-    for (let i = 0; i < web.n; i++) { X[i] = (web.x[i]! - cam.x) * z; Y[i] = (web.y[i]! - cam.y) * z }
-    const r = web.r * Math.pow(z, 0.45)
-    const cut = (text: string, size: number, weight: number) => { let t = text; while (t.length > 8 && measure(t, size, weight) > COPY_TITLE_MAX) t = `${t.slice(0, -2).trimEnd()}…`; return t }
-    const ask = (i: number, text: string, size: number, weight: number, mute: boolean): BranchNameAsk => {
-      const tw = measure(text, size, weight)
-      const end = X[i]! + r + 4 + tw > branch.w / 2
-      return { x: end ? X[i]! - r - 4 : X[i]! + r + 4, y: Y[i]! + 4, text, size, weight, anchor: end ? 'end' : 'start', mute }
-    }
-    const titles: BranchNameAsk[] = []
-    const outlets: BranchNameAsk[] = []
-    const sources = new Set<number>()
-    for (const k of links.hot) {
-      const [c, src] = links.pairs[k]!
-      if (c >= web.n || src >= web.n) continue
-      titles.push(ask(c, cut(list[c]!.title || list[c]!.outlet, 11.5, 600), 11.5, 600, false))
-      sources.add(src)
-    }
-    for (const src of sources) outlets.push(ask(src, list[src]!.outlet, 11, 400, true))
-    // A title may lie over the nodes (its halo keeps it readable), so every copy has its title; it keeps clear of the other titles only.
-    const none = { n: 0, x: X, y: Y, r }
-    const box = { w: branch.w, h: branch.h }
-    const placedTitles = placeBranchNames(none, titles, box, measure)
-    const titleBoxes = placedTitles.map(boxOf)
-    const placed = [...placedTitles, ...placeBranchNames({ n: web.n, x: X, y: Y, r }, outlets, box, measure).filter(n => { const b = boxOf(n); return !titleBoxes.some(o => b.x0 < o.x1 && b.x1 > o.x0 && b.y0 < o.y1 && b.y1 > o.y0) })]
-    const boxes = placed.map(boxOf)
-    const meets = (b: ReturnType<typeof boxOf>) => boxes.some(o => b.x0 < o.x1 + 4 && b.x1 > o.x0 - 4 && b.y0 < o.y1 && b.y1 > o.y0)
-    Object.assign(copyNames, { links, base: base.names, names: [...placed, ...base.names.filter(n => !meets(boxOf(n)))], ticks: base.ticks })
-    return copyNames
-  }
+  const namesNow = zoomedNames
   // One step of the zoom for a frame (PlegmaStage.vue); whether it still moves.
   const stepWebZoom = (now: number) => {
     const dt = Math.min(64, Math.max(0, now - st.zoomAt))
@@ -489,6 +446,25 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       g.globalAlpha = 0.45 * st.lineIn * (1 - 0.4 * mix)
       g.lineWidth = 2
       g.stroke(line)
+      // The step under the pointer: a thin rule from the axis up to the line, and a dot on the line.
+      const on = pts[st.hoverBand + 1]
+      if (st.hoverBand >= 0 && on && st.hoverBand + 1 < pts.length - 1) {
+        g.filter = 'none'
+        g.globalAlpha = st.lineIn
+        g.strokeStyle = colour
+        g.lineWidth = 1
+        g.beginPath()
+        g.moveTo(on.x, Y(base) + 6)
+        g.lineTo(on.x, on.y)
+        g.stroke()
+        g.fillStyle = colour
+        g.strokeStyle = st.paper
+        g.lineWidth = 2
+        g.beginPath()
+        g.arc(on.x, on.y, 4, 0, TAU)
+        g.fill()
+        g.stroke()
+      }
       g.restore()
     }
     if (level === 2) {
@@ -521,9 +497,12 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
           if (i >= aw.n || j >= aw.n) return
           const strong = !links.hot || links.hot.has(k)
           g.globalAlpha = (strong ? (links.hot ? 0.85 : 0.5) : 0.1) * st.lineIn
+          // A little bow, so the line reads as a link between two articles, not a branch.
+          const dx = ax[i]! - ax[j]!
+          const dy = ay[i]! - ay[j]!
           g.beginPath()
           g.moveTo(ax[j]!, ay[j]!)
-          g.lineTo(ax[i]!, ay[i]!)
+          g.quadraticCurveTo((ax[i]! + ax[j]!) / 2 - dy * 0.18, (ay[i]! + ay[j]!) / 2 + dx * 0.18, ax[i]!, ay[i]!)
           g.stroke()
         })
         g.setLineDash([])
@@ -693,6 +672,118 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     }
     g.globalAlpha = 1
   }
+  // While an outlet of Αντίγραφα is pointed at (plegma.articleLinks with its copies hot): a card by each of its copies, drawn as the app's tooltip, with the whole title,
+  // the outlet and its time, and the outlet and time of the article it copies. The cards keep clear of each other inside the region, with a thin line to their copy.
+  const CARD_W = 280
+  const CARD_PAD = 12
+  const CARD_LINE = 17
+  const CARD_ROW = 19
+  const CARD_TITLE_LINES = 3
+  const wrapTitle = (text: string) => {
+    const room = CARD_W - CARD_PAD * 2
+    const lines: string[] = []
+    let line = ''
+    for (const word of text.split(/\s+/)) {
+      const next = line ? `${line} ${word}` : word
+      if (measure(next, 12, 600) <= room || !line) line = next
+      else { lines.push(line); line = word }
+    }
+    if (line) lines.push(line)
+    if (lines.length > CARD_TITLE_LINES) {
+      let last = lines.slice(CARD_TITLE_LINES - 1).join(' ')
+      while (last.length > 4 && measure(`${last}…`, 12, 600) > room) last = last.slice(0, -1).trimEnd()
+      return [...lines.slice(0, CARD_TITLE_LINES - 1), `${last}…`]
+    }
+    return lines
+  }
+  const drawCopyCards = (g: CanvasRenderingContext2D, a: typeof arts, alpha: number) => {
+    const links = plegma.articleLinks
+    const list = plegma.articles
+    if (!links?.hot?.size || !list || !branch.web) return
+    const left = a.cx - (branch.w / 2) * a.k
+    const right = a.cx + (branch.w / 2) * a.k
+    const top = a.cy - (branch.h / 2) * a.k
+    const bottom = a.cy + (branch.h / 2) * a.k
+    const pairs = [...links.hot].map(k => links.pairs[k]!).filter(([c, src]) => c < ax.length && src < ax.length && list[c]?.time !== undefined).sort((u, v) => ay[u[0]]! - ay[v[0]]!)
+    const taken: { x0: number, y0: number, x1: number, y1: number }[] = []
+    g.save()
+    g.globalAlpha = alpha
+    g.textBaseline = 'middle'
+    for (const [c, src] of pairs) {
+      const copy = list[c]!
+      const source = list[src]!
+      const title = wrapTitle(copy.title || copy.outlet)
+      const h = CARD_PAD + title.length * CARD_LINE + 11 + CARD_ROW * 2 + 6
+      // The nearest free place: beside the copy (on its right, else its left), then up and down from it, then on the other side.
+      const onRight = ax[c]! + 18 + CARD_W <= right
+      const sides = [onRight ? ax[c]! + 18 : ax[c]! - 18 - CARD_W, onRight ? ax[c]! - 18 - CARD_W : ax[c]! + 18].map(v => Math.max(left, Math.min(right - CARD_W, v)))
+      const want = Math.max(top, Math.min(bottom - h, ay[c]! - 22))
+      const meets = (x: number, y: number) => taken.some(o => x < o.x1 + 8 && x + CARD_W > o.x0 - 8 && y < o.y1 + 8 && y + h > o.y0 - 8)
+      let spot: { x: number, y: number } | null = null
+      for (const x of sides) {
+        for (let k = 0; !spot && k <= 2 * Math.ceil((bottom - top) / 10); k++) {
+          const y = want + Math.ceil(k / 2) * 10 * (k % 2 ? 1 : -1)
+          if (y >= top && y + h <= bottom && !meets(x, y)) spot = { x, y }
+        }
+        if (spot) break
+      }
+      if (!spot) continue
+      const { x, y } = spot
+      taken.push({ x0: x, y0: y, x1: x + CARD_W, y1: y + h })
+      // The line from the copy to its card.
+      g.strokeStyle = st.mute
+      g.globalAlpha = alpha * 0.6
+      g.lineWidth = 1
+      g.beginPath()
+      g.moveTo(ax[c]!, ay[c]!)
+      g.lineTo(x < ax[c]! ? x + CARD_W : x, Math.max(y + 10, Math.min(y + h - 10, ay[c]!)))
+      g.stroke()
+      g.globalAlpha = alpha
+      g.shadowColor = `color-mix(in srgb, ${st.shade} 24%, transparent)`
+      g.shadowBlur = 22
+      g.shadowOffsetY = 8
+      g.fillStyle = st.raised
+      g.beginPath()
+      g.roundRect(x, y, CARD_W, h, 10)
+      g.fill()
+      g.shadowColor = 'transparent'
+      g.strokeStyle = st.border
+      g.lineWidth = 1
+      g.stroke()
+      let ty = y + CARD_PAD + CARD_LINE / 2 - 2
+      g.font = `600 12px ${st.fontText}`
+      g.fillStyle = st.strong
+      g.textAlign = 'left'
+      for (const line of title) { g.fillText(line, x + CARD_PAD, ty); ty += CARD_LINE }
+      const rule = ty - CARD_LINE / 2 + 5
+      g.strokeStyle = st.border
+      g.beginPath()
+      g.moveTo(x + CARD_PAD, rule)
+      g.lineTo(x + CARD_W - CARD_PAD, rule)
+      g.stroke()
+      const row = (k: number, slot: number, solid: boolean, label: string, value: string, strong: boolean) => {
+        const ry = rule + 6 + CARD_ROW * k + CARD_ROW / 2
+        g.beginPath()
+        g.arc(x + CARD_PAD + 4, ry, 4, 0, TAU)
+        if (solid) { g.fillStyle = st.groupInk[slot] ?? st.mute; g.fill() }
+        else { g.strokeStyle = st.groupInk[slot] ?? st.mute; g.lineWidth = 1.5; g.stroke() }
+        g.font = `${strong ? '600 ' : ''}12px ${st.fontText}`
+        g.textAlign = 'right'
+        g.fillStyle = strong ? st.strong : st.mute
+        g.fillText(value, x + CARD_W - CARD_PAD, ry)
+        const room = CARD_W - CARD_PAD * 2 - 16 - measure(value, 12, strong ? 600 : 400) - 10
+        let text = label
+        while (text.length > 4 && measure(text, 12, 400) > room) text = `${text.slice(0, -2).trimEnd()}…`
+        g.font = `12px ${st.fontText}`
+        g.textAlign = 'left'
+        g.fillStyle = strong ? st.ink : st.mute
+        g.fillText(text, x + CARD_PAD + 16, ry)
+      }
+      row(0, copy.slot, true, copy.outlet, whenText(copy.time!), true)
+      row(1, source.slot, false, deps.t('story.copies.of', { outlet: source.outlet }), source.time === undefined ? '' : whenText(source.time), false)
+    }
+    g.restore()
+  }
   // The names of Κλαδιά: the start node's, the marks of the axis, the first articles of the first groups and the ends of the branches. They come in last and go first when the view is left.
   const drawBranchNames = (g: CanvasRenderingContext2D, a: typeof arts) => {
     const alpha = st.ringIn * (1 - clamp(st.ringOut * 2, 0, 1))
@@ -729,6 +820,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       g.fillText(name.text, tx, y)
     }
     g.textAlign = 'left'
+    drawCopyCards(g, a, alpha)
   }
   // The article that node i of the web stands for, of `len` articles: itself when the web has one node for each article (Κλαδιά, or a small story).
   const nodeArticle = (i: number, len: number) => (arts.aw?.n === len ? i : articleOfNode(i, len))
@@ -748,9 +840,27 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     return { x: here.x, y: here.y, edge: ringOf(articleWorldRadius(s) * st.cam.z) + 9, kx: articleAspect() }
   }
   const isBranch = (s: PlegmaStory) => !!branchOf(s)
+  // The step of the band of the days (Κλαδιά) under a point of the screen, as the last frame drew it: its place, its time and its articles.
+  const bandAt = (s: PlegmaStory, x: number, y: number) => {
+    const band = branch.band
+    const web = branch.web
+    if (!arts.branch || arts.id !== s.id || !band || !web || band.x.length < 3) return null
+    const { z, cam } = st.zoom
+    const X = (v: number) => arts.cx + (v - cam.x) * z * arts.k
+    const Y = (v: number) => arts.cy + (v - cam.y) * z * arts.k
+    const base = web.axisY - 14
+    if (y < Y(base - bandRoom(branch.h) - 6) - 6 || y > Y(web.axisY) + 6) return null
+    if (x < X(band.x[0]!) - 4 || x > X(band.x[band.x.length - 1]!) + 4) return null
+    let best = 1
+    for (let b = 2; b < band.x.length - 1; b++) if (Math.abs(X(band.x[b]!) - x) < Math.abs(X(band.x[best]!) - x)) best = b
+    const span = band.spans[best - 1]
+    if (!span) return null
+    const day = fmtDay(athensDate(span.from))
+    return { bin: best - 1, from: span.from, to: span.to, n: band.n[best]!, label: band.step >= 1440 ? day : `${day}, ${athensClock(span.from)}–${athensClock(span.to + 1)}` }
+  }
   // Where the story web of Κλαδιά was last drawn: its middle on the screen and its scale against the framing (the zoom's points are in px of the framing, from that middle).
   const zoomFrame = (s: PlegmaStory) => (arts.branch && arts.id === s.id ? { cx: arts.cx, cy: arts.cy, k: arts.k } : null)
-  return { lagText, stepWebZoom, zoomFrame, drawArticles, articleAt, ringAt, articleWorldRadius, articleAspect, ringOf, sectorOf, byOutlet, centerRadius, centerPoint, clearRadius, linkFrom, nodeArticle, isBranch }
+  return { lagText, bandAt, stepWebZoom, zoomFrame, drawArticles, articleAt, ringAt, articleWorldRadius, articleAspect, ringOf, sectorOf, byOutlet, centerRadius, centerPoint, clearRadius, linkFrom, nodeArticle, isBranch }
 }
 
 export type StageArticles = ReturnType<typeof createStageArticles>

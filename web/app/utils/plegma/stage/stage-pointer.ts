@@ -25,7 +25,7 @@ export const CAPTURES = 'a, button, input, select, textarea, [role="dialog"], .d
 export const createStagePointer = (st: StageState, deps: PointerDeps, core: StageCore, articles: StageArticles, theme: StageTheme, hero: StageHero) => {
   const { plegma, reduced, locale, pointerFine, phone, canvas, tooltip, t, kick } = deps
   const { visible, placed, drift, focusStory, focusOutlet, webFocus, behind, name, coreOf, spokeSet, BACK_Z, backFrame, backPoint } = core
-  const { articleAt, ringAt, sectorOf, byOutlet, nodeArticle, isBranch, lagText } = articles
+  const { articleAt, ringAt, sectorOf, byOutlet, nodeArticle, isBranch, lagText, bandAt } = articles
   const { themeNodeAt, themeWebOf, themeRingAt } = theme
   const { explore } = hero
   const pickAt = (x: number, y: number, reach: number) => {
@@ -112,9 +112,10 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
   const leave = () => {
     st.lantern.on = false
     dropLink()
-    if (!tipOn && !st.hover && st.hoverArticle < 0 && st.hoverNode < 0 && !st.hoverRing) return
+    if (!tipOn && !st.hover && st.hoverArticle < 0 && st.hoverNode < 0 && !st.hoverRing && st.hoverBand < 0) return
     st.hover = null
     st.hoverArticle = -1
+    st.hoverBand = -1
     st.hoverNode = -1
     st.hoverRing = ''
     if (st.ringLit) { st.ringLit = false; plegma.setHighlight(null) }
@@ -195,6 +196,24 @@ export const createStagePointer = (st: StageState, deps: PointerDeps, core: Stag
         return
       }
       if (st.hoverArticle >= 0) { st.hoverArticle = -1; if (reduced.value) kick() }
+      // The band of the days under Κλαδιά: a step of it lights its articles on the branches, with its time and its articles in the tooltip.
+      const step = bandAt(story, p.x, p.y)
+      if (step) {
+        if (st.hoverBand !== step.bin) {
+          st.hoverBand = step.bin
+          plegma.setHighlight({ from: step.from, to: step.to })
+          st.ringLit = true
+          kick()
+        }
+        show({ title: step.label, rows: [{ label: t('entity.fact.articles'), value: fmtInt(step.n) }], field: true }, e)
+        return
+      }
+      if (st.hoverBand >= 0) {
+        st.hoverBand = -1
+        if (st.ringLit) { st.ringLit = false; plegma.setHighlight(null) }
+        hide()
+        kick()
+      }
       const arc = ringAt(story, p.x, p.y)
       if (arc) {
         const key = `${arc.kind}${arc.k}`
