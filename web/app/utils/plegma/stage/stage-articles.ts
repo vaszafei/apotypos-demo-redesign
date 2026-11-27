@@ -1,19 +1,26 @@
 import { articleOfNode, articleRadius, articleWebOf, matchesHighlight, nodeCount } from '../plegma-articles'
 import type { PlegmaArticle, PlegmaHighlight } from '../plegma-articles'
 import { branchLag, branchRadius, buildBranchWeb, placeBranchNames } from '../plegma-branches'
+import { storySteps } from '../story-steps'
 import type { BranchName, BranchNameAsk, PlegmaBranchWeb } from '../plegma-branches'
 import { isZoomed, resetWebZoom, stepZoom } from '../plegma-zoom'
 import { PLEGMA_REGION, frameStory, regionBox, toScreen } from '../plegma-camera'
 import { ringEmptiedTo } from '../plegma-leave'
 import { RING_START } from '../plegma-ring'
 import type { PlegmaStory } from '../plegma-world'
-import { TAU, arcThick, clamp, shareArcs } from './stage-draw-util'
+import { TAU, arcThick, clamp, shareArcs, withAlpha } from './stage-draw-util'
 import type { StageState } from './stage-state'
 import type { StageCore, StageDeps } from './stage-core'
 import { NAME_MAX, createStageNames } from './stage-names'
 import type { NameItem } from './stage-names'
 
 // The picked story: one node for each article, the ring of its groups or outlets or stance, what the pointer finds on it.
+// The start node of Κλαδιά: a little smaller than the center of a circle web (2.3), and its names (the start, the outlet, the time) above it or under it, not on its left.
+const startRadius = (dr: number) => Math.max(4, dr * 1.9)
+const START_NAMES: 'above' | 'under' = 'above'
+// The strip between the branches and the axis where the articles over time are drawn: low and flat, so it reads as the ground of the web.
+const bandRoom = (h: number) => Math.round(Math.min(90, Math.max(48, h * 0.11)))
+
 export const createStageArticles = (st: StageState, deps: StageDeps, core: StageCore) => {
   const { plegma, reduced } = deps
   const { placed, gatherTo, gatherR, colourOf } = core
@@ -34,14 +41,14 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
   let hlKey = ''
   // The nodes whose articles are in the highlight: a node of a story of many articles stands for several, and comes forward if one of them does.
   const matchNodes = (s: PlegmaStory, h: PlegmaHighlight, list: NonNullable<typeof plegma.articles>, nodes: number) => {
-    const key = `${s.id}|${'from' in h ? `${h.from}-${h.to}` : `${h.group}|${h.outlet ?? ''}`}|${list.length}|${nodes}`
+    const key = `${s.id}|${'picks' in h ? `p${h.story}` : 'from' in h ? `${h.from}-${h.to}` : `${h.group}|${h.outlet ?? ''}`}|${list.length}|${nodes}`
     if (key === hlKey) return hlMatch
     hlKey = key
     hlMatch = new Uint8Array(nodes)
     for (let i = 0; i < nodes; i++) {
       const from = Math.floor((i * s.n) / nodes)
       const to = Math.max(from + 1, Math.floor(((i + 1) * s.n) / nodes))
-      for (let k = from; k < to; k++) if (matchesHighlight(list[k]!, h)) { hlMatch[i] = 1; break }
+      for (let k = from; k < to; k++) if (matchesHighlight(list[k]!, h, k)) { hlMatch[i] = 1; break }
     }
     return hlMatch
   }
@@ -104,7 +111,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
   }
   // Κλαδιά (utils/plegma/plegma-branches.ts): a story whose articles have their time is its web spread by time,
   // in the whole free cell, with no ring. One node for each article. The web and its names are made once for a story and a size of the region, in pixels of the framing; the frame scales them with the camera.
-  const branch = { key: '', list: null as unknown, web: null as PlegmaBranchWeb | null, aw: null as ReturnType<typeof articleWebOf> | null, names: [] as BranchName[], fz: 1, w: 0, h: 0,
+  const branch = { band: null as { x: Float32Array, n: Float32Array, top: number } | null, key: '', list: null as unknown, web: null as PlegmaBranchWeb | null, aw: null as ReturnType<typeof articleWebOf> | null, names: [] as BranchName[], fz: 1, w: 0, h: 0,
     asks: null as ((X: ArrayLike<number>, Y: ArrayLike<number>, z: number, cam: { x: number, y: number }) => { asks: BranchNameAsk[], ticks: number[] }) | null, ticks: [] as number[] }
   const measure = (text: string, size: number, weight: number) => {
     const g = st.ctxFocus
@@ -124,13 +131,13 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const times = list.map(a => a.time!)
     const first = list[0]!
     const starts: [string, number, number][] = [[deps.t('story.branches.started'), 11.5, 400], [first.outlet, 14, 600], [whenText(times[0]!), 11.5, 400]]
-    // The names of the start node keep clear of its thin ring (centerRadius, at the framing).
-    const pad = Math.max(5, (branchRadius(list.length) / NODE_SCALE) * 2.3) * 1.7 + 8
-    const left = Math.max(...starts.map(([text, size, weight]) => measure(text, size, weight))) + pad + 14
+    // The names of the start node keep clear of its thin ring (centerRadius, at the framing). They are above it (or under it, START_NAMES), so the web needs room on its left only for the node.
+    const pad = startRadius(branchRadius(list.length) / NODE_SCALE) * 1.7 + 8
+    const left = pad
     const byGroup = new Map<number, { a: PlegmaArticle, n: number }>()
     for (const a of list) { const g = byGroup.get(a.order); if (g) g.n++; else byGroup.set(a.order, { a, n: 1 }) }
     const endText = (g: number) => { const row = byGroup.get(g)!; return `${shortGroup(row.a.group)} · ${fmtPct(row.n / list.length)}` }
-    const input = { times, groups: list.map(a => a.order), seed: s.id, w: box.w, h: box.h, left }
+    const input = { times, groups: list.map(a => a.order), seed: s.id, w: box.w, h: box.h, left, band: bandRoom(box.h) }
     const web = buildBranchWeb({ ...input, right: Math.max(0, ...[...byGroup.keys()].map(g => measure(endText(g), 11.5, 400))) + 34 })
     const firsts = web.firsts.slice(0, web.n < 12 ? 9 : 4)
     const lagOf = (i: number) => lagText(times[i]! - times[0]!)
@@ -147,7 +154,8 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       const asks: BranchNameAsk[] = []
       const ticks: number[] = []
       const startPad = pad * Math.pow(z, 0.45)
-      if (inBox(0)) starts.forEach(([text, size, weight], k) => asks.push({ x: X[0]! - startPad, y: Y[0]! + [-13, 5, 21][k]!, text, size, weight, anchor: 'end', mute: k !== 1, fixed: true }))
+      const startY = START_NAMES === 'above' ? [-(startPad + 33), -(startPad + 16), -startPad] : [startPad + 7, startPad + 24, startPad + 40]
+      if (inBox(0)) starts.forEach(([text, size, weight], k) => asks.push({ x: X[0]! - 6, y: Y[0]! + startY[k]!, text, size, weight, anchor: 'start', mute: k !== 1, fixed: true }))
       // The axis stays under the branches; more marks find room as the web opens.
       for (const [m, mark] of web.marks.entries()) {
         const x = m ? (mark.x - cam.x) * z : X[0]!
@@ -177,7 +185,31 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     // A new layout begins at its whole web.
     resetWebZoom(st.zoom)
     zoomNames.key = ''
+    // The articles over time, under the branches (the line of «Ιστορία στον χρόνο», drawn in the Plegma): the articles of each step of time (the step the chart had), at the place of
+    // that time on the branches (between the articles around it), so a peak is under the articles that make it.
+    const step = storySteps(list).step
+    const t0 = times[0]!
+    const bins = Math.max(1, Math.floor((times[times.length - 1]! - t0) / step) + 1)
+    const counts = new Float32Array(bins)
+    for (const tm of times) counts[Math.floor((tm - t0) / step)]!++
+    const xm = new Float32Array(web.n)
+    for (let i = 0; i < web.n; i++) xm[i] = i ? Math.max(xm[i - 1]!, web.x[i]!) : web.x[0]!
+    const xAt = (m: number) => {
+      let lo = 0
+      let hi = times.length - 1
+      if (m <= times[0]!) return xm[0]!
+      if (m >= times[hi]!) return xm[hi]!
+      while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (times[mid]! <= m) lo = mid; else hi = mid }
+      const f = times[hi]! === times[lo]! ? 0 : (m - times[lo]!) / (times[hi]! - times[lo]!)
+      return xm[lo]! + (xm[hi]! - xm[lo]!) * f
+    }
+    const bx = new Float32Array(bins + 2)
+    const bn = new Float32Array(bins + 2)
+    bx[0] = xm[0]!
+    for (let b = 0; b < bins; b++) { bx[b + 1] = xAt(t0 + (b + 0.5) * step); bn[b + 1] = counts[b]! }
+    bx[bins + 1] = xm[web.n - 1]!
     Object.assign(branch, {
+      band: web.n > 2 ? { x: bx, n: bn, top: Math.max(1, ...counts) } : null,
       key, list, web, names: placeBranchNames(web, whole.asks, box, measure), ticks: whole.ticks, asks: asksAt, fz: frameStory(s, st.width, st.height, plegma.region).z, w: box.w, h: box.h,
       aw: { n: web.n, x: web.x, y: web.y, phase: web.phase, speed: web.speed, reach: web.reach, edges: web.edges, bow: web.bow, gap: 0, arcs: new Float32Array(0) }
     })
@@ -375,6 +407,43 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const mix = st.hlMix
     const lit = articles && st.hlLast && mix > 0.01 ? matchNodes(s, st.hlLast, articles, aw.n) : null
     const rOf = (i: number) => gatherR(i, i === 0 ? a.dr * 1.7 : a.dr)
+    if (level === 2 && a.branch && branch.band && branch.web) {
+      // The articles over time, soft and a little blurred, in the lower part of the web, over the axis: a backdrop, not a chart to read.
+      const { z, cam } = st.zoom
+      const band = branch.band
+      const X = (v: number) => a.cx + (v - cam.x) * z * a.k
+      const Y = (v: number) => a.cy + (v - cam.y) * z * a.k
+      const base = branch.web.axisY - 14
+      const tall = bandRoom(branch.h) + 6
+      const pts = Array.from(band.x, (v, i) => ({ x: X(v), y: Y(base - (band.n[i]! / band.top) * tall) }))
+      const curve = (path: Path2D) => {
+        path.moveTo(pts[0]!.x, pts[0]!.y)
+        for (let i = 1; i < pts.length - 1; i++) path.quadraticCurveTo(pts[i]!.x, pts[i]!.y, (pts[i]!.x + pts[i + 1]!.x) / 2, (pts[i]!.y + pts[i + 1]!.y) / 2)
+        path.lineTo(pts[pts.length - 1]!.x, pts[pts.length - 1]!.y)
+      }
+      const colour = st.groupInk[1] ?? st.ink
+      const area = new Path2D()
+      curve(area)
+      area.lineTo(pts[pts.length - 1]!.x, Y(base))
+      area.lineTo(pts[0]!.x, Y(base))
+      area.closePath()
+      const fade = g.createLinearGradient(0, Y(base - tall), 0, Y(base))
+      fade.addColorStop(0, withAlpha(colour, 0.2))
+      fade.addColorStop(1, withAlpha(colour, 0))
+      g.save()
+      g.globalAlpha = st.lineIn * (1 - 0.4 * mix)
+      g.filter = 'blur(4px)'
+      g.fillStyle = fade
+      g.fill(area)
+      const line = new Path2D()
+      curve(line)
+      g.filter = 'blur(1.4px)'
+      g.strokeStyle = colour
+      g.globalAlpha = 0.45 * st.lineIn * (1 - 0.4 * mix)
+      g.lineWidth = 2
+      g.stroke(line)
+      g.restore()
+    }
     if (level === 2) {
       const lines = new Map<number, Path2D>()
       for (let e = 0; e < aw.bow.length; e++) {
@@ -394,6 +463,23 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
         g.lineWidth = a.spacing < 7 ? 0.7 : 1
         g.globalAlpha = (a.spacing < 7 ? 0.4 : 0.55) * (1 - 0.35 * mix) * st.lineIn
         g.stroke(path)
+      }
+      // The copies on Κλαδιά: a dashed line from each copy back to the article it copies, straight across the branches; those of an outlet under the pointer strong.
+      const links = a.branch ? plegma.articleLinks : null
+      if (links) {
+        g.setLineDash([3, 4])
+        g.lineWidth = 1.2
+        g.strokeStyle = st.ink
+        links.pairs.forEach(([i, j], k) => {
+          if (i >= aw.n || j >= aw.n) return
+          const strong = !links.hot || links.hot.has(k)
+          g.globalAlpha = (strong ? (links.hot ? 0.85 : 0.5) : 0.1) * st.lineIn
+          g.beginPath()
+          g.moveTo(ax[j]!, ay[j]!)
+          g.lineTo(ax[i]!, ay[i]!)
+          g.stroke()
+        })
+        g.setLineDash([])
       }
     }
     const rim = clamp(a.dr * 0.4, 0.8, 1.6)
@@ -443,8 +529,10 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       }
     }
     // The center is the story, in the color of its theme: a disc with a soft light around it and a thin ring. The lines of the first articles of the groups begin at it.
+    // On Κλαδιά it is the first article: the color of its group, as the other nodes.
     {
-      const er = gatherR(0, Math.max(5, a.dr * 2.3))
+      const er = gatherR(0, centerRadius())
+      const col = a.branch && articles ? (slotOf(0) < 0 ? colourOf(s) : st.groupInk[slotOf(0)] ?? st.mute) : colourOf(s)
       for (const [k, alpha] of [[3, 0.07], [2.2, 0.1]] as const) {
         g.globalAlpha = alpha * st.nodeIn
         g.fillStyle = col
@@ -598,7 +686,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
   // The article that node i of the web stands for, of `len` articles: itself when the web has one node for each article (Κλαδιά, or a small story).
   const nodeArticle = (i: number, len: number) => (arts.aw?.n === len ? i : articleOfNode(i, len))
   // The radius of the disc at the center of the web of the story, as drawn in the last frame (the dot of a theme comes to it, stage-draw.ts).
-  const centerRadius = () => Math.max(5, arts.dr * 2.3)
+  const centerRadius = () => (arts.branch ? startRadius(arts.dr) : Math.max(5, arts.dr * 2.3))
   // Where the center of the story's web was drawn in the last frame (the start node of Κλαδιά, at the left of its region); null before the story's web is laid out.
   const centerPoint = (s: PlegmaStory) => (arts.id === s.id && ax.length ? { x: ax[0]!, y: ay[0]! } : null)
   // How far around the story (in the world) the other stories are pushed out: the ring of the circle web, or the corners of Κλαδιά's region.

@@ -8,6 +8,7 @@ of its publication in UTC (published_at, or the first time the crawler saw it wh
 
 Output: data/story-times/<k>.json for k in 0..shards-1, each {"<story id>": [t0, outlet, minutes, outlet, minutes, ...]}, where a story is in
 shard id % shards, t0 is the minute of its first article (minutes since 1970 UTC) and each minutes is counted from t0.
+data/story-titles/<k>.json, the same shards, each {"<story id>": [title, title, ...]}: the title of each article in the same order ("" when it has none).
 """
 
 import argparse
@@ -28,7 +29,7 @@ def minute(stamp):
 
 
 def chains_with_times(dsn, outlet_of_domain, dates, first, last):
-    """The chains of database_stories in make-db-fixtures.py, in its order, each with its articles: (name, [(minute, outlet, day index)])."""
+    """The chains of database_stories in make-db-fixtures.py, in its order, each with its articles: (name, [(minute, outlet, day index, title, article id)])."""
     day_of = f"(coalesce(a.published_at, a.first_seen_at) at time zone '{db.DAY_TZ}')::date"
     listed = ",".join(f"'{d}'" for d in sorted(outlet_of_domain))
     nodes = [int(r["id"]) for r in db.query(dsn, f"select id from daily_stories where day between '{first}' and '{last}'")]
@@ -58,7 +59,7 @@ def chains_with_times(dsn, outlet_of_domain, dates, first, last):
         titled = sorted((r["article_time"], int(r["article"]), db.clean_title(r["title"])) for r in articles.values() if db.clean_title(r["title"]))
         if not titled:
             continue
-        arts = sorted((minute(r["at"] + "+00:00"), outlet_of_domain[r["domain"]], index[r["day"]]) for r in articles.values())
+        arts = sorted((minute(r["at"] + "+00:00"), outlet_of_domain[r["domain"]], index[r["day"]], db.clean_title(r["title"]) or "", int(r["article"])) for r in articles.values())
         built.append((titled[0][0], min(articles), titled[0][2], arts))
     built.sort(key=lambda x: (x[0], x[1]))
     return [(name, arts) for _t, _a, name, arts in built]
@@ -84,21 +85,24 @@ def main():
     if len(chains) != sum(1 for s in stories["stories"] if s["id"] >= first_id):
         raise SystemExit(f"{len(chains)} chains, but stories.js has {sum(1 for s in stories['stories'] if s['id'] >= first_id)} stories from the database")
     shards = [{} for _ in range(args.shards)]
+    titles = [{} for _ in range(args.shards)]
     for k, (name, arts) in enumerate(chains):
         sid = first_id + k
         if by_id[sid]["el"] != name:
             raise SystemExit(f"story {sid}: the chain is named {name!r}, stories.js has {by_id[sid]['el']!r}")
         t0 = arts[0][0]
-        shards[sid % args.shards][str(sid)] = [t0] + [x for m, o, _d in arts for x in (o, m - t0)]
+        shards[sid % args.shards][str(sid)] = [t0] + [x for m, o, _d, _h, _a in arts for x in (o, m - t0)]
+        titles[sid % args.shards][str(sid)] = [h for _m, _o, _d, h, _a in arts]
 
-    out = root / "data" / "story-times"
-    out.mkdir(exist_ok=True)
-    for old in out.glob("*.json"):
-        old.unlink()
-    for k, shard in enumerate(shards):
-        (out / f"{k}.json").write_text(json.dumps(shard, separators=(",", ":")), encoding="utf-8")
-    size = sum(p.stat().st_size for p in out.glob("*.json"))
-    print(f"{len(chains)} stories, {sum(len(a) for _n, a in chains)} articles, {args.shards} shards, {size // 1024} KB in {out}")
+    for folder, parts, ascii_only in (("story-times", shards, True), ("story-titles", titles, False)):
+        out = root / "data" / folder
+        out.mkdir(exist_ok=True)
+        for old in out.glob("*.json"):
+            old.unlink()
+        for k, shard in enumerate(parts):
+            (out / f"{k}.json").write_text(json.dumps(shard, separators=(",", ":"), ensure_ascii=ascii_only), encoding="utf-8")
+        size = sum(p.stat().st_size for p in out.glob("*.json"))
+        print(f"{len(chains)} stories, {sum(len(a) for _n, a in chains)} articles, {args.shards} shards, {size // 1024} KB in {out}")
 
 
 if __name__ == "__main__":

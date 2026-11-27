@@ -4,6 +4,7 @@ import PlegmaHowCard from './PlegmaHowCard.vue'
 import PlegmaRelatedCard from './PlegmaRelatedCard.vue'
 import PlegmaStanceCard from './PlegmaStanceCard.vue'
 import PlegmaPeopleCard from './PlegmaPeopleCard.vue'
+import PlegmaStoryViews from './PlegmaStoryViews.vue'
 import { articlesPerNode } from '~/utils/plegma/plegma-articles'
 
 // The story view: the title, under it the other stories of the theme, the free cell for the map and the cards beside it, and the days under that row. The web itself is the stage's (PlegmaStage.vue).
@@ -55,7 +56,7 @@ const nodesNote = computed(() => {
     <section class="dcard c-12"><div class="empty-state" data-state="empty"><AppIcon name="inbox" /><p style="margin: 0">{{ t('topics2.empty') }}</p></div></section>
   </div>
   <ErrorPage v-else-if="!m" :status="404" />
-  <div v-else ref="orbit" class="plegma-orbit is-story" :class="{ 'is-in': plegma.landed, 'is-leaving': plegma.leaving, 'no-right': !columns.right.length, 'no-left': !columns.left.length, 'has-strip': m.labelled && columns.right.length }">
+  <div v-else ref="orbit" class="plegma-orbit is-story" :class="{ 'is-in': plegma.landed, 'is-leaving': plegma.leaving, 'no-right': !columns.right.length, 'no-left': !columns.left.length, 'has-strip': m.labelled && columns.right.length, 'has-ring': !m.labelled && columns.right.length }">
     <div class="plegma-title entity-grid">
       <EntityTitle :kind="t('hero.kind.story')" :title="storyName(m.story)">
         <template v-if="topicsShown" #meta><EntityLink type="topic" :to="topicHref(String(m.story.issue))">{{ topicName(m.issue) }}</EntityLink></template>
@@ -73,6 +74,7 @@ const nodesNote = computed(() => {
       <PlegmaCard v-if="m.labelled" :at="0" :order="3" class="card-strip"><OutletStack :parts="stripParts" @hover="lightPart" :caption="plegma.ring === 'outlets' ? undefined : t('story.strip.groups', { n: stripParts.length })" /></PlegmaCard>
       <div class="orbit-subs">
         <div v-for="(column, c) in columns.right" :key="c" class="orbit-sub">
+          <PlegmaStoryViews v-if="!m.labelled && column.includes('related')" :view="view" />
           <PlegmaCard v-for="(key, i) in column" :key="key" :at="0" :order="1 + c + i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
         </div>
       </div>

@@ -17,7 +17,7 @@ export const useStoryView = (id: MaybeRefOrGetter<number>) => {
   const groupsData = useFixtureLazy<GroupsData>('groups', { required: ['groups'] })
   // The sample of headlines of the snapshot (mme.json): a few articles of a story with their title and link. It is not needed to show the story, so it is not part of loading.
   const mme = useFixtureLazy<MmeData>('mme', { required: ['sets'], isEmpty: b => Object.keys(b.sets).length === 0 })
-  const { times, pending: timesPending } = useStoryTimes(id, () => detail.data.value?.dbStoryFrom)
+  const { times, links, copies, pending: timesPending } = useStoryTimes(id, () => detail.data.value?.dbStoryFrom)
   const loading = computed(() => list.status.value === 'loading' || detail.status.value === 'loading')
   const problem = computed(() => [list.status.value, detail.status.value].find(s => s !== 'ready'))
   const retry = () => { list.refresh(); detail.refresh() }
@@ -73,7 +73,7 @@ export const useStoryView = (id: MaybeRefOrGetter<number>) => {
       return { day, outlet: o.name, group: o.group, slot: slotOfColor(groupColor(o.group)), order: Math.max(0, order.get(o.group ?? null) ?? 0), outletOrder: outletOrder.get(o.name) ?? 0 }
     }
     // A story of the database has the time of each article: one node for each, in order of time (the same articles as the counts).
-    if (times.value) return times.value.map(a => ({ ...baseOf(a.outlet, dates.indexOf(athensDate(a.time))), time: a.time }))
+    if (times.value) return times.value.map(a => ({ ...baseOf(a.outlet, dates.indexOf(athensDate(a.time))), time: a.time, ...(a.title ? { title: a.title } : {}) }))
     return rows.flatMap(({ day, outlet, n }) => {
       const base = baseOf(outlet, day)
       const known = titles.get(`${m.dd.outlets[outlet]!.name}|${day}`)
@@ -147,13 +147,21 @@ export const useStoryView = (id: MaybeRefOrGetter<number>) => {
     const m = model.value
     if (!m) return []
     const days = m.last + 1
-    return relatedStories(m.d.stories.filter(s => !s.generic), m.story, s => dailyOf(s, days), { issue: m.story.issue, words: !!m.d.issues[m.story.issue]?.catchAll }).map(r => ({ ...r, articles: articlesOf(r.s), values: dailyOf(r.s, days) }))
+    if (timesPending.value) return []
+    // A story of the database: the stories about the same thing by the vectors of their articles, with the articles of this one about each (`picks`).
+    if (links.value) {
+      const byId = new Map(m.d.stories.filter(s => !s.generic).map(s => [s.id, s]))
+      return links.value.filter(l => byId.has(l.id)).slice(0, RELATED).map(l => ({ s: byId.get(l.id)!, picks: l.picks, articles: articlesOf(byId.get(l.id)!), values: dailyOf(byId.get(l.id)!, days) }))
+    }
+    return relatedStories(m.d.stories.filter(s => !s.generic), m.story, s => dailyOf(s, days), { issue: m.story.issue, words: !!m.d.issues[m.story.issue]?.catchAll }).map(r => ({ s: r.s, picks: null as number[] | null, articles: articlesOf(r.s), values: dailyOf(r.s, days) }))
   })
+  // The related stories come from the vectors of the articles (else from the words of the titles and the days).
+  const relatedByVectors = computed(() => !!links.value)
 
   // The story has the time of each article: its web is Κλαδιά (utils/plegma/plegma-branches.ts).
   const timed = computed(() => !!times.value)
 
-  return { loading, problem, retry, model, series, articles, timed, shown, dailyTip, tree, outletParts, groupParts, stance, how, related, dayLabel }
+  return { loading, problem, retry, model, series, articles, timed, shown, dailyTip, tree, outletParts, groupParts, stance, how, related, relatedByVectors, copies, dayLabel }
 }
 
 export type StoryView = ReturnType<typeof useStoryView>
