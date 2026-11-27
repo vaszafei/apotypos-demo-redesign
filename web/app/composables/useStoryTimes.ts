@@ -9,6 +9,8 @@ import type { MaybeRefOrGetter } from 'vue'
 export const STORY_TIME_SHARDS = 50
 export type StoryTimes = { outlet: number, time: number, title?: string }[]
 export type StoryLinks = { id: number, cosine: number, picks: number[] }[]
+// data/story-copies/<same shard>.json: the articles that are copies of an earlier article of another outlet, with that article ([copy, source], places in this order).
+export type StoryCopies = [number, number][]
 
 // The day of a minute (since 1970 UTC) in Athens, as the dates of the fixtures (YYYY-MM-DD): a story's day is an Athens day.
 const athens = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Athens' })
@@ -38,19 +40,23 @@ export const storyTimesOf = (row: number[] | undefined, titles?: string[]): Stor
 export const useStoryTimes = (id: MaybeRefOrGetter<number>, from: MaybeRefOrGetter<number | undefined>) => {
   const times = ref<StoryTimes | null>(null)
   const links = ref<StoryLinks | null>(null)
+  const copies = ref<StoryCopies | null>(null)
   const pending = ref(false)
   watch(() => [toValue(id), toValue(from)] as const, async ([sid, first]) => {
     times.value = null
     links.value = null
+    copies.value = null
     pending.value = false
     if (!import.meta.client || first === undefined || sid < first) return
     pending.value = true
     const k = sid % STORY_TIME_SHARDS
-    const [shard, titled, linked] = await Promise.all([shardOf<number>('story-times', k), shardOf<string>('story-titles', k), shardOf<[number, number, number[]]>('story-related', k)])
+    const [shard, titled, linked, copied] = await Promise.all([shardOf<number>('story-times', k), shardOf<string>('story-titles', k), shardOf<[number, number, number[]]>('story-related', k), shardOf<number>('story-copies', k)])
     if (toValue(id) !== sid) return
     times.value = storyTimesOf(shard[String(sid)], titled[String(sid)])
     links.value = times.value ? (linked[String(sid)] ?? []).map(([other, cosine, picks]) => ({ id: other, cosine: cosine / 1000, picks })) : null
+    const flat = copied[String(sid)] ?? []
+    copies.value = times.value ? Array.from({ length: flat.length / 2 }, (_, i) => [flat[i * 2]!, flat[i * 2 + 1]!] as [number, number]) : null
     pending.value = false
   }, { immediate: true })
-  return { times, links, pending }
+  return { times, links, copies, pending }
 }

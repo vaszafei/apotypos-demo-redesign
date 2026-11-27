@@ -10,6 +10,8 @@ shows the first RELATED of them that are in its window).
 
 Output: data/story-related/<k>.json, in the shards of data/story-times/, each {"<story id>": [[other id, cosine x 1000, [article index, ...]], ...]},
 where an article index is the place of the article in the story's row of story-times.
+data/story-copies/<k>.json, the same shards, each {"<story id>": [copy, source, copy, source, ...]}: an article (copy) whose vector has a cosine of at least
+COPY_MIN with an earlier article of another outlet of the story, and the earliest such article (source), as article indexes.
 """
 
 import argparse
@@ -24,6 +26,7 @@ import numpy as np
 STORY_MIN = 0.70
 ARTICLE_MIN = 0.70
 KEEP = 10
+COPY_MIN = 0.95
 
 here = Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location("article_times", here / "make-article-times.py")
@@ -84,10 +87,22 @@ def main():
     sim = centers @ centers.T
     np.fill_diagonal(sim, -1)
 
+    outlet_of = {a: o for _name, arts in chains for _m, o, _d, _h, a in arts}
     shards = [{} for _ in range(args.shards)]
+    copies = [{} for _ in range(args.shards)]
     pairs = 0
     for i, sid in enumerate(sids):
         mine = vectors[[row[a] for a in order[sid]]]
+        # The copies: the articles are in order of time, so an earlier article has a lower index.
+        same = mine @ mine.T
+        outlets = np.array([outlet_of[a] for a in order[sid]])
+        found = []
+        for j in range(1, len(outlets)):
+            earlier = np.flatnonzero((same[j, :j] >= COPY_MIN) & (outlets[:j] != outlets[j]))
+            if len(earlier):
+                found += [j, int(earlier[0])]
+        if found:
+            copies[sid % args.shards][str(sid)] = found
         out = []
         for j in np.argsort(-sim[i], kind="stable"):
             if sim[i, j] < STORY_MIN or len(out) == KEEP:
@@ -99,14 +114,16 @@ def main():
             shards[sid % args.shards][str(sid)] = out
             pairs += len(out)
 
-    out_dir = root / "data" / "story-related"
-    out_dir.mkdir(exist_ok=True)
-    for old in out_dir.glob("*.json"):
-        old.unlink()
-    for k, shard in enumerate(shards):
-        (out_dir / f"{k}.json").write_text(json.dumps(shard, separators=(",", ":")), encoding="utf-8")
-    size = sum(p.stat().st_size for p in out_dir.glob("*.json"))
-    print(f"{len(sids)} stories with vectors, {sum(1 for s in shards for _ in s)} with related stories, {pairs} pairs, {size // 1024} KB in {out_dir}")
+    for folder, parts in (("story-related", shards), ("story-copies", copies)):
+        out_dir = root / "data" / folder
+        out_dir.mkdir(exist_ok=True)
+        for old in out_dir.glob("*.json"):
+            old.unlink()
+        for k, shard in enumerate(parts):
+            (out_dir / f"{k}.json").write_text(json.dumps(shard, separators=(",", ":")), encoding="utf-8")
+        size = sum(p.stat().st_size for p in out_dir.glob("*.json"))
+        print(f"{len(sids)} stories with vectors, {sum(1 for s in parts for _ in s)} in {folder}, {size // 1024} KB in {out_dir}")
+    print(f"{pairs} related pairs")
 
 
 if __name__ == "__main__":

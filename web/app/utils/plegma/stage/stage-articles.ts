@@ -400,6 +400,23 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
         g.globalAlpha = (a.spacing < 7 ? 0.4 : 0.55) * (1 - 0.35 * mix) * st.lineIn
         g.stroke(path)
       }
+      // The copies on Κλαδιά: a dashed line from each copy back to the article it copies, straight across the branches; those of an outlet under the pointer strong.
+      const links = a.branch ? plegma.articleLinks : null
+      if (links) {
+        g.setLineDash([3, 4])
+        g.lineWidth = 1.2
+        g.strokeStyle = st.ink
+        links.pairs.forEach(([i, j], k) => {
+          if (i >= aw.n || j >= aw.n) return
+          const strong = !links.hot || links.hot.has(k)
+          g.globalAlpha = (strong ? (links.hot ? 0.85 : 0.5) : 0.1) * st.lineIn
+          g.beginPath()
+          g.moveTo(ax[j]!, ay[j]!)
+          g.lineTo(ax[i]!, ay[i]!)
+          g.stroke()
+        })
+        g.setLineDash([])
+      }
     }
     const rim = clamp(a.dr * 0.4, 0.8, 1.6)
     // A node is a small ring in the color of its group, with nothing inside it (the page shows through); the ones a card points at (below) are solid, so they stand out.

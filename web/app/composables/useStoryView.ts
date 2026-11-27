@@ -17,7 +17,7 @@ export const useStoryView = (id: MaybeRefOrGetter<number>) => {
   const groupsData = useFixtureLazy<GroupsData>('groups', { required: ['groups'] })
   // The sample of headlines of the snapshot (mme.json): a few articles of a story with their title and link. It is not needed to show the story, so it is not part of loading.
   const mme = useFixtureLazy<MmeData>('mme', { required: ['sets'], isEmpty: b => Object.keys(b.sets).length === 0 })
-  const { times, links, pending: timesPending } = useStoryTimes(id, () => detail.data.value?.dbStoryFrom)
+  const { times, links, copies, pending: timesPending } = useStoryTimes(id, () => detail.data.value?.dbStoryFrom)
   const loading = computed(() => list.status.value === 'loading' || detail.status.value === 'loading')
   const problem = computed(() => [list.status.value, detail.status.value].find(s => s !== 'ready'))
   const retry = () => { list.refresh(); detail.refresh() }
@@ -161,7 +161,7 @@ export const useStoryView = (id: MaybeRefOrGetter<number>) => {
   // The story has the time of each article: its web is Κλαδιά (utils/plegma/plegma-branches.ts).
   const timed = computed(() => !!times.value)
 
-  return { loading, problem, retry, model, series, articles, timed, shown, dailyTip, tree, outletParts, groupParts, stance, how, related, relatedByVectors, dayLabel }
+  return { loading, problem, retry, model, series, articles, timed, shown, dailyTip, tree, outletParts, groupParts, stance, how, related, relatedByVectors, copies, dayLabel }
 }
 
 export type StoryView = ReturnType<typeof useStoryView>

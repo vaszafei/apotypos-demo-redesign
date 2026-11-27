@@ -4,7 +4,7 @@ import PlegmaHowCard from './PlegmaHowCard.vue'
 import PlegmaRelatedCard from './PlegmaRelatedCard.vue'
 import PlegmaStanceCard from './PlegmaStanceCard.vue'
 import PlegmaPeopleCard from './PlegmaPeopleCard.vue'
-import PlegmaOutletRing from './PlegmaOutletRing.vue'
+import PlegmaStoryViews from './PlegmaStoryViews.vue'
 import { articlesPerNode } from '~/utils/plegma/plegma-articles'
 
 // The story view: the title, under it the other stories of the theme, the free cell for the map and the cards beside it, and the days under that row. The web itself is the stage's (PlegmaStage.vue).
@@ -21,8 +21,6 @@ const ring = computed({ get: () => plegma.ring, set: (v: string) => plegma.setRi
 // A part of the bar under the pointer lights its nodes on the map, softly (the outlet on the ring of the outlets, the group otherwise).
 const lightPart = (p: { group: string | null, name: string } | null) => plegma.setHighlight(p ? (plegma.ring === 'outlets' ? { group: p.group, outlet: p.name } : { group: p.group }) : null)
 const stripParts = computed(() => (plegma.ring === 'outlets' ? view.outletParts.value : view.groupParts.value))
-// An outlet of the ring above the other stories (a story with no profile) lights its articles on the map.
-const lightOutlet = (p: { group: string | null, name: string } | null) => plegma.setHighlight(p ? { group: p.group, outlet: p.name } : null)
 watch(() => (m.value?.labelled ? m.value.det.s!.slice(1) : null), counts => plegma.setStance(counts), { immediate: true })
 onBeforeUnmount(() => { plegma.setStance(null); plegma.setArticles(null); plegma.setHighlight(null); plegma.setHoverStory(null); plegma.setRelated([]) })
 
@@ -76,7 +74,7 @@ const nodesNote = computed(() => {
       <PlegmaCard v-if="m.labelled" :at="0" :order="3" class="card-strip"><OutletStack :parts="stripParts" @hover="lightPart" :caption="plegma.ring === 'outlets' ? undefined : t('story.strip.groups', { n: stripParts.length })" /></PlegmaCard>
       <div class="orbit-subs">
         <div v-for="(column, c) in columns.right" :key="c" class="orbit-sub">
-          <PlegmaOutletRing v-if="!m.labelled && column.includes('related')" :parts="view.outletParts.value" :articles="m.articles" :outlets="m.outlets.length" @hover="lightOutlet" />
+          <PlegmaStoryViews v-if="!m.labelled && column.includes('related')" :view="view" />
           <PlegmaCard v-for="(key, i) in column" :key="key" :at="0" :order="1 + c + i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
         </div>
       </div>
