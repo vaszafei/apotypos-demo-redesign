@@ -410,6 +410,27 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     g.drawImage(layer, 0, 0)
     g.restore()
   }
+  // The articles of each picked outlet in each step of the band (the same steps, with a 0 at each end as the band has), once for each pick.
+  let pickBandKey = ''
+  let pickBandOf: { by: Map<string, Float32Array>, top: number } = { by: new Map(), top: 1 }
+  const pickBand = (list: NonNullable<typeof plegma.articles>, pick: Set<string>, band: NonNullable<typeof branch.band>) => {
+    const key = `${branch.key}|${[...pick].join('|')}`
+    if (key === pickBandKey) return pickBandOf
+    const by = new Map<string, Float32Array>()
+    for (const name of pick) by.set(name, new Float32Array(band.spans.length + 2))
+    let b = 0
+    for (const x of list) {
+      const counts = by.get(x.outlet)
+      if (!counts || x.time === undefined) continue
+      while (b < band.spans.length - 1 && x.time > band.spans[b]!.to) b++
+      counts[b + 1] = counts[b + 1]! + 1
+    }
+    let top = 1
+    for (const counts of by.values()) for (const n of counts) top = Math.max(top, n)
+    pickBandKey = key
+    pickBandOf = { by, top }
+    return pickBandOf
+  }
   const paintArticles = (g: CanvasRenderingContext2D, s: PlegmaStory, level: 1 | 2, sec: number) => {
     const a = layoutArticles(s, sec)
     const aw = a.aw!
@@ -449,8 +470,10 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       const fade = g.createLinearGradient(0, Y(base - tall), 0, Y(base))
       fade.addColorStop(0, withAlpha(colour, 0.2))
       fade.addColorStop(1, withAlpha(colour, 0))
+      // With outlets picked to compare, the whole story steps back and each picked outlet has a line of its own, in its color, on a scale of their largest step.
+      const back = 1 - 0.6 * st.pickMix
       g.save()
-      g.globalAlpha = st.lineIn * (1 - 0.4 * mix)
+      g.globalAlpha = st.lineIn * (1 - 0.4 * mix) * back
       g.filter = 'blur(4px)'
       g.fillStyle = fade
       g.fill(area)
@@ -458,9 +481,26 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       curve(line)
       g.filter = 'blur(1.4px)'
       g.strokeStyle = colour
-      g.globalAlpha = 0.45 * st.lineIn * (1 - 0.4 * mix)
+      g.globalAlpha = 0.45 * st.lineIn * (1 - 0.4 * mix) * back
       g.lineWidth = 2
       g.stroke(line)
+      if (pick && articles) {
+        const lines = pickBand(articles, pick, band)
+        g.filter = 'none'
+        g.lineWidth = 1.6
+        g.lineJoin = 'round'
+        g.globalAlpha = st.lineIn * st.pickMix
+        for (const [outlet, counts] of lines.by) {
+          const own = Array.from(band.x, (v, i) => ({ x: X(v), y: Y(base - (counts[i]! / lines.top) * tall) }))
+          const path = new Path2D()
+          path.moveTo(own[0]!.x, own[0]!.y)
+          for (let i = 1; i < own.length - 1; i++) path.quadraticCurveTo(own[i]!.x, own[i]!.y, (own[i]!.x + own[i + 1]!.x) / 2, (own[i]!.y + own[i + 1]!.y) / 2)
+          path.lineTo(own[own.length - 1]!.x, own[own.length - 1]!.y)
+          const slot = slots.get(outlet) ?? articles.find(x => x.outlet === outlet)?.slot ?? 0
+          g.strokeStyle = st.groupInk[slot] ?? st.mute
+          g.stroke(path)
+        }
+      }
       // The step under the pointer: a thin rule from the axis up to the line, and a dot on the line.
       const on = pts[st.hoverBand + 1]
       if (st.hoverBand >= 0 && on && st.hoverBand + 1 < pts.length - 1) {
