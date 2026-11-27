@@ -60,7 +60,7 @@ const copyParts = computed<RingPart[]>(() => {
 })
 const copies = {
   middle: computed<RingMiddle>(() => ({ big: fmtInt(copyPairs.value.length), bigCap: t('story.copies.big'), line: fmtPct(copyPairs.value.length / Math.max(1, total.value)), cap: t('story.copies.share') })),
-  pointed: (p: RingPart): RingMiddle => ({ big: fmtInt(p.n), bigCap: t('story.copies.big'), line: p.name, cap: short(p.group) }),
+  pointed: (p: RingPart): RingMiddle => ({ big: fmtInt(p.n), bigCap: t('story.copies.big'), line: p.name, cap: '' }),
   hover: (p: RingPart | null) => {
     const list = props.view.articles.value
     const hot = new Set<number>()
