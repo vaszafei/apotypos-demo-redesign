@@ -12,6 +12,8 @@ Output: data/story-related/<k>.json, in the shards of data/story-times/, each {"
 where an article index is the place of the article in the story's row of story-times.
 data/story-copies/<k>.json, the same shards, each {"<story id>": [copy, source, copy, source, ...]}: an article (copy) whose vector has a cosine of at least
 COPY_MIN with an earlier article of another outlet of the story, and the earliest such article (source), as article indexes.
+data/story-core/<k>.json, the same shards, each {"<story id>": [cosine x 1000, ...]}: how near each article (in the order of story-times) is to its story's vector, the
+mean of all its articles: the branches of the story page place an article farther from the middle of its branch the less it is about the core of the story.
 """
 
 import argparse
@@ -90,9 +92,11 @@ def main():
     outlet_of = {a: o for _name, arts in chains for _m, o, _d, _h, a in arts}
     shards = [{} for _ in range(args.shards)]
     copies = [{} for _ in range(args.shards)]
+    cores = [{} for _ in range(args.shards)]
     pairs = 0
     for i, sid in enumerate(sids):
         mine = vectors[[row[a] for a in order[sid]]]
+        cores[sid % args.shards][str(sid)] = [int(round(float(c) * 1000)) for c in mine @ centers[i]]
         # The copies: the articles are in order of time, so an earlier article has a lower index.
         same = mine @ mine.T
         outlets = np.array([outlet_of[a] for a in order[sid]])
@@ -114,7 +118,7 @@ def main():
             shards[sid % args.shards][str(sid)] = out
             pairs += len(out)
 
-    for folder, parts in (("story-related", shards), ("story-copies", copies)):
+    for folder, parts in (("story-related", shards), ("story-copies", copies), ("story-core", cores)):
         out_dir = root / "data" / folder
         out_dir.mkdir(exist_ok=True)
         for old in out_dir.glob("*.json"):

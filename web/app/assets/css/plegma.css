@@ -738,3 +738,5 @@
 .art-copy-when { margin-left: auto; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .art-copy-title { font-size: var(--text-small); font-weight: 600; line-height: 1.4; color: var(--ink); }
 .art-copy-text { font-size: var(--text-caption); line-height: 1.5; color: var(--text-secondary); }
+/* The tabs of the branches of a story (Μέσα, Όμιλοι), at the top left of its map: the look of the ring tabs. */
+.orbit-map > .story-lanes { z-index: 3; }

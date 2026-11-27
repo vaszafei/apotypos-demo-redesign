@@ -47,6 +47,8 @@ export const usePlegmaStore = defineStore('plegma', () => {
   })
   // The color slot an article (or an outlet) is drawn in: its group's, or its own while it is picked among other outlets of no group.
   const inkSlot = (a: { outlet: string, slot: number }) => pickSlots.value.get(a.outlet) ?? a.slot
+  // The branches of a story's Κλαδιά: one for each outlet (in the color of its group) or one for each group. The tabs at the top left of the map (PlegmaStoryView.vue).
+  const lanes = ref<'outlets' | 'groups'>('outlets')
   // The time window (minutes) of the articles in view while the story web is zoomed: the rings count only them. null: the whole story.
   const viewSpan = ref<{ from: number, to: number } | null>(null)
   // The article of the focused story open in the drawer (PlegmaArticleDrawer.vue), as a place in `articles`; null: closed.
@@ -115,6 +117,7 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const setArticleLinks = (value: { pairs: [number, number][], hot: Set<number> | null } | null) => { articleLinks.value = value }
   const setOutletPick = (value: Set<string>) => { outletPick.value = value }
   const read = (value: number | null) => { reading.value = value }
+  const setLanes = (value: 'outlets' | 'groups') => { lanes.value = value }
   const setViewSpan = (value: { from: number, to: number } | null) => { viewSpan.value = value }
   const setDiveFrom = (value: { key: string, x: number, y: number, r: number, fill: string | null } | null) => { diveFrom.value = value }
   const setThemeGroups = (value: { name: string, slot: number, n: number }[] | null) => { themeGroups.value = value }
@@ -124,5 +127,5 @@ export const usePlegmaStore = defineStore('plegma', () => {
   const pickHome = (id: number | null) => { homePick.value = id }
   const setHomeDim = (value: boolean) => { homeDim.value = value }
 
-  return { active, backdrop, leaving, setLeaving, focus, day, compare, landed, region, articles, labelRoom, highlight, hoverStory, related, articleLinks, outletPick, pickSlots, inkSlot, reading, read, viewSpan, setViewSpan, ring, stance, themeStories, themeGroups, diveFrom, outletSlot, homeDay, homePick, homeDim, syncRoute, stepTo, compareWith, setLanded, setRegion, setLabelRoom, setArticles, setHighlight, setHoverStory, setRelated, setArticleLinks, setOutletPick, setRing, setStance, setThemeStories, setThemeGroups, setDiveFrom, setOutletSlot, setHomeDay, pickHome, setHomeDim }
+  return { active, backdrop, leaving, setLeaving, focus, day, compare, landed, region, articles, labelRoom, highlight, hoverStory, related, articleLinks, outletPick, pickSlots, inkSlot, reading, read, viewSpan, setViewSpan, lanes, setLanes, ring, stance, themeStories, themeGroups, diveFrom, outletSlot, homeDay, homePick, homeDim, syncRoute, stepTo, compareWith, setLanded, setRegion, setLabelRoom, setArticles, setHighlight, setHoverStory, setRelated, setArticleLinks, setOutletPick, setRing, setStance, setThemeStories, setThemeGroups, setDiveFrom, setOutletSlot, setHomeDay, pickHome, setHomeDim }
 })

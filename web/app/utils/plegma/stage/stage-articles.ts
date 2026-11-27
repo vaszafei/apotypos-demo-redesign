@@ -113,7 +113,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
   // in the whole free cell, with no ring. One node for each article. The web and its names are made once for a story and a size of the region, in pixels of the framing; the frame scales them with the camera.
   type Band = { x: Float32Array, n: Float32Array, top: number, spans: { from: number, to: number }[], step: number }
   const branch = { band: null as Band | null, bandOf: null as ((lo: number, hi: number) => Band | null) | null, within: null as ((a: number, b: number) => { lo: number, hi: number }) | null,
-    zoomBand: null as Band | null, zoomKey: '', key: '', list: null as unknown, web: null as PlegmaBranchWeb | null, aw: null as ReturnType<typeof articleWebOf> | null, names: [] as BranchName[], fz: 1, w: 0, h: 0,
+    zoomBand: null as Band | null, zoomKey: '', morph: null as { x: Float32Array, y: Float32Array, t0: number } | null, key: '', list: null as unknown, web: null as PlegmaBranchWeb | null, aw: null as ReturnType<typeof articleWebOf> | null, names: [] as BranchName[], fz: 1, w: 0, h: 0,
     asks: null as ((X: ArrayLike<number>, Y: ArrayLike<number>, z: number, cam: { x: number, y: number }) => { asks: BranchNameAsk[], ticks: number[] }) | null, ticks: [] as number[] }
   const measure = (text: string, size: number, weight: number) => {
     const g = st.ctxFocus
@@ -128,7 +128,10 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const list = plegma.articles
     if (!list || !list.length || list.length !== s.n || list[0]!.time === undefined || !plegma.region) return null
     const box = regionBox(st.width, st.height, plegma.region)
-    const key = `${s.id}|${Math.round(box.w)}|${Math.round(box.h)}|${deps.locale.value}`
+    // A branch for each outlet, in the color of its group, the outlets of a group side by side (the tab Μέσα), or one for each group (Όμιλοι).
+    const perOutlet = plegma.lanes === 'outlets'
+    const laneOf = (a: PlegmaArticle) => (perOutlet ? a.outletOrder : a.order)
+    const key = `${s.id}|${Math.round(box.w)}|${Math.round(box.h)}|${deps.locale.value}|${perOutlet}`
     if (key === branch.key && list === branch.list) return branch
     const times = list.map(a => a.time!)
     const first = list[0]!
@@ -137,9 +140,11 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const pad = startRadius(branchRadius(list.length) / NODE_SCALE) * 1.7 + 8
     const left = pad
     const byGroup = new Map<number, { a: PlegmaArticle, n: number }>()
-    for (const a of list) { const g = byGroup.get(a.order); if (g) g.n++; else byGroup.set(a.order, { a, n: 1 }) }
-    const endText = (g: number) => { const row = byGroup.get(g)!; return `${shortGroup(row.a.group)} · ${fmtPct(row.n / list.length)}` }
-    const input = { times, groups: list.map(a => a.order), seed: s.id, w: box.w, h: box.h, left, band: bandRoom(box.h) }
+    for (const a of list) { const g = byGroup.get(laneOf(a)); if (g) g.n++; else byGroup.set(laneOf(a), { a, n: 1 }) }
+    const endText = (g: number) => { const row = byGroup.get(g)!; return `${perOutlet ? row.a.outlet : shortGroup(row.a.group)} · ${fmtPct(row.n / list.length)}` }
+    const rank = perOutlet ? new Map([...byGroup.values()].map(({ a, n }) => [a.outletOrder, a.order * 1000 - n])) : undefined
+    const cored = list.every(a => a.core !== undefined)
+    const input = { times, groups: list.map(laneOf), rank, core: cored ? list.map(a => a.core!) : undefined, copyOf: cored ? list.map(a => a.copyOf ?? -1) : undefined, seed: s.id, w: box.w, h: box.h, left, band: bandRoom(box.h) }
     const web = buildBranchWeb({ ...input, right: Math.max(0, ...[...byGroup.keys()].map(g => measure(endText(g), 11.5, 400))) + 34 })
     const firsts = web.firsts.slice(0, web.n < 12 ? 9 : 4)
     const lagOf = (i: number) => lagText(times[i]! - times[0]!)
@@ -170,18 +175,18 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       const dotOf = (i: number) => (pick ? plegma.inkSlot(list[i]!) : undefined)
       const asked = new Set<number>()
       for (const i of firsts) {
-        if (!inBox(i) || !named(i)) continue
+        if (!inBox(i) || !named(i) || perOutlet) continue
         asked.add(i)
         asks.push({ x: X[i]! + rz + 4, y: Y[i]! + (o3 > 0 ? 4 : -7), text: o3 > 0 ? `${list[i]!.outlet} · ${dayText(i)} · ${lagOf(i)}` : `${list[i]!.outlet} ${lagOf(i)}`, dot: dotOf(i) })
       }
       // A branch with no picked outlet keeps its name, faded as its articles are.
-      const groupPicked = (g: number) => !pick || list.some(x => x.order === g && pick.has(x.outlet))
+      const groupPicked = (g: number) => !pick || list.some(x => laneOf(x) === g && pick.has(x.outlet))
       for (const end of web.ends) if (inBox(end.node)) asks.push({ x: X[end.node]! + rz + 8, y: Y[end.node]! + 4, text: endText(end.group), dot: list[end.node]!.slot, alpha: groupPicked(end.group) ? 1 : 0.3 })
       if (o3 > 0) { for (let i = 1; i < web.n; i++) if (!asked.has(i) && inBox(i) && named(i)) asks.push({ x: X[i]! + rz + 4, y: Y[i]! + 4, text: `${list[i]!.outlet} · ${dayText(i)}`, size: 10.5, alpha: o3 }) }
       else {
         const shown = new Set([...asked].map(i => list[i]!.outlet))
         for (let i = 1; i < web.n; i++) {
-          if (asked.has(i) || !inBox(i) || shown.has(list[i]!.outlet) || !named(i)) continue
+          if (perOutlet || asked.has(i) || !inBox(i) || shown.has(list[i]!.outlet) || !named(i)) continue
           shown.add(list[i]!.outlet)
           asks.push({ x: X[i]! + rz + 4, y: Y[i]! + 4, text: list[i]!.outlet, size: 11, dot: dotOf(i) })
         }
@@ -189,7 +194,9 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       return { asks, ticks }
     }
     const whole = asksAt(web.x, web.y, 1, { x: 0, y: 0 })
-    // A new layout begins at its whole web.
+    // A new layout begins at its whole web; the same story in its other branches moves there from where its nodes were.
+    branch.morph = branch.web && branch.key.split('|')[0] === String(s.id) && branch.web.n === list.length && !reduced.value
+      ? { x: Float32Array.from(branch.web.x), y: Float32Array.from(branch.web.y), t0: performance.now() } : null
     resetWebZoom(st.zoom)
     zoomNames.key = ''
     // The articles over time, under the branches (the line of «Ιστορία στον χρόνο», drawn in the Plegma): the articles of each step of time (the step the chart had), at the place of
@@ -294,11 +301,18 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     // The zoom: a node is drawn at (its place - the camera of the zoom) * the zoom (utils/plegma/plegma-zoom.ts).
     const { z, cam } = st.zoom
     if (ax.length < web.n) { ax = new Float32Array(web.n); ay = new Float32Array(web.n) }
+    const MORPH_MS = 700
+    const m = b.morph ? Math.min(1, (performance.now() - b.morph.t0) / MORPH_MS) : 1
+    const f = m < 0.5 ? 4 * m * m * m : 1 - (-2 * m + 2) ** 3 / 2
+    const from = m < 1 ? b.morph : null
+    if (m >= 1) b.morph = null
     for (let i = 0; i < web.n; i++) {
       const a = sec * web.speed[i]! + web.phase[i]!
       const reach = i === 0 ? 0 : web.reach[i]!
-      const bx = (web.x[i]! - cam.x) * z
-      const by = (web.y[i]! - cam.y) * z
+      const wx = from ? from.x[i]! + (web.x[i]! - from.x[i]!) * f : web.x[i]!
+      const wy = from ? from.y[i]! + (web.y[i]! - from.y[i]!) * f : web.y[i]!
+      const bx = (wx - cam.x) * z
+      const by = (wy - cam.y) * z
       ax[i] = p.x + bx * k + Math.cos(a) * amp * reach
       ay[i] = p.y + by * k + Math.sin(a) * amp * reach
       // The branches grow out of the start node: the early articles first.
@@ -770,29 +784,18 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     }
     g.globalAlpha = 1
   }
-  // While an outlet of Αντίγραφα is pointed at (plegma.articleLinks with its copies hot): a card by each of its copies, drawn as the app's tooltip, with the whole title,
-  // the outlet and its time, and the outlet and time of the article it copies. The cards keep clear of each other inside the region, with a thin line to their copy.
-  const CARD_W = 280
-  const CARD_PAD = 12
-  const CARD_LINE = 17
-  const CARD_ROW = 19
-  const CARD_TITLE_LINES = 3
-  const wrapTitle = (text: string) => {
-    const room = CARD_W - CARD_PAD * 2
-    const lines: string[] = []
-    let line = ''
-    for (const word of text.split(/\s+/)) {
-      const next = line ? `${line} ${word}` : word
-      if (measure(next, 12, 600) <= room || !line) line = next
-      else { lines.push(line); line = word }
-    }
-    if (line) lines.push(line)
-    if (lines.length > CARD_TITLE_LINES) {
-      let last = lines.slice(CARD_TITLE_LINES - 1).join(' ')
-      while (last.length > 4 && measure(`${last}…`, 12, 600) > room) last = last.slice(0, -1).trimEnd()
-      return [...lines.slice(0, CARD_TITLE_LINES - 1), `${last}…`]
-    }
-    return lines
+  // While an outlet of Αντίγραφα is pointed at (plegma.articleLinks with its copies hot): a numbered badge on each of its copies (the dashed line runs from it to the article
+  // it copies) and one list of them, in the app's tooltip style, numbered the same, on the side of the region its copies leave freer: the title, the outlet and its time,
+  // and the outlet and time of the article it copies. Nothing lies by the copies themselves, so nothing hides the lines.
+  const LIST_W = 330
+  const LIST_PAD = 12
+  const LIST_ROW = 40
+  const LIST_HEAD = 26
+  const BADGE_R = 8
+  const ellipsis = (text: string, size: number, weight: number, room: number) => {
+    let out = text
+    while (out.length > 4 && measure(out, size, weight) > room) out = `${out.slice(0, -2).trimEnd()}…`
+    return out
   }
   const drawCopyCards = (g: CanvasRenderingContext2D, a: typeof arts, alpha: number) => {
     const links = plegma.articleLinks
@@ -802,83 +805,84 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const right = a.cx + (branch.w / 2) * a.k
     const top = a.cy - (branch.h / 2) * a.k
     const bottom = a.cy + (branch.h / 2) * a.k
-    const pairs = [...links.hot].map(k => links.pairs[k]!).filter(([c, src]) => c < ax.length && src < ax.length && list[c]?.time !== undefined).sort((u, v) => ay[u[0]]! - ay[v[0]]!)
-    const taken: { x0: number, y0: number, x1: number, y1: number }[] = []
+    const pairs = [...links.hot].map(k => links.pairs[k]!).filter(([c, src]) => c < ax.length && src < ax.length && list[c]?.time !== undefined).sort((u, v) => u[0] - v[0])
+    if (!pairs.length) return
+    const ink = (x: PlegmaArticle) => st.groupInk[plegma.inkSlot(x)] ?? st.mute
     g.save()
     g.globalAlpha = alpha
     g.textBaseline = 'middle'
-    for (const [c, src] of pairs) {
+    g.textAlign = 'center'
+    // The badges: the number of each copy on its node, in the color of its outlet.
+    pairs.forEach(([c], k) => {
+      g.fillStyle = st.paper
+      g.beginPath()
+      g.arc(ax[c]!, ay[c]!, BADGE_R + 2, 0, TAU)
+      g.fill()
+      g.fillStyle = ink(list[c]!)
+      g.beginPath()
+      g.arc(ax[c]!, ay[c]!, BADGE_R, 0, TAU)
+      g.fill()
+      g.font = `600 10.5px ${st.fontText}`
+      g.fillStyle = st.paper
+      g.fillText(String(k + 1), ax[c]!, ay[c]! + 0.5)
+    })
+    // The list, on the half of the region with fewer of the copies and their sources, from its top (under the tabs).
+    const xs = pairs.flatMap(([c, src]) => [ax[c]!, ax[src]!])
+    const onLeft = xs.filter(x => x < (left + right) / 2).length <= xs.length / 2
+    const x = onLeft ? left + 4 : right - LIST_W - 4
+    const y = top + 48
+    const rows = Math.max(1, Math.min(pairs.length, Math.floor((bottom - y - LIST_HEAD - LIST_PAD * 2) / LIST_ROW)))
+    const more = pairs.length - rows
+    const h = LIST_PAD * 2 + LIST_HEAD + rows * LIST_ROW + (more > 0 ? 18 : 0)
+    g.shadowColor = `color-mix(in srgb, ${st.shade} 24%, transparent)`
+    g.shadowBlur = 22
+    g.shadowOffsetY = 8
+    g.fillStyle = st.raised
+    g.beginPath()
+    g.roundRect(x, y, LIST_W, h, 10)
+    g.fill()
+    g.shadowColor = 'transparent'
+    g.strokeStyle = st.border
+    g.lineWidth = 1
+    g.stroke()
+    const copier = list[pairs[0]![0]]!
+    g.textAlign = 'left'
+    g.font = `600 12px ${st.fontText}`
+    g.fillStyle = st.strong
+    g.fillText(`${copier.outlet} · ${fmtInt(pairs.length)} ${deps.t('story.copies.big')}`, x + LIST_PAD, y + LIST_PAD + 8)
+    g.strokeStyle = st.border
+    g.beginPath()
+    g.moveTo(x + LIST_PAD, y + LIST_PAD + LIST_HEAD - 4)
+    g.lineTo(x + LIST_W - LIST_PAD, y + LIST_PAD + LIST_HEAD - 4)
+    g.stroke()
+    const room = LIST_W - LIST_PAD * 2 - BADGE_R * 2 - 10
+    pairs.slice(0, rows).forEach(([c, src], k) => {
       const copy = list[c]!
       const source = list[src]!
-      const title = wrapTitle(copy.title || copy.outlet)
-      const h = CARD_PAD + title.length * CARD_LINE + 11 + CARD_ROW * 2 + 6
-      // The nearest free place: beside the copy (on its right, else its left), then up and down from it, then on the other side.
-      const onRight = ax[c]! + 18 + CARD_W <= right
-      const sides = [onRight ? ax[c]! + 18 : ax[c]! - 18 - CARD_W, onRight ? ax[c]! - 18 - CARD_W : ax[c]! + 18].map(v => Math.max(left, Math.min(right - CARD_W, v)))
-      const want = Math.max(top, Math.min(bottom - h, ay[c]! - 22))
-      const meets = (x: number, y: number) => taken.some(o => x < o.x1 + 8 && x + CARD_W > o.x0 - 8 && y < o.y1 + 8 && y + h > o.y0 - 8)
-      let spot: { x: number, y: number } | null = null
-      for (const x of sides) {
-        for (let k = 0; !spot && k <= 2 * Math.ceil((bottom - top) / 10); k++) {
-          const y = want + Math.ceil(k / 2) * 10 * (k % 2 ? 1 : -1)
-          if (y >= top && y + h <= bottom && !meets(x, y)) spot = { x, y }
-        }
-        if (spot) break
-      }
-      if (!spot) continue
-      const { x, y } = spot
-      taken.push({ x0: x, y0: y, x1: x + CARD_W, y1: y + h })
-      // The line from the copy to its card.
-      g.strokeStyle = st.mute
-      g.globalAlpha = alpha * 0.6
-      g.lineWidth = 1
+      const ry = y + LIST_PAD + LIST_HEAD + k * LIST_ROW
+      const tx = x + LIST_PAD + BADGE_R * 2 + 10
+      g.fillStyle = ink(copy)
       g.beginPath()
-      g.moveTo(ax[c]!, ay[c]!)
-      g.lineTo(x < ax[c]! ? x + CARD_W : x, Math.max(y + 10, Math.min(y + h - 10, ay[c]!)))
-      g.stroke()
-      g.globalAlpha = alpha
-      g.shadowColor = `color-mix(in srgb, ${st.shade} 24%, transparent)`
-      g.shadowBlur = 22
-      g.shadowOffsetY = 8
-      g.fillStyle = st.raised
-      g.beginPath()
-      g.roundRect(x, y, CARD_W, h, 10)
+      g.arc(x + LIST_PAD + BADGE_R, ry + 11, BADGE_R, 0, TAU)
       g.fill()
-      g.shadowColor = 'transparent'
-      g.strokeStyle = st.border
-      g.lineWidth = 1
-      g.stroke()
-      let ty = y + CARD_PAD + CARD_LINE / 2 - 2
+      g.textAlign = 'center'
+      g.font = `600 10.5px ${st.fontText}`
+      g.fillStyle = st.paper
+      g.fillText(String(k + 1), x + LIST_PAD + BADGE_R, ry + 11.5)
+      g.textAlign = 'left'
       g.font = `600 12px ${st.fontText}`
       g.fillStyle = st.strong
-      g.textAlign = 'left'
-      for (const line of title) { g.fillText(line, x + CARD_PAD, ty); ty += CARD_LINE }
-      const rule = ty - CARD_LINE / 2 + 5
-      g.strokeStyle = st.border
-      g.beginPath()
-      g.moveTo(x + CARD_PAD, rule)
-      g.lineTo(x + CARD_W - CARD_PAD, rule)
-      g.stroke()
-      const row = (k: number, slot: number, solid: boolean, label: string, value: string, strong: boolean) => {
-        const ry = rule + 6 + CARD_ROW * k + CARD_ROW / 2
-        g.beginPath()
-        g.arc(x + CARD_PAD + 4, ry, 4, 0, TAU)
-        if (solid) { g.fillStyle = st.groupInk[slot] ?? st.mute; g.fill() }
-        else { g.strokeStyle = st.groupInk[slot] ?? st.mute; g.lineWidth = 1.5; g.stroke() }
-        g.font = `${strong ? '600 ' : ''}12px ${st.fontText}`
-        g.textAlign = 'right'
-        g.fillStyle = strong ? st.strong : st.mute
-        g.fillText(value, x + CARD_W - CARD_PAD, ry)
-        const room = CARD_W - CARD_PAD * 2 - 16 - measure(value, 12, strong ? 600 : 400) - 10
-        let text = label
-        while (text.length > 4 && measure(text, 12, 400) > room) text = `${text.slice(0, -2).trimEnd()}…`
-        g.font = `12px ${st.fontText}`
-        g.textAlign = 'left'
-        g.fillStyle = strong ? st.ink : st.mute
-        g.fillText(text, x + CARD_PAD + 16, ry)
-      }
-      row(0, plegma.inkSlot(copy), true, copy.outlet, whenText(copy.time!), true)
-      row(1, plegma.inkSlot(source), false, deps.t('story.copies.of', { outlet: source.outlet }), source.time === undefined ? '' : whenText(source.time), false)
+      g.fillText(ellipsis(copy.title || copy.outlet, 12, 600, room), tx, ry + 11)
+      const sameDay = source.time !== undefined && athensDate(source.time) === athensDate(copy.time!)
+      const from = `${deps.t('story.copies.of', { outlet: source.outlet })}${source.time === undefined ? '' : `, ${sameDay ? athensClock(source.time) : whenText(source.time)}`}`
+      g.font = `11px ${st.fontText}`
+      g.fillStyle = st.mute
+      g.fillText(ellipsis(`${whenText(copy.time!)} · ${from}`, 11, 400, room), tx, ry + 27)
+    })
+    if (more > 0) {
+      g.font = `11px ${st.fontText}`
+      g.fillStyle = st.mute
+      g.fillText(deps.t('story.copies.more', { n: fmtInt(more) }), x + LIST_PAD, y + h - LIST_PAD - 4)
     }
     g.restore()
   }

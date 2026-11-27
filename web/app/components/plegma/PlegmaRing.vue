@@ -137,7 +137,7 @@ const middle = computed(() => {
         <path class="por-lead" :d="l.d" />
         <text :x="l.x" :y="l.y" :text-anchor="l.end ? 'end' : 'start'" @pointerenter="on = l.p" @pointerleave="on = null">{{ l.p.name }}</text>
       </g>
-      <g v-if="ring.middle" class="por-middle">
+      <g v-if="ring.middle" class="por-middle" :transform="middle.line || middle.cap ? undefined : 'translate(0 14)'">
         <text :x="ring.cx" :y="ring.cy + MIDDLE_Y.big" class="por-big">{{ middle.big }}</text>
         <text :x="ring.cx" :y="ring.cy + MIDDLE_Y.bigCap" class="por-cap" :style="{ fontSize: `${middle.bigCapSize}px` }">{{ middle.bigCap }}</text>
         <text :x="ring.cx" :y="ring.cy + MIDDLE_Y.line" class="por-mid" :style="{ fontSize: `${middle.lineSize}px` }">{{ middle.line }}</text>

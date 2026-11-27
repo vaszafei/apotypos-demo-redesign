@@ -18,6 +18,12 @@ export interface BranchInput {
   right: number
   // The room (px) kept between the branches and the axis, for the articles over time drawn there (stage-articles.ts).
   band?: number
+  // The order of the branches from the top (lower first), in place of the fan of the largest in the middle (one for each outlet, those of a group together).
+  rank?: Map<number, number>
+  // How near each article is to the story's vector (0 to 1), and the place of the article each copies (-1: none). With them an article is not placed at random across its
+  // branch: the farther it is from the core of the story the farther it is from the middle of its branch, and a copy goes to the side of its branch nearest the article it copies.
+  core?: ArrayLike<number>
+  copyOf?: ArrayLike<number>
 }
 
 export interface BranchTick { x: number, minute: number, kind: 'start' | 'day' | 'hour' }
@@ -113,25 +119,41 @@ export const buildBranchWeb = (input: BranchInput): PlegmaBranchWeb => {
   for (let i = 1; i < n; i++) { const g = groups[i]!; const list = members.get(g); if (list) list.push(i); else members.set(g, [i]) }
   const bySize = [...members.entries()].sort((a, b) => b[1].length - a[1].length || a[0] - b[0])
   const slots: (typeof bySize)[number][] = []
-  bySize.forEach((g, q) => (q % 2 ? slots.push(g) : slots.unshift(g)))
+  if (input.rank) slots.push(...[...bySize].sort((a, b) => input.rank!.get(a[0])! - input.rank!.get(b[0])!))
+  else bySize.forEach((g, q) => (q % 2 ? slots.push(g) : slots.unshift(g)))
   const weight = (list: number[]) => Math.sqrt(list.length) + 1.1
   const total = slots.reduce((s, [, list]) => s + weight(list), 0)
   let at = 0
   const tx = new Float32Array(n)
-  slots.forEach(([, list], q) => {
+  const lanes = slots.map(([g, list], q) => {
     const part = weight(list) / total
-    const home = (at + part / 2 - 0.5) * (H - 24)
-    const band = Math.min(part * (H - 24) * 0.95, 190)
-    const ph = (((q + 3) * 0.618034) % 1) * Math.PI * 2
+    const lane = { g, list, home: (at + part / 2 - 0.5) * (H - 24), band: Math.min(part * (H - 24) * 0.95, 190), ph: (((q + 3) * 0.618034) % 1) * Math.PI * 2 }
     at += part
+    return lane
+  })
+  const homeOf = new Map(lanes.map(l => [l.g, l.home]))
+  // The place across the branch (-0.5 to 0.5): by the distance from the core, ranked in the story so the articles spread over the whole branch, on a side picked at random;
+  // a copy at the side facing the branch of the article it copies.
+  const across = Float32Array.from(jitter)
+  if (input.core) {
+    const far = Array.from({ length: n }, (_, i) => 1 - input.core![i]!)
+    const rank = new Float32Array(n)
+    Array.from({ length: n }, (_, i) => i).sort((a, b) => far[a]! - far[b]!).forEach((i, k) => { rank[i] = n > 1 ? k / (n - 1) : 0 })
+    for (let i = 1; i < n; i++) {
+      const src = input.copyOf?.[i] ?? -1
+      const toward = src >= 0 ? Math.sign((homeOf.get(groups[src]!) ?? 0) - (homeOf.get(groups[i]!) ?? 0)) : 0
+      across[i] = toward ? toward * 0.5 : (jitter[i]! < 0 ? -1 : 1) * 0.5 * rank[i]!
+    }
+  }
+  for (const { list, home, band, ph } of lanes) {
     for (const i of list) {
       tx[i] = x0 + HUB + span * share(i)
       const s = (tx[i]! - x0) / (x1 - x0)
       const open = 1 - Math.exp(-s * 5.5)
       x[i] = tx[i]!
-      y[i] = mid + home * open + Math.sin(s * 5.2 + ph) * 21 * open + jitter[i]! * band * (0.45 + 0.75 * Math.min(1, s * 2.5))
+      y[i] = mid + home * open + Math.sin(s * 5.2 + ph) * 21 * open + across[i]! * band * (0.45 + 0.75 * Math.min(1, s * 2.5))
     }
-  })
+  }
   x[0] = x0
   y[0] = mid
   // The nodes push each other apart until none is nearer than its size and a little room; a node keeps near its place in time.

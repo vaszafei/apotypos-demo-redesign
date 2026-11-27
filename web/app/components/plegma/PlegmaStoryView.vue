@@ -18,6 +18,7 @@ const { loading, problem, retry, model: m, dayLabel } = view
 // The map draws one node for each article of the story.
 watch(view.articles, list => plegma.setArticles(list.length ? list : null), { immediate: true })
 watch(view.related, list => plegma.setRelated(list.map(r => r.s.id)), { immediate: true })
+const lanes = computed({ get: () => plegma.lanes, set: (v: string) => plegma.setLanes(v === 'groups' ? 'groups' : 'outlets') })
 const ring = computed({ get: () => plegma.ring, set: (v: string) => plegma.setRing(v === 'stance' || v === 'outlets' ? v : 'groups') })
 // The bar at the end of the row is the outlets while the ring is the outlets, and the groups otherwise.
 // A part of the bar under the pointer lights its nodes on the map, softly (the outlet on the ring of the outlets, the group otherwise).
@@ -43,7 +44,7 @@ const perNode = computed(() => (m.value ? articlesPerNode(m.value.articles) : 1)
 // The note under the map: what a node is.
 const nodesNote = computed(() => {
   if (!view.timed.value) return perNode.value > 1 ? t('story.nodes.many', { n: fmtInt(perNode.value) }) : t('story.nodes.one')
-  return t('story.branches.note')
+  return t(plegma.lanes === 'outlets' ? 'story.branches.noteOutlets' : 'story.branches.note')
 })
 </script>
 
@@ -72,6 +73,7 @@ const nodesNote = computed(() => {
       <PlegmaCard v-for="(key, i) in columns.left" :key="key" :at="2" :order="3 + i" :class="`card-${key}`"><component :is="BODY[key]" :view="view" /></PlegmaCard>
     </div>
     <div ref="map" class="orbit-map">
+      <SegmentedControl v-if="view.timed.value" v-model="lanes" class="orbit-ring-tabs story-lanes" :label="t('story.lanes.label')" :options="[{ value: 'outlets', label: t('story.ring.outlets') }, { value: 'groups', label: t('story.groups.title') }]" />
       <p class="plegma-nodes-note">{{ nodesNote }}</p></div>
     <div v-if="columns.right.length" class="orbit-col orbit-right">
       <PlegmaCard v-if="m.labelled" :at="0" :order="3" class="card-strip"><OutletStack :parts="stripParts" @hover="lightPart" :caption="plegma.ring === 'outlets' ? undefined : t('story.strip.groups', { n: stripParts.length })" /></PlegmaCard>

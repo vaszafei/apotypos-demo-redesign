@@ -50,11 +50,11 @@ const groupParts = computed<RingPart[]>(() => {
   return props.view.groupParts.value.filter(p => by.has(p.group)).map(p => ({ key: p.name, name: p.name, group: p.group, n: by.get(p.group)!, color: p.color }))
 })
 const groups = {
-  // The pick within one group: the middle names it, with its share of the story.
+  // No count of articles here (the ring of the outlets has it): the number of groups, or the share of the one group of the pick or of the group pointed at, with its name.
   middle: computed<RingMiddle>(() => (plegma.outletPick.size && groupParts.value.length === 1
-    ? { big: articlesFact.value, bigCap: t('entity.fact.articles'), line: short(groupParts.value[0]!.group), cap: fmtPct(total.value / Math.max(1, storyTotal.value)) }
-    : { big: articlesFact.value, bigCap: t('entity.fact.articles'), line: fmtInt(groupParts.value.length), cap: t('story.groups.title') })),
-  pointed: (p: RingPart): RingMiddle => ({ big: fmtInt(p.n), bigCap: t('entity.fact.articles'), line: short(p.name), cap: fmtPct(p.n / total.value) }),
+    ? { big: fmtPct(total.value / Math.max(1, storyTotal.value)), bigCap: t('story.copies.share'), line: short(groupParts.value[0]!.group), cap: '' }
+    : { big: fmtInt(groupParts.value.length), bigCap: t('story.groups.title'), line: '', cap: '' })),
+  pointed: (p: RingPart): RingMiddle => ({ big: fmtPct(p.n / Math.max(1, total.value)), bigCap: t('story.copies.share'), line: short(p.name), cap: '' }),
   hover: (p: RingPart | null) => light(p ? { group: p.group } : null)
 }
 // Αντίγραφα: the outlets that published a copy of an earlier article of another outlet, by their copies; under the pointer, their copies and the articles they copy are lit, with the lines between them.
