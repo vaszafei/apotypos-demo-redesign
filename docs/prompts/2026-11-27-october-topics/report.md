@@ -93,3 +93,21 @@ Clean 22, mostly 5, mixed 9.
 - The 8 mixed topics of that run were split in 3 each (`sub.py`) and each part sent to a clean topic or kept as a small concrete one (`names.py` holds the mapping).
 - Result: **40 topics**, 0.4%–5.5%, every article has one. Four are still broad catch-alls: Επιχειρήσεις και επενδύσεις, Θεσμοί δικαιοσύνη και διοίκηση, Διεθνή πρόσωπα, Ανά τον κόσμο.
 - Names are mine and wait for the user's approval.
+
+## Built into the fixtures (2026-11-27)
+
+- `docs/redesign/prototypes/scripts/october-topics.json` (364 KB, `export.py`): the 40 topics with English names, `soft` flags and the ids of their articles.
+- `make-db-fixtures.py` adds them after the 36 Aug–Sep topics of media, home and stories (`dbIssueFrom` = 36), with articles per day and per outlet (`media.issueOutlet`). Each of the 2,453 October stories takes the topic of most of its articles: 0 left on the catch-all. 48,099 of 48,146 articles have a topic (47 have no embedding). Two runs give byte-identical files; outside the topic fields home, media and stories are unchanged, storyDetail is byte-identical.
+- `web/scripts/trim-window.mjs` keeps only the topics with articles in 14–27 Oct (the 40), renumbers every topic index (stories, media, home, search rows and topic entries) and counts the group topics again from `media.issueOutlet` (`groups.topicsAll` sums to 48,099).
+- Checks: trim tests 7 of 7; all web tests 226 pass, 5 fail, the same 5 that fail on main (move, plegma-articles sector, visitor-script); `check:fixtures` ok after its topic rule was changed; `nuxi typecheck` exit 0.
+- `make-search.mjs` fails on main (it reads `data/statements.js`, deleted in 4406b7c), so search.js was not rebuilt; the trim gives each search row the topic of its story.
+
+Seen on screen, dev server, 1440 and 390, old data against new data (two runs of each data set; same-data runs differ by 0 px except one late card reveal):
+
+| Page | Change |
+|---|---|
+| Home | «Δημοφιλή σήμερα» chips with 4 topics appear under the search; the hero moves down; at 390 the page is 197 px taller |
+| /stories | the period web draws the stories as topic-coded, so its dots and lines differ |
+| Story pages | Σχετικές ιστορίες now prefer stories of the same topic |
+| Every page with the Plegma behind it | the faint background dots differ (400–1,100 px) |
+| Group, groups, outlet cards | no change in the cards |

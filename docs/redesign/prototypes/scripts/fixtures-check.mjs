@@ -52,9 +52,23 @@ if (m.volumeFrom) {
       if (i >= covered[0] && i <= covered[1] && vol !== null && typeof vol !== 'number') fail(`media.outletDaily[${k}][${i}] volume is not a number`)
     }
   })
-  m.issueDaily.forEach((row, k) => { if (!row.slice(from).every(isNull)) fail(`media.issueDaily[${k}] has a number on a day of the database`) })
+  // A topic of the base has no number on a day of the database; a topic of the database (from dbIssueFrom) has a number only inside dbCovered.
+  const issueFrom = m.dbIssueFrom ?? m.issues.length
+  const topicRow = (name, row, k) => {
+    if (k < issueFrom) { if (!row.slice(from).every(isNull)) fail(`${name}[${k}] has a number on a day of the database`); return }
+    row.forEach((v, i) => {
+      const inside = i >= covered[0] && i <= covered[1]
+      if (inside ? typeof v !== 'number' : v !== null) fail(`${name}[${k}][${i}] is ${v} ${inside ? 'inside' : 'outside'} dbCovered`)
+    })
+  }
+  m.issueDaily.forEach((row, k) => topicRow('media.issueDaily', row, k))
   m.stories.forEach((s, k) => { if (!s.daily.slice(from).every(isNull)) fail(`media.stories[${k}].daily has a number on a day of the database`) })
-  F.home.issueDaily.forEach((row, k) => { if (!row.slice(from).every(isNull)) fail(`home.issueDaily[${k}] has a number on a day of the database`) })
+  F.home.issueDaily.forEach((row, k) => topicRow('home.issueDaily', row, k))
+  for (const key of ['home', 'stories']) {
+    if (F[key].issues.map((x) => x.el).join('\n') !== m.issues.map((x) => x.el).join('\n')) fail(`${key}.issues differ from media.issues`)
+    if (F[key].dbIssueFrom !== m.dbIssueFrom) fail(`${key}.dbIssueFrom differs from media.dbIssueFrom`)
+  }
+  if (m.issueOutlet && m.issueOutlet.length !== m.issues.length) fail(`media.issueOutlet has ${m.issueOutlet.length} rows for ${m.issues.length} topics`)
   for (const key of ['stories', 'storyDetail', 'home']) if (F[key].volumeFrom !== m.volumeFrom) fail(`${key}.volumeFrom differs from media.volumeFrom`)
   for (const key of ['stories', 'storyDetail']) {
     if (F[key].dbStoryFrom === undefined) fail(`${key}.dbStoryFrom is missing`)

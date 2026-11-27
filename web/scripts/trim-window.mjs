@@ -73,7 +73,51 @@ export const trimWindow = (fx) => {
     groups.totalCollected = groups.groups.reduce((a, g) => a + g.collected, 0) + groups.ungrouped.reduce((a, o) => a + o.collected, 0)
     groups.window = [from, stories.window[1]]
   }
-  return { from, cut, stories: stories.stories.length }
+  const topics = keepWindowTopics(fx)
+  return { from, cut, stories: stories.stories.length, ...(topics && { topics }) }
+}
+
+// The topics with articles in the window (the October topics of make-db-fixtures.py, #214) stay, the others go, and every index of a topic
+// is renumbered; a search row takes the topic of its story. The topics of groups are counted again from the articles of each topic and outlet (media.issueOutlet).
+// Runs after the days are cut. Returns the number of topics kept, or null when there is nothing to drop.
+export const keepWindowTopics = ({ home, media, stories, search, groups }) => {
+  if (!media.issues || !stories.issues) return null
+  const keep = media.issueDaily.flatMap((row, i) => (row.some((v) => v !== null) ? [i] : []))
+  if (!keep.length || keep.length === media.issues.length) return null
+  const names = media.issues.map((x) => x.el).join('\n')
+  for (const [name, f] of [['home', home], ['stories', stories]]) {
+    if (f.issues.map((x) => x.el).join('\n') !== names) throw new Error(`${name} and media do not list the same topics`)
+  }
+  const at = new Map(keep.map((i, n) => [i, n]))
+  const moved = (i) => {
+    if (!at.has(i)) throw new Error(`a story of the window has topic ${i}, which has no article in the window`)
+    return at.get(i)
+  }
+  const pick = (list) => keep.map((i) => list[i])
+
+  for (const f of [media, home, stories]) f.issues = pick(f.issues)
+  media.issueDaily = pick(media.issueDaily)
+  home.issueDaily = pick(home.issueDaily)
+  if (media.issueOutlet) media.issueOutlet = pick(media.issueOutlet)
+  for (const s of stories.stories) s.issue = moved(s.issue)
+
+  if (search) {
+    const topicOf = new Map(stories.stories.map((s) => [s.id, s.issue]))
+    for (const row of search.storyRows) row[2] = topicOf.get(row[0]) ?? row[2]
+    if (search.kinds?.topics) {
+      search.kinds.topics = stories.issues.map((x, n) => ({ n: x.el, ...(x.en && x.en !== x.el && { en: x.en }), h: `topic-v2.html?i=${n}`, r: '/trends' }))
+    }
+  }
+
+  if (groups && media.issueOutlet) {
+    const outletOf = new Map(media.outlets.map((o, k) => [o.slug, k]))
+    const count = (i, slugs) => slugs.reduce((a, slug) => a + (media.issueOutlet[i][outletOf.get(slug)] ?? 0), 0)
+    const all = media.outlets.map((o) => o.slug)
+    groups.issues = stories.issues
+    groups.topicsAll = stories.issues.map((_, i) => count(i, all))
+    for (const g of groups.groups) g.topics = stories.issues.map((_, i) => count(i, g.outlets.map((o) => o.slug)))
+  }
+  return keep.length
 }
 
 // public/data/ after buildFixtures: each key as <key>.json, and the static pages read the same data as <key>.js.

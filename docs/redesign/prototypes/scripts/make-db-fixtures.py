@@ -16,8 +16,14 @@ the first such day that holds to the last one before --as-of are the covered ran
 
 A story of the database is a chain: each daily story is a node and each `continues` link of story_links joins two nodes. The stories and
 storyDetail fixtures get one row for each chain with 3 or more articles of the mapped outlets in the covered range, like the stories of the base.
-The name is the title of its first article. The topic is the catch-all topic. The labels of storyDetail (frame, stance, section, clickbait) are null.
+The name is the title of its first article. The labels of storyDetail (frame, stance, section, clickbait) are null.
 The ids of the new stories start after the last id of the base; `dbStoryFrom` keeps the first, so a second run cuts them before it appends.
+
+The topics of the covered range come from october-topics.json (#214): each topic lists the ids of its articles. They are added after the
+topics of the base in media, home and stories; `dbIssueFrom` keeps the first, so a second run cuts them before it appends. A base topic has
+null cells on the new days and a new topic has null cells on the base days. A story gets the topic of most of its articles (the bigger topic
+on a tie), or the catch-all topic when none of its articles has one. media.issueOutlet holds the articles of each topic and outlet in the
+covered range (null for a base topic and for an outlet with no domain).
 """
 
 import argparse
@@ -27,6 +33,7 @@ import io
 import json
 import re
 import statistics
+from collections import Counter
 import subprocess
 import sys
 from datetime import date, timedelta
@@ -62,7 +69,17 @@ def days_between(first, last):
     return [(first + timedelta(days=i)).isoformat() for i in range((last - first).days + 1)]
 
 
-MARKERS = ("volumeFrom", "dbCovered", "dbStoryFrom")
+MARKERS = ("volumeFrom", "dbCovered", "dbStoryFrom", "dbIssueFrom")
+
+
+def cut_issues(fixture):
+    """The topics of a fixture as they were before the database: without the topics from dbIssueFrom."""
+    if "dbIssueFrom" in fixture:
+        n = fixture["dbIssueFrom"]
+        fixture["issues"] = fixture["issues"][:n]
+        if "issueDaily" in fixture:
+            fixture["issueDaily"] = fixture["issueDaily"][:n]
+    fixture.pop("issueOutlet", None)
 
 
 def cut_stories(fixture):
@@ -124,6 +141,49 @@ def article_counts(dsn, domains, first, as_of):
         and {day_of} >= '{first}' and {day_of} < '{as_of}'
       group by 1, 2"""
     return {(r["domain"], r["day"]): int(r["n"]) for r in query(dsn, sql)}
+
+
+def read_topics(path):
+    """The topics of october-topics.json and the topic index of each article id."""
+    topics = json.loads(path.read_text(encoding="utf-8"))["topics"]
+    topic_of = {}
+    for k, t in enumerate(topics):
+        for a in t["articles"]:
+            if a in topic_of:
+                sys.exit(f"article {a} is in two topics of {path.name}")
+            topic_of[a] = k
+    return [{"el": t["el"], "en": t["en"], "soft": t["soft"], "catchAll": False} for t in topics], topic_of
+
+
+def add_topics(dsn, media, home, stories, topics, topic_of, outlet_of_domain, first, last):
+    """The topics of the covered range after the topics of the base, with their articles per day and per outlet. Returns a report."""
+    names = [x["el"] for x in media["issues"]]
+    for name, f in (("home", home), ("stories", stories)):
+        if [x["el"] for x in f["issues"]] != names:
+            sys.exit(f"{name}.js and media.js do not list the same topics in the same order")
+    day_of = f"(coalesce(a.published_at, a.first_seen_at) at time zone '{DAY_TZ}')::date"
+    listed = ",".join(f"'{d}'" for d in sorted(outlet_of_domain))
+    rows = query(dsn, f"""select a.id, d.domain, {day_of} as day from articles a join sources d on d.id = a.source_id
+      where d.domain in ({listed}) and a.moved_to_id is null and {day_of} between '{first}' and '{last}'""")
+    days = {day: i for i, day in enumerate(media["dates"]) if first <= day <= last}
+    daily = [[0 if i in days.values() else None for i in range(len(media["dates"]))] for _ in topics]
+    per_outlet = [[0 if k in outlet_of_domain.values() else None for k in range(len(media["outlets"]))] for _ in topics]
+    no_topic = 0
+    for r in rows:
+        t = topic_of.get(int(r["id"]))
+        if t is None:
+            no_topic += 1
+            continue
+        daily[t][days[r["day"]]] += 1
+        per_outlet[t][outlet_of_domain[r["domain"]]] += 1
+    base = len(names)
+    for f in (media, home, stories):
+        f["issues"] = f["issues"] + [dict(x) for x in topics]
+        f["dbIssueFrom"] = base
+    for f in (media, home):
+        f["issueDaily"] += [list(row) for row in daily]
+    media["issueOutlet"] = [None] * base + per_outlet
+    return {"topics": len(topics), "articles": len(rows), "with_topic": len(rows) - no_topic, "no_topic": no_topic}
 
 
 def covered_range(counts, domains, days):
@@ -195,7 +255,7 @@ def find(parent, x):
     return x
 
 
-def database_stories(dsn, outlet_of_domain, dates, first, last, catch_all, first_id):
+def database_stories(dsn, outlet_of_domain, dates, first, last, catch_all, first_id, topic_of, topic_base):
     """The chains of daily stories of the covered range as story rows. Returns (stories.js rows, storyDetail.js rows, report)."""
     day_of = f"(coalesce(a.published_at, a.first_seen_at) at time zone '{DAY_TZ}')::date"
     listed = ",".join(f"'{d}'" for d in sorted(outlet_of_domain))
@@ -232,14 +292,16 @@ def database_stories(dsn, outlet_of_domain, dates, first, last, catch_all, first
         for r in articles.values():
             key = (outlet_of_domain[r["domain"]], index[r["day"]])
             cells[key] = cells.get(key, 0) + 1
-        built.append((titled[0][0], min(articles), titled[0][2], cells))
+        votes = Counter(topic_of[a] for a in articles if a in topic_of)
+        topic = topic_base + min(votes, key=lambda t: (-votes[t], t)) if votes else catch_all
+        built.append((titled[0][0], min(articles), titled[0][2], cells, topic))
     built.sort(key=lambda x: (x[0], x[1]))
     story_rows, detail_rows = [], []
-    for k, (_t, _a, name, cells) in enumerate(built):
+    for k, (_t, _a, name, cells, topic) in enumerate(built):
         per_day = {}
         for (_o, day), n in cells.items():
             per_day[day] = per_day.get(day, 0) + n
-        story_rows.append({"id": first_id + k, "el": name, "issue": catch_all, "outlets": len({o for o, _d in cells}), "generic": False,
+        story_rows.append({"id": first_id + k, "el": name, "issue": topic, "outlets": len({o for o, _d in cells}), "generic": False,
                            "days": [x for day, n in sorted(per_day.items()) for x in (day, n)]})
         detail_rows.append({"id": first_id + k, "t": [x for (o, day), n in sorted(cells.items()) for x in (o, day, n)], "f": None, "s": None, "c": None, "k": None, "p": []})
     sizes = sorted((len(s["days"]) // 2 for s in story_rows), reverse=True)
@@ -259,6 +321,9 @@ def main():
 
     paths = {key: root / "data" / f"{key}.js" for key in ("media", "stories", "storyDetail", "home")}
     media, stories, detail, home = (read_fixture(paths[key], key) for key in paths)
+    topics, topic_of = read_topics(root / "scripts" / "october-topics.json")
+    for fixture in (media, stories, home):
+        cut_issues(fixture)
     base_stories = cut_stories(stories)
     cut_stories(detail)
     cut = cut_base(media, base_stories)
@@ -279,7 +344,9 @@ def main():
     if len(catch_all) != 1:
         sys.exit("stories.js must have exactly one catch-all topic")
     first_id = max(s["id"] for s in stories["stories"]) + 1
-    new_stories, new_detail, story_report = database_stories(args.dsn, report["outlet_of_domain"], media["dates"], *report["covered"], catch_all[0], first_id)
+    topic_base = len(stories["issues"])
+    new_stories, new_detail, story_report = database_stories(args.dsn, report["outlet_of_domain"], media["dates"], *report["covered"], catch_all[0], first_id,
+                                                             topic_of, topic_base)
     stories["stories"] += new_stories
     detail["stories"] += new_detail
     media["storyDays"] += [s["days"] for s in new_stories]
@@ -290,18 +357,22 @@ def main():
         fixture["dbStoryFrom"] = first_id
 
     extend_home(home, media, cut)
+    topic_report = add_topics(args.dsn, media, home, stories, topics, topic_of, report["outlet_of_domain"], *report["covered"])
+    story_report["catch_all"] = sum(1 for s in new_stories if s["issue"] == catch_all[0])
     for key in paths:
         write_fixture(paths[key], key, {"media": media, "stories": stories, "storyDetail": detail, "home": home}[key])
     sources_path = root / "data" / "sources.json"
     sources = json.loads(sources_path.read_text(encoding="utf-8"))
     sources["database"] = {"dump": args.dump, "asOf": args.as_of, "covered": report["covered"], "dayTimeZone": DAY_TZ,
                            "outlets": f"{report['outlets_with_domain']} of {report['outlets_with_domain'] + report['outlets_null']}",
-                           "articles": report["articles"], "stories": story_report["kept"]}
+                           "articles": report["articles"], "stories": story_report["kept"],
+                           "topics": f"{topic_report['topics']} from october-topics.json, {topic_report['with_topic']} of {topic_report['articles']} articles"}
     sources_path.write_text(json.dumps(sources, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"media.js: {report['base_days']} base days + {report['new_days']} new days; covered {report['covered'][0]} to {report['covered'][1]}")
     print(f"outlets: {report['outlets_with_domain']} with a domain, {report['outlets_null']} with null cells")
     print("ratio of the October daily mean to the Aug-Sep daily mean: " + ", ".join(f"{n} {r:.2f}" for n, r in sorted(report["ratios"].items())))
     print(f"stories: {base_stories} base + {story_report['kept']} new (ids from {first_id}); {story_report}")
+    print(f"topics: {topic_report}")
 
 
 if __name__ == "__main__":
