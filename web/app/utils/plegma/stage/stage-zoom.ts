@@ -5,7 +5,7 @@ import type { StageCore, StageDeps } from './stage-core'
 import type { StageArticles } from './stage-articles'
 import { CAPTURES } from './stage-pointer'
 
-// The input of the zoom of the story web (#222, utils/plegma/plegma-zoom.ts): on a story page with Κλαδιά or Σύννεφα, from 1280 px wide and with a mouse or a trackpad,
+// The input of the zoom of the story web (#222, utils/plegma/plegma-zoom.ts): on a story page with Κλαδιά, from 1280 px wide and with a mouse or a trackpad,
 // the wheel or a pinch over the map zooms; zoomed, a drag pans and a double-click goes back to the whole web. Over a card or a control the page keeps the pointer.
 export const ZOOM_MIN_WIDTH = 1280
 export interface ZoomDeps extends StageDeps {
