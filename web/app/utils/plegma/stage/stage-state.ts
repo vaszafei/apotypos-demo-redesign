@@ -72,7 +72,7 @@ export interface StageState {
   heroCleared: boolean
   heroRev: Map<number, number>
   lantern: HeroSpot
-  // The zoom of the story web of Κλαδιά and Σύννεφα (utils/plegma/plegma-zoom.ts), and when it last stepped.
+  // The zoom of the story web of Κλαδιά (utils/plegma/plegma-zoom.ts), and when it last stepped.
   zoom: WebZoom
   zoomAt: number
 }

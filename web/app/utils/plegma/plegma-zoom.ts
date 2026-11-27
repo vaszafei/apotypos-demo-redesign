@@ -1,7 +1,7 @@
 // The zoom of the story web (#222, option M): three levels (the whole web, 2.4, 5). A mouse notch glides one level, and notches during a glide add up; a trackpad
 // or a pinch zooms smoothly and, when the fingers stop, settles on the next level the way it went. The point under the pointer stays where it is; a drag pans,
 // with a little inertia; a double-click goes back to the whole web. The zoom never goes farther out than the whole web.
-// Points are in px of the region at the framing zoom, from the middle of the region (as the layouts of Κλαδιά and Σύννεφα): `view` is where a point is drawn,
+// Points are in px of the region at the framing zoom, from the middle of the region (as the layout of Κλαδιά): `view` is where a point is drawn,
 // `web` is the point of the layout; view = (web - cam) * z.
 
 export const ZOOM_LEVELS = [1, 2.4, 5] as const

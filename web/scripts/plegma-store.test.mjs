@@ -93,14 +93,3 @@ test('a group address puts that group in focus, Politis Group when it has no slu
   plegma.syncRoute(route('/group/', {}))
   assert.deepEqual({ ...plegma.focus }, { kind: 'group', slug: 'politis' })
 })
-
-test('the spread of a story opens on Κλαδιά, keeps Σύννεφα while the story stays, and goes back to Κλαδιά on another story', () => {
-  const plegma = usePlegmaStore()
-  plegma.syncRoute(route('/story', { id: '5' }))
-  assert.equal(plegma.spread, 'branches')
-  plegma.setSpread('clouds')
-  plegma.syncRoute(route('/story', { id: '5' }))
-  assert.equal(plegma.spread, 'clouds')
-  plegma.syncRoute(route('/story', { id: '6' }))
-  assert.equal(plegma.spread, 'branches')
-})

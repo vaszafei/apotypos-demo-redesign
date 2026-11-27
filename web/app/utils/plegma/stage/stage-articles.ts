@@ -2,7 +2,6 @@ import { articleOfNode, articleRadius, articleWebOf, matchesHighlight, nodeCount
 import type { PlegmaArticle, PlegmaHighlight } from '../plegma-articles'
 import { branchLag, branchRadius, buildBranchWeb, placeBranchNames } from '../plegma-branches'
 import type { BranchName, BranchNameAsk, PlegmaBranchWeb } from '../plegma-branches'
-import { buildCloudWeb, cloudLabel } from '../plegma-story-clouds'
 import { isZoomed, resetWebZoom, stepZoom } from '../plegma-zoom'
 import { PLEGMA_REGION, frameStory, regionBox, toScreen } from '../plegma-camera'
 import { ringEmptiedTo } from '../plegma-leave'
@@ -22,7 +21,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
   // The web is the story's articles (utils/plegma/plegma-articles.ts). Its size on the screen is that of the free map region, so it is the same at any window; in the world it is
   // a disc of `Rt / zt` where zt is the zoom of the framing, so it grows and shrinks with the camera in a flight. The nodes go round on small circles, each its own way.
   // `branch`: the web is Κλαδιά (below), and `k` its scale against the framing of the story.
-  const arts = { aw: null as ReturnType<typeof articleWebOf> | null, tab: '', fromTab: '', by: 'group' as By, from: null as ReturnType<typeof articleWebOf> | null, fromBy: 'group' as By, blend: 1, id: -1, cx: 0, cy: 0, R: 0, ring: 0, kx: 1, rWorld: 0, dr: 1, spacing: 0, branch: false, k: 1, threads: 0 }
+  const arts = { aw: null as ReturnType<typeof articleWebOf> | null, tab: '', fromTab: '', by: 'group' as By, from: null as ReturnType<typeof articleWebOf> | null, fromBy: 'group' as By, blend: 1, id: -1, cx: 0, cy: 0, R: 0, ring: 0, kx: 1, rWorld: 0, dr: 1, spacing: 0, branch: false, k: 1 }
   // When the outlets of the story are read the web changes from the plain disc to the sectors of its groups: the nodes move there, they do not jump.
   const MORPH_MS = 900
   let morphFrom: ReturnType<typeof articleWebOf> | null = null
@@ -103,17 +102,10 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const box = regionBox(st.width, st.height, region)
     return clamp(box.w / Math.max(1, box.h), 1, 1.6)
   }
-  // Κλαδιά (utils/plegma/plegma-branches.ts) or Σύννεφα (plegma-story-clouds.ts), as `plegma.spread`: a story whose articles have their time is its web spread by time,
+  // Κλαδιά (utils/plegma/plegma-branches.ts): a story whose articles have their time is its web spread by time,
   // in the whole free cell, with no ring. One node for each article. The web and its names are made once for a story and a size of the region, in pixels of the framing; the frame scales them with the camera.
-  const branch = { key: '', list: null as unknown, web: null as PlegmaBranchWeb | null, aw: null as ReturnType<typeof articleWebOf> | null, names: [] as BranchName[], fz: 1, w: 0, h: 0, threads: 0, from: null as { x: Float32Array, y: Float32Array } | null, at: 0,
+  const branch = { key: '', list: null as unknown, web: null as PlegmaBranchWeb | null, aw: null as ReturnType<typeof articleWebOf> | null, names: [] as BranchName[], fz: 1, w: 0, h: 0,
     asks: null as ((X: ArrayLike<number>, Y: ArrayLike<number>, z: number, cam: { x: number, y: number }) => { asks: BranchNameAsk[], ticks: number[] }) | null, ticks: [] as number[] }
-  // Switching between Κλαδιά and Σύννεφα the nodes glide from one layout to the other (MORPH_MS); the names of the new one come in over the second half.
-  const branchGlide = () => {
-    if (!branch.from) return 1
-    const k = (performance.now() - branch.at) / MORPH_MS
-    if (k >= 1) { branch.from = null; return 1 }
-    return 1 - Math.pow(1 - k, 3)
-  }
   const measure = (text: string, size: number, weight: number) => {
     const g = st.ctxFocus
     if (!g) return text.length * size * 0.54
@@ -127,7 +119,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const list = plegma.articles
     if (!list || !list.length || list.length !== s.n || list[0]!.time === undefined || !plegma.region) return null
     const box = regionBox(st.width, st.height, plegma.region)
-    const key = `${s.id}|${Math.round(box.w)}|${Math.round(box.h)}|${deps.locale.value}|${plegma.spread}`
+    const key = `${s.id}|${Math.round(box.w)}|${Math.round(box.h)}|${deps.locale.value}`
     if (key === branch.key && list === branch.list) return branch
     const times = list.map(a => a.time!)
     const first = list[0]!
@@ -139,19 +131,12 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     for (const a of list) { const g = byGroup.get(a.order); if (g) g.n++; else byGroup.set(a.order, { a, n: 1 }) }
     const endText = (g: number) => { const row = byGroup.get(g)!; return `${shortGroup(row.a.group)} · ${fmtPct(row.n / list.length)}` }
     const input = { times, groups: list.map(a => a.order), seed: s.id, w: box.w, h: box.h, left }
-    const clouds = plegma.spread === 'clouds' ? buildCloudWeb({ ...input, right: 24 }) : null
-    const web = clouds ?? buildBranchWeb({ ...input, right: Math.max(0, ...[...byGroup.keys()].map(g => measure(endText(g), 11.5, 400))) + 34 })
-    const dayOf = (local: number) => fmtDay(new Date(local * 60000).toISOString().slice(0, 10))
-    const days = new Intl.DateTimeFormat(deps.locale.value === 'en' ? 'en-GB' : 'el-GR', { day: 'numeric', month: 'short', timeZone: 'UTC' })
-    const range = (from: number, to: number) => days.formatRange(new Date(from * 60000), new Date(to * 60000))
-    const cloudText = clouds ? clouds.clouds.map((_, k) => cloudLabel(clouds.clouds, k, clouds.unit, dayOf, range)) : []
-    const seen = new Set([first.outlet])
-    const outletFirsts = list.map((a, i) => (seen.has(a.outlet) ? -1 : (seen.add(a.outlet), i))).filter(i => i > 0)
-    const firsts = clouds ? outletFirsts.slice(0, web.n < 12 ? 7 : 4) : web.firsts.slice(0, web.n < 12 ? 9 : 4)
+    const web = buildBranchWeb({ ...input, right: Math.max(0, ...[...byGroup.keys()].map(g => measure(endText(g), 11.5, 400))) + 34 })
+    const firsts = web.firsts.slice(0, web.n < 12 ? 9 : 4)
     const lagOf = (i: number) => lagText(times[i]! - times[0]!)
     const dayText = (i: number) => fmtDay(athensDate(times[i]!))
     // The names at a zoom (utils/plegma/plegma-zoom.ts): the nodes as drawn (X, Y, in px of the region from its middle) and the camera of the zoom. At the whole web (z 1) the start node, the
-    // axis or the labels of the clouds, the first articles and the ends of the branches. Deeper, from 1.6 to 1.9, each outlet where it first shows; from 3.1 to 3.4 every article in view with
+    // axis, the first articles and the ends of the branches. Deeper, from 1.6 to 1.9, each outlet where it first shows; from 3.1 to 3.4 every article in view with
     // its outlet and day, the first of a group also how long after the first article it came.
     const band = (z: number, a: number, b: number) => clamp((z - a) / (b - a), 0, 1)
     const asksAt = (X: ArrayLike<number>, Y: ArrayLike<number>, z: number, cam: { x: number, y: number }) => {
@@ -163,20 +148,12 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       const ticks: number[] = []
       const startPad = pad * Math.pow(z, 0.45)
       if (inBox(0)) starts.forEach(([text, size, weight], k) => asks.push({ x: X[0]! - startPad, y: Y[0]! + [-13, 5, 21][k]!, text, size, weight, anchor: 'end', mute: k !== 1, fixed: true }))
-      if (clouds) {
-        clouds.clouds.forEach((c, k) => {
-          const x = (c.cx - cam.x) * z
-          if (Math.abs(x) > box.w / 2 - 20) return
-          asks.push({ x, y: Math.min(web.axisY, (c.labelY - 22 - cam.y) * z + 22), text: cloudText[k]!, size: 11, anchor: 'middle', mute: true, fixed: true })
-        })
-      } else {
-        // The axis stays under the branches; more marks find room as the web opens.
-        for (const [m, mark] of web.marks.entries()) {
-          const x = m ? (mark.x - cam.x) * z : X[0]!
-          if (Math.abs(x) > box.w / 2 - 10 || ticks.some(u => Math.abs(u - x) < (mark.kind === 'hour' ? 62 : 46)) || (m && x < X[0]! + 64 * z)) continue
-          ticks.push(x)
-          asks.push({ x, y: web.axisY, text: mark.kind === 'hour' ? athensClock(mark.minute) : fmtDay(athensDate(mark.minute)), size: 11, anchor: 'middle', mute: mark.kind === 'hour', fixed: true })
-        }
+      // The axis stays under the branches; more marks find room as the web opens.
+      for (const [m, mark] of web.marks.entries()) {
+        const x = m ? (mark.x - cam.x) * z : X[0]!
+        if (Math.abs(x) > box.w / 2 - 10 || ticks.some(u => Math.abs(u - x) < (mark.kind === 'hour' ? 62 : 46)) || (m && x < X[0]! + 64 * z)) continue
+        ticks.push(x)
+        asks.push({ x, y: web.axisY, text: mark.kind === 'hour' ? athensClock(mark.minute) : fmtDay(athensDate(mark.minute)), size: 11, anchor: 'middle', mute: mark.kind === 'hour', fixed: true })
       }
       const asked = new Set<number>()
       for (const i of firsts) {
@@ -197,12 +174,11 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       return { asks, ticks }
     }
     const whole = asksAt(web.x, web.y, 1, { x: 0, y: 0 })
-    const glide = !reduced.value && branch.web && branch.list === list && branch.w === box.w && branch.h === box.h && branch.web.n === web.n ? { x: branch.web.x, y: branch.web.y } : null
     // A new layout begins at its whole web.
     resetWebZoom(st.zoom)
     zoomNames.key = ''
     Object.assign(branch, {
-      from: glide, at: performance.now(), key, list, web, names: placeBranchNames(web, whole.asks, box, measure), ticks: whole.ticks, asks: asksAt, fz: frameStory(s, st.width, st.height, plegma.region).z, w: box.w, h: box.h, threads: clouds?.threads ?? 0,
+      key, list, web, names: placeBranchNames(web, whole.asks, box, measure), ticks: whole.ticks, asks: asksAt, fz: frameStory(s, st.width, st.height, plegma.region).z, w: box.w, h: box.h,
       aw: { n: web.n, x: web.x, y: web.y, phase: web.phase, speed: web.speed, reach: web.reach, edges: web.edges, bow: web.bow, gap: 0, arcs: new Float32Array(0) }
     })
     return branch
@@ -235,16 +211,14 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const p = toScreen(st.cam, st.width, st.height, placed(s))
     const k = st.cam.z / b.fz
     const amp = clamp(web.r * 0.5, 0.8, 2.2)
-    const e = branchGlide()
-    const from = b.from
     // The zoom: a node is drawn at (its place - the camera of the zoom) * the zoom (utils/plegma/plegma-zoom.ts).
     const { z, cam } = st.zoom
     if (ax.length < web.n) { ax = new Float32Array(web.n); ay = new Float32Array(web.n) }
     for (let i = 0; i < web.n; i++) {
       const a = sec * web.speed[i]! + web.phase[i]!
       const reach = i === 0 ? 0 : web.reach[i]!
-      const bx = ((from ? from.x[i]! + (web.x[i]! - from.x[i]!) * e : web.x[i]!) - cam.x) * z
-      const by = ((from ? from.y[i]! + (web.y[i]! - from.y[i]!) * e : web.y[i]!) - cam.y) * z
+      const bx = (web.x[i]! - cam.x) * z
+      const by = (web.y[i]! - cam.y) * z
       ax[i] = p.x + bx * k + Math.cos(a) * amp * reach
       ay[i] = p.y + by * k + Math.sin(a) * amp * reach
       // The branches grow out of the start node: the early articles first.
@@ -252,7 +226,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     }
     morphFrom = null
     const dr = (web.r / NODE_SCALE) * Math.pow(k * z, 0.45)
-    Object.assign(arts, { aw: b.aw, tab: plegma.ring, fromTab: plegma.ring, by: curBy(), from: null, fromBy: curBy(), blend: 1, id: s.id, cx: p.x, cy: p.y, R: (b.h / 2) * k, ring: 0, kx: 1, rWorld: b.h / 2 / b.fz, spacing: web.r * 2 + (web.n > 400 ? 2.2 : 4), dr, branch: true, k, threads: b.threads })
+    Object.assign(arts, { aw: b.aw, tab: plegma.ring, fromTab: plegma.ring, by: curBy(), from: null, fromBy: curBy(), blend: 1, id: s.id, cx: p.x, cy: p.y, R: (b.h / 2) * k, ring: 0, kx: 1, rWorld: b.h / 2 / b.fz, spacing: web.r * 2 + (web.n > 400 ? 2.2 : 4), dr, branch: true, k })
     return arts
   }
   const layoutArticles = (s: PlegmaStory, sec: number) => {
@@ -303,7 +277,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       ay[i] = p.y + by * R + Math.sin(a) * amp * reach
       if (st.introP < 1) { const at = gatherTo(i, aw.n, ax[i]!, ay[i]!); ax[i] = at.x; ay[i] = at.y }
     }
-    Object.assign(arts, { aw, tab: plegma.ring, fromTab: morphTab, by: curBy(), from, fromBy: morphBy, blend, id: s.id, cx: p.x, cy: p.y, R, ring: ringOf(R), kx, rWorld, spacing, dr: clamp(spacing * 0.27, 1.2, 4.6), branch: false, k: 1, threads: 0 })
+    Object.assign(arts, { aw, tab: plegma.ring, fromTab: morphTab, by: curBy(), from, fromBy: morphBy, blend, id: s.id, cx: p.x, cy: p.y, R, ring: ringOf(R), kx, rWorld, spacing, dr: clamp(spacing * 0.27, 1.2, 4.6), branch: false, k: 1 })
     return arts
   }
   const articleAt = (s: PlegmaStory, x: number, y: number) => {
@@ -402,13 +376,11 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     const lit = articles && st.hlLast && mix > 0.01 ? matchNodes(s, st.hlLast, articles, aw.n) : null
     const rOf = (i: number) => gatherR(i, i === 0 ? a.dr * 1.7 : a.dr)
     if (level === 2) {
-      // The thread between the clouds of Σύννεφα (the first `threads` edges) is gray, a little stronger than the lines inside them.
-      const THREAD = -2
       const lines = new Map<number, Path2D>()
       for (let e = 0; e < aw.bow.length; e++) {
         const i = aw.edges[e * 2]!
         const j = aw.edges[e * 2 + 1]!
-        const slot = e < a.threads ? THREAD : slotOf(i)
+        const slot = slotOf(i)
         let path = lines.get(slot)
         if (!path) { path = new Path2D(); lines.set(slot, path) }
         const dx = ax[j]! - ax[i]!
@@ -418,9 +390,9 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
       }
       g.lineCap = 'round'
       for (const [slot, path] of lines) {
-        g.strokeStyle = slot === THREAD ? st.mute : inkOf(slot)
-        g.lineWidth = slot === THREAD ? 1.1 : a.spacing < 7 ? 0.7 : 1
-        g.globalAlpha = (slot === THREAD ? 0.6 : a.spacing < 7 ? 0.4 : 0.55) * (1 - 0.35 * mix) * st.lineIn
+        g.strokeStyle = inkOf(slot)
+        g.lineWidth = a.spacing < 7 ? 0.7 : 1
+        g.globalAlpha = (a.spacing < 7 ? 0.4 : 0.55) * (1 - 0.35 * mix) * st.lineIn
         g.stroke(path)
       }
     }
@@ -586,9 +558,9 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     }
     g.globalAlpha = 1
   }
-  // The names of Κλαδιά: the start node's, the marks of the axis, the first articles of the first groups and the ends of the branches (of Σύννεφα: the labels of the clouds). They come in last and go first when the view is left.
+  // The names of Κλαδιά: the start node's, the marks of the axis, the first articles of the first groups and the ends of the branches. They come in last and go first when the view is left.
   const drawBranchNames = (g: CanvasRenderingContext2D, a: typeof arts) => {
-    const alpha = st.ringIn * (1 - clamp(st.ringOut * 2, 0, 1)) * (branch.from ? clamp(branchGlide() * 2 - 1, 0, 1) : 1)
+    const alpha = st.ringIn * (1 - clamp(st.ringOut * 2, 0, 1))
     if (alpha <= 0.01) return
     const web = branch.web!
     const X = (x: number) => a.cx + x * a.k
@@ -641,7 +613,7 @@ export const createStageArticles = (st: StageState, deps: StageDeps, core: Stage
     return { x: here.x, y: here.y, edge: ringOf(articleWorldRadius(s) * st.cam.z) + 9, kx: articleAspect() }
   }
   const isBranch = (s: PlegmaStory) => !!branchOf(s)
-  // Where the story web of Κλαδιά or Σύννεφα was last drawn: its middle on the screen and its scale against the framing (the zoom's points are in px of the framing, from that middle).
+  // Where the story web of Κλαδιά was last drawn: its middle on the screen and its scale against the framing (the zoom's points are in px of the framing, from that middle).
   const zoomFrame = (s: PlegmaStory) => (arts.branch && arts.id === s.id ? { cx: arts.cx, cy: arts.cy, k: arts.k } : null)
   return { lagText, stepWebZoom, zoomFrame, drawArticles, articleAt, ringAt, articleWorldRadius, articleAspect, ringOf, sectorOf, byOutlet, centerRadius, centerPoint, clearRadius, linkFrom, nodeArticle, isBranch }
 }
