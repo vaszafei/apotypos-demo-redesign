@@ -34,6 +34,10 @@ export const createStageCore = (st: StageState, deps: StageDeps) => {
     st.ink = style.getPropertyValue('--ink').trim() || '#111'
     st.mute = style.getPropertyValue('--text-secondary').trim() || st.mute
     st.paper = style.getPropertyValue('--surface-page').trim() || st.paper
+    st.raised = style.getPropertyValue('--surface-raised').trim() || st.raised
+    st.border = style.getPropertyValue('--border').trim() || st.border
+    st.strong = style.getPropertyValue('--strong').trim() || st.ink
+    st.shade = style.getPropertyValue('--shade').trim() || st.shade
     st.fontText = style.getPropertyValue('--font-text').trim() || st.fontText
     st.cats = Array.from({ length: 8 }, (_, i) => style.getPropertyValue(`--cat-${i + 1}`).trim() || st.mute)
     st.groupInk = Array.from({ length: 10 }, (_, i) => style.getPropertyValue(`--cat-${i}`).trim() || st.mute)

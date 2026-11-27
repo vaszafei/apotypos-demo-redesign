@@ -26,6 +26,11 @@ export interface StageState {
   mute: string
   // The color of the page: the rim of a node.
   paper: string
+  // The colors of a tooltip (the cards of the copies on Κλαδιά are drawn as the app's tooltip).
+  raised: string
+  border: string
+  strong: string
+  shade: string
   cats: string[]
   groupInk: string[]
   stanceInk: string[]
@@ -44,6 +49,8 @@ export interface StageState {
   // The story in view keeps a clear space around its web: its place and the radius (in the world) the other stories are pushed out of.
   push: { s: PlegmaStory, r: number } | null
   hoverArticle: number
+  // The step of the band of the days (Κλαδιά) under the pointer, -1 for none.
+  hoverBand: number
   // The arc of the ring under the pointer ('g3' the fourth group, 's1' the neutral arc of the stance) and, for each arc, how far it has come forward (0 to 1): it grows and brightens as it eases.
   hoverRing: string
   // Set while the pointer is on an arc of the ring of a story and that arc has lit its nodes (the highlight of the cards is not touched).
@@ -93,6 +100,10 @@ export const createStageState = (): StageState => ({
   ink: '#111',
   mute: '#6b6f78',
   paper: '#f6f4ef',
+  raised: '#fff',
+  border: '#e4e1d9',
+  strong: '#111',
+  shade: '#000',
   cats: [],
   groupInk: [],
   stanceInk: [],
@@ -106,6 +117,7 @@ export const createStageState = (): StageState => ({
   ringOut: 0,
   push: null,
   hoverArticle: -1,
+  hoverBand: -1,
   hoverRing: '',
   ringLit: false,
   ringHot: new Map(),

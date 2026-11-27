@@ -70,12 +70,25 @@ const ring = computed(() => {
     }
   }
   // The middle holds a number and a line when the ring leaves them room; a line is as wide as the inside of the ring at its height.
-  return { arcs, names, cx, cy, middle: R >= 60, room: 2 * Math.sqrt(Math.max(0, (R - 8) ** 2 - 34 ** 2)) - 8 }
+  return { arcs, names, cx, cy, R, middle: R >= 60 }
 })
+// The middle: each line as wide as the inside of the ring at its height; a long line takes a smaller size before it is cut (a name of an outlet or a group is read whole).
+const MIDDLE_Y = { big: -24, bigCap: -4, line: 18, cap: 34 }
+const LINE_SIZES = [20, 17, 15, 13]
+const CAP_SIZES = [12, 11, 10]
 const middle = computed(() => {
   const r = ring.value
   const m = on.value ? props.pointed(on.value) : props.middle
-  return r ? { ...m, line: fit(m.line, '600 20px', r.room), cap: fit(m.cap, '12px', r.room), bigCap: fit(m.bigCap, '12px', r.room) } : m
+  if (!r) return { ...m, lineSize: LINE_SIZES[0]!, capSize: CAP_SIZES[0]!, bigCapSize: CAP_SIZES[0]! }
+  const roomAt = (y: number, size: number) => 2 * Math.sqrt(Math.max(0, (r.R - 8) ** 2 - (Math.abs(y) + size / 2) ** 2)) - 6
+  const sized = (text: string, y: number, sizes: number[], weight: string) => {
+    const size = sizes.find(z => width(text, `${weight} ${z}px`) <= roomAt(y, z)) ?? sizes[sizes.length - 1]!
+    return { text: fit(text, `${weight} ${size}px`, roomAt(y, size)), size }
+  }
+  const line = sized(m.line, MIDDLE_Y.line, LINE_SIZES, '600')
+  const cap = sized(m.cap, MIDDLE_Y.cap, CAP_SIZES, '400')
+  const bigCap = sized(m.bigCap, MIDDLE_Y.bigCap, CAP_SIZES, '400')
+  return { ...m, line: line.text, lineSize: line.size, cap: cap.text, capSize: cap.size, bigCap: bigCap.text, bigCapSize: bigCap.size }
 })
 </script>
 
@@ -89,10 +102,10 @@ const middle = computed(() => {
         <text :x="l.x" :y="l.y" :text-anchor="l.end ? 'end' : 'start'" @pointerenter="on = l.p" @pointerleave="on = null">{{ l.p.name }}</text>
       </g>
       <g v-if="ring.middle" class="por-middle">
-        <text :x="ring.cx" :y="ring.cy - 22" class="por-big">{{ middle.big }}</text>
-        <text :x="ring.cx" :y="ring.cy - 2" class="por-cap">{{ middle.bigCap }}</text>
-        <text :x="ring.cx" :y="ring.cy + 24" class="por-mid">{{ middle.line }}</text>
-        <text :x="ring.cx" :y="ring.cy + 42" class="por-cap">{{ middle.cap }}</text>
+        <text :x="ring.cx" :y="ring.cy + MIDDLE_Y.big" class="por-big">{{ middle.big }}</text>
+        <text :x="ring.cx" :y="ring.cy + MIDDLE_Y.bigCap" class="por-cap" :style="{ fontSize: `${middle.bigCapSize}px` }">{{ middle.bigCap }}</text>
+        <text :x="ring.cx" :y="ring.cy + MIDDLE_Y.line" class="por-mid" :style="{ fontSize: `${middle.lineSize}px` }">{{ middle.line }}</text>
+        <text :x="ring.cx" :y="ring.cy + MIDDLE_Y.cap" class="por-cap" :style="{ fontSize: `${middle.capSize}px` }">{{ middle.cap }}</text>
       </g>
     </svg>
   </div>

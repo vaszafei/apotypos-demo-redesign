@@ -666,7 +666,7 @@
 .plegma-ring .por-arc.is-silent { stroke: var(--text-secondary); stroke-dasharray: 2 4; stroke-opacity: 0.7; stroke-linecap: butt; }
 
 /* The four rings of a story, two by two, on the Plegma (no cards). */
-.plegma-views { flex: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: minmax(190px, 26vh) minmax(160px, 18vh); gap: var(--space-3) var(--space-4); }
+.plegma-views { flex: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: minmax(190px, 26vh) minmax(184px, 20vh); gap: var(--space-3) var(--space-4); }
 /* The ring of the outlets alone on the first row, bigger; the groups and the copies under it. */
 .plegma-view.is-outlets { grid-column: 1 / -1; }
 .plegma-view { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
