@@ -28,7 +28,7 @@ export const useTooltipStore = defineStore('tooltip', () => {
     timer = setTimeout(() => { if (!pinned.value && !over.value) tip.value = null }, 220)
   }
   const pin = (t: Tip, e: MouseEvent, anchor?: TipAnchor) => { set(t, e, anchor); pinned.value = true }
-  const unpin = () => { if (!pinned.value) return; pinned.value = false; tip.value = null }
+  const unpin = () => { if (!pinned.value) return; pinned.value = false; over.value = false; tip.value = null }
   const enter = () => { if (at.value) { over.value = true; clearTimeout(timer) } }
   const leave = () => { if (!over.value) return; over.value = false; if (!pinned.value) tip.value = null }
   const close = () => { clearTimeout(timer); pinned.value = false; over.value = false; tip.value = null }
